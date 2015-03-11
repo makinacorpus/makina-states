@@ -37,19 +37,21 @@ from mc_states.api import (
 )
 
 import mc_states.saltapi
+from salt.ext import six as six
 
 import mc_states.project
+import mc_states.project as projects_api
 from mc_states.project import (
-    ENVS,
-    KEEP_ARCHIVES,
-    ProjectInitException,
     ProjectProcedureException,
     TooEarlyError,
+    RemoteProjectSyncUnCleanPillarError,
+    ProjectNotCleanError,
     RemoteProjectException,
-    RemoteProjectInitException,
     RemotePillarInitException,
+    RemoteProjectTransferProjectError,
+    RemoteProjectWCSyncProjectError,
     RemoteProjectSyncError,
-    RemoteProjectSyncPillarError,
+    RemoteProjectSyncPushPillarError,
     RemoteProjectSyncProjectError,
     RemoteProjectDeployError)
 
@@ -59,6 +61,7 @@ log = logger = logging.getLogger(__name__)
 
 API_VERSION = '2'
 PROJECT_INJECTED_CONFIG_VAR = 'cfg'
+DEFAULT_PROJECT_NAME = 'project'
 
 DEFAULT_CONFIGURATION = {
     'name': None,
@@ -67,7 +70,7 @@ DEFAULT_CONFIGURATION = {
     'remote_host': '{fqdn}',
     'default_env': None,
     'installer': 'generic',
-    'keep_archives': KEEP_ARCHIVES,
+    'keep_archives': projects_api.KEEP_ARCHIVES,
     #
     'user': None,
     'groups': [],
@@ -170,6 +173,15 @@ def _force_cli_retcode(ret):
         __context__['retcode'] = 0
 
 
+def set_makina_states_author(directory,
+                             name='makina-states',
+                             email='makina-states@paas.tld',
+                             **kw):
+    user, _ = get_default_user_group(**kw)
+    __salt__['git.config_set'](directory, 'user.email', email, user=user)
+    __salt__['git.config_set'](directory, 'user.name', name, user=user)
+
+
 def remove_path(path):
     '''Remove a path.'''
     if os.path.exists(path):
@@ -245,8 +257,10 @@ def _sls_exec(name, cfg, sls):
     return ret
 
 
-def _get_ret(name, *args, **kwargs):
+def _get_ret(name=None, *args, **kwargs):
     ret = kwargs.get('ret', None)
+    if name is None:
+        name = kwargs.get('name', 'noname')
     if ret is None:
         ret = {'comment': '',
                'raw_comment': '',
@@ -319,7 +333,7 @@ def _step_exec(cfg, step, failhard=True):
     return _filter_ret(cret, cfg['raw_console_return'])
 
 
-def get_default_configuration():
+def get_default_configuration(remote_host=None):
     conf = copy.deepcopy(DEFAULT_CONFIGURATION)
     this_host = this_localhost = socket.gethostname()
     this_port = 22
@@ -329,7 +343,9 @@ def get_default_configuration():
     if os.path.exists('/this_host'):
         with open('/this_host') as fic:
             this_host = fic.read().splitlines()[0].strip()
-    conf['remote_host'] = __grains__['fqdn']
+    if not remote_host:
+        remote_host = __grains__['fqdn']
+    conf['remote_host'] = remote_host
     conf['this_host'] = this_host
     conf['this_localhost'] = this_localhost
     conf['this_port'] = this_port
@@ -452,7 +468,7 @@ def _defaultsConfiguration(
     os_defaults.setdefault(__grains__['os_family'],
                            OrderedDict())
     env_defaults.setdefault(default_env, OrderedDict())
-    for k in ENVS:
+    for k in projects_api.ENVS:
         env_defaults.setdefault(k, OrderedDict())
     defaultsConfiguration = _s['mc_utils.dictupdate'](
         defaultsConfiguration, pillar_data)
@@ -528,17 +544,18 @@ def set_project(cfg):
     return cfg
 
 
-def get_project(name):
-    '''Alias of get_configuration for convenience'''
-    return get_configuration(name)
+def get_project(name, *args, **kwargs):
+    '''
+    Alias of get_configuration for convenience
+    '''
+    return get_configuration(name, *args, **kwargs)
 
 
 def _get_contextual_cached_project(name, remote_host=None):
-    _init_context(name=name)
+    _init_context(name=name, remote_host=remote_host)
     # throw KeyError if not already loaded
-    dcfg = get_default_configuration()
-    if not remote_host:
-        remote_host = dcfg['remote_host']
+    dcfg = get_default_configuration(remote_host=remote_host)
+    remote_host = dcfg['remote_host']
     cfg = __opts__['ms_projects'].setdefault((name, remote_host), dcfg)
     if remote_host == __grains__['fqdn']:
         __opts__['ms_project'] = cfg
@@ -729,7 +746,7 @@ def get_configuration(name, *args, **kwargs):
     try:
         cfg['keep_archives'] = int(cfg['keep_archives'])
     except (TypeError, ValueError, KeyError):
-        cfg['keep_archives'] = KEEP_ARCHIVES
+        cfg['keep_archives'] = projects_api.KEEP_ARCHIVES
     if nodata:
         cfg['data'] = OrderedDict()
     else:
@@ -828,23 +845,24 @@ def init_user_groups(user, groups=None, ret=None):
     _append_comment(
         ret, summary='Verify user:{0} & groups:{1} for project'.format(
             user, groups))
-    _s = __salt__.get
+    _s = __salt__
     if not groups:
         groups = []
     if not ret:
         ret = _get_ret(user)
     # create user if any
     for g in groups:
-        if not _s('group.info')(g):
+        if not _s['group.info'](g):
             cret = _state_exec(sgroup, 'present', g, system=True)
             if not cret['result']:
-                raise ProjectInitException('Can\'t manage {0} group'.format(g))
+                raise projects_api.ProjectInitException(
+                    'Can\'t manage {0} group'.format(g))
             else:
                 _append_comment(ret, body=indent(cret['comment']))
     if not os.path.exists('/home/users'):
         os.makedirs('/home/users')
         os.chmod('/home/users', 0755)
-    if not _s('user.info')(user):
+    if not _s['user.info'](user):
         cret = _state_exec(suser, 'present',
                            user,
                            home='/home/users/{0}'.format(user),
@@ -853,7 +871,7 @@ def init_user_groups(user, groups=None, ret=None):
                            remove_groups=False,
                            optional_groups=groups)
         if not cret['result']:
-            raise ProjectInitException(
+            raise projects_api.ProjectInitException(
                 'Can\'t manage {0} user'.format(user))
         else:
             _append_comment(ret, body=indent(cret['comment']))
@@ -861,7 +879,7 @@ def init_user_groups(user, groups=None, ret=None):
 
 
 def init_project_dirs(cfg, ret=None):
-    _s = __salt__.get
+    _s = __salt__
     if not ret:
         ret = _get_ret(cfg['name'])
     _append_comment(ret, summary=(
@@ -883,7 +901,7 @@ def init_project_dirs(cfg, ret=None):
                            group=cfg['group'],
                            mode='750')
         if not cret['result']:
-            raise ProjectInitException(
+            raise projects_api.ProjectInitException(
                 'Can\'t manage {0} dir'.format(dr))
     for symlink, target in (
         (cfg['wired_salt_root'], cfg['salt_root']),
@@ -891,7 +909,7 @@ def init_project_dirs(cfg, ret=None):
     ):
         cret = _state_exec(sfile, 'symlink', symlink, target=target)
         if not cret['result']:
-            raise ProjectInitException(
+            raise projects_api.ProjectInitException(
                 'Can\'t manage {0} -> {1} symlink\n{2}'.format(
                     symlink, target, cret))
     return ret
@@ -936,16 +954,16 @@ done;
 exit $res;'''.format(user=user)
     if not ret:
         ret = _get_ret(user)
-    _s = __salt__.get
+    _s = __salt__
     cret = _state_exec(scmd, 'run', cmd, onlyif=onlyif, stateful=True)
     if failhard and not cret['result']:
-        raise ProjectInitException('SSH keys improperly configured\n'
+        raise projects_api.ProjectInitException('SSH keys improperly configured\n'
                                    '{0}'.format(cret))
     return ret
 
 
 def sync_hooks(name, ret=None, api_version=API_VERSION, *args, **kwargs):
-    _s = __salt__.get
+    _s = __salt__
     cfg = get_configuration(name, *args, **kwargs)
     user, groups, group = cfg['user'], cfg['groups'], cfg['group']
     if not ret:
@@ -985,7 +1003,7 @@ def sync_hooks(name, ret=None, api_version=API_VERSION, *args, **kwargs):
                        defaults=params,
                        user=user, group=group, mode='750')
     if not cret['result']:
-        raise ProjectInitException(
+        raise projects_api.ProjectInitException(
             'Can\'t set git hooks for {0}\n{1}'.format(name, cret['comment']))
     else:
         _append_comment(
@@ -993,27 +1011,41 @@ def sync_hooks(name, ret=None, api_version=API_VERSION, *args, **kwargs):
     return ret
 
 
-def init_repo(cfg, git, user, group,
-              ret=None, bare=True, init_salt=False,
-              init_pillar=False, api_version=API_VERSION):
-    _s = __salt__.get
+def init_repo(working_copy,
+              user=None,
+              group=None,
+              ret=None,
+              bare=True,
+              init_salt=False,
+              init_pillar=False,
+              init_data=None,
+              project=None,
+              cfg=None,
+              api_version=API_VERSION):
+    user, group = get_default_user_group(user=user, group=group)
+    _s = __salt__
+    if cfg is None:
+        cfg = get_configuration(get_default_project(project))
+    if init_data is None:
+        init_data = cfg
     if not ret:
         ret = _get_ret(user)
     pref = 'Bare r'
     if not bare:
         pref = 'R'
     _append_comment(
-        ret, summary='{1}epository managment in {0}'.format(git, pref))
-    lgit = git
+        ret, summary='{1}epository managment in {0}'.format(working_copy,
+                                                            pref))
+    lgit = working_copy
     if not bare:
         lgit = os.path.join(lgit, '.git')
     if os.path.exists(lgit):
-        cmd = 'chown -Rf {0} "{2}"'.format(user, group, git)
-        cret = _s('cmd.run_all')(cmd, python_shell=True)
+        cmd = 'chown -Rf {0} "{2}"'.format(user, group, working_copy)
+        cret = _s['cmd.run_all'](cmd, python_shell=True)
         if cret['retcode']:
-            raise ProjectInitException(
-                'Can\'t set perms for {0}'.format(git))
-    parent = os.path.dirname(git)
+            raise projects_api.ProjectInitException(
+                'Can\'t set perms for {0}'.format(working_copy))
+    parent = os.path.dirname(working_copy)
     cret = _state_exec(sfile, 'directory',
                        parent,
                        makedirs=True,
@@ -1021,17 +1053,17 @@ def init_repo(cfg, git, user, group,
                        group=group,
                        mode='770')
     if not cret['result']:
-        raise ProjectInitException(
-            'Can\'t manage {0} dir'.format(git))
+        raise projects_api.ProjectInitException(
+            'Can\'t manage {0} dir'.format(working_copy))
     cret = _state_exec(sgit,
                        'present',
-                       git,
+                       working_copy,
                        user=user,
                        bare=bare,
                        force=True)
     if not cret['result']:
-        raise ProjectInitException(
-            'Can\'t manage {0} dir'.format(git))
+        raise projects_api.ProjectInitException(
+            'Can\'t manage {0} dir'.format(working_copy))
     create = False
     if len(os.listdir(lgit + '/refs/heads')) < 1:
         cret = git_log(lgit, user=user)
@@ -1041,75 +1073,118 @@ def init_repo(cfg, git, user, group,
         else:
             create = True
     if create:
-        igit = lgit
+        if init_salt and init_pillar:
+            raise ValueError(
+                'init_salt and init_pillar are mutually exclusive')
+        igit = working_copy
         if bare:
             igit += '.tmp'
-            cret = _s('cmd.run_all')(
-                (
-                    'mkdir -p "{0}" &&'
-                    ' cd "{0}" &&'
-                    ' git init &&'
-                    ' touch .empty &&'
-                    ' git config user.email "makinastates@paas.tld" &&'
-                    ' git config user.name "makinastates" &&'
-                    ' git add .empty &&'
-                    ' git commit -am "initial" &&'
-                    ' git remote add origin {1} &&'
-                    ' git push -u origin master'
-                ).format(igit, lgit),
-                python_shell=True,
-                runas=user
-            )
-        else:
-            cret = _s('cmd.run_all')(
-                (
-                    'mkdir -p "{0}" &&'
-                    ' cd "{0}" &&'
-                    ' git init &&'
-                    ' touch .empty &&'
-                    ' git config user.email "makinastates@paas.tld" &&'
-                    ' git config user.name "makinastates" &&'
-                    ' git add .empty &&'
-                    ' git commit -am "initial"'
-                ).format(igit, lgit),
-                python_shell=True,
-                runas=user)
-        if cret['retcode']:
-            raise ProjectInitException(
-                'Can\'t add first commit in {0}'.format(git))
-        if bare and (init_salt or init_pillar):
+        try:
+            parent = os.path.dirname(igit)
+            if not os.path.exists(parent):
+                _s['file.makedirs_perms'](
+                    parent, user=user, group=group, mode=0750)
+            _s['file.set_mode'](parent, 0750)
+            _s['file.chown'](parent, user=user, group=group)
+            if not os.path.exists(
+                os.path.join(igit, '.git')
+            ):
+                _s['git.init'](igit, user=user)
+            _s['file.set_mode'](igit, 0750)
+            _s['file.chown'](igit, user=user, group=group)
+            empty = os.path.join(igit, '.empty')
+            if not os.path.exists(empty):
+                _s['file.touch'](empty)
+                _s['file.chown'](empty, user, group)
+            _s['git.remote_set'](igit, 'origin', working_copy, user=user)
+            if bare:
+                set_makina_states_author(igit, user=user)
             if init_salt:
-                init_salt_dir(cfg, lgit+".tmp", ret=ret)
+                init_salt_dir(
+                    igit,
+                    commit_all=True,
+                    user=user,
+                    bare=bare,
+                    project=project,
+                    do_push=bare,
+                    init_data=cfg,
+                    api_version=api_version,
+                    ret=ret)
             if init_pillar:
-                init_pillar_dir(cfg, lgit+".tmp", ret=ret)
-            cret = _s('cmd.run_all')(
-                ('cd "{0}.tmp" &&'
-                 ' git add . &&'
-                 ' git commit -m "salt init"').format(lgit),
-                python_shell=True,
-                runas=user
-            )
-            if cret['retcode']:
-                raise ProjectInitException(
-                    'Can\'t commit salt commit in {0}'.format(git))
-            cret = _s('cmd.run_all')(
-                ('cd "{0}.tmp" &&'
-                 ' git push origin -u master').format(lgit),
-                python_shell=True,
-                runas=user
-            )
-            if cret['retcode']:
-                raise ProjectInitException(
-                    'Can\'t push first salt commit in {0}'.format(git))
-        if bare:
-            cret = _s('cmd.run_all')(
-                ('rm -rf "{0}.tmp"').format(lgit),
-                python_shell=True, runas=user)
+                init_pillar_dir(
+                    igit,
+                    init_data=cfg,
+                    project=project,
+                    user=user,
+                    commit_all=True,
+                    bare=bare,
+                    do_push=bare,
+                    api_version=api_version,
+                    ret=ret)
+            set_makina_states_author(igit, user=user)
+
+            git_commit(igit, commit_all=True, opts='-f', user=user)
+            if bare:
+                _s['git.push'](
+                    igit, 'origin', branch='master:master',
+                    opts='-u', user=user)
+        except Exception:
+            log.error(traceback.format_exc())
+            raise projects_api.ProjectInitException(
+                'Can\'t create init layout in {0}'.format(working_copy))
+        finally:
+            if bare:
+                cret = _s['cmd.run_all']('rm -rf "{0}"'.format(igit),
+                                         runas=user)
     return ret
 
 
+def push_changesets_in(directory, opts='', **kw):
+    user, group = get_default_user_group(**kw)
+    try:
+        return __salt__['git.push'](
+            directory, 'origin',
+            branch='master:master', opts=opts, user=user
+        )
+    except Exception:
+        trace = traceback.format_exc()
+        raise projects_api.ProjectInitException(
+            'Can\'t push first salt commit in {0}\n{1}'.format(
+                directory, trace))
+
+
+def git_commit(git,
+               message='salt commit',
+               opts=None,
+               commit_all=False,
+               commit_opts=None,
+               **kw):
+    _s = __salt__
+    user, group = get_default_user_group(**kw)
+    if not opts:
+        opts = ''
+    if not commit_opts:
+        commit_opts = ''
+    cret = None
+    try:
+        if commit_all:
+            _s['git.add'](git, '.', opts=opts, user=user)
+        status = _s['cmd.run']('git st',
+                               env={'LANG': 'C', 'LC_ALL': 'C'},
+                               runas=user,
+                               cwd=git)
+        if 'nothing to commit, working directory clean' not in status:
+            cret = _s['git.commit'](git, message, opts=commit_opts, user=user)
+    except Exception:
+        trace = traceback.format_exc()
+        raise projects_api.ProjectInitException(
+            'Can\'t commit salt commit in {0}\n{1}'.format(
+                git, trace))
+    return cret
+
+
 def init_local_repository(wc, url, user, group, ret=None):
-    _s = __salt__.get
+    _s = __salt__
     _append_comment(
         ret, summary='Local git repository initialization in {0}'.format(wc))
     if not ret:
@@ -1122,7 +1197,7 @@ def init_local_repository(wc, url, user, group, ret=None):
                        group=group,
                        mode='770')
     if not cret['result']:
-        raise ProjectInitException(
+        raise projects_api.ProjectInitException(
             'Can\'t manage {0} dir'.format(wc))
     else:
         _append_comment(ret, body=indent(cret['comment']))
@@ -1133,21 +1208,21 @@ def init_local_repository(wc, url, user, group, ret=None):
                        user=user,
                        force=True)
     if not cret['result']:
-        raise ProjectInitException(
+        raise projects_api.ProjectInitException(
             'Can\'t initialize git dir  {0} dir'.format(wc))
 
 
 def set_git_remote(wc, user, localgit, remote='origin', ret=None):
-    _s = __salt__.get
+    _s = __salt__
     _append_comment(
         ret, summary=('Set remotes in local copy {0} -> {1}'.format(
             localgit, wc)))
     if not ret:
         ret = _get_ret(user)
     # add the local and distant remotes
-    cret = _s('git.remote_set')(localgit, remote, wc, user=user)
+    cret = _s['git.remote_set'](localgit, remote, wc, user=user)
     if not cret:
-        raise ProjectInitException(
+        raise projects_api.ProjectInitException(
             'Can\'t initialize git local remote '
             '{0}  in {2}'.format(
                 remote, wc))
@@ -1155,63 +1230,62 @@ def set_git_remote(wc, user, localgit, remote='origin', ret=None):
 
 
 def fetch_last_commits(wc, user, origin='origin', ret=None):
-    _s = __salt__.get
+    _s = __salt__
     if not ret:
         ret = _get_ret(user)
     _append_comment(
         ret, summary=('Fetch last commits from {1} '
                       'in working copy: {0}'.format(
                           wc, origin)))
-    cret = _s('cmd.run_all')(
+    cret = _s['cmd.run_all'](
         'git fetch {0}'.format(origin), cwd=wc, python_shell=True, runas=user)
     if cret['retcode']:
-        raise ProjectInitException('Can\'t fetch git in {0}'.format(wc))
-    cret = _s('cmd.run_all')(
+        raise projects_api.ProjectInitException('Can\'t fetch git in {0}'.format(wc))
+    cret = _s['cmd.run_all'](
         'git fetch {0} --tags'.format(origin),
         cwd=wc, python_shell=True, runas=user)
     if cret['retcode']:
-        raise ProjectInitException('Can\'t fetch git tags in {0}'.format(wc))
+        raise projects_api.ProjectInitException('Can\'t fetch git tags in {0}'.format(wc))
     return ret
 
 
 def git_log(wc, user='root'):
-    _s = __salt__.get
-    return _s('cmd.run')(
+    _s = __salt__
+    return _s['cmd.run'](
         'git log', env={'LANG': 'C', 'LC_ALL': 'C'},
-        cwd=wc, python_shell=True, user=user)
+        cwd=wc, python_shell=True, runas=user)
 
 
 def has_no_commits(wc, user='root'):
-    _s = __salt__.get
     nocommits = "fatal: bad default revision 'HEAD'" in git_log(wc, user)
     return nocommits
 
 
 def set_upstream(wc, rev, user, origin='origin', ret=None):
-    _s = __salt__.get
+    _s = __salt__
     _append_comment(
         ret, summary=(
             'Set upstream: {2}/{1} in {0}'.format(
                 wc, rev, origin)))
     # set branch upstreams
     try:
-        sver = _s('cmd.run_all')(
-            'git --version', python_shell=True)['stdout'].split()[-1]
+        sver = _s['cmd.run_all'](
+            'git --version', cwd='/', python_shell=True)['stdout'].split()[-1]
         git_ver = float('.'.join(sver.split('.')[:2]))
     except (ValueError, TypeError):
         git_ver = 1.8
     if has_no_commits(wc, user=user):
-        cret2 = _s('cmd.run_all')(
+        cret2 = _s['cmd.run_all'](
             'git reset --hard {1}/{0}'.format(
                 rev, origin), cwd=wc, python_shell=True, runas=user)
         if cret2['retcode'] or cret2['retcode']:
-            raise ProjectInitException(
+            raise projects_api.ProjectInitException(
                 'Can\'t reset to initial state in {0}'.format(wc))
     if git_ver < 1.8:
-        cret2 = _s('cmd.run_all')(
+        cret2 = _s['cmd.run_all'](
             'git branch --set-upstream master {1}/{0}'.format(
                 rev, origin), cwd=wc, python_shell=True, runas=user)
-        cret1 = _s('cmd.run_all')(
+        cret1 = _s['cmd.run_all'](
             'git branch --set-upstream {0} {1}/{0}'.format(rev, origin),
             cwd=wc, python_shell=True, runas=user)
         if cret2['retcode'] or cret1['retcode']:
@@ -1219,24 +1293,24 @@ def set_upstream(wc, rev, user, origin='origin', ret=None):
             _append_comment(ret, body=indent(out))
             out = splitstrip('{stdout}\n{stderr}'.format(**cret1))
             _append_comment(ret, body=indent(out))
-            raise ProjectInitException(
+            raise projects_api.ProjectInitException(
                 'Can\'t set upstreams for {0}'.format(wc))
     else:
-        cret = _s('cmd.run_all')(
+        cret = _s['cmd.run_all'](
             'git branch --set-upstream-to={1}/{0}'.format(rev, origin),
             cwd=wc, python_shell=True, runas=user)
         if cret['retcode']:
             out = splitstrip('{stdout}\n{stderr}'.format(**cret))
             _append_comment(ret, body=indent(out))
-            raise ProjectInitException(
+            raise projects_api.ProjectInitException(
                 'Can not set upstream from {2} -> {0}/{1}'.format(
                     origin, rev, wc))
     return ret
 
 
 def working_copy_in_initial_state(wc, user='root'):
-    _s = __salt__.get
-    cret = _s('cmd.run_all')(
+    _s = __salt__
+    cret = _s['cmd.run_all'](
         'git log --pretty=format:"%h:%s:%an"',
         cwd=wc, python_shell=True, runas=user)
     out = splitstrip('{stdout}\n{stderr}'.format(**cret))
@@ -1250,7 +1324,7 @@ def working_copy_in_initial_state(wc, user='root'):
 
 
 def sync_working_copy(user, wc, rev=None, ret=None, origin=None):
-    _s = __salt__.get
+    _s = __salt__
     if rev is None:
         rev = 'master'
     if origin is None:
@@ -1262,46 +1336,71 @@ def sync_working_copy(user, wc, rev=None, ret=None, origin=None):
             'Synchronise working copy {0} from upstream {2}/{1}'.format(
                 wc, rev, origin)))
     initial = working_copy_in_initial_state(wc, user=user)
-    nocommits = "fatal: bad default revision 'HEAD'" in _s('cmd.run')(
+    nocommits = "fatal: bad default revision 'HEAD'" in _s['cmd.run'](
         'git log', env={'LANG': 'C', 'LC_ALL': 'C'},
-        cwd=wc, user=user)
+        cwd=wc, runas=user)
     # the local copy is not yet synchronnized with any repo
     if initial or nocommits or (
         os.listdir(wc) == ['.git']
     ):
-        cret = _s('git.reset')(
+        cret = _s['git.reset'](
             wc, '--hard {1}/{0}'.format(rev, origin),
             user=user)
         # in dev mode, no local repo, but we sync it anyway
         # to avoid bugs
         if not cret:
-            raise ProjectInitException(
+            raise projects_api.ProjectInitException(
                 'Can not sync from {1}@{0} in {2}'.format(
                     origin, rev, wc))
     else:
-        cret = _s('cmd.run_all')('git pull {1} {0}'.format(rev, origin),
-                                 cwd=wc, python_shell=True, user=user)
+        cret = _s['cmd.run_all']('git pull {1} {0}'.format(rev, origin),
+                                 cwd=wc, python_shell=True, runas=user)
         if cret['retcode']:
             # finally try to reset hard
-            cret = _s('cmd.run_all')(
+            cret = _s['cmd.run_all'](
                 'git reset --hard {1}/{0}'.format(rev, origin),
                 cwd=wc, user=user)
             if cret['retcode']:
                 # try to merge a bit but only what's mergeable
-                cret = _s('cmd.run_all')(
+                cret = _s['cmd.run_all'](
                     'git merge --ff-only {1}/{0}'.format(rev, origin),
-                    cwd=wc, python_shell=True, user=user)
+                    cwd=wc, python_shell=True, runas=user)
                 if cret['retcode']:
-                    raise ProjectInitException(
+                    raise projects_api.ProjectInitException(
                         'Can not sync from {0}/{1} in {2}'.format(
                             origin, rev, wc))
     return ret
 
 
-def init_pillar_dir(cfg, parent, ret=None):
-    salt_settings = __salt__['mc_salt.settings']()
-    user, group = cfg['user'], cfg['group']
-    files = [os.path.join(parent, 'init.sls')]
+def get_default_project(project):
+    if not project:
+        project = DEFAULT_PROJECT_NAME
+    return project
+
+def get_default_user_group(user=None, group=None, **kw):
+    if not user:
+        user = 'root'
+    if not group:
+        group = 'root'
+    return user, group
+
+
+def init_pillar_dir(directory,
+                    init_data=None,
+                    name='project',
+                    bare=False,
+                    user=None,
+                    group=None,
+                    project=None,
+                    commit_all=False,
+                    do_push=False,
+                    **kw):
+    user, group = get_default_user_group(user, group)
+    files = [os.path.join(directory, 'init.sls')]
+    project = get_default_project(project)
+    if not init_data:
+        init_data = get_configuration(project)
+    set_project(init_data)
     for fil in files:
         # if pillar is empty, create it
         if os.path.exists(fil):
@@ -1311,87 +1410,133 @@ def init_pillar_dir(cfg, parent, ret=None):
         template = (
             'salt://makina-states/files/projects/2/pillar/{0}'.format(
                 os.path.basename(fil)))
-        init_data = _get_filtered_cfg(cfg)
+        if not init_data:
+            init_data = {}
+        name = init_data.get('name', name)
+        init_data = _get_filtered_cfg(init_data)
         for k in [a for a in init_data]:
             if k not in [
                 "api_version",
             ]:
                 del init_data[k]
+        # be sure that the first level is not an empty dict !
+        if isinstance(init_data, OrderedDict):
+            oinit_data = {}
+            for i, val in six.iteritems(oinit_data):
+                oinit_data[i] = val
+            init_data = oinit_data
         defaults = {
-            'name': cfg['name'],
-            'cfg': yaml.dump(
-                {
-                    'makina-projects.{name}'.format(
-                        **cfg): init_data
-                },  width=80, indent=2, default_flow_style=False
-            ),
-        }
+            'name': name,
+            'cfg': yaml.dump({
+                'makina-projects.{0}'.format(name):
+                init_data}, width=80, indent=2, default_flow_style=False)}
         cret = _state_exec(sfile, 'managed',
                            name=fil, source=template,
                            makedirs=True,
                            defaults=defaults, template='jinja',
                            user=user, group=group, mode='770')
         if not cret['result']:
-            raise ProjectInitException(
+            raise projects_api.ProjectInitException(
                 'Can\'t create default {0}\n{1}'.format(fil, cret['comment']))
+    if os.path.join(directory, '.git'):
+        if commit_all:
+            git_commit(directory, commit_all=True, user=user)
+        if do_push:
+            push_changesets_in(directory, opts='-u', user=user)
 
 
-def refresh_files_in_working_copy(name, force=False, *args, **kwargs):
-    _s = __salt__.get
-    cfg = get_configuration(name, *args, **kwargs)
-    ret = _get_ret(name, *args, **kwargs)
+def refresh_files_in_working_copy(project_root,
+                                  init_data=None,
+                                  project=None,
+                                  user=None,
+                                  group=None,
+                                  force=False,
+                                  bare=None,
+                                  api_version=None,
+                                  commit_all=False,
+                                  do_push=False,
+                                  *args,
+                                  **kwargs):
+    if not api_version:
+        api_version = API_VERSION
+    user, group = get_default_user_group(user=user, group=group)
+    project = get_default_project(project)
+    ret = _get_ret(*args, **kwargs)
     _append_comment(
         ret, summary='Verify or initialise some default files')
-    user, group = cfg['user'], cfg['group']
-    project_root = cfg['project_root']
-    salt_root = os.path.join(project_root, '.salt')
-    if not os.path.exists(
-        os.path.join(project_root, '.salt')
-    ):
-        if not force:
-            raise TooEarlyError('Too early to call me')
-        else:
-            ret = init_salt_dir(cfg, project_root, ret=ret)
-    for fil in ['PILLAR.sample']:
-        dest = os.path.join(project_root, '.salt', fil)
-        if os.path.exists(dest):
-            continue
-        template = (
-            'salt://makina-states/files/projects/{1}/'
-            'salt/{0}'.format(fil, cfg['api_version']))
-        cret = _state_exec(sfile, 'managed',
-                           name=dest,
-                           source=template, defaults={},
-                           user=user, group=group,
-                           makedirs=True,
-                           mode='770', template='jinja')
-        if not cret['result']:
-            raise ProjectInitException(
-                'Can\'t create default {0}\n{1}'.format(
-                    fil, cret['comment']))
+    if not init_data:
+        init_data = get_configuration(project)
+    if not bare:
+        if not os.path.exists(
+            os.path.join(project_root, '.salt')
+        ):
+            if not force:
+                raise TooEarlyError('Too early to call me')
+            else:
+                ret = init_salt_dir(project_root,
+                                    user=user,
+                                    init_data=init_data,
+                                    project=project,
+                                    bare=bare,
+                                    do_push=do_push,
+                                    commit_all=commit_all,
+                                    ret=ret)
+        set_project(init_data)
+        for fil in ['PILLAR.sample']:
+            dest = os.path.join(project_root, '.salt', fil)
+            if os.path.exists(dest):
+                continue
+            template = (
+                'salt://makina-states/files/projects/{1}/'
+                'salt/{0}'.format(fil, api_version))
+            cret = _state_exec(sfile, 'managed',
+                               name=dest,
+                               source=template, defaults={},
+                               user=user, group=group,
+                               makedirs=True,
+                               mode='770', template='jinja')
+            if not cret['result']:
+                raise projects_api.ProjectInitException(
+                    'Can\'t create default {0}\n{1}'.format(
+                        fil, cret['comment']))
+        if os.path.join(project_root, '.git'):
+            if commit_all:
+                git_commit(project_root, commit_all=True, user=user)
+            if do_push:
+                push_changesets_in(project_root, opts='-u', user=user)
     return ret
 
 
-def init_salt_dir(cfg, parent, ret=None):
-    _s = __salt__.get
-    if not ret:
-        ret = _get_ret(cfg['name'])
+def init_salt_dir(directory,
+                  bare=False,
+                  user=None,
+                  group=None,
+                  commit_all=False,
+                  do_push=False,
+                  project=None,
+                  init_data=None,
+                  **kw):
+    user, group = get_default_user_group(user=user, group=group)
+    api_version = kw.get('api_version', API_VERSION)
+    _s = __salt__
+    ret = _get_ret(**kw)
     _append_comment(
         ret, summary='Verify or initialise salt & pillar core files')
-    user, group = cfg['user'], cfg['group']
-    pillar_root = cfg['pillar_root']
-    salt_root = os.path.join(parent, '.salt')
-    if not os.path.exists(parent):
-        raise ProjectInitException(
-            'parent for salt root {0} does not exist'.format(parent))
+    salt_root = os.path.join(directory, '.salt')
+    if not init_data:
+        init_data = get_configuration(project)
+    set_project(init_data)
+    if not os.path.exists(directory):
+        raise projects_api.ProjectInitException(
+            'directory for salt root {0} does not exist'.format(directory))
     cret = _state_exec(sfile, 'directory',
                        salt_root,
                        user=user,
                        group=group,
                        mode='770')
     if not cret['result']:
-        raise ProjectInitException(
-            'Can\'t manage {0} dir'.format(salt_root))
+        raise projects_api.ProjectInitException(
+            'Can\'t manage {0} dir'.format(directory))
     files = [os.path.join(salt_root, a)
              for a in os.listdir(salt_root)
              if a.endswith('.sls') and not os.path.isdir(a)]
@@ -1400,7 +1545,7 @@ def init_salt_dir(cfg, parent, ret=None):
                                     '00_helloworld.sls']:
             template = (
                 'salt://makina-states/files/projects/{1}/'
-                'salt/{0}'.format(fil, cfg['api_version']))
+                'salt/{0}'.format(fil, api_version))
             cret = _state_exec(sfile, 'managed',
                                name=os.path.join(salt_root, '{0}').format(fil),
                                source=template, defaults={},
@@ -1408,9 +1553,14 @@ def init_salt_dir(cfg, parent, ret=None):
                                makedirs=True,
                                mode='770', template='jinja')
             if not cret['result']:
-                raise ProjectInitException(
+                raise projects_api.ProjectInitException(
                     'Can\'t create default {0}\n{1}'.format(
                         fil, cret['comment']))
+    if os.path.join(directory, '.git'):
+        if commit_all:
+            git_commit(directory, commit_all=True, user=user)
+        if do_push:
+            push_changesets_in(directory, opts='-u', user=user)
     return ret
 
 
@@ -1425,7 +1575,7 @@ def init_project(name, *args, **kwargs):
         - The project & salt git repository url
 
     '''
-    _s = __salt__.get
+    _s = __salt__
     cfg = get_configuration(name, *args, **kwargs)
     user, groups, group = cfg['user'], cfg['groups'], cfg['group']
     ret = _get_ret(cfg['name'])
@@ -1456,10 +1606,12 @@ def init_project(name, *args, **kwargs):
             ),
         ]
         for wc, rev, localgit, hook, init_salt, init_pillar in repos:
-            init_repo(cfg, localgit, user, group, ret=ret,
+            init_repo(localgit, user=user, group=group,
+                      ret=ret,
                       init_salt=init_salt, init_pillar=init_pillar,
-                      bare=True)
-            init_repo(cfg, wc, user, group, ret=ret, bare=False)
+                      bare=True, init_data=cfg)
+            init_repo(wc, user=user, group=group, cfg=cfg,
+                      ret=ret, bare=False, init_data=cfg)
             for working_copy, remote in [(localgit, wc),
                                          (wc, localgit)]:
                 set_git_remote(working_copy, user, remote, ret=ret)
@@ -1472,8 +1624,18 @@ def init_project(name, *args, **kwargs):
             set_upstream(wc, rev, user, ret=ret)
             sync_working_copy(user, wc, rev=rev, ret=ret)
         link(name, *args, **kwargs)
-        refresh_files_in_working_copy(name, force=True, *args, **kwargs)
-    except ProjectInitException, ex:
+        refresh_files_in_working_copy(cfg['project_root'],
+                                      user=user,
+                                      group=group,
+                                      project=cfg['name'],
+                                      init_data=cfg,
+                                      force=True,
+                                      commit_all=True,
+                                      do_push=True,
+                                      api_version=cfg['api_version'],
+                                      *args,
+                                      **kwargs)
+    except projects_api.ProjectInitException, ex:
         trace = traceback.format_exc()
         ret['result'] = False
         _append_comment(ret,
@@ -1523,7 +1685,6 @@ def guarded_step(cfg,
                     step, cfg['api_version'])](name, *args, **kwargs)
                 _merge_statuses(ret, cret, step=step)
         except ProjectProcedureException, pr:
-
             # if we are not in an inner step, raise in first place !
             # and do not mark for rollback
             if inner_step:
@@ -1805,7 +1966,7 @@ def install(name, only_steps=None, task_mode=False, *args, **kwargs):
                      inner_step=True,
                      ret=ret)
     if not os.path.exists(cfg['installer_path']):
-        raise ProjectInitException(
+        raise projects_api.ProjectInitException(
             'invalid project type or installer directory: {0}/{1}'.format(
                 cfg['installer'], cfg['installer_path']))
     cret = None
@@ -2065,227 +2226,640 @@ Project: {conf[push_salt_url]}
 # REMOTE API
 #
 
-def clean_salt_git_commit(directory, commit=True):
-    if commit:
-        cret = __salt__['cmd.run_all']('touch init.sls;'
-                                       'git add init.sls;'
-                                       'git commit -am deployercommit',
-                                       cwd=directory, python_shell=True)
-    cret = __salt__['cmd.run']('git st',
-                               env={'LANG': 'C', 'LC_ALL': 'C'},
-                               cwd=directory, python_shell=True)
-    if 'nothing added to commit but untracked files present' in cret:
+
+def repr_ret(cret):
+    sret = ''
+    if isinstance(cret, dict):
+        levels = ['trace', 'stdout', 'stderr']
+        if any([level in cret for level in levels]):
+            out = ''
+            for i in levels:
+                val = cret[i]
+                if not val:
+                    val = ''
+                val = val.strip()
+                out += '{0}:\n'.format(i.upper())
+                if not val:
+                    continue
+                try:
+                    out += __salt__['mc_utils.magicstring'](val)
+                except Exception:
+                    out += '{0} failed to repr\n'
+                out += '\n'
+            if cret.get('retcode'):
+                out += 'retcode: {retcode}'.format(**cret)
+            sret = out
+    if not sret:
+        try:
+            sret = pprint.pformat(cret)
+        except Exception:
+            try:
+                sret = '{0}'.format(cret)
+            except Exception:
+                try:
+                    sret = repr(cret)
+                except Exception:
+                    sret = 'failed to repr this result'
+    return sret
+
+
+def raise_exc(klass,
+              msg,
+              detail_msg=None,
+              default_msg='failed',
+              *exc_args,
+              **exc_kwargs):
+    rmsg = None
+    try:
+        rmsg = detail_msg.format(*exc_args, **exc_kwargs)
+    except UnicodeEncodeError:
+        if not isinstance(detail_msg, unicode):
+            try:
+                rmsg = detail_msg.decode('utf-8').format(
+                    *exc_args, **exc_kwargs).encode('utf-8')
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                rmsg = None
+        if not rmsg:
+            try:
+                rmsg = msg.format(*exc_args, **exc_kwargs)
+            except UnicodeEncodeError:
+                if not isinstance(msg, unicode):
+                    try:
+                        rmsg = msg.decode('utf-8').format(
+                            *exc_args, **exc_kwargs).encode('utf-8')
+                    except (UnicodeEncodeError, UnicodeDecodeError):
+                        rmsg = None
+    if not rmsg:
+        msg = default_msg
+    if isinstance(rmsg, six.string_types):
+        rmsg = __salt__['mc_utils.magicstring'](rmsg)
+    raise klass(rmsg, *exc_args, **exc_kwargs)
+
+
+def clean_salt_git_commit(directory, commit=True, **kw):
+    user, group = get_default_user_group(**kw)
+    cret = {}
+    cret['st'] = __salt__['cmd.run']('git st',
+                                     env={'LANG': 'C', 'LC_ALL': 'C'},
+                                     runas=user,
+                                     cwd=directory, python_shell=True)
+    if 'nothing added to commit but untracked files present' in cret['st']:
         pass
-    elif 'nothing to commit' in cret:
+    elif 'nothing to commit' in cret['st']:
         pass
     else:
-        raise RemotePillarInitException(
-            "{0}: git invalidstatus".format(directory), ret=cret)
+        raise ProjectNotCleanError(
+            "{0}: git invalid status".format(directory), ret=cret)
+    return cret
 
 
-def init_local_remote_pillar(host, project, ssh_port=22, user='root', **kw):
+def _init_local_remote_directory(host,
+                                 project,
+                                 directory,
+                                 init_salt=False,
+                                 init_pillar=False,
+                                 init_data=None,
+                                 bare=False,
+                                 origin=None,
+                                 rev=None,
+                                 **kw):
+    _s = __salt__
+    exc_class = kw.get('exc_klass', BaseProjectInitException)
+    try:
+        if not rev:
+            rev = 'master'
+        cret = OrderedDict()
+        container = os.path.dirname(directory)
+        user, group = get_default_user_group(**kw)
+        if not os.path.isdir(container):
+            _s['file.makedirs_perms'](
+                container, user=user, group=group, mode=750)
+        if not os.path.isdir(container):
+            raise OSError(
+                "Project container creation failed ({1})".format(container))
+        empty_directory = False
+        if not os.path.exists(directory):
+            empty_directory = True
+        else:
+            empty_directory = bool(
+                not [a for a in os.listdir(directory)
+                     if a not in ['.', '..']])
+        if empty_directory:
+            _s['file.remove'](directory)
+        if origin:
+            if os.path.exists(directory):
+                log.error('existing container, moving to')
+            cret['clone'] = _s['git.clone'](directory, origin, user=user)
+        else:
+            cret['init'] = init_repo(directory,
+                                     bare=bare,
+                                     init_pillar=init_pillar,
+                                     init_salt=init_salt,
+                                     init_data=init_data,
+                                     user=user,
+                                     group=group)
+        set_makina_states_author(directory, user=user)
+    except (
+        OSError,
+        salt.exceptions.CommandExecutionError,
+        ProjectNotCleanError
+    ) as exc:
+        scret = traceback.format_exc()
+        raise_exc(
+            exc_klass,
+            msg=('{host}: remote project {project} '
+                 'structure init failed'),
+            detail_msg=('{host}: remote project {project} '
+                        'init failed:\n{scret}'),
+            scret=scret,
+            cret=cret,
+            host=host,
+            original=exc,
+            project=project)
+    return cret
+
+
+def init_local_remote_pillar(host,
+                             project,
+                             origin=None,
+                             rev=None,
+                             **kw):
     _s = __salt__
     # we only need a few constant properties, project is not existing locally
-    cfg = _s['mc_project.get_configuration'](project, remove_host=host)
-    pillar_dir = cfg['remote_pillar_dir']
-    pillars_dir = os.path.join(pillar_dir)
-    if not os.path.isdir(pillars_dir):
-        _s['file.makedirs_perms'](
-            pillars_dir, user='root', group='root', mode=750)
-    if not os.path.isdir(pillars_dir):
-        raise RemotePillarInitException(
-            "{0}: projects container creation failed ({1})".format(
-                project, pillars_dir))
-    if not os.path.exists(
-        os.path.join(pillar_dir, '.git', 'config')
-    ):
-        init_repo(None, pillar_dir, bare=False, user='root', group='root')
-    if not os.path.exists(os.path.join(pillar_dir, '.git')):
-        raise RemotePillarInitException(
-            "{0}: git repository creation failed".format(project))
-    _s['git.remote_set'](
-        pillar_dir, 'prod',
-        'ssh://{user}@{host}:{ssh_port}/srv/projects'
-        '/{project}/git/pillar.git' .format(
-            user=user, host=host, ssh_port=ssh_port, project=project),
-        user=user)
-    _s['git.config_set'](
-        pillar_dir, 'user.email', 'makina-states@localhost')
-    _s['git.config_set'](
-        pillar_dir, 'user.name', 'makina-states')
-    clean_salt_git_commit(pillar_dir)
+    pcfg = _s['mc_project.get_configuration'](project, remote_host=host)
+    cfg = _s['mc_project.get_configuration'](project)
+    directory = os.path.abspath(cfg['remote_pillar_dir'])
+    cret = OrderedDict()
+    try:
+        cret = _init_local_remote_directory(
+            host,
+            project,
+            directory,
+            bare=False,
+            origin=origin,
+            rev=rev,
+            #
+            init_pillar=True,
+            init_data=pcfg,
+            exc_klass=RemotePillarInitException,
+            **kw)
+    except:
+        raise
+    return cret
 
 
 def init_local_remote_project(host,
                               project,
-                              git,
+                              origin=None,
                               rev=None,
-                              ssh_port=22,
-                              user='root',
                               **kw):
     _s = __salt__
-    if not rev:
-        rev = 'master'
-    pcfg = _s['mc_project.get_configuration'](project, remote_host=host)
-    rret = {'result': True}
-    project_dir = pcfg['remote_project_dir']
-    projects_dir = os.path.dirname(project_dir)
-    if not os.path.isdir(projects_dir):
-        _s['file.makedirs_perms'](
-            projects_dir, user='root', group='root', mode=750)
-    if not rret['changes']['result']:
-        raise RemoteProjectInitException(
-            "{0}: project {1} creation failed".format(
-                host, project))
-    if not os.path.exists(project_dir):
-        cret = _s['git.clone'](project_dir, git, user=user)
-    cret = _s['git.config_set'](
-        project_dir, 'user.email', 'makina-states@makina-corpus.com')
-    cret = _s['git.config_set'](project_dir, 'user.name', 'makina-states')
-    cret = _s['git.remote_set'](project_dir, 'origin', git)
-    cret = _s['git.fetch'](project_dir, 'origin')
-    cret = _s['git.reset'](project_dir, '--hard {0}'.format(rev))
-    clean_salt_git_commit(project_dir, commit=False)
-    tmpbare = os.path.jnoin(project_dir, 'bare')
-    if not os.path.exists(tmpbare):
-        cret = _s['git.clone'](tmpbare, project_dir, opts='--bare')
-    cret = _s['git.remote_set'](project_dir, 'bare', tmpbare)
-    cret = _s['git.push'](project_dir, 'bare',
-                          branch='', opts='--force master:master')
+    # we only need a few constant properties, project is not existing locally
+    directory = os.path.abspath(cfg['remote_pillar_dir'])
+    pcfg = get_configuration(project, remote_host=host)
+    cfg = get_configuration(project)
+    directory = pcfg['remote_directory']
+    cret = OrderedDict()
+    try:
+        cret = _init_local_remote_directory(
+            host,
+            project,
+            directory,
+            bare=False,
+            origin=origin,
+            rev=rev,
+            # no remote hsot here
+            init_data=cfg,
+            init_salt=True,
+            exc_klass=RemoteProjectDeployError,
+            **kw)
+    except:
+        raise
     return cret
 
 
-def _init_remote_structure(host, project, ssh_port=22, user='root', **kw):
+def _init_remote_structure(host, project, **kw):
     '''
     Initialize a remote project structure over ssh
     '''
     _s = __salt__
+    user, group = get_default_user_group(**kw)
+    ssh_kw = _s['mc_remote.ssh_kwargs'](kw)
     dkey = 'mc_project_{0}_{1}'.format(host, project)
-    cret = __context__.get(dkey, {})
-    if cret.get('result', None):
-        return cret
-    if any([
-        _s['mc_remote.ssh'](
-            host, (
-                'set -e;'
-                'test -d /srv/salt/makina-projects/{0};'
-                'test -d /srv/pillar/makina-projects/{0};'
-                'test -d /srv/projects/{0}/project;'
-                'test -d /srv/projects/{0}/pillar;'
-                'test -d /srv/projects/{0}/git/pillar.git;'
-                'test -d /srv/projects/{0}/git/project.git'
-            ).format(project)
-        )['retcode'],
-    ]):
-        cret = _s['mc_remote.salt_call'](
-            host, 'mc_project.deploy', project, port=ssh_port, user=user, **kw)
-        if not cret['result'].get('result', False):
-            log.error(pprint.pformat(cret))
-            raise RemoteProjectInitException(
-                '{0}: project {1} init failed'.format(host, project),
-                ret=cret)
-    return __context__.setdefault(dkey, cret)
+    cret = __context__.get(dkey, OrderedDict())
+    # if we already run, but failed
+    # we have cached the result, but we can test to redeploy
+    if not isinstance(cret, dict):
+        cret = None
+    else:
+        if not cret.get('result'):
+            cret = None
+    do_raise = kw.get('do_raise', True)
+    failed = False
+    scret = ''
+    if not cret:
+        original = None
+        try:
+            test_structure = _s['mc_remote.ssh'](
+                host, (
+                    'set -e;'
+                    'test -d /srv/salt/makina-projects/{0};'
+                    'test -d /srv/pillar/makina-projects/{0};'
+                    'test -d /srv/projects/{0}/project;'
+                    'test -d /srv/projects/{0}/pillar;'
+                    'test -d /srv/projects/{0}/git/pillar.git;'
+                    'test -d /srv/projects/{0}/git/project.git'
+                ).format(project), no_error_log=True, **ssh_kw)
+            if test_structure['retcode']:
+                cret = _s['mc_remote.salt_call'](
+                    host, 'mc_project.deploy', project, **ssh_kw)
+                if cret['retcode'] > 0:
+                    failed = True
+                elif not cret['result'].get('result', False):
+                    failed = True
+                scret = repr_ret(cret)
+        except Exception as exc:
+            trace = traceback.format_exc()
+            failed = True
+            original = exc
+            cret = '{0}'.format(exc)
+            scret = trace
+        if do_raise and failed:
+            raise_exc(
+                RemoteProjectInitException,
+                msg=('{host}: remote project {project} '
+                     'structure init failed'),
+                detail_msg=('{host}: remote project {project} '
+                            'init failed:\n{scret}'),
+                scret=scret,
+                cret=cret,
+                host=host,
+                original=original,
+                project=project)
+    __context__[dkey] = cret
+    return __context__[dkey]
 
 
-def init_remote_pillar(host, project, ssh_port=22, user='root', **kw):
-    return _init_remote_structure(
-        host, project, ssh_port=ssh_port, user=user, **kw)
+def init_remote_pillar(host, project, **kw):
+    """
+    Initialise the remote host project container structure
+
+    CLI Examples:
+
+         salt-call --local mc_project.init_local_remote_pillar \
+                 host.foo.net port=40007 projname
+    """
+    return _init_remote_structure(host, project, **kw)
 
 
-def init_remote_project(host, project, ssh_port=22, user='root', **kw):
-    return _init_remote_structure(
-        host, project, ssh_port=ssh_port, user=user, **kw)
+def init_remote_project(host, project, **kw):
+    """
+    Initialise the remote host project container structure
 
+    CLI Examples:
+
+         salt-call --local mc_project.init_local_remote_project \
+                 host.foo.net port=40007 projname
+    """
+    return _init_remote_structure(host, project, **kw)
+
+
+def sync_git_directory(directory,
+                       origin=None,
+                       rev=None,
+                       sync_remote='sync',
+                       refresh=False,
+                       **kw):
+    _s = __salt__
+    if rev is None:
+        rev = 'master'
+    user, _ = get_default_user_group(**kw)
+    if origin:
+        _s['git.set_remote'](directory, sync_remote, origin, user=user)
+    if origin and refresh:
+        _s['git.fetch'](directory, sync_remote, user=user)
+        _s['git.reset'](directory,
+                        '--hard {0}/{1}'.format(origin, rev),
+                        user=user)
 
 def sync_remote_pillar(host,
                        project,
-                       ssh_port=22,
-                       user='root',
+                       origin=None,
+                       rev=None,
                        init_pillar=False,
                        **kw):
-    cret = {}
-    pcfg = get_configuration(project, remote_host=host)
+    _s = __salt__
+    cret = OrderedDict()
+    user, group = get_default_user_group(**kw)
+    pcfg = get_configuration(project, remote_host=host, user=user)
+    ssh_kw = _s['mc_remote.ssh_kwargs'](kw)
+    pillar_dir = pcfg['remote_pillar_dir']
+    refresh = kw.get('refresh', False)
+    if not rev:
+        rev = 'master'
     if init_pillar:
         cret['init'] = init_remote_pillar(host, project, **kw)
     try:
-        __salt__['git.push'](
-            pcfg['remote_pillar_dir'], 'prod', branch='',
-            opts='--force master:master')
-    except (salt.exceptions.CommandExecutionError,) as exc:
-        raise RemoteProjectSyncPillarError(
-            '{0}: project {1} pillar sync failed\n'
-            '{2}'.format(host, project, exc),
-            ret=cret)
+        cret['clean'] = clean_salt_git_commit(pillar_dir)
+        cret['sync'] = sync_git_directory(
+            pillar_dir, origin=origin, refresh=refresh, rev=rev,  user=user)
+        cret['remote'] = _s['git.remote_set'](
+            pillar_dir, 'prod',
+            'ssh://{2[ssh_user]}@{0}:{2[ssh_port]}/{3}' .format(
+                host, user, ssh_kw, pcfg['git_pillar_root']),
+            user=user)
+    except (
+        salt.exceptions.CommandExecutionError,
+        ProjectNotCleanError
+    ) as exc:
+        trace = traceback.format_exc()
+        raise_exc(
+            RemoteProjectSyncUnCleanPillarError,
+            msg=('{host}: pillar for {project} clean failed'
+                 ' (transfert)'),
+            detail_msg=('{host}: pillar for project {project} clean failed'
+                        ':\n{scret}'),
+            scret=trace,
+            cret=cret,
+            host=host,
+            original=exc,
+            project=project)
+    try:
+        cret['push'] = __salt__['git.push'](
+            pillar_dir, 'prod', branch='', opts='--force master:master')
+    except (
+        salt.exceptions.CommandExecutionError,
+    ) as exc:
+        trace = traceback.format_exc()
+        raise_exc(
+            RemoteProjectSyncPushPillarError,
+            msg=('{host}: pillar for {project} sync failed'
+                 ' (transfert)'),
+            detail_msg=('{host}: pillar for project {project} sync failed'
+                        ':\n{scret}'),
+            scret=trace,
+            cret=cret,
+            host=host,
+            original=exc,
+            project=project)
     cret['pushed'] = True
     return cret
 
 
 def sync_remote_project(host,
                         project,
-                        ssh_port=22,
-                        user='root',
+                        origin=None,
+                        rev=None,
+                        refresh=True,
                         init_project=False,
                         **kw):
     _s = __salt__
+    if not rev:
+        rev = 'master'
     project = get_project(**kw)
+    user, group = get_default_user_group(**kw)
+    ssh_kw = _s['mc_remote.ssh_kwargs'](kw, user=user)
     pcfg = _s['mc_project.get_configuration'](project, remote_host=host)
-    cret = {}
-    if init_project:
-        cret['init'] = init_local_remote_project(host, project, **kw)
+    cret = OrderedDict()
     remote_project_dir = pcfg['project_root']
-    localcopy = pcfg['remote_project_dir']
-    cret['create_remote_localcopy'] = _s['mc_remote.salt_call'](
-        host,
-        'file.makedirs_perms',
-        arg=[localcopy], kwarg={'user': 'root', 'group': 'root', 'mode': 750},
-        port=ssh_port, user=user)
-    cret['sync_files'] = _s['mc_remote.ssh_transfer_dir'](
-        host, localcopy, localcopy, port=ssh_port, user=user)
-    cret['set_remote'] = _s['mc_remote.salt_call'](
-        host,
-        'git.set_remote',
-        arg=[remote_project_dir, 'localcopy', localcopy],
-        kwarg={'user': '{0}-user'.format(user)},
-        user=user,
-        port=ssh_port)
-    cret['final_wc_sync'] = _s['mc_remote.salt_call'](
-        host,
-        'cmd.run',
-        arg=['set -e'
-             'git fetch localcopy;'
-             'git reset --hard localcopy/master'],
-        kwarg={'python_shell': True,
-               'use_vt': True,
-               'user': cfg['user']},
-        user=user,
-        port=ssh_port)
+    project_dir = pcfg['remote_project_dir']
+    localcopy = kw.get('localcopy', project_dir)
+    gforce = '--force master:master'
+    tmpbare = os.path.join(project_dir, 'bare')
+    lremote = 'localcopy'
+    if init_project:
+        cret['init'] = init_local_remote_project(
+            host, project, user=user, **kw)
+    try:
+        cret['sync'] = sync_git_directory(
+            project_dir, origin=origin, refresh=refresh, rev=rev,  user=user)
+        set_makina_states_author(project_dir, user=user)
+        clean_salt_git_commit(project_dir)
+        if not os.path.exists(tmpbare):
+            cret = _s['git.clone'](tmpbare,
+                                   project_dir,
+                                   opts='--bare',
+                                   user=user)
+        cret = _s['git.remote_set'](
+            project_dir, lremote, tmpbare, user=user)
+        cret = _s['git.push'](
+            project_dir, lremote, branch='', opts=gforce, user=user)
+        try:
+            cret['sync_files'] = _s['mc_remote.ssh_transfer_dir'](
+                host, project_dir, localcopy, makedirs=True,
+                **ssh_kw)
+            if cret['sync_files']['retcode']:
+                raise ValueError()
+        except (ValueError,) as exc:
+            raise_exc(
+                RemoteProjectTransferProjectError,
+                msg=('{host}: project {project} sync failed'
+                     ' (transfert)'),
+                detail_msg=('{host}: project {project} sync failed'
+                            ' (transfert):\n{scret}'),
+                scret=repr_ret(cret),
+                cret=cret,
+                host=host,
+                original=exc,
+                project=project)
+        except (Exception,) as exc:
+            trace = traceback.format_exc()
+            raise_exc(
+                RemoteProjectTransferProjectError,
+                msg=('{host}: project {project} sync failed'
+                     ' (transfert)'),
+                detail_msg=('{host}: project {project} sync failed'
+                            ' (transfert):\n{scret}'),
+                scret=trace,
+                cret="{0}".format(exc),
+                host=host,
+                original=exc,
+                project=project)
+        cret['final_wc_sync'] = _s['mc_remote.salt_call'](
+            host,
+            'cmd.run',
+            arg=['git remote add "{0}" "{1}" 2>/dev/null'
+                 ' || git remote set-url "{0}" "{1}"'
+                 '&& git fetch "{0}"'
+                 '&& git reset --hard "{0}/master"'
+                 '&& git push origin {2}'
+                 ''.format(lremote, localcopy, gforce)],
+            kwarg={'python_shell': True,
+                   'use_vt': True,
+                   'cwd': remote_project_dir,
+                   'runas': 'root'},
+            **ssh_kw)
+        if cret['final_wc_sync']['retcode']:
+            raise_exc(
+                RemoteProjectWCSyncProjectError,
+                msg='{host}: project {project} sync failed',
+                detail_msg='{host}: project {project} sync failed:\n{scret}',
+                scret=repr_ret(cret),
+                cret=cret,
+                host=host,
+                original=None,
+                project=project)
+    except (
+        salt.exceptions.CommandExecutionError,
+        ProjectNotCleanError
+    ) as exc:
+        trace = traceback.format_exc()
+        raise_exc(
+            RemoteProjectSyncProjectError,
+            msg='{host}: project {project} sync failed',
+            detail_msg='{host}: project {project} sync failed:\n{scret}',
+            scret=trace,
+            cret=cret,
+            host=host,
+            original=exc,
+            project=project)
     return cret
 
 
-def deploy_remote_project(host,
-                          project,
-                          ssh_port=22,
-                          user='root',
-                          pre_hook=None,
-                          post_hook=None,
-                          **kw):
-    crets = {'pre': None, 'result': None, 'post': None}
-    if pre_hook and (pre_hook in __salt__):
-        crets['pre'] = __salt__[pret_hook](
-            host, project, ssh_port=ssh_port, user=user, **kw)
+def remote_deploy(host, project, **kw):
+    ssh_kw = _s['mc_remote.ssh_kwargs'](kw)
     kwarg = {}
     if 'deploy_only' in kw:
         kwarg['only'] = kw['deploy_only']
     if 'deploy_only_steps' in kw:
         kwarg['only_steps'] = kw['deploy_only_steps']
-        crets['result'] = __salt__['mc_remote.salt_call'](
+    do_raise = kw.get('do_raise', True)
+    original = None
+    scret = ''
+    try:
+        cret = __salt__['mc_remote.salt_call'](
             'mc_project.deploy', arg=[project], kwarg=kwarg,
-            user=user, port=ssh_port)
-    if not crets['result']['result']:
-        log.error(pprint.pformat(crets))
-        raise RemoteProjectDeployError(
-            '{0}: {1}'.format(host, project), ret=crets)
-    if post_hook and (post_hook in __salt__):
-        crets['post'] = __salt__[post_hook](
-            host, project, ssh_port=ssh_port, user=user, **kw)
+            **ssh_kw)
+        if cret['retcode']:
+            failed = True
+            scret = repr_ret(cret)
+    except (
+        salt.exceptions.CommandExecutionError,
+        ProjectNotCleanError
+    ) as exc:
+        scret = traceback.format_exc()
+        failed = True
+        original = exc
+    if do_raise and failed:
+        raise_exc(
+            RemoteProjectDeployError,
+            msg='{host}: project {project} deploy failed',
+            detail_msg='{host}: project {project} deploy failed:\n{scret}',
+            scret=scret,
+            cret=cret,
+            host=host,
+            original=original,
+            project=project)
+    return cret
+
+
+def orchestrate(host,
+                project,
+                init=None,
+                origin=None,
+                rev=None,
+                pillar_origin=None,
+                pillar_rev=None,
+                sync=None,
+                refresh=None,
+                deploy=True,
+                refresh_pillar=None,
+                refresh_project=None,
+                init_project=None,
+                init_pillar=None,
+                sync_project=None,
+                sync_pillar=None,
+                pre_init_hook=None,
+                post_init_hook=None,
+                pre_sync_hook=None,
+                post_sync_hook=None,
+                pre_hook=None,
+                post_hook=None,
+                **kw):
+    pcfg = get_configuration(project, remote_host=host)
+    user, group = get_default_user_group(**kw)
+    kw['user'] = user
+    kw['group'] = group
+    crets = OrderedDict()
+    kw['remote_config'] = pcfg
+    if refresh_project is None:
+        refresh_project = refresh
+    if refresh_pillar is None:
+        refresh_pillar = refresh
+    if sync_project is None:
+        sync_project = sync
+    if sync_pillar is None:
+        sync_pillar = sync
+    if init_project is None:
+        init_project = init
+    if init_pillar is None:
+        init_pillar = init
+    if refresh is None:
+        refresh = False
+    sync_project = bool(sync_project)
+    sync_pillar = bool(sync_pillar)
+    init_project = bool(init_project)
+    init_pillar = bool(init_pillar)
+    refresh_pillar = bool(refresh_pillar)
+    refresh_project = bool(refresh_project)
+    # remake this available for hooks
+    kw['sync_pillar'] = sync_pillar
+    kw['sync_project'] = sync_project
+    kw['init_pillar'] = init_pillar
+    kw['init_project'] = init_project
+    #
+    if init_pillar or init_project:
+        crets['init_pre'] = remote_project_hook(
+            pre_init_hook, project, **kw)
+        _init_remote_structure(host, project, **kw)
+    if init_pillar:
+        crets['init_pillar'] = init_local_remote_pillar(
+            host, project,
+            origin=pillar_origin,
+            rev=pillar_rev,
+            **kw)
+    if init_project:
+        crets['init_project'] = init_local_remote_project(
+            host, project, origin=origin, rev=rev, **kw)
+    if init_pillar or init_project:
+        crets['init_post'] = remote_project_hook(
+            post_init_hook, project, **kw)
+    #
+    if sync_pillar or sync_project:
+        crets['sync_pre'] = remote_project_hook(
+            pre_sync_hook, project, **kw)
+    if sync_pillar:
+        crets['sync_pillar'] = sync_remote_pillar(
+            host,
+            project,
+            origin=pillar_origin,
+            rev=pillar_rev,
+            init_pillar=False,
+            refresh=refresh_pillar,
+            **kw)
+    if sync_project:
+        crets['sync_project'] = sync_remote_project(
+            host,
+            project,
+            origin=origin,
+            rev=rev,
+            refresh=refresh_project,
+            init_project=False,
+            **kw)
+    if sync_pillar or sync_project:
+        crets['sync_post'] = remote_project_hook(
+            post_sync_hook, project, **kw)
+    #
+    if deploy:
+        crets['deploy_pre'] = remote_project_hook(
+            pre_hook, project, **kw)
+        crets['deploy'] = remote_deploy(
+            host, project, **kw)
+        crets['deploy_post'] = remote_project_hook(
+            post_hook, project, **kw)
     return crets
+
+
+def remote_project_hook(hook, host, project, **kw):
+    if hook and (hook in __salt__):
+        return __salt__[hook](host, project, user=user, **kw)
