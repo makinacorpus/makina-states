@@ -45,6 +45,7 @@ import salt.loader
 import salt.minion
 import salt.exceptions
 import salt.utils
+from salt.utils.odict import OrderedDict
 import salt.utils.args
 import salt.utils.dictupdate
 import salt.utils.pycrypto
@@ -119,50 +120,73 @@ if [ "x{sh_wrapper_debug}" != "x" ];then
     sftp_opts=""
     scp_opts=""
 fi
+ret=0
+has_ssh=0
 if [ "x{progress}" = "x1" ] || [ "x{sh_wrapper_debug}" != "x" ];then
     rsync_opts="${{rsync_opts}}P"
 fi
-if ! test -e "{orig}";then
-    echo "Unexisting origin: {orig}"
-    exit 1
-fi
-fmode=$(stat -c "%a" "{orig}")
-cmode=$(stat -c "%a" "{orig_container}")
-ret=0
-if [ "x{makedirs}" = "x1" ];then
- if [ "x{sh_wrapper_debug}" != "x" ];then
-    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
-      "set -x;\
-       if [ ! -e \\"{container}\\" ];then \
-        mkdir -pv \\"{container}\\";\
-        chmod -v  ${{cmode}} \\"{container}\\";\
-       fi"
-    ctret=${{?}}
- else
-    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
-      "if [ ! -e \\"{container}\\" ];then \
-        mkdir -p  \\"{container}\\";\
-        chmod     ${{cmode}} \\"{container}\\";\
-       fi"
-    ctret=${{?}}
- fi
- if [ "x${{ctret}}" != "x0" ];then
-     echo "Remote directory \\"{container}\\" creation failed">&2
-     ret=1
- fi
+if [ "x{rsync_opts}" != "x" ];then
+    rsync_opts="${{rsync_opts}} {rsync_opts}"
 fi
 if [ "x${{ret}}" = "x0" ];then
+    if ! test -e "{orig}";then
+        echo "Unexisting origin: {orig}" >&2
+        ret=1
+    else
+        fmode=$(stat -c "%a" "{orig}")
+        cmode=$(stat -c "%a" "{orig_container}")
+    fi
+fi
+if [ "x${{ret}}" = "x0" ];then
+    # ensure to have a connection
+    if [ "x{sh_wrapper_debug}" != "x" ];then
+        ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}" "set +x;date"
+    else
+        ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}" \
+                "date 1>/dev/null 2>&1"
+    fi
+    if [ "x${{?}}" != "x0" ];then
+        echo "SSH connection did not estasblish(file),"\
+             " will fallback on scp/sftp" >&2
+        has_ssh=1
+    fi
+fi
+if [ "x${{has_ssh}}" = "x0" ] && [ "x${{ret}}" = "x0" ];then
+    if [ "x{makedirs}" = "x1" ];then
+     if [ "x{sh_wrapper_debug}" != "x" ];then
+        ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+          "set -x;\
+           if [ ! -e \\"{container}\\" ];then \
+            mkdir -pv \\"{container}\\";\
+            chmod -v  ${{cmode}} \\"{container}\\";\
+           fi"
+        ctret=${{?}}
+     else
+        ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+          "if [ ! -e \\"{container}\\" ];then \
+            mkdir -p  \\"{container}\\";\
+            chmod     ${{cmode}} \\"{container}\\";\
+           fi"
+        ctret=${{?}}
+     fi
+     if [ "x${{ctret}}" != "x0" ];then
+         echo "Remote directory \\"{container}\\" creation failed">&2
+         ret=1
+     fi
+    fi
+fi
+if [ "x${{has_ssh}}" = "x0" ] && [ "x${{ret}}" = "x0" ];then
     ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
             "test -e \\"{container}\\" \
             && test ! -f  \\"{container}\\""
     ctret=${{?}}
     if [ "x${{ctret}}" != "x0" ];then
         echo \
-"Remote directory \\"{container}\\" does not exits or is not a directory">&2
+"Remote directory \\"{container}aaa\\" does not exits or is not a directory">&2
         ret=1
     fi
 fi
-if [ "x${{ret}}" = "x0" ];then
+if [ "x${{has_ssh}}" = "x0" ] && [ "x${{ret}}" = "x0" ];then
     ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
        "if [ -d \\"{dest}\\" ];then\
          exit 1;\
@@ -175,7 +199,7 @@ if [ "x${{ret}}" = "x0" ];then
          ret=1
     fi
 fi
-if [ "x${{ret}}" = "x0" ];then
+if [ "x${{has_ssh}}" = "x0" ] && [ "x${{ret}}" = "x0" ];then
     ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
        "test -e \\"{container}\\""
     if [ "x${{?}}" != "x0" ];then
@@ -184,11 +208,15 @@ if [ "x${{ret}}" = "x0" ];then
     fi
 fi
 if [ "x${{ret}}" = "x0" ];then
-    rsync ${{rsync_opts}} \\
-            -e "ssh -p "{port}" {quoted_ssh_args}"\\
-            "{orig}" "{user}@{host}":"{dest}"\\
-            && fmode=''
-    ret=${{?}}
+    if [ "x${{has_ssh}}" = "x0" ];then
+        rsync ${{rsync_opts}} \\
+                -e "ssh -p "{port}" {quoted_ssh_args}"\\
+                "{orig}" "{user}@{host}":"{dest}"\\
+                && fmode=''
+        ret=${{?}}
+    else
+        ret=1
+    fi
     if [ "x${{ret}}" != "x0" ];then
         scp ${{scp_opts}} -P "{port}" {ttyfree_ssh_args}\\
                 "{orig}" "{user}@{host}":"{dest}"
@@ -219,7 +247,8 @@ if [ "x${{ret}}" = "x0" ];then
       ret=${{?}}
     fi
 fi
-if [ "x${{ret}}" = "x0" ] && [ "x${{fmode}}" != "x" ];then
+if [ "x${{has_ssh}}" = "x0" ] && [ "x${{ret}}" = "x0" ] \
+   && [ "x${{fmode}}" != "x" ];then
  if [ "x{sh_wrapper_debug}" != "x" ];then
     ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
        "set -x;chmod ${{fmode}} \\"{dest}\\""
@@ -228,6 +257,14 @@ if [ "x${{ret}}" = "x0" ] && [ "x${{fmode}}" != "x" ];then
       "chmod ${{fmode}} \\"{dest}\\""
  fi
   ret=${{?}}
+fi
+if [ "x${{ret}}" != "x0" ];then
+    echo "Failed transfer for \\"{orig}\\"" >&2
+    if [ "x{display_content_on_error}" = "x1" ] && [ -e "{orig}" ];then
+        cat "{orig}" >&2
+        echo "CONTENTS:" >&2
+        echo "---------" >&2
+    fi
 fi
 exit ${{ret}}
 '''
@@ -246,37 +283,62 @@ fi
 if [ "x{progress}" = "x1" ] || [ "x{sh_wrapper_debug}" != "x" ];then
     rsync_opts="${{rsync_opts}}P"
 fi
-ret=1
-if ! test -e "{orig}";then
-    echo "Unexisting origin: {orig}"
-    exit 1
+if [ "x{sync_identical}" = "x1" ];then
+    rsync_opts="${{rsync_opts}} --delete --delete-excluded"
 fi
-fmode=$(stat -c "%a" "{orig}")
-cmode=$(stat -c "%a" "{orig_container}")
+if [ "x{rsync_opts}" != "x" ];then
+    rsync_opts="${{rsync_opts}} {rsync_opts}"
+fi
 ret=0
-if [ "x{makedirs}" = "x1" ];then
- if [ "x{sh_wrapper_debug}" != "x" ];then
-    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
-      "set -x;\
-       if [ ! -e \\"{container}\\" ];then \
-        mkdir -pv \\"{container}\\";\
-        chmod -v  ${{cmode}} \\"{container}\\";\
-       fi"
-    ctret=${{?}}
- else
-    ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
-      "if [ ! -e \\"{container}\\" ];then \
-        mkdir -p  \\"{container}\\";\
-        chmod     ${{cmode}} \\"{container}\\";\
-       fi"
-    ctret=${{?}}
- fi
- if [ "x${{ctret}}" != "x0" ];then
-     echo "Remote directory \\"{container}\\" creation failed">&2
-     ret=1
- fi
+has_ssh=0
+if [ "x${{ret}}" = "x0" ];then
+    if ! test -e "{orig}";then
+        echo "Unexisting origin: {orig}" >&2
+        ret=1
+    else
+        fmode=$(stat -c "%a" "{orig}")
+        cmode=$(stat -c "%a" "{orig_container}")
+    fi
+fi
+if [ "x${{ret}}" != "x0" ];then
+    # ensure to have a connection
+    if [ "x{sh_wrapper_debug}" != "x" ];then
+        ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}" "set +x;date"
+    else
+        ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}" \
+                "date 1>/dev/null 2>&1"
+    fi
+    if [ "x${{?}}" != "x0" ];then
+        echo "SSH connection did not estasblish(file),"\
+             " will fallback on scp/sftp" >&2
+        has_ssh=1
+    fi
 fi
 if [ "x${{ret}}" = "x0" ];then
+    if [ "x{makedirs}" = "x1" ];then
+     if [ "x{sh_wrapper_debug}" != "x" ];then
+        ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+          "set -x;\
+           if [ ! -e \\"{container}\\" ];then \
+            mkdir -pv \\"{container}\\";\
+            chmod -v  ${{cmode}} \\"{container}\\";\
+           fi"
+        ctret=${{?}}
+     else
+        ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
+          "if [ ! -e \\"{container}\\" ];then \
+            mkdir -p  \\"{container}\\";\
+            chmod     ${{cmode}} \\"{container}\\";\
+           fi"
+        ctret=${{?}}
+     fi
+     if [ "x${{ctret}}" != "x0" ];then
+         echo "Remote directory \\"{container}\\" creation failed">&2
+         ret=1
+     fi
+    fi
+fi
+if [ "x${{has_ssh}}" = "x0" ] && [ "x${{ret}}" = "x0" ];then
     ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
             "test -e \\"{container}\\" \
             && test ! -f  \\"{container}\\""
@@ -287,7 +349,7 @@ if [ "x${{ret}}" = "x0" ];then
         ret=1
     fi
 fi
-if [ "x${{ret}}" = "x0" ];then
+if [ "x${{has_ssh}}" = "x0" ] && [ "x${{ret}}" = "x0" ];then
     ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
        "if [ -e \\"{dest}\\" ];then\
          if test -d \\"{dest}\\";then\
@@ -305,11 +367,15 @@ if [ "x${{ret}}" = "x0" ];then
     fi
 fi
 if [ "x${{ret}}" = "x0" ];then
-    rsync ${{rsync_opts}} \\
-            -e "ssh -p "{port}" {quoted_ssh_args}"\\
-            "{corig}" "{user}@{host}":"{cdest}"\\
-            && fmode=''
-    ret=${{?}}
+    if [ "x${{has_ssh}}" = "x0" ];then
+        rsync ${{rsync_opts}} \\
+                -e "ssh -p "{port}" {quoted_ssh_args}"\\
+                "{corig}" "{user}@{host}":"{cdest}"\\
+                && fmode=''
+        ret=${{?}}
+    else
+        ret=1
+    fi
     if [ "x${{ret}}" != "x0" ];then
         scp -r ${{scp_opts}} -P "{port}" {ttyfree_ssh_args}\\
                 "{orig}" "{user}@{host}":"{dest}"
@@ -328,7 +394,8 @@ if [ "x${{ret}}" = "x0" ];then
       rm -f "{tmpfile}"
     fi
 fi
-if [ "x${{ret}}" = "x0" ] && [ "x${{fmode}}" != "x" ];then
+if [ "x${{has_ssh}}" = "x0" ] && [ "x${{ret}}" = "x0" ] \
+   && [ "x${{fmode}}" != "x" ];then
  if [ "x{sh_wrapper_debug}" != "x" ];then
     ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
        "set -x;chmod ${{fmode}} \\"{dest}\\""
@@ -337,6 +404,9 @@ if [ "x${{ret}}" = "x0" ] && [ "x${{fmode}}" != "x" ];then
       "chmod ${{fmode}} \\"{dest}\\""
  fi
   ret=${{?}}
+fi
+if [ "x${{ret}}" != "x0" ];then
+    echo "Failed transfer for \\"{orig}\\"" >&2
 fi
 exit ${{ret}}
 '''
@@ -399,6 +469,122 @@ class _SSHTransferFailed(_SSHCommandFailed):
 
 class _SaltCallFailure(_SSHExecError):
     """."""
+
+
+def ssh_kwargs(first_argument_kwargs=None, **kw):
+    """
+    Lookup & sanitize input in kwargs to have
+    only one value for various & well known
+    SSH connection parameters & other related to mc_remote.
+
+    The resulting structure is an well known interface dict
+    usable and used in all this module functions.
+
+    All kwargs will be lookup in the form ssh_param and then param.
+
+    Eg: ssh_user, if no value, user, if not value, default.
+
+    This supports for now:
+
+        user
+            root
+        tty
+            use ssh -t (true)
+        port
+            22
+        key_filename
+            ~/id_{rsa,dsa} if existing else ~/.ssh/id_rsa
+        gateway_key
+            ~/id_{rsa,dsa} if existing else ~/.ssh/id_rsa
+        gateway
+            gateway host/ip if any
+        gateway_user
+            root
+        gateway_port
+            22
+        password
+            clear password if any (None)
+        password_retries
+            how many do we retry a failed password (3)
+        known_hosts_file
+            known_hosts_file if any (/dev/null)
+        host_key_checking
+            toggle host checking (no)
+        makedirs
+            When transfering files or the shell wrapper,
+            are we allowed to create the conttainer(s)
+            (false)
+        quote
+            quote commands (false)
+        progress
+            display ssh transfer stats (false)
+        show_running_cmd
+            flag for extra logs (true)
+        no_error_log
+            Do not report execution failure in logs
+        display_ssh_output
+            flag to stream output streams (true)
+    """
+    if not isinstance(first_argument_kwargs, dict):
+        first_argument_kwargs = {}
+    kw = copy.deepcopy(kw)
+    res = OrderedDict()
+    id_file = '~/.ssh/id_rsa'
+    for k in ['~/.ssh/id_rsa', '~/.ssh/id_dsa']:
+        k = os.path.expanduser(k)
+        if os.path.exists(k):
+            id_file = k
+            break
+    pretendants = OrderedDict([
+        ('rsync_opts', ''),
+        ('sync_identical', False),
+        ('port', 22),
+        ('tty', True),
+        ('gateway_key', id_file),
+        ('key_filename', id_file),
+        ('display_content_on_error', True),
+        ('show_running_cmd', True),
+        ('gateway', None),
+        ('gateway_user', 'root'),
+        ('no_error_log', False),
+        ('quote', False),
+        ('gateway_port', 22),
+        ('interaction_class', _SSHPasswordChallenger),
+        ('tmpdir', tempfile.tempdir or '/tmp'),
+        ('password', None),
+        ('output_loglevel', 'info'),
+        ('display_ssh_output', True),
+        ('makedirs', False),
+        ('progress', False),
+        ('password_retries', 3),
+        ('known_hosts_file', '/dev/null'),
+        ('host_key_checking', 'no'),
+        ('user', 'root')])
+    for kwarg in [kw, first_argument_kwargs]:
+        for param in [a for a in six.iterkeys(kwarg)]:
+            fparam = param
+            value = default_value = kwarg[param]
+            if fparam in res:
+                continue
+            if isinstance(param, six.string_types):
+                if (len(param) > 4) and param.startswith('ssh_'):
+                    param = param[4:]
+                if param in six.iterkeys(pretendants):
+                    fparam = 'ssh_{0}'.format(param)
+                    default_value = pretendants[param]
+                for lparam in [param, fparam]:
+                    value = kwarg.get(lparam, None)
+                    if value not in [None, default_value]:
+                        value = kwarg[lparam]
+                        break
+                if value in [None, default_value]:
+                    continue
+            res[fparam] = value
+    for param, value in six.iteritems(pretendants):
+        fparam = "ssh_{0}".format(param)
+        if fparam not in res:
+            res[fparam] = value
+    return res
 
 
 def log_enabled_for(lvl='info', name=None):
@@ -474,14 +660,14 @@ class _AbstractSshSession(object):
     def __init__(self, cmd, *a, **kw):
         self._proc = None
         self.cmd = cmd
-        if kw.get('quote', False):
-            self.cmd = pipes.quote(cmd)
+        kw = ssh_kwargs(kw)
+        if kw['ssh_quote']:
+            self.cmd = pipes.ssh_quote(cmd)
         self.timeout = kw.get('timeout', False)
         self.loop_interval = kw.get('loop_interval', 0.05)
-        self.display_ssh_output = kw.get('display_ssh_output', True)
-        self.output_loglevel = kw.get('vt_loglevel',
-                                      kw.get('output_loglevel',
-                                             'info'))
+        self.ssh_display_ssh_output = kw['ssh_display_ssh_output']
+        self.ssh_output_loglevel = kw.get('vt_loglevel',
+                                          kw['ssh_output_loglevel'])
         self._proc = None
         self._pid = -1
         self.stdout = ''
@@ -501,11 +687,11 @@ class _AbstractSshSession(object):
             self._proc = salt.utils.vt.Terminal(
                 self.cmd,
                 shell=True,
-                log_stdout_level=self.output_loglevel,
-                log_stdin_level=self.output_loglevel,
-                log_stderr_level=self.output_loglevel,
-                stream_stdout=self.display_ssh_output,
-                stream_stderr=self.display_ssh_output)
+                log_stdout_level=self.ssh_output_loglevel,
+                log_stdin_level=self.ssh_output_loglevel,
+                log_stderr_level=self.ssh_output_loglevel,
+                stream_stdout=self.ssh_display_ssh_output,
+                stream_stderr=self.ssh_display_ssh_output)
             # let the connexion establish
             time.sleep(self.loop_interval)
         return self._proc
@@ -529,7 +715,7 @@ class _AbstractSshSession(object):
                     # calling the property starts the ssh session
                     while self.proc.isalive() or self.proc.has_unread_data:
                         try:
-                            cout, cerr =  self.proc.recv()
+                            cout, cerr = self.proc.recv()
                             if not cout:
                                 cout = ''
                             if not cerr:
@@ -576,6 +762,7 @@ class _AbstractSshSession(object):
             except (_SSHExecError,) as exc:
                 typ, eargs, _trace = sys.exc_info()
                 trace = traceback.format_exc()
+                # log.error(trace)
                 if isinstance(exc, _SSHCommandFailed):
                     retcode = self.proc.exitstatus
                 elif isinstance(exc, _SSHCommandFinished):
@@ -617,6 +804,10 @@ class _AbstractSshSession(object):
                     return exc.exec_ret
                 else:
                     _reraise(exc, trace=_trace)
+        except Exception:
+            trace = traceback.format_exc()
+            # log.error(trace)
+            raise
         finally:
             if isinstance(self.proc, salt.utils.vt.Terminal):
                 self.proc.close(terminate=True, kill=True)
@@ -626,8 +817,9 @@ class _SSHPasswordChallenger(_AbstractSshSession):
 
     def __init__(self, cmd, *a, **kw):
         super(_SSHPasswordChallenger, self).__init__(cmd, *a, **kw)
-        self.password = kw.get('password', None)
-        self.password_retries = kw.get('password_retries', 3)
+        skw = ssh_kwargs(**kw)
+        self.password = skw['ssh_password']
+        self.password_retries = skw['ssh_password_retries']
         self.sent_password = 0
         self.pwd_index = 0
 
@@ -682,21 +874,21 @@ def interactive_ssh(cmd, **kw):
     password challenge and forward the result to the user.
 
     The session control behavior can be controller by subclassing the
-    AbstractSshSession class, see 'interaction_class':
+    AbstractSshSession class, see 'ssh_interaction_class':
     cmd
         the full ssh command to wrap the execution from
         eg::
 
             ssh foo.com "ls /"
-    quote
+    ssh_quote
         do we force the script to be quoted
-    display_ssh_output
+    ssh_display_ssh_output
         do we send output on the console
-    output_loglevel
+    ssh_output_loglevel
         log level
-    password_retries
+    ssh_password_retries
         how many retries do we try for the password
-    interaction_class
+    ssh_interaction_class
         _AbstractSshSession subclass(not instance)
         (_SSHPasswordChallenger by default)
     timeout
@@ -704,66 +896,49 @@ def interactive_ssh(cmd, **kw):
 
     '''
     # dont use regular named args to support multi layer of forwarded kwargs
-    ssh_interaction_class = kw.get('interaction_class', _SSHPasswordChallenger)
+    kw = ssh_kwargs(**kw)
+    ssh_interaction_class = kw['ssh_interaction_class']
     acmd = __salt__['mc_utils.magicstring'](cmd)
     session = ssh_interaction_class(acmd, **kw)
     return session.run()
 
 
-def _get_ssh_args(**kw):
+def _get_ssh_args(**kwargs):
     '''
-    Common ssh args for ssh functions.
+    Compute common CLI ssh args for ssh functions.
 
-    tty
-        use a tty (-t)
-    key_filename
-        ssh key to use
-    known_hosts_file
-        known host file to use (default to disable)
-    host_key_checking
-        known host check (default to disable)
-    ssh_gateway
-        ssh gateway to use
-    ssh_gateway_key
-        ssh gateway key to use (no password auth for gw)
-    ssh_gateway_user
-        ssh gateway gateway to use
-    ssh_gateway_port
-        ssh gateway port to use
+    Please also look ssh_kwargs
     '''
-    tty = kw.get('tty', True)
-    id_file = '~/.ssh/id_rsa'
-    for k in ['~/.ssh/id_rsa', '~/.ssh/id_dsa']:
-        k = os.path.expanduser(k)
-        if os.path.exists(k):
-            id_file = k
-            break
-    key_filename = kw.get('key_filename', id_file)
-    known_hosts_file = kw.get('known_hosts_file', '/dev/null')
-    host_key_checking = kw.get('host_key_checking', 'no')
-    ssh_gateway = kw.get('ssh_gateway', None)
-    ssh_gateway_key = kw.get('ssh_gateway_key', id_file)
-    ssh_gateway_user = kw.get('ssh_gateway_user', 'root')
-    ssh_gateway_port = kw.get('ssh_gateway_port', 22)
-    password = kw.get('password', None)
+    kw = ssh_kwargs(**kwargs)
+    tty = kw['ssh_tty']
+    ssh_key_filename = kw['ssh_key_filename']
+    ssh_known_hosts_file = kw['ssh_known_hosts_file']
+    ssh_host_key_checking = kw['ssh_host_key_checking']
+    ssh_gateway = kw['ssh_gateway']
+    ssh_gateway_key = kw['ssh_gateway_key']
+    ssh_gateway_user = kw['ssh_gateway_user']
+    ssh_gateway_port = kw['ssh_gateway_port']
+    ssh_password = kw['ssh_password']
     ssh_args = []
     if tty:
         # Use double `-t` on the `ssh` script, it's necessary when `sudo` has
         # `requiretty` enforced.
         ssh_args.extend(['-t', '-t'])
-    if known_hosts_file != '/dev/null':
-        host_key_checking = 'yes'
-    ssh_args.extend(['-oStrictHostKeyChecking={0}'.format(host_key_checking),
-                     '-oLogLevel=QUIET',
-                     '-oUserKnownHostsFile={0}'.format(known_hosts_file),
-                     '-oControlPath=none'])
-    if not password:
+    if ssh_known_hosts_file != '/dev/null':
+        ssh_host_key_checking = 'yes'
+    ssh_args.extend([
+        '-oStrictHostKeyChecking={0}'.format(
+            ssh_host_key_checking),
+        '-oLogLevel=QUIET',
+        '-oUserKnownHostsFile={0}'.format(ssh_known_hosts_file),
+        '-oControlPath=none'])
+    if not ssh_password:
         # There should never be both a password and an ssh key passed in, so
         ssh_args.extend(['-oPasswordAuthentication=no',
                          '-oChallengeResponseAuthentication=no',
                          '-oPubkeyAuthentication=yes',
                          '-oKbdInteractiveAuthentication=no',
-                         '-i {0}'.format(key_filename)])
+                         '-i {0}'.format(ssh_key_filename)])
     if ssh_gateway:
         if ':' in ssh_gateway:
             ssh_gateway, ssh_gateway_port = ssh_gateway.split(':')
@@ -772,7 +947,7 @@ def _get_ssh_args(**kw):
             # Don't add new hosts to the host key database
             '-oStrictHostKeyChecking=no',
             # Set hosts key database path to /dev/null
-            '-oUserKnownHostsFile={0}'.format(known_hosts_file),
+            '-oUserKnownHostsFile={0}'.format(ssh_known_hosts_file),
             # Don't re-use the SSH connection. Less failures.
             '-oControlPath=none',
             '-oPasswordAuthentication=no',
@@ -795,9 +970,10 @@ def _get_ssh_args(**kw):
     return ssh_args
 
 
-def ssh_transfer_file(host, orig, dest=None, **kw):
+def ssh_transfer_file(host, orig, dest=None, **kwargs):
     '''
     Transfer files to an host via ssh layer
+    Please also look ssh_kwargs
 
     This will try then fallback on next transfer method.
     In order we try:
@@ -809,6 +985,10 @@ def ssh_transfer_file(host, orig, dest=None, **kw):
 
     host
         host to tranfer to
+    ssh_user/user (first win)
+        user to connect as
+    ssh_port/port (first win)
+        Port to connect onto
     orig
         filepath to transfer
     dest
@@ -824,18 +1004,29 @@ def ssh_transfer_file(host, orig, dest=None, **kw):
         _get_ssh_args
             (see doc)
             to mangle connection details
-        interactive_ssh(& interaction_class)
+        interactive_ssh(& ssh_interaction_class)
             (see doc)
             to interact during ssh session
     '''
-    user = kw.get('user', 'root')
-    port = kw.get('port', 22)
-    makedirs = kw.get('makedirs', False)
-    progress = kw.get('progress', False)
+    kwargs.setdefault('ssh_display_content_on_error', False)
+    kw = ssh_kwargs(kwargs)
+    user = kw['ssh_user']
+    port = kw['ssh_port']
+    progress = kw['ssh_progress']
+    makedirs = kw['ssh_makedirs']
+    display_content_on_error = kw['ssh_display_content_on_error']
+    if display_content_on_error:
+        display_content_on_error = '1'
+    else:
+        display_content_on_error = '0'
     if makedirs:
         makedirs = '1'
     else:
         makedirs = '0'
+    if kw['ssh_sync_identical']:
+        sync_identical = '1'
+    else:
+        sync_identical = '0'
     if progress:
         progress = '1'
     else:
@@ -851,7 +1042,7 @@ def ssh_transfer_file(host, orig, dest=None, **kw):
         raise OSError("{0} is not a file".format(orig))
     kw = copy.deepcopy(kw)
     # as we chain three login,methods, we multiplicate password challenges
-    kw['password_retries'] = kw.get('password_retries', 3) * 8
+    kw['ssh_password_retries'] = kw.get('ssh_password_retries', 3) * 8
     _ssh_args = _get_ssh_args(**kw)
     tmpfile = tempfile.mkstemp()[1]
     # transfer via scp, fallback on scp, fallback on rsync
@@ -864,6 +1055,10 @@ def ssh_transfer_file(host, orig, dest=None, **kw):
             **_mangle_kw_for_script({
                 'ttyfree_ssh_args': ttyfree_ssh_args,
                 'quoted_ssh_args': quoted_ssh_args,
+                'rsync_opts':  kw['ssh_rsync_opts'],
+                'sync_identical': sync_identical,
+                'display_content_on_error': (
+                    display_content_on_error),
                 'orig': orig,
                 'dest': dest,
                 'progress': progress,
@@ -887,9 +1082,10 @@ def ssh_transfer_file(host, orig, dest=None, **kw):
     return ret
 
 
-def ssh_transfer_dir(host, orig, dest=None, **kw):
+def ssh_transfer_dir(host, orig, dest=None, **kwargs):
     '''
-    Transfer files to an host via ssh layer
+    Transfer directories to an host via ssh layer
+    Please also look ssh_kwargs
 
     This will try then fallback on next transfer method.
     In order we try:
@@ -901,6 +1097,10 @@ def ssh_transfer_dir(host, orig, dest=None, **kw):
 
     host
         host to tranfer to
+    ssh_user/user (first win)
+        user to connect as
+    ssh_port/port (first win)
+        Port to connect onto
     orig
         filepath to transfer
     dest
@@ -916,22 +1116,33 @@ def ssh_transfer_dir(host, orig, dest=None, **kw):
         _get_ssh_args
             (see doc)
             to mangle connection details
-        interactive_ssh(& interaction_class)
+        interactive_ssh(& ssh_interaction_class)
             (see doc)
             to interact during ssh session
     '''
-    makedirs = kw.get('makedirs', False)
-    user = kw.get('user', 'root')
-    port = kw.get('port', 22)
+    kwargs.setdefault('ssh_display_content_on_error', False)
+    kw = ssh_kwargs(kwargs)
+    makedirs = kw['ssh_makedirs']
+    user = kw['ssh_user']
+    port = kw['ssh_port']
     progress = kw.get('progress', False)
+    display_content_on_error = kw['ssh_display_content_on_error']
     if makedirs:
         makedirs = '1'
     else:
         makedirs = '0'
+    if kw['ssh_sync_identical']:
+        sync_identical = '1'
+    else:
+        sync_identical = '0'
     if progress:
         progress = '1'
     else:
         progress = '0'
+    if display_content_on_error:
+        display_content_on_error = '1'
+    else:
+        display_content_on_error = '0'
     append_slashes = kw.setdefault('append_slashes', True)
     if dest is None:
         dest = orig
@@ -943,7 +1154,7 @@ def ssh_transfer_dir(host, orig, dest=None, **kw):
             cdest = dest + '/'
     kw = copy.deepcopy(kw)
     # as we chain three login,methods, we multiplicate password challenges
-    kw['password_retries'] = kw.get('password_retries', 3) * 8
+    kw['ssh_password_retries'] = kw.get('ssh_password_retries', 3) * 8
     _ssh_args = _get_ssh_args(**kw)
     if not os.path.exists(orig):
         raise OSError("{0} does not exists".format(orig))
@@ -959,8 +1170,12 @@ def ssh_transfer_dir(host, orig, dest=None, **kw):
         **_mangle_kw_for_script({
             'ttyfree_ssh_args': ttyfree_ssh_args,
             'quoted_ssh_args': quoted_ssh_args,
+            'sync_identical': sync_identical,
+            'rsync_opts':  kw['ssh_rsync_opts'],
             'corig': corig,
             'cdest': cdest,
+            'display_content_on_error': (
+                display_content_on_error),
             'orig': orig,
             'dest': dest,
             'progress': progress,
@@ -985,13 +1200,18 @@ def ssh_transfer_dir(host, orig, dest=None, **kw):
     return ret
 
 
-def ssh(host, script, **kw):
+def ssh(host, script, **kwargs):
     '''
     Executes a script command remotly via ssh
     Attention, if you use a gateway, only key auth is possible on the gw
+    Please also look ssh_kwargs
 
     host
         host to execute the script on
+    ssh_user/user (first win)
+        user to connect as (default: root)
+    ssh_port/port (first win)
+        Port to connect onto (default: 22)
     tmpdir
         tempfile to upload script to (default to /tmp, this mountpoint
         must not have the -noexec mount flag)
@@ -1014,7 +1234,7 @@ def ssh(host, script, **kw):
         _get_ssh_args
             (see doc)
             to mangle connection details
-        interactive_ssh(& interaction_class)
+        interactive_ssh(& ssh_interaction_class)
             (see doc)
             to interact during ssh session
 
@@ -1027,11 +1247,12 @@ def ssh(host, script, **kw):
                 "cat /etc/hostname"
 
     '''
+    kw = ssh_kwargs(kwargs)
     rand = _LETTERSDIGITS_RE.sub('_', salt.utils.pycrypto.secure_password(64))
-    tmpdir = kw.get('tmpdir', tempfile.tempdir or '/tmp')
+    tmpdir = kw['ssh_tmpdir']
     dest = os.path.join(tmpdir, '{0}.sh'.format(rand))
-    user = kw.get('user', 'root')
-    port = kw.get('port', 22)
+    user = kw['ssh_user']
+    port = kw['ssh_port']
     script_p, inline_script = script, False
     cret = _get_ret()
     msg = ('Running:\n'
@@ -1073,13 +1294,14 @@ def ssh(host, script, **kw):
                 sssh_args, script_p, dest, user, host, port)
             cret = interactive_ssh(cmd, **copy.deepcopy(kw))
         # Exec the script, eventually
-        if kw.get('show_running_cmd', True):
+        if kw['ssh_show_running_cmd']:
             log.info(msg)
         cmd = 'ssh {0} "{3}@{4}" -p "{5}" "{2}"'.format(
             sssh_args, script_p, dest, user, host, port)
         cret = interactive_ssh(cmd, **kw)
     except (_SSHExecError,) as exc:
-        log.error("{0}".format(exc))
+        if not kw['ssh_no_error_log']:
+            log.error("{0}".format(exc))
         cret = exc.exec_ret
     finally:
         if inline_script and script_p and os.path.exists(script_p):
@@ -1107,9 +1329,20 @@ def delete_remote(host, filepath, mode="-f", level='info', **kw):
     ssh(host, rm_cmd, **kw)
 
 
+def run(host, script, **kw):
+    '''
+    Wrapper to ssh but get only stdout
+
+    kwargs are forwarded to ssh helper functions !
+
+    returning only the code exist status
+    '''
+    return ssh(host, script, **kw)['stdout']
+
+
 def ssh_retcode(host, script, **kw):
     '''
-    Wrapper to ssh_call
+    Wrapper to ssh
 
     kwargs are forwarded to ssh helper functions !
 
@@ -1144,6 +1377,70 @@ def yamldump_arg(arg, default_flow_style=True, line_break='\n', strip=True):
     return arg
 
 
+def unparse_ret(ret, transformer, minion_id):
+    renderers = salt.loader.render(__opts__, __salt__)
+    outputters = salt.loader.outputters(__opts__)
+    rtype = ret['result_type']
+    log_trace = None
+    if transformer is None:
+        transformer = rtype
+    transformer = {'yaml': 'lyaml',
+                   'lyaml': 'lyaml',
+                   'highstate': 'highstate',
+                   'nested': 'nested',
+                   'json': 'json'}.get(transformer, 'noop')
+    unparser = {'yaml': 'lyaml',
+                'lyaml': 'lyaml',
+                'json': 'json'}.get(rtype, 'noop')
+    ret['transformer'] = transformer
+    ret['unparser'] = unparser
+    if (unparser != 'noop') and ret.get('result', False):
+        try:
+            ret['result'] = renderers[unparser](ret['result'])
+        except Exception:
+            try:
+                # try to remove debugs from shell running with set -e
+                cret = '\n'.join(
+                    [a for a in ret['result'].splitlines() if not
+                     a.startswith('+ ')])
+                ret['result'] = renderers[unparser](cret)
+            except:
+                if ret['raw_result'].startswith(
+                    'NO RETURN FROM'
+                ):
+                    ret['result'] = _EXECUTION_FAILED
+                    log_trace = traceback.format_exc()
+                else:
+                    raise
+    if (
+        transformer != 'noop'
+        and transformer != unparser
+        and ret.get('result', _EXECUTION_FAILED) is not _EXECUTION_FAILED
+    ):
+        if transformer in renderers:
+            try:
+                ret['result'] = renderers[transformer](ret['result'])
+            except salt.exceptions.SaltRenderError:
+                log_trace = traceback.format_exc()
+        elif transformer in outputters:
+            try:
+                ret['result'] = outputters[transformer](ret['result'])
+            except Exception:
+                if ret['raw_result'].startswith(
+                    'NO RETURN FROM'
+                ):
+                    ret['result'] = _EXECUTION_FAILED
+                    log_trace = traceback.format_exc()
+                else:
+                    raise
+    if 'result' not in ret and ret.get('retcode'):
+        ret['result'] = _EXECUTION_FAILED
+    if isinstance(ret['result'], dict):
+        if [a for a in ret['result']] == [minion_id]:
+            ret['result'] = ret['result'][minion_id]
+    return ret, log_trace
+
+
 def salt_call(host,
               fun=None,
               arg=None,
@@ -1159,10 +1456,16 @@ def salt_call(host,
               strip_out=None,
               hard_failure=False,
               *args,
-              **kw):
+              **kwargs):
     '''
     Executes a salt_call call remotely via ssh
 
+    host
+        host to execute on
+    ssh_user/user (first win)
+        user to connect as (default: root)
+    ssh_port/port (first win)
+        Port to connect onto (default: 22)
     fun
         saltcall function to call
     arg
@@ -1216,8 +1519,8 @@ def salt_call(host,
                 unparse=False outputter=yaml
 
     '''
-    vt_lvl = kw.setdefault('vt_loglevel', 'warning')
-    lvl = kw.setdefault('loglevel', __opts__.get('log_level', 'warning'))
+    vt_lvl = kwargs.setdefault('vt_loglevel', 'warning')
+    lvl = kwargs.setdefault('loglevel', __opts__.get('log_level', 'warning'))
     sc, dso = False, False
     if vt_lvl in ['info', 'debug', 'trace']:
         dso = True
@@ -1225,8 +1528,9 @@ def salt_call(host,
         dso = True
     if lvl in ['debug', 'trace']:
         sc = True
-    kw.setdefault('display_ssh_output', dso)
-    kw.setdefault('show_running_cmd', sc)
+    kwargs.setdefault('ssh_display_ssh_output', dso)
+    kwargs.setdefault('ssh_show_running_cmd', sc)
+    kw = ssh_kwargs(kwargs)
     if arg is None:
         arg = []
     if not args:
@@ -1333,6 +1637,7 @@ def salt_call(host,
         delete_remote(host, skwargs['quoted_outfile'], level=level, **kw)
     ret['result_type'] = outputter
     ret['raw_result'] = 'NO RETURN FROM {0}'.format(outfile)
+    log_trace = None
     if ret['stdout']:
         collect, result = False, ''
         for line in ret['stdout'].splitlines():
@@ -1349,73 +1654,23 @@ def salt_call(host,
     if ret.get('retcode', 0):
         try:
             if int(ret['retcode']) >= 0:
+                if unparse:
+                    try:
+                        ret, log_trace = unparse_ret(ret,
+                                                     transformer,
+                                                     minion_id)
+                    except Exception:
+                        pass
                 ret['raw_result'] = ret.pop('result', None)
                 ret['result'] = _EXECUTION_FAILED
         except (ValueError, TypeError,) as exc:
             pass
     ret['transformer'] = None
     ret['unparser'] = None
-    log_trace = None
     if unparse:
-        renderers = salt.loader.render(__opts__, __salt__)
-        outputters = salt.loader.outputters(__opts__)
-        rtype = ret['result_type']
-        if transformer is None:
-            transformer = rtype
-        transformer = {'yaml': 'lyaml',
-                       'lyaml': 'lyaml',
-                       'highstate': 'highstate',
-                       'nested': 'nested',
-                       'json': 'json'}.get(transformer, 'noop')
-        unparser = {'yaml': 'lyaml',
-                    'lyaml': 'lyaml',
-                    'json': 'json'}.get(rtype, 'noop')
-        ret['transformer'] = transformer
-        ret['unparser'] = unparser
-        if (unparser != 'noop') and ret.get('result', False):
-            try:
-                ret['result'] = renderers[unparser](ret['result'])
-            except Exception:
-                try:
-                    # try to remove debugs from shell running with set -e
-                    cret = '\n'.join(
-                        [a for a in ret['result'].splitlines() if not
-                         a.startswith('+ ')])
-                    ret['result'] = renderers[unparser](cret)
-                except:
-                    if ret['raw_result'].startswith(
-                        'NO RETURN FROM'
-                    ):
-                        ret['result'] = _EXECUTION_FAILED
-                        log_trace = traceback.format_exc()
-                    else:
-                        raise
-        if (
-            transformer != 'noop'
-            and transformer != unparser
-            and ret.get('result', _EXECUTION_FAILED) is not _EXECUTION_FAILED
-        ):
-            if transformer in renderers:
-                try:
-                    ret['result'] = renderers[transformer](ret['result'])
-                except salt.exceptions.SaltRenderError:
-                    log_trace = traceback.format_exc()
-            elif transformer in outputters:
-                try:
-                    ret['result'] = outputters[transformer](ret['result'])
-                except Exception:
-                    if ret['raw_result'].startswith(
-                        'NO RETURN FROM'
-                    ):
-                        ret['result'] = _EXECUTION_FAILED
-                        log_trace = traceback.format_exc()
-                    else:
-                        raise
-        if 'result' not in ret and ret.get('retcode'):
-            ret['result'] = _EXECUTION_FAILED
-        if isinstance(ret['result'], dict):
-            if [a for a in ret['result']] == [minion_id]:
-                ret['result'] = ret['result'][minion_id]
+        ret, log_trace = unparse_ret(ret,
+                                     transformer,
+                                     minion_id)
     if strip_out and (ret['retcode'] in [0]):
         ret['stdout'] = ret['stderr'] = ''
     if not isinstance(ret, dict):
@@ -1468,6 +1723,15 @@ def sls(host,
     Run a state file on an host and fails on error
     kwargs are forwarded to ssh helper functions !
 
+    host
+        host to connect onto
+    ssh_user/user (first win)
+        user to connect as (default: root)
+    ssh_port/port (first win)
+        Port to connect onto (default: 22)
+    sls
+        sls to execute
+
     CLI Examples::
 
         salt-call --local mc_remote.sls foo.net mysls
@@ -1490,6 +1754,15 @@ def highstate(host,
     '''
     Run an highstate on an host and fails on error
     kwargs are forwarded to ssh helper functions !
+
+    host
+        host to connect onto
+    ssh_user/user (first win)
+        user to connect as (default: root)
+    ssh_port/port (first win)
+        Port to connect onto (default: 22)
+    sls
+        sls to execute
 
     CLI Examples::
 

@@ -20,53 +20,75 @@ ENVS = {
 _DEFAULT = object()
 
 
-class ProjectException(salt.exceptions.SaltException):
+
+class _BaseProjectException(salt.exceptions.SaltException):
+    '''Project global exc'''
+    def __init__(self, *args, **kw):
+        if args:
+            cargs = [args[0]]
+        else:
+            cargs = []
+        super(_BaseProjectException, self).__init__(*cargs)
+        self.deploy_args = args
+        self.deploy_kw = kw
+        for attr in ['salt_ret', 'salt_step']:
+            if attr in self.deploy_kw:
+                setattr(self, attr, self.deploy_kw[attr])
+
+
+class ProjectException(_BaseProjectException):
     '''Project global exc'''
 
 
-class ProjectInitException(salt.exceptions.SaltException):
+class ProjectNotCleanError(ProjectException):
+    '''Project global exc'''
+
+
+class ProjectInitException(ProjectException):
     '''Project init exc'''
 
 
-class ProjectProcedureException(salt.exceptions.SaltException):
+class ProjectProcedureException(_BaseProjectException):
     '''Project init exc'''
-
-    def __init__(self, *args, **kw):
-        super(ProjectProcedureException, self).__init__(*args)
-        self.salt_ret = kw.get('salt_ret', None)
-        self.salt_step = kw.get('salt_step', None)
 
 
 class TooEarlyError(ProjectInitException):
     '''.'''
 
 
-class RemoteProjectException(salt.exceptions.SaltException):
-    """."""
-
-    def __init__(self, *args, **kw):
-        super(RemoteProjectException, self).__init__()
-        self.deploy_args = args
-        self.deploy_kw = kw
-
-
-class RemoteProjectInitException(RemoteProjectException):
+class RemoteProjectException(ProjectException):
     """."""
 
 
-class RemotePillarInitException(ProjectInitException):
+class BaseProjectInitException(ProjectException):
     """."""
 
 
-class RemoteProjectSyncError(RemoteProjectException):
+class RemoteProjectInitException(BaseProjectInitException):
     """."""
 
 
-class RemoteProjectSyncPillarError(RemoteProjectSyncError):
+class RemotePillarInitException(BaseProjectInitException):
     """."""
 
 
-class RemoteProjectSyncProjectError(RemoteProjectSyncError):
+class BaseRemoteProjectSyncError(RemoteProjectException):
+    """."""
+
+
+class RemoteProjectSyncError(BaseRemoteProjectSyncError):
+    """."""
+
+
+class RemoteProjectTransferError(RemoteProjectSyncError):
+    """."""
+
+
+class RemoteProjectWCSyncError(RemoteProjectSyncError):
+    """."""
+
+
+class RemoteProjectSyncRemoteError(RemoteProjectSyncError):
     """."""
 
 
