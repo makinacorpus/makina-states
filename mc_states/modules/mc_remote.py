@@ -125,10 +125,16 @@ has_ssh=0
 if [ "x{progress}" = "x1" ] || [ "x{sh_wrapper_debug}" != "x" ];then
     rsync_opts="${{rsync_opts}}P"
 fi
-if [ "x${{ret}}" != "x0" ];then
+if [ "x{rsync_opts}" != "x" ];then
+    rsync_opts="${{rsync_opts}} {rsync_opts}"
+fi
+if [ "x${{ret}}" = "x0" ];then
     if ! test -e "{orig}";then
         echo "Unexisting origin: {orig}" >&2
         ret=1
+    else
+        fmode=$(stat -c "%a" "{orig}")
+        cmode=$(stat -c "%a" "{orig_container}")
     fi
 fi
 if [ "x${{ret}}" = "x0" ];then
@@ -146,8 +152,6 @@ if [ "x${{ret}}" = "x0" ];then
     fi
 fi
 if [ "x${{has_ssh}}" = "x0" ] && [ "x${{ret}}" = "x0" ];then
-    fmode=$(stat -c "%a" "{orig}")
-    cmode=$(stat -c "%a" "{orig_container}")
     if [ "x{makedirs}" = "x1" ];then
      if [ "x{sh_wrapper_debug}" != "x" ];then
         ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
@@ -279,10 +283,22 @@ fi
 if [ "x{progress}" = "x1" ] || [ "x{sh_wrapper_debug}" != "x" ];then
     rsync_opts="${{rsync_opts}}P"
 fi
+if [ "x{sync_identical}" = "x1" ];then
+    rsync_opts="${{rsync_opts}} --delete --delete-excluded"
+fi
+if [ "x{rsync_opts}" != "x" ];then
+    rsync_opts="${{rsync_opts}} {rsync_opts}"
+fi
 ret=0
-if ! test -e "{orig}";then
-    echo "Unexisting origin: {orig}" >&2
-    ret=1
+has_ssh=0
+if [ "x${{ret}}" = "x0" ];then
+    if ! test -e "{orig}";then
+        echo "Unexisting origin: {orig}" >&2
+        ret=1
+    else
+        fmode=$(stat -c "%a" "{orig}")
+        cmode=$(stat -c "%a" "{orig_container}")
+    fi
 fi
 if [ "x${{ret}}" != "x0" ];then
     # ensure to have a connection
@@ -299,8 +315,6 @@ if [ "x${{ret}}" != "x0" ];then
     fi
 fi
 if [ "x${{ret}}" = "x0" ];then
-    fmode=$(stat -c "%a" "{orig}")
-    cmode=$(stat -c "%a" "{orig_container}")
     if [ "x{makedirs}" = "x1" ];then
      if [ "x{sh_wrapper_debug}" != "x" ];then
         ssh -p "{port}" {ttyfree_ssh_args} "{user}@{host}"\\
@@ -393,11 +407,6 @@ if [ "x${{has_ssh}}" = "x0" ] && [ "x${{ret}}" = "x0" ] \
 fi
 if [ "x${{ret}}" != "x0" ];then
     echo "Failed transfer for \\"{orig}\\"" >&2
-    if [ "x{display_content_on_error}" = "x1" ] && [ -e "{orig}" ];then
-        echo "CONTENTS:" >&2
-        echo "---------" >&2
-        cat "{orig}" >&2
-    fi
 fi
 exit ${{ret}}
 '''
@@ -462,7 +471,7 @@ class _SaltCallFailure(_SSHExecError):
     """."""
 
 
-def ssh_kwargs(first_argument_kwargs=None, pdb=False, **kw):
+def ssh_kwargs(first_argument_kwargs=None, **kw):
     """
     Lookup & sanitize input in kwargs to have
     only one value for various & well known
@@ -527,6 +536,8 @@ def ssh_kwargs(first_argument_kwargs=None, pdb=False, **kw):
             id_file = k
             break
     pretendants = OrderedDict([
+        ('rsync_opts', ''),
+        ('sync_identical', False),
         ('port', 22),
         ('tty', True),
         ('gateway_key', id_file),
@@ -751,6 +762,7 @@ class _AbstractSshSession(object):
             except (_SSHExecError,) as exc:
                 typ, eargs, _trace = sys.exc_info()
                 trace = traceback.format_exc()
+                # log.error(trace)
                 if isinstance(exc, _SSHCommandFailed):
                     retcode = self.proc.exitstatus
                 elif isinstance(exc, _SSHCommandFinished):
@@ -792,6 +804,10 @@ class _AbstractSshSession(object):
                     return exc.exec_ret
                 else:
                     _reraise(exc, trace=_trace)
+        except Exception:
+            trace = traceback.format_exc()
+            # log.error(trace)
+            raise
         finally:
             if isinstance(self.proc, salt.utils.vt.Terminal):
                 self.proc.close(terminate=True, kill=True)
@@ -1007,6 +1023,10 @@ def ssh_transfer_file(host, orig, dest=None, **kwargs):
         makedirs = '1'
     else:
         makedirs = '0'
+    if kw['ssh_sync_identical']:
+        sync_identical = '1'
+    else:
+        sync_identical = '0'
     if progress:
         progress = '1'
     else:
@@ -1035,6 +1055,8 @@ def ssh_transfer_file(host, orig, dest=None, **kwargs):
             **_mangle_kw_for_script({
                 'ttyfree_ssh_args': ttyfree_ssh_args,
                 'quoted_ssh_args': quoted_ssh_args,
+                'rsync_opts':  kw['ssh_rsync_opts'],
+                'sync_identical': sync_identical,
                 'display_content_on_error': (
                     display_content_on_error),
                 'orig': orig,
@@ -1100,7 +1122,7 @@ def ssh_transfer_dir(host, orig, dest=None, **kwargs):
     '''
     kwargs.setdefault('ssh_display_content_on_error', False)
     kw = ssh_kwargs(kwargs)
-    makedirs = kw.get('makedirs', False)
+    makedirs = kw['ssh_makedirs']
     user = kw['ssh_user']
     port = kw['ssh_port']
     progress = kw.get('progress', False)
@@ -1109,6 +1131,10 @@ def ssh_transfer_dir(host, orig, dest=None, **kwargs):
         makedirs = '1'
     else:
         makedirs = '0'
+    if kw['ssh_sync_identical']:
+        sync_identical = '1'
+    else:
+        sync_identical = '0'
     if progress:
         progress = '1'
     else:
@@ -1144,6 +1170,8 @@ def ssh_transfer_dir(host, orig, dest=None, **kwargs):
         **_mangle_kw_for_script({
             'ttyfree_ssh_args': ttyfree_ssh_args,
             'quoted_ssh_args': quoted_ssh_args,
+            'sync_identical': sync_identical,
+            'rsync_opts':  kw['ssh_rsync_opts'],
             'corig': corig,
             'cdest': cdest,
             'display_content_on_error': (
@@ -1219,7 +1247,7 @@ def ssh(host, script, **kwargs):
                 "cat /etc/hostname"
 
     '''
-    kw = ssh_kwargs(kwargs, pdb=True)
+    kw = ssh_kwargs(kwargs)
     rand = _LETTERSDIGITS_RE.sub('_', salt.utils.pycrypto.secure_password(64))
     tmpdir = kw['ssh_tmpdir']
     dest = os.path.join(tmpdir, '{0}.sh'.format(rand))

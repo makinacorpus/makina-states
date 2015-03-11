@@ -80,6 +80,9 @@ APIS = {
     'sync_remote_project': {
         '2': 'mc_project_2.sync_remote_project',
     },
+    'sync_git_directory': {
+        '2': 'mc_project_2.sync_git_directory',
+    },
     'init_local_remote_project': {
         '2': 'mc_project_2.init_local_remote_project',
     },
@@ -258,6 +261,10 @@ def init_remote_pillar(name, *args, **kwargs):
 
 def init_remote_project(name, *args, **kwargs):
     return _api_switcher('init_remote_project', name, *args, **kwargs)
+
+
+def sync_git_directory(name, *args, **kwargs):
+    return _api_switcher('sync_git_directory', name, *args, **kwargs)
 
 
 def sync_remote_pillar(name, *args, **kwargs):

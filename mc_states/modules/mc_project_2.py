@@ -4,6 +4,7 @@
 
 mc_project_2 / project settings regitry APIV2
 ================================================
+This is a Corpus Paas reactor, deploy your projects with style, salt style.
 
 '''
 
@@ -2240,9 +2241,55 @@ Project: {conf[push_salt_url]}
 '''.format(conf=conf)
     return ret
 
-#
-# REMOTE API
-#
+
+def sync_git_directory(directory,
+                       origin=None,
+                       rev=None,
+                       sync_remote='sync',
+                       refresh=False,
+                       **kw):
+    cret = OrderedDict()
+    try:
+        _s = __salt__
+        if not os.path.exists(
+            os.path.join(directory, '.git', 'config')
+        ):
+            raise OSError('{0} is not a git working copy'.format(
+                directory))
+        if rev is None:
+            rev = 'master'
+        user, _ = get_default_user_group(**kw)
+        cret['clean'] = clean_salt_git_commit(directory)
+        if origin:
+            _s['git.remote_set'](directory, sync_remote, origin, user=user)
+        try:
+            remotes = _s['git.remotes'](directory, user=user)
+        except Exception:
+            remotes = {}
+        if refresh and (sync_remote in remotes):
+            cret['fetch'] = _s['git.fetch'](
+                directory, sync_remote, user=user)
+            cret['sync'] = _s['git.reset'](
+                directory,
+                '--hard {0}/{1}'.format(sync_remote, rev),
+                user=user)
+    except (
+        OSError,
+        salt.exceptions.CommandExecutionError,
+        projects_api.ProjectNotCleanError
+    ) as exc:
+        trace = traceback.format_exc()
+        raise_exc(
+            kw.get('exc_klas',
+                   projects_api.BaseRemoteProjectSyncError),
+            msg=('{directory}: sync error'),
+            detail_msg=('{directory}: sync error'
+                        ':\n{scret}'),
+            scret=trace,
+            cret=cret,
+            directory=directory,
+            original=exc)
+    return cret
 
 
 def repr_ret(cret):
@@ -2287,6 +2334,11 @@ def raise_exc(klass,
               default_msg='failed',
               *exc_args,
               **exc_kwargs):
+    if not detail_msg:
+        if msg:
+            detail_msg = msg
+        else:
+            detail_msg = default_msg
     rmsg = None
     try:
         rmsg = detail_msg.format(*exc_args, **exc_kwargs)
@@ -2316,7 +2368,7 @@ def raise_exc(klass,
 
 def clean_salt_git_commit(directory, commit=True, **kw):
     user, group = get_default_user_group(**kw)
-    cret = {}
+    cret = OrderedDict()
     cret['st'] = __salt__['cmd.run']('git st',
                                      env={'LANG': 'C', 'LC_ALL': 'C'},
                                      runas=user,
@@ -2326,9 +2378,18 @@ def clean_salt_git_commit(directory, commit=True, **kw):
     elif 'nothing to commit' in cret['st']:
         pass
     else:
-        raise projects_api.ProjectNotCleanError(
-            "{0}: git invalid status".format(directory), ret=cret)
+        try:
+            msg = "{0}: git invalid status\n{1}".format(
+                directory, cret['st'])
+        except Exception:
+            msg = "{0}: git invalid status".format(directory)
+        raise projects_api.ProjectNotCleanError(msg, ret=cret)
     return cret
+
+
+#
+# REMOTE API
+#
 
 
 def _init_local_remote_directory(host,
@@ -2339,9 +2400,12 @@ def _init_local_remote_directory(host,
                                  init_data=None,
                                  bare=False,
                                  origin=None,
+                                 refresh=None,
                                  rev=None,
                                  **kw):
     _s = __salt__
+    exc_klass = kw.get('exc_klass',
+                       projects_api.BaseProjectInitException)
     try:
         if not rev:
             rev = 'master'
@@ -2363,18 +2427,28 @@ def _init_local_remote_directory(host,
                      if a not in ['.', '..']])
         if empty_directory:
             _s['file.remove'](directory)
+        maybe_sync = not empty_directory
         if origin:
-            if os.path.exists(directory):
-                log.error('existing container, moving to')
-            cret['clone'] = _s['git.clone'](directory, origin, user=user)
+            if empty_directory:
+                cret['clone'] = _s['git.clone'](directory, origin, user=user)
+                cret['st'] = clean_salt_git_commit(directory)['st']
         else:
-            cret['init'] = init_repo(directory,
-                                     bare=bare,
-                                     init_pillar=init_pillar,
-                                     init_salt=init_salt,
-                                     init_data=init_data,
-                                     user=user,
-                                     group=group)
+            if empty_directory:
+                cret['init'] = init_repo(directory,
+                                         bare=bare,
+                                         init_pillar=init_pillar,
+                                         init_salt=init_salt,
+                                         init_data=init_data,
+                                         user=user,
+                                         group=group)
+        if maybe_sync and (refresh in [None, True]):
+            cret['sync_dir'] = sync_git_directory(
+                directory,
+                origin=origin,
+                refresh=True,
+                exc_klass=exc_klass,
+                rev=rev,
+                user=user)
         set_makina_states_author(directory, user=user)
     except (
         OSError,
@@ -2383,8 +2457,7 @@ def _init_local_remote_directory(host,
     ) as exc:
         scret = traceback.format_exc()
         raise_exc(
-            kw.get('exc_klass',
-                   projects_api.BaseProjectInitException),
+            exc_klass,
             msg=('{host}: remote project {project} '
                  'structure init failed'),
             detail_msg=('{host}: remote project {project} '
@@ -2405,25 +2478,21 @@ def init_local_remote_pillar(host,
     _s = __salt__
     # we only need a few constant properties, project is not existing locally
     pcfg = _s['mc_project.get_configuration'](project, remote_host=host)
-    cfg = _s['mc_project.get_configuration'](project)
     directory = os.path.abspath(pcfg['remote_pillar_dir'])
     cret = OrderedDict()
-    try:
-        cret = _init_local_remote_directory(
-            host,
-            project,
-            directory,
-            bare=False,
-            origin=origin,
-            rev=rev,
-            #
-            init_pillar=True,
-            init_data=pcfg,
-            exc_klass=(
-                projects_api.RemotePillarInitException),
-            **kw)
-    except:
-        raise
+    cret = _init_local_remote_directory(
+        host,
+        project,
+        directory,
+        bare=False,
+        origin=origin,
+        rev=rev,
+        #
+        init_pillar=True,
+        init_data=pcfg,
+        exc_klass=(
+            projects_api.RemotePillarInitException),
+        **kw)
     return cret
 
 
@@ -2436,24 +2505,21 @@ def init_local_remote_project(host,
     # we only need a few constant properties, project is not existing locally
     pcfg = get_configuration(project, remote_host=host)
     cfg = get_configuration(project)
-    directory = pcfg['remote_directory']
+    directory = pcfg['remote_project_dir']
     cret = OrderedDict()
-    try:
-        cret = _init_local_remote_directory(
-            host,
-            project,
-            directory,
-            bare=False,
-            origin=origin,
-            rev=rev,
-            # no remote hsot here
-            init_data=cfg,
-            init_salt=True,
-            exc_klass=(
-                projects_api.RemoteProjectInitException),
-            **kw)
-    except:
-        raise
+    cret = _init_local_remote_directory(
+        host,
+        project,
+        directory,
+        bare=False,
+        origin=origin,
+        rev=rev,
+        # no remote hsot here
+        init_data=cfg,
+        init_salt=True,
+        exc_klass=(
+            projects_api.RemoteProjectInitException),
+        **kw)
     return cret
 
 
@@ -2505,7 +2571,7 @@ def _init_remote_structure(host, project, **kw):
             scret = trace
         if do_raise and failed:
             raise_exc(
-                RemoteProjectInitException,
+                projects_api.RemoteProjectInitException,
                 msg=('{host}: remote project {project} '
                      'structure init failed'),
                 detail_msg=('{host}: remote project {project} '
@@ -2543,188 +2609,152 @@ def init_remote_project(host, project, **kw):
     return _init_remote_structure(host, project, **kw)
 
 
-def sync_git_directory(directory,
-                       origin=None,
-                       rev=None,
-                       sync_remote='sync',
-                       refresh=False,
-                       **kw):
+def sync_remote_working_copy(host,
+                             directory,
+                             remote_directory=None,
+                             remote_local_copy=None,
+                             lremote=None,
+                             **kw):
     _s = __salt__
-    if rev is None:
-        rev = 'master'
-    user, _ = get_default_user_group(**kw)
-    if origin:
-        _s['git.set_remote'](directory, sync_remote, origin, user=user)
-    if origin and refresh:
-        _s['git.fetch'](directory, sync_remote, user=user)
-        _s['git.reset'](directory,
-                        '--hard {0}/{1}'.format(origin, rev),
-                        user=user)
-
-def sync_remote_pillar(host,
-                       project,
-                       origin=None,
-                       rev=None,
-                       init_pillar=False,
-                       **kw):
-    _s = __salt__
-    cret = OrderedDict()
     user, group = get_default_user_group(**kw)
-    pcfg = get_configuration(project, remote_host=host, user=user)
-    ssh_kw = _s['mc_remote.ssh_kwargs'](kw)
-    pillar_dir = pcfg['remote_pillar_dir']
-    refresh = kw.get('refresh', False)
-    if not rev:
-        rev = 'master'
-    if init_pillar:
-        cret['init'] = init_remote_pillar(host, project, **kw)
+    ssh_kw = _s['mc_remote.ssh_kwargs'](kw, user=user)
+    cret = OrderedDict()
+    if not remote_directory:
+        remote_directory = directory
+    kw['user'] = user
+    gforce = '--force master:master'
+    tmpbare = "{0}.bare.git".format(os.path.abspath(directory))
+    if not lremote:
+        lremote = 'localcopy'
+    klass = projects_api.RemoteProjectTransferError
+    trace = ''
+    failed, original = False, None
     try:
-        cret['clean'] = clean_salt_git_commit(pillar_dir)
-        cret['sync'] = sync_git_directory(
-            pillar_dir, origin=origin, refresh=refresh, rev=rev,  user=user)
+        set_makina_states_author(directory, user=user)
+        clean_salt_git_commit(directory)
+        if not os.path.exists(tmpbare):
+            cret['clone'] = _s['git.clone'](tmpbare,
+                                            directory,
+                                            opts='--bare',
+                                            user=user)
         cret['remote'] = _s['git.remote_set'](
-            pillar_dir, 'prod',
-            'ssh://{2[ssh_user]}@{0}:{2[ssh_port]}/{3}' .format(
-                host, user, ssh_kw, pcfg['git_pillar_root']),
-            user=user)
-    except (
-        salt.exceptions.CommandExecutionError,
-        projects_api.ProjectNotCleanError
-    ) as exc:
+            directory, lremote, tmpbare, user=user)
+        cret['push'] = _s['git.push'](
+            directory, lremote, branch='', opts=gforce, user=user)
+    except (Exception,) as exc:
         trace = traceback.format_exc()
+        failed, original = True, exc
+        klass = projects_api.RemoteProjectTransferError
+
+    if not failed:
+        try:
+            cret['sync_files'] = _s['mc_remote.ssh_transfer_dir'](
+                host,
+                directory,
+                remote_directory,
+                makedirs=True,
+                rsync_opts='--delete -P',
+                **ssh_kw)
+            if cret['sync_files']['retcode']:
+                failed = True
+                trace = repr_ret(cret['sync_files'])
+            else:
+                cret['sync_files'] = cret['sync_files']['stdout']
+        except (Exception,) as exc:
+            trace = traceback.format_exc()
+            failed, original = True, exc
+            klass = projects_api.RemoteProjectSyncRemoteError
+
+    if not failed:
+        try:
+            fixperms = os.path.join(
+                os.path.abspath(
+                    os.path.dirname(remote_local_copy)),
+                'global-reset-perms.sh')
+            cret['wc_sync'] = _s['mc_remote.ssh'](
+                host,
+                'cd "{remote_local_copy}"'
+                '&& git remote add "{0}" "{1}" 2>/dev/null;'
+                'if [ "x${{?}}" != "x0" ];then'
+                ' git remote set-url "{0}" "{1}";'
+                'fi'
+                '&& set -x 1>/dev/null 2>&1'
+                '&& git fetch "{0}"'
+                '&& git reset --hard "{0}/master"'
+                '&& git push origin {2};'
+                'ret=${{?}};'
+                'if [ -x "{fixperms}" ];then'
+                ' "{fixperms}" 1>/dev/null 2>&1 || /bin/true;'
+                'fi;'
+                'exit ${{ret}}'
+                ''.format(lremote,
+                          remote_directory,
+                          gforce,
+                          remote_local_copy=remote_local_copy,
+                          fixperms=fixperms),
+                **ssh_kw)
+            if cret['wc_sync']['retcode']:
+                failed = True
+                trace = repr_ret(cret['wc_sync'])
+            else:
+                cret['wc_sync'] = cret['wc_sync']['stdout']
+        except (Exception,) as exc:
+            trace = traceback.format_exc()
+            failed, original = True, exc
+            klass = projects_api.RemoteProjectWCSyncError
+    if failed:
         raise_exc(
-            projects_api.RemoteProjectSyncUnCleanPillarError,
-            msg=('{host}: pillar for {project} clean failed'
-                 ' (transfert)'),
-            detail_msg=('{host}: pillar for project {project} clean failed'
-                        ':\n{scret}'),
+            klass,
+            msg='{host}: directory {directory} sync failed',
+            detail_msg=('{host}: directory {directory}'
+                        ' sync failed:\n{scret}'),
             scret=trace,
             cret=cret,
             host=host,
-            original=exc,
-            project=project)
-    try:
-        cret['push'] = __salt__['git.push'](
-            pillar_dir, 'prod', branch='', opts='--force master:master')
-    except (
-        salt.exceptions.CommandExecutionError,
-    ) as exc:
-        trace = traceback.format_exc()
-        raise_exc(
-            projects_api.RemoteProjectSyncPushPillarError,
-            msg=('{host}: pillar for {project} sync failed'
-                 ' (transfert)'),
-            detail_msg=('{host}: pillar for project {project} sync failed'
-                        ':\n{scret}'),
-            scret=trace,
-            cret=cret,
-            host=host,
-            original=exc,
-            project=project)
-    cret['pushed'] = True
+            directory=directory,
+            original=original)
     return cret
 
 
-def sync_remote_project(host,
-                        project,
-                        origin=None,
-                        rev=None,
-                        refresh=True,
-                        init_project=False,
-                        **kw):
-    _s = __salt__
-    if not rev:
-        rev = 'master'
-    project = get_project(**kw)
-    user, group = get_default_user_group(**kw)
-    ssh_kw = _s['mc_remote.ssh_kwargs'](kw, user=user)
-    pcfg = _s['mc_project.get_configuration'](project, remote_host=host)
+def sync_remote_directory(host,
+                          project,
+                          directory,
+                          remote_directory=None,
+                          remote_local_copy=None,
+                          origin=None,
+                          rev=None,
+                          refresh=None,
+                          init=None,
+                          lremote=None,
+                          **kw):
     cret = OrderedDict()
-    remote_project_dir = pcfg['project_root']
-    project_dir = pcfg['remote_project_dir']
-    localcopy = kw.get('localcopy', project_dir)
-    gforce = '--force master:master'
-    tmpbare = os.path.join(project_dir, 'bare')
-    lremote = 'localcopy'
-    if init_project:
-        cret['init'] = init_local_remote_project(
-            host, project, user=user, **kw)
+    if init is None:
+        init = False
     try:
-        cret['sync'] = sync_git_directory(
-            project_dir, origin=origin, refresh=refresh, rev=rev,  user=user)
-        set_makina_states_author(project_dir, user=user)
-        clean_salt_git_commit(project_dir)
-        if not os.path.exists(tmpbare):
-            cret = _s['git.clone'](tmpbare,
-                                   project_dir,
-                                   opts='--bare',
-                                   user=user)
-        cret = _s['git.remote_set'](
-            project_dir, lremote, tmpbare, user=user)
-        cret = _s['git.push'](
-            project_dir, lremote, branch='', opts=gforce, user=user)
-        try:
-            cret['sync_files'] = _s['mc_remote.ssh_transfer_dir'](
-                host, project_dir, localcopy, makedirs=True,
-                **ssh_kw)
-            if cret['sync_files']['retcode']:
-                raise ValueError()
-        except (ValueError,) as exc:
-            raise_exc(
-                projects_api.RemoteProjectTransferProjectError,
-                msg=('{host}: project {project} sync failed'
-                     ' (transfert)'),
-                detail_msg=('{host}: project {project} sync failed'
-                            ' (transfert):\n{scret}'),
-                scret=repr_ret(cret),
-                cret=cret,
-                host=host,
-                original=exc,
-                project=project)
-        except (Exception,) as exc:
-            trace = traceback.format_exc()
-            raise_exc(
-                projects_api.RemoteProjectTransferProjectError,
-                msg=('{host}: project {project} sync failed'
-                     ' (transfert)'),
-                detail_msg=('{host}: project {project} sync failed'
-                            ' (transfert):\n{scret}'),
-                scret=trace,
-                cret="{0}".format(exc),
-                host=host,
-                original=exc,
-                project=project)
-        cret['final_wc_sync'] = _s['mc_remote.salt_call'](
+        if init:
+            cret['init'] = init_local_remote_project(
+                host, project,
+                origin=origin, rev=rev, refresh=refresh,
+                **kw)
+        else:
+            cret['sync'] = sync_git_directory(
+                directory,
+                origin=origin, refresh=refresh, rev=rev, **kw)
+        cret['remote_sync'] = sync_remote_working_copy(
             host,
-            'cmd.run',
-            arg=['git remote add "{0}" "{1}" 2>/dev/null'
-                 ' || git remote set-url "{0}" "{1}"'
-                 '&& git fetch "{0}"'
-                 '&& git reset --hard "{0}/master"'
-                 '&& git push origin {2}'
-                 ''.format(lremote, localcopy, gforce)],
-            kwarg={'python_shell': True,
-                   'use_vt': True,
-                   'cwd': remote_project_dir,
-                   'runas': 'root'},
-            **ssh_kw)
-        if cret['final_wc_sync']['retcode']:
-            raise_exc(
-                projects_api.RemoteProjectWCSyncProjectError,
-                msg='{host}: project {project} sync failed',
-                detail_msg='{host}: project {project} sync failed:\n{scret}',
-                scret=repr_ret(cret),
-                cret=cret,
-                host=host,
-                original=None,
-                project=project)
+            directory,
+            remote_directory=remote_directory,
+            remote_local_copy=remote_local_copy,
+            lremote=lremote,
+            **kw)
     except (
         salt.exceptions.CommandExecutionError,
+        projects_api.BaseRemoteProjectSyncError,
         projects_api.ProjectNotCleanError
     ) as exc:
         trace = traceback.format_exc()
         raise_exc(
-            projects_api.RemoteProjectSyncProjectError,
+            projects_api.RemoteProjectSyncRemoteError,
             msg='{host}: project {project} sync failed',
             detail_msg='{host}: project {project} sync failed:\n{scret}',
             scret=trace,
@@ -2732,6 +2762,66 @@ def sync_remote_project(host,
             host=host,
             original=exc,
             project=project)
+    return cret
+
+
+def sync_remote_pillar(host,
+                       project,
+                       origin=None,
+                       remote_directory=None,
+                       remote_local_copy=None,
+                       rev=None,
+                       init=False,
+                       refresh=None,
+                       lremote=None,
+                       **kw):
+    _s = __salt__
+    project = get_default_project(project)
+    pcfg = _s['mc_project.get_configuration'](project, remote_host=host)
+    directory = pcfg['remote_pillar_dir']
+    if remote_local_copy is None:
+        remote_local_copy = pcfg['pillar_root']
+    cret = sync_remote_directory(host,
+                                 project,
+                                 directory,
+                                 remote_directory=remote_directory,
+                                 remote_local_copy=remote_local_copy,
+                                 origin=origin,
+                                 rev=rev,
+                                 refresh=refresh,
+                                 init=init,
+                                 lremote=lremote,
+                                 **kw)
+    return cret
+
+
+def sync_remote_project(host,
+                        project,
+                        origin=None,
+                        remote_directory=None,
+                        remote_local_copy=None,
+                        rev=None,
+                        init=False,
+                        refresh=None,
+                        lremote=None,
+                        **kw):
+    _s = __salt__
+    project = get_default_project(project)
+    pcfg = _s['mc_project.get_configuration'](project, remote_host=host)
+    directory = pcfg['remote_project_dir']
+    if remote_local_copy is None:
+        remote_local_copy = pcfg['project_root']
+    cret = sync_remote_directory(host,
+                                 project,
+                                 directory,
+                                 remote_directory=remote_directory,
+                                 remote_local_copy=remote_local_copy,
+                                 origin=origin,
+                                 rev=rev,
+                                 refresh=refresh,
+                                 init=init,
+                                 lremote=lremote,
+                                 **kw)
     return cret
 
 
@@ -2814,7 +2904,7 @@ def orchestrate(host,
     if init_pillar is None:
         init_pillar = init
     if refresh is None:
-        refresh = False
+        refresh = True
     sync_project = bool(sync_project)
     sync_pillar = bool(sync_pillar)
     init_project = bool(init_project)
@@ -2853,7 +2943,7 @@ def orchestrate(host,
             project,
             origin=pillar_origin,
             rev=pillar_rev,
-            init_pillar=False,
+            init=False,
             refresh=refresh_pillar,
             **kw)
     if sync_project:
@@ -2863,7 +2953,7 @@ def orchestrate(host,
             origin=origin,
             rev=rev,
             refresh=refresh_project,
-            init_project=False,
+            init=False,
             **kw)
     if sync_pillar or sync_project:
         crets['sync_post'] = remote_project_hook(

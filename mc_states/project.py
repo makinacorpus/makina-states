@@ -72,31 +72,23 @@ class RemotePillarInitException(BaseProjectInitException):
     """."""
 
 
-class RemoteProjectSyncError(RemoteProjectException):
+class BaseRemoteProjectSyncError(RemoteProjectException):
     """."""
 
 
-class RemoteProjectSyncPillarError(RemoteProjectSyncError):
+class RemoteProjectSyncError(BaseRemoteProjectSyncError):
     """."""
 
 
-class RemoteProjectSyncUnCleanPillarError(RemoteProjectSyncPillarError):
+class RemoteProjectTransferError(RemoteProjectSyncError):
     """."""
 
 
-class RemoteProjectSyncPushPillarError(RemoteProjectSyncPillarError):
+class RemoteProjectWCSyncError(RemoteProjectSyncError):
     """."""
 
 
-class RemoteProjectSyncProjectError(RemoteProjectSyncError):
-    """."""
-
-
-class RemoteProjectTransferProjectError(RemoteProjectSyncError):
-    """."""
-
-
-class RemoteProjectWCSyncProjectError(RemoteProjectSyncProjectError):
+class RemoteProjectSyncRemoteError(RemoteProjectSyncError):
     """."""
 
 
