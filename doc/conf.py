@@ -639,7 +639,7 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 # for automodules & rtd
 D = os.path.abspath(os.path.dirname(__name__))
 sys.path.insert(0, os.path.abspath(D))
-sys.path.insert(0, os.path.abspath(D + os.path.join('/..')))
+#sys.path.insert(0, os.path.abspath(D + os.path.join('/..')))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
