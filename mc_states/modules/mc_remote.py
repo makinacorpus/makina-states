@@ -8,6 +8,8 @@ from __future__ import print_function
 mc_remote / remote execution functions
 ======================================
 
+
+
 The following functions are related to do remote executions over ssh transport.
 This for both raw commands and local salt executions.
 Those functions are just variations from salt.utils.cloud (which i (kiorky)
