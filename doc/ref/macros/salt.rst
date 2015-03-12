@@ -72,3 +72,4 @@ modyfing the confRepos keys as follow
             name: '{salt_root}/docker'
             target: '{salt_root}/formulas/docker/docker'
 
+

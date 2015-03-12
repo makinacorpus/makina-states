@@ -4,3 +4,4 @@ Collaboration services
    :maxdepth: 2
 
    etherpad.rst
+

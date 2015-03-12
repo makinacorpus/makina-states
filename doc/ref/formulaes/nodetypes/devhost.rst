@@ -16,3 +16,4 @@ devhost in the registry::
 
     {{ salt['mc_nodetypes.registry']().is.devhost }}
 
+

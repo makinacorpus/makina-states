@@ -290,11 +290,15 @@ def settings():
 
 
 def vhost_settings(domain, doc_root, **kwargs):
-    '''Settings for the nginx macro
+    '''
+    Settings for the nginx macro
+
+
     ssl_cert
         ssl_cert content if any
     ssl_key
         ssl_key content if any
+
     '''
     nginxSettings = copy.deepcopy(__salt__['mc_nginx.settings']())
     # retro compat

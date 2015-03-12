@@ -7,3 +7,4 @@ For mastersalt orchestration we provide the following hooks:
     :dummy-pre-mastersalt-service-restart: before mastersalt is restarted after its reconfiguration
 
     :dummy-post-mastersalt-service-restart: after mastersalt is restarted after its reconfiguration
+

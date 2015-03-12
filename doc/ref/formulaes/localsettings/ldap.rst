@@ -45,3 +45,4 @@ Exposed settings:
     :makina-states.localsettings.ldap.nslcd.reconnect_sleeptime: 1
     :makina-states.localsettings.ldap.nslcd.reconnect_retrytime: 10
 
+

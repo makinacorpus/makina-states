@@ -17,3 +17,4 @@ Pillar value start with makina-states.services.monitoring.circus:
       Edit the directory in which circus is installed. (**locs['apps_dir'] + '/etherpad'**)
 
 
+

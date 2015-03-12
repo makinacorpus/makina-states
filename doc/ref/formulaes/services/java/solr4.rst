@@ -1,2 +1,3 @@
 Solr4 configuration
 ===================
+

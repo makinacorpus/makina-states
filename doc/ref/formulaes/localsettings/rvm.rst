@@ -12,3 +12,4 @@ Exposed settings:
     :makina-states.localsettings.rvm.rubies: rubies to install as bases
     :makina-states.localsettings.rvm.user: base rvm user
     :makina-states.localsettings.rvm.group: base rvm user group
+

@@ -64,3 +64,4 @@ To activate the driver you need to install the generic & the saltify formulaes
     makina-states.cloud.saltify: true
 
 
+

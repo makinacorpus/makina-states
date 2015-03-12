@@ -4,11 +4,10 @@ from __future__ import division
 from __future__ import print_function
 __docformat__ = 'restructuredtext en'
 '''
-
 .. _module_mc_remote:
 
 mc_remote / remote execution functions
-============================================
+======================================
 The following functions are related to do remote executions over ssh transport.
 This for both raw commands and local salt executions.
 Those functions are just variations from salt.utils.cloud (which i (kiorky)
@@ -75,8 +74,6 @@ _SSHCommandFailed = mc_states.saltapi._SSHCommandFailed
 _SSHCommandTimeout = mc_states.saltapi._SSHCommandTimeout
 _SSHTransferFailed = mc_states.saltapi._SSHTransferFailed
 _SaltCallFailure = mc_states.saltapi._SaltCallFailure
-
-
 
 
 class _EvalFalse(object):
@@ -852,11 +849,14 @@ def interactive_ssh(cmd, **kw):
 
     The session control behavior can be controller by subclassing the
     AbstractSshSession class, see 'ssh_interaction_class':
+
     cmd
         the full ssh command to wrap the execution from
+
         eg::
 
             ssh foo.com "ls /"
+
     ssh_quote
         do we force the script to be quoted
     ssh_display_ssh_output
@@ -954,6 +954,7 @@ def ssh_transfer_file(host, orig, dest=None, **kwargs):
 
     This will try then fallback on next transfer method.
     In order we try:
+
         - rsync
         - scp
         - sftp
@@ -1068,11 +1069,10 @@ def ssh_transfer_dir(host, orig, dest=None, **kwargs):
 
     This will try then fallback on next transfer method.
     In order we try:
+
         - rsync
         - scp
         - sftp
-        - gzip piped to dest host gunzip
-        - cat piped to dest host uncat
 
     host
         host to tranfer to
@@ -1196,13 +1196,15 @@ def ssh(host, script, **kwargs):
         must not have the -noexec mount flag)
     script
         script or command to execute:
-        if the script contains multiple lines
-            We put the content in a temporary file, as-is before
-            uploading it
-        If the script is a filepath
-            we upload it as-is
-        In other cases
-            we wrap it in a simple shell wrapper before uploading
+
+            - if the script contains multiple lines
+              We put the content in a temporary file, as-is before
+              uploading it
+            - If the script is a filepath
+              we upload it as-is
+            - In other cases
+              we wrap it in a simple shell wrapper before uploading
+
     vt_loglevel
         loglevel to use for vt
 

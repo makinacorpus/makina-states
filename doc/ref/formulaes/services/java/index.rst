@@ -5,3 +5,4 @@ Java services
 
    solr4.rst
    tomcat7.rst
+

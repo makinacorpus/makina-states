@@ -142,8 +142,10 @@ def sync_images(only=None,
                 __salt__from_exec=None):
     '''
     Sync the 'makina-states' image to all configured LXC hosts minions
-    WARNING: it checks .ms_version inside the rootfs of the LXC
-             if this one didnt change, images wont be synced
+
+    WARNING
+        it checks .ms_version inside the rootfs of the LXC
+        if this one didnt change, images wont be synced
 
     Configuration:
 

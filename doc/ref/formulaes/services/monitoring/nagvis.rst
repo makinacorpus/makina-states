@@ -142,3 +142,4 @@ The macro produces a csv file like
 This macro produces only the /etc/nagvis/geomap/name.csv file and 
 not the /etc/nagvis/maps/name.cfg file.
 In order to produce the /etc/nagvis/maps/name.cfg file, you should call the "add_map" macro.
+

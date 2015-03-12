@@ -304,3 +304,4 @@ On the pillar slave targeted pillar, now::
       server_type: slave
       masters: ["{{masterip}}"]
 
+

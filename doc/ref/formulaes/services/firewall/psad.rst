@@ -12,3 +12,4 @@ Eg::
   makina-states.services.firewall.psad.alertdest: sysadmin@goo.com
   makina-states.services.firewall.psad.hostname: bar.goo.com
 
+
