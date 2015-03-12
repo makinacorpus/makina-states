@@ -5,6 +5,8 @@
 mc_registry / local registries
 ============================================
 
+
+
 Makina-States local registries management
 '''
 
