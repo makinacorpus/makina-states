@@ -57,6 +57,10 @@ ENVS = projects_api.ENVS
 KEEP_ARCHIVES = projects_api.KEEP_ARCHIVES
 PROJECT_INJECTED_CONFIG_VAR = 'cfg'
 DEFAULT_PROJECT_NAME = 'project'
+DEFAULT_COMMIT_MESSAGE = 'salt commit'
+INITIAL_COMMIT_MESSAGE = 'initial'
+DEFAULT_AUTHOR = 'makina-states'
+DEFAULT_EMAIL = '{0}@paas.tls'.format(DEFAULT_AUTHOR)
 DEFAULT_CONFIGURATION = {
     'name': None,
     'minion_id': None,
@@ -169,8 +173,8 @@ def _force_cli_retcode(ret):
 
 
 def set_makina_states_author(directory,
-                             name='makina-states',
-                             email='makina-states@paas.tld',
+                             name=DEFAULT_AUTHOR,
+                             email=DEFAULT_EMAIL,
                              **kw):
     user, _ = get_default_user_group(**kw)
     __salt__['git.config_set'](directory, 'user.email', email, user=user)
@@ -179,7 +183,7 @@ def set_makina_states_author(directory,
 
 def remove_path(path):
     '''Remove a path.'''
-    if os.path.exists(path):
+    if os.path.exists(path) or os.path.islink(path):
         if os.path.islink(path):
             os.unlink(path)
         elif os.path.isfile(path):
@@ -1151,41 +1155,41 @@ def init_repo(working_copy,
             _s['file.set_mode'](igit, 0750)
             _s['file.chown'](igit, user=user, group=group)
             empty = os.path.join(igit, '.empty')
-            if not os.path.exists(empty):
-                _s['file.touch'](empty)
-                _s['file.chown'](empty, user, group)
             _s['git.remote_set'](igit, 'origin', working_copy, user=user)
             if bare:
                 set_makina_states_author(igit, user=user)
             if init_salt:
-                init_salt_dir(
-                    igit,
-                    commit_all=True,
-                    user=user,
-                    bare=bare,
-                    project=project,
-                    do_push=bare,
-                    init_data=cfg,
-                    api_version=api_version,
-                    ret=ret)
-            if init_pillar:
+                refresh_files_in_working_copy(igit,
+                                              user=user,
+                                              group=group,
+                                              project=project,
+                                              init_data=cfg,
+                                              force=True,
+                                              commit_all=False,
+                                              do_push=False,
+                                              api_version=api_version)
+            elif init_pillar:
                 init_pillar_dir(
                     igit,
                     init_data=cfg,
                     project=project,
                     user=user,
-                    commit_all=True,
+                    commit_all=False,
                     bare=bare,
-                    do_push=bare,
+                    do_push=False,
                     api_version=api_version,
                     ret=ret)
+            else:
+                if not os.path.exists(empty):
+                    _s['file.touch'](empty)
+                    _s['file.chown'](empty, user, group)
             set_makina_states_author(igit, user=user)
-
-            git_commit(igit, commit_all=True, opts='-f', user=user)
+            git_commit(igit, message=INITIAL_COMMIT_MESSAGE,
+                       commit_all=True, opts='-f', user=user)
             if bare:
                 _s['git.push'](
                     igit, 'origin', branch='master:master',
-                    opts='-u', user=user)
+                    opts='--force -u', user=user)
         except Exception:
             log.error(traceback.format_exc())
             raise projects_api.ProjectInitException(
@@ -1212,7 +1216,7 @@ def push_changesets_in(directory, opts='', **kw):
 
 
 def git_commit(git,
-               message='salt commit',
+               message=DEFAULT_COMMIT_MESSAGE,
                opts=None,
                commit_all=False,
                commit_opts=None,
@@ -1374,14 +1378,14 @@ def working_copy_in_initial_state(wc, user='root'):
     out = splitstrip('{stdout}\n{stderr}'.format(**cret))
     lines = out.splitlines()
     initial = False
-    if len(lines) > 1 and lines[0].count(':') == 2:
+    if len(lines) >= 1 and lines[0].count(':') == 2:
         parts = lines[0].split(':')
-        if 'makinastates' == parts[2] and 'initial' == parts[1]:
+        if DEFAULT_AUTHOR == parts[2] and INITIAL_COMMIT_MESSAGE == parts[1]:
             initial = True
     return initial
 
 
-def sync_working_copy(user, wc, rev=None, ret=None, origin=None):
+def sync_working_copy(user, wc, rev=None, ret=None, origin=None, reset=False):
     _s = __salt__
     rev = get_default_rev(rev)
     if origin is None:
@@ -1397,8 +1401,14 @@ def sync_working_copy(user, wc, rev=None, ret=None, origin=None):
         'git log', env={'LANG': 'C', 'LC_ALL': 'C'},
         cwd=wc, runas=user)
     # the local copy is not yet synchronnized with any repo
-    if initial or nocommits or (
-        os.listdir(wc) == ['.git']
+    if (
+        initial
+        or reset
+        or nocommits
+        or (
+            [a for a in os.listdir(wc) if a not in ['.git']]
+            == ['.empty']
+        )
     ):
         cret = _s['git.reset'](
             wc, '--hard {1}/{0}'.format(rev, origin),
@@ -1489,7 +1499,7 @@ def init_pillar_dir(directory,
             'cfg': yaml.dump({
                 'makina-projects.{0}'.format(project):
                 init_data}, width=80, indent=2, default_flow_style=False)}
-        commit_all = True
+        do_push = commit_all = True
         cret = _state_exec(sfile, 'managed',
                            name=fil, source=template,
                            makedirs=True,
@@ -1523,8 +1533,7 @@ def refresh_files_in_working_copy(project_root,
     user, group = get_default_user_group(user=user, group=group)
     project = get_default_project(project)
     ret = _get_ret(*args, **kwargs)
-    _append_comment(
-        ret, summary='Verify or initialise some default files')
+    _append_comment(ret, summary='Verify or initialise some default files')
     infos = get_contextual_cfg_defaults(
         [init_data], project=project, remote_host=remote_host)
     project = infos['project']
@@ -1568,7 +1577,7 @@ def refresh_files_in_working_copy(project_root,
             if commit_all:
                 git_commit(project_root, commit_all=commit_all, user=user)
             if do_push:
-                push_changesets_in(project_root, opts='-u', user=user)
+                push_changesets_in(project_root, user=user)
     return ret
 
 
@@ -1606,7 +1615,6 @@ def init_salt_dir(directory,
              for a in os.listdir(salt_root)
              if a.endswith('.sls') and not os.path.isdir(a)]
     if not files:
-        commit_all = True
         for fil in SPECIAL_SLSES + ['PILLAR.sample',
                                     '00_helloworld.sls']:
             template = (
@@ -1626,7 +1634,7 @@ def init_salt_dir(directory,
         if commit_all:
             git_commit(directory, commit_all=commit_all, user=user)
         if do_push:
-            push_changesets_in(directory, opts='-u', user=user)
+            push_changesets_in(directory, user=user)
     return ret
 
 
@@ -1971,7 +1979,6 @@ def archive(name, *args, **kwargs):
 
 def release_sync(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
-    kwargs['commit_all'] = False
     iret = init_project(name, *args, **kwargs)
     return iret
 
@@ -2082,89 +2089,143 @@ def fixperms(name, *args, **kwargs):
     return cret
 
 
-def link_pillar(name, *args, **kwargs):
-    cfg = get_configuration(name, nodata=True, *args, **kwargs)
-    ret = _get_ret(name, *args, **kwargs)
-    salt_settings = __salt__['mc_salt.settings']()
-    pillar_root = os.path.join(salt_settings['pillarRoot'])
-    pillarf = os.path.join(pillar_root, 'top.sls')
-    pillar_top = 'makina-projects.{name}'.format(**cfg)
-    if not os.path.exists(cfg['wired_pillar_root']):
-        os.symlink(cfg['pillar_root'], cfg['wired_pillar_root'])
-        _append_comment(
-            ret, body=indent(
-                'Added  pillar link: {0}'.format(ret['name'])))
-    with open(pillarf) as fpillarf:
-        pillars = fpillarf.read()
-        if pillar_top not in pillars:
-            lines = []
-            for line in pillars.splitlines():
-                lines.append(line)
-                if line == "  '*':":
-                    lines.append('    - {0}\n'.format(pillar_top))
-            with open(pillarf, 'w') as wpillarf:
-                wpillarf.write('\n'.join(lines))
-            _append_comment(
-                ret, body=indent(
-                    'Added to pillar top: {0}'.format(ret['name'])))
+def link_pillar(names, *args, **kwargs):
+    if not isinstance(names, list):
+        names = names.split(',')
+    names.extend(args)
+    ret = _get_ret(*args, **kwargs)
+    for name in names:
+        cfg = get_configuration(name, nodata=True, *args, **kwargs)
+        salt_settings = __salt__['mc_salt.settings']()
+        pillar_root = os.path.join(salt_settings['pillarRoot'])
+        pillarf = os.path.join(pillar_root, 'top.sls')
+        pillar_top = 'makina-projects.{name}'.format(**cfg)
+        link_into_root(
+            name, ret,
+            cfg['wired_pillar_root'], cfg['pillar_root'], do_link=True)
+        added = '    - {0}'.format(pillar_top)
+        with open(pillarf) as fpillarf:
+            pillars = fpillarf.read().splitlines()
+            found = False
+            for line in pillars:
+                if line.strip().endswith(added.strip()):
+                    found = True
+                    break
+            if not found:
+                lines = []
+                log = False
+                for line in pillars:
+                    lines.append(line)
+                    if line == "  '*':":
+                        log = True
+                        lines.append(added)
+                with open(pillarf, 'w') as wpillarf:
+                    wpillarf.write('\n'.join(lines))
+                if log:
+                    _append_comment(
+                        ret, body=indent(
+                            'Added to pillar top: {0}'.format(name)))
     return ret
 
 
-def unlink_pillar(name, *args, **kwargs):
-    cfg = get_configuration(name, nodata=True,  *args, **kwargs)
-    ret = _get_ret(name, *args, **kwargs)
-    kwargs.pop('ret', None)
-    salt_settings = __salt__['mc_salt.settings']()
-    pillar_root = os.path.join(salt_settings['pillarRoot'])
-    pillarf = os.path.join(pillar_root, 'top.sls')
-    pillar_top = 'makina-projects.{name}'.format(**cfg)
-    with open(pillarf) as fpillarf:
-        pillar_top = '- makina-projects.{name}'.format(**cfg)
-        pillars = fpillarf.read()
-        if pillar_top in pillars:
-            lines = []
-            for line in pillars.splitlines():
-                if line.endswith(pillar_top):
-                    continue
-                lines.append(line)
-            with open(pillarf, 'w') as wpillarf:
-                wpillarf.write('\n'.join(lines))
-            _append_comment(
-                ret, body=indent(
-                    'Cleaned pillar top: {0}'.format(ret['name'])))
-    if os.path.exists(cfg['wired_pillar_root']):
-        remove_path(cfg['wired_pillar_root'])
-        _append_comment(
-            ret, body=indent(
-                'Removed pillar link: {0}'.format(ret['name'])))
+def unlink_pillar(names, *args, **kwargs):
+    if not isinstance(names, list):
+        names = names.split(',')
+    names.extend(args)
+    ret = _get_ret(*args, **kwargs)
+    for name in names:
+        cfg = get_configuration(name, nodata=True,  *args, **kwargs)
+        kwargs.pop('ret', None)
+        salt_settings = __salt__['mc_salt.settings']()
+        pillar_root = os.path.join(salt_settings['pillarRoot'])
+        pillarf = os.path.join(pillar_root, 'top.sls')
+        pillar_top = 'makina-projects.{name}'.format(**cfg)
+        with open(pillarf) as fpillarf:
+            pillar_top = '- makina-projects.{name}'.format(**cfg)
+            pillars = fpillarf.read()
+            if pillar_top in pillars:
+                lines = []
+                log = False
+                for line in pillars.splitlines():
+                    if line.endswith(pillar_top):
+                        log = True
+                        continue
+                    lines.append(line)
+                with open(pillarf, 'w') as wpillarf:
+                    wpillarf.write('\n'.join(lines))
+                if log:
+                    _append_comment(
+                        ret, body=indent(
+                            'Cleaned pillar top: {0}'.format(name)))
+        link_into_root(
+            name, ret,
+            cfg['wired_pillar_root'], cfg['pillar_root'], do_link=False)
     return ret
 
 
-def link_salt(name, *args, **kwargs):
-    cfg = get_configuration(name, nodata=True, *args, **kwargs)
-    ret = _get_ret(name, *args, **kwargs)
-    kwargs.pop('ret', None)
-    if not os.path.exists(cfg['wired_salt_root']):
-        os.symlink(cfg['salt_root'], cfg['wired_salt_root'])
+def link_into_root(name, ret, link, target, do_link=True):
+    '''
+    Link a salt managed directory into salt root
+    This takes care of not leaving a dangling symlink
+    '''
+    remove = not do_link
+    ftarget = os.path.abspath(target)
+    kind = (('pillar' in ftarget) is True) and 'pillar' or 'salt'
+    if os.path.islink(link):
+        if (
+            # target changed
+            os.path.abspath(os.readlink(link)) != ftarget
+            # dangling symlink
+            or not os.path.exists(link)
+        ):
+            remove = True
+        if (
+            os.path.abspath(os.readlink(link)) == ftarget
+        ):
+            do_link = False
+    if (
+        remove
+        and (os.path.islink(link)
+             or os.path.exists(link))
+    ):
         _append_comment(
             ret, body=indent(
-                'Linked {0} into salt root'.format(ret['name'])))
+                'Cleaned {1} root from {0}'.format(name, kind)))
+        remove_path(link)
+    if do_link and os.path.exists(ftarget):
+        _append_comment(
+            ret, body=indent(
+                'Linked {0} into {1} root'.format(name, kind)))
+        os.symlink(target, link)
+
+
+def link_salt(names, *args, **kwargs):
+    if not isinstance(names, list):
+        names = names.split(',')
+    names.extend(args)
+    ret = _get_ret(*args, **kwargs)
+    for name in names:
+        cfg = get_configuration(name, nodata=True, *args, **kwargs)
+        kwargs.pop('ret', None)
+        link_into_root(
+            name, ret, cfg['wired_salt_root'], cfg['salt_root'], do_link=True)
     return ret
 
 
-def unlink_salt(name, *args, **kwargs):
-    cfg = get_configuration(name, nodata=True, *args, **kwargs)
-    ret = _get_ret(name, *args, **kwargs)
-    kwargs.pop('ret', None)
-    if os.path.exists(cfg['wired_salt_root']):
-        remove_path(cfg['wired_salt_root'])
-        _append_comment(
-            ret, body=indent(
-                'Cleaned salt root from {0}'.format(ret['name'])))
+def unlink_salt(names, *args, **kwargs):
+    if not isinstance(names, list):
+        names = names.split(',')
+    names.extend(args)
+    ret = _get_ret(*args, **kwargs)
+    for name in names:
+        cfg = get_configuration(name, nodata=True, *args, **kwargs)
+        kwargs.pop('ret', None)
+        link_into_root(
+            name, ret, cfg['wired_salt_root'], cfg['salt_root'], do_link=False)
     return ret
 
 
-def link(name, *args, **kwargs):
+def link(names, *args, **kwargs):
     '''
     Add the link wired in salt folders (pillar & salt)
 
@@ -2172,23 +2233,29 @@ def link(name, *args, **kwargs):
         list of project(s) separated by commas
 
     '''
-    ret = _get_ret(name, *args, **kwargs)
+    ret = _get_ret(*args, **kwargs)
     kwargs.pop('ret', None)
-    for nm in name.split(','):
+    if not isinstance(names, list):
+        names = names.split(',')
+    names.extend(args)
+    for nm in names:
         link_pillar(nm, ret=ret, *args, **kwargs)
         link_salt(nm, ret=ret, *args, **kwargs)
     return msplitstrip(ret)
 
 
-def unlink(name, *args, **kwargs):
+def unlink(names, *args, **kwargs):
     '''
     Remove the link wired in salt folders (pillar & salt)
     name
         list of project(s) separated by commas
     '''
     kwargs.pop('ret', None)
-    ret = _get_ret(name, *args, **kwargs)
-    for nm in name.split(','):
+    ret = _get_ret(*args, **kwargs)
+    if not isinstance(names, list):
+        names = names.split(',')
+    names.extend(args)
+    for nm in names:
         unlink_pillar(nm, ret=ret, *args, **kwargs)
         unlink_salt(nm, ret=ret, *args, **kwargs)
     return msplitstrip(ret)
