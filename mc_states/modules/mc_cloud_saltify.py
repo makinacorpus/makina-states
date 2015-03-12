@@ -5,6 +5,8 @@
 mc_cloud_saltify / cloud related variables
 ==============================================
 
+
+
 - This contains generate settings around cloud_saltify
 - This contains also all targets to be driven using the saltify driver
 - LXC driver profile and containers settings are in :ref:`module_mc_lxc`.

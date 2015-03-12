@@ -6,6 +6,8 @@
 mc_cloud_kvm / kvm registry for compute nodes
 ===============================================
 
+
+
 '''
 __docformat__ = 'restructuredtext en'
 
