@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-__docformat__ = 'restructuredtext en'
 '''
 .. _module_mc_remote:
 
@@ -26,6 +25,7 @@ If this module gains salt core, there are some small makina-states deps:
     - mc_states.modules.mc_utils.magicstring (which needs chardet)
 
 '''
+__docformat__ = 'restructuredtext en'
 
 import stat
 import time
