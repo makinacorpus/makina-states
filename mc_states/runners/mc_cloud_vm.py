@@ -164,9 +164,10 @@ def vm_ping(vm, ret=None, output=True):
     '''
     ping a specific vm on a specific compute node
 
-        vm
-            vm to ping
-     ::
+    vm
+        vm to ping
+
+    ::
 
         mastersalt-run -lall mc_cloud_vm.vm_ping foo.domain.tld
 

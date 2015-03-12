@@ -630,8 +630,8 @@ def get_cert_for(domain, gen=False, domain_csr_data=None):
     Search order precedence:
 
       - ./custom/<subdomain>.<domain>.<tld>
-      - wildcard certificate: ./custom/*.<domain>.<tld>
-      - signed by the controller: ./<cloudctlr>/certs/*.<domain>.<tld>
+      - wildcard certificate: ./custom/\*.<domain>.<tld>
+      - signed by the controller: ./<cloudctlr>/certs/\*.<domain>.<tld>
       - signed by the controller: ./<cloudctlr>/certs/<sub>.<domain>.<tld>
 
     '''
@@ -711,8 +711,8 @@ def get_selfsigned_cert_for(domain, gen=False, domain_csr_data=None):
     Search precedence:
 
       - ./custom/<subdomain>.<domain>.<tld>
-      - wildcard certificate: ./custom/*.<domain>.<tld>
-      - selfsigned: ./selfsigned/certs/*.<domain>.<tld>
+      - wildcard certificate: ./custom/\*.<domain>.<tld>
+      - selfsigned: ./selfsigned/certs/\*.<domain>.<tld>
       - selfsigned: ./selfsigned/certs/<subdomain>.<domain>.<tld>
 
     '''

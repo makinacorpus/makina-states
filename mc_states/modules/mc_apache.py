@@ -142,7 +142,8 @@ def settings():
        all workers settings are used
 
        AsyncRequestWorkerFactor
-           max of concurrent conn is:
+       max of concurrent conn is::
+
            (AsyncRequestWorkerFactor + 1) * MaxRequestWorkers
     '''
     @mc_states.utils.lazy_subregistry_get(__salt__, __name)
@@ -499,14 +500,14 @@ def vhost_settings(domain, doc_root, **kwargs):
         files, then prey for your soul,
         eat some shit, kill yourself and set that to True
     vhost_basename:
-        basename of file in /etc/apache*/site-*
+        basename of file in /etc/apache2/sites-{enabled,available}
     log_level
         log level
     ssl_interface/interface
-        interface of the namevirtualhost (like in "*:80"),
-        default is "*"
+        interface of the namevirtualhost (like in "\*:80"),
+        default is "\*"
     ssl_port/port
-        port of the namevirtualhost (like in "*:80"),
+        port of the namevirtualhost (like in "\*:80"),
         default is "80" and "443" for ssl version
     '''
     _s = __salt__

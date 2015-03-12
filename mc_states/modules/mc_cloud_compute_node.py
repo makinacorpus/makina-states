@@ -85,7 +85,7 @@ def default_settings():
     all_targets
         a mapping indexed by target minions ids
         containing either only the compute node on compute node
-                          all the compute nodes on controller
+        all the compute nodes on controller
     vms
         vms on compute node or empty dict
 
