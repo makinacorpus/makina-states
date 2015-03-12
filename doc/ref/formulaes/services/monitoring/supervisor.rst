@@ -12,3 +12,4 @@ Exposed Hooks:
     - supervisor-post-restart
 
 Pillar value start with **makina-states.services.monitoring.supervisor**.
+

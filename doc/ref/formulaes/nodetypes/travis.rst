@@ -8,3 +8,4 @@ To test if you are on a travis box::
 
     {{ salt['mc_nodetypes.registry']().is.travis }}
 
+

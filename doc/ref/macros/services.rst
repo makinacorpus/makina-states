@@ -14,3 +14,4 @@ To use it in your states, just do something like that
         cmd.run:
             -name: echo {{ services.apacheSettings.mpm}}
 
+

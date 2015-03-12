@@ -23,3 +23,4 @@ Makina-states Formulaes
    :maxdepth: 3
 
    cloud/index.rst
+

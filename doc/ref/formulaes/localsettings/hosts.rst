@@ -42,3 +42,4 @@ this way
           - text: "here your text"
           - require_in:
             - file: makina-etc-host-vm-management
+

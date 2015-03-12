@@ -9,3 +9,4 @@ Eg::
   makina-states.services.firewall.fail2ban: true
   makina-states.services.firewall.fail2ban.maxretry: 10
 
+

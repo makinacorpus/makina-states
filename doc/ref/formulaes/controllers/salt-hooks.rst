@@ -7,3 +7,4 @@ For salt orchestration we provide the following hooks:
     :dummy-pre-salt-service-restart: before salt is restarted after its reconfiguration
 
     :dummy-post-salt-service-restart: after salt is restarted after its reconfiguration
+

@@ -17,3 +17,4 @@ Controllers
    salt.rst
    mastersalt.rst
 
+

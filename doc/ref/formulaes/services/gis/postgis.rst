@@ -21,3 +21,4 @@ Use a database with posgis template
     {{- pgsql.postgresql_user(common.data['db']['user'],
                               password=common.data['db']['password'],
                               db=common.data['db']['name'],) }}
+

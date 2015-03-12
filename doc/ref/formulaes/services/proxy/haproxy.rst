@@ -40,3 +40,4 @@ Add the following entries to your pillar and re run the haproxy states
             opts: check
 
 this will configure a reverse proxy for domain myapp.domain.com on port 80 -> 10.0.3.7 port 80.
+

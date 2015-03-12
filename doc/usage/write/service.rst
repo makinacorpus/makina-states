@@ -32,3 +32,4 @@ Taking circus as an example:
     standalone formula
         https://github.com/makinacorpus/makina-states/blob/master/services/monitoring/circus-standalone.sls
 
+

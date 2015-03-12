@@ -518,3 +518,4 @@ If you want add a new service managed with this macro, you have to:
      and add the command with its arguments in "check_command_args"
 
 
+

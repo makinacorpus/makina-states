@@ -71,3 +71,4 @@ Bootstrap makina-states with care
     git clone git@github.com:makinacorpus/makina-states.git
     cd makina-states
     ./_scripts/boot-salt.sh -b stable -m <MINION_ID>
+

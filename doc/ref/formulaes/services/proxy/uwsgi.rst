@@ -18,3 +18,4 @@ with
     :config_file: template of configuration file
     :enabled: if true, symlink configuration file in /etc/uwsgi/apps-enabled
 
+

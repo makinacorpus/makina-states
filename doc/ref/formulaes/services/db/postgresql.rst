@@ -159,3 +159,4 @@ makina-postgresql-post-base
     after installing an user role in a speicific postgresql version
 makina-postgresql-post-inst
     final hook
+

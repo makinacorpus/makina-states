@@ -12,3 +12,4 @@ Exposed settings:
     :makina-states.apt.ubuntu.comps: main (defaults: main restricted universe multiverse) defaults comps to install on ubuntu
     :makina-states.apt.debian.comps: main (defaults: main contrib non-free) defaults comps to install on debian
 
+

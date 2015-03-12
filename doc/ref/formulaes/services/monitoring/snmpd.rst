@@ -15,3 +15,4 @@ Exposed Hooks:
     - snmpd-post-restart
 
 Pillar value start with **makina-states.services.monitoring.snmpd**.
+

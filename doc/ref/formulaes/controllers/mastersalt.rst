@@ -17,3 +17,4 @@ All those formulaes are thin wrappers to the `salt_macro`_.
 .. _`mastersalt_minion`: https://github.com/makinacorpus/makina-states/tree/master/controllers/salt_minion.sls
 .. _`salt_macro`: https://github.com/makinacorpus/makina-states/blob/master/_macros/salt.jinja
 
+
