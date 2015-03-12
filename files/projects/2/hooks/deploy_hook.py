@@ -112,10 +112,10 @@ def get_worker_pids(*args, **kwargs):
     '''
     ops = popen(
         'ps aux'
-        '|grep mc_project.deploy'
-        '|grep {project_name}.deploy'
+        '|grep {o[salt_function]}'
+        '|grep {k[project_name]}'
         '|grep -v grep'
-        '|awk \'{{print $2}}\''.format(**kwargs))[0]
+        '|awk \'{{print $2}}\''.format(o=OPTIONS, k=kwargs))[0]
     return ops[0] + ops[1] + "\n"
 
 
