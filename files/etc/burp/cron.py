@@ -31,6 +31,7 @@ The behavior can be changed by tweaking:
 '''
 import re
 import traceback
+import copy
 import datetime
 import time
 import atexit
@@ -62,6 +63,9 @@ LOCK = "/var/run/burp-client.lock"
 DEFAULT_TIMEOUT = 23 * 60 * 60
 DEFAULT_DELAY = 5
 CMDS = ['burp -a t 2>&1']
+OPTIONS = {
+    'delay': DEFAULT_DELAY,
+}
 
 
 def get_container(pid):
@@ -792,15 +796,16 @@ def main():
     init_file_logging(options.deploy_log, lvl)
     stdout_tee = Tee(sys.stdout, sys.__stdout__)
     stderr_tee = Tee(sys.stderr, sys.__stderr__)
-    test_deploy(**vars(options))
     logger.info('start')
+    OPTIONS.update({'delay': options.delay})
     callback_args = get_callback_args(parser, options, args)
+    test_deploy(callback_args=callback_args, **vars(options))
     try:
         args = [callback_args,
                 options.loglevel,
                 options.deploy_log,
                 options.deploy_lock]
-        ckwargs = {'delay': options.delay}
+        ckwargs = copy.deepcopy(OPTIONS)
         if not options.async:
             exitcode = deploy(*args, **ckwargs)
         else:
