@@ -51,8 +51,10 @@ def cloud_event(msg='', *args, **kw):
     tag = kw.pop('event_tag', EVENT_TAG)
     category = kw.pop('event_category', None)
     kw['event_datetime'] = datetime.datetime.now().isoformat()
-    payload = {'args': args, 'kw': kw,
-               'message': msg, 'category': category}
+    payload = {
+        'outputter': 'pprint',
+        'args': args, 'kw': kw,
+        'message': msg, 'category': category}
     __jid_event__.fire_event(payload, tag)
 
 
