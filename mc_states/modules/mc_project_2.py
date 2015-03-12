@@ -256,7 +256,9 @@ def _get_ret(name=None, *args, **kwargs):
     return ret
 
 
-def _colors(color=None):
+def _colors(color=None, exact=False):
+    if color and not exact:
+        color = color.upper()
     return mc_states.saltapi._colors(
         color=color, colorize=__opts__.get('color'))
 
@@ -284,8 +286,14 @@ def _append_comment(ret,
     return ret
 
 
+def _color_log(msg, color, exact=False):
+    return "{0}{1}{2}".format(_colors(color, exact=exact),
+                              __salt__['mc_utils.magicstring'](msg),
+                              _colors('ENDC', exact=exact))
+
+
 def _append_separator(ret, separator='--', separator_color='LIGHT_CYAN'):
-    if not 'raw_comment' in ret:
+    if 'raw_comment' not in ret:
         ret['raw_comment'] = ''
     if separator:
         ret['raw_comment'] += '\n{0}'.format(separator)
@@ -1337,8 +1345,7 @@ def working_copy_in_initial_state(wc, user='root'):
 
 def sync_working_copy(user, wc, rev=None, ret=None, origin=None):
     _s = __salt__
-    if rev is None:
-        rev = 'master'
+    rev = get_default_rev(rev)
     if origin is None:
         origin = 'origin'
     if not ret:
@@ -1609,7 +1616,7 @@ def init_project(name, *args, **kwargs):
         repos = [
             (
                 cfg['pillar_root'],
-                'master',
+                get_default_rev(),
                 pillar_git_root,
                 False,
                 False,
@@ -1617,7 +1624,7 @@ def init_project(name, *args, **kwargs):
             ),
             (
                 cfg['project_root'],
-                'master',
+                get_default_rev(),
                 project_git_root,
                 True,
                 True,
@@ -2256,8 +2263,7 @@ def sync_git_directory(directory,
         ):
             raise OSError('{0} is not a git working copy'.format(
                 directory))
-        if rev is None:
-            rev = 'master'
+        rev = get_default_rev(rev)
         user, _ = get_default_user_group(**kw)
         cret['clean'] = clean_salt_git_commit(directory)
         if origin:
@@ -2400,6 +2406,11 @@ def clean_salt_git_commit(directory, commit=True, **kw):
 # REMOTE API
 #
 
+def get_default_rev(rev=None, **kw):
+    if rev is None:
+        rev = kw.get('rev', 'master')
+    return rev
+
 
 def _init_local_remote_directory(host,
                                  project,
@@ -2415,9 +2426,34 @@ def _init_local_remote_directory(host,
     _s = __salt__
     exc_klass = kw.get('exc_klass',
                        projects_api.BaseProjectInitException)
+
+    kind = ''
+    if bare:
+        kind += ' bare'
+    if init_salt:
+        kind += ' salt'
+    elif init_pillar:
+        kind += ' pillar'
+    if kind:
+        kind += ' '
+    _remote_log('   - Initialize local{4}copy:'
+                '  {2}{3}{0}/{1}'.format(host,
+                                         project,
+                                         _colors('endc'),
+                                         _colors('yellow'),
+                                         kind))
+    rev = get_default_rev(rev)
+    if origin:
+        _remote_log('       * origin: {1}{2}{0}'.format(
+            origin, _colors('endc'), _colors('light_yellow')),
+            color='yellow')
+    if rev != get_default_rev():
+        _remote_log('       * rev: {1}{2}{0}'.format(
+            rev, _colors('endc'), _colors('light_yellow')),
+            color='yellow')
+    if refresh:
+        _remote_log('       * will force the refresh')
     try:
-        if not rev:
-            rev = 'master'
         cret = OrderedDict()
         container = os.path.dirname(directory)
         user, group = get_default_user_group(**kw)
@@ -2548,6 +2584,10 @@ def _init_remote_structure(host, project, **kw):
     else:
         if not cret.get('result'):
             cret = None
+    _remote_log('   - Initialize remote project structure:'
+                '  {2}{3}{0}/{1}'.format(host, project,
+                                         _colors('endc'),
+                                         _colors('yellow')))
     do_raise = kw.get('do_raise', True)
     failed = False
     scret = ''
@@ -2624,12 +2664,29 @@ def sync_remote_working_copy(host,
                              remote_local_copy=None,
                              lremote=None,
                              **kw):
+    _remote_log('      - Synchronizing {2}{3}{0}:{1}'.format(
+        host, directory, _colors('endc'), _colors('yellow')))
+    origin = kw.get('origin', None)
+    rev = get_default_rev(**kw)
     _s = __salt__
     user, group = get_default_user_group(**kw)
     ssh_kw = _s['mc_remote.ssh_kwargs'](kw, user=user)
     cret = OrderedDict()
     if not remote_directory:
         remote_directory = directory
+    _remote_log(
+        '         * remote directory: {1}{2}{0}'.format(
+            remote_directory, _colors('endc'), _colors('light_yellow')
+        ),
+        color='yellow')
+    if origin:
+        _remote_log('           * origin: {1}{2}{0}'.format(
+            origin, _colors('endc'), _colors('light_yellow')),
+            color='yellow')
+    if rev != get_default_rev():
+        _remote_log('           * rev: {1}{2}{0}'.format(
+            rev, _colors('endc'), _colors('light_yellow')),
+            color='yellow')
     kw['user'] = user
     gforce = '--force master:master'
     tmpbare = "{0}.bare.git".format(os.path.abspath(directory))
@@ -2736,6 +2793,22 @@ def sync_remote_directory(host,
                           init=None,
                           lremote=None,
                           **kw):
+
+    _remote_log('      - Synchronizing directory'
+                ' {3}{4}{0}/{1}:'
+                ''.format(host,
+                          project,
+                          directory,
+                          _colors('endc'),
+                          _colors('yellow'),
+                          _colors('light_yellow')))
+    _remote_log(
+        '           * {1}{2}{0}'.format(
+            directory,
+            _colors('yellow'),
+            _colors('light_yellow')),
+        'yellow')
+    _s = __salt__
     cret = OrderedDict()
     if init is None:
         init = False
@@ -2784,6 +2857,11 @@ def sync_remote_pillar(host,
                        refresh=None,
                        lremote=None,
                        **kw):
+    _remote_log('   - Synchronizing pillar on'
+                ' {2}{3}{0}/{1}'.format(host,
+                                        project,
+                                        _colors('endc'),
+                                        _colors('yellow')))
     _s = __salt__
     project = get_default_project(project)
     pcfg = _s['mc_project.get_configuration'](project, remote_host=host)
@@ -2814,6 +2892,11 @@ def sync_remote_project(host,
                         refresh=None,
                         lremote=None,
                         **kw):
+    _remote_log('   - Synchronizing project on'
+                ' {2}{3}{0}/{1}'.format(host,
+                                        project,
+                                        _colors('endc'),
+                                        _colors('yellow')))
     _s = __salt__
     project = get_default_project(project)
     pcfg = _s['mc_project.get_configuration'](project, remote_host=host)
@@ -2836,6 +2919,10 @@ def sync_remote_project(host,
 
 def remote_deploy(host, project, **kw):
     _s = __salt__
+    _remote_log('   - Deployment {2}{3}{0}/{1}'.format(host,
+                                                  project,
+                                                  _colors('endc'),
+                                                  _colors('yellow')))
     ssh_kw = _s['mc_remote.ssh_kwargs'](kw)
     kwarg = kw.get('kwarg', {})
 
@@ -2844,7 +2931,11 @@ def remote_deploy(host, project, **kw):
         ('deploy_only_steps', 'only_steps')
     ]:
         for k in opts:
-            if k in kw and k not in kwarg:
+            if (
+                (k in kw)
+                and (k not in kwarg)
+                and (kw.get(k, None) is not None)
+            ):
                 kwarg[k] = kw[k]
     # kwarg['only'] = 'install,fixperms'
     for k in ['only', 'only_steps']:
@@ -2852,6 +2943,7 @@ def remote_deploy(host, project, **kw):
             continue
         if isinstance(kwarg[k], list):
             kwarg[k] = ",".join(kwarg[k])
+            _remote_log('''  {0}: {1}'''.format(k, kwarg[k]), 'yellow')
     do_raise = kw.get('do_raise', True)
     original = None
     scret = ''
@@ -2872,6 +2964,9 @@ def remote_deploy(host, project, **kw):
         failed = True
         original = exc
     if do_raise and failed:
+        _remote_log('   - Deployment {2}{3}{0}/{1}: {2}{4}FAILED'.format(
+            host, project,
+            _colors('endc'), _colors('yellow'), _colors('ligth_red')))
         raise_exc(
             projects_api.RemoteProjectDeployError,
             msg='{host}: project {project} deploy failed',
@@ -2882,7 +2977,16 @@ def remote_deploy(host, project, **kw):
             host=host,
             original=original,
             project=project)
+    else:
+        _remote_log('   - Deployment {2}{3}{0}/{1}: {2}{4}OK'.format(
+            host, project,
+            _colors('endc'), _colors('yellow'), _colors('light_green')))
     return cret
+
+
+def _remote_log(msg, color='red', exact=False, level='debug'):
+    getattr(log, level)(msg)
+    print(_color_log(msg, color, exact=exact))
 
 
 def orchestrate(host,
@@ -2907,7 +3011,11 @@ def orchestrate(host,
                 post_sync_hook=None,
                 pre_hook=None,
                 post_hook=None,
+                only=None,
+                only_steps=None,
                 **kw):
+    _remote_log('Deployment orchestration: {2}{3}{0}/{1}'.format(
+        host, project, _colors('endc'), _colors('yellow')))
     pcfg = get_configuration(project, remote_host=host)
     user, group = get_default_user_group(**kw)
     kw['user'] = user
@@ -2992,9 +3100,13 @@ def orchestrate(host,
         crets['deploy_pre'] = remote_project_hook(
             pre_hook, host, project, opts, **kw)
         crets['deploy'] = remote_deploy(
-            host, project, **kw)
+            host, project, only=only, only_steps=only_steps, **kw)
         crets['deploy_post'] = remote_project_hook(
             post_hook, host, project, opts, **kw)
+    _remote_log(
+        'Deployment orchestration: {2}{3}{0}/{1}:{2}{4} OK'.format(
+            host, project,
+            _colors('endc'), _colors('yellow'), _colors('light_green')))
     return crets
 
 
