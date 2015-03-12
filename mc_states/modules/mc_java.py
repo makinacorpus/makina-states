@@ -7,6 +7,9 @@
 mc_java / java registry
 ============================================
 
+
+
+
 If you alter this module and want to test it, do not forget
 to deploy it on minion using::
 

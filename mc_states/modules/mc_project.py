@@ -5,6 +5,10 @@
 mc_project / project settings regitry switcher and common functions
 =====================================================================
 
+
+
+see  :ref:`module_mc_project_2`
+
 '''
 
 from mc_states.project import LAST_PROJECT_API_VERSION
