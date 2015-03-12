@@ -89,6 +89,7 @@ Pass/ProjectManagement modules
 -------------------------------
 .. toctree::
    :maxdepth: 2
+
    mc_project.rst
    mc_project_2.rst
 
