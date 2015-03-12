@@ -839,7 +839,9 @@ def _get_filtered_cfg(cfg):
 
 
 def set_configuration(name, cfg=None, *args, **kwargs):
-    '''set or update a local (grains) project configuration'''
+    '''
+    set or update a local (grains) project configuration
+    '''
     if not cfg:
         cfg = get_configuration(name, *args, **kwargs)
     local_conf = __salt__['mc_macros.get_local_registry'](
@@ -954,7 +956,8 @@ def init_project_dirs(cfg, ret=None):
 
 
 def init_ssh_user_keys(user, failhard=False, ret=None):
-    '''Copy root keys from root to a user
+    '''
+    Copy root keys from root to a user
     to allow user to share the same key than root to clone distant repos.
     This is useful in vms (local PaaS vm)
     '''
@@ -1079,6 +1082,25 @@ def init_repo(working_copy,
               remote_host=None,
               cfg=None,
               api_version=API_VERSION):
+    '''
+    Initialize an empty git repository, either bare or a working copy
+
+    This can be either:
+
+        - a basic corpus-salt base project template
+        - a pillar repo (containing an init.sls)
+        - an enmpty directory (containing an empty .empty file just
+          for git repo init)
+
+    CLI Examples::
+
+         salt-call --local mc_project.init_repo /foo
+         salt-call --local mc_project.init_repo /foo bare=true
+         salt-call --local mc_project.init_repo /foo init_salt=True
+         salt-call --local mc_project.init_repo /foo init_pillar=True
+         salt-call --local mc_project.init_repo /foo bare=true init_salt=True
+         salt-call --local mc_project.init_repo /foo bare=true init_pillar=True
+    '''
     user, group = get_default_user_group(user=user, group=group)
     _s = __salt__
     # seek project name & remote host
@@ -1201,12 +1223,40 @@ def init_repo(working_copy,
     return ret
 
 
-def push_changesets_in(directory, opts='', **kw):
+def push_changesets_in(directory,
+                       remote='origin',
+                       branch="master:master",
+                       opts='',
+                       **kw):
+    '''
+    Thin wrapper to git push
+
+        directory
+            directory where to act on
+        user
+            user to push as
+        branch
+            branch part of the git command
+        remote
+            remote to push to
+        opts
+            'origin',
+            opts to give
+
+    CLI Examples::
+
+        salt-call --local  mc_project.push_changesets_in /foo
+        salt-call --local  mc_project.push_changesets_in /foo opts="-f"
+        salt-call --local  mc_project.push_changesets_in /foo opts="-f"
+    '''
     user, group = get_default_user_group(**kw)
     try:
         return __salt__['git.push'](
-            directory, 'origin',
-            branch='master:master', opts=opts, user=user
+            directory,
+            remote,
+            branch=branch,
+            opts=opts,
+            user=user
         )
     except Exception:
         trace = traceback.format_exc()
@@ -1370,8 +1420,17 @@ def set_upstream(wc, rev, user, origin='origin', ret=None):
     return ret
 
 
-def working_copy_in_initial_state(wc, user='root'):
+def working_copy_in_initial_state(wc, **kw):
+    '''
+    Test if a directory is at the first git commit
+    from this system
+    wc
+        where to execute
+    user
+        user to act with
+    '''
     _s = __salt__
+    use, group = get_default_user_group(**kw)
     cret = _s['cmd.run_all'](
         'git log --pretty=format:"%h:%s:%an"',
         cwd=wc, python_shell=True, runas=user)
@@ -1385,13 +1444,32 @@ def working_copy_in_initial_state(wc, user='root'):
     return initial
 
 
-def sync_working_copy(user, wc, rev=None, ret=None, origin=None, reset=False):
+def sync_working_copy(wc,
+                      rev=None,
+                      ret=None,
+                      origin=None,
+                      reset=False,
+                      **kw):
+    '''
+    Synchronnze a directory with it's git remote
+
+    directory
+        directory to execute into
+    reset
+        force sync with remote
+    user
+        user to exec commands as and for new files
+    rev
+        force rev to reset to
+    origin
+        origin to sync with
+    '''
     _s = __salt__
     rev = get_default_rev(rev)
+    use, group = get_default_user_group(**kw)
     if origin is None:
         origin = 'origin'
-    if not ret:
-        ret = _get_ret(wc)
+    ret = _get_ret(**kw)
     _append_comment(
         ret, summary=(
             'Synchronise working copy {0} from upstream {2}/{1}'.format(
@@ -1454,16 +1532,33 @@ def get_default_user_group(user=None, group=None, **kw):
 
 def init_pillar_dir(directory,
                     init_data=None,
-                    bare=False,
                     user=None,
                     group=None,
                     project=None,
-                    remote_host=None,
                     commit_all=False,
                     do_push=False,
                     **kw):
+    '''
+    Initialize a basic versionned pillar directory
+
+    directory
+        directory to execute into
+    user
+        user to exec commands as and for new files
+    group
+        group for new files
+    commit_all
+        do we do a final git add/commit
+    do_push
+        do we do a final push
+    project
+        project name
+    init_data
+        configuration options in the corpus format (see get_configuration)
+    '''
     user, group = get_default_user_group(user, group)
     files = [os.path.join(directory, 'init.sls')]
+    remote_host = kw.get('remote_host', None)
     infos = get_contextual_cfg_defaults(
         [init_data], project=project, remote_host=remote_host)
     project = infos['project']
@@ -1521,7 +1616,6 @@ def refresh_files_in_working_copy(project_root,
                                   user=None,
                                   group=None,
                                   force=False,
-                                  bare=None,
                                   api_version=None,
                                   commit_all=False,
                                   do_push=False,
@@ -1540,49 +1634,46 @@ def refresh_files_in_working_copy(project_root,
     remote_host = infos['remote_host']
     if not init_data:
         init_data = get_configuration(project, remote_host=remote_host)
-    if not bare:
-        if not os.path.exists(
-            os.path.join(project_root, '.salt')
-        ):
-            if not force:
-                raise projects_api.TooEarlyError('Too early to call me')
-            else:
-                ret = init_salt_dir(project_root,
-                                    user=user,
-                                    init_data=init_data,
-                                    project=project,
-                                    bare=bare,
-                                    do_push=do_push,
-                                    commit_all=commit_all,
-                                    ret=ret)
-        set_project(init_data)
-        for fil in ['PILLAR.sample']:
-            dest = os.path.join(project_root, '.salt', fil)
-            if os.path.exists(dest):
-                continue
-            template = (
-                'salt://makina-states/files/projects/{1}/'
-                'salt/{0}'.format(fil, api_version))
-            cret = _state_exec(sfile, 'managed',
-                               name=dest,
-                               source=template, defaults={},
-                               user=user, group=group,
-                               makedirs=True,
-                               mode='770', template='jinja')
-            if not cret['result']:
-                raise projects_api.ProjectInitException(
-                    'Can\'t create default {0}\n{1}'.format(
-                        fil, cret['comment']))
-        if os.path.join(project_root, '.git'):
-            if commit_all:
-                git_commit(project_root, commit_all=commit_all, user=user)
-            if do_push:
-                push_changesets_in(project_root, user=user)
+    if not os.path.exists(
+        os.path.join(project_root, '.salt')
+    ):
+        if not force:
+            raise projects_api.TooEarlyError('Too early to call me')
+        else:
+            ret = init_salt_dir(project_root,
+                                user=user,
+                                init_data=init_data,
+                                project=project,
+                                do_push=do_push,
+                                commit_all=commit_all,
+                                ret=ret)
+    set_project(init_data)
+    for fil in ['PILLAR.sample']:
+        dest = os.path.join(project_root, '.salt', fil)
+        if os.path.exists(dest):
+            continue
+        template = (
+            'salt://makina-states/files/projects/{1}/'
+            'salt/{0}'.format(fil, api_version))
+        cret = _state_exec(sfile, 'managed',
+                           name=dest,
+                           source=template, defaults={},
+                           user=user, group=group,
+                           makedirs=True,
+                           mode='770', template='jinja')
+        if not cret['result']:
+            raise projects_api.ProjectInitException(
+                'Can\'t create default {0}\n{1}'.format(
+                    fil, cret['comment']))
+    if os.path.join(project_root, '.git'):
+        if commit_all:
+            git_commit(project_root, commit_all=commit_all, user=user)
+        if do_push:
+            push_changesets_in(project_root, user=user)
     return ret
 
 
 def init_salt_dir(directory,
-                  bare=False,
                   user=None,
                   group=None,
                   commit_all=False,
@@ -1590,6 +1681,24 @@ def init_salt_dir(directory,
                   project=None,
                   init_data=None,
                   **kw):
+    '''
+    Initialize a basic corpus project directory
+
+    directory
+        directory to execute into
+    user
+        user to exec commands as and for new files
+    group
+        group for new files
+    commit_all
+        do we do a final git add/commit
+    do_push
+        do we do a final push
+    project
+        project name
+    init_data
+        configuration options in the corpus format (see get_configuration)
+    '''
     user, group = get_default_user_group(user=user, group=group)
     api_version = kw.get('api_version', API_VERSION)
     _s = __salt__
@@ -1697,7 +1806,7 @@ def init_project(name, *args, **kwargs):
         # the same iterables, but in 2 times
         for wc, rev, localgit, hook, init_salt, init_pillar in repos:
             set_upstream(wc, rev, user, ret=ret)
-            sync_working_copy(user, wc, rev=rev, ret=ret)
+            sync_working_copy(wc, user=user, rev=rev, ret=ret)
         link(name, *args, **kwargs)
         refresh_files_in_working_copy_kwargs = copy.deepcopy(kwargs)
         refresh_files_in_working_copy_kwargs['commit_all'] = commit_all
@@ -2090,6 +2199,13 @@ def fixperms(name, *args, **kwargs):
 
 
 def link_pillar(names, *args, **kwargs):
+    '''
+    Add the link wired in pillar folder
+    & register the pillar in pillar top
+
+    name
+        list of project(s) separated by commas
+    '''
     if not isinstance(names, list):
         names = names.split(',')
     names.extend(args)
@@ -2129,6 +2245,13 @@ def link_pillar(names, *args, **kwargs):
 
 
 def unlink_pillar(names, *args, **kwargs):
+    '''
+    Remove the link wired in pillar folder
+    & unregister the pillar in pillar top
+
+    name
+        list of project(s) separated by commas
+    '''
     if not isinstance(names, list):
         names = names.split(',')
     names.extend(args)
@@ -2166,6 +2289,7 @@ def unlink_pillar(names, *args, **kwargs):
 def link_into_root(name, ret, link, target, do_link=True):
     '''
     Link a salt managed directory into salt root
+
     This takes care of not leaving a dangling symlink
     '''
     remove = not do_link
@@ -2200,6 +2324,10 @@ def link_into_root(name, ret, link, target, do_link=True):
 
 
 def link_salt(names, *args, **kwargs):
+    '''
+    Link a salt managed directory into salt root
+    This takes care of not leaving a dangling symlink
+    '''
     if not isinstance(names, list):
         names = names.split(',')
     names.extend(args)
@@ -2213,6 +2341,14 @@ def link_salt(names, *args, **kwargs):
 
 
 def unlink_salt(names, *args, **kwargs):
+    '''
+    Remove the link wired in salt folder
+    & unregister the pillar in pillar top
+
+    name
+        list of project(s) separated by commas
+    '''
+
     if not isinstance(names, list):
         names = names.split(',')
     names.extend(args)
@@ -2228,6 +2364,7 @@ def unlink_salt(names, *args, **kwargs):
 def link(names, *args, **kwargs):
     '''
     Add the link wired in salt folders (pillar & salt)
+    & register the pillar in pillar top
 
     name
         list of project(s) separated by commas
@@ -2262,12 +2399,18 @@ def unlink(names, *args, **kwargs):
 
 
 def rollback(name, *args, **kwargs):
+    '''
+    Run the rollback corpus step
+    '''
     cfg = get_configuration(name, *args, **kwargs)
     cret = _step_exec(cfg, 'rollback')
     return cret
 
 
 def rotate_archives(name, *args, **kwargs):
+    '''
+    Run the rotate_archives corpus step
+    '''
     cfg = get_configuration(name, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
     try:
@@ -2298,7 +2441,7 @@ def sync_hooks_for_all(*args, **kwargs):
     '''
     Get connection details & projects report
     '''
-    pt = '/srv/projects'
+    pt = get_configuration('project')['projects_dir']
     projects = os.listdir(pt)
     ret = _get_ret('project')
     if projects:
@@ -2311,8 +2454,12 @@ def sync_hooks_for_all(*args, **kwargs):
 def report():
     '''
     Get connection details & projects report
+
+    CLI Examples::
+
+        salt-call --local mc_project.report
     '''
-    pt = '/srv/projects'
+    pt = get_configuration('project')['projects_dir']
     ret = ''
     target = __grains__['id']
     dconf = get_default_configuration()
@@ -2365,6 +2512,26 @@ def sync_git_directory(directory,
                        sync_remote='sync',
                        refresh=False,
                        **kw):
+
+    '''
+    Agressively sync a git working copy with its remote
+
+    directory
+        directory where to act
+    origin
+        remote origin <url>
+    rev
+        changeset to deploy
+    sync_remote
+        name of the remote
+    refresh
+        if the working copy exists, force the git pull dance
+
+    CLI Examples::
+
+        salt-call --local \\
+                mc_project.sync_git_directory /foo origin=git://foo rev=develop
+    '''
     cret = OrderedDict()
     try:
         _s = __salt__
@@ -2492,6 +2659,8 @@ def raise_exc(klass,
 
 
 def clean_salt_git_commit(directory, commit=True, **kw):
+    '''
+    '''
     user, group = get_default_user_group(**kw)
     cret = OrderedDict()
     cret['st'] = __salt__['cmd.run']('git st',
@@ -3292,56 +3461,33 @@ def orchestrate(host,
         host where to deploy
     project
         project to deploy onto (name)
-    init
+    init/init_project/init_pillar
         do we do the full init step
-    init_project
-        do we do the init_project step (overrides init)
-    init_pillar
-        do we do the init_pillar step (overrides init)
+        do we do the init_project step (overrides init).
+        do we do the init_pillar step (overrides init).
     init_remote
         do we do the init_remote step
-    sync
-        do we do the full sync step
-    sync_project
-        do we do the sync_project step (overrides sync)
-    sync_pillar
+    origin/pillar_origin
+        url of the pillar to deploy if any (if None: empty pillar)
+    rev/pillar_rev
+        changeset if the project/pillar is from a git url (master)
+    sync/sync_project/sync_pillar
+        do we do the full sync step.
+        do we do the sync_project step (overrides sync).
         do we do the sync_pillar step (overrides sync)
-    refresh
-        do we update the code prior to sync
-    refresh_project
-        do we do the refresh_project step (overrides refresh_project)
-    refresh_pillar
+    refresh/refresh_project/refresh_pillar
+        do we update the code prior to sync.
+        do we do the refresh_project step (overrides refresh_project).
         do we do the refresh_project step (overrides refresh)
     deploy
         do we do the deploy step
-    pillar_origin
-        url of the pillar to deploy if any (if None: empty pillar)
-    pillar_rev
-        changeset if the pillar is from a git url (master)
-    origin
-        git url of the project to deploy if any (if None: empty pillar)
-    rev
-        changeset if the xproject is from a git url (master)
-    pre_init_hook
+    pre_init_hook/post_init_hook/\
+    pre_init_remote_hook/post_init_remote_hook/\
+    pre_sync_hook/post_sync_hook/\
+    pre_hook/post_hook
         deployment hook (see above lifecycle explaination & hook spec)
-    post_init_hook
-        deployment hook (see above lifecycle explaination & hook spec)
-    pre_init_remote_hook
-        deployment hook (see above lifecycle explaination & hook spec)
-    post_init_remote_hook
-        deployment hook (see above lifecycle explaination & hook spec)
-    pre_sync_hook
-        deployment hook (see above lifecycle explaination & hook spec)
-    post_sync_hook
-        deployment hook (see above lifecycle explaination & hook spec)
-    pre_hook
-        deployment hook (see above lifecycle explaination & hook spec)
-    post_hook
-        deployment hook (see above lifecycle explaination & hook spec)
-    only
-        deployment hook (see above lifecycle explaination & hook spec)
-    only_steps
-        deployment hook (see above lifecycle explaination & hook spec)
+    only/only_steps
+        mc_project.deploy deploy limits arguments(if any)
 
     An hook is a salt function, in any module with the following signature::
 
@@ -3363,11 +3509,12 @@ def orchestrate(host,
                 origin="https://github.com/makinacorpus/corpus-pgsql.git"
         salt-call --local mc_project.orchestrate host.fr <project>\\
                 origin="https://github.com/makinacorpus/corpus-pgsql.git"\\
-                rev=stable\
+                rev=stable\\
                 pillar_origin="https://github.com/mak/corpus-pillar.git"\\
                 rev=stable
         salt-call --local mc_project.orchestrate host.fr <project>\\
                 origin="https://github.com/makinacorpus/corpus-pgsql.git"
+
     '''
     _remote_log('Deployment orchestration: {2}{3}{0}/{1}'.format(
         host, project, _colors('endc'), _colors('yellow')))
