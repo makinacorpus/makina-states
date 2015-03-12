@@ -42,3 +42,4 @@ Projects integration
     - **/srv/salt/makina-projects/<project_name>/salt**: Symlink to the salt project directory
 
 
+

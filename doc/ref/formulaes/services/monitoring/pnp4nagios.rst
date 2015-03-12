@@ -14,3 +14,4 @@ Pnp4nagios edits icinga.cfg file in order to enable performance data.
 Integration with icinga-web is done in icinga_web service.
 
 
+

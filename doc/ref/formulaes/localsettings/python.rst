@@ -12,3 +12,4 @@ eg::
 
     salt-call grains.setval makina-states.localsettings.python.versions '["2.6"]'
 
+

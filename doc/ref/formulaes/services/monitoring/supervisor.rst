@@ -13,3 +13,4 @@ Exposed Hooks:
 
 Pillar value start with **makina-states.services.monitoring.supervisor**.
 
+

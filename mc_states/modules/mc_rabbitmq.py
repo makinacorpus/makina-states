@@ -4,6 +4,9 @@
 
 mc_rabbitmq / rabbitmq functions
 ============================================
+
+
+
 '''
 
 __docformat__ = 'restructuredtext en'

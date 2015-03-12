@@ -72,3 +72,4 @@ Bootstrap makina-states with care
     cd makina-states
     ./_scripts/boot-salt.sh -b stable -m <MINION_ID>
 
+

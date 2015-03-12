@@ -12,3 +12,4 @@ Exposed hooks
 - rsyslog-pre-restart-hook
 - rsyslog-post-restart-hook
 
+

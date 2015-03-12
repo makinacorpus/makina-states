@@ -2,12 +2,14 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-__docformat__ = 'restructuredtext en'
 '''
 .. _module_mc_remote:
 
 mc_remote / remote execution functions
 ======================================
+
+
+
 The following functions are related to do remote executions over ssh transport.
 This for both raw commands and local salt executions.
 Those functions are just variations from salt.utils.cloud (which i (kiorky)
@@ -26,6 +28,7 @@ If this module gains salt core, there are some small makina-states deps:
     - mc_states.modules.mc_utils.magicstring (which needs chardet)
 
 '''
+__docformat__ = 'restructuredtext en'
 
 import stat
 import time

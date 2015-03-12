@@ -5,6 +5,8 @@
 mc_icinga2 / icinga functions
 ============================
 
+
+
 The first level of subdictionaries is for distinguish configuration
 files. There is one subdictionary per configuration file.
 The key used for subdictionary correspond
