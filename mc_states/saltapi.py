@@ -35,6 +35,17 @@ from mc_states.utils import memoize_cache
 import salt.utils.vt
 
 
+# try to import fix from various places (readthedoc!!!)
+try:
+    import salt.ext.six as six
+    HAS_SIX = True
+except ImportError:
+    try:
+        import six
+        HAS_SIX = True
+    except ImportError:
+        HAS_SIX = False
+
 log = logging.getLogger(__name__)
 _CLIENTS = {}
 _marker=object()
