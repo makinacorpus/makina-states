@@ -53,6 +53,24 @@ import salt.utils.vt
 import salt.exceptions
 from salt.ext.six import string_types, integer_types
 import salt.ext.six as six
+import mc_states.saltapi
+
+
+_get_ret = mc_states.saltapi._get_ssh_ret
+asbool = mc_states.saltapi.asbool
+_marker = mc_states.saltapi._marker
+_SSHExecError = mc_states.saltapi._SSHExecError
+_SSHLoginError = mc_states.saltapi._SSHLoginError
+_SSHTimeoutError = mc_states.saltapi._SSHTimeoutError
+_SSHVtError = mc_states.saltapi._SSHVtError
+_SSHInterruptError = mc_states.saltapi._SSHInterruptError
+_SSHCommandFinished = mc_states.saltapi._SSHCommandFinished
+_SSHCommandFailed = mc_states.saltapi._SSHCommandFailed
+_SSHCommandTimeout = mc_states.saltapi._SSHCommandTimeout
+_SSHTransferFailed = mc_states.saltapi._SSHTransferFailed
+_SaltCallFailure = mc_states.saltapi._SaltCallFailure
+
+
 
 
 class _EvalFalse(object):
@@ -87,8 +105,17 @@ _LETTERSDIGITS_RE = re.compile(
 _SH_WRAPPER = '''\
 #!/usr/bin/env bash
 if [ "x{sh_wrapper_debug}" != "x" ];then set -x;fi
-{0}
-exit ${{?}}
+{script_content}
+ret=${{?}}
+if [ "x${{ret}}" != "x0" ];then
+    echo "Failed \\"{script_path}\\"" >&2
+    if [ "x{display_content_on_error}" = "x1" ] && [ -e "${{0}}" ];then
+        echo "FAILED SCRIPT CONTENT:" >&2
+        echo "----------------------" >&2
+        cat "${{0}}" >&2
+    fi
+fi
+exit ${{ret}}
 '''
 _SALT_CALL_WRAPPER = '''\
 #!/usr/bin/env bash
@@ -412,63 +439,7 @@ exit ${{ret}}
 '''
 
 
-_marker = object()
 log = logging.getLogger(__name__)
-
-
-def _get_ret(**kw):
-    return salt.utils.dictupdate.update({'retcode': 1255,
-                                         'pid': -1,
-                                         'stdout': '',
-                                         'stderr': '',
-                                         'trace': ''},
-                                        kw)
-
-
-class _SSHExecError(salt.utils.vt.TerminalException):
-    """."""
-
-    def __init__(self, message, exec_ret=_marker):
-        super(_SSHExecError, self).__init__(message)
-        if exec_ret is _marker:
-            exec_ret = _get_ret()
-        self.exec_ret = exec_ret
-
-
-class _SSHLoginError(_SSHExecError):
-    """."""
-
-
-class _SSHTimeoutError(_SSHLoginError):
-    '''.'''
-
-
-class _SSHVtError(_SSHExecError):
-    """."""
-
-
-class _SSHInterruptError(_SSHExecError):
-    """."""
-
-
-class _SSHCommandFinished(_SSHExecError):
-    """."""
-
-
-class _SSHCommandFailed(_SSHCommandFinished):
-    """."""
-
-
-class _SSHCommandTimeout(_SSHCommandFailed):
-    """."""
-
-
-class _SSHTransferFailed(_SSHCommandFailed):
-    """."""
-
-
-class _SaltCallFailure(_SSHExecError):
-    """."""
 
 
 def ssh_kwargs(first_argument_kwargs=None, **kw):
@@ -999,6 +970,8 @@ def ssh_transfer_file(host, orig, dest=None, **kwargs):
         vt loglevel
     progress
         activate transfers statsv
+    display_content_on_error
+        show script on error
 
     Any extra keywords parameters will by forwarded to:
         _get_ssh_args
@@ -1015,19 +988,19 @@ def ssh_transfer_file(host, orig, dest=None, **kwargs):
     progress = kw['ssh_progress']
     makedirs = kw['ssh_makedirs']
     display_content_on_error = kw['ssh_display_content_on_error']
-    if display_content_on_error:
+    if asbool(display_content_on_error):
         display_content_on_error = '1'
     else:
         display_content_on_error = '0'
-    if makedirs:
+    if asbool(makedirs):
         makedirs = '1'
     else:
         makedirs = '0'
-    if kw['ssh_sync_identical']:
+    if asbool(kw['ssh_sync_identical']):
         sync_identical = '1'
     else:
         sync_identical = '0'
-    if progress:
+    if asbool(progress):
         progress = '1'
     else:
         progress = '0'
@@ -1120,26 +1093,26 @@ def ssh_transfer_dir(host, orig, dest=None, **kwargs):
             (see doc)
             to interact during ssh session
     '''
-    kwargs.setdefault('ssh_display_content_on_error', False)
+    display_content_on_error = kwargs.setdefault(
+        'ssh_display_content_on_error', False)
     kw = ssh_kwargs(kwargs)
     makedirs = kw['ssh_makedirs']
     user = kw['ssh_user']
     port = kw['ssh_port']
     progress = kw.get('progress', False)
-    display_content_on_error = kw['ssh_display_content_on_error']
-    if makedirs:
+    if asbool(makedirs):
         makedirs = '1'
     else:
         makedirs = '0'
-    if kw['ssh_sync_identical']:
+    if asbool(kw['ssh_sync_identical']):
         sync_identical = '1'
     else:
         sync_identical = '0'
-    if progress:
+    if asbool(progress):
         progress = '1'
     else:
         progress = '0'
-    if display_content_on_error:
+    if asbool(display_content_on_error):
         display_content_on_error = '1'
     else:
         display_content_on_error = '0'
@@ -1258,13 +1231,26 @@ def ssh(host, script, **kwargs):
     msg = ('Running:\n'
            '{0}'.format(
                __salt__['mc_utils.magicstring'](script))).strip()
+    dcoe = kw.setdefault('ssh_display_content_on_error', False)
+    sh_wrapper_debug = kw.setdefault('sh_wrapper_debug', False)
+    kw['script_path'] = script_p
     if '\n' in script:
         inline_script = True
     elif script and os.path.exists(script):
         inline_script = False
     else:
         inline_script = True
-        script = _SH_WRAPPER.format(script, **_mangle_kw_for_script(kw))
+        skw = _mangle_kw_for_script(kw)
+        if asbool(sh_wrapper_debug):
+            skw['sh_wrapper_debug'] = '1'
+        else:
+            skw['sh_wrapper_debug'] = ''
+        if asbool(dcoe):
+            skw['display_content_on_error'] = '1'
+        else:
+            skw['display_content_on_error'] = '0'
+        skw['script_content'] = script
+        script = _SH_WRAPPER.format(**skw)
     if inline_script:
         tmpfh, script_p = tempfile.mkstemp()
         with salt.utils.fopen(script_p, 'w') as tmpfile:

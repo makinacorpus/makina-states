@@ -12,6 +12,7 @@ import salt.config as config
 import os
 import logging
 import json
+import re
 from pprint import pformat
 import salt.syspaths
 from mc_states.modules.mc_utils import dictupdate
@@ -28,15 +29,23 @@ from salt.exceptions import (
     SaltRunnerError
 )
 from salt.runner import RunnerClient
+from salt.ext import six as six
 from mc_states import api
 from mc_states.utils import memoize_cache
+import salt.utils.vt
 
 
 log = logging.getLogger(__name__)
 _CLIENTS = {}
+_marker=object()
 _RUNNERS = {}
 LXC_IMPLEMENTATION = 'mc_lxc_fork'
 LXC_IMPLEMENTATION = 'lxc'
+STRIP_FLAGS = re.M | re.U | re.S
+STRIPPED_RES = [
+    re.compile(r"\x1b\[[0-9;]*[mG]", STRIP_FLAGS),
+    re.compile(r"\x1b.*?[mGKH]", STRIP_FLAGS),
+]
 
 
 class SaltExit(SaltException):
@@ -619,6 +628,14 @@ def process_cloud_return(name, info, driver='saltify', ret=None):
     return ret
 
 
+def strip_colors(line):
+    stripped_line = line
+    for stripped_re in STRIPPED_RES:
+        stripped_line = stripped_re.sub('', stripped_line)
+    stripped_line = salt.output.strip_esc_sequence(line)
+    return stripped_line
+
+
 def merge_results(ret, cret):
     # sometime we delete some stuff from the to be merged  results
     # dict to only keep some infos
@@ -635,4 +652,67 @@ def merge_results(ret, cret):
             ret[k] = dictupdate(ret[k], cret[k])
     return ret
 
+
+def _get_ssh_ret(**kw):
+    return salt.utils.dictupdate.update({'retcode': 1255,
+                                         'pid': -1,
+                                         'stdout': '',
+                                         'stderr': '',
+                                         'trace': ''},
+                                        kw)
+
+class _SSHExecError(salt.utils.vt.TerminalException):
+    """."""
+
+    def __init__(self, message, exec_ret=_marker):
+        super(_SSHExecError, self).__init__(message)
+        if exec_ret is _marker:
+            exec_ret = _get_ssh_ret()
+        self.exec_ret = exec_ret
+
+
+class _SSHLoginError(_SSHExecError):
+    """."""
+
+
+class _SSHTimeoutError(_SSHLoginError):
+    '''.'''
+
+
+class _SSHVtError(_SSHExecError):
+    """."""
+
+
+class _SSHInterruptError(_SSHExecError):
+    """."""
+
+
+class _SSHCommandFinished(_SSHExecError):
+    """."""
+
+
+class _SSHCommandFailed(_SSHCommandFinished):
+    """."""
+
+
+class _SSHCommandTimeout(_SSHCommandFailed):
+    """."""
+
+
+class _SSHTransferFailed(_SSHCommandFailed):
+    """."""
+
+
+class _SaltCallFailure(_SSHExecError):
+    """."""
+
+
+def asbool(item):
+    if isinstance(item, six.string_types):
+        item = item.lower()
+    if item in [None, False, 0, '0', 'no', 'n', 'n', 'non']:
+        item = False
+    if item in [True, 1, '1', 'yes', 'y', 'o', 'oui']:
+        item = True
+    return bool(item)
 # vim:set et sts=4 ts=4 tw=80:

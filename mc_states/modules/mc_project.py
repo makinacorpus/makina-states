@@ -12,6 +12,9 @@ from mc_states import api
 
 
 APIS = {
+    'get_configuration_item': {
+        '2': 'mc_project_2.get_configuration_item',
+    },
     'sync_hooks': {
         '2': 'mc_project_2.sync_hooks',
     },
@@ -71,6 +74,9 @@ APIS = {
         '2': 'mc_project_2.set_configuration',
     },
     # remote api
+    'remote_run_task': {
+        '2': 'mc_project_2.remote_run_task',
+    },
     'remote_deploy': {
         '2': 'mc_project_2.remote_deploy',
     },
@@ -89,8 +95,8 @@ APIS = {
     'init_local_remote_pillar': {
         '2': 'mc_project_2.init_local_remote_pillar',
     },
-    'init_remote_project': {
-        '2': 'mc_project_2.init_remote_project',
+    'init_remote_structure': {
+        '2': 'mc_project_2.init_remote_structure',
     },
     'clean_salt_git_commit': {
         '2': 'mc_project_2.clean_salt_git_commit',
@@ -98,11 +104,11 @@ APIS = {
     'remote_project_hook': {
         '2': 'mc_project_2.remote_project_hook',
     },
+    'remote_task': {
+        '2': 'mc_project_2.remote_task',
+    },
     'orchestrate': {
         '2': 'mc_project_2.orchestrate',
-    },
-    'init_remote_pillar': {
-        '2': 'mc_project_2.init_remote_pillar',
     },
 }
 
@@ -142,6 +148,10 @@ def init_project(name, *args, **kwargs):
 
 def report(*args, **kwargs):
     return _api_switcher('report')
+
+
+def get_configuration_item(name, *args, **kwargs):
+    return _api_switcher('get_configuration_item', name, *args, **kwargs)
 
 
 def deploy(name, *args, **kwargs):
@@ -255,12 +265,8 @@ def remote_project_hook(name, *args, **kwargs):
     return _api_switcher('remote_project_hook', name, *args, **kwargs)
 
 
-def init_remote_pillar(name, *args, **kwargs):
-    return _api_switcher('init_remote_pillar', name, *args, **kwargs)
-
-
-def init_remote_project(name, *args, **kwargs):
-    return _api_switcher('init_remote_project', name, *args, **kwargs)
+def init_remote_structure(name, *args, **kwargs):
+    return _api_switcher('init_remote_structure', name, *args, **kwargs)
 
 
 def sync_git_directory(name, *args, **kwargs):
@@ -275,8 +281,17 @@ def sync_remote_project(name, *args, **kwargs):
     return _api_switcher('sync_remote_project', name, *args, **kwargs)
 
 
+def remote_run_task(name, *args, **kwargs):
+    return _api_switcher('remote_run_task', name, *args, **kwargs)
+
+
+def remote_task(name, *args, **kwargs):
+    return _api_switcher('remote_task', name, *args, **kwargs)
+
+
 def remote_deploy(name, *args, **kwargs):
     return _api_switcher('remote_deploy', name, *args, **kwargs)
+
 
 def orchestrate(name, *args, **kwargs):
     return _api_switcher('orchestrate', name, *args, **kwargs)

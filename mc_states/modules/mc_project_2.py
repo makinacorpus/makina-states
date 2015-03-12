@@ -6,17 +6,24 @@ mc_project_2 / project settings regitry APIV2
 ================================================
 This is a Corpus Paas reactor, deploy your projects with style, salt style.
 
+This can either:
+
+    - Deploy locally a project
+    - Deploy remotely a project over ssh (the remote host must have
+      makina-states installed)
+
 '''
 
 import yaml.error
 import datetime
 import os
-import logging
+import pipes
 import socket
 import pprint
 import shutil
 import traceback
 import uuid
+import logging
 import yaml
 import copy
 from salt.utils.odict import OrderedDict
@@ -44,6 +51,7 @@ import mc_states.project as projects_api
 
 log = logger = logging.getLogger(__name__)
 
+_MARKER = object()
 API_VERSION = '2'
 ENVS = projects_api.ENVS
 KEEP_ARCHIVES = projects_api.KEEP_ARCHIVES
@@ -94,6 +102,7 @@ DEFAULT_CONFIGURATION = {
     'archives_root': '{project_dir}/archives',
     'git_root': '{project_dir}/git',
     'project_git_root': '{git_root}/project.git',
+    'git_deploy_hook': '{git_root}/project.git/hooks/deploy_hook.py',
     'pillar_git_root': '{git_root}/pillar.git',
     'current_archive_dir': None,
     'rollback': False,
@@ -256,7 +265,9 @@ def _get_ret(name=None, *args, **kwargs):
     return ret
 
 
-def _colors(color=None):
+def _colors(color=None, exact=False):
+    if color and not exact:
+        color = color.upper()
     return mc_states.saltapi._colors(
         color=color, colorize=__opts__.get('color'))
 
@@ -284,8 +295,14 @@ def _append_comment(ret,
     return ret
 
 
+def _color_log(msg, color, exact=False):
+    return "{0}{1}{2}".format(_colors(color, exact=exact),
+                              __salt__['mc_utils.magicstring'](msg),
+                              _colors('ENDC', exact=exact))
+
+
 def _append_separator(ret, separator='--', separator_color='LIGHT_CYAN'):
-    if not 'raw_comment' in ret:
+    if 'raw_comment' not in ret:
         ret['raw_comment'] = ''
     if separator:
         ret['raw_comment'] += '\n{0}'.format(separator)
@@ -829,6 +846,35 @@ def set_configuration(name, cfg=None, *args, **kwargs):
     return get_configuration(name)
 
 
+def get_configuration_item(project, item=_MARKER, **kw):
+    '''
+    Return an item, maybe filtered or all the config
+
+    in the form::
+
+        {key: <itemKey or 'cfg'>, item: VALUE, cfg: <Whole config dict>}
+
+    CLI examples::
+
+        salt-call --local\
+                mc_project_2.get_configuration_item eee git_deploy_hook
+        salt-call --local\
+                mc_project_2.get_configuration_item eee
+
+    '''
+    cfg = get_configuration(project, **kw)
+    if item is _MARKER:
+        val = cfg
+        key = 'cfg'
+    else:
+        key = item
+        val = cfg.get(key, cfg['data'].get(key))
+        if key in ['git_deploy_hook']:
+            if not os.path.exists(val):
+                val = False
+    return {'item': val, 'cfg': cfg, 'key': key}
+
+
 def init_user_groups(user, groups=None, ret=None):
     _append_comment(
         ret, summary='Verify user:{0} & groups:{1} for project'.format(
@@ -1337,8 +1383,7 @@ def working_copy_in_initial_state(wc, user='root'):
 
 def sync_working_copy(user, wc, rev=None, ret=None, origin=None):
     _s = __salt__
-    if rev is None:
-        rev = 'master'
+    rev = get_default_rev(rev)
     if origin is None:
         origin = 'origin'
     if not ret:
@@ -1609,7 +1654,7 @@ def init_project(name, *args, **kwargs):
         repos = [
             (
                 cfg['pillar_root'],
-                'master',
+                get_default_rev(),
                 pillar_git_root,
                 False,
                 False,
@@ -1617,7 +1662,7 @@ def init_project(name, *args, **kwargs):
             ),
             (
                 cfg['project_root'],
-                'master',
+                get_default_rev(),
                 project_git_root,
                 True,
                 True,
@@ -2256,8 +2301,7 @@ def sync_git_directory(directory,
         ):
             raise OSError('{0} is not a git working copy'.format(
                 directory))
-        if rev is None:
-            rev = 'master'
+        rev = get_default_rev(rev)
         user, _ = get_default_user_group(**kw)
         cret['clean'] = clean_salt_git_commit(directory)
         if origin:
@@ -2400,6 +2444,11 @@ def clean_salt_git_commit(directory, commit=True, **kw):
 # REMOTE API
 #
 
+def get_default_rev(rev=None, **kw):
+    if rev is None:
+        rev = kw.get('rev', 'master')
+    return rev
+
 
 def _init_local_remote_directory(host,
                                  project,
@@ -2412,12 +2461,55 @@ def _init_local_remote_directory(host,
                                  refresh=None,
                                  rev=None,
                                  **kw):
+    '''
+    Initialize a local git directory to be deployed & synchronized remotely
+
+    This git directory can be initialized as either:
+
+        - an empty repo
+        - a pillar repo (./init.sls): if init_pillar=True
+        - a salt repo (./.salt): if init_salt=True
+
+    CLI Examples::
+
+        salt-call --local mc_project._init_local_remote_directory\\
+                host.fr <project>
+        salt-call --local mc_project._init_local_remote_directory\\
+                host.fr <project> init_salt=True
+        salt-call --local mc_project._init_local_remote_directory\\
+                host.fr <project> init_pillar=True
+    '''
     _s = __salt__
     exc_klass = kw.get('exc_klass',
                        projects_api.BaseProjectInitException)
+
+    kind = ''
+    if bare:
+        kind += ' bare'
+    if init_salt:
+        kind += ' salt'
+    elif init_pillar:
+        kind += ' pillar'
+    if kind:
+        kind += ' '
+    _remote_log('   - Initialize local{4}copy:'
+                '  {2}{3}{0}/{1}'.format(host,
+                                         project,
+                                         _colors('endc'),
+                                         _colors('yellow'),
+                                         kind))
+    rev = get_default_rev(rev)
+    if origin:
+        _remote_log('       * origin: {1}{2}{0}'.format(
+            origin, _colors('endc'), _colors('light_yellow')),
+            color='yellow')
+    if rev != get_default_rev():
+        _remote_log('       * rev: {1}{2}{0}'.format(
+            rev, _colors('endc'), _colors('light_yellow')),
+            color='yellow')
+    if refresh:
+        _remote_log('       * will force the refresh')
     try:
-        if not rev:
-            rev = 'master'
         cret = OrderedDict()
         container = os.path.dirname(directory)
         user, group = get_default_user_group(**kw)
@@ -2532,9 +2624,13 @@ def init_local_remote_project(host,
     return cret
 
 
-def _init_remote_structure(host, project, **kw):
+def init_remote_structure(host, project, **kw):
     '''
     Initialize a remote project structure over ssh
+
+    CLI Examples::
+
+        salt-call --local mc_project.init_remote_structure host.fr <project>
     '''
     _s = __salt__
     user, group = get_default_user_group(**kw)
@@ -2548,6 +2644,10 @@ def _init_remote_structure(host, project, **kw):
     else:
         if not cret.get('result'):
             cret = None
+    _remote_log('   - Initialize remote project structure:'
+                '  {2}{3}{0}/{1}'.format(host, project,
+                                         _colors('endc'),
+                                         _colors('yellow')))
     do_raise = kw.get('do_raise', True)
     failed = False
     scret = ''
@@ -2594,42 +2694,45 @@ def _init_remote_structure(host, project, **kw):
     return __context__[dkey]
 
 
-def init_remote_pillar(host, project, **kw):
-    """
-    Initialise the remote host project container structure
-
-    CLI Examples:
-
-         salt-call --local mc_project.init_local_remote_pillar \
-                 host.foo.net port=40007 projname
-    """
-    return _init_remote_structure(host, project, **kw)
-
-
-def init_remote_project(host, project, **kw):
-    """
-    Initialise the remote host project container structure
-
-    CLI Examples:
-
-         salt-call --local mc_project.init_local_remote_project \
-                 host.foo.net port=40007 projname
-    """
-    return _init_remote_structure(host, project, **kw)
-
-
 def sync_remote_working_copy(host,
                              directory,
                              remote_directory=None,
                              remote_local_copy=None,
                              lremote=None,
                              **kw):
+
+    '''
+    CLI examples::
+
+        salt-call --local mc_project.sync_remote_working_copy\\
+                a.fr /srv/remote-projects/a.fr
+        salt-call --local mc_project.sync_remote_working_copy\\
+                a.fr /srv/remote-projects/a.fr /otherdir
+    '''
+
+    _remote_log('      - Synchronizing {2}{3}{0}:{1}'.format(
+        host, directory, _colors('endc'), _colors('yellow')))
+    origin = kw.get('origin', None)
+    rev = get_default_rev(**kw)
     _s = __salt__
     user, group = get_default_user_group(**kw)
     ssh_kw = _s['mc_remote.ssh_kwargs'](kw, user=user)
     cret = OrderedDict()
     if not remote_directory:
         remote_directory = directory
+    _remote_log(
+        '         * remote directory: {1}{2}{0}'.format(
+            remote_directory, _colors('endc'), _colors('light_yellow')
+        ),
+        color='yellow')
+    if origin:
+        _remote_log('           * origin: {1}{2}{0}'.format(
+            origin, _colors('endc'), _colors('light_yellow')),
+            color='yellow')
+    if rev != get_default_rev():
+        _remote_log('           * rev: {1}{2}{0}'.format(
+            rev, _colors('endc'), _colors('light_yellow')),
+            color='yellow')
     kw['user'] = user
     gforce = '--force master:master'
     tmpbare = "{0}.bare.git".format(os.path.abspath(directory))
@@ -2736,6 +2839,22 @@ def sync_remote_directory(host,
                           init=None,
                           lremote=None,
                           **kw):
+
+    _remote_log('      - Synchronizing directory'
+                ' {3}{4}{0}/{1}:'
+                ''.format(host,
+                          project,
+                          directory,
+                          _colors('endc'),
+                          _colors('yellow'),
+                          _colors('light_yellow')))
+    _remote_log(
+        '           * {1}{2}{0}'.format(
+            directory,
+            _colors('yellow'),
+            _colors('light_yellow')),
+        'yellow')
+    _s = __salt__
     cret = OrderedDict()
     if init is None:
         init = False
@@ -2784,6 +2903,11 @@ def sync_remote_pillar(host,
                        refresh=None,
                        lremote=None,
                        **kw):
+    _remote_log('   - Synchronizing pillar on'
+                ' {2}{3}{0}/{1}'.format(host,
+                                        project,
+                                        _colors('endc'),
+                                        _colors('yellow')))
     _s = __salt__
     project = get_default_project(project)
     pcfg = _s['mc_project.get_configuration'](project, remote_host=host)
@@ -2814,6 +2938,11 @@ def sync_remote_project(host,
                         refresh=None,
                         lremote=None,
                         **kw):
+    _remote_log('   - Synchronizing project on'
+                ' {2}{3}{0}/{1}'.format(host,
+                                        project,
+                                        _colors('endc'),
+                                        _colors('yellow')))
     _s = __salt__
     project = get_default_project(project)
     pcfg = _s['mc_project.get_configuration'](project, remote_host=host)
@@ -2834,55 +2963,173 @@ def sync_remote_project(host,
     return cret
 
 
-def remote_deploy(host, project, **kw):
+def remote_task(host, project, *args, **kw):
+    '''
+    Alias to remote_run_task
+    '''
+    return remote_run_task(host, project, *args, **kw)
+
+
+def remote_run_task(host, project, *args, **kw):
+    '''
+    Run a task from the .salt directory, remotely
+
+    CLI Examples::
+
+        salt-call --local mc_project.remote_run_task \
+                host.fr <project> task_helloworld.sls
+        salt-call --local mc_project.remote_run_task \
+                host.fr <project> task_helloworld.sls a=b
+    '''
+    kw['salt_function'] = 'mc_project.run_task'
+    return remote_deploy(host, project, *args, **kw)
+
+
+def remote_deploy(host, project, *args, **kw):
+    '''
+
+    Run a deployment task, remotely
+
+    CLI Examples::
+
+        salt-call --local mc_project.remote_deploy \
+                host.fr <project>
+        salt-call --local mc_project.remote_deploy \
+                host.fr <project> only=install,fixperms
+        salt-call --local mc_project.remote_deploy \
+                host.fr <project> only=install,fixperms only_steps=0.sls
+    '''
     _s = __salt__
+    _remote_log('   - Deployment {2}{3}{0}/{1}'.format(host,
+                                                       project,
+                                                       _colors('endc'),
+                                                       _colors('yellow')))
     ssh_kw = _s['mc_remote.ssh_kwargs'](kw)
     kwarg = kw.get('kwarg', {})
-
-    for opts in [
-        ('deploy_only', 'only'),
-        ('deploy_only_steps', 'only_steps')
-    ]:
-        for k in opts:
-            if k in kw and k not in kwarg:
-                kwarg[k] = kw[k]
-    # kwarg['only'] = 'install,fixperms'
-    for k in ['only', 'only_steps']:
-        if k not in kwarg:
-            continue
-        if isinstance(kwarg[k], list):
-            kwarg[k] = ",".join(kwarg[k])
+    salt_function = kw.get('project_salt_function',
+                           kw.get('salt_function', 'mc_project.deploy'))
+    remote_deploy_supported_funs = ['mc_project.deploy', 'mc_project.run_task']
     do_raise = kw.get('do_raise', True)
     original = None
     scret = ''
     failed = False
-    try:
-        cret = __salt__['mc_remote.salt_call'](
-            host,
-            'mc_project.deploy', arg=[project], kwarg=kwarg,
-            **ssh_kw)
-        if cret['retcode']:
+    task = None
+    extra_args = [
+        pipes.quote(__salt__['mc_utils.magicstring'](a))
+        for a in args]
+    if salt_function not in remote_deploy_supported_funs:
+        raise ValueError('{0} is not a valid function'.format(salt_function))
+    if any([
+        salt_function.endswith('.deploy'),
+    ]):
+        for opts in [
+            ('deploy_only', 'only'),
+            ('deploy_only_steps', 'only_steps')
+        ]:
+            for k in opts:
+                if (
+                    (k in kw)
+                    and (k not in kwarg)
+                    and (kw.get(k, None) is not None)
+                ):
+                    kwarg[k] = kw[k]
+        # kwarg['only'] = 'install,fixperms'
+        for k in ['only', 'only_steps']:
+            if k not in kwarg:
+                continue
+            if isinstance(kwarg[k], list):
+                kwarg[k] = ",".join(kwarg[k])
+                _remote_log('''  {0}: {1}'''.format(k, kwarg[k]), 'yellow')
+    if any([
+        salt_function.endswith('.run_task')
+    ]):
+        if not extra_args:
             failed = True
-            scret = repr_ret(cret)
-    except (
-        salt.exceptions.CommandExecutionError,
-        projects_api.ProjectNotCleanError
-    ) as exc:
-        scret = traceback.format_exc()
-        failed = True
-        original = exc
+            cret = scret = 'You should set at least one task to execute'
+            original = ValueError(scret)
+        else:
+            task = extra_args[0]
+            extra_args = extra_args[1:]
+    if not failed:
+        try:
+            cfgret = __salt__['mc_remote.salt_call'](
+                host,
+                'mc_project.get_configuration_item',
+                arg=[project, 'git_deploy_hook'], kwarg=kwarg,
+                **ssh_kw)
+            hook = False
+            if not cfgret['retcode']:
+                hook = cfgret['result']['item']
+            ssh_kw['ssh_display_content_on_error'] = True
+            if hook:
+                cmd = '"{0}" -p "{1}"'.format(hook, project)
+                for i in ['only', 'only_steps']:
+                    if i in kwarg:
+                        cmd += ' --{0}="{1}"'.format(i, kwarg[i])
+                if task:
+                    cmd += ' --task="{0}"'.format(task)
+                if extra_args:
+                    cmd += " {0}".format(" ".join(extra_args))
+                cret = __salt__['mc_remote.ssh'](host, cmd, **ssh_kw)
+                if cret['retcode']:
+                    failed = True
+                    scret = repr_ret(cret)
+            if not hook:
+                cret = __salt__['mc_remote.salt_call'](
+                    host,
+                    salt_function,
+                    arg=[project] + extra_args, kwarg=kwarg,
+                    **ssh_kw)
+                if cret['retcode']:
+                    failed = True
+                    scret = repr_ret(cret)
+        except (
+            mc_states.saltapi._SSHExecError,
+            salt.exceptions.CommandExecutionError,
+            projects_api.ProjectNotCleanError
+        ) as exc:
+
+            original = exc
+    msg, smsg = '', ''
     if do_raise and failed:
+        msg, smsg = _remote_log(
+            '   - Deployment {2}{3}{0}/{1}: {2}{4}FAILED'.format(
+                host, project,
+                _colors('endc'), _colors('yellow'), _colors('light_red')))
+        lmsg, lsmsg = _remote_log(
+            '   - Deployment {2}{3}{0}/{1}: {2}{4}FAILED'
+            '\n{{scret}}'.format(
+                host, project,
+                _colors('endc'), _colors('yellow'), _colors('light_red')))
         raise_exc(
             projects_api.RemoteProjectDeployError,
-            msg='{host}: project {project} deploy failed',
-            detail_msg=('{host}: project {project} deploy failed:'
-                        '\n{scret}'),
+            msg=msg,
+            detail_msg=lmsg,
             scret=scret,
             cret=cret,
             host=host,
             original=original,
             project=project)
+    else:
+        msg, smsg = _remote_log(
+            '   - Deployment {2}{3}{0}/{1}: {2}{4}OK'.format(
+                host, project,
+                _colors('endc'), _colors('yellow'), _colors('light_green')))
+    cret['z_msg'] = msg
     return cret
+
+
+def _remote_log(line,
+                color='red',
+                exact=False,
+                output=True,
+                level='debug'):
+    line = _color_log(line, color, exact=exact)
+    if output:
+        print(line)
+    stripped_line = mc_states.saltapi.strip_colors(line)
+    getattr(log, level)(stripped_line)
+    return line, stripped_line
 
 
 def orchestrate(host,
@@ -2890,6 +3137,7 @@ def orchestrate(host,
                 init=True,
                 init_project=None,
                 init_pillar=None,
+                init_remote=True,
                 sync=True,
                 sync_project=None,
                 sync_pillar=None,
@@ -2903,11 +3151,154 @@ def orchestrate(host,
                 rev=None,
                 pre_init_hook=None,
                 post_init_hook=None,
+                pre_init_remote_hook=None,
+                post_init_remote_hook=None,
                 pre_sync_hook=None,
                 post_sync_hook=None,
                 pre_hook=None,
                 post_hook=None,
+                only=None,
+                only_steps=None,
                 **kw):
+    '''
+    Orchestrate a project deployment, remotely
+
+    Note:
+
+        a project is composed by it's code & deployment recipe (.salt)
+        and it's pillar.
+
+    This:
+
+        - Run the pre init hook if any
+        - initiliazes & prepare the code locally
+        - Run the post init hook if any
+        - Run the pre init remote hook if any
+        - May initiliazes the remote project structure
+        - Run the post init remote hook if any
+        - Run the pre sync hook if any
+        - Sync the code to remote buffer directories
+        - Sync the remote deployment directories (pillar & project)
+        - Run the post sync hook if any
+        - Run the pre deploy hook if any
+        - Run the deployment procedure (salt-call mc_project.deploy dance)
+        - Run the post deploy hook if any
+
+
+    The deployed code will at first be initialized:
+        project code is initialized as either:
+            - from an empty structure (shell helloworld)
+            - from **git**:
+
+                    origin
+                        git url
+
+                    rev
+                        git remote tag/branch/changeset
+
+            - from an empty structure (shell helloworld)
+
+        pillar code is initialized as either:
+            - from an empty structure (shell helloworld)
+            - from **git**:
+
+                    pillar_origin
+                        git url
+
+                    pillar_rev
+                        git remote tag/branch/changeset
+
+    If the urls were not specified, but the git repositories
+    present in the local directories are valid, they will
+    be deployed as-is.
+
+    If the git repositories have a valid remote, the sync step
+    will use it, even if the "origin/pillar_origin" were not
+    specified explicitly
+
+    host
+        host where to deploy
+    project
+        project to deploy onto (name)
+    init
+        do we do the full init step
+    init_project
+        do we do the init_project step (overrides init)
+    init_pillar
+        do we do the init_pillar step (overrides init)
+    init_remote
+        do we do the init_remote step
+    sync
+        do we do the full sync step
+    sync_project
+        do we do the sync_project step (overrides sync)
+    sync_pillar
+        do we do the sync_pillar step (overrides sync)
+    refresh
+        do we update the code prior to sync
+    refresh_project
+        do we do the refresh_project step (overrides refresh_project)
+    refresh_pillar
+        do we do the refresh_project step (overrides refresh)
+    deploy
+        do we do the deploy step
+    pillar_origin
+        url of the pillar to deploy if any (if None: empty pillar)
+    pillar_rev
+        changeset if the pillar is from a git url (master)
+    origin
+        git url of the project to deploy if any (if None: empty pillar)
+    rev
+        changeset if the xproject is from a git url (master)
+    pre_init_hook
+        deployment hook (see above lifecycle explaination & hook spec)
+    post_init_hook
+        deployment hook (see above lifecycle explaination & hook spec)
+    pre_init_remote_hook
+        deployment hook (see above lifecycle explaination & hook spec)
+    post_init_remote_hook
+        deployment hook (see above lifecycle explaination & hook spec)
+    pre_sync_hook
+        deployment hook (see above lifecycle explaination & hook spec)
+    post_sync_hook
+        deployment hook (see above lifecycle explaination & hook spec)
+    pre_hook
+        deployment hook (see above lifecycle explaination & hook spec)
+    post_hook
+        deployment hook (see above lifecycle explaination & hook spec)
+    only
+        deployment hook (see above lifecycle explaination & hook spec)
+    only_steps
+        deployment hook (see above lifecycle explaination & hook spec)
+
+    An hook is a salt function, in any module with the following signature::
+
+        def hook(host, project, opts, **kw)::
+            print("hourray")
+
+    Making in a execution module, /srv/salt/_module/foo.py::
+
+        def hook(host, project, opts, **kw)::
+            print("Called on {0}".format(host))
+
+    Can be called like this::
+
+        salt-call --local mc_project.orchestrate h proj init_hook=foo.hook
+
+    CLI Examples::
+
+        salt-call --local mc_project.orchestrate host.fr <project>\\
+                origin="https://github.com/makinacorpus/corpus-pgsql.git"
+        salt-call --local mc_project.orchestrate host.fr <project>\\
+                origin="https://github.com/makinacorpus/corpus-pgsql.git"\\
+                rev=stable\
+                pillar_origin="https://github.com/mak/corpus-pillar.git"\\
+                rev=stable
+        salt-call --local mc_project.orchestrate host.fr <project>\\
+                origin="https://github.com/makinacorpus/corpus-pgsql.git"
+    '''
+    _remote_log('Deployment orchestration: {2}{3}{0}/{1}'.format(
+        host, project, _colors('endc'), _colors('yellow')))
     pcfg = get_configuration(project, remote_host=host)
     user, group = get_default_user_group(**kw)
     kw['user'] = user
@@ -2962,6 +3353,16 @@ def orchestrate(host,
     if init_pillar or init_project:
         crets['init_post'] = remote_project_hook(
             post_init_hook, host, project, opts, **kw)
+    if init_remote:
+        crets['init_remote_pre'] = remote_project_hook(
+            pre_init_remote_hook, host, project, opts, **kw)
+        crets['init_remote_structure'] = init_remote_structure(
+            host, project, **kw)
+        crets['init_remote_post'] = remote_project_hook(
+            post_init_remote_hook, host, project, opts, **kw)
+    if init_pillar or init_project:
+        crets['init_post'] = remote_project_hook(
+            post_init_hook, host, project, opts, **kw)
     #
     if sync_pillar or sync_project:
         crets['sync_pre'] = remote_project_hook(
@@ -2992,13 +3393,27 @@ def orchestrate(host,
         crets['deploy_pre'] = remote_project_hook(
             pre_hook, host, project, opts, **kw)
         crets['deploy'] = remote_deploy(
-            host, project, **kw)
+            host, project, only=only, only_steps=only_steps, **kw)
         crets['deploy_post'] = remote_project_hook(
             post_hook, host, project, opts, **kw)
+    msg, smsg = _remote_log(
+        'Deployment orchestration: {2}{3}{0}/{1}:{2}{4} OK'.format(
+            host, project,
+            _colors('endc'), _colors('yellow'), _colors('light_green')))
+    crets['z_msg'] = msg
     return crets
 
 
 def remote_project_hook(hook, host, project, opts, **kw):
+    '''
+    Execute an hook
+
+    An hook is a salt function, in any module with the following signature::
+
+        def hook(host, project, opts, **kw)::
+            print("hourray")
+    '''
+
     if hook and (hook in __salt__):
         log.info('{0}/{1}: Running hook {2}'.format(
             host, project, hook))

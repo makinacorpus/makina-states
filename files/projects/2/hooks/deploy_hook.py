@@ -29,7 +29,9 @@ The behavior can be changed by tweaking:
     - get_running_pids
 
 '''
+import re
 import traceback
+import copy
 import datetime
 import time
 import atexit
@@ -60,8 +62,11 @@ LOG = "{tmpdir}/makina-states.{project_name}-deploy.log"
 LOCK = "{tmpdir}/.makina-states.{project_name}-deploy.lock"
 DEFAULT_TIMEOUT = 5 * 60 * 60
 DEFAULT_DELAY = None
-CMDS = [['salt-call', '--local', '--retcode-passthrough',
-         '-l{loglevel}', 'mc_project.deploy', '{0}']]
+CMDS = ['salt-call --local --retcode-passthrough'
+        ' -l{loglevel} "{salt_function}" "{project_name}"']
+OPTIONS = {
+    'delay': DEFAULT_DELAY,
+}
 
 
 def get_container(pid):
@@ -107,10 +112,10 @@ def get_worker_pids(*args, **kwargs):
     '''
     ops = popen(
         'ps aux'
-        '|grep mc_project.deploy'
-        '|grep {project_name}.deploy'
+        '|grep {o[salt_function]}'
+        '|grep {k[project_name]}'
         '|grep -v grep'
-        '|awk \'{{print $2}}\''.format(**kwargs))[0]
+        '|awk \'{{print $2}}\''.format(o=OPTIONS, k=kwargs))[0]
     return ops[0] + ops[1] + "\n"
 
 
@@ -710,6 +715,11 @@ def prepare_parser(parser):
     parser.add_option("-p", dest="project_name")
     parser.add_option("-r", dest="project_root",
                       default="/srv/projects/{project_name}/project")
+    parser.add_option("--only", dest="project_only", default="")
+    parser.add_option("--only-steps", dest="project_only_steps", default="")
+    parser.add_option("--extra-args", dest="project_extra_args", default="")
+    parser.add_option("--task",
+                      dest="project_task", action="store", default="")
     return parser
 
 
@@ -721,7 +731,27 @@ def do_custom_parse(parser, options, args):
 
 
 def get_callback_args(parser, options, args):
-    return [options.project_name]
+    OPTIONS['salt_function'] = 'mc_project.deploy'
+    if options.project_task:
+        OPTIONS['salt_function'] = 'mc_project.run_task'
+    if not options.project_name:
+        options.project_name = os.path.abspath(__file__).split(os.path.sep)[-5]
+    OPTIONS['project_name'] = options.project_name
+    args = [options.project_name]
+    if (
+        options.project_task
+        and (options.project_only_steps or options.project_only)
+    ):
+        raise ValueError('task / (only/only_steps*) are mutually exclusive')
+    if options.project_task:
+        CMDS[0] += ' "{0}"'.format(options.project_task)
+    if options.project_only:
+        CMDS[0] += ' only="{0}"'.format(options.project_only)
+    if options.project_only_steps:
+        CMDS[0] += ' only_steps="{0}"'.format(options.project_only_steps)
+    if options.project_extra_args:
+        CMDS[0] += ' {0}'.format(options.project_extra_args)
+    return args
 
 
 def main():
@@ -751,15 +781,16 @@ def main():
     init_file_logging(options.deploy_log, lvl)
     stdout_tee = Tee(sys.stdout, sys.__stdout__)
     stderr_tee = Tee(sys.stderr, sys.__stderr__)
-    test_deploy(**vars(options))
     logger.info('start')
+    OPTIONS.update({'delay': options.delay})
     callback_args = get_callback_args(parser, options, args)
+    test_deploy(callback_args=callback_args, **vars(options))
     try:
         args = [callback_args,
                 options.loglevel,
                 options.deploy_log,
                 options.deploy_lock]
-        ckwargs = {'delay': options.delay}
+        ckwargs = copy.deepcopy(OPTIONS)
         if not options.async:
             exitcode = deploy(*args, **ckwargs)
         else:
