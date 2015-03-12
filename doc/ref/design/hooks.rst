@@ -59,3 +59,4 @@ You can also easily skip a full subset of states, imagining the three following 
 You just discoved the magic of hooks to make custom execution modes without having to clutter your states files with custom require/includes, you just have to subscribe to isolated hooks, and in the real states files, to also subscribe to those hooks. In the listeners, you just have to conditonnaly include the real state file for the job to be correctly executed with the other states.
 
 
+

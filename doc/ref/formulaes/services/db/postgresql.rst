@@ -160,3 +160,4 @@ makina-postgresql-post-base
 makina-postgresql-post-inst
     final hook
 
+

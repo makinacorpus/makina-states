@@ -5,3 +5,4 @@ This will trigger the installation of **makina-states.localsettings**.
 
 In standalone mode, we do not include localsettings.
 
+

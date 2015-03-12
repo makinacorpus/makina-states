@@ -13,3 +13,4 @@ Exposed settings:
     :makina-states.localsettings.rvm.user: base rvm user
     :makina-states.localsettings.rvm.group: base rvm user group
 
+

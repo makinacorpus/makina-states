@@ -23,3 +23,4 @@ You can then use the macro::
     {% import "makina-states/localsettings/nodejs-standalone.sls" as nodejs with context %}
     {{ nodejs.npmInstall('less', '0.8.26') }}
 
+

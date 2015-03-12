@@ -10,3 +10,4 @@ Exposed settings:
     :makina-states.localsettings.locales.locale: default shell locale (default: fr)
 
 
+

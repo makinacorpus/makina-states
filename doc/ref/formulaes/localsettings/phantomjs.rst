@@ -9,3 +9,4 @@ You can then use the macro to install a specific version of phantomjs in /srv/ap
     {% import "makina-states/localsettings/phantomjs/init.sls" as phantomjs with context %}
     {{ phantomjs.install('1.1-beta3', 'sha1_hash') }}
 
+

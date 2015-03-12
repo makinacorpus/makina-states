@@ -22,3 +22,4 @@ Use a database with posgis template
                               password=common.data['db']['password'],
                               db=common.data['db']['name'],) }}
 
+

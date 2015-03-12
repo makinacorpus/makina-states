@@ -23,3 +23,4 @@ All those formulaes are thin wrappers to the `salt_macro`_.
 .. _`salt_macro`: https://github.com/makinacorpus/makina-states/blob/master/_macros/salt.jinja
 
 
+

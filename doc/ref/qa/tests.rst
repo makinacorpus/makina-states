@@ -14,3 +14,4 @@ On a provisionned box, run::
 
 It will run all the sls found in ``makina-states.tests``.
 
+

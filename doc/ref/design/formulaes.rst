@@ -13,3 +13,4 @@ Examples:
 Inside those states files, the idea is to use macros as wrappers to the underlying registries shared via salt executtion modules. See the base macros bellow.
 
 
+

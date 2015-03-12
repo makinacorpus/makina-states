@@ -12,3 +12,4 @@ You can use the circusAddWatcher macro to add a watcher:
       :args: arguments of cmdline
       :conf_priority: special keyword to specify the file order priority in configuration directory
 
+
