@@ -23,5 +23,6 @@ Services
    queue/index.rst
    log/index.rst
    virt/index.rst
+   sound/index.rst
 
 
