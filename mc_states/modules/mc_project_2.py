@@ -2917,12 +2917,26 @@ def sync_remote_project(host,
     return cret
 
 
+def get_deploy_hook_path(project, remote_host=None, **kw):
+    cfg = get_configuration(project, remote_host=remote_host, **kw)
+    hook = '{0[pillar_git_root]}/hooks/deploy.py'.format(rcfg)
+    if os.path.exists(hook):
+        return hook
+
+
+def get_deploy_hook(project, **kw):
+    cret = __salt__['mc_remote.salt_call'](
+        host,
+        'mc_project.get_deploy_hook', arg=[project], kwarg=kwarg,
+        **ssh_kw)
+
+
 def remote_deploy(host, project, **kw):
     _s = __salt__
     _remote_log('   - Deployment {2}{3}{0}/{1}'.format(host,
-                                                  project,
-                                                  _colors('endc'),
-                                                  _colors('yellow')))
+                                                       project,
+                                                       _colors('endc'),
+                                                       _colors('yellow')))
     ssh_kw = _s['mc_remote.ssh_kwargs'](kw)
     kwarg = kw.get('kwarg', {})
 
@@ -2949,13 +2963,28 @@ def remote_deploy(host, project, **kw):
     scret = ''
     failed = False
     try:
-        cret = __salt__['mc_remote.salt_call'](
+        rcfg = __salt__['mc_remote.salt_call'](
             host,
-            'mc_project.deploy', arg=[project], kwarg=kwarg,
+            'mc_project.get_configuration', arg=[project], kwarg=kwarg,
             **ssh_kw)
-        if cret['retcode']:
-            failed = True
-            scret = repr_ret(cret)
+        has_hook = False
+        # FIXME: call hook which is a singleton executor
+        if has_hook:
+            cret = __salt__['mc_remote.salt_call'](
+                host,
+                'mc_project.deploy', arg=[project], kwarg=kwarg,
+                **ssh_kw)
+            if cret['retcode']:
+                failed = True
+                scret = repr_ret(cret)
+        else:
+            cret = __salt__['mc_remote.salt_call'](
+                host,
+                'mc_project.deploy', arg=[project], kwarg=kwarg,
+                **ssh_kw)
+            if cret['retcode']:
+                failed = True
+                scret = repr_ret(cret)
     except (
         salt.exceptions.CommandExecutionError,
         projects_api.ProjectNotCleanError
@@ -2963,10 +2992,12 @@ def remote_deploy(host, project, **kw):
         scret = traceback.format_exc()
         failed = True
         original = exc
+    msg, smsg = '', ''
     if do_raise and failed:
-        _remote_log('   - Deployment {2}{3}{0}/{1}: {2}{4}FAILED'.format(
-            host, project,
-            _colors('endc'), _colors('yellow'), _colors('ligth_red')))
+        msg, smsg = _remote_log(
+            '   - Deployment {2}{3}{0}/{1}: {2}{4}FAILED'.format(
+                host, project,
+                _colors('endc'), _colors('yellow'), _colors('ligth_red')))
         raise_exc(
             projects_api.RemoteProjectDeployError,
             msg='{host}: project {project} deploy failed',
@@ -2978,15 +3009,25 @@ def remote_deploy(host, project, **kw):
             original=original,
             project=project)
     else:
-        _remote_log('   - Deployment {2}{3}{0}/{1}: {2}{4}OK'.format(
-            host, project,
-            _colors('endc'), _colors('yellow'), _colors('light_green')))
+        msg, smsg = _remote_log(
+            '   - Deployment {2}{3}{0}/{1}: {2}{4}OK'.format(
+                host, project,
+                _colors('endc'), _colors('yellow'), _colors('light_green')))
+    cret['z_msg'] = msg
     return cret
 
 
-def _remote_log(msg, color='red', exact=False, level='debug'):
-    getattr(log, level)(msg)
-    print(_color_log(msg, color, exact=exact))
+def _remote_log(line,
+                color='red',
+                exact=False,
+                output=True,
+                level='debug'):
+    line = _color_log(line, color, exact=exact)
+    if output:
+        print(line)
+    stripped_line = mc_states.saltapi.strip_colors(line)
+    getattr(log, level)(stripped_line)
+    return line, stripped_line
 
 
 def orchestrate(host,
@@ -3103,10 +3144,11 @@ def orchestrate(host,
             host, project, only=only, only_steps=only_steps, **kw)
         crets['deploy_post'] = remote_project_hook(
             post_hook, host, project, opts, **kw)
-    _remote_log(
+    msg, smsg = _remote_log(
         'Deployment orchestration: {2}{3}{0}/{1}:{2}{4} OK'.format(
             host, project,
             _colors('endc'), _colors('yellow'), _colors('light_green')))
+    crets['z_msg'] = msg
     return crets
 
 

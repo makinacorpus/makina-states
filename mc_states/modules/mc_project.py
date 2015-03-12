@@ -12,6 +12,9 @@ from mc_states import api
 
 
 APIS = {
+    'get_deploy_hook': {
+        '2': 'mc_project_2.get_deploy',
+    },
     'sync_hooks': {
         '2': 'mc_project_2.sync_hooks',
     },
@@ -142,6 +145,10 @@ def init_project(name, *args, **kwargs):
 
 def report(*args, **kwargs):
     return _api_switcher('report')
+
+
+def get_deploy_hook(name, *args, **kwargs):
+    return _api_switcher('get_deploy_hook', name, *args, **kwargs)
 
 
 def deploy(name, *args, **kwargs):

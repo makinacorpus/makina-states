@@ -12,6 +12,7 @@ import salt.config as config
 import os
 import logging
 import json
+import re
 from pprint import pformat
 import salt.syspaths
 from mc_states.modules.mc_utils import dictupdate
@@ -37,6 +38,11 @@ _CLIENTS = {}
 _RUNNERS = {}
 LXC_IMPLEMENTATION = 'mc_lxc_fork'
 LXC_IMPLEMENTATION = 'lxc'
+STRIP_FLAGS = re.M | re.U | re.S
+STRIPPED_RES = [
+    re.compile(r"\x1b\[[0-9;]*[mG]", STRIP_FLAGS),
+    re.compile(r"\x1b.*?[mGKH]", STRIP_FLAGS),
+]
 
 
 class SaltExit(SaltException):
@@ -617,6 +623,14 @@ def process_cloud_return(name, info, driver='saltify', ret=None):
         ret['result'] = False
         ret['comment'] += '\nFailed to saltify {0}'.format(name)
     return ret
+
+
+def strip_colors(line):
+    stripped_line = line
+    for stripped_re in STRIPPED_RES:
+        stripped_line = stripped_re.sub('', stripped_line)
+    stripped_line = salt.output.strip_esc_sequence(line)
+    return stripped_line
 
 
 def merge_results(ret, cret):
