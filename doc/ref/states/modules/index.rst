@@ -85,13 +85,20 @@ Subregistries
    mc_www.rst
 
 
+Pass/ProjectManagement modules
+-------------------------------
+.. toctree::
+   :maxdepth: 2
+   mc_project.rst
+   mc_project_2.rst
+
+
 Other modules
 ---------------
 .. toctree::
    :maxdepth: 2
 
    mc_macros.rst
-   mc_project.rst
    mc_utils.rst
 
 
