@@ -1489,6 +1489,7 @@ def init_pillar_dir(directory,
             'cfg': yaml.dump({
                 'makina-projects.{0}'.format(project):
                 init_data}, width=80, indent=2, default_flow_style=False)}
+        commit_all = True
         cret = _state_exec(sfile, 'managed',
                            name=fil, source=template,
                            makedirs=True,
@@ -1499,7 +1500,7 @@ def init_pillar_dir(directory,
                 'Can\'t create default {0}\n{1}'.format(fil, cret['comment']))
     if os.path.join(directory, '.git'):
         if commit_all:
-            git_commit(directory, commit_all=True, user=user)
+            git_commit(directory, commit_all=commit_all, user=user)
         if do_push:
             push_changesets_in(directory, opts='-u', user=user)
 
@@ -1565,7 +1566,7 @@ def refresh_files_in_working_copy(project_root,
                         fil, cret['comment']))
         if os.path.join(project_root, '.git'):
             if commit_all:
-                git_commit(project_root, commit_all=True, user=user)
+                git_commit(project_root, commit_all=commit_all, user=user)
             if do_push:
                 push_changesets_in(project_root, opts='-u', user=user)
     return ret
@@ -1605,6 +1606,7 @@ def init_salt_dir(directory,
              for a in os.listdir(salt_root)
              if a.endswith('.sls') and not os.path.isdir(a)]
     if not files:
+        commit_all = True
         for fil in SPECIAL_SLSES + ['PILLAR.sample',
                                     '00_helloworld.sls']:
             template = (
@@ -1622,7 +1624,7 @@ def init_salt_dir(directory,
                         fil, cret['comment']))
     if os.path.join(directory, '.git'):
         if commit_all:
-            git_commit(directory, commit_all=True, user=user)
+            git_commit(directory, commit_all=commit_all, user=user)
         if do_push:
             push_changesets_in(directory, opts='-u', user=user)
     return ret
@@ -1643,6 +1645,7 @@ def init_project(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
     user, groups, group = cfg['user'], cfg['groups'], cfg['group']
     ret = _get_ret(cfg['name'])
+    commit_all = kwargs.get('commit_all', False)
     try:
         init_user_groups(user, groups, ret=ret)
         init_ssh_user_keys(user,
@@ -1688,17 +1691,18 @@ def init_project(name, *args, **kwargs):
             set_upstream(wc, rev, user, ret=ret)
             sync_working_copy(user, wc, rev=rev, ret=ret)
         link(name, *args, **kwargs)
+        refresh_files_in_working_copy_kwargs = copy.deepcopy(kwargs)
+        refresh_files_in_working_copy_kwargs['commit_all'] = commit_all
         refresh_files_in_working_copy(cfg['project_root'],
                                       user=user,
                                       group=group,
                                       project=cfg['name'],
                                       init_data=cfg,
                                       force=True,
-                                      commit_all=True,
                                       do_push=True,
                                       api_version=cfg['api_version'],
                                       *args,
-                                      **kwargs)
+                                      **refresh_files_in_working_copy_kwargs)
     except projects_api.ProjectInitException, ex:
         trace = traceback.format_exc()
         ret['result'] = False
@@ -1967,6 +1971,7 @@ def archive(name, *args, **kwargs):
 
 def release_sync(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
+    kwargs['commit_all'] = False
     iret = init_project(name, *args, **kwargs)
     return iret
 

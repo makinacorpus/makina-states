@@ -46,14 +46,20 @@ import salt.minion
 import salt.exceptions
 import salt.utils
 from salt.utils.odict import OrderedDict
-import salt.utils.args
+try:
+    import salt.utils.args
+    HAS_ARGS = True
+except ImportError:
+    HAS_ARGS = False
 import salt.utils.dictupdate
 import salt.utils.pycrypto
 import salt.utils.vt
 import salt.exceptions
-from salt.ext.six import string_types, integer_types
-import salt.ext.six as six
 import mc_states.saltapi
+
+six = mc_states.saltapi.six
+string_types = six.string_types
+integer_types = six.integer_types
 
 
 _get_ret = mc_states.saltapi._get_ssh_ret
@@ -1550,6 +1556,8 @@ def salt_call(host,
     kwarg['__kwarg__'] = True
     arg.append(kwarg)
     arg, kwarg = salt.utils.args.parse_input(arg, condition=False)
+    if not HAS_ARGS:
+        raise OSError('Missing salt.utils.args')
     sarg = ''
     for i in arg:
         try:

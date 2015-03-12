@@ -4,7 +4,7 @@ Services
 .. toctree::
    :maxdepth: 3
 
-   cache.rst
+   cache/index/.rst
    backup/index.rst
    base/index.rst
    collab/index.rst
@@ -20,7 +20,7 @@ Services
    openstack/index.rst
    php/index.rst
    proxy/index.rst
-   queue.rst
+   queue/index.rst
    log/index.rst
    virt/index.rst
 
