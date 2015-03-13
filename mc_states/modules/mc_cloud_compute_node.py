@@ -78,6 +78,9 @@ def default_settings():
     target
         target minion id
 
+    expose/expose_limited
+        expose configuration to other nodes, see mc_cloud.ext_pillar
+
     all_vms
         contain compute node vms on compute node
         contain all vms on controller
@@ -89,6 +92,7 @@ def default_settings():
         a mapping indexed by target minions ids
         containing either only the compute node on compute node
         all the compute nodes on controller
+
     vms
         vms on compute node or empty dict
 
@@ -138,6 +142,8 @@ def default_settings():
     data = {'has': {'firewall': True},
             'target': target,
             'vms': OrderedDict(),
+            'expose': [],
+            'expose_limited': {},
             'domains': [],
             'vts': [],
             'ssl_certs': [],
@@ -789,8 +795,8 @@ def feed_sw_reverse_proxies_for_target(target_data):
     return target_data
 
 
-def cn_extpillar_settings(id_=None, ttl=30):
-    def _do(id_=None):
+def cn_extpillar_settings(id_=None, limited=False, ttl=30):
+    def _do(id_=None, limited=False):
         _s = __salt__
         if id_ is None:
             id_ = _s['mc_pillar.mastersalt_minion_id']()
@@ -803,69 +809,76 @@ def cn_extpillar_settings(id_=None, ttl=30):
                                         'reverse_proxies': {'target': id_}})
         data['vts'] = conf.get('vts', [])
         return data
-    cache_key = 'mc_cloud_cn.cn_extpillar_settings{0}'.format(id_)
-    return copy.deepcopy(memoize_cache(_do, [id_], {}, cache_key, ttl))
+    cache_key = 'mc_cloud_cn.cn_extpillar_settings{0}{1}'.format(id_, limited)
+    return copy.deepcopy(memoize_cache(
+        _do, [id_, limited], {}, cache_key, ttl))
 
 
-def extpillar_settings(id_=None, ttl=30):
-    def _do(id_=None):
+def extpillar_settings(id_=None, limited=False, ttl=30):
+    def _do(id_=None, limited=False):
         _s = __salt__
         data = cn_extpillar_settings(id_=id_)
-        for _vm, _vm_data in get_vms_for_target(id_).items():
-            data['vms'][_vm] = _s['mc_cloud_vm.vm_extpillar_settings'](_vm)
+        if not limited:
+            for _vm, _vm_data in get_vms_for_target(id_).items():
+                data['vms'][_vm] = _s[
+                    'mc_cloud_vm.vm_extpillar_settings'](_vm)
         # can only be done after some infos is loaded
         data['domains'] = domains_for(id_, data['domains'])
         data['ssl_certs'] = _s['mc_cloud.ssl_certs_for'](
             id_, data['domains'], data['ssl_certs'])
         _s['mc_cloud.add_ms_ssl_certs'](data)
         return data
-    cache_key = 'mc_cloud_cn.extpillar_settings{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    cache_key = 'mc_cloud_cn.extpillar_settings{0}{1}'.format(
+        id_, limited)
+    return memoize_cache(_do, [id_, limited], {}, cache_key, ttl)
 
 
-def ext_pillar(id_, prefixed=True, *args, **kw):
+def ext_pillar(id_, prefixed=True, ttl=120, *args, **kw):
     '''
     compute node extpillar
     '''
-    _s = __salt__
-    expose = False
-    if _s['mc_cloud.is_a_compute_node'](id_):
-        expose = True
-    if not expose:
-        return {}
-    data = extpillar_settings(id_)
-    # can only be done after some infos is loaded -- part2
-    data['reverse_proxies']['target'] = data['target'] = id_
-    haproxy_pre = data.get('haproxy', {}).get('raw_opts_pre', [])
-    haproxy_post = data.get('haproxy', {}).get('raw_opts_post', [])
-    for suf, opts in [
-        a for a in [
-            ['pre', haproxy_pre],
-            ['post', haproxy_post]
-        ] if a[1]
-    ]:
-        for subsection in ['https_proxy', 'http_proxy']:
-            proxy = data['reverse_proxies'].setdefault(
-                subsection, OrderedDict())
-            proxy['raw_opts_{0}'.format(suf)] = opts
-    data = feed_http_reverse_proxy_for_target(data)
-    data = feed_sw_reverse_proxies_for_target(data)
-    haproxy_opts = OrderedDict()
-    http_proxy = data['reverse_proxies']['http_proxy']
-    https_proxy = data['reverse_proxies']['https_proxy']
-    for typ, bdatadict in (
-        ("frontends", {http_proxy['name']:  http_proxy}),
-        ("frontends", {https_proxy['name']: https_proxy}),
-        ("backends", data['reverse_proxies']['http_backends']),
-        ("backends", data['reverse_proxies']['https_backends']),
-    ):
-        pref = 'makina-states.services.proxy.haproxy'
-        for id_, bdata in bdatadict.items():
-            haproxy_opts[pref + '.{0}.{1}'.format(typ, id_)] = bdata
-    if prefixed:
-        data = {PREFIX: data}
-    data.update(haproxy_opts)
-    return data
+    def _do(id_, prefixed, limited):
+        _s = __salt__
+        if not _s['mc_cloud.is_a_compute_node'](id_):
+            return {}
+        data = extpillar_settings(id_, limited=limited)
+        # can only be done after some infos is loaded -- part2
+        data['reverse_proxies']['target'] = data['target'] = id_
+        haproxy_pre = data.get('haproxy', {}).get('raw_opts_pre', [])
+        haproxy_post = data.get('haproxy', {}).get('raw_opts_post', [])
+        for suf, opts in [
+            a for a in [
+                ['pre', haproxy_pre],
+                ['post', haproxy_post]
+            ] if a[1]
+        ]:
+            for subsection in ['https_proxy', 'http_proxy']:
+                proxy = data['reverse_proxies'].setdefault(
+                    subsection, OrderedDict())
+                proxy['raw_opts_{0}'.format(suf)] = opts
+        data = feed_http_reverse_proxy_for_target(data)
+        data = feed_sw_reverse_proxies_for_target(data)
+        haproxy_opts = OrderedDict()
+        http_proxy = data['reverse_proxies']['http_proxy']
+        https_proxy = data['reverse_proxies']['https_proxy']
+        for typ, bdatadict in (
+            ("frontends", {http_proxy['name']:  http_proxy}),
+            ("frontends", {https_proxy['name']: https_proxy}),
+            ("backends", data['reverse_proxies']['http_backends']),
+            ("backends", data['reverse_proxies']['https_backends']),
+        ):
+            pref = 'makina-states.services.proxy.haproxy'
+            for id_, bdata in bdatadict.items():
+                haproxy_opts[pref + '.{0}.{1}'.format(typ, id_)] = bdata
+        if prefixed:
+            data = {PREFIX: data}
+        data.update(haproxy_opts)
+        return data
+    limited = kw.get('limited', False)
+    cache_key = 'mc_cloud_compute_node.ext_pillar{0}{1}{2}'.format(
+        id_, prefixed, limited)
+    return memoize_cache(_do, [id_, prefixed, limited],
+                         {}, cache_key, ttl)
 
 
 '''

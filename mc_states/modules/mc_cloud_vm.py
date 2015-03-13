@@ -53,7 +53,6 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
 
         mode
             (salt (default) or mastersalt)
-
         ssh_gateway
             ssh gateway info
         ssh_gateway_port
@@ -201,6 +200,10 @@ def vm_default_settings(vm, cloudSettings, imgSettings, extpillar=False):
         domains
             list of domains tied with this host (first is minion id
             and main domain name, it is automaticly added)
+
+       expose/expose_limited
+          expose configuration to other nodes, see mc_cloud.ext_pillar
+
     '''
     _s = __salt__
     vm_infos = _s['mc_cloud_compute_node.get_vm'](vm)
@@ -210,7 +213,6 @@ def vm_default_settings(vm, cloudSettings, imgSettings, extpillar=False):
     else:
         vt_settings = _s['mc_cloud_vm.vt_default_settings'.format(vt)](
             cloudSettings, imgSettings)
-
     # if it is not a distant minion, use private gateway ip
     master = vt_settings['defaults']['master']
     if _s['mc_pillar.mastersalt_minion_id']() == target:
@@ -218,6 +220,8 @@ def vm_default_settings(vm, cloudSettings, imgSettings, extpillar=False):
     node = 'mc_cloud_compute_node.'
     data = _s['mc_utils.dictupdate'](vt_settings['defaults'], {
         'name': vm,
+        'expose': [],
+        'expose_limited': {},
         'vt': vt_settings['vt'],
         'target': target,
         'master': master,
@@ -250,7 +254,7 @@ def vt_extpillar_settings(vt, ttl=60):
     return memoize_cache(_do, [vt], {}, cache_key, ttl)
 
 
-def vm_extpillar_settings(vm, ttl=30):
+def vm_extpillar_settings(vm, limited=False, ttl=30):
     _s = __salt__
 
     def _sort_domains(dom):
@@ -259,7 +263,7 @@ def vm_extpillar_settings(vm, ttl=30):
         else:
             return '1{0}'.format(dom)
 
-    def _do(vm):
+    def _do(vm, limited):
         cloudSettings = _s['mc_cloud.extpillar_settings']()
         imgSettings = _s['mc_cloud_images.extpillar_settings']()
         data = _s['mc_pillar.get_cloud_conf_for_vm'](vm)
@@ -305,27 +309,28 @@ def vm_extpillar_settings(vm, ttl=30):
             ipinfos.setdefault('netmask', '32')
             ipinfos.setdefault('link', 'br0')
         return data
-    cache_key = 'mc_cloud_vm.extpillar_settings{0}'.format(vm)
-    return memoize_cache(_do, [vm], {}, cache_key, ttl)
+    cache_key = 'mc_cloud_vm.extpillar_settings{0}{1}'.format(vm, limited)
+    return memoize_cache(_do, [vm, limited], {}, cache_key, ttl)
 
 
-def vt_extpillar(target, vt, ttl=60):
-    def _do(target, vt):
+def vt_extpillar(target, vt, limited=False, ttl=60):
+    def _do(target, vt, limited):
         _s = __salt__
         extdata = _s['mc_pillar.get_cloud_conf_for_cn'](target).get(vt, {})
         data = vt_extpillar_settings(vt)
         fun = 'mc_cloud_{0}.vt_extpillar'.format(vt)
-        data = _s['mc_utils.dictupdate'](_s[fun](target, data), extdata)
+        data = _s['mc_utils.dictupdate'](_s[fun](
+            target, data, limited=limited), extdata)
         return data
-    cache_key = 'mc_cloud_vm.vt_extpillar{0}{1}'.format(target, vt)
-    return memoize_cache(_do, [target, vt], {}, cache_key, ttl)
+    cache_key = 'mc_cloud_vm.vt_extpillar{0}{1}{2}'.format(target, vt, limited)
+    return memoize_cache(_do, [target, vt, limited], {}, cache_key, ttl)
 
 
 def domains_for(vm, domains=None):
     _s = __salt__
     if domains is None:
         vm_settings = _s['mc_cloud_vm.vm_extpillar_settings'](vm)
-        domains =vm_settings['domains']
+        domains = vm_settings['domains']
     # special case as domains is a list but we always want for
     # the vm id to be un domains list even if overriden in
     # extpillar
@@ -333,8 +338,8 @@ def domains_for(vm, domains=None):
     return domains
 
 
-def vm_extpillar(id_, ttl=60):
-    def _do(id_):
+def vm_extpillar(id_, limited=False, ttl=60):
+    def _do(id_, limited):
         _s = __salt__
         extdata = _s['mc_pillar.get_cloud_conf_for_vm'](id_)
         data = vm_extpillar_settings(id_)
@@ -345,12 +350,12 @@ def vm_extpillar(id_, ttl=60):
             id_, data['domains'], data['ssl_certs'])
         _s['mc_cloud.add_ms_ssl_certs'](data)
         return data
-    cache_key = 'mc_cloud_vm.vm_extpillar{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    cache_key = 'mc_cloud_vm.vm_extpillar{0}{1}'.format(id_, limited)
+    return memoize_cache(_do, [id_, limited], {}, cache_key, ttl)
 
 
 def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
-    def _do(id_, prefixed):
+    def _do(id_, prefixed, limited):
         _s = __salt__
         all_vms = _s['mc_cloud_compute_node.get_vms']()
         targets = _s['mc_cloud_compute_node.get_targets']()
@@ -378,16 +383,21 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
             vts_pillar = data['vts']
             vms_pillar = data['vms']
         for vt in vts:
-            vts_pillar[vt] = _s['mc_cloud_vm.vt_extpillar'](target, vt)
+            vts_pillar[vt] = _s['mc_cloud_vm.vt_extpillar'](
+                target, vt, limited=limited)
         for vm, vmdata in vms.items():
             vt = vmdata['vt']
-            vm_settings = _s['mc_cloud_vm.vm_extpillar'](vm)
+            vm_settings = _s['mc_cloud_vm.vm_extpillar'](
+                vm, limited=limited)
             vm_settings['vt'] = vt
             vms_pillar[vm] = vm_settings
             _s['mc_cloud.add_ms_ssl_certs'](data, vm_settings)
         return data
-    cache_key = 'mc_cloud_vm.ext_pillar{0}{1}'.format(id_, prefixed)
-    return memoize_cache(_do, [id_, prefixed], {}, cache_key, ttl)
+    limited = kw.get('limited', False)
+    cache_key = 'mc_cloud_vm.ext_pillar{0}{1}{2}'.format(
+        id_, prefixed, limited)
+    return memoize_cache(_do, [id_, prefixed, limited],
+                         {}, cache_key, ttl)
 
 
 '''
