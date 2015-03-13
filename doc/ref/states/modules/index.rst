@@ -84,7 +84,7 @@ Subregistries
    mc_www.rst
 
 
-RemoteExecution/Pass/ProjectManagement modules
+RemoteExecution/PaaS/ProjectManagement modules
 ------------------------------------------------
 .. toctree::
    :maxdepth: 2
