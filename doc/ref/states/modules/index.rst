@@ -11,6 +11,17 @@ Registries
    mc_localsettings.rst
    mc_services.rst
 
+ 
+RemoteExecution/PaaS/ProjectManagement modules
+------------------------------------------------
+.. toctree::
+   :maxdepth: 2
+
+   mc_project.rst
+   mc_project_2.rst
+   mc_remote.rst
+
+ 
 Subregistries
 --------------
 .. toctree::
@@ -82,16 +93,6 @@ Subregistries
    mc_usergroup.rst
    mc_uwsgi.rst
    mc_www.rst
-
-
-RemoteExecution/PaaS/ProjectManagement modules
-------------------------------------------------
-.. toctree::
-   :maxdepth: 2
-
-   mc_project.rst
-   mc_project_2.rst
-   mc_remote.rst
 
 
 Other modules
