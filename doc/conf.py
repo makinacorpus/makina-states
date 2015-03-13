@@ -47,6 +47,7 @@ MOCK_MODULES = [
     'yaml',
     'yaml.constructor',
     'yaml.nodes',
+    'yaml.error',
     'yaml.scanner',
     'zmq',
     # salt.cloud
@@ -74,6 +75,7 @@ MOCK_MODULES = [
     'yum',
     'OpenSSL',
     'zfs'
+    'yaml.error',
     # cd src/salt/ && find salt -name "*py"|sed -re s:/__init__.py::g -e s:/:.:g -e s:.py$::g|sort -u >>../../doc/conf.py && cd -
     'salt',
     'salt.auth',

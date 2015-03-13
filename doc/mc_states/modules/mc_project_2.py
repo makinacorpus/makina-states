@@ -3,7 +3,7 @@
 .. _module_mc_project_2:
 
 mc_project_2 / project settings regitry APIV2
-===============================================
+================================================
 
 
 
@@ -1427,10 +1427,12 @@ def working_copy_in_initial_state(wc, **kw):
     '''
     Test if a directory is at the first git commit
     from this system
+
     wc
         where to execute
     user
         user to act with
+
     '''
     _s = __salt__
     use, group = get_default_user_group(**kw)
@@ -2047,6 +2049,7 @@ def run_task(name, only_steps, *args, **kwargs):
     Run one or more tasks inside a project context
 
     You can filter steps to run with only_steps
+
     All sls in .salt which are a task (beginning with task_ will be searched
     and the one matching only_steps (string or list) will be executed
     '''
@@ -2137,9 +2140,12 @@ def install(name, only_steps=None, task_mode=False, *args, **kwargs):
     You can filter steps to run with only_steps
     All sls in .salt which are not special or tasks (beginning with tasks
     will be executed)
+
     eg::
+
         salt mc_project.deploy only=install onlystep=00_foo,001_bar
         salt mc_project.deploy only=install onlystep=00_foo
+
     '''
     if not only_steps:
         only_steps = []
@@ -2387,6 +2393,7 @@ def link(names, *args, **kwargs):
 def unlink(names, *args, **kwargs):
     '''
     Remove the link wired in salt folders (pillar & salt)
+
     name
         list of project(s) separated by commas
     '''
