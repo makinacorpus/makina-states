@@ -11,6 +11,17 @@ Registries
    mc_localsettings.rst
    mc_services.rst
 
+ 
+RemoteExecution/PaaS/ProjectManagement modules
+------------------------------------------------
+.. toctree::
+   :maxdepth: 2
+
+   mc_project.rst
+   mc_project_2.rst
+   mc_remote.rst
+
+ 
 Subregistries
 --------------
 .. toctree::
@@ -66,7 +77,6 @@ Subregistries
    mc_rabbitmq.rst
    mc_rdiffbackup.rst
    mc_redis.rst
-   mc_remote.rst
    mc_rsyslog.rst
    mc_rvm.rst
    mc_salt.rst
@@ -91,7 +101,6 @@ Other modules
    :maxdepth: 2
 
    mc_macros.rst
-   mc_project.rst
    mc_utils.rst
 
 

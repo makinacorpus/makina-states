@@ -1,0 +1,2 @@
+
+execute build.sh to workaround autodoc that does not like __future__, do copy modules without future & let sphinx digest them
