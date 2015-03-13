@@ -1825,6 +1825,10 @@ def init_project(name, *args, **kwargs):
                                       api_version=cfg['api_version'],
                                       *args,
                                       **refresh_files_in_working_copy_kwargs)
+        # remove if found, the force marker
+        fm = os.path.join(cfg['project_git_root'], 'hooks', 'force_marker')
+        if os.path.exists(fm):
+            remove_path(fm)
     except projects_api.ProjectInitException, ex:
         trace = traceback.format_exc()
         ret['result'] = False
