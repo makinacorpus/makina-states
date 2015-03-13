@@ -1435,7 +1435,7 @@ def working_copy_in_initial_state(wc, **kw):
 
     '''
     _s = __salt__
-    use, group = get_default_user_group(**kw)
+    user, group = get_default_user_group(**kw)
     cret = _s['cmd.run_all'](
         'git log --pretty=format:"%h:%s:%an"',
         cwd=wc, python_shell=True, runas=user)
@@ -1471,7 +1471,7 @@ def sync_working_copy(wc,
     '''
     _s = __salt__
     rev = get_default_rev(rev)
-    use, group = get_default_user_group(**kw)
+    user, group = get_default_user_group(**kw)
     if origin is None:
         origin = 'origin'
     ret = _get_ret(**kw)
@@ -1825,6 +1825,10 @@ def init_project(name, *args, **kwargs):
                                       api_version=cfg['api_version'],
                                       *args,
                                       **refresh_files_in_working_copy_kwargs)
+        # remove if found, the force marker
+        fm = os.path.join(cfg['project_git_root'], 'hooks', 'force_marker')
+        if os.path.exists(fm):
+            remove_path(fm)
     except projects_api.ProjectInitException, ex:
         trace = traceback.format_exc()
         ret['result'] = False
