@@ -1435,7 +1435,7 @@ def working_copy_in_initial_state(wc, **kw):
 
     '''
     _s = __salt__
-    use, group = get_default_user_group(**kw)
+    user, group = get_default_user_group(**kw)
     cret = _s['cmd.run_all'](
         'git log --pretty=format:"%h:%s:%an"',
         cwd=wc, python_shell=True, runas=user)
@@ -1471,7 +1471,7 @@ def sync_working_copy(wc,
     '''
     _s = __salt__
     rev = get_default_rev(rev)
-    use, group = get_default_user_group(**kw)
+    user, group = get_default_user_group(**kw)
     if origin is None:
         origin = 'origin'
     ret = _get_ret(**kw)
