@@ -388,7 +388,6 @@ def submit_async_job(target,
                                  **arkwargs)
             break
         except (SaltClientError, EauthAuthenticationError) as exc:
-            import pdb;pdb.set_trace()  ## Breakpoint ##
             if thistry > findtries:
                 raise exc
             time.sleep(poll)
@@ -403,7 +402,6 @@ def submit_async_job(target,
                             arg=[jid], **rkwargs)
             break
         except (SaltClientError, EauthAuthenticationError) as exc:
-            import pdb;pdb.set_trace()  ## Breakpoint ##
             if thistry > findtries:
                 raise exc
             time.sleep(poll)
