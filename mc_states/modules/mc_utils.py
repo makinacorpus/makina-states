@@ -710,6 +710,23 @@ def json_load(data):
     return api.json_load(data)
 
 
+def sls_load(sls, get_inner=False):
+    if not os.path.exists(sls):
+        raise OSError('does not exists: {0}'.format(sls))
+    jinjarend = salt.loader.render(__opts__, __salt__)
+    data_l = salt.template.compile_template(
+        sls, jinjarend, __opts__['renderer'], 'base')
+    if isinstance(data_l, (dict, list, set)) and get_inner:
+        if len(data_l) == 1:
+            if isinstance(data_l, dict):
+                for key in six.iterkeys(data_l):
+                    data_l = data_l[key]
+                    break
+            else:
+                data_l = data_l[0]
+    return data_l
+
+
 def yencode(string):
     """."""
     return api.yencode(string)
