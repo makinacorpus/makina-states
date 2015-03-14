@@ -71,7 +71,7 @@ def run_vt_hook(hook_name,
     ret = __salt__['mc_cloud_controller.run_vt_hook'](
         hook_name, target=target, ret=ret, vts=vts, output=output,
         *args, **kwargs)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -88,7 +88,7 @@ def upgrade_vts(target, ret=None, output=True):
         ret['comment'] += yellow(
             '{0} is now upgraded to host vms\n'.format(target))
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -105,7 +105,7 @@ def install_vts(target, ret=None, output=True):
         ret['comment'] += yellow(
             '{0} is now ready to host vms\n'.format(target))
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -120,7 +120,7 @@ def configure(what, target, ret, output):
     ret = _s['mc_api.apply_sls']('{0}.{1}'.format(_GPREF, what),
                                  **{'salt_target': target, 'ret': ret})
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -192,7 +192,7 @@ def reconfigure_front(target, ret=None, output=True):
     ]:
         step(target, ret=ret, output=False)
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -223,7 +223,7 @@ def deploy(target, output=True, ret=None, hooks=True, pre=True, post=True):
         run_vt_hook('post_deploy_compute_node',
                     ret=ret, target=target, output=output)
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -244,7 +244,7 @@ def post_deploy(target, ret=None, output=True):
     hook = 'post_post_deploy_compute_node'
     run_vt_hook(hook, target=target, ret=ret, output=output)
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -268,7 +268,7 @@ def filter_compute_nodes(nodes, skip, only):
                 only = [a for a in only.split(',') if a.strip()]
         targets = [a for a in targets if a in only]
     targets.sort()
-    __salt__['mc_api.time_log']('end', fname, targets=targets)
+    __salt__['mc_api.time_log']('end', fname)
     return targets
 
 
@@ -339,7 +339,7 @@ def provision_compute_nodes(skip=None, only=None,
             ret['trace'] = ''
             ret['comment'] += green('All computes nodes were provisionned\n')
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -395,7 +395,7 @@ def post_provision_compute_nodes(skip=None, only=None,
             ret['comment'] += green(
                 'All computes nodes were postprovisionned\n')
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -517,7 +517,7 @@ def orchestrate(skip=None,
                         lresult = False
     ret['result'] = lresult
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -552,7 +552,7 @@ def report(targets, ret=None, refresh=False, output=True):
         sret += '{0}'.format(cli('mc_project.report', salt_target=target))
     ret['result'] = sret
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 

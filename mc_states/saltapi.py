@@ -55,6 +55,7 @@ _marker = object()
 _RUNNERS = {}
 LXC_IMPLEMENTATION = 'mc_lxc_fork'
 LXC_IMPLEMENTATION = 'lxc'
+DEFAULT_POLL = 0.4
 STRIP_FLAGS = re.M | re.U | re.S
 STRIPPED_RES = [
     re.compile(r"\x1b\[[0-9;]*[mG]", STRIP_FLAGS),
@@ -219,13 +220,44 @@ def master_opts(*args, **kwargs):
     return _master_opts(*args, **kwargs)
 
 
-def _runner(cfgdir=None, cfg=None):
-    # opts = _master_opts()
-    # opts['output'] = 'quiet'
+def get_local_client(cfgdir=None, cfg=None, conn=None, **kwargs):
+    '''
+    Get a local client
+
+    cfgdir/cfg
+        args given to localclient
+
+    '''
+    if isinstance(conn, LocalClient):
+        return conn
+    kw = {}
+    if cfgdir:
+        kw['cfgdir'] = cfgdir
+    if cfg:
+        kw['cfg'] = cfg
+    key = '{0}_{1}'.format(cfgdir, cfg)
+    if key not in _CLIENTS:
+        _CLIENTS[key] = LocalClient(mopts=_master_opts(**kw))
+    return _CLIENTS[key]
+
+
+def get_local_runner(cfgdir=None, cfg=None, runner=None, **kwargs):
+    conn = kwargs.get('runner', None)
+    if isinstance(conn, RunnerClient):
+        return conn
+    kw = {}
+    if cfgdir:
+        kw['cfgdir'] = cfgdir
+    if cfg:
+        kw['cfgdir'] = cfg
     key = '{0}_{1}'.format(cfgdir, cfg)
     if key not in _RUNNERS:
         _RUNNERS[key] = RunnerClient(_master_opts(cfgdir=cfgdir, cfg=cfg))
-    return _RUNNERS
+    return _RUNNERS[key]
+
+
+def _runner(*a, **kw):
+    return get_local_runner(*a, **kw)
 
 
 def get_local_target(cfgdir=None):
@@ -233,17 +265,39 @@ def get_local_target(cfgdir=None):
     return target
 
 
-def _client(cfgdir=None, cfg=None):
-    key = '{0}_{1}'.format(cfgdir, cfg)
-    if key not in _CLIENTS:
-        _CLIENTS[key] = LocalClient(mopts=_master_opts(cfgdir=cfgdir, cfg=cfg))
-    return _CLIENTS[key]
+def _client(*a, **kw):
+    '''
+    Retocompat alias
+    '''
+    return get_local_client(*a, **kw)
+
+
+def get_failure_error(jid, target, fun, args, kw):
+    try:
+        jidt = ''
+        if jid:
+            jidt = '{0}'.format(jid)
+        to_errmsg = (
+            'Failure for [job/]fun[/args/kw'
+            ' {1}{2}/{4}/{5}'
+        ).format(None, jidt, fun, target, args, kw)
+        raise
+    except:
+        jidt = ''
+        if jid:
+            jidt = '{0}'.format(jid)
+        to_errmsg = (
+            'Failure for [job/]fun'
+            ' {1}{2}'
+        ).format(None, jidt, fun, target)
+    return to_errmsg
+
 
 
 def get_timeout_error(wait_for_res,
                       jid,
-                      fun,
                       target,
+                      fun,
                       args,
                       kw):
     try:
@@ -270,7 +324,15 @@ def get_timeout_error(wait_for_res,
     return to_errmsg
 
 
-def wait_running_job(conn, target, jid, timeout=0, running=True, poll=0.4):
+def wait_running_job(target,
+                     jid,
+                     timeout=0,
+                     running=True,
+                     poll=DEFAULT_POLL,
+                     conn=None,
+                     **run_kw):
+    if conn is None:
+        conn = get_local_client(**run_kw)
     endto = time.time() + timeout
     while running:
         # Again, do not fall too quick on findjob which is quite
@@ -288,6 +350,7 @@ def wait_running_job(conn, target, jid, timeout=0, running=True, poll=0.4):
             except (SaltClientError, EauthAuthenticationError) as exc:
                 if thistry > findtries:
                     raise exc
+                time.sleep(poll)
         running = bool(cret.get(target, False))
         if not running:
             break
@@ -297,11 +360,24 @@ def wait_running_job(conn, target, jid, timeout=0, running=True, poll=0.4):
         time.sleep(poll)
 
 
-def submit_async_job(conn, target, fun, args, kw, **run_kw):
+def submit_async_job(target,
+                     fun,
+                     args,
+                     kw,
+                     timeout=10,
+                     conn=None,
+                     rkwargs=None,
+                     **run_kw):
+    if rkwargs is None:
+        rkwargs = {}
+    if conn is None:
+        conn = get_local_client(**run_kw)
     cret = None
-    rkwargs = copy.deepcopy(run_kw.get('kwargs', {}))
-    rkwargs['timeout'] = 10
+    arkwargs = copy.deepcopy(rkwargs)
+    arkwargs['timeout'] = timeout
     findtries, thistry = 10, 0
+    poll = rkwargs.get('poll', DEFAULT_POLL)
+    jid = _marker
     while thistry < findtries:
         thistry += 1
         try:
@@ -309,12 +385,14 @@ def submit_async_job(conn, target, fun, args, kw, **run_kw):
                                  fun=fun,
                                  arg=args,
                                  kwarg=kw,
-                                 **rkwargs)
+                                 **arkwargs)
             break
         except (SaltClientError, EauthAuthenticationError) as exc:
             if thistry > findtries:
                 raise exc
+            time.sleep(poll)
         # do not fall too quick on findjob which is quite spamming the
+    _check_ret(jid, '', target, run, args, kw)
     # master and give too early of a false positive
     findtries, thistry = 10, 0
     while thistry < findtries:
@@ -326,27 +404,34 @@ def submit_async_job(conn, target, fun, args, kw, **run_kw):
         except (SaltClientError, EauthAuthenticationError) as exc:
             if thistry > findtries:
                 raise exc
+            time.sleep(poll)
     return jid, cret
 
 
-def run_and_poll(conn, target, fun, args, kw, **run_kw):
-    cret = _marker
-    cfgdir = run_kw['cfgdir']
-    cfg = run_kw['cfg']
-    poll = run_kw['poll']
-    timeout = run_kw.get('timeout', 10)
-    runner = _runner(cfgdir=cfgdir, cfg=cfg)
+def run_and_poll(target,
+                 fun,
+                 args,
+                 kw,
+                 conn=None,
+                 runner=None,
+                 rkwargs=None,
+                 **run_kw):
+    if runner is None:
+        runner = get_local_runner(**run_kw)
+    if conn is None:
+        conn = get_local_client(**run_kw)
+    if rkwargs is None:
+        rkwargs = {}
+    ret = _marker
+    poll = rkwargs.get('poll', DEFAULT_POLL)
     wait_for_res = float({'test.ping': '5', }.get(fun, '120'))
-    jid, cret = submit_async_job(conn, target, fun, args, kw, **run_kw)
+    jid, cret = submit_async_job(target, fun, args, kw,
+                                 conn=conn, rkwargs=rkwargs)
     running = bool(cret.get(target, False))
-    wait_running_job(conn, target, jid,
-                     timeout=timeout,
-                     running=running,
-                     poll=poll)
+    wait_running_job(target, jid, running=running, conn=conn, poll=poll)
     wendto = time.time() + wait_for_res
     while True:
-        cret = runner.cmd('jobs.lookup_jid',
-                          [jid, {'__kwarg__': True}])
+        cret = runner.cmd('jobs.lookup_jid', [jid, {'__kwarg__': True}])
         if target in cret:
             ret = cret[target]
             break
@@ -356,13 +441,22 @@ def run_and_poll(conn, target, fun, args, kw, **run_kw):
         if fun in ['test.ping'] and not wait_for_res:
             ret = {'test.ping': False}.get(fun, False)
         if time.time() > wendto:
-            raise SaltExit(
-                get_timeout_error(10, jid, fun, target, args, kw))
+            raise SaltExit(get_timeout_error(10, jid, target, fun, args, kw))
         time.sleep(poll)
+    return _check_ret(ret, jid, fun, args, kw)
+
+
+def _check_ret(ret, jid, target, fun, args, kw):
+    if ret is _marker:
+        raise SaltExit(get_failure_error( jid, target, fun, args, kw))
     return ret
 
 
-def run(conn, target, fun, args, kw, **run_kw):
+def run(target, fun, args, kw, rkwargs=None, conn=None, **run_kw):
+    if rkwargs is None:
+        rkwargs = {}
+    if conn is None:
+        conn = get_local_client(**run_kw)
     # do not fall too quick on findjob which is quite spamming the
     # master and give too early of a false positive
     findtries, thistry = 10, 0
@@ -370,43 +464,45 @@ def run(conn, target, fun, args, kw, **run_kw):
     while thistry < findtries:
         thistry += 1
         try:
-            ret = conn.cmd(
-                tgt=target, fun=fun, arg=args, kwarg=kw, **run_kw['kwargs']
-            )[target]
+            ret = conn.cmd(target, fun, args, kwarg=kw, **rkwargs)[target]
             break
         except (SaltClientError, EauthAuthenticationError) as exc:
             if thistry > findtries:
                 raise exc
-    return ret
+            time.sleep(0.4)
+    return _check_ret(ret, '', target, fun, args, kw)
 
 
-def assert_pinguable(conn, target, ping_max_retries=10):
-        # be sure that the executors are alive
-        ping_retries = 0
-        while ping_retries <= ping_max_retries:
-            try:
-                if ping_retries > 0:
-                    time.sleep(1)
-                pings = conn.cmd(tgt=target,
-                                 timeout=10,
-                                 fun='test.ping')
-                values = pings.values()
-                if not values:
-                    ping = False
-                for v in values:
-                    if v is not True:
-                        ping = False
-                if not ping:
-                    raise ValueError('Unreachable')
-                break
-            except Exception:
+def assert_pinguable(target, max_retries=10, conn=None, **run_kw):
+    if conn is None:
+        conn = get_local_client(**run_kw)
+    # be sure that the executors are alive
+    ping_retries = 0
+    while ping_retries <= max_retries:
+        try:
+            if ping_retries > 0:
+                time.sleep(1)
+            pings = conn.cmd(tgt=target,
+                             timeout=10,
+                             fun='test.ping')
+            values = pings.values()
+            ping = True
+            if not values:
                 ping = False
-                ping_retries += 1
-                log.error(get_timeout_error(
-                    10, '', 'test.ping', target, '', ''))
-        if not ping:
-            raise SaltExit(
-                'Target {0} unreachable'.format(target))
+            for v in values:
+                if v is not True:
+                    ping = False
+            if not ping:
+                raise ValueError('Unreachable')
+            break
+        except Exception:
+            ping = False
+            ping_retries += 1
+            log.error(get_timeout_error(
+                10, '', target, 'test.ping', '', ''))
+    if not ping:
+        raise SaltExit('Target {0} unreachable'.format(target))
+
 
 def client(fun, *args, **kw):
     '''
@@ -475,7 +571,6 @@ def client(fun, *args, **kw):
         run_kw['kwargs'] = kw.pop('kwargs')
     except KeyError:
         run_kw['kwargs'] = {}
-    kwargs = run_kw['kwargs']
     try:
         sargs = json.dumps(args)
     except TypeError:
@@ -489,26 +584,23 @@ def client(fun, *args, **kw):
     except TypeError:
         skwargs = ''
 
-    def _do(target, fun, args, kw, kwargs):
-        # timeout for the master to return data
-        # about a specific job
-        conn = _client(cfgdir=run_kw['cfgdir'], cfg=run_kw['cfg'])
-        # the target(s) have environ one minute to respond
-        # we call 60 ping request, without HERE time
-        # check which is useless in this check
-        ping_max_retries = 6
+    def _do(target, fun, args, kw, run_kw):
+        conn = get_local_client(**run_kw)
+        runner = get_local_runner(**run_kw)
         # do not check ping... if we are pinguing
         if not fun == 'test.ping':
-            assert_pinguable(conn, target, ping_max_retries=ping_max_retries)
+            assert_pinguable(target, max_retries=6, conn=conn)
         # throw the real job command
         findtries, thistry = 10, 0
         ret = _marker
+        rkwargs = run_kw['kwargs']
         while thistry < findtries:
             thistry += 1
             if not run_kw['polling']:
-                ret = run(conn, target, fun, args, kw, **run_kw)
+                ret = run(target, fun, args, kw, conn=conn, rkwargs=rkwargs)
             else:
-                ret = run_and_poll(conn, target, fun, args, kw, **run_kw)
+                ret = run_and_poll(target, fun, args, kw,
+                                   rkwargs=rkwargs, runner=runner, conn=conn)
             if ret is not _marker:
                 break
             if thistry > findtries:
@@ -524,7 +616,7 @@ def client(fun, *args, **kw):
                     'module/function {0} is not available'.format(fun))
         return ret
     cache_key = 'mcapi_' + '_'.join([target, fun, sargs, skw, skwargs])
-    return memoize_cache(_do, [target, fun, args, kw, kwargs], {},
+    return memoize_cache(_do, [target, fun, args, kw, run_kw], {},
                          cache_key, ttl, force_run=force_run)
 
 
