@@ -362,6 +362,7 @@ def get_default_configuration(remote_host=None):
     return conf
 
 
+
 def _defaultsConfiguration(
     cfg,
     default_env,
@@ -378,11 +379,7 @@ def _defaultsConfiguration(
     if os.path.exists(sample):
         try:
             sample_data = OrderedDict()
-            if not os.path.exists(sample):
-                raise OSError('does not exists: {0}'.format(sample))
-            jinjarend = salt.loader.render(__opts__, __salt__)
-            sample_data_l = salt.template.compile_template(
-                sample, jinjarend, __opts__['renderer'], 'base')
+            sample_data_l = __salt__['mc_utils.sls_load'](sample)
             # sample_data_l = __salt__['mc_utils.cyaml_load'](fic.read())
             defaultsConfiguration['sls_default_pillar'] = sample_data_l
             if not isinstance(sample_data_l, dict):
