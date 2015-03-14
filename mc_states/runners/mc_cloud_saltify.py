@@ -153,7 +153,7 @@ def saltify(name, output=True, ret=None):
         ret['result'] = False
         _s['mc_api.out'](ret, __opts__, output=output)
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', func_name, ret=ret)
+    _s['mc_api.time_log']('end', func_name)
     return ret
 
 
@@ -231,6 +231,6 @@ def orchestrate(only=None, skip=None, ret=None, output=True, refresh=False):
         comment = green('All targets were successfuly saltified.')
     ret['comment'] += '\n{0}'.format(comment)
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', func_name, ret=ret)
+    _s['mc_api.time_log']('end', func_name)
     return ret
 #

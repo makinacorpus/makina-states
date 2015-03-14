@@ -92,7 +92,7 @@ def run_vt_hook(hook_name,
             cret = _s[vid_](*args, **kwargs)
             merge_results(ret, cret)
             check_point(ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -113,7 +113,7 @@ def dns_conf(output=True, ret=None):
     check_point(kw['ret'], __opts__, output=output)
     run_vt_hook('post_dns_conf_on_controller', ret=kw['ret'], output=output)
     __salt__['mc_api.out'](kw['ret'], __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return kw['ret']
 
 
@@ -136,7 +136,7 @@ def deploy(output=True, ret=None):
     check_point(kw['ret'], __opts__, output=output)
     run_vt_hook('post_deploy_controller', ret=kw['ret'], output=output)
     __salt__['mc_api.out'](kw['ret'], __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return kw['ret']
 
 
@@ -313,7 +313,7 @@ def orchestrate(skip=None,
     # make the exec fail if the provision of at least one CN failed
     ret['result'] = gret and ret['result']
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
