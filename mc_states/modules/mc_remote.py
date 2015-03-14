@@ -1635,9 +1635,12 @@ def salt_call(host,
     script = salt_call_script.format(**skwargs)
     level = kw["vt_loglevel"]
     if not remote:
-        cret = __salt__['cmd.run_all'](
-            script, python_shell=True, runas=kw['ssh_user'], use_vt=use_vt)
-        ret = cret
+        try:
+            ret = __salt__['cmd.run_all'](
+                script, python_shell=True, runas=kw['ssh_user'], use_vt=use_vt)
+        finally:
+            if os.path.exists(skwargs['quoted_outfile']):
+                os.remove(skwargs['quoted_outfile'])
     else:
         try:
             if level in ['trace', 'garbage']:

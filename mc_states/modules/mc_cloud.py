@@ -287,18 +287,18 @@ def gather_expositions(ttl=60):
         vms = _s['mc_cloud_compute_node.get_vms']()
         targets = _s['mc_cloud_compute_node.get_targets']()
         for vkind, fun, mapping in [
-            ('vm',
+            ('vms',
              'mc_pillar.get_cloud_conf_for_vm',
              vms),
-            ('cn',
+            ('cns',
              'mc_pillar.get_cloud_conf_for_cn',
              targets),
         ]:
             for i, tdata in six.iteritems(mapping):
                 if _s['mc_cloud.is_a_compute_node'](i):
-                    kind = 'cn'
+                    kind = 'cns'
                 else:
-                    kind = 'vm'
+                    kind = 'vms'
                 if not (is_a_vm(i) or is_a_compute_node(i)):
                     continue
                 rexpose = direct.setdefault(i, OrderedDict())
@@ -337,9 +337,9 @@ def gather_expositions(ttl=60):
                 ]:
                     for item, access in six.iteritems(exposure):
                         if _s['mc_cloud.is_a_compute_node'](item):
-                            ikind = 'cn'
+                            ikind = 'cns'
                         else:
-                            ikind = 'vm'
+                            ikind = 'vms'
                         dex = fdict.setdefault(
                             item, {'access': None, 'kinds': []})
                         if ikind not in dex['kinds']:
@@ -383,12 +383,12 @@ def gather_exposed_data(target, ttl=60):
             for kind in tdata['kinds']:
                 gepillar = copy.deepcopy(
                     ext_pillar(host, limited=True, prefixed=False))
-                fun = {'vm': 'mc_cloud_vm.ext_pillar',
-                       'cn': 'mc_cloud_compute_node.ext_pillar'}[kind]
+                fun = {'vms': 'mc_cloud_vm.ext_pillar',
+                       'cns': 'mc_cloud_compute_node.ext_pillar'}[kind]
                 sepillar = copy.deepcopy(
                     _s[fun](host, prefixed=False, limited=True))
                 gepillar = _s['mc_utils.dictupdate'](gepillar, sepillar)
-                if kind == 'vm':
+                if kind == 'vms':
                     vms = gepillar.pop('vms', {})
                     gepillar.pop('vts', {})
                     vm = vms.get(host, {})
