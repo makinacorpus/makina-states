@@ -264,10 +264,12 @@ def add_ms_ssl_certs(data, extdata=None):
     return data
 
 
-def filter_exposed_data(data, mode='full'):
+def filter_exposed_data(target, data, mode='full'):
     data = copy.deepcopy(data)
     if mode != 'full':
         for k in [a for a in data]:
+            if k in [target]:
+                continue
             for l in ['pass', 'user']:
                 if l in k:
                     data.pop(k, None)
@@ -374,8 +376,18 @@ def gather_expositions(ttl=60):
 def gather_exposed_data(target, ttl=60):
     def _do(target):
         _s = __salt__
-        exposed_to_me = gather_expositions()[
-            'indirect'].get(target, OrderedDict())
+        exposed_to_me = copy.deepcopy(
+            gather_expositions()['indirect'].get(target, OrderedDict())
+        )
+        if target not in exposed_to_me:
+            exposed_to_me[target] = {'access': 'full', 'kinds': []}
+        kinds = exposed_to_me[target].setdefault('kinds', [])
+        if is_a_vm(target):
+            if 'vms' not in kinds:
+                kinds.append('vms')
+        if is_a_compute_node(target):
+            if 'cns' not in kinds:
+                kinds.append('cns')
         exposed_datas = OrderedDict()
         if not exposed_to_me:
             return {}
@@ -406,7 +418,7 @@ def gather_exposed_data(target, ttl=60):
                 kexposed_datas = exposed_datas.setdefault(kind, OrderedDict())
                 kexposed_datas[host] = _s['mc_utils.dictupdate'](
                     kexposed_datas.setdefault(host, OrderedDict()),
-                    filter_exposed_data(gepillar, tdata['access']))
+                    filter_exposed_data(target, gepillar, tdata['access']))
         return exposed_datas
     cache_key = '{0}.{1}.{2}'.format(__name, 'gather_exposed_data', target)
     return memoize_cache(_do, [target], {}, cache_key, ttl)
