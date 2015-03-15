@@ -4194,7 +4194,7 @@ upgrade_from_buildout() {
     if [ "x${IS_MASTERSALT}" != "x" ] && [ ! -e "${MASTERSALT_VENV_PATH}" ];then
         s_venv="1"
     fi
-    if [ "${s_venv}" != "x" ];then
+    if [ "x${s_venv}" != "x" ];then
         setup_virtualenvs
     fi
 }
