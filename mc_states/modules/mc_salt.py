@@ -520,6 +520,12 @@ def settings():
     return _settings()
 
 
+def has_mastersalt():
+    return __salt__['mc_controllers.has_mastersalt']()
+
+
+def has_mastersalt_running():
+    return __salt__['mc_controllers.has_mastersalt_running']()
 
 
 #

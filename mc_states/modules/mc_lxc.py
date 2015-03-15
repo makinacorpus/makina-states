@@ -78,6 +78,18 @@ def is_lxc():
     return lxc
 
 
+def is_this_lxc():
+    return __salt__['mc_utils.is_this_lxc']()
+
+
+def get_container(pid):
+    return __salt__['mc_utils.get_container'](pid)
+
+
+def filter_host_pids(pids):
+    return __salt__['mc_utils.filter_host_pids'](pids)
+
+
 def settings():
     '''Lxc registry
 

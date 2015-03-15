@@ -41,6 +41,40 @@ def has_mastersalt():
     return has_mastersalt
 
 
+def has_mastersalt_running():
+    ret = False
+    pids = []
+    all_pids = [int(pid) for pid in os.listdir('/proc') if pid.isdigit()]
+    if not all_pids:
+        processes = __salt__['cmd.run']('ps aux')
+        for line in processes.splitlines():
+            if ('/salt-minion' in line) and ('-c /etc/mastersalt' in line):
+                chunks = line.split()
+                if __salt__['mc_utils.filter_host_pids'](
+                    [int(chunks[1])]
+                ):
+                    ret = True
+                    break
+    else:
+        for pid in all_pids:
+            line = ''
+            try:
+                with open(
+                    os.path.join('/proc', str(pid), 'cmdline'),
+                    'rb'
+                ) as fic:
+                    line = fic.read().replace('\x00', ' ')
+            except IOError:
+                continue
+            if ('salt-minion' in line) and ('-c /etc/mastersalt' in line):
+                if __salt__['mc_utils.filter_host_pids'](
+                    [pid]
+                ):
+                    ret = True
+                    break
+    return ret
+
+
 def mastersalt_mode():
     return (
         (

@@ -70,7 +70,4 @@ def is_vm():
         if reg['is'].get(i, False):
             return True
     return False
-
-
-
 #
