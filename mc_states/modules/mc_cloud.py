@@ -13,8 +13,8 @@ mc_cloud / cloud registries & functions
 # Import salt libs
 import os
 import copy
-import mc_states.utils
-from mc_states.utils import memoize_cache
+import mc_states.api
+from mc_states.api import memoize_cache
 import socket
 import yaml
 import logging
@@ -563,7 +563,7 @@ def is_controller():
 
 
 def metadata():
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _metadata():
         return __salt__['mc_macros.metadata'](
             __name, bases=['services'])
@@ -626,7 +626,7 @@ def settings(ttl=60):
 
 
 def registry():
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _registry():
         return __salt__[
             'mc_macros.construct_registry_configuration'

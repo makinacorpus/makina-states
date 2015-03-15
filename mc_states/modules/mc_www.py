@@ -21,7 +21,7 @@ Documentation of this module is available with::
 '''
 # Import python libs
 import logging
-import mc_states.utils
+import mc_states.api
 
 __name = 'www'
 
@@ -35,7 +35,7 @@ def settings():
     fastcgi_socket_directory
         fastcgi socket directory
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         grains = __grains__
         pillar = __pillar__

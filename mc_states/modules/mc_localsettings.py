@@ -8,7 +8,7 @@ mc_localsettings / localsettings variables
 '''
 
 # Import salt libs
-import mc_states.utils
+import mc_states.api
 import re
 
 __name = 'localsettings'
@@ -20,7 +20,7 @@ slssan2 = re.compile(
 
 def metadata():
     '''metadata registry for localsettings'''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _metadata():
         return __salt__['mc_macros.metadata'](__name)
     return _metadata()
@@ -42,7 +42,7 @@ def settings():
 
     WILL DISAPPEAR IN A NEAR FUTURE
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         data = {}
         saltmods = __salt__  # affect to a var to see further pep8 errors
@@ -103,7 +103,7 @@ def settings():
 
 def registry():
     '''registry registry for localsettings'''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _registry():
         has_nodejs = __salt__['mc_utils.get'](
             'makina-states.localsettings.nodejs', False)

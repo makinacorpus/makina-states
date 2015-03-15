@@ -590,6 +590,10 @@ set_vars() {
     MASTERSALT_MS="${MASTERSALT_ROOT}/makina-states"
     TMPDIR="${TMPDIR:-"/tmp"}"
     VENV_PATH="${VENV_PATH:-"/salt-venv"}"
+    EGGS_GIT_DIRS="docker-py m2crypto salt salttesting"
+    PIP_CACHE="${VENV_PATH}/cache"
+    SALT_VENV_PATH="${VENV_PATH}/salt"
+    MASTERSALT_VENV_PATH="${VENV_PATH}/mastersalt"
     CONF_PREFIX="${CONF_PREFIX:-"${CONF_ROOT}/salt"}"
     MCONF_PREFIX="${MCONF_PREFIX:-"${CONF_ROOT}/mastersalt"}"
     # global installation marker
@@ -947,8 +951,10 @@ set_vars() {
 	SALT_LIGHT_INSTALL="y"
     fi
 
+
     # export variables to support a restart
     export ONLY_BUILDOUT_REBOOTSTRAP SALT_LIGHT_INSTALL
+    export EGGS_GIT_DIRS
     export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS DO_REFRESH_MODULES
     export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE SALT_BOOT_INITIAL_HIGHSTATE
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
@@ -969,6 +975,7 @@ set_vars() {
     #
     export ROOT PREFIX ETC_INIT
     export VENV_PATH CONF_ROOT
+    export MASTERSALT_VENV_PATH SALT_VENV_PATH PIP_CACHE
     export MCONF_PREFIX CONF_PREFIX
     #
     export SALT_NODETYPE FORCE_SALT_NODETYPE
@@ -1037,9 +1044,6 @@ recap_(){
     fi
     if [ "x${VENV_REBOOTSTRAP}" != "x" ];then
         bs_log "Rebootstrap virtualenv"
-    fi
-    if [ "x${BUILDOUT_REBOOTSTRAP}" != "x" ];then
-        bs_log "Rebootstrap buildout"
     fi
     if [ "x${SALT_REBOOTSTRAP}" != "x" ];then
         bs_log "Rebootstrap salt"
@@ -1287,8 +1291,10 @@ salt_call_wrapper_() {
     if [ -e "${outf}" ];then
       stmpf=$(mktemp)
       cat > "${stmpf}" << EOF
-from __future__ import (absolute_import, division,
-                        print_function, unicode_literals)
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+from __future__ import print_function
 import yaml, sys, codecs
 from pprint import pprint
 ret = 0
@@ -1319,7 +1325,7 @@ if statecheck:
                     break
 sys.exit(ret)
 EOF
-        "${salt_call_prefix}/bin/mypy" "${stmpf}"
+        "${salt_call_prefix}/bin/python" "${stmpf}"
         yaml_check=${?}
         rm -f "${stmpf}"
     fi
@@ -1565,10 +1571,14 @@ setup_and_maybe_update_code() {
                     fi
                 fi
                 #chmod +x ${SALT_MS}/_scripts/install_salt_modules.sh
-                #"${SALT_MS}/_scripts/install_salt_modules.sh" "${SALT_ROOT}"
+                #"${SALT_MS}/_s
                 cd "${ms}"
-                if [ ! -d src ];then
-                    mkdir src
+                if [ ! -e src ];then
+                    link_salt_dir "${ms}"
+                fi
+                if [ ! -e src ];then
+                    echo "pb with linking venv in ${ms}"
+                    exit 1
                 fi
                 for i in "${ms}" "${ms}/src/"*;do
                     is_changeset=""
@@ -1598,7 +1608,8 @@ setup_and_maybe_update_code() {
                                 remote=""
                             fi
                         fi
-                        if  [ "x${i}" = "x${ms}/src/SaltTesting" ]\
+                        if  [ "x${i}" = "x${ms}/src/salttesting" ]\
+                         || [ "x${i}" = "x${ms}/src/SaltTesting" ]\
                          || [ "x${i}" = "x${ms}/src/salt" ];then
                             co_branch="develop"
                         fi
@@ -1641,7 +1652,7 @@ setup_and_maybe_update_code() {
                                         bs_log "Update is necessary"
                                     fi
                                 fi && if \
-                                    [ "x${i}" = "x${ms}/src/SaltTesting" ]\
+                                    [ "x${i}" = "x${ms}/src/SaltTesting" ] || [ "x${i}" = "x${ms}/src/salttesting" ]\
                                 ;then
                                     git reset ${QUIET_GIT} --hard origin/${co_branch}
                                 else
@@ -1709,9 +1720,18 @@ cleanup_previous_venv() {
     fi
 }
 
+setup_virtualenvs() {
+    setup_virtualenv "${SALT_VENV_PATH}"
+    if [ "x${IS_MASTERSALT}" != "x" ];then
+        setup_virtualenv "${MASTERSALT_VENV_PATH}"
+    fi
+}
+
 setup_virtualenv() {
     # Script is now running in makina-states git location
     # Check for virtualenv presence
+    venv_path="${1:-${SALT_VENV_PATH}}"
+    ms_path="$(get_makina_states ${venv_path})"
     REBOOTSTRAP="${VENV_REBOOTSTRAP:-${SALT_REBOOTSTRAP}}"
     VENV_CONTENT="
 bin/activate
@@ -1733,99 +1753,128 @@ local/bin/python3*
 local/include/python*
 local/lib/python*
 "
-    cleanup_previous_venv ${SALT_MS}
-    cleanup_previous_venv /srv/salt-venv
-    cd ${SALT_MS}
-    if     [ ! -e "${VENV_PATH}/bin/activate" ] \
-        || [ ! -e "${VENV_PATH}/lib" ] \
-        || [ ! -e "${VENV_PATH}/include" ] \
+    cleanup_previous_venv "/srv/salt-venv"
+    if [ ! -e "${ms_path}" ];then
+        echo missing makina-states in ${ms_path}
+        exit 1
+    fi
+    cd "${ms_path}"
+    if     [ ! -e "${venv_path}/bin/activate" ] \
+        || [ ! -e "${venv_path}/lib" ] \
+        || [ ! -e "${venv_path}/include" ] \
         ;then
-        bs_log "Creating virtualenv in ${VENV_PATH}"
+        bs_log "Creating virtualenv in ${venv_path}"
         vargs=""
         if [ "x${DISTRIB_CODENAME}" = "xlenny" ];then
             vargs="--python=$(which python2.7)"
         fi
-        virtualenv $vargs --no-site-packages --unzip-setuptools ${VENV_PATH} &&\
-        . ${VENV_PATH}/bin/activate &&\
-        easy_install -U setuptools &&\
+        if [ ! -e "${PIP_CACHE}" ];then
+            mkdir -p "${PIP_CACHE}"
+        fi
+        if [ ! -e "${venv_path}" ];then
+            mkdir -p "${venv_path}"
+        fi
+        virtualenv $vargs --system-site-packages --unzip-setuptools ${venv_path} &&\
+        . "${venv_path}/bin/activate" &&\
+        "${venv_path}/bin/easy_install" -U setuptools &&\
+        "${venv_path}/bin/pip" install -U pip&&\
         deactivate
         BUILDOUT_REBOOTSTRAP=y
         SALT_REBOOTSTRAP=y
     fi
 
     # virtualenv is present, activate it
-    if [ -e "${VENV_PATH}/bin/activate" ];then
+    if [ -e "${venv_path}/bin/activate" ];then
         if [ "x${QUIET}" = "x" ];then
-            bs_log "Activating virtualenv in ${VENV_PATH}"
+            bs_log "Activating virtualenv in ${venv_path}"
         fi
-        . "${VENV_PATH}/bin/activate"
+        . "${venv_path}/bin/activate"
     fi
+    # install requirements
+    cd "${ms_path}"
+    install_git=""
+    for i in ${EGGS_GIT_DIRS};do
+        if [ ! -e "${venv_path}/src/${i}" ];then
+            install_git="x"
+        fi
+    done
+    uflag=""
+    # only install git reqs in upgade mode if not already there
+
+    reqs="-r requirements/requirements.txt"
+    if [ "x${install_git}" != "x" ];then
+        reqs="${reqs} -r requirements/git_requirements.txt"
+    fi
+    pip install -U --download-cache "${PIP_CACHE}" ${reqs}
+    pip install --no-deps -e .
+    link_salt_dir "${ms_path}" "${venv_path}"
 }
 
-run_ms_buildout() {
-    ms="${1}"
-    cd "${ms}"
-    # Check for buildout things presence
-    if    [ ! -e "${ms}/bin/buildout" ]\
-       || [ ! -e "${ms}/parts" ] \
-       || [ "x${BUILDOUT_REBOOTSTRAP}" != "x" ] \
-       || [ ! -e "${ms}/develop-eggs" ] \
-        ;then
-        bs_log "Launching buildout bootstrap for salt initialisation (${ms})"
-        python bootstrap.py
-        ret=${?}
-        if [ "x${ret}" != "x0" ];then
-            rm -rf "${ms}/parts" "${ms}/develop-eggs"
-            die_ $ret " [bs] Failed buildout bootstrap (${ms})"
-        fi
+
+get_makina_states() {
+    if [ "x${1}" = "x${MASTERSALT_VENV_PATH}" ];then
+        venv_dir="${MASTERSALT_MS}"
+    else
+        venv_dir="${SALT_MS}"
     fi
-    # remove stale zmq egg (to relink on zmq3)
-    test="$(ldd $(find -L "${ms}/eggs/pyzmq-"*egg -name *so 2>/dev/null) 2>/dev/null|grep zmq.so.1|wc -l|sed -e "s/ //g")"
-    if [ "x${test}" != "x0" ];then
-        find -L "${ms}/eggs/pyzmq-"*egg -maxdepth 0 -type d|xargs rm -rfv
-    fi
-    # detect incomplete buildout
-    # pyzmq check is for testing upgrade from libzmq to zmq3
-    if    [ ! -e "${ms}/bin/buildout" ]\
-        || [ ! -e "${ms}/bin/salt-ssh" ]\
-        || [ ! -e "${ms}/bin/salt" ]\
-        || [ ! -e "${ms}/bin/salt-call" ]\
-        || [ ! -e "${ms}/bin/salt-key" ]\
-        || [ ! -e "${ms}/bin/salt-syndic" ]\
-        || [ ! -e "${ms}/bin/mypy" ]\
-        || [ ! -e "${ms}/.installed.cfg" ]\
-        || [ "x$(find -L "${ms}/eggs/pyzmq"* |wc -l|sed -e "s/ //g")" = "x0" ]\
-        || [ ! -e "${ms}/src/salt/setup.py" ]\
-        || [ ! -e "${ms}/src/docker/setup.py" ]\
-        || [ ! -e "${ms}/src/m2crypto/setup.py" ]\
-        || [ ! -e "${ms}/src/SaltTesting/setup.py" ]\
-        || [ "x${BUILDOUT_REBOOTSTRAP}" != "x" ] \
-        ;then
-        cd "${ms}"
-        bs_log "Launching buildout for salt initialisation (${ms})"
-        bin/buildout || die " [bs] Failed buildout (${ms})"
-        ret=${?}
-        if [ "x${ret}" != "x0" ];then
-            rm -rf "${ms}/.installed.cfg"
-            die_ ${ret} " [bs] Failed buildout in ${ms}"
-        fi
-    fi
+    echo "${venv_dir}"
 }
 
-install_buildouts() {
-    if [ "x${IS_SALT}" != "x" ];then
-        run_ms_buildout ${SALT_MS}
+get_venv_path() {
+    if [ "x${1}" = "x${MASTERSALT_MS}" ];then
+        makina_states_dir="${MASTERSALT_VENV_PATH}"
+    else
+        makina_states_dir="${SALT_VENV_PATH}"
     fi
-    if [  "x${IS_MASTERSALT}" != "x" ];then
-        if [ ! -e ${MASTERSALT_ROOT}/makina-states/.installed.cfg ];then
-            bs_log "Copying base tree, this can take a while"
-            # -a without time
-            rsync -rlpgoD "${SALT_MS}/" "${MASTERSALT_ROOT}/makina-states/" --exclude=*pyc --exclude=*pyo --exclude=.installed.cfg --exclude=.mr.developer.cfg --exclude=.bootlogs
-            cd ${MASTERSALT_ROOT}/makina-states
-            rm -rf .installed.cfg .mr.developer.cfg parts
+    echo "${makina_states_dir}"
+}
+
+link_salt_dir() {
+    where="${1}"
+    vpath="${2:-$(get_venv_path "${where}")}"
+    checkreq=""
+    for i in ${EGGS_GIT_DIRS};do
+        i="${venv_path}/src/${i}"
+        if [ ! -e "${i}" ];then
+            echo "   * ${i} is not present"
+            checkreq="1"
         fi
-        run_ms_buildout "${MASTERSALT_ROOT}/makina-states/"
+    done
+    for i in \
+        bin/salt-call\
+        bin/salt\
+        bin/pip\
+        bin/easy_install\
+        bin/activate\
+        bin/salt-master\
+        bin/python;do
+        if [ ! -e "${venv_path}/${i}" ];then
+            echo "   * ${i} is not present"
+            checkreq="1"
+        fi
+    done
+    if [ "x${checkreq}" != "x" ];then
+        echo "prerequisites not achieved, there is a problem with pip install !"
+        exit 1
     fi
+    for i in share man lib include bin src;do
+        if [ -d "${where}/${i}" ] && [ ! -h "${where}/${i}" ];then
+            if [ ! -e "${where}/nobackup" ];then
+                mkdir "${where}/nobackup"
+            fi
+            echo "moving old directory; \"${where}/${i}\" to \"${where}/nobackup/${i}-$(date "+%F-%T-%N")\""
+            mv "${where}/${i}" "${where}/nobackup/${i}-$(date "+%F-%T-%N")"
+        fi
+        do_link="1"
+        if [ -h "${where}/${i}" ];then
+            if [ "x$(readlink ${where}/${i})" != "${vpath}/${i}" ];then
+                do_link=""
+            fi
+        fi
+        if [ "x${do_link}" != "x" ];then
+            ln -sfv "${vpath}/${i}" "${where}/${i}"
+        fi
+    done
 }
 
 __install() {
@@ -1841,6 +1890,7 @@ __install() {
 }
 
 kill_ms_daemons() {
+    upgrade_from_buildout
     killall_local_mastersalt_masters
     killall_local_mastersalt_minions
     killall_local_minions
@@ -2558,6 +2608,7 @@ killall_local_minions() {
 }
 
 restart_local_mastersalt_masters() {
+    upgrade_from_buildout
     if [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
         service_ mastersalt-master stop
         killall_local_mastersalt_masters
@@ -2566,6 +2617,7 @@ restart_local_mastersalt_masters() {
 }
 
 restart_local_mastersalt_minions() {
+    upgrade_from_buildout
     if [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_MASTERSALT_MINION}" != "x" ];then
         service_ mastersalt-minion stop
         killall_local_mastersalt_minions
@@ -2574,6 +2626,7 @@ restart_local_mastersalt_minions() {
 }
 
 restart_local_masters() {
+    upgrade_from_buildout
     if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
         killall_local_masters
     elif [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_SALT_MASTER}" != "x" ];then
@@ -2584,6 +2637,7 @@ restart_local_masters() {
 }
 
 restart_local_minions() {
+    upgrade_from_buildout
     if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
         killall_local_minions
     elif [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_SALT_MINION}" != "x" ];then
@@ -2951,9 +3005,10 @@ make_mastersalt_association() {
         mastersalt_master_connectivity_check
         bs_log "Waiting for mastersalt minion key hand-shake"
         minion_id="$(mastersalt_get_minion_id)"
-        if [ "x$(salt_ping_test)" = "x0" ];then
+        mastersalt_call_wrapper test.ping -lall
+        if [ "x$(mastersalt_ping_test)" = "x0" ];then
             salt_echo "changed=yes comment='mastersalt minion registered'"
-            bs_log "Salt minion \"${minion_id}\" registered on master"
+            bs_log "Mastersalt minion \"${minion_id}\" registered on master"
             registered="1"
             salt_echo "changed=yes comment='salt minion registered'"
         else
@@ -3616,10 +3671,8 @@ usage() {
         bs_help "--restart-minions" "restart minion daemons" "" "y"
         bs_help "--no-colors:" "No terminal colors" "${NO_COLORS}" "y"
         bs_help "--salt-rebootstrap:" "Redo salt bootstrap" "${SALT_REBOOTSTRAP}" "y"
-        bs_help "--buildout-rebootstrap:" "Redo buildout" "${BUILDOUT_REBOOTSTRAP}" "y"
         bs_help "--salt-cloud-dir" "directory to grab salt cloud content from" "${SALT_CLOUD_DIR}" y
-        bs_help "--only-buildout-rebootstrap:" "Redo buildout and stop after buildout has run" "${ONLY_BUILDOUT_REBOOTSTRAP}" "y"
-        bs_help "--venv-rebootstrap:" "Redo venv, buildout & salt bootstrap" "${VENV_REBOOTSTRAP}" "y"
+        bs_help "--venv-rebootstrap:" "Redo venv, salt bootstrap" "${VENV_REBOOTSTRAP}" "y"
         bs_help "--test:" "run makina-states tests, be caution, this installs everything and is to be installed on a vm which will be trashed afterwards!" "${MAKINASTATES_TEST}" "y"
         bs_help "--salt-minion-dns <dns>:" "DNS of the salt minion" "${SALT_MINION_DNS}" "y"
         bs_help "-g|--makina-states-url <url>:" "makina-states url" "${STATES_URL}" y
@@ -3718,16 +3771,6 @@ parse_cli_opts() {
         if [ "x${1}" = "x--salt-rebootstrap" ];then
             SALT_REBOOTSTRAP="1";argmatch="1"
         fi
-        if [ "x${1}" = "x--buildout-rebootstrap" ];then
-            BUILDOUT_REBOOTSTRAP="1"
-            argmatch="1"
-        fi
-        if [ "x${1}" = "x--only-buildout-rebootstrap" ];then
-            BUILDOUT_REBOOTSTRAP="1"
-            ONLY_BUILDOUT_REBOOTSTRAP="1"
-            argmatch="1"
-        fi
-
         if [ "x${1}" = "x-S" ] || [ "x${1}" = "x--skip-checkouts" ];then
             SALT_BOOT_SKIP_CHECKOUTS="y";argmatch="1"
         fi
@@ -3980,6 +4023,7 @@ parse_cli_opts() {
 }
 
 restart_daemons() {
+    upgrade_from_buildout
     if [ "x${IS_SALT_MINION}" != "x" ];then
         restart_local_minions
     fi
@@ -4143,7 +4187,22 @@ kill_old_syncs() {
     done
 }
 
+upgrade_from_buildout() {
+    # upgrade from old buildout based install
+    s_venv=""
+    if [ ! -e "${SALT_VENV_PATH}" ];then
+        s_venv="1"
+    fi
+    if [ "x${IS_MASTERSALT}" != "x" ] && [ ! -e "${MASTERSALT_VENV_PATH}" ];then
+        s_venv="1"
+    fi
+    if [ "${s_venv}" != "x" ];then
+        setup_virtualenvs
+    fi
+}
+
 synchronize_code() {
+    upgrade_from_buildout
     restart_modes=""
     kill_old_syncs
     setup_and_maybe_update_code onlysync
@@ -4238,6 +4297,7 @@ initial_highstates() {
 }
 
 cleanup_execlogs() {
+    upgrade_from_buildout
     LOG_LIMIT="${LOG_LIMIT:-20}"
     # keep 20 local exec logs only
     for dir in "${SALT_MS}/.bootlogs" "${MASTERSALT_MS}/.bootlogs";do
@@ -4306,16 +4366,19 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         synchronize_code
     fi
     if [ "x${SALT_BOOT_RESTART_MINIONS}" != "x" ];then
+        upgrade_from_buildout
         restart_local_minions
         restart_local_mastersalt_minions
         abort="1"
     fi
     if [ "x${SALT_BOOT_RESTART_MASTERS}" != "x" ];then
+        upgrade_from_buildout
         restart_local_masters
         restart_local_mastersalt_masters
         abort="1"
     fi
     if [ "x${SALT_BOOT_RESTART_DAEMONS}" != "x" ];then
+        upgrade_from_buildout
         restart_daemons
         abort="1"
     fi
@@ -4325,11 +4388,7 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         cleanup_old_installs
         setup_and_maybe_update_code
         handle_upgrades
-        setup_virtualenv
-        install_buildouts
-        if [ "x${ONLY_BUILDOUT_REBOOTSTRAP}" != "x" ];then
-            exit ${?}
-        fi
+        setup_virtualenvs
         create_salt_skeleton
         install_mastersalt_env
         install_salt_env

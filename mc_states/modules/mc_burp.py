@@ -16,7 +16,7 @@ __docformat__ = 'restructuredtext en'
 import logging
 import random
 import os
-import mc_states.utils
+import mc_states.api
 from salt.utils.odict import OrderedDict
 from salt.utils.pycrypto import secure_password
 
@@ -136,7 +136,7 @@ def settings():
         - ssh_gateway_key
 
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         salt = __salt__
         local_conf = salt['mc_macros.get_local_registry'](

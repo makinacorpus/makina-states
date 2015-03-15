@@ -19,7 +19,7 @@ import logging
 import traceback
 
 from pprint import pformat
-from mc_states.utils import memoize_cache
+from mc_states.api import memoize_cache
 
 # Import salt libs
 from salt.utils import check_state_result

@@ -9,7 +9,7 @@ mc_phantomjs / phantomjs/npm registry
 '''
 # Import python libs
 import logging
-import mc_states.utils
+import mc_states.api
 
 __name = 'phantomjs'
 
@@ -21,7 +21,7 @@ def settings():
     phantomjs
 
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         grains = __grains__
         pillar = __pillar__

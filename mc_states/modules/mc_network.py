@@ -25,7 +25,7 @@ import logging
 import time
 from pprint import pformat
 import copy
-import mc_states.utils
+import mc_states.api
 import datetime
 import re
 from salt.utils.odict import OrderedDict
@@ -35,7 +35,10 @@ try:
     HAS_IPWHOIS = True
 except ImportError:
     HAS_IPWHOIS = False
-from mc_states.utils import memoize_cache
+
+from mc_states.api import memoize_cache
+from mc_states.api import six
+from mc_states.api import is_valid_ip
 import contextlib
 import socket
 import urllib2
@@ -198,7 +201,7 @@ def settings():
     devhost_ip
       devhost ip
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         saltmods = __salt__
         grains = __grains__
@@ -410,6 +413,8 @@ def providers():
     return ['online', 'ovh', 'phpnet', 'sys']
 
 
+def is_ip(ip):
+    return is_valid_ip(ip)
 
 
 def ext_ip():

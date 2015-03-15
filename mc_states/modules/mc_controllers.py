@@ -9,14 +9,14 @@ mc_controllers / controllers related variables
 
 # Import salt libs
 import os
-import mc_states.utils
+import mc_states.api
 
 __name = 'controllers'
 
 
 def metadata():
     '''controllers metadata registry'''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _metadata():
         return __salt__['mc_macros.metadata'](
             __name, bases=['localsettings'])
@@ -41,6 +41,40 @@ def has_mastersalt():
     return has_mastersalt
 
 
+def has_mastersalt_running():
+    ret = False
+    pids = []
+    all_pids = [int(pid) for pid in os.listdir('/proc') if pid.isdigit()]
+    if not all_pids:
+        processes = __salt__['cmd.run']('ps aux')
+        for line in processes.splitlines():
+            if ('/salt-minion' in line) and ('-c /etc/mastersalt' in line):
+                chunks = line.split()
+                if __salt__['mc_utils.filter_host_pids'](
+                    [int(chunks[1])]
+                ):
+                    ret = True
+                    break
+    else:
+        for pid in all_pids:
+            line = ''
+            try:
+                with open(
+                    os.path.join('/proc', str(pid), 'cmdline'),
+                    'rb'
+                ) as fic:
+                    line = fic.read().replace('\x00', ' ')
+            except IOError:
+                continue
+            if ('salt-minion' in line) and ('-c /etc/mastersalt' in line):
+                if __salt__['mc_utils.filter_host_pids'](
+                    [pid]
+                ):
+                    ret = True
+                    break
+    return ret
+
+
 def mastersalt_mode():
     return (
         (
@@ -59,7 +93,7 @@ def masterless():
 
 def settings():
     '''controllers settings registry'''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         saltmods = __salt__
         data = dict(metadata=saltmods['mc_{0}.metadata'.format(__name)]())
@@ -69,7 +103,7 @@ def settings():
 
 def registry():
     '''controllers registry registry'''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _registry():
         has_m = has_mastersalt()
         return  __salt__[

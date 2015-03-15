@@ -12,7 +12,7 @@ __docformat__ = 'restructuredtext en'
 import copy
 import logging
 from salt.utils.odict import OrderedDict
-import mc_states.utils
+import mc_states.api
 
 __name = 'mysql'
 
@@ -91,7 +91,7 @@ def settings(**kwargs):
     to know non documented parameters to override, the code is well
     documented but spared from configuration from end users.
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings(**lkwargs):
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
         mysql_reg = __salt__[

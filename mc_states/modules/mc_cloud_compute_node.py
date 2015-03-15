@@ -15,9 +15,9 @@ import logging
 import copy
 import random
 import os
-from mc_states.utils import memoize_cache
+from mc_states.api import memoize_cache
 import msgpack
-import mc_states.utils
+import mc_states.api
 from salt.utils.odict import OrderedDict
 import msgpack.exceptions
 from salt.utils.pycrypto import secure_password

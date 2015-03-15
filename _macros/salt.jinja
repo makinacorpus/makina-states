@@ -389,6 +389,10 @@ salt-{{ data.name }}-makina-states-dirs:
 {#- update makina-state #}
 salt-{{ data.name }}-buildout-bootstrap:
   cmd.run:
+    {#do nothing here, but keep the state for retro compat#}
+    - onlyif: test x = y
+    - name: echo skipped
+    {#
     - name: |
             py="python";
             if [ -e "{{ data.venv }}/bin/python" ];then
@@ -396,14 +400,91 @@ salt-{{ data.name }}-buildout-bootstrap:
             fi;
             $py bootstrap.py
     - cwd: {{ data.msr }}
+    #}
     - unless: test "$(cat buildout.cfg|md5sum|awk '{print $1}')" = "$(cat .saltchk)"
     - require_in:
       - cmd: update-makinastates-{{ data.name }}
     - require:
       - mc_git: salt-{{ data.name }}-makina-states
 
+update-makinastates-{{ data.name }}-venv:
+  virtualenv.managed:
+    - name: "{{data.venv_path}}"
+    - system_site_packages: true
+    - require_in:
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+
+update-makinastates-{{ data.name }}-reqs:
+  pip.installed:
+    - requirements: "{{data.msr}}/requirements/requirements.txt"
+    - bin_env: "{{data.venv_path}}"
+    - upgrade: true
+    - use_vt: true
+    - require_in:
+      - virtualenv: update-makinastates-{{ data.name }}-venv
+    - require_in:
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+
+update-makinastates-{{ data.name }}-git-reqs:
+  pip.installed:
+    - require:
+      - virtualenv: update-makinastates-{{ data.name }}-venv
+    - require_in:
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+    - requirements: "{{data.msr}}/requirements/git_requirements.txt"
+    - bin_env: "{{data.venv_path}}"
+    - use_vt: true
+    - upgrade: true
+
+    - onlyif: |
+              for i in docker-py salttesting salt m2crypto;do
+                if [ ! -e "{{data.msr}}/${i}" ];then
+                  exit 1
+                fi
+              done
+              exit 0
+
+{% for i in ['lib', 'include', 'local', 'man', 'share', 'bin', 'src'] %}
+{% set ldir = "{0}/{1}".format(data.msr, i) %}
+{% set bdir = "{0}/nobackup/{1}".format(data.msr, i) %}
+moveold-makinastates-{{ data.name }}-links{{i}}:
+  cmd.run:
+    - name: |
+            if [ ! -e "{{data.msr}}/nobackup" ];then 
+              mkdir "{{data.msr}}/nobackup"
+            fi
+            mv "{{ldir}}" "{{bdir}}-$(date "+%F-%T-%N")"
+    - target: "{{data.venv_path}}/{{i}}"
+    - onlyif: |
+              set -e
+              test -e "{{ldir}}" 
+              test -d "{{ldir}}" 
+              test ! -h "{{ldir}}"
+    - require_in:
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+    - require:
+      - virtualenv: update-makinastates-{{ data.name }}-venv
+      - pip: update-makinastates-{{ data.name }}-reqs
+      - pip: update-makinastates-{{ data.name }}-git-reqs
+update-makinastates-{{ data.name }}-links{{i}}:
+  file.symlink:
+    - name: "{{data.msr}}/{{i}}"
+    - target: "{{data.venv_path}}/{{i}}"
+    - require_in:
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+    - require:
+      - cmd: moveold-makinastates-{{ data.name }}-links{{i}}
+      - virtualenv: update-makinastates-{{ data.name }}-venv
+      - pip: update-makinastates-{{ data.name }}-reqs
+      - pip: update-makinastates-{{ data.name }}-git-reqs
+{% endfor %}
+
 update-makinastates-{{ data.name }}:
   cmd.run:
+    {#do nothing here, but keep the state for retro compat#}
+    - onlyif: test x = y
+    - name: echo skipped
+    {#
     - name: |
             bin/buildout &&\
             cat buildout.cfg|md5sum|awk '{print $1}'>.saltchk &&\
@@ -412,6 +493,7 @@ update-makinastates-{{ data.name }}:
             touch "{{ data.msr }}/.restart_salt_minion" &&\
             touch "{{ data.msr }}/.restart_msalt_minion"
     - cwd: {{ data.msr }}
+    #}
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
     - unless: test "$(cat buildout.cfg|md5sum|awk '{print $1}')" = "$(cat .saltchk)"

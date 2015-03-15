@@ -8,7 +8,7 @@ mc_nodetypes / nodetypes registry
 
 
 import os
-import mc_states.utils
+import mc_states.api
 from  mc_states.grains import makina_grains
 
 __name = 'nodetypes'
@@ -16,7 +16,7 @@ __name = 'nodetypes'
 
 def metadata():
     '''nodetypes metadata registry'''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _metadata():
         return __salt__['mc_macros.metadata'](
             __name, bases=['localsettings', 'services'])
@@ -25,7 +25,7 @@ def metadata():
 
 def settings():
     '''nodetypes settings registry'''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         metadata = __salt__['mc_{0}.metadata'.format(__name)]()
         return locals()
@@ -34,7 +34,7 @@ def settings():
 
 def registry():
     '''nodetypes registry registry'''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _registry():
         travis = False
         if os.environ.get('TRAVIS', 'false') == 'true':
@@ -70,7 +70,4 @@ def is_vm():
         if reg['is'].get(i, False):
             return True
     return False
-
-
-
 #

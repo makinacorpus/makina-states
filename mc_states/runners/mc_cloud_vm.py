@@ -23,7 +23,7 @@ import logging
 # Import salt libs
 import salt.client
 import salt.payload
-from mc_states.utils import memoize_cache
+from mc_states.api import memoize_cache
 import salt.utils
 import salt.output
 from salt.utils import check_state_result

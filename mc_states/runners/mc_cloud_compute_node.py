@@ -26,7 +26,7 @@ from salt.utils import check_state_result
 import salt.output
 import salt.minion
 from salt.utils.odict import OrderedDict
-from mc_states.utils import memoize_cache
+from mc_states.api import memoize_cache
 
 from mc_states import api
 from mc_states.saltapi import (

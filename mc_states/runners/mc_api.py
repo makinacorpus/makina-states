@@ -17,7 +17,7 @@ Internal module used as api.
 __docformat__ = 'restructuredtext en'
 import salt.output
 from pprint import pformat
-from mc_states.utils import memoize_cache
+from mc_states.api import memoize_cache
 import traceback
 import salt.wheel
 import datetime

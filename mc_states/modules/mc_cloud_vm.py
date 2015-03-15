@@ -14,14 +14,14 @@ __docformat__ = 'restructuredtext en'
 
 # Import python libs
 import logging
-import mc_states.utils
+import mc_states.api
 import os
 import copy
 
 
 from mc_states import saltapi
 from salt.utils.odict import OrderedDict
-from mc_states.utils import memoize_cache
+from mc_states.api import memoize_cache
 
 __name = 'mc_cloud_vm'
 

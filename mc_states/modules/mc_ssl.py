@@ -25,8 +25,8 @@ import logging
 from copy import deepcopy
 import os
 from salt.utils.odict import OrderedDict
-import mc_states.utils
-from mc_states.utils import memoize_cache
+import mc_states.api
+from mc_states.api import memoize_cache
 import M2Crypto
 try:
     import OpenSSL
@@ -1179,7 +1179,7 @@ def settings():
             * all certs will be validated to be x509 certs
 
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         data = reload_settings()
         # even if we make a doublon here, it will be filtered by CN indexing

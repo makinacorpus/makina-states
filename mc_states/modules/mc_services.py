@@ -12,7 +12,7 @@ mc_services / servives registries & functions
 
 # Import salt libs
 import os
-import mc_states.utils
+import mc_states.api
 
 __name = 'services'
 
@@ -46,7 +46,7 @@ def _ntpEn(__salt__):
 
 
 def metadata():
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _metadata():
         return __salt__['mc_macros.metadata'](
             __name, bases=['localsettings'])
@@ -57,7 +57,7 @@ def settings():
     '''
     Global services registry
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         pillar = __pillar__
         grains = __grains__
@@ -67,7 +67,7 @@ def settings():
 
 
 def registry():
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _registry():
         # only some services will be fully done  on mastersalt side if any
         sshen = True

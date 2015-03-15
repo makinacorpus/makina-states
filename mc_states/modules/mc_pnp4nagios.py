@@ -17,7 +17,7 @@ __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import copy
-import mc_states.utils
+import mc_states.api
 
 import hmac
 import hashlib
@@ -107,7 +107,7 @@ def settings():
                 list of strings where each string is a line in rra.cfg file
 
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         grains = __grains__
         pillar = __pillar__

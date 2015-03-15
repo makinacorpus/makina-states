@@ -15,13 +15,13 @@ import logging
 import time
 from pprint import pformat
 import copy
-import mc_states.utils
+import mc_states.api
 import datetime
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 import traceback
-from mc_states.utils import memoize_cache
-import mc_states.utils
+from mc_states.api import memoize_cache
+import mc_states.api
 import random
 import string
 log = logging.getLogger(__name__)
@@ -3273,7 +3273,7 @@ def test():
     memoize_cache(do, [], {}, 'foo', 2)
     time.sleep(3)
     memoize_cache(do, [], {}, 'foo', 2)
-    from mc_states.utils import _LOCAL_CACHE
+    from mc_states.api import _LOCAL_CACHE
     from pprint import pprint
     pprint(_LOCAL_CACHE)
 

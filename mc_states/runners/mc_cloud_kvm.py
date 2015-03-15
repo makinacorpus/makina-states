@@ -24,7 +24,7 @@ import salt.client
 import salt.payload
 import salt.utils
 import salt.output
-from mc_states.utils import memoize_cache
+from mc_states.api import memoize_cache
 import salt.minion
 from salt.utils import check_state_result
 from salt.cloud.exceptions import SaltCloudSystemExit

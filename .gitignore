@@ -1,4 +1,10 @@
 .*installed.cfg
+/man
+/share
+/corpus-*
+/mc_states.egg-info/
+nobackup
+/buildout/buildout.cfg
 *.swp
 makina.scripts
 MegaSAS.log
@@ -42,7 +48,7 @@ boot_salt_top
 /downloads/
 /eggs/
 /parts/
-/src/
+/src
 .restart_msalt
 .restart_msalt_minion
 .restart_salt
