@@ -9,7 +9,7 @@ mc_salt / salt related helpers
 
 '''
 # Import salt libs
-import mc_states.utils
+import mc_states.api
 import random
 import json
 import os
@@ -41,7 +41,7 @@ def settings():
     as it can brick your installation.
     That's why most of this stuff will be underdocumented at first sight.
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         saltmods = __salt__
         local_salt_mode = get_local_salt_mode()

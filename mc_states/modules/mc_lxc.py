@@ -12,7 +12,7 @@ This module contains settings for lxc and helper functions
 
 # Import python libs
 import logging
-import mc_states.utils
+import mc_states.api
 from pprint import pformat
 import os
 import random
@@ -99,7 +99,7 @@ def settings():
     containers
         Mapping of containers defintions classified by host
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         grains = __grains__
         pillar = __pillar__

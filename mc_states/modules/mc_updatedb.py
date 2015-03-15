@@ -14,7 +14,7 @@ __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import os
-import mc_states.utils
+import mc_states.api
 from salt.utils.pycrypto import secure_password
 
 
@@ -27,7 +27,7 @@ def settings():
     '''
     updatedb settings
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         salt = __salt__
         grains = __grains__

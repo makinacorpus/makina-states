@@ -14,7 +14,7 @@ __docformat__ = 'restructuredtext en'
 import logging
 import os
 from salt.utils.odict import OrderedDict
-import mc_states.utils
+import mc_states.api
 
 __name = 'haproxy'
 
@@ -26,7 +26,7 @@ def settings():
     haproxy settings
 
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         grains = __grains__
         pillar = __pillar__

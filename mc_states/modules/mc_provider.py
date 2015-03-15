@@ -17,7 +17,7 @@ __docformat__ = 'restructuredtext en'
 __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
-import mc_states.utils
+import mc_states.api
 from salt.utils.odict import OrderedDict
 
 __name = 'provider'
@@ -43,7 +43,7 @@ def settings():
             online specific: do we have rpn
 
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         grains = __grains__
         is_ovh = 'ovh' in __grains__['id']

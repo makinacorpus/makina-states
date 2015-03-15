@@ -26,7 +26,7 @@ from mc_states import api
 
 from salt.ext import six as six
 
-import mc_states.utils
+import mc_states.api
 import yaml
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -808,7 +808,7 @@ def profile(func, *args, **kw):
 
 
 def invalidate_memoize_cache(*args, **kw):
-    return mc_states.utils.invalidate_memoize_cache(*args, **kw)
+    return mc_states.api.invalidate_memoize_cache(*args, **kw)
 
 
 def manage_file(name, **kwargs):

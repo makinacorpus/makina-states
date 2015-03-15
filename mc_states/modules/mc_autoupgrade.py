@@ -10,7 +10,7 @@ mc_autoupgrade / packages autoupgrade
 '''
 # Import python libs
 import logging
-import mc_states.utils
+import mc_states.api
 
 __name = 'autoupgrade'
 
@@ -22,7 +22,7 @@ def settings():
     autoupgrade registry
 
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         _s = __salt__
         grains = __grains__

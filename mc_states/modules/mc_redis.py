@@ -12,7 +12,7 @@ mc_redis / redis functions
 __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
-import mc_states.utils
+import mc_states.api
 from salt.utils.odict import OrderedDict as _OrderedDict
 
 __name = 'redis'
@@ -28,7 +28,7 @@ def settings():
         installation directory
 
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         grains = __grains__
         pillar = __pillar__

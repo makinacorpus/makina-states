@@ -16,8 +16,8 @@ import logging
 import os
 import copy
 import yaml
-import mc_states.utils
-from mc_states.utils import memoize_cache
+import mc_states.api
+from mc_states.api import memoize_cache
 
 from mc_states import saltapi
 

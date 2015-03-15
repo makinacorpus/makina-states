@@ -15,7 +15,7 @@ __docformat__ = 'restructuredtext en'
 import os
 import logging
 import copy
-import mc_states.utils
+import mc_states.api
 
 from mc_states import saltapi
 from salt.utils.odict import OrderedDict

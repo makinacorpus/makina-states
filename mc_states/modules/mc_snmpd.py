@@ -12,7 +12,7 @@ snmpd module
 '''
 # Import python libs
 import logging
-import mc_states.utils
+import mc_states.api
 
 __name = 'snmpd'
 
@@ -46,7 +46,7 @@ def settings():
         default_password_enc_type
             SHA
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         _salt = __salt__
         grains = __grains__

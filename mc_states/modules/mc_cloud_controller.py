@@ -20,8 +20,8 @@ from copy import deepcopy
 import os
 from salt.utils.odict import OrderedDict
 import copy
-import mc_states.utils
-from mc_states.utils import memoize_cache
+import mc_states.api
+from mc_states.api import memoize_cache
 from salt.modules import tls as tlsm
 import M2Crypto
 

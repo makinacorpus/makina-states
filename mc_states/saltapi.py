@@ -34,20 +34,10 @@ from salt.exceptions import (
 )
 from salt.runner import RunnerClient
 from mc_states import api
-from mc_states.utils import memoize_cache
+from mc_states.api import memoize_cache
+from mc_states.api import six
 import salt.utils.vt
 
-
-# try to import fix from various places (readthedoc!!!)
-try:
-    import salt.ext.six as six
-    HAS_SIX = True
-except ImportError:
-    try:
-        import six
-        HAS_SIX = True
-    except ImportError:
-        HAS_SIX = False
 
 log = logging.getLogger(__name__)
 _CLIENTS = {}

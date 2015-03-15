@@ -15,11 +15,11 @@ mc_cloud_saltify / cloud related variables
 __docformat__ = 'restructuredtext en'
 # Import salt libs
 import copy
-import mc_states.utils
+import mc_states.api
 from pprint import pformat
 from salt.utils.odict import OrderedDict
 from mc_states import saltapi
-from mc_states.utils import memoize_cache
+from mc_states.api import memoize_cache
 
 __name = 'cloud_saltify'
 VT = 'saltify'
