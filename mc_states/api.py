@@ -71,6 +71,30 @@ _default = object()
 log = logging.getLogger(__name__)
 
 
+STRIP_FLAGS = re.M | re.U | re.S
+STRIPPED_RES = [
+    re.compile(r"\x1b\[[0-9;]*[mG]", STRIP_FLAGS),
+    re.compile(r"\x1b.*?[mGKH]", STRIP_FLAGS)]
+
+
+def strip_colors(line):
+    stripped_line = line
+    for stripped_re in STRIPPED_RES:
+        stripped_line = stripped_re.sub('', stripped_line)
+    stripped_line = salt.output.strip_esc_sequence(line)
+    return stripped_line
+
+
+def asbool(item):
+    if isinstance(item, six.string_types):
+        item = item.lower()
+    if item in [None, False, 0, '0', 'no', 'n', 'n', 'non']:
+        item = False
+    if item in [True, 1, '1', 'yes', 'y', 'o', 'oui']:
+        item = True
+    return bool(item)
+
+
 def uniquify(seq):
     '''uniquify a list'''
     seen = set()

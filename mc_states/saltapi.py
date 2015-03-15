@@ -36,6 +36,9 @@ from salt.runner import RunnerClient
 from mc_states import api
 from mc_states.api import memoize_cache
 from mc_states.api import six
+from mc_states.api import asbool
+from mc_states.api import STRIPPED_RES
+from mc_states.api import strip_colors
 import salt.utils.vt
 
 
@@ -46,10 +49,6 @@ _RUNNERS = {}
 LXC_IMPLEMENTATION = 'mc_lxc_fork'
 LXC_IMPLEMENTATION = 'lxc'
 DEFAULT_POLL = 0.4
-STRIP_FLAGS = re.M | re.U | re.S
-STRIPPED_RES = [
-    re.compile(r"\x1b\[[0-9;]*[mG]", STRIP_FLAGS),
-    re.compile(r"\x1b.*?[mGKH]", STRIP_FLAGS)]
 __RESULT = {'comment': '',
             'changes': {},
             'output': '',
@@ -810,14 +809,6 @@ def process_cloud_return(name, info, driver='saltify', ret=None):
     return ret
 
 
-def strip_colors(line):
-    stripped_line = line
-    for stripped_re in STRIPPED_RES:
-        stripped_line = stripped_re.sub('', stripped_line)
-    stripped_line = salt.output.strip_esc_sequence(line)
-    return stripped_line
-
-
 def merge_results(ret, cret):
     # sometime we delete some stuff from the to be merged  results
     # dict to only keep some infos
@@ -842,14 +833,4 @@ def _get_ssh_ret(**kw):
                                          'stderr': '',
                                          'trace': ''},
                                         kw)
-
-
-def asbool(item):
-    if isinstance(item, six.string_types):
-        item = item.lower()
-    if item in [None, False, 0, '0', 'no', 'n', 'n', 'non']:
-        item = False
-    if item in [True, 1, '1', 'yes', 'y', 'o', 'oui']:
-        item = True
-    return bool(item)
 # vim:set et sts=4 ts=4 tw=80:
