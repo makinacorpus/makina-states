@@ -1862,8 +1862,8 @@ link_salt_dir() {
             if [ ! -e "${where}/nobackup" ];then
                 mkdir "${where}/nobackup"
             fi
-            echo "moving old directory; \"${where}/${i}\" to \"${where}/nobackup/${i}-$(date "+%F-%T-%N")\"" 
-            mv "${where}/${i}" "${where}/nobackup/${i}-$(date "+%F-%T-%N")" 
+            echo "moving old directory; \"${where}/${i}\" to \"${where}/nobackup/${i}-$(date "+%F-%T-%N")\""
+            mv "${where}/${i}" "${where}/nobackup/${i}-$(date "+%F-%T-%N")"
         fi
         do_link="1"
         if [ -h "${where}/${i}" ];then
@@ -1890,6 +1890,7 @@ __install() {
 }
 
 kill_ms_daemons() {
+    upgrade_from_buildout
     killall_local_mastersalt_masters
     killall_local_mastersalt_minions
     killall_local_minions
@@ -2607,6 +2608,7 @@ killall_local_minions() {
 }
 
 restart_local_mastersalt_masters() {
+    upgrade_from_buildout
     if [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
         service_ mastersalt-master stop
         killall_local_mastersalt_masters
@@ -2615,6 +2617,7 @@ restart_local_mastersalt_masters() {
 }
 
 restart_local_mastersalt_minions() {
+    upgrade_from_buildout
     if [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_MASTERSALT_MINION}" != "x" ];then
         service_ mastersalt-minion stop
         killall_local_mastersalt_minions
@@ -2623,6 +2626,7 @@ restart_local_mastersalt_minions() {
 }
 
 restart_local_masters() {
+    upgrade_from_buildout
     if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
         killall_local_masters
     elif [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_SALT_MASTER}" != "x" ];then
@@ -2633,6 +2637,7 @@ restart_local_masters() {
 }
 
 restart_local_minions() {
+    upgrade_from_buildout
     if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
         killall_local_minions
     elif [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_SALT_MINION}" != "x" ];then
@@ -4018,6 +4023,7 @@ parse_cli_opts() {
 }
 
 restart_daemons() {
+    upgrade_from_buildout
     if [ "x${IS_SALT_MINION}" != "x" ];then
         restart_local_minions
     fi
@@ -4181,7 +4187,22 @@ kill_old_syncs() {
     done
 }
 
+upgrade_from_buildout() {
+    # upgrade from old buildout based install
+    s_venv=""
+    if [ ! -e "${SALT_VENV_PATH}" ];then
+        s_venv="1"
+    fi
+    if [ "x${IS_MASTERSALT}" != "x" ] && [ ! -e "${MASTERSALT_VENV_PATH}" ];then
+        s_venv="1"
+    fi
+    if [ "${s_venv}" != "x" ];then
+        setup_virtualenvs
+    fi
+}
+
 synchronize_code() {
+    upgrade_from_buildout
     restart_modes=""
     kill_old_syncs
     setup_and_maybe_update_code onlysync
@@ -4276,6 +4297,7 @@ initial_highstates() {
 }
 
 cleanup_execlogs() {
+    upgrade_from_buildout
     LOG_LIMIT="${LOG_LIMIT:-20}"
     # keep 20 local exec logs only
     for dir in "${SALT_MS}/.bootlogs" "${MASTERSALT_MS}/.bootlogs";do
@@ -4344,16 +4366,19 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         synchronize_code
     fi
     if [ "x${SALT_BOOT_RESTART_MINIONS}" != "x" ];then
+        upgrade_from_buildout
         restart_local_minions
         restart_local_mastersalt_minions
         abort="1"
     fi
     if [ "x${SALT_BOOT_RESTART_MASTERS}" != "x" ];then
+        upgrade_from_buildout
         restart_local_masters
         restart_local_mastersalt_masters
         abort="1"
     fi
     if [ "x${SALT_BOOT_RESTART_DAEMONS}" != "x" ];then
+        upgrade_from_buildout
         restart_daemons
         abort="1"
     fi
