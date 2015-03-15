@@ -321,7 +321,6 @@ def get_failure_error(jid, target, fun, args, kw):
     return to_errmsg
 
 
-
 def get_timeout_error(wait_for_res,
                       jid,
                       target,

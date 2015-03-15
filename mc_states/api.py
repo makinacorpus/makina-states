@@ -16,6 +16,8 @@ import os
 import re
 import socket
 import traceback
+import salt.output
+
 
 # try to import fix from various places (readthedoc!!!)
 try:
@@ -169,8 +171,9 @@ def lazy_subregistry_get(__salt__, registry):
     """
     def wrapper(func):
         key = AUTO_NAMES.get(func.__name__, func.__name__)
+
         def _call(*a, **kw):
-            # TODO: replace the next line with the two others with a better test
+            # TODO: change the next line with the two others with a better test
             # cache each registry 5 minutes. which should be sufficient
             # to render the whole sls files
             # remember that the registry is a reference and even cached
@@ -179,6 +182,7 @@ def lazy_subregistry_get(__salt__, registry):
             if kw:
                 force_run = True
             ttl = 5 * 60
+
             def _do(func, a, kw):
                 ret = func(*a, **kw)
                 ret = filter_locals(ret)
@@ -199,7 +203,7 @@ def dump(__salt__, kind, filters=None):
         __salt__['mc_macros.registry_kind_get'](kind)
     )
     for filt in filters:
-        if not filt in REG:
+        if filt not in REG:
             del REG[filt]
     return REG
 
