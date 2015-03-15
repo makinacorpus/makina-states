@@ -49,8 +49,70 @@ DEFAULT_POLL = 0.4
 STRIP_FLAGS = re.M | re.U | re.S
 STRIPPED_RES = [
     re.compile(r"\x1b\[[0-9;]*[mG]", STRIP_FLAGS),
-    re.compile(r"\x1b.*?[mGKH]", STRIP_FLAGS),
-]
+    re.compile(r"\x1b.*?[mGKH]", STRIP_FLAGS)]
+__RESULT = {'comment': '',
+            'changes': {},
+            'output': '',
+            'trace': '',
+            'result': True}
+__FUN_TIMEOUT = {
+    'mc_cloud_lxc.get_settings_for_vm': 120,
+    'mc_cloud_compute_node.get_settings_for_target': 300,
+    'mc_cloud_compute_node.get_reverse_proxies_for_target': 300,
+    'mc_cloud_compute_node.settings': 300,
+    'mc_cloud_controller.settings': 300,
+    'mc_cloud_images.settings': 120,
+    'mc_cloud.settings': 120,
+    'mc_cloud_lxc.settings': 120,
+    'cmd.run': 60 * 60,
+    'test.ping': 10,
+    'lxc.info': 40,
+    'lxc.list': 300,
+    'lxc.templates': 100,
+    'grains.items': 100,
+    'state.sls': 60*60*5}
+__CACHED_FUNS = {
+    'test.ping': 3 * 60,  # cache ping for 3 minutes
+    'lxc.list':  2,  # cache lxc.list for 2 seconds,
+    'grains.items': 100,
+
+    'mc_cloud_compute_node.settings': 600,
+    'mc_cloud_images.settings': 900,
+    'mc_cloud_controller.settings': 600,
+    'mc_cloud_vm.settings': 900,
+    'mc_cloud.settings': 900,
+
+    'mc_cloud_compute_node.ext_pillar': 600,
+    'mc_cloud_controller.ext_pillar': 600,
+    'mc_cloud_vm.ext_pillar': 600,
+    'mc_cloud_images.ext_pillar': 900,
+    'mc_cloud.ext_pillar': 900,
+
+    'mc_cloud_compute_node.extpillar_settings': 600,
+    'mc_cloud_controller.extpillar_settings': 600,
+    'mc_cloud_vm.extpillar_settings': 600,
+    'mc_cloud.extpillar_settings': 900,
+    'mc_cloud_images.extpillar_settings': 900,
+
+    'mc_cloud_compute_node.ext_pillar': 600,
+    'mc_cloud_vm.vt_extpillar': 600,
+    'mc_cloud_vm.vm_extpillar': 600,
+
+    'mc_cloud_vm.vt_settings': 600,
+    'mc_cloud_vm.vm_settings': 600,
+    'mc_cloud_vm.vts_settings': 600,
+    'mc_cloud_vm.vms_settings': 600,
+
+    'mc_nodetypes.registry': 900,
+    'mc_cloud.registry': 900,
+    'mc_services.registry': 900,
+    'mc_controllers.registry': 900,
+    'mc_localsettings.registry': 900,
+
+    'mc_nodetypes.settings': 900,
+    'mc_controllers.settings': 900,
+    'mc_services.settings': 600,
+    'mc_localsettings.settings': 600}
 
 
 class SaltExit(SaltException):
@@ -101,11 +163,50 @@ class MessageError(SaltException):
     pass
 
 
-__RESULT = {'comment': '',
-            'changes': {},
-            'output': '',
-            'trace': '',
-            'result': True}
+class _SSHExecError(salt.utils.vt.TerminalException):
+    """."""
+
+    def __init__(self, message, exec_ret=_marker):
+        super(_SSHExecError, self).__init__(message)
+        if exec_ret is _marker:
+            exec_ret = _get_ssh_ret()
+        self.exec_ret = exec_ret
+
+
+class _SSHLoginError(_SSHExecError):
+    """."""
+
+
+class _SSHTimeoutError(_SSHLoginError):
+    '''.'''
+
+
+class _SSHVtError(_SSHExecError):
+    """."""
+
+
+class _SSHInterruptError(_SSHExecError):
+    """."""
+
+
+class _SSHCommandFinished(_SSHExecError):
+    """."""
+
+
+class _SSHCommandFailed(_SSHCommandFinished):
+    """."""
+
+
+class _SSHCommandTimeout(_SSHCommandFailed):
+    """."""
+
+
+class _SSHTransferFailed(_SSHCommandFailed):
+    """."""
+
+
+class _SaltCallFailure(_SSHExecError):
+    """."""
 
 
 def result(**kwargs):
@@ -116,68 +217,6 @@ def result(**kwargs):
     ret = copy.deepcopy(__RESULT)
     ret.update(kwargs)
     return ret
-
-
-__FUN_TIMEOUT = {
-    'mc_cloud_lxc.get_settings_for_vm': 120,
-    'mc_cloud_compute_node.get_settings_for_target': 300,
-    'mc_cloud_compute_node.get_reverse_proxies_for_target': 300,
-    'mc_cloud_compute_node.settings': 300,
-    'mc_cloud_controller.settings': 300,
-    'mc_cloud_images.settings': 120,
-    'mc_cloud.settings': 120,
-    'mc_cloud_lxc.settings': 120,
-    'cmd.run': 60 * 60,
-    'test.ping': 10,
-    'lxc.info': 40,
-    'lxc.list': 300,
-    'lxc.templates': 100,
-    'grains.items': 100,
-    'state.sls': 60*60*5,
-}
-__CACHED_FUNS = {
-    'test.ping': 3 * 60,  # cache ping for 3 minutes
-    'lxc.list':  2,  # cache lxc.list for 2 seconds,
-    'grains.items': 100,
-
-    'mc_cloud_compute_node.settings': 600,
-    'mc_cloud_images.settings': 900,
-    'mc_cloud_controller.settings': 600,
-    'mc_cloud_vm.settings': 900,
-    'mc_cloud.settings': 900,
-
-    'mc_cloud_compute_node.ext_pillar': 600,
-    'mc_cloud_controller.ext_pillar': 600,
-    'mc_cloud_vm.ext_pillar': 600,
-    'mc_cloud_images.ext_pillar': 900,
-    'mc_cloud.ext_pillar': 900,
-
-    'mc_cloud_compute_node.extpillar_settings': 600,
-    'mc_cloud_controller.extpillar_settings': 600,
-    'mc_cloud_vm.extpillar_settings': 600,
-    'mc_cloud.extpillar_settings': 900,
-    'mc_cloud_images.extpillar_settings': 900,
-
-    'mc_cloud_compute_node.ext_pillar': 600,
-    'mc_cloud_vm.vt_extpillar': 600,
-    'mc_cloud_vm.vm_extpillar': 600,
-
-    'mc_cloud_vm.vt_settings': 600,
-    'mc_cloud_vm.vm_settings': 600,
-    'mc_cloud_vm.vts_settings': 600,
-    'mc_cloud_vm.vms_settings': 600,
-
-    'mc_nodetypes.registry': 900,
-    'mc_cloud.registry': 900,
-    'mc_services.registry': 900,
-    'mc_controllers.registry': 900,
-    'mc_localsettings.registry': 900,
-
-    'mc_nodetypes.settings': 900,
-    'mc_controllers.settings': 900,
-    'mc_services.settings': 600,
-    'mc_localsettings.settings': 600,
-}
 
 
 def _minion_opts(cfgdir=None, cfg=None):
@@ -433,12 +472,12 @@ def run_and_poll(target,
         if time.time() > wendto:
             raise SaltExit(get_timeout_error(10, jid, target, fun, args, kw))
         time.sleep(poll)
-    return _check_ret(ret, jid, fun, args, kw)
+    return _check_ret(ret, jid, target, fun, args, kw)
 
 
 def _check_ret(ret, jid, target, fun, args, kw):
     if ret is _marker:
-        raise SaltExit(get_failure_error( jid, target, fun, args, kw))
+        raise SaltExit(get_failure_error(jid, target, fun, args, kw))
     return ret
 
 
@@ -803,51 +842,6 @@ def _get_ssh_ret(**kw):
                                          'stderr': '',
                                          'trace': ''},
                                         kw)
-
-class _SSHExecError(salt.utils.vt.TerminalException):
-    """."""
-
-    def __init__(self, message, exec_ret=_marker):
-        super(_SSHExecError, self).__init__(message)
-        if exec_ret is _marker:
-            exec_ret = _get_ssh_ret()
-        self.exec_ret = exec_ret
-
-
-class _SSHLoginError(_SSHExecError):
-    """."""
-
-
-class _SSHTimeoutError(_SSHLoginError):
-    '''.'''
-
-
-class _SSHVtError(_SSHExecError):
-    """."""
-
-
-class _SSHInterruptError(_SSHExecError):
-    """."""
-
-
-class _SSHCommandFinished(_SSHExecError):
-    """."""
-
-
-class _SSHCommandFailed(_SSHCommandFinished):
-    """."""
-
-
-class _SSHCommandTimeout(_SSHCommandFailed):
-    """."""
-
-
-class _SSHTransferFailed(_SSHCommandFailed):
-    """."""
-
-
-class _SaltCallFailure(_SSHExecError):
-    """."""
 
 
 def asbool(item):
