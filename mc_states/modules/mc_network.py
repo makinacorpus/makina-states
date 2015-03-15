@@ -35,7 +35,10 @@ try:
     HAS_IPWHOIS = True
 except ImportError:
     HAS_IPWHOIS = False
+
 from mc_states.utils import memoize_cache
+from mc_states.utils import six
+from mc_states.utils import is_valid_ip
 import contextlib
 import socket
 import urllib2
@@ -410,6 +413,8 @@ def providers():
     return ['online', 'ovh', 'phpnet', 'sys']
 
 
+def is_ip(ip):
+    return is_valid_ip(ip)
 
 
 def ext_ip():
