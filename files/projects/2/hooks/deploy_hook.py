@@ -355,15 +355,32 @@ def deploy(callback_args, loglevel, logfile, lock, **kwargs):
                         if t and ret in ['d']:
                             t.join()
                     stdout = ''
+                    buf = ''
                     while True:
                         try:
-                            stdout += streamout_queue.get_nowait()
+                            content =  streamout_queue.get_nowait()
+                            if buf:
+                                content = buf + content
+                                buf = ''
+                            try:
+                                stdout += content
+                            except UnicodeDecodeError:
+                                buf = content
                         except Empty:
                             break
                     stderr = ''
+                    buf = ''
                     while True:
                         try:
-                            stdout += streamerr_queue.get_nowait()
+                            content =  streamerr_queue.get_nowait()
+                            if buf:
+                                content = buf + content
+                                buf = ''
+                            try:
+                                stderr += content
+                            except UnicodeDecodeError:
+                                # handle 2codes chars
+                                buf = content
                         except Empty:
                             break
                     (do_loop, delay, stdout, stderr) = custom_communicate(
