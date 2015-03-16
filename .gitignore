@@ -1,4 +1,5 @@
 .*installed.cfg
+/local
 /man
 /share
 /corpus-*

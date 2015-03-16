@@ -3647,4 +3647,4 @@ def remote_project_hook(hook, host, project, opts, **kw):
     if hook and (hook in __salt__):
         log.info('{0}/{1}: Running hook {2}'.format(
             host, project, hook))
-        return __salt__[hook](host, project, ops, **kw)
+        return __salt__[hook](host, project, opts, **kw)

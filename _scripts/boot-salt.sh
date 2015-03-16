@@ -1800,12 +1800,10 @@ local/lib/python*
     done
     uflag=""
     # only install git reqs in upgade mode if not already there
-
-    reqs="-r requirements/requirements.txt"
+    pip install -U --download-cache "${PIP_CACHE}" -r requirements/requirements.txt
     if [ "x${install_git}" != "x" ];then
-        reqs="${reqs} -r requirements/git_requirements.txt"
+        pip install -U --download-cache "${PIP_CACHE}" -r requirements/git_requirements.txt
     fi
-    pip install -U --download-cache "${PIP_CACHE}" ${reqs}
     pip install --no-deps -e .
     link_salt_dir "${ms_path}" "${venv_path}"
 }
@@ -4196,7 +4194,7 @@ upgrade_from_buildout() {
     if [ "x${IS_MASTERSALT}" != "x" ] && [ ! -e "${MASTERSALT_VENV_PATH}" ];then
         s_venv="1"
     fi
-    if [ "${s_venv}" != "x" ];then
+    if [ "x${s_venv}" != "x" ];then
         setup_virtualenvs
     fi
 }
