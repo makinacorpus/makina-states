@@ -3252,10 +3252,10 @@ def remote_deploy(host, project, *args, **kw):
                 host.fr <project> only=install,fixperms only_steps=0.sls
     '''
     _s = __salt__
-    _remote_log('   - Deployment {2}{3}{0}/{1}'.format(host,
-                                                       project,
-                                                       _colors('endc'),
-                                                       _colors('yellow')))
+    _remote_log('   - Deployment: {2}{3}{0}/{1}'.format(host,
+                                                        project,
+                                                        _colors('endc'),
+                                                        _colors('yellow')))
     ssh_kw = _s['mc_remote.ssh_kwargs'](kw)
     kwarg = kw.get('kwarg', {})
     salt_function = kw.get('project_salt_function',
@@ -3304,7 +3304,7 @@ def remote_deploy(host, project, *args, **kw):
             extra_args = extra_args[1:]
     if not failed:
         try:
-            cfgret = __salt__['mc_remote.salt_call'](
+            cfgret = _s['mc_remote.salt_call'](
                 host,
                 'mc_project.get_configuration_item',
                 arg=[project, 'git_deploy_hook'], kwarg=kwarg,
@@ -3315,19 +3315,22 @@ def remote_deploy(host, project, *args, **kw):
             ssh_kw['ssh_display_content_on_error'] = True
             if hook:
                 cmd = '"{0}" -p "{1}"'.format(hook, project)
-                for i in ['only', 'only_steps']:
+                for i, sw in six.iteritems({
+                    'only': 'only',
+                    'only_steps': 'only-steps'
+                }):
                     if i in kwarg:
-                        cmd += ' --{0}="{1}"'.format(i, kwarg[i])
+                        cmd += ' --{0}="{1}"'.format(sw, kwarg[i])
                 if task:
                     cmd += ' --task="{0}"'.format(task)
                 if extra_args:
                     cmd += " {0}".format(" ".join(extra_args))
-                cret = __salt__['mc_remote.ssh'](host, cmd, **ssh_kw)
+                cret = _s['mc_remote.ssh'](host, cmd, **ssh_kw)
                 if cret['retcode']:
                     failed = True
                     scret = repr_ret(cret)
             if not hook:
-                cret = __salt__['mc_remote.salt_call'](
+                cret = _s['mc_remote.salt_call'](
                     host,
                     salt_function,
                     arg=[project] + extra_args, kwarg=kwarg,
