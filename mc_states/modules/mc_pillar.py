@@ -1260,6 +1260,8 @@ def serial_for(domain,
         # load the local pillar dns registry
         dns_reg = __salt__['mc_macros.get_local_registry'](
             'dns_serials', registry_format='pack')
+        dns_failures = __salt__['mc_macros.get_local_registry'](
+            'dns_serials_failures', registry_format='pack')
         if serials is None:
             serials = OrderedDict()
         override = True
@@ -1303,6 +1305,7 @@ def serial_for(domain,
         # this avoid real situation errors and serial
         # mismatch between master and slaves
         # If our serial is inferior, we take this serial as a value
+        now = datetime.datetime.now()
         try:
             resolver = dns.resolver.Resolver()
             resolver.timeout = 10
@@ -1315,16 +1318,56 @@ def serial_for(domain,
                     ns += domain + '.'
                 ns = ns[:-1]
                 request = dns.message.make_query(domain, dns.rdatatype.SOA)
-                res = dns.query.tcp(request, ns, timeout=30)
-
-                for answer in res.answer:
-                    for soa in answer:
-                        if soa.serial > dns_serial:
-                            dns_serial = soa.serial
+                do_skip = False
+                t10 = datetime.timedelta(minutes=10)
+                try:
+                    nsip = socket.gethostbyname(ns)
+                except Exception:
+                    nsip = ns
+                # if a nameserver fails three times
+                # ignore it for 10 minutes
+                if nsip in dns_failures:
+                    failure = dns_failures[nsip]
+                    try:
+                        odate = datetime.datetime.strptime(
+                            failure['date'][:-7], '%Y-%m-%dT%H:%M:%S')
+                    except Exception:
+                        odate = now
+                    if (
+                        failure['skip']
+                        and (now - odate < t10)
+                    ):
+                        do_skip = True
+                        log.error(
+                            'nameserver {0}/{1} is skipped 10minutes, too much'
+                            ' failures'.format(ns, nsip))
+                    if now - odate >= t10:
+                        dns_failures.pop(ns, None)
+                if not do_skip:
+                    if nsip == '195.154.171.136':
+                        raise Exception()
+                    res = dns.query.tcp(request, ns, timeout=5)
+                    for answer in res.answer:
+                        for soa in answer:
+                            if soa.serial > dns_serial:
+                                dns_serial = soa.serial
+                    if ns in dns_failures:
+                        dns_failures.pop(ns, None)
             if dns_serial != serial and dns_serial > 0:
                 serial = dns_serial
         except Exception, ex:
+            try:
+                nsip = socket.gethostbyname(ns)
+            except Exception:
+                nsip = ns
+            failure = dns_failures.setdefault(
+                nsip,
+                {'date': now.isoformat(), 'skip': False, 'count': 0})
+            failure['count'] += 1
+            if failure['count'] > 3:
+                failure['skip'] = True
             trace = traceback.format_exc()
+            log.error('DNSSERIALS: {0}: {1} failures: {2}'.format(ns, nsip, failure))
             log.error('DNSSERIALS: {0}'.format(ex))
             log.error('DNSSERIALS: {0}'.format(domain))
             log.error(trace)
@@ -1337,6 +1380,8 @@ def serial_for(domain,
         if not force_serial:
             serial += 1
         dns_reg[domain] = serial
+        __salt__['mc_macros.update_local_registry'](
+            'dns_failures', dns_failures, registry_format='pack')
         __salt__['mc_macros.update_local_registry'](
             'dns_serials', dns_reg, registry_format='pack')
         return serial
