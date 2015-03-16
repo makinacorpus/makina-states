@@ -1344,8 +1344,6 @@ def serial_for(domain,
                     if now - odate >= t10:
                         dns_failures.pop(ns, None)
                 if not do_skip:
-                    if nsip == '195.154.171.136':
-                        raise Exception()
                     res = dns.query.tcp(request, ns, timeout=5)
                     for answer in res.answer:
                         for soa in answer:
