@@ -63,7 +63,7 @@ DEFAULT_PROJECT_NAME = 'project'
 DEFAULT_COMMIT_MESSAGE = 'salt commit'
 INITIAL_COMMIT_MESSAGE = 'initial'
 DEFAULT_AUTHOR = 'makina-states'
-DEFAULT_EMAIL = '{0}@paas.tls'.format(DEFAULT_AUTHOR)
+DEFAULT_EMAIL = '{0}@paas.tld'.format(DEFAULT_AUTHOR)
 DEFAULT_CONFIGURATION = {
     'name': None,
     'minion_id': None,
