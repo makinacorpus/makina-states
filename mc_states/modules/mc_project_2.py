@@ -180,8 +180,19 @@ def set_makina_states_author(directory,
                              email=DEFAULT_EMAIL,
                              **kw):
     user, _ = get_default_user_group(**kw)
-    __salt__['git.config_set'](directory, 'user.email', email, user=user)
-    __salt__['git.config_set'](directory, 'user.name', name, user=user)
+    force = kw.get('force', False)
+    try:
+        cemail = __salt__['git.config_get'](directory, 'user.email', user=user)
+    except salt.exceptions.CommandExecutionError:
+        cemail = None
+    try:
+        cname = __salt__['git.config_get'](directory, 'user.name', user=user)
+    except salt.exceptions.CommandExecutionError:
+        cname = None
+    if force or not cemail:
+        __salt__['git.config_set'](directory, 'user.email', email, user=user)
+    if force or not cname:
+        __salt__['git.config_set'](directory, 'user.name', name, user=user)
 
 
 def remove_path(path):
