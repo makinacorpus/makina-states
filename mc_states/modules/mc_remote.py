@@ -215,7 +215,7 @@ if [ "x${{has_ssh}}" = "x0" ] && [ "x${{ret}}" = "x0" ];then
     ctret=${{?}}
     if [ "x${{ctret}}" != "x0" ];then
         echo \
-"Remote directory \\"{container}aaa\\" does not exits or is not a directory">&2
+"Remote directory \\"{container}\\" does not exits or is not a directory">&2
         ret=1
     fi
 fi
