@@ -4188,10 +4188,10 @@ kill_old_syncs() {
 upgrade_from_buildout() {
     # upgrade from old buildout based install
     s_venv=""
-    if [ ! -e "${SALT_VENV_PATH}" ];then
+    if [ ! -e "${SALT_VENV_PATH}/bin/salt-call" ];then
         s_venv="1"
     fi
-    if [ "x${IS_MASTERSALT}" != "x" ] && [ ! -e "${MASTERSALT_VENV_PATH}" ];then
+    if [ "x${IS_MASTERSALT}" != "x" ] && [ ! -e "${MASTERSALT_VENV_PATH}/bin/salt-call" ];then
         s_venv="1"
     fi
     if [ "x${s_venv}" != "x" ];then
@@ -4383,6 +4383,9 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     if [ "x${abort}" = "x" ];then
         recap
         set_dns
+        if [ -e "${SALT_MS}/.installed.cfg" ] || [ -e "${MASTERSALT_MS}/.installed.cfg" ];then
+            upgrade_from_buildout
+        fi
         cleanup_old_installs
         setup_and_maybe_update_code
         handle_upgrades

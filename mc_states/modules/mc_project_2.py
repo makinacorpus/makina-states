@@ -63,7 +63,7 @@ DEFAULT_PROJECT_NAME = 'project'
 DEFAULT_COMMIT_MESSAGE = 'salt commit'
 INITIAL_COMMIT_MESSAGE = 'initial'
 DEFAULT_AUTHOR = 'makina-states'
-DEFAULT_EMAIL = '{0}@paas.tls'.format(DEFAULT_AUTHOR)
+DEFAULT_EMAIL = '{0}@paas.tld'.format(DEFAULT_AUTHOR)
 DEFAULT_CONFIGURATION = {
     'name': None,
     'minion_id': None,
@@ -180,8 +180,19 @@ def set_makina_states_author(directory,
                              email=DEFAULT_EMAIL,
                              **kw):
     user, _ = get_default_user_group(**kw)
-    __salt__['git.config_set'](directory, 'user.email', email, user=user)
-    __salt__['git.config_set'](directory, 'user.name', name, user=user)
+    force = kw.get('force', False)
+    try:
+        cemail = __salt__['git.config_get'](directory, 'user.email', user=user)
+    except salt.exceptions.CommandExecutionError:
+        cemail = None
+    try:
+        cname = __salt__['git.config_get'](directory, 'user.name', user=user)
+    except salt.exceptions.CommandExecutionError:
+        cname = None
+    if force or not cemail:
+        __salt__['git.config_set'](directory, 'user.email', email, user=user)
+    if force or not cname:
+        __salt__['git.config_set'](directory, 'user.name', name, user=user)
 
 
 def remove_path(path):
@@ -3252,10 +3263,10 @@ def remote_deploy(host, project, *args, **kw):
                 host.fr <project> only=install,fixperms only_steps=0.sls
     '''
     _s = __salt__
-    _remote_log('   - Deployment {2}{3}{0}/{1}'.format(host,
-                                                       project,
-                                                       _colors('endc'),
-                                                       _colors('yellow')))
+    _remote_log('   - Deployment: {2}{3}{0}/{1}'.format(host,
+                                                        project,
+                                                        _colors('endc'),
+                                                        _colors('yellow')))
     ssh_kw = _s['mc_remote.ssh_kwargs'](kw)
     kwarg = kw.get('kwarg', {})
     salt_function = kw.get('project_salt_function',
@@ -3304,7 +3315,7 @@ def remote_deploy(host, project, *args, **kw):
             extra_args = extra_args[1:]
     if not failed:
         try:
-            cfgret = __salt__['mc_remote.salt_call'](
+            cfgret = _s['mc_remote.salt_call'](
                 host,
                 'mc_project.get_configuration_item',
                 arg=[project, 'git_deploy_hook'], kwarg=kwarg,
@@ -3315,19 +3326,22 @@ def remote_deploy(host, project, *args, **kw):
             ssh_kw['ssh_display_content_on_error'] = True
             if hook:
                 cmd = '"{0}" -p "{1}"'.format(hook, project)
-                for i in ['only', 'only_steps']:
+                for i, sw in six.iteritems({
+                    'only': 'only',
+                    'only_steps': 'only-steps'
+                }):
                     if i in kwarg:
-                        cmd += ' --{0}="{1}"'.format(i, kwarg[i])
+                        cmd += ' --{0}="{1}"'.format(sw, kwarg[i])
                 if task:
                     cmd += ' --task="{0}"'.format(task)
                 if extra_args:
                     cmd += " {0}".format(" ".join(extra_args))
-                cret = __salt__['mc_remote.ssh'](host, cmd, **ssh_kw)
+                cret = _s['mc_remote.ssh'](host, cmd, **ssh_kw)
                 if cret['retcode']:
                     failed = True
                     scret = repr_ret(cret)
             if not hook:
-                cret = __salt__['mc_remote.salt_call'](
+                cret = _s['mc_remote.salt_call'](
                     host,
                     salt_function,
                     arg=[project] + extra_args, kwarg=kwarg,
