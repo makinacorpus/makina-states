@@ -94,6 +94,7 @@ sys-pkgs:
       - mlocate
       - psmisc
       - pwgen
+      - virt-what
       - python
       - python-dev
       - sudo
