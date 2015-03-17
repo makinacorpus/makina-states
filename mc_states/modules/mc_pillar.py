@@ -98,15 +98,19 @@ def get_fqdn_domains(fqdn):
 
 
 def get_db():
-    dbpath = os.path.join(
-        __opts__['pillar_roots']['base'][0],
-        'database.yaml')
+    dbpath = None
+    for i in ['sls', 'yaml']:
+        dbpath = os.path.join(
+            __opts__['pillar_roots']['base'][0],
+            'database.{0}'.format(i))
+        if os.path.exists(dbpath):
+            break
     return dbpath
 
 
 def has_db():
     db = get_db()
-    if ('yaml' in db) and db.startswith('/srv'):
+    if ('yaml' in db or 'sls' in db) and db.startswith('/srv'):
         return os.path.exists(db)
     else:
         return False
@@ -115,10 +119,18 @@ def has_db():
 # to be easily mockable in tests while having it cached
 def loaddb_do(*a, **kw5):
     dbpath = get_db()
+    suf = os.path.splitext(dbpath)[1]
+    if suf not in ['.yaml', '.json', '.sls']:
+        raise ValueError(
+            'invalid db format {0}: {1}'.format(suf, dbpath))
+    suf = suf[1:]
     if not has_db():
         raise KeyError("{0} is not present".format(dbpath))
     with open(get_db()) as fic:
-        db = yaml_load(fic.read())
+        content = dbpath
+        if suf not in ['sls']:
+            content = fic.read()
+        db = __salt__['mc_utils.{0}_load'.format(suf)](content)
     for item in db:
         types = (dict, list)
         if item in ['format']:
