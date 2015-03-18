@@ -129,8 +129,8 @@ def test(name="thisisatest"):
           "target": __opts__['id'],
           "mac": "00:16:3e:11:31:64",
           "ssh_gateway_user": "root",
-          "script_args": ("-C --from-salt-cloud "
+          "script_args": ("-C --reattach "
                           "--mastersalt-minion "
-                          "-b stable --salt-cloud-dir {0}"),
+                          "-b stable --reattach-dir {0}"),
           "ssh_gateway_port": 22}
     return __salt__['lxc.cloud_init'](name, vm_=vm)

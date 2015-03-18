@@ -112,9 +112,9 @@ def default_settings():
         'script': ('/srv/mastersalt/makina-states/'
                    '_scripts/boot-salt.sh'),
         'bootstrap_shell': 'bash',
-        'bootsalt_args': '-C --from-salt-cloud -no-M',
+        'bootsalt_args': '-C --reattach -no-M',
         'bootsalt_mastersalt_args': (
-            '-C --from-salt-cloud --mastersalt-minion'),
+            '-C --reattach --mastersalt-minion'),
         'bootsalt_branch': None,
         'master_port': __opts__.get('master_port'),
         'master': __grains__['id'],
