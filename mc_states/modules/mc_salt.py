@@ -489,7 +489,7 @@ def settings():
         data['mcachePrefix'] = mastersaltCommonData['cache_prefix']
         data['mrunPrefix'] = mastersaltCommonData['run_prefix']
         data['mlogPrefix'] = mastersaltCommonData['log_prefix']
-        data['local_ùastersalt_mode'] = mastersaltCommonData['local_mastersalt_mode']
+        data['local_mastersalt_mode'] = mastersaltCommonData['local_mastersalt_mode']
         data['local_salt_mode'] = mastersaltCommonData['local_salt_mode']
         data['mpillarRoot'] = mastersaltCommonData['pillar_root']
         mmsr = data['mmsr'] = msaltroot + '/makina-states'
