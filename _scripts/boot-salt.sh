@@ -1530,10 +1530,16 @@ setup_and_maybe_update_code() {
                 #"${SALT_MS}/_s
                 cd "${ms}"
                 if [ ! -e src ];then
-                    link_salt_dir "${ms}"
+                    venv_path="$(get_venv_path ${ms})"
+                    create_venv_dirs "${venv_path}"
+                    ln -sf "${venv_path}/src" "${ms}/src"
                 fi
                 if [ ! -e src ];then
                     echo "pb with linking venv in ${ms}"
+                    exit 1
+                fi
+                if [ -d src ] && [ ! -h  src ];then
+                    echo "pb with linking venv in ${ms} (2)"
                     exit 1
                 fi
                 for i in "${ms}" "${ms}/src/"*;do
@@ -1741,6 +1747,7 @@ setup_virtualenv() {
         fi
         . "${venv_path}/bin/activate"
     fi
+    create_venv_dirs "${venv_path}"
     # install requirements
     cd "${ms_path}"
     install_git=""
@@ -1770,6 +1777,13 @@ get_makina_states() {
         venv_dir="${SALT_MS}"
     fi
     echo "${venv_dir}"
+}
+
+create_venv_dirs() {
+    venv_path="${1:-${venv_path}}"
+    if [ ! -e "${venv_path}/src" ];then
+        mkdir -p "${venv_path}/src"
+    fi
 }
 
 get_venv_path() {
@@ -1907,6 +1921,9 @@ reconfigure_mastersalt_master() {
     mastersalt_master_changed="${mastersalt_master_changed:-"0"}"
     if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
         for conf in "${MASTERSALT_PILLAR}/mastersalt_minion.sls" "${MASTERSALT_PILLAR}/mastersalt.sls";do
+            if [ ! -e "${conf}" ];then
+                touch "${conf}"
+            fi
             edit_yaml_file "${conf}" makina-states.controllers.salt_master.settings.interface "${master_ip}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 mastersalt_master_changed="1"
@@ -1959,8 +1976,11 @@ reconfigure_salt_master() {
     port="${3:-${SALT_MASTER_PORT}}"
     publish_port="${4:-${SALT_MASTER_PUBLISH_PORT}}"
     salt_master_changed="${salt_master_changed:-"0"}"
-    if [ "x${IS_SALT_MASTER}" != "x"];then
+    if [ "x${IS_SALT_MASTER}" != "x" ];then
         for conf in "${SALT_PILLAR}/salt_minion.sls" "${SALT_PILLAR}/salt.sls";do
+            if [ ! -e "${conf}" ];then
+                touch "${conf}"
+            fi
             # think to firewall the interfaces, but restricting only to localhost cause
             # more harm than good
             # any way the keys for attackers need to be accepted.
@@ -2013,7 +2033,7 @@ reconfigure_mastersalt_minion() {
     branch_id="$(get_ms_branch|"${SED}" -e "s/changeset://g")"
     setted_id="${1:-$(get_minion_id)}"
     master="${1:-${MASTERSALT_MASTER_DNS}}"
-    port="${2:-${%MASTERSALT_MASTER_PORT}}"
+    port="${2:-${MASTERSALT_MASTER_PORT}}"
     minion_ip="${3:-${MASTERSALT_MINION_IP}}"
     mastersalt_minion_changed="${mastersalt_minion_changed:-"0"}"
     if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
@@ -2023,7 +2043,7 @@ reconfigure_mastersalt_minion() {
             fi
         done
         for conf in "${MCONF_PREFIX}/grains" "${MASTERSALT_PILLAR}/mastersalt_minion.sls" "${MASTERSALT_PILLAR}/mastersalt.sls";do
-            if [ -e "${conf}" ];then
+            if [ ! -e "${conf}" ];then
                 touch "${conf}"
             fi
             "${SED}" -i -e "/^    id:/ d" "${conf}"
@@ -2096,6 +2116,7 @@ reconfigure_salt_minion() {
     setted_id="${1:-$(get_minion_id)}"
     master="${1:-${SALT_MASTER_DNS}}"
     port="${2:-${SALT_MASTER_PORT}}"
+    minion_ip="${2:-${SALT_MINION_IP}}"
     salt_minion_changed="${salt_minion_changed:-"0"}"
     if [ "x${IS_SALT_MINION}" != "x" ];then
         for i in "${CONF_PREFIX}/minion_id";do
@@ -2272,6 +2293,7 @@ a\    - salt_minion
 a\    - salt
 }" "${SALT_PILLAR}/top.sls"
     fi
+    touch "${SALT_PILLAR}/salt.sls" "${SALT_PILLAR}/salt_minion.sls"
     # --------- MASTERSALT
     # Set default mastersalt  pillar
     if [ "x${IS_MASTERSALT}" != "x" ];then
@@ -2294,6 +2316,7 @@ a\    - mastersalt_minion
 a\    - mastersalt
 }" "${MASTERSALT_PILLAR}/top.sls"
         fi
+        touch "${MASTERSALT_PILLAR}/mastersalt.sls" "${MASTERSALT_PILLAR}/mastersalt_minion.sls"
     fi
 }
 
@@ -2381,6 +2404,8 @@ EOF
                 "s|\{salt_root\}|${salt_root}|g"\
                 "${salt_root}/makina-states/mc_states/modules_dirs.json" \
                 | ${SED} -re "s/^[{}]$//g" \
+                | ${SED} -re "s/],$/]/g" \
+                | ${SED} -re "s/^  +\"([^:]+: )/\"\1/g" \
                 >> "${conf_prefix}/master"
         fi
 
@@ -2402,6 +2427,8 @@ EOF
             "s|\{salt_root\}|${salt_root}|g"\
             "${salt_root}/makina-states/mc_states/modules_dirs.json" \
             | ${SED} -re "s/^[{}]$//g" \
+            | ${SED} -re "s/],$/]/g" \
+            | ${SED} -re "s/^  +\"([^:]+: )/\"\1/g" \
             >> "${conf_prefix}/minion"
     fi
 
@@ -2442,6 +2469,8 @@ EOF
             "s|\{salt_root\}|${salt_root}|g"\
             "${salt_root}/makina-states/mc_states/modules_dirs.json" \
             | ${SED} -re "s/^[{}]$//g" \
+            | ${SED} -re "s/^  +\"([^:]+: )/\"\1/g" \
+            | ${SED} -re "s/],$/]/g" \
             >> "${conf_prefix}/master"
         fi
 
@@ -2461,6 +2490,8 @@ EOF
             "s|\{salt_root\}|${salt_root}|g"\
             "${salt_root}/makina-states/mc_states/modules_dirs.json" \
             | ${SED} -re "s/^[{}]$//g" \
+            | ${SED} -re "s/^  +\"([^:]+: )/\"\1/g" \
+            | ${SED} -re "s/],$/]/g" \
             >> "${conf_prefix}/minion"
         fi
     fi
@@ -2471,7 +2502,6 @@ create_salt_skeleton() {
     create_pillars
     create_salt_tops
     create_pillar_tops
-    exit 1
     maybe_wire_reattached_conf
     reconfigure_masters
     reconfigure_minions
