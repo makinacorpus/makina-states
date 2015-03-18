@@ -2050,8 +2050,8 @@ reconfigure_mastersalt_minion() {
                 echo "${setted_id}" > "${i}"
             fi
         done
-        "${SED}" "s/^id:/g" "${MASTERSALT_PILLAR}/mastersalt_minion.sls"
-        "${SED}" "s/^makina-states.minion_id:/g" "${MASTERSALT_PILLAR}/mastersalt_minion.sls"
+        "${SED}" -i -re "s/^id:/g" "${MASTERSALT_PILLAR}/mastersalt_minion.sls"
+        "${SED}" -i -re "s/^makina-states.minion_id:/g" "${MASTERSALT_PILLAR}/mastersalt_minion.sls"
         for conf in "${MCONF_PREFIX}/grains" "${MASTERSALT_PILLAR}/mastersalt.sls";do
             if [ ! -e "${conf}" ];then
                 touch "${conf}"
@@ -2138,8 +2138,8 @@ reconfigure_salt_minion() {
                 echo "${setted_id}" > "${i}"
             fi
         done
-        "${SED}" "s/^id:/g" "${SALT_PILLAR}/salt_minion.sls"
-        "${SED}" "s/^makina-states.minion_id:/g" "${SALT_PILLAR}/salt_minion.sls"
+        "${SED}" -i -re "s/^id:/g" "${SALT_PILLAR}/salt_minion.sls"
+        "${SED}" -i -re "s/^makina-states.minion_id:/g" "${SALT_PILLAR}/salt_minion.sls"
         for conf in "${CONF_PREFIX}/grains" "${SALT_PILLAR}/salt.sls";do
             if [ ! -e "${conf}" ];then
                 touch "${conf}"
