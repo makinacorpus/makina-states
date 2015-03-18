@@ -183,10 +183,10 @@ def gather_only_skip(only=None,
             skip_vms)
 
 
-def orchestrate(skip=None,
-                skip_vms=None,
-                only=None,
+def orchestrate(only=None,
                 only_vms=None,
+                skip=None,
+                skip_vms=None,
                 no_controller=False,
                 no_dns_conf=False,
                 no_configure=False,
