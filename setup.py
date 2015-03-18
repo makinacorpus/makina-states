@@ -27,7 +27,7 @@ classifiers = [
     "Topic :: Software Development"]
 
 name = 'mc_states'
-version = "1.0dev"
+version = "1.0"
 src_dir = '.'
 install_requires = ["setuptools"]
 extra_requires = {}
