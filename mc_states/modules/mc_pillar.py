@@ -1371,18 +1371,24 @@ def serial_for(domain,
             if dns_serial != serial and dns_serial > 0:
                 serial = dns_serial
         except Exception, ex:
+            hasns, nsip, failure = True, '', {}
+            trace = traceback.format_exc()
             try:
                 nsip = socket.gethostbyname(ns)
             except Exception:
-                nsip = ns
-            failure = dns_failures.setdefault(
-                nsip,
-                {'date': now.isoformat(), 'skip': False, 'count': 0})
-            failure['count'] += 1
-            if failure['count'] > 3:
-                failure['skip'] = True
-            trace = traceback.format_exc()
-            log.error('DNSSERIALS: {0}: {1} failures: {2}'.format(ns, nsip, failure))
+                try:
+                    nsip = ns
+                except UnboundLocalError:
+                    hasns = False
+            if hasns:
+                failure = dns_failures.setdefault(
+                    nsip,
+                    {'date': now.isoformat(), 'skip': False, 'count': 0})
+                failure['count'] += 1
+                if failure['count'] > 3:
+                    failure['skip'] = True
+                log.error('DNSSERIALS: {0}: {1} failures: {2}'.format(
+                    ns, nsip, failure))
             log.error('DNSSERIALS: {0}'.format(ex))
             log.error('DNSSERIALS: {0}'.format(domain))
             log.error(trace)
