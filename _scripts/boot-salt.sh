@@ -1800,6 +1800,9 @@ local/lib/python*
     done
     uflag=""
     # only install git reqs in upgade mode if not already there
+    if [ ! -f requirements/requirements.txt ];then
+        git pull
+    fi
     pip install -U --download-cache "${PIP_CACHE}" -r requirements/requirements.txt
     if [ "x${install_git}" != "x" ];then
         pip install -U --download-cache "${PIP_CACHE}" -r requirements/git_requirements.txt
