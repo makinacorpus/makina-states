@@ -77,6 +77,7 @@ set_progs() {
     else
         PS="$(which ps)"
     fi
+    export SED GETENT PERL PYTHON DIG NSLOOKUP PS
 }
 
 bs_log(){
@@ -959,6 +960,10 @@ set_vars() {
     export MASTERSALT_BOOT_SKIP_HIGHSTATE SALT_BOOT_SKIP_HIGHSTATE SALT_BOOT_SKIP_HIGHSTATES
     #
     export SALT_REATTACH SALT_REATTACH_DIR
+    #
+    export yaml_file_changed yaml_added_value yaml_edited_value
+    export mastersalt_master_changed mastersalt_minion_challenge
+    export salt_master_changed salt_minion_challenge
 
 }
 
@@ -2466,6 +2471,7 @@ create_salt_skeleton() {
     create_pillars
     create_salt_tops
     create_pillar_tops
+    exit 1
     maybe_wire_reattached_conf
     reconfigure_masters
     reconfigure_minions
@@ -2681,7 +2687,7 @@ install_salt_daemons() {
     lazy_start_salt_daemons
 }
 
-kill_pids(){
+kill_pids() {
     for i in ${@};do
         if [ "x$x{i}" != "x" ];then
             kill -9 ${i}
@@ -3580,7 +3586,6 @@ parse_cli_opts() {
         if [ "x${1}" = "x--from-salt-cloud" ] || [ "x${1}" = "x--reattach" ];then
             SALT_REATTACH="1"
             argmatch="1"
-            SALT_BOOT_SKIP_HIGHSTATES="1"
         fi
         if [ "x${1}" = "x--salt-cloud-dir" ] || [ "x${1}" = "x--reattach-dir" ] ;then
             SALT_REATTACH_DIR="$2";sh="2";argmatch="1"
@@ -3590,6 +3595,7 @@ parse_cli_opts() {
         if [ "x${SALT_REATTACH}" != "x" ];then
             # will read /tmp/.<>/minion's master's value
             IS_MASTERSALT="yes"
+            SALT_BOOT_SKIP_HIGHSTATES="1"
             FORCE_IS_MASTERSALT="yes"
             FORCE_IS_MASTERSALT_MINION="yes"
         fi
@@ -4164,8 +4170,8 @@ postinstall() {
 
 
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
-    set_progs
     detect_os
+    set_progs
     parse_cli_opts $LAUNCH_ARGS
     set_vars # real variable affectation
     if [ "x$(dns_resolve localhost)" = "x${DNS_RESOLUTION_FAILED}" ];then
