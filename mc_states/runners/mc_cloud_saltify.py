@@ -85,7 +85,7 @@ def saltify(name, output=True, ret=None):
                 ]:
                     if data.get(var):
                         if var == "script_args":
-                            if "from-sal" in data[var]:
+                            if "reattach" in data[var]:
                                 if " --mastersalt " not in data[var]:
                                     data[var] += " --mastersalt {0}".format(
                                         data.get('master', thisid))
@@ -210,6 +210,9 @@ def orchestrate(only=None, skip=None, ret=None, output=True, refresh=False):
         if thisid == compute_node:
             # do not saltify ourselves
             continue
+        if only:
+            if compute_node not in only:
+                continue
         try:
             cret = saltify(compute_node, output=False)
             if cret['result']:

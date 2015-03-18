@@ -34,6 +34,19 @@ def get_local_salt_mode():
     return local_salt_mode
 
 
+def get_local_mastersalt_mode():
+    try:
+        with open(
+            '/etc/makina-states/local_mastersalt_mode'
+        ) as fic:
+            local_salt_mode = fic.read().strip()
+    except:
+        local_salt_mode = ''
+    if local_salt_mode not in ['masterless', 'remote']:
+        local_salt_mode = 'remote'
+    return local_salt_mode
+
+
 def settings():
     '''Registry of settings decriving salt installation
 
@@ -45,6 +58,7 @@ def settings():
     def _settings():
         saltmods = __salt__
         local_salt_mode = get_local_salt_mode()
+        local_mastersalt_mode = get_local_mastersalt_mode()
         local_conf = __salt__['mc_macros.get_local_registry'](
             'salt', registry_format='pack')
         nodetypes_reg = saltmods['mc_nodetypes.registry']()
@@ -162,6 +176,7 @@ def settings():
             raise ValueError('Missing salt mods')
         saltCommonData = {
             'local_salt_mode': local_salt_mode,
+            'local_mastersalt_mode': local_mastersalt_mode,
             'id': saltmods['config.option']('makina-states.minion_id',
                                             saltmods['config.option']('id',
                                                                       None)),
@@ -474,6 +489,7 @@ def settings():
         data['mcachePrefix'] = mastersaltCommonData['cache_prefix']
         data['mrunPrefix'] = mastersaltCommonData['run_prefix']
         data['mlogPrefix'] = mastersaltCommonData['log_prefix']
+        data['local_mastersalt_mode'] = mastersaltCommonData['local_mastersalt_mode']
         data['local_salt_mode'] = mastersaltCommonData['local_salt_mode']
         data['mpillarRoot'] = mastersaltCommonData['pillar_root']
         mmsr = data['mmsr'] = msaltroot + '/makina-states'
