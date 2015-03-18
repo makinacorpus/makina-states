@@ -341,8 +341,8 @@ set_colors() {
 get_local_mastersalt_mode() {
     default_mode="remote"
     mastersalt_mode="$(get_conf local_mastersalt_mode)"
-    if [ "x${FORCE_LOCAL_SALT_MODE}" != "x" ];then
-        mastersalt_mode="${FORCE_LOCAL_SALT_MODE}"
+    if [ "x${FORCE_LOCAL_MASTERSALT_MODE}" != "x" ];then
+        mastersalt_mode="${FORCE_LOCAL_MASTERSALT_MODE}"
     fi
     thistest="$(echo "${mastersalt_mode}"|egrep -q '^(remote|masterless)$';echo "${?}")"
     if [ "x${thistest}" != "x0" ];then
@@ -628,6 +628,11 @@ set_vars() {
         IS_SALT_MASTER="y"
     else
         IS_SALT_MINION="y"
+    fi
+    if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
+        if [ "x${MASTERSALT}" = "x" ];then
+            MASTERSALT="localhost"
+        fi
     fi
     if [ "x${MASTERSALT_CONTROLLER}" = "xmastersalt_master" ]\
      || [ "x$(grep -q "makina-states.controllers.mastersalt_master: true" "${MCONF_PREFIX}/grains" 2>/dev/null;echo "${?}")" = "x0" ];then
@@ -1217,7 +1222,10 @@ get_saltcall_args() {
 }
 
 get_mastersaltcall_args() {
-    get_module_args "${MASTERSALT_ROOT}" "${MASTERSALT_MS}"
+    if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
+        LOCAL="--local"
+    fi
+    echo "${LOCAL} $(get_module_args "${LOCAL}" "${MASTERSALT_ROOT}" "${MASTERSALT_MS}")"
 }
 
 salt_call_wrapper_() {
@@ -3131,6 +3139,7 @@ salt_echo() {
 
 make_mastersalt_association() {
     if [ "x${IS_MASTERSALT_MINION}" = "x" ];then return;fi
+    if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then return;fi
     minion_id="$(cat "${CONF_PREFIX}/minion_id" 1>/dev/null 2>/dev/null)"
     registered=""
     debug_msg "Entering mastersalt association routine"
@@ -3218,6 +3227,7 @@ make_mastersalt_association() {
 }
 
 lazy_start_mastersalt_daemons() {
+    if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then return;fi
     if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
         if [ "x$(mastersalt_master_processes)" = "x0" ] || [ "x${mastersalt_master_changed}" = "x1" ];then
             restart_local_mastersalt_masters
@@ -3227,7 +3237,7 @@ lazy_start_mastersalt_daemons() {
             fi
         fi
     fi
-    if [ "x${IS_MASTERSALT_MINION}" != "x" ] || [ "${mastersalt_minion_changed}" = "x1" ] ;then
+    if [ "x${IS_MASTERSALT_MINION}" != "x" ] || [ "${mastersalt_minion_changed}" = "x1" ];then
         if [ "x$(mastersalt_minion_processes)" = "x0" ];then
             restart_local_mastersalt_minions
             sleep 2
@@ -3339,7 +3349,7 @@ install_mastersalt_daemons() {
         run_mastersalt_bootstrap ${mastersalt_bootstrap_nodetype}
 
         # run mastersalt master setup
-        if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+        if [ "x${IS_MASTERSALT_MASTER}" != "x" ] && [ "x$(get_local_mastersalt_mode)" != "xmasterless" ];then
             run_mastersalt_bootstrap ${mastersalt_bootstrap_master}
         fi
 
