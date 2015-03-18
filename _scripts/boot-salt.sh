@@ -1924,15 +1924,15 @@ reconfigure_mastersalt_master() {
             if [ ! -e "${conf}" ];then
                 touch "${conf}"
             fi
-            edit_yaml_file makina-states.controllers.salt_master.settings.interface "${master_ip}" "${conf}"
+            edit_yaml_file makina-states.controllers.mastersalt_master.settings.interface "${master_ip}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 mastersalt_master_changed="1"
             fi
-            edit_yaml_file makina-states.controllers.salt_master.settings.publish_port "${publish_port}" "${conf}"
+            edit_yaml_file makina-states.controllers.mastersalt_master.settings.publish_port "${publish_port}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 mastersalt_master_changed="1"
             fi
-            edit_yaml_file makina-states.controllers.salt_master.settings.ret_port "${port}" "${conf}"
+            edit_yaml_file makina-states.controllers.mastersalt_master.settings.ret_port "${port}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 mastersalt_master_changed="1"
             fi
@@ -2050,7 +2050,9 @@ reconfigure_mastersalt_minion() {
                 echo "${setted_id}" > "${i}"
             fi
         done
-        for conf in "${MCONF_PREFIX}/grains" "${MASTERSALT_PILLAR}/mastersalt_minion.sls" "${MASTERSALT_PILLAR}/mastersalt.sls";do
+        "${SED}" -i -re "s/^id:/g" "${MASTERSALT_PILLAR}/mastersalt_minion.sls"
+        "${SED}" -i -re "s/^makina-states.minion_id:/g" "${MASTERSALT_PILLAR}/mastersalt_minion.sls"
+        for conf in "${MCONF_PREFIX}/grains" "${MASTERSALT_PILLAR}/mastersalt.sls";do
             if [ ! -e "${conf}" ];then
                 touch "${conf}"
             fi
@@ -2136,7 +2138,9 @@ reconfigure_salt_minion() {
                 echo "${setted_id}" > "${i}"
             fi
         done
-        for conf in "${CONF_PREFIX}/grains" "${SALT_PILLAR}/salt_minion.sls" "${SALT_PILLAR}/salt.sls";do
+        "${SED}" -i -re "s/^id:/g" "${SALT_PILLAR}/salt_minion.sls"
+        "${SED}" -i -re "s/^makina-states.minion_id:/g" "${SALT_PILLAR}/salt_minion.sls"
+        for conf in "${CONF_PREFIX}/grains" "${SALT_PILLAR}/salt.sls";do
             if [ ! -e "${conf}" ];then
                 touch "${conf}"
             fi
