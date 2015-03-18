@@ -1870,19 +1870,19 @@ regenerate_openssh_keys() {
 }
 
 get_yaml_value() {
-    gyaml_file="${1}"
-    gyaml_param="${2}"
-    egrep "^${gyaml_param}: " "${gyaml_file}" 2>/dev/null|tail -n1|${SED} -re "s/^(${gyaml_param}): (.*)$/\2/g"
+    gyaml_param="${1}"
+    shift
+    egrep "^${gyaml_param}: " ${@} 2>/dev/null|head -n1|${SED} -re "s/^(${gyaml_param}): (.*)$/\2/g"
 }
 
 edit_yaml_file() {
     yaml_old_value=""
     yaml_file_changed="0"
-    yaml_file="${1}"
-    shift
     yaml_param="${1}"
+    yaml_value="${2}"
     shift
-    yaml_value=$@
+    shift
+    yaml_file=${1}
     yaml_edit_value="0"
     yaml_edited_value="0"
     yaml_added_value="0"
@@ -1892,12 +1892,12 @@ edit_yaml_file() {
             yaml_edit_value="1"
         fi
         if [ "x${yaml_edit_value}" != "x0" ];then
-            yaml_old_value=$(get_yaml_value "${yaml_file}" "${yaml_param}")
+            yaml_old_value=$(get_yaml_value "${yaml_param}" "${@}")
             if [ "x${yaml_old_value}" != "x${yaml_value}" ];then
                 yaml_file_changed="1"
                 yaml_edited_value="1"
                 yaml_add_value="1"
-                ${SED} -i -re "/^${yaml_param}: /d" "${yaml_file}"
+                ${SED} -i -re "/^${yaml_param}: /d" ${@}
             fi
         else
             yaml_add_value="1"
@@ -1924,47 +1924,51 @@ reconfigure_mastersalt_master() {
             if [ ! -e "${conf}" ];then
                 touch "${conf}"
             fi
-            edit_yaml_file "${conf}" makina-states.controllers.salt_master.settings.interface "${master_ip}"
+            edit_yaml_file makina-states.controllers.salt_master.settings.interface "${master_ip}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 mastersalt_master_changed="1"
             fi
-            edit_yaml_file "${conf}" makina-states.controllers.salt_master.settings.publish_port "${publish_port}"
+            edit_yaml_file makina-states.controllers.salt_master.settings.publish_port "${publish_port}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 mastersalt_master_changed="1"
             fi
-            edit_yaml_file "${conf}" makina-states.controllers.salt_master.settings.ret_port "${port}"
+            edit_yaml_file makina-states.controllers.salt_master.settings.ret_port "${port}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 mastersalt_master_changed="1"
             fi
         done
+        confs=""
         for conf in "${MCONF_PREFIX}"/master "${MCONF_PREFIX}"/master.d/*;do
             if [ -f "${conf}" ];then
-                edit_yaml_file "${conf}" interface "${SALT_MASTER_IP}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    mastersalt_master_changed="1"
-                fi
-                edit_yaml_file "${conf}" ret_port "${SALT_MASTER_PORT}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    mastersalt_master_changed="1"
-                fi
-                edit_yaml_file "${conf}" publish_port "${SALT_MASTER_PUBLISH_PORT}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    mastersalt_master_changed="1"
-                fi
-                edit_yaml_file "${conf}" "${BRANCH_PILLAR_ID}" "${branch_id}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    mastersalt_master_changed="1"
-                fi
+                congs="${confs} ${conf}"
             fi
         done
-        edit_yaml_file "${MCONF_PREFIX}/grains" makina-states.controllers.mastersalt_master true
+        edit_yaml_file interface "${SALT_MASTER_IP}" "${confs}"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            mastersalt_master_changed="1"
+        fi
+        edit_yaml_file ret_port "${SALT_MASTER_PORT}" "${confs}"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            mastersalt_master_changed="1"
+        fi
+        edit_yaml_file publish_port "${SALT_MASTER_PUBLISH_PORT}" "${confs}"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            mastersalt_master_changed="1"
+        fi
+        edit_yaml_file "${BRANCH_PILLAR_ID}" "${branch_id}" "${confs}"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            mastersalt_master_changed="1"
+        fi
+        edit_yaml_file makina-states.controllers.mastersalt_master true "${MCONF_PREFIX}/grains"
         if [ "x${yaml_file_changed}" != "x0" ];then
             mastersalt_master_changed="1"
         fi
     else
-        edit_yaml_file "${MCONF_PREFIX}/grains" makina-states.controllers.mastersalt_master false
-        if [ "x${yaml_file_changed}" != "x0" ];then
-            mastersalt_master_changed="1"
+        if [ "x${IS_MASTERSALT}" != "x" ];then
+            edit_yaml_file makina-states.controllers.mastersalt_master false "${MCONF_PREFIX}/grains"
+            if [ "x${yaml_file_changed}" != "x0" ];then
+                mastersalt_master_changed="1"
+            fi
         fi
     fi
 }
@@ -1984,47 +1988,51 @@ reconfigure_salt_master() {
             # think to firewall the interfaces, but restricting only to localhost cause
             # more harm than good
             # any way the keys for attackers need to be accepted.
-            edit_yaml_file "${conf}" makina-states.controllers.salt_master.settings.interface "${master_ip}"
+            edit_yaml_file makina-states.controllers.salt_master.settings.interface "${master_ip}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 salt_master_changed="1"
             fi
-            edit_yaml_file "${conf}" makina-states.controllers.salt_master.settings.publish_port "${publish_port}"
+            edit_yaml_file makina-states.controllers.salt_master.settings.publish_port "${publish_port}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 salt_master_changed="1"
             fi
-            edit_yaml_file "${conf}" makina-states.controllers.salt_master.settings.ret_port "${port}"
+            edit_yaml_file makina-states.controllers.salt_master.settings.ret_port "${port}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 salt_master_changed="1"
             fi
-            edit_yaml_file "${conf}" "${BRANCH_PILLAR_ID}" "${branch_id}"
+            edit_yaml_file "${BRANCH_PILLAR_ID}" "${branch_id}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 salt_master_changed="1"
             fi
         done
+        confs=""
         for conf in "${CONF_PREFIX}"/master "${CONF_PREFIX}"/master.d/*;do
             if [ -f "${conf}" ];then
-                edit_yaml_file "${conf}" interface "${master_ip}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    salt_master_changed="1"
-                fi
-                edit_yaml_file "${conf}" ret_port "${port}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    salt_master_changed="1"
-                fi
-                edit_yaml_file "${conf}" publish_port "${publish_port}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    salt_master_changed="1"
-                fi
+                confs="${confs} ${conf}"
             fi
         done
-        edit_yaml_file "${CONF_PREFIX}/grains" makina-states.controllers.salt_master true
+        edit_yaml_file interface "${master_ip}" "${confs}"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            salt_master_changed="1"
+        fi
+        edit_yaml_file ret_port "${port}" "${confs}"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            salt_master_changed="1"
+        fi
+        edit_yaml_file publish_port "${publish_port}" "${confs}"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            salt_master_changed="1"
+        fi
+        edit_yaml_file makina-states.controllers.salt_master true "${CONF_PREFIX}/grains"
         if [ "x${yaml_file_changed}" != "x0" ];then
             salt_master_changed="1"
         fi
     else
-        edit_yaml_file "${CONF_PREFIX}/grains" makina-states.controllers.salt_master false
-        if [ "x${yaml_file_changed}" != "x0" ];then
-            salt_master_changed="1"
+        if [ "x${IS_SALT}" != "x" ];then
+            edit_yaml_file makina-states.controllers.salt_master false "${CONF_PREFIX}/grains"
+            if [ "x${yaml_file_changed}" != "x0" ];then
+                salt_master_changed="1"
+            fi
         fi
     fi
 }
@@ -2047,66 +2055,70 @@ reconfigure_mastersalt_minion() {
                 touch "${conf}"
             fi
             "${SED}" -i -e "/^    id:/ d" "${conf}"
-            edit_yaml_file ${conf} id "${setted_id}"
+            edit_yaml_file id "${setted_id}" ${conf}
             if [ "x${yaml_file_changed}" != "x0" ];then
                 mastersalt_minion_changed="1"
             fi
-            edit_yaml_file ${conf} makina-states.minion_id "${setted_id}"
+            edit_yaml_file makina-states.minion_id "${setted_id}" ${conf}
             if [ "x${yaml_file_changed}" != "x0" ];then
                 mastersalt_minion_changed="1"
             fi
         done
         for conf in "${MASTERSALT_PILLAR}/mastersalt_minion.sls" "${MASTERSALT_PILLAR}/mastersalt.sls";do
-            edit_yaml_file "${conf}" makina-states.controllers.mastersalt_minion.settings.master "${master}"
+            edit_yaml_file makina-states.controllers.mastersalt_minion.settings.master "${master}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 mastersalt_minion_changed="1"
             fi
-            edit_yaml_file "${conf}" makina-states.controllers.mastersalt_minion.settings.master_port "${port}"
+            edit_yaml_file makina-states.controllers.mastersalt_minion.settings.master_port "${port}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 mastersalt_minion_changed="1"
             fi
-            edit_yaml_file "${conf}" "${BRANCH_PILLAR_ID}" "${branch_id}"
+            edit_yaml_file "${BRANCH_PILLAR_ID}" "${branch_id}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 mastersalt_minion_changed="1"
             fi
-            edit_yaml_file "${conf}" makina-states.controllers.mastersalt_minion.settings.interface "${minion_ip}"
+            edit_yaml_file makina-states.controllers.mastersalt_minion.settings.interface "${minion_ip}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 salt_minion_changed="1"
             fi
         done
-        for conf in  "${MCONF_PREFIX}"/minion "${MCONF_PREFIX}"/minion.d/*;do
+        confs=""
+        for conf in "${MCONF_PREFIX}"/minion "${MCONF_PREFIX}"/minion.d/*;do
             if [ -f "${conf}" ];then
-                "${SED}" -i -e "/^    id:/ d" "${conf}"
-                edit_yaml_file "${conf}" id "${setted_id}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    mastersalt_minion_changed="1"
-                fi
-                edit_yaml_file "${conf}" makina-states.minion_id "${setted_id}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    mastersalt_minion_changed="1"
-                fi
-                edit_yaml_file "${conf}" interface "${minion_ip}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    mastersalt_minion_changed="1"
-                fi
-                edit_yaml_file "${conf}" master "${master}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    mastersalt_minion_changed="1"
-                fi
-                edit_yaml_file "${conf}" master_port "${port}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    mastersalt_minion_changed="1"
-                fi
+                confs="${confs} ${conf}"
             fi
         done
-        edit_yaml_file "${MCONF_PREFIX}/grains" makina-states.controllers.mastersalt_minion true
+        "${SED}" -i -e "/^    id:/ d" "${conf}"
+        edit_yaml_file id "${setted_id}" "${confs}"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            mastersalt_minion_changed="1"
+        fi
+        edit_yaml_file interface "${minion_ip}" "${confs}"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            mastersalt_minion_changed="1"
+        fi
+        edit_yaml_file master "${master}" "${confs}"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            mastersalt_minion_changed="1"
+        fi
+        edit_yaml_file master_port "${port}" "${confs}"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            mastersalt_minion_changed="1"
+        fi
+        edit_yaml_file makina-states.minion_id "${setted_id}" "${MCONF_PREFIX}/grains"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            mastersalt_minion_changed="1"
+        fi
+        edit_yaml_file makina-states.controllers.mastersalt_minion true "${MCONF_PREFIX}/grains"
         if [ "x${yaml_file_changed}" != "x0" ];then
             mastersalt_minion_changed="1"
         fi
     else
-        edit_yaml_file "${MCONF_PREFIX}/grains" makina-states.controllers.mastersalt_minion false
-        if [ "x${yaml_file_changed}" != "x0" ];then
-            mastersalt_minion_changed="1"
+        if [ "${IS_SALT}" != "x" ];then
+            edit_yaml_file makina-states.controllers.mastersalt_minion false "${MCONF_PREFIX}/grains"
+            if [ "x${yaml_file_changed}" != "x0" ];then
+                mastersalt_minion_changed="1"
+            fi
         fi
     fi
 }
@@ -2129,57 +2141,61 @@ reconfigure_salt_minion() {
                 touch "${conf}"
             fi
             "${SED}" -i -e "/^    id:/ d" "${conf}"
-            edit_yaml_file "${conf}" id "${setted_id}"
+            edit_yaml_file id "${setted_id}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 salt_minion_changed="1"
             fi
-            edit_yaml_file "${conf}" makina-states.minion_id "${setted_id}"
+            edit_yaml_file makina-states.minion_id "${setted_id}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 salt_minion_changed="1"
             fi
         done
         for conf in "${SALT_PILLAR}/salt_minion.sls" "${SALT_PILLAR}/salt.sls";do
-            edit_yaml_file "${conf}" makina-states.controllers.salt_minion.settings.master "${master}"
+            edit_yaml_file makina-states.controllers.salt_minion.settings.master "${master}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 salt_minion_changed="1"
             fi
-            edit_yaml_file "${conf}" makina-states.controllers.salt_minion.settings.master_port "${port}"
+            edit_yaml_file makina-states.controllers.salt_minion.settings.master_port "${port}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 salt_minion_changed="1"
             fi
-            edit_yaml_file "${conf}" "${BRANCH_PILLAR_ID}" "${branch_id}"
+            edit_yaml_file "${BRANCH_PILLAR_ID}" "${branch_id}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 salt_minion_changed="1"
             fi
-            edit_yaml_file "${conf}" makina-states.controllers.salt_minion.settings.interface "${minion_ip}"
+            edit_yaml_file makina-states.controllers.salt_minion.settings.interface "${minion_ip}" "${conf}"
             if [ "x${yaml_file_changed}" != "x0" ];then
                 salt_minion_changed="1"
             fi
         done
+        conf=""
         for conf in "${CONF_PREFIX}"/minion "${CONF_PREFIX}"/minion.d/*;do
             if [ -f "${conf}" ];then
-                edit_yaml_file "${conf}" id "${setted_id}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    salt_minion_changed="1"
-                fi
-                edit_yaml_file "${conf}" master "${master}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    salt_minion_changed="1"
-                fi
-                edit_yaml_file "${conf}" master_port "${port}"
-                if [ "x${yaml_file_changed}" != "x0" ];then
-                    salt_minion_changed="1"
-                fi
-            fi
+                confs="${confs} ${conf}"
+             fi
         done
-        edit_yaml_file "${CONF_PREFIX}/grains" makina-states.controllers.salt_minion true
+        edit_yaml_file id "${setted_id}" "${confs}"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            salt_minion_changed="1"
+        fi
+        edit_yaml_file master "${master}" "${confs}"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            salt_minion_changed="1"
+        fi
+        edit_yaml_file master_port "${port}" "${confs}"
+        if [ "x${yaml_file_changed}" != "x0" ];then
+            salt_minion_changed="1"
+        fi
+        edit_yaml_file makina-states.controllers.salt_minion true "${CONF_PREFIX}/grains"
         if [ "x${yaml_file_changed}" != "x0" ];then
             salt_minion_changed="1"
         fi
     else
-        edit_yaml_file "${CONF_PREFIX}/grains" makina-states.controllers.salt_minion false
-        if [ "x${yaml_file_changed}" != "x0" ];then
-            salt_minion_changed="1"
+        if [ "${IS_MASTERSALT}" != "x" ];then
+            edit_yaml_file makina-states.controllers.salt_minion false "${CONF_PREFIX}/grains"
+            if [ "x${yaml_file_changed}" != "x0" ];then
+                salt_minion_changed="1"
+            fi
         fi
     fi
 
