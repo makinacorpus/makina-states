@@ -86,7 +86,7 @@ def mastersalt_mode():
 def masterless():
     ret = False
     if not mastersalt_mode():
-        if __salt__['mc_salt.get_local_salt_mode']() == "masterlesss":
+        if __salt__['mc_salt.get_local_salt_mode']() == "masterless":
             ret = True
     if mastersalt_mode():
         if __salt__['mc_salt.get_local_mastersalt_mode']() == "masterless":
