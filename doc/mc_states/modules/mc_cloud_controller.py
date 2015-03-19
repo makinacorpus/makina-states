@@ -20,8 +20,8 @@ from copy import deepcopy
 import os
 from salt.utils.odict import OrderedDict
 import copy
-import mc_states.utils
-from mc_states.utils import memoize_cache
+import mc_states.api
+from mc_states.api import memoize_cache
 from salt.modules import tls as tlsm
 import M2Crypto
 
@@ -57,8 +57,8 @@ def default_settings():
     return data
 
 
-def extpillar_settings(id_=None, ttl=30):
-    def _do(id_=None):
+def extpillar_settings(id_=None, limited=False, ttl=30):
+    def _do(id_=None, limited=False):
         _s = __salt__
         gconf = _s['mc_pillar.get_configuration'](
             _s['mc_pillar.mastersalt_minion_id']())
@@ -68,12 +68,13 @@ def extpillar_settings(id_=None, ttl=30):
         data = _s['mc_utils.dictupdate'](default_settings(),
                                          _s['mc_utils.dictupdate'](gdata, extdata))
         return data
-    cache_key = 'mc_cloud_controller.extpillar_settings{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    cache_key = 'mc_cloud_controller.extpillar_settings{0}{1}'.format(
+        id_, limited)
+    return memoize_cache(_do, [id_, limited], {}, cache_key, ttl)
 
 
-def ext_pillar(id_=None, prefixed=True, ttl=30):
-    def _do(id_=None, prefixed=True):
+def ext_pillar(id_=None, prefixed=True, limited=False, ttl=30):
+    def _do(id_=None, prefixed=True, limited=False):
         if not id_:
             id_ = __grains__['id']
         _s = __salt__
@@ -115,8 +116,9 @@ def ext_pillar(id_=None, prefixed=True, ttl=30):
         if prefixed:
             data = {PREFIX: data}
         return data
-    cache_key = 'mc_cloud_controller.extpillar{0}{1}'.format(id_, prefixed)
-    return memoize_cache(_do, [id_, prefixed], {}, cache_key, ttl)
+    cache_key = 'mc_cloud_controller.extpillar{0}{1}{2}'.format(
+        id_, prefixed, limited)
+    return memoize_cache(_do, [id_, prefixed, limited], {}, cache_key, ttl)
 
 
 def settings(ttl=60):

@@ -23,7 +23,7 @@ import salt.client
 import salt.payload
 import salt.utils
 import salt.output
-from mc_states.utils import memoize_cache
+from mc_states.api import memoize_cache
 import salt.minion
 from salt.utils import check_state_result
 from salt.cloud.exceptions import SaltCloudSystemExit
@@ -63,7 +63,7 @@ def post_deploy_controller(output=True):
     p = 'makina-states.cloud.lxc.controller'
     ret = _s['mc_api.apply_sls'](['{0}.postdeploy'.format(p)], **{'ret': ret})
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -79,7 +79,7 @@ def cn_configure(what, target, ret=None, output=True):
     ret = _s['mc_api.apply_sls']('{0}.{1}'.format(pref, what),
                                  **{'salt_target': target, 'ret': ret})
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -153,7 +153,7 @@ def upgrade_vt(target, ret=None, output=True):
     cli('mc_macros.update_local_registry', 'lxc_to_restart',
         {'todo': [a for a in todo if a not in done]}, salt_target=target)
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -172,7 +172,7 @@ def sync_images(target, output=True, ret=None):
         ret['comment'] += yellow(
             'LXC: images failed to synchronnise on {0}\n'.format(target))
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -189,7 +189,7 @@ def install_vt(target, output=True):
             pass
     __salt__['mc_cloud_lxc.sync_images'](target, output=False, ret=ret)
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -216,7 +216,7 @@ def post_post_deploy_compute_node(target, output=True):
         status = 'failure'
     ret['comment'] += clr(msg.format(status))
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -234,7 +234,7 @@ def vm_configure(what, vm, ret=None, output=True):
     ret = _s['mc_api.apply_sls']('{0}.{1}'.format(p, what),
                                  **{'salt_target': vm, 'ret': ret})
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -257,9 +257,9 @@ def _load_profile(data, profile_data=None):
         val = data.get(var)
         if val:
             if var in ['script_args']:
-                if '--salt-cloud-dir' not in val:
+                if '--reattach-dir' not in val:
                     val = '{0} {1}'.format(
-                        val, '--salt-cloud-dir {0}')
+                        val, '--reattach-dir {0}')
             profile_data[var] = val
     return profile_data
 
@@ -305,9 +305,9 @@ def vm_spawn(vm, ret=None, output=True, force=False):
     if force or (lret['retcode'] and not ping):
         try:
             # XXX: using the lxc runner which is now faster and nicer.
-            _s['mc_api.time_log']('start', 'lxc_vm_init',  vm, cn, pdt)
+            _s['mc_api.time_log']('start', 'lxc_vm_init',  vm, cn)
             cret = _s[LXC_IMPLEMENTATION + '.cloud_init']([vm], host=cn, **pdt)
-            _s['mc_api.time_log']('end', 'lxc_vm_end',  vm=vm, cret=cret)
+            _s['mc_api.time_log']('end', 'lxc_vm_end',  vm=vm)
             if not cret['result']:
                 # convert to regular dict for pformat
                 errors = dict(cret.pop('errors', {}))
@@ -332,7 +332,7 @@ def vm_spawn(vm, ret=None, output=True, force=False):
         ret['comment'] = ('Failed to provision lxc {0},'
                           ' see {1}, see mastersalt-minion log').format(vm, cn)
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -387,9 +387,9 @@ def vm_reconfigure(vm, ret=None, output=True, force=False):
             ]:
                 if i in args:
                     kw[i] = args[i]
-            _s['mc_api.time_log']('start', 'lxc_vm_init',  vm, cn, pdata=kw)
+            _s['mc_api.time_log']('start', 'lxc_vm_init',  vm, cn)
             cret = cli(LXC_IMPLEMENTATION + '.reconfigure', kw, salt_target=cn)
-            _s['mc_api.time_log']('end', 'lxc_vm_end',  vm=vm, cret=cret)
+            _s['mc_api.time_log']('end', 'lxc_vm_end',  vm=vm)
             if not cret['result']:
                 ret['trace'] += 'FAILURE ON LXC {0}:\n{1}\n'.format(
                     vm, pformat(dict(cret)))
@@ -409,7 +409,7 @@ def vm_reconfigure(vm, ret=None, output=True, force=False):
         ret['comment'] = ('Failed to reconfigure lxc {0},'
                           ' see {1} mastersalt-minion log').format(vm, cn)
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -456,7 +456,7 @@ def vm_volumes(vm, ret=None, output=True, force=False):
         else:
             ret['comment'] += yellow('Container {0} rebooted\n'.format(vm))
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 

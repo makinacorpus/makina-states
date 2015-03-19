@@ -16,7 +16,7 @@ import socket
 import logging
 import traceback
 from distutils.version import LooseVersion
-import mc_states.utils
+import mc_states.api
 import ipaddr
 from salt.utils.odict import OrderedDict
 
@@ -127,7 +127,7 @@ def settings():
             TBD
 
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         _s = __salt__
         protos = ['tcp', 'udp']

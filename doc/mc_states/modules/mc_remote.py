@@ -212,7 +212,7 @@ if [ "x${{has_ssh}}" = "x0" ] && [ "x${{ret}}" = "x0" ];then
     ctret=${{?}}
     if [ "x${{ctret}}" != "x0" ];then
         echo \
-"Remote directory \\"{container}aaa\\" does not exits or is not a directory">&2
+"Remote directory \\"{container}\\" does not exits or is not a directory">&2
         ret=1
     fi
 fi
@@ -1444,11 +1444,13 @@ def salt_call(host,
               unparse=True,
               loglevel='info',
               salt_call_bin='salt-call',
-              masterless=True,
+              masterless=None,
               minion_id='local',
               salt_call_script=None,
               strip_out=None,
               hard_failure=False,
+              remote=True,
+              use_vt=True,
               *args,
               **kwargs):
     '''
@@ -1484,6 +1486,10 @@ def salt_call(host,
         do we run masterless (--local)
     salt_call_script
         override default salt call wrapper shell script
+    remote
+        use salt locally (you must set host to None !
+    use_vt
+        When ran locally, use use_vt to stream output
     args
         are appended to arg as arguments to the called salt function
     kwargs
@@ -1601,6 +1607,13 @@ def salt_call(host,
     sh_wrapper_debug = kw.get('sh_wrapper_debug', '')
     if not kw.get('vt_loglevel'):
         kw['vt_loglevel'] = loglevel
+    if masterless is None:
+        if 'mastersalt' in salt_call_bin:
+            masterless = False
+        else:
+            masterless = True
+    else:
+        masterless = bool(masterless)
     skwargs = _mangle_kw_for_script({
         'outputter': '--out="{0}"'.format(outputter),
         'local': bool(masterless) and '--local' or '',
@@ -1618,19 +1631,27 @@ def salt_call(host,
         'sarg': sarg})
     script = salt_call_script.format(**skwargs)
     level = kw["vt_loglevel"]
-    try:
-        if level in ['trace', 'garbage']:
-            level = 'debug'
-        if level in ['error', 'warning']:
-            level = 'info'
+    if not remote:
         try:
-            ret = ssh(host, script, **kw)
-        except (Exception, SystemExit, KeyboardInterrupt) as exc:
-            typ, eargs, _trace = sys.exc_info()
-            _reraise(exc, trace=_trace)
-            level = "error"
-    finally:
-        delete_remote(host, skwargs['quoted_outfile'], level=level, **kw)
+            ret = __salt__['cmd.run_all'](
+                script, python_shell=True, runas=kw['ssh_user'], use_vt=use_vt)
+        finally:
+            if os.path.exists(skwargs['quoted_outfile']):
+                os.remove(skwargs['quoted_outfile'])
+    else:
+        try:
+            if level in ['trace', 'garbage']:
+                level = 'debug'
+            if level in ['error', 'warning']:
+                level = 'info'
+            try:
+                ret = ssh(host, script, **kw)
+            except (Exception, SystemExit, KeyboardInterrupt) as exc:
+                typ, eargs, _trace = sys.exc_info()
+                _reraise(exc, trace=_trace)
+                level = "error"
+        finally:
+            delete_remote(host, skwargs['quoted_outfile'], level=level, **kw)
     ret['result_type'] = outputter
     ret['raw_result'] = 'NO RETURN FROM {0}'.format(outfile)
     log_trace = None
@@ -1700,6 +1721,34 @@ def salt_call(host,
     if hard_failure:
         raise _SaltCallFailure(msg, exec_ret=ret)
     return ret
+
+
+def mastersalt_call(*a, **kw):
+    '''
+    Execute mastersalt-call remotely
+    see salt-call
+    '''
+    kw.setdefault('salt_call_bin', 'mastersalt-call')
+    return salt_call(*a, **kw)
+
+
+def local_mastersalt_call(*a, **kw):
+    '''
+    Execute mastersalt-call locally, in another shell
+    see salt-call
+    '''
+    kw.setdefault('remote', False)
+    kw.setdefault('salt_call_bin', 'mastersalt-call')
+    return mastersalt_call(None, *a, **kw)
+
+
+def local_salt_call(*a, **kw):
+    '''
+    Execute salt-call locally, in another shell
+    see salt-call
+    '''
+    kw.setdefault('remote', False)
+    return mastersalt_call(None, *a, **kw)
 
 
 def hardstop_salt_call(*args, **kw):

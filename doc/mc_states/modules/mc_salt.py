@@ -9,7 +9,7 @@ mc_salt / salt related helpers
 
 '''
 # Import salt libs
-import mc_states.utils
+import mc_states.api
 import random
 import json
 import os
@@ -34,6 +34,19 @@ def get_local_salt_mode():
     return local_salt_mode
 
 
+def get_local_mastersalt_mode():
+    try:
+        with open(
+            '/etc/makina-states/local_mastersalt_mode'
+        ) as fic:
+            local_salt_mode = fic.read().strip()
+    except:
+        local_salt_mode = ''
+    if local_salt_mode not in ['masterless', 'remote']:
+        local_salt_mode = 'remote'
+    return local_salt_mode
+
+
 def settings():
     '''Registry of settings decriving salt installation
 
@@ -41,10 +54,11 @@ def settings():
     as it can brick your installation.
     That's why most of this stuff will be underdocumented at first sight.
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         saltmods = __salt__
         local_salt_mode = get_local_salt_mode()
+        local_mastersalt_mode = get_local_mastersalt_mode()
         local_conf = __salt__['mc_macros.get_local_registry'](
             'salt', registry_format='pack')
         nodetypes_reg = saltmods['mc_nodetypes.registry']()
@@ -67,17 +81,21 @@ def settings():
             data = salt_ssh_data['roster'][id_]
             data.setdefault('priv', salt_ssh_data['priv'])
         confRepos = {
+            # attention, see requirements/git_requirements.txt
+            'docker-py-git': {
+                'name': 'https://github.com/dotcloud/docker-py.git',
+                'target': '{venv_path}/src/docker-py'},
             'salt-git': {
                 'name': 'http://github.com/makinacorpus/salt.git',
                 'rev': 'develop',
-                'target': '{salt_root}/makina-states/src/salt'},
-            'SaltTesting-git': {
+                'target': '{venv_path}/src/salt'},
+            'salttesting-git': {
                 'name': 'http://github.com/saltstack/salt-testing.git',
                 'rev': 'develop',
-                'target': '{salt_root}/makina-states/src/SaltTesting'},
+                'target': '{venv_path}/src/salttesting'},
             'm2crypto': {
                 'name': 'https://github.com/makinacorpus/M2Crypto.git',
-                'target': '{salt_root}/makina-states/src/m2crypto'},
+                'target': '{venv_path}/src/m2crypto'},
             #'salt-formulae': {
             #    'name': 'http://github.com/saltstack-formulas/salt-formula.git',
             #    'link': {'target': '{salt_root}/formulas/salt/salt',
@@ -158,6 +176,7 @@ def settings():
             raise ValueError('Missing salt mods')
         saltCommonData = {
             'local_salt_mode': local_salt_mode,
+            'local_mastersalt_mode': local_mastersalt_mode,
             'id': saltmods['config.option']('makina-states.minion_id',
                                             saltmods['config.option']('id',
                                                                       None)),
@@ -203,6 +222,7 @@ def settings():
             'init_d': '{initd_dir}',
             'prefix': locs['prefix'],
             'venv': locs['venv'],
+            'venv_path': "{venv}/{name}",
             'salt_root': '{prefix}/{name}',
             'msr': '{salt_root}/makina-states',
             'pillar_root': '{prefix}/pillar',
@@ -469,6 +489,7 @@ def settings():
         data['mcachePrefix'] = mastersaltCommonData['cache_prefix']
         data['mrunPrefix'] = mastersaltCommonData['run_prefix']
         data['mlogPrefix'] = mastersaltCommonData['log_prefix']
+        data['local_mastersalt_mode'] = mastersaltCommonData['local_mastersalt_mode']
         data['local_salt_mode'] = mastersaltCommonData['local_salt_mode']
         data['mpillarRoot'] = mastersaltCommonData['pillar_root']
         mmsr = data['mmsr'] = msaltroot + '/makina-states'
@@ -520,6 +541,12 @@ def settings():
     return _settings()
 
 
+def has_mastersalt():
+    return __salt__['mc_controllers.has_mastersalt']()
+
+
+def has_mastersalt_running():
+    return __salt__['mc_controllers.has_mastersalt_running']()
 
 
 #

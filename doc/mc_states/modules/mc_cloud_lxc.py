@@ -15,7 +15,7 @@ __docformat__ = 'restructuredtext en'
 import os
 import logging
 import copy
-import mc_states.utils
+import mc_states.api
 
 from mc_states import saltapi
 from salt.utils.odict import OrderedDict
@@ -169,10 +169,10 @@ def vm_extpillar(vm, data, *args, **kw):
     '''
     backing = data.setdefault('backing', 'dir')
     if data['from_container'] is not None:
-        del data['image']
+        data.pop('image', None)
     if ('overlayfs' in backing) or ('dir' in backing):
         for k in ['lvname', 'vgname', 'size']:
             if k in data:
-                del data[k]
+                data.pop(k, None)
     return data
 # vim:set et sts=4 ts=4 tw=80:

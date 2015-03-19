@@ -20,7 +20,7 @@ Documentation of this module is available with::
 # Import python libs
 import os
 import logging
-import mc_states.utils
+import mc_states.api
 from copy import deepcopy
 
 __name = 'usergroup'
@@ -109,7 +109,7 @@ def settings():
         managed users
 
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         saltmods = __salt__
         grains = __grains__

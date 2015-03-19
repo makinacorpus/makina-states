@@ -22,7 +22,7 @@ import logging
 # Import salt libs
 import salt.client
 import salt.payload
-from mc_states.utils import memoize_cache
+from mc_states.api import memoize_cache
 import salt.utils
 import salt.output
 from salt.utils import check_state_result
@@ -62,7 +62,7 @@ def vm_configure(what, vm, ret=None, output=True):
     ret = _s['mc_api.apply_sls']('{0}.{1}'.format(p, what),
                                  **{'salt_target': vm, 'ret': ret})
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -189,7 +189,7 @@ def vm_ping(vm, ret=None, output=True):
         comment = red('VM {0} is unreachable\n')
     ret['comment'] += comment.format(vm)
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -211,7 +211,7 @@ def vm_fix_dns(vm, ret=None, output=True, force=False):
             ret['result'] = False
             ret['comment'] += red('pb with dns on {0}'.format(vm))
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -249,7 +249,7 @@ def step(vm, step, ret=None, output=True):
             ret['trace'] = ''
             ret['output'] = ''
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -301,7 +301,7 @@ def provision(vm, steps=None, ret=None, output=True):
         comment = red('{0}/{1}/{2} failed to deploy\n').format(cn, vt, vm)
     ret['comment'] += comment
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -342,7 +342,7 @@ def post_provision(vm, ret=None, output=True):
         comment = red('{0}/{1}/{2} failed to deploy\n').format(cn, vt, vm)
     ret['comment'] += comment
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -450,7 +450,7 @@ def provision_vms(compute_node=None,
             ret['trace'] = ''
             ret['comment'] += green('All vms were provisionned\n')
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -521,7 +521,7 @@ def post_provision_vms(cn,
             ret['trace'] = ''
             ret['comment'] += green('All vms were post provisionned\n')
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -551,7 +551,7 @@ def orchestrate(compute_node=None,
                         output=output, refresh=False,
                         ret=ret)
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
