@@ -28,4 +28,4 @@ makina-projects.projectname:
     Debian:
 # os familly filter
       opt1: value11
-# vim:set ft=yaml:
+# vim:set ft=sls:

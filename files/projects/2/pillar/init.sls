@@ -5,4 +5,4 @@
 #  data:
 #    foo: bar
 
-# vim:set ft=yaml:
+# vim:set ft=sls:
