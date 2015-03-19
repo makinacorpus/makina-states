@@ -673,13 +673,14 @@ def cyaml_dump(*args, **kw):
     return ret
 
 
-def yaml_dump(data, flow=False):
+def yaml_dump(data, flow=False, nonewline=True):
     """."""
     content = yaml.dump(
         data,
         default_flow_style=flow,
         Dumper=yamldumper.SafeOrderedDumper)
-    content = content.replace('\n', ' ')
+    if nonewline:
+        content = content.replace('\n', ' ')
     return yencode(content)
 
 
