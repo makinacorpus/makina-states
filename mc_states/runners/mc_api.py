@@ -276,7 +276,7 @@ def get_vm(vm, ttl=60):
         vmdata = cli('mc_cloud_vm.vm_extpillar', vm)
         if not vmdata.get('vt', None):
             raise KeyError('vm is empty for {0}'.format(vm))
-        __salt__['mc_api.time_log']('end', fname, vm=vm, vmdata=vmdata)
+        __salt__['mc_api.time_log']('end', fname, vm=vm)
         return vmdata
     cache_key = 'rmc_api.get_vm{0}'.format(vm)
     return memoize_cache(_do, [vm], {}, cache_key, ttl)
@@ -305,7 +305,7 @@ def get_compute_node_settings(compute_node=None, vm=None, ttl=60):
             raise Exception('Choose at least one cn or one vm')
         data = cli('mc_cloud_compute_node.ext_pillar',
                    compute_node, prefixed=False)
-        __salt__['mc_api.time_log']('end', fname, data=data)
+        __salt__['mc_api.time_log']('end', fname)
         return data
     cache_key = 'rmc_api.get_compute_node_settings{0}{1}'.format(
         compute_node, vm)
