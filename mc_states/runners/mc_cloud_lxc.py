@@ -257,9 +257,9 @@ def _load_profile(data, profile_data=None):
         val = data.get(var)
         if val:
             if var in ['script_args']:
-                if '--salt-cloud-dir' not in val:
+                if '--reattach-dir' not in val:
                     val = '{0} {1}'.format(
-                        val, '--salt-cloud-dir {0}')
+                        val, '--reattach-dir {0}')
             profile_data[var] = val
     return profile_data
 

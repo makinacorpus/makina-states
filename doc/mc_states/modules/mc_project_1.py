@@ -12,7 +12,7 @@ mc_project_1 / project settings regitry APIV1
 __docformat__ = 'restructuredtext en'
 
 _default_activation_status = object()
-from mc_states.utils import is_valid_ip
+from mc_states.api import is_valid_ip
 import socket
 from mc_states.api import (
     uniquify,

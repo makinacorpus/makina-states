@@ -1880,7 +1880,7 @@ regenerate_openssh_keys() {
 get_yaml_value() {
     gyaml_param="${1}"
     shift
-    egrep "^${gyaml_param}: " ${@} 2>/dev/null|head -n1|${SED} -re "s/^(${gyaml_param}): (.*)$/\2/g"
+    egrep -h "^${gyaml_param}: " ${@} 2>/dev/null|head -n1|${SED} -re "s/^(${gyaml_param}): (.*)$/\2/g"
 }
 
 edit_yaml_file() {
@@ -1896,11 +1896,11 @@ edit_yaml_file() {
     yaml_added_value="0"
     yaml_add_value="0"
     if [ -e "${yaml_file}" ] && [ ! -d "${yaml_file}" ];then
-        if [ "x$(egrep -q "^${yaml_param}: " "${yaml_file}" 2>/dev/null;echo ${?})" = "x0" ];then
+        if [ "x$(egrep -h -q "^${yaml_param}: " ${@} 2>/dev/null;echo ${?})" = "x0" ];then
             yaml_edit_value="1"
         fi
         if [ "x${yaml_edit_value}" != "x0" ];then
-            yaml_old_value=$(get_yaml_value "${yaml_param}" "${@}")
+            yaml_old_value=$(get_yaml_value "${yaml_param}" ${@})
             if [ "x${yaml_old_value}" != "x${yaml_value}" ];then
                 yaml_file_changed="1"
                 yaml_edited_value="1"
@@ -1951,19 +1951,19 @@ reconfigure_mastersalt_master() {
                 congs="${confs} ${conf}"
             fi
         done
-        edit_yaml_file interface "${SALT_MASTER_IP}" "${confs}"
+        edit_yaml_file interface "${SALT_MASTER_IP}" ${confs}
         if [ "x${yaml_file_changed}" != "x0" ];then
             mastersalt_master_changed="1"
         fi
-        edit_yaml_file ret_port "${SALT_MASTER_PORT}" "${confs}"
+        edit_yaml_file ret_port "${SALT_MASTER_PORT}" ${confs}
         if [ "x${yaml_file_changed}" != "x0" ];then
             mastersalt_master_changed="1"
         fi
-        edit_yaml_file publish_port "${SALT_MASTER_PUBLISH_PORT}" "${confs}"
+        edit_yaml_file publish_port "${SALT_MASTER_PUBLISH_PORT}" ${confs}
         if [ "x${yaml_file_changed}" != "x0" ];then
             mastersalt_master_changed="1"
         fi
-        edit_yaml_file "${BRANCH_PILLAR_ID}" "${branch_id}" "${confs}"
+        edit_yaml_file "${BRANCH_PILLAR_ID}" "${branch_id}" ${confs}
         if [ "x${yaml_file_changed}" != "x0" ];then
             mastersalt_master_changed="1"
         fi
@@ -2019,15 +2019,15 @@ reconfigure_salt_master() {
                 confs="${confs} ${conf}"
             fi
         done
-        edit_yaml_file interface "${master_ip}" "${confs}"
+        edit_yaml_file interface "${master_ip}" ${confs}
         if [ "x${yaml_file_changed}" != "x0" ];then
             salt_master_changed="1"
         fi
-        edit_yaml_file ret_port "${port}" "${confs}"
+        edit_yaml_file ret_port "${port}" ${confs}
         if [ "x${yaml_file_changed}" != "x0" ];then
             salt_master_changed="1"
         fi
-        edit_yaml_file publish_port "${publish_port}" "${confs}"
+        edit_yaml_file publish_port "${publish_port}" ${confs}
         if [ "x${yaml_file_changed}" != "x0" ];then
             salt_master_changed="1"
         fi
@@ -2099,19 +2099,19 @@ reconfigure_mastersalt_minion() {
             fi
         done
         "${SED}" -i -e "/^    id:/ d" "${conf}"
-        edit_yaml_file id "${setted_id}" "${confs}"
+        edit_yaml_file id "${setted_id}" ${confs}
         if [ "x${yaml_file_changed}" != "x0" ];then
             mastersalt_minion_changed="1"
         fi
-        edit_yaml_file interface "${minion_ip}" "${confs}"
+        edit_yaml_file interface "${minion_ip}" ${confs}
         if [ "x${yaml_file_changed}" != "x0" ];then
             mastersalt_minion_changed="1"
         fi
-        edit_yaml_file master "${master}" "${confs}"
+        edit_yaml_file master "${master}" ${confs}
         if [ "x${yaml_file_changed}" != "x0" ];then
             mastersalt_minion_changed="1"
         fi
-        edit_yaml_file master_port "${port}" "${confs}"
+        edit_yaml_file master_port "${port}" ${confs}
         if [ "x${yaml_file_changed}" != "x0" ];then
             mastersalt_minion_changed="1"
         fi
@@ -2186,15 +2186,15 @@ reconfigure_salt_minion() {
                 confs="${confs} ${conf}"
              fi
         done
-        edit_yaml_file id "${setted_id}" "${confs}"
+        edit_yaml_file id "${setted_id}" ${confs}
         if [ "x${yaml_file_changed}" != "x0" ];then
             salt_minion_changed="1"
         fi
-        edit_yaml_file master "${master}" "${confs}"
+        edit_yaml_file master "${master}" ${confs}
         if [ "x${yaml_file_changed}" != "x0" ];then
             salt_minion_changed="1"
         fi
-        edit_yaml_file master_port "${port}" "${confs}"
+        edit_yaml_file master_port "${port}" ${confs}
         if [ "x${yaml_file_changed}" != "x0" ];then
             salt_minion_changed="1"
         fi

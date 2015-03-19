@@ -97,6 +97,6 @@
       "{salt_root}/makina-states/salt_fork/runners"],
   "utils_dirs": [
       "{salt_root}/_utils",
-      "{salt_root}/makina-states/mc_states/utils",
+      "{salt_root}/makina-states/mc_states.api",
       "{salt_root}/makina-states/salt_fork/utils"]
 }

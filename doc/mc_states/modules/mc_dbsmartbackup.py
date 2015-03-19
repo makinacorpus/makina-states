@@ -7,7 +7,7 @@ mc_dbsmartbackup / db_smart_backup functions
 
 '''
 # Import salt libs
-import mc_states.utils
+import mc_states.api
 
 __name = 'dbsmartbackup'
 
@@ -93,7 +93,7 @@ def settings():
     servername
         servername tied to those backups
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         mongoSettings = __salt__['mc_mongodb.settings']()
         mysqlSettings = __salt__['mc_mysql.settings']()

@@ -23,7 +23,7 @@ import salt.client
 import salt.payload
 import salt.utils
 import salt.output
-from mc_states.utils import memoize_cache
+from mc_states.api import memoize_cache
 import salt.minion
 from salt.utils import check_state_result
 from salt.cloud.exceptions import SaltCloudSystemExit
@@ -62,7 +62,7 @@ def post_deploy_controller(output=True):
     p = 'makina-states.cloud.kvm.controller'
     ret = _s['mc_api.apply_sls'](['{0}.postdeploy'.format(p)], **{'ret': ret})
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -78,7 +78,7 @@ def cn_configure(what, target, ret, output):
     ret = _s['mc_api.apply_sls']('{0}.{1}'.format(p, what),
                                  **{'salt_target': target, 'ret': ret})
     _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname, ret=ret)
+    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -98,7 +98,7 @@ def upgrade_vt(target, ret=None, output=True):
     __salt__['mc_api.time_log']('start', fname, target)
     if not ret:
         ret = result()
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -111,7 +111,7 @@ def sync_images(target, output=True, ret=None):
     __salt__['mc_api.time_log']('start', fname, target)
     if ret is None:
         ret = result()
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -130,7 +130,7 @@ def install_vt(target, output=True):
             pass
     __salt__['mc_cloud_kvm.sync_images'](target, output=False, ret=ret)
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -157,7 +157,7 @@ def post_post_deploy_compute_node(target, output=True):
         status = 'failure'
     ret['comment'] += clr(msg.format(status))
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -174,6 +174,6 @@ def vm_configure(what, vm, ret=None, output=True):
     ret =  __salt__['mc_api.apply_sls'](
         '{0}.{1}'.format(pref, what), **{'salt_target': vm, 'ret': ret})
     __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname, ret=ret)
+    __salt__['mc_api.time_log']('end', fname)
     return ret
 # vim:set et sts=4 ts=4 tw=80:

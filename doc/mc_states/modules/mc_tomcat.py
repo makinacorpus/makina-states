@@ -10,7 +10,7 @@ mc_tomcat / tomcat functions
 __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
-import mc_states.utils
+import mc_states.api
 
 __name = 'tomcat'
 
@@ -64,7 +64,7 @@ def settings():
     loglevel_Catalina_localhost_level
         loglevel for catalina section (INFO)
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         locs = __salt__['mc_locations.settings']()
         data = __salt__['mc_utils.defaults'](

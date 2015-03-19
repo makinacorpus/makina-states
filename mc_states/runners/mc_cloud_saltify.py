@@ -60,7 +60,6 @@ def saltify(name, output=True, ret=None):
         already_exists = _s['mc_cloud_controller.exists'](name)
         data = None
         thisid = cli('grains.items')['id']
-        already_exists = False
         if already_exists:
             success = green('{0} is already saltified'.format(name))
         else:
@@ -73,7 +72,6 @@ def saltify(name, output=True, ret=None):
             if data is None or not data:
                 raise SaltyficationError(
                     red('Saltify target {0} is not configured'.format(name)))
-
             else:
                 success = green('{0} is saltified')
                 kwargs = {'minion': {'master': data['master'],
@@ -91,6 +89,11 @@ def saltify(name, output=True, ret=None):
                                         data.get('master', thisid))
                                 if " -m " not in data[var]:
                                     data[var] += " -m {0}".format(name)
+
+                                if " -b " not in data[var]:
+                                    data[var] += (
+                                        " -b {0[bootsalt_branch]}"
+                                        "".format(data))
                         kwargs[var] = data[var]
                 try:
                     ping = cli('test.ping', salt_target=name)

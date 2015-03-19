@@ -14,7 +14,7 @@ import copy
 import logging
 import time
 import traceback
-from mc_states.utils import memoize_cache, invalidate_memoize_cache
+from mc_states.api import memoize_cache, invalidate_memoize_cache
 from salt.exceptions import SaltException
 from salt.utils.odict import OrderedDict
 from mc_states.api import(

@@ -16,7 +16,7 @@ Internal module used as api.
 __docformat__ = 'restructuredtext en'
 import salt.output
 from pprint import pformat
-from mc_states.utils import memoize_cache
+from mc_states.api import memoize_cache
 import traceback
 import salt.wheel
 import datetime
@@ -214,7 +214,7 @@ def get_cloud_saltify_settings(ttl=60):
         __salt__['mc_api.time_log']('start', fname, __opts__['id'])
         settings = cli('mc_cloud_saltify.ext_pillar',
                        __opts__['id'], prefixed=False)
-        __salt__['mc_api.time_log']('end', fname, settings=settings)
+        __salt__['mc_api.time_log']('end', fname)
         return settings
     cache_key = 'rmc_api.get_cloud_saltify_settings'
     return memoize_cache(_do, [], {}, cache_key, ttl)
@@ -225,7 +225,7 @@ def get_cloud_saltify_settings_for_target(id_, ttl=60):
         fname = 'mc_api.get_cloud_saltify_settings_for_target'
         __salt__['mc_api.time_log']('start', fname, id_)
         settings = cli('mc_cloud_saltify.target_extpillar', id_)
-        __salt__['mc_api.time_log']('end', fname, settings=settings)
+        __salt__['mc_api.time_log']('end', fname)
         return settings
     cache_key = 'rmc_api.get_cloud_saltify_settings{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
@@ -237,7 +237,7 @@ def get_cloud_images_settings(ttl=60):
         __salt__['mc_api.time_log']('start', fname, __opts__['id'])
         settings = cli('mc_cloud_images.ext_pillar',
                        __opts__['id'], prefixed=False)
-        __salt__['mc_api.time_log']('end', fname, settings=settings)
+        __salt__['mc_api.time_log']('end', fname)
         return settings
     cache_key = 'rmc_api.get_cloud_images_settings'
     return memoize_cache(_do, [], {}, cache_key, ttl)
@@ -249,7 +249,7 @@ def get_cloud_controller_settings(ttl=60):
         __salt__['mc_api.time_log']('start', fname, __opts__['id'])
         settings = cli('mc_cloud_controller.ext_pillar',
                        __opts__['id'], prefixed=False)
-        __salt__['mc_api.time_log']('end', fname, settings=settings)
+        __salt__['mc_api.time_log']('end', fname)
         return settings
     cache_key = 'rmc_api.get_cloud_controller_settings'
     return memoize_cache(_do, [], {}, cache_key, ttl)
@@ -262,7 +262,7 @@ def get_cloud_settings(id_=None, ttl=60):
         fname = 'mc_api.get_cloud_settings'
         __salt__['mc_api.time_log']('start', fname, id_)
         settings = cli('mc_cloud.ext_pillar', id_, prefixed=False)
-        __salt__['mc_api.time_log']('end', fname, settings=settings)
+        __salt__['mc_api.time_log']('end', fname)
         return settings
     cache_key = 'rmc_api.get_cloud_settings'
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
@@ -275,7 +275,7 @@ def get_vm(vm, ttl=60):
         vmdata = cli('mc_cloud_vm.vm_extpillar', vm)
         if not vmdata.get('vt', None):
             raise KeyError('vm is empty for {0}'.format(vm))
-        __salt__['mc_api.time_log']('end', fname, vm=vm, vmdata=vmdata)
+        __salt__['mc_api.time_log']('end', fname, vm=vm)
         return vmdata
     cache_key = 'rmc_api.get_vm{0}'.format(vm)
     return memoize_cache(_do, [vm], {}, cache_key, ttl)
@@ -304,7 +304,7 @@ def get_compute_node_settings(compute_node=None, vm=None, ttl=60):
             raise Exception('Choose at least one cn or one vm')
         data = cli('mc_cloud_compute_node.ext_pillar',
                    compute_node, prefixed=False)
-        __salt__['mc_api.time_log']('end', fname, data=data)
+        __salt__['mc_api.time_log']('end', fname)
         return data
     cache_key = 'rmc_api.get_compute_node_settings{0}{1}'.format(
         compute_node, vm)

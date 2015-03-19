@@ -13,7 +13,7 @@ For the documentation on usage, please look :ref:`bind_documentation`.
 __docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
-import mc_states.utils
+import mc_states.api
 from copy import deepcopy
 import copy
 import string
@@ -159,7 +159,7 @@ def settings():
                 error
 
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         grains = __grains__
         pillar = __pillar__
@@ -384,7 +384,7 @@ def cached_zone_headers():
     keys = ['views', 'server_type', 'template', 'source',
             'zoneid', 'fqdn', 'fpath']
     zpref = 'makina-states.services.dns.bind.zones'
-    @mc_states.utils.lazy_subregistry_get(__salt__, zpref)
+    @mc_states.api.lazy_subregistry_get(__salt__, zpref)
     def _settings():
         zones = __salt__['mc_utils.defaults'](zpref, {})
         data = {}

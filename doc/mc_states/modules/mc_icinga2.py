@@ -42,8 +42,8 @@ import socket
 import logging
 import traceback
 import copy
-import mc_states.utils
-from mc_states.utils import memoize_cache
+import mc_states.api
+from mc_states.api import memoize_cache
 
 __name = 'icinga2'
 _default = object()
@@ -446,7 +446,7 @@ def settings():
                 enable the ido2db module
 
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         grains = __grains__
         pillar = __pillar__

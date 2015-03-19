@@ -16,8 +16,8 @@ import logging
 import os
 import copy
 import yaml
-import mc_states.utils
-from mc_states.utils import memoize_cache
+import mc_states.api
+from mc_states.api import memoize_cache
 
 from mc_states import saltapi
 
@@ -100,8 +100,8 @@ def default_settings():
     return data
 
 
-def extpillar_settings(id_=None, ttl=30):
-    def _do(id_=None):
+def extpillar_settings(id_=None, limited=False, ttl=30):
+    def _do(id_=None, limited=False):
         cid = __opts__['id']
         _s = __salt__
         extdata = _s['mc_pillar.get_global_clouf_conf']('images')
@@ -126,8 +126,9 @@ def extpillar_settings(id_=None, ttl=30):
         data = complete_images(data)
         data = _s['mc_utils.format_resolve'](data)
         return data
-    cache_key = 'mc_cloud_images.extpillar_settings{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    cache_key = 'mc_cloud_images.extpillar_settings{0}{1}'.format(
+        id_, limited)
+    return memoize_cache(_do, [id_, limited], {}, cache_key, ttl)
 
 
 def ext_pillar(id_, prefixed=True, *args, **kw):
@@ -135,12 +136,13 @@ def ext_pillar(id_, prefixed=True, *args, **kw):
     Images extpillar
     '''
     _s = __salt__
+    limited = kw.get('limited', False)
     expose = False
     if _s['mc_cloud.is_a_cloud_member'](id_):
         expose = True
     data = {}
     if expose:
-        data = extpillar_settings(id_)
+        data = extpillar_settings(id_, limited=limited)
     if prefixed:
         data = {PREFIX: data}
     return data

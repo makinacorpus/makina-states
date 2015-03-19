@@ -15,13 +15,13 @@ import logging
 import time
 from pprint import pformat
 import copy
-import mc_states.utils
+import mc_states.api
 import datetime
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 import traceback
-from mc_states.utils import memoize_cache
-import mc_states.utils
+from mc_states.api import memoize_cache
+import mc_states.api
 import random
 import string
 log = logging.getLogger(__name__)
@@ -30,6 +30,8 @@ log = logging.getLogger(__name__)
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
 DOTTED_DOMAIN_PATTERN = '((^{0}\\.?$)|(\\.(@{0})|({0}\\.?)))$'
 __name = 'mc_pillar'
+
+SUPPORTED_DB_FORMATS = ['sls', 'yaml', 'json']
 
 
 def mastersalt_minion_id():
@@ -98,15 +100,22 @@ def get_fqdn_domains(fqdn):
 
 
 def get_db():
-    dbpath = os.path.join(
-        __opts__['pillar_roots']['base'][0],
-        'database.yaml')
+    dbpath = None
+    for i in SUPPORTED_DB_FORMATS:
+        dbpath = os.path.join(
+            __opts__['pillar_roots']['base'][0],
+            'database.{0}'.format(i))
+        if os.path.exists(dbpath):
+            break
     return dbpath
 
 
 def has_db():
     db = get_db()
-    if ('yaml' in db) and db.startswith('/srv'):
+    if (
+        (os.path.splitext(db)[1][1:] in SUPPORTED_DB_FORMATS)
+        and db.startswith('/srv')
+    ):
         return os.path.exists(db)
     else:
         return False
@@ -115,10 +124,18 @@ def has_db():
 # to be easily mockable in tests while having it cached
 def loaddb_do(*a, **kw5):
     dbpath = get_db()
+    suf = os.path.splitext(dbpath)[1]
+    suf = suf[1:]
+    if suf not in SUPPORTED_DB_FORMATS:
+        raise ValueError(
+            'invalid db format {0}: {1}'.format(suf, dbpath))
     if not has_db():
         raise KeyError("{0} is not present".format(dbpath))
     with open(get_db()) as fic:
-        db = yaml_load(fic.read())
+        content = dbpath
+        if suf not in ['sls']:
+            content = fic.read()
+        db = __salt__['mc_utils.{0}_load'.format(suf)](content)
     for item in db:
         types = (dict, list)
         if item in ['format']:
@@ -1260,6 +1277,8 @@ def serial_for(domain,
         # load the local pillar dns registry
         dns_reg = __salt__['mc_macros.get_local_registry'](
             'dns_serials', registry_format='pack')
+        dns_failures = __salt__['mc_macros.get_local_registry'](
+            'dns_serials_failures', registry_format='pack')
         if serials is None:
             serials = OrderedDict()
         override = True
@@ -1303,6 +1322,7 @@ def serial_for(domain,
         # this avoid real situation errors and serial
         # mismatch between master and slaves
         # If our serial is inferior, we take this serial as a value
+        now = datetime.datetime.now()
         try:
             resolver = dns.resolver.Resolver()
             resolver.timeout = 10
@@ -1315,16 +1335,60 @@ def serial_for(domain,
                     ns += domain + '.'
                 ns = ns[:-1]
                 request = dns.message.make_query(domain, dns.rdatatype.SOA)
-                res = dns.query.tcp(request, ns, timeout=30)
-
-                for answer in res.answer:
-                    for soa in answer:
-                        if soa.serial > dns_serial:
-                            dns_serial = soa.serial
+                do_skip = False
+                t10 = datetime.timedelta(minutes=10)
+                try:
+                    nsip = socket.gethostbyname(ns)
+                except Exception:
+                    nsip = ns
+                # if a nameserver fails three times
+                # ignore it for 10 minutes
+                if nsip in dns_failures:
+                    failure = dns_failures[nsip]
+                    try:
+                        odate = datetime.datetime.strptime(
+                            failure['date'][:-7], '%Y-%m-%dT%H:%M:%S')
+                    except Exception:
+                        odate = now
+                    if (
+                        failure['skip']
+                        and (now - odate < t10)
+                    ):
+                        do_skip = True
+                        log.error(
+                            'nameserver {0}/{1} is skipped 10minutes, too much'
+                            ' failures'.format(ns, nsip))
+                    if now - odate >= t10:
+                        dns_failures.pop(ns, None)
+                if not do_skip:
+                    res = dns.query.tcp(request, ns, timeout=5)
+                    for answer in res.answer:
+                        for soa in answer:
+                            if soa.serial > dns_serial:
+                                dns_serial = soa.serial
+                    if ns in dns_failures:
+                        dns_failures.pop(ns, None)
             if dns_serial != serial and dns_serial > 0:
                 serial = dns_serial
         except Exception, ex:
+            hasns, nsip, failure = True, '', {}
             trace = traceback.format_exc()
+            try:
+                nsip = socket.gethostbyname(ns)
+            except Exception:
+                try:
+                    nsip = ns
+                except UnboundLocalError:
+                    hasns = False
+            if hasns:
+                failure = dns_failures.setdefault(
+                    nsip,
+                    {'date': now.isoformat(), 'skip': False, 'count': 0})
+                failure['count'] += 1
+                if failure['count'] > 3:
+                    failure['skip'] = True
+                log.error('DNSSERIALS: {0}: {1} failures: {2}'.format(
+                    ns, nsip, failure))
             log.error('DNSSERIALS: {0}'.format(ex))
             log.error('DNSSERIALS: {0}'.format(domain))
             log.error(trace)
@@ -1337,6 +1401,8 @@ def serial_for(domain,
         if not force_serial:
             serial += 1
         dns_reg[domain] = serial
+        __salt__['mc_macros.update_local_registry'](
+            'dns_failures', dns_failures, registry_format='pack')
         __salt__['mc_macros.update_local_registry'](
             'dns_serials', dns_reg, registry_format='pack')
         return serial
@@ -3070,18 +3136,17 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         pr.disable()
         if not os.path.isdir('/tmp/stats'):
             os.makedirs('/tmp/stats')
-        ficp = '/tmp/stats/{0}.pstats'.format(id_)
-        fico = '/tmp/stats/{0}.dot'.format(id_)
-        ficn = '/tmp/stats/{0}.stats'.format(id_)
-        os.system(
-            '/srv/mastersalt/makina-states/bin/pyprof2calltree '
-            '-i {0} -o {1}'.format(ficp, fico))
+        date = datetime.datetime.now().isoformat()
+        ficp = '/tmp/stats/{0}.{1}.pstats'.format(id_, date)
+        fico = '/tmp/stats/{0}.{1}.dot'.format(id_, date)
+        ficn = '/tmp/stats/{0}.{1}.stats'.format(id_, date)
         if not os.path.exists(ficp):
             pr.dump_stats(ficp)
             with open(ficn, 'w') as fic:
-                ps = pstats.Stats(
-                    pr, stream=fic).sort_stats('cumulative')
-                ps.print_stats()
+                pstats.Stats(pr, stream=fic).sort_stats('cumulative')
+        __salt__['cmd.run'](
+            '/srv/mastersalt/makina-states/bin/pyprof2calltree '
+            '-i "{0}" -o "{1}"'.format(ficp, fico), python_shell=True)
     return data
 
 
@@ -3273,7 +3338,7 @@ def test():
     memoize_cache(do, [], {}, 'foo', 2)
     time.sleep(3)
     memoize_cache(do, [], {}, 'foo', 2)
-    from mc_states.utils import _LOCAL_CACHE
+    from mc_states.api import _LOCAL_CACHE
     from pprint import pprint
     pprint(_LOCAL_CACHE)
 

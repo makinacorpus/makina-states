@@ -10,7 +10,7 @@ mc_ssh / OpenSSH  related functions
 
 '''
 # Import salt libs
-import mc_states.utils
+import mc_states.api
 
 __name = 'ssh'
 
@@ -78,7 +78,7 @@ def settings():
                 to be documented
 
     '''
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         pillar = __pillar__
         g = 'sshusers'

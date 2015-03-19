@@ -13,11 +13,14 @@ mc_cloud / cloud registries & functions
 # Import salt libs
 import os
 import copy
-import mc_states.utils
-from mc_states.utils import memoize_cache
+import mc_states.api
+from mc_states.api import memoize_cache
 import socket
 import yaml
 import logging
+
+from mc_states.saltapi import six
+from salt.utils.odict import OrderedDict
 
 __name = 'cloud'
 log = logging.getLogger(__name__)
@@ -109,9 +112,9 @@ def default_settings():
         'script': ('/srv/mastersalt/makina-states/'
                    '_scripts/boot-salt.sh'),
         'bootstrap_shell': 'bash',
-        'bootsalt_args': '-C --from-salt-cloud -no-M',
+        'bootsalt_args': '-C --reattach -no-M',
         'bootsalt_mastersalt_args': (
-            '-C --from-salt-cloud --mastersalt-minion'),
+            '-C --reattach --mastersalt-minion'),
         'bootsalt_branch': None,
         'master_port': __opts__.get('master_port'),
         'master': __grains__['id'],
@@ -131,7 +134,7 @@ def default_settings():
         'is': {'compute_node': False,
                'vm': False,
                'controller': False},
-        'lxc.defaults.backing': 'dir'
+        'lxc.defaults.backing': 'dir',
     }
     return data
 
@@ -141,7 +144,7 @@ def extpillar_settings(id_=None, ttl=30, *args, **kw):
     return the cloud global configuation
     opts['id'] should resolve to mastersalt
     '''
-    def _do(id_=None):
+    def _do(id_=None, limited=False):
         _s = __salt__
         _o = __opts__
         if id_ is None:
@@ -174,8 +177,9 @@ def extpillar_settings(id_=None, ttl=30, *args, **kw):
                                            default_env, 'stable')
         data = _s['mc_utils.format_resolve'](data)
         return data
-    cache_key = 'mc_cloud.extpillar_settings{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    limited = kw.get('limited', False)
+    cache_key = 'mc_cloud.extpillar_settings{0}{1}'.format(id_, limited)
+    return memoize_cache(_do, [id_, limited], {}, cache_key, ttl)
 
 
 def is_a_vm(id_=None, ttl=30):
@@ -260,16 +264,226 @@ def add_ms_ssl_certs(data, extdata=None):
     return data
 
 
+def filter_exposed_data(target, data, mode='full'):
+    data = copy.deepcopy(data)
+    if mode != 'full':
+        for k in [a for a in data]:
+            if k in [target]:
+                continue
+            for l in ['pass', 'user']:
+                if l in k:
+                    data.pop(k, None)
+    return data
+
+
+def gather_expositions(ttl=60):
+    '''
+    Merge expositions amongst CN & VM settings
+    as a vm can also be a compute node itself
+    '''
+    def _do():
+        _s = __salt__
+        data = OrderedDict()
+        direct = data.setdefault('direct', OrderedDict())
+        indirect = data.setdefault('indirect', OrderedDict())
+        vms = _s['mc_cloud_compute_node.get_vms']()
+        targets = _s['mc_cloud_compute_node.get_targets']()
+        for vkind, fun, mapping in [
+            ('vms',
+             'mc_pillar.get_cloud_conf_for_vm',
+             vms),
+            ('cns',
+             'mc_pillar.get_cloud_conf_for_cn',
+             targets),
+        ]:
+            for i, tdata in six.iteritems(mapping):
+                if _s['mc_cloud.is_a_compute_node'](i):
+                    kind = 'cns'
+                else:
+                    kind = 'vms'
+                if not (is_a_vm(i) or is_a_compute_node(i)):
+                    continue
+                rexpose = direct.setdefault(i, OrderedDict())
+                indirect_rexpose = indirect.setdefault(i, OrderedDict())
+                cdata = _s[fun](i)
+                if not cdata or not isinstance(cdata, dict):
+                    continue
+                expose = cdata.setdefault('expose', [])
+                expose_limited = cdata.setdefault(
+                    'expose_limited', OrderedDict())
+                exposed = cdata.setdefault('exposed', [])
+                exposed_limited = cdata.setdefault(
+                    'expose_limited_in', OrderedDict())
+                if not isinstance(expose, list):
+                    expose = []
+                if not isinstance(expose_limited, dict):
+                    expose_limited = OrderedDict()
+                if not isinstance(exposed, list):
+                    exposed = []
+                if not isinstance(exposed_limited, dict):
+                    exposed_limited = OrderedDict()
+                if not (
+                    expose
+                    or expose_limited
+                    or exposed
+                    or exposed_limited
+                ):
+                    continue
+                for e in expose:
+                    expose_limited[e] = 'full'
+                for e in exposed:
+                    exposed_limited[e] = 'full'
+                for exposure, fdict in [
+                    (expose_limited, rexpose),
+                    (exposed_limited, indirect_rexpose)
+                ]:
+                    for item, access in six.iteritems(exposure):
+                        if _s['mc_cloud.is_a_compute_node'](item):
+                            ikind = 'cns'
+                        else:
+                            ikind = 'vms'
+                        dex = fdict.setdefault(
+                            item, {'access': None, 'kinds': []})
+                        if ikind not in dex['kinds']:
+                            dex['kinds'].append(ikind)
+                        # first level try wins, be sure to set
+                        # it to be consistent amongst all declaration in conf !
+                        if dex['access'] is None:
+                            dex['access'] = access
+        directs = [a for a in direct]
+        indirects = [a for a in indirect]
+        for lmaps, tmap, itmap in [
+            (indirects, indirect, direct),
+            (directs, direct, indirect),
+        ]:
+            for host in lmaps:
+                mapped = tmap[host]
+                for ohost, odata in mapped.items():
+                    expose = itmap.setdefault(ohost, OrderedDict())
+                    edata = expose.setdefault(
+                        host,
+                        {'access': None, 'kinds': []})
+                    if edata['access'] is None:
+                        edata['access'] = odata['access']
+                    for kind in odata['kinds']:
+                        if kind not in edata['kinds']:
+                            edata['kinds'].append(kind)
+        return data
+    cache_key = '{0}.{1}'.format(__name, 'gather_expositions')
+    return memoize_cache(_do, [], {}, cache_key, ttl)
+
+
+def gather_exposed_data(target, ttl=60):
+    def _do(target):
+        _s = __salt__
+        exposed_to_me = copy.deepcopy(
+            gather_expositions()['indirect'].get(target, OrderedDict())
+        )
+        if target not in exposed_to_me:
+            exposed_to_me[target] = {'access': 'full', 'kinds': []}
+        kinds = exposed_to_me[target].setdefault('kinds', [])
+        if is_a_vm(target):
+            if 'vms' not in kinds:
+                kinds.append('vms')
+        if is_a_compute_node(target):
+            if 'cns' not in kinds:
+                kinds.append('cns')
+        exposed_datas = OrderedDict()
+        if not exposed_to_me:
+            return {}
+        for host, tdata in six.iteritems(exposed_to_me):
+            for kind in tdata['kinds']:
+                gepillar = copy.deepcopy(
+                    ext_pillar(host, limited=True, prefixed=False))
+                fun = {'vms': 'mc_cloud_vm.ext_pillar',
+                       'cns': 'mc_cloud_compute_node.ext_pillar'}[kind]
+                sepillar = copy.deepcopy(
+                    _s[fun](host, prefixed=False, limited=True))
+                gepillar = _s['mc_utils.dictupdate'](gepillar, sepillar)
+                if kind == 'vms':
+                    vms = gepillar.pop('vms', {})
+                    gepillar.pop('vts', {})
+                    vm = vms.get(host, {})
+                    if vm:
+                        gepillar = _s['mc_utils.dictupdate'](gepillar, vm)
+                # only direct cloud settings
+                to_remove = [k
+                             for k in six.iterkeys(gepillar)
+                             if (
+                                 k.startswith('makina-states')
+                                 or k in ['ssl', 'ssl_certs']
+                             )]
+                for k in to_remove:
+                    gepillar.pop(k, None)
+                kexposed_datas = exposed_datas.setdefault(kind, OrderedDict())
+                kexposed_datas[host] = _s['mc_utils.dictupdate'](
+                    kexposed_datas.setdefault(host, OrderedDict()),
+                    filter_exposed_data(target, gepillar, tdata['access']))
+        return exposed_datas
+    cache_key = '{0}.{1}.{2}'.format(__name, 'gather_exposed_data', target)
+    return memoize_cache(_do, [target], {}, cache_key, ttl)
+
+
 def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
     '''
-    makina-states cloud extpillar
+    Makina-states cloud extpillar
+
+    NOTE
+        This ext pillar is responsible for taking care of exposing
+        other nodes configuration to a particular node if
+        we have configured this via the expose/expose_limited settings
+
+    expose/exposed
+        list of vm or compute nodes which will have full
+        access to the vm infos in via ext_pillar
+
+        - expose mean give access to other vm conf
+        - exposed mean take acces on other vm conf
+
+    expose_limited/exposed_limited
+        dict of vm or compute nodes which will have access
+        to the vm infos via the ext_pillar
+        Here sensitive info may be filtered, for now,
+        nothing is implememted and we give full for now.
+
+        Levels are(only full is really implemented):
+
+            full
+                full access to conf
+            light
+                all conf but passwords or sensitive
+            network
+                network conf only
+
+        example of pilar conf settings in database.yaml:
+
+            cloud_vm_attrs:
+              myvm:
+                expose_limited:
+                    other_vm0: full
+                    other_vm1: network
+                    other_vm2: password
+                    mynode: full
+
+            cloud_cn_attrs:
+              mynode:
+                expose_limited:
+                    other_vm1: full
+                    other_vm2: network
+                    other_node: password
+
+        This can be accessed client side via mc_cloud.settings/expositions
+
+            mastersalt-call mc_cloud.settings -> expositions / vms or cns
+
+
     '''
-    def _do(id_, prefixed):
+    def _do(id_, prefixed, limited):
         data = {}
         _s = __salt__
         # run that to aliment the cache
         _s['mc_pillar.mastersalt_minion_id']()
-        extdata = extpillar_settings(id_)
+        extdata = extpillar_settings(id_, limited=limited)
         vms = _s['mc_cloud_compute_node.get_vms']()
         targets = _s['mc_cloud_compute_node.get_targets']()
         if is_a_vm(id_):
@@ -290,31 +504,44 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
                 data['makina-states.services.virt.' + i] = True
             data['makina-states.services.is.proxy.haproxy'] = True
             data['makina-states.services.is.firewall.shorewall'] = True
+        if not limited:
+            data[
+                'makina-states.cloud.expositions'
+            ] = gather_exposed_data(id_)
         if any([
             extdata['is']['vm'],
             extdata['is']['compute_node']
         ]):
-            data.update(_s['mc_cloud_vm.ext_pillar'](id_))
+            data.update(_s['mc_cloud_vm.ext_pillar'](
+                id_, limited=limited))
         if any([
             extdata['is']['controller'],
             extdata['is']['compute_node']
         ]):
-            data.update(_s['mc_cloud_compute_node.ext_pillar'](id_))
+            data.update(_s['mc_cloud_compute_node.ext_pillar'](
+                id_, limited=limited))
         if is_a_controller(id_):
             extdata['is']['controller'] = True
-            data.update(_s['mc_cloud_saltify.ext_pillar'](id_))
+            data.update(_s['mc_cloud_saltify.ext_pillar'](
+                id_, limited=limited))
         # if any of vm/computenode/controller
         # expose global cloud conf
         if any(extdata['is'].values()):
-            data.update(_s['mc_cloud_controller.ext_pillar'](id_))
-            data.update(_s['mc_cloud_images.ext_pillar'](id_))
+            data.update(_s['mc_cloud_controller.ext_pillar'](
+                id_, limited=limited))
+            data.update(_s['mc_cloud_images.ext_pillar'](
+                id_, limited=limited))
             if prefixed:
                 data[PREFIX] = extdata
             else:
                 data = _s['mc_utils.dictupdate'](data, extdata)
+
         return data
-    cache_key = 'mc_cloud.ext_pillar{0}{1}'.format(id_, prefixed)
-    return memoize_cache(_do, [id_, prefixed], {}, cache_key, ttl)
+    limited = kw.get('limited', False)
+    cache_key = 'mc_cloud.ext_pillar{0}{1}{2}'.format(
+        id_, prefixed, limited)
+    return memoize_cache(_do, [id_, prefixed, limited], {},
+                         cache_key, ttl)
 
 
 '''
@@ -348,7 +575,7 @@ def is_controller():
 
 
 def metadata():
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _metadata():
         return __salt__['mc_macros.metadata'](
             __name, bases=['services'])
@@ -379,6 +606,7 @@ def settings(ttl=60):
             'makina-states.cloud',
             _s['mc_utils.dictupdate'](
                 default_settings(), {
+                    'expositions': {'vms': {}, 'cns': {}},
                     'root': root,
                     'all_pillar_dir': (
                         os.path.join(
@@ -410,7 +638,7 @@ def settings(ttl=60):
 
 
 def registry():
-    @mc_states.utils.lazy_subregistry_get(__salt__, __name)
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _registry():
         return __salt__[
             'mc_macros.construct_registry_configuration'

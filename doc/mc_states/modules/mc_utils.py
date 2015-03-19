@@ -26,7 +26,7 @@ from mc_states import api
 
 from salt.ext import six as six
 
-import mc_states.utils
+import mc_states.api
 import yaml
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -710,6 +710,23 @@ def json_load(data):
     return api.json_load(data)
 
 
+def sls_load(sls, get_inner=False):
+    if not os.path.exists(sls):
+        raise OSError('does not exists: {0}'.format(sls))
+    jinjarend = salt.loader.render(__opts__, __salt__)
+    data_l = salt.template.compile_template(
+        sls, jinjarend, __opts__['renderer'], 'base')
+    if isinstance(data_l, (dict, list, set)) and get_inner:
+        if len(data_l) == 1:
+            if isinstance(data_l, dict):
+                for key in six.iterkeys(data_l):
+                    data_l = data_l[key]
+                    break
+            else:
+                data_l = data_l[0]
+    return data_l
+
+
 def yencode(string):
     """."""
     return api.yencode(string)
@@ -791,7 +808,7 @@ def profile(func, *args, **kw):
 
 
 def invalidate_memoize_cache(*args, **kw):
-    return mc_states.utils.invalidate_memoize_cache(*args, **kw)
+    return mc_states.api.invalidate_memoize_cache(*args, **kw)
 
 
 def manage_file(name, **kwargs):
@@ -874,4 +891,31 @@ def output(mapping, raw=False, outputter='highstate'):
                         raise
     __opts__['color'] = color
     return ret
-#
+
+
+def is_this_lxc():
+    container = get_container(1)
+    if container not in ['MAIN_HOST']:
+        return True
+    return False
+
+
+def get_container(pid):
+    lxc = 'MAIN_HOST'
+    cg = '/proc/{0}/cgroup'.format(pid)
+    # lxc ?
+    if os.path.isfile(cg):
+        with open(cg) as fic:
+            content = fic.read()
+            if 'lxc' in content:
+                # 9:blkio:NAME
+                lxc = content.split('\n')[0].split(':')[-1]
+    if '/lxc' in lxc:
+        lxc = lxc.split('/lxc/', 1)[1]
+    return lxc
+
+
+def filter_host_pids(pids):
+    thishost = get_container(1)
+    return [a for a in pids
+            if get_container(a) == thishost]

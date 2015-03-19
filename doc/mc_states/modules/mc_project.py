@@ -19,6 +19,9 @@ APIS = {
     'get_configuration_item': {
         '2': 'mc_project_2.get_configuration_item',
     },
+    'git_commit': {
+        '2': 'mc_project_2.git_commit',
+    },
     'sync_hooks': {
         '2': 'mc_project_2.sync_hooks',
     },
@@ -283,6 +286,10 @@ def sync_remote_pillar(name, *args, **kwargs):
 
 def sync_remote_project(name, *args, **kwargs):
     return _api_switcher('sync_remote_project', name, *args, **kwargs)
+
+
+def git_commit(name, *args, **kwargs):
+    return _api_switcher('git_commit', name, *args, **kwargs)
 
 
 def remote_run_task(name, *args, **kwargs):
