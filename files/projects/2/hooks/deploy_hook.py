@@ -358,7 +358,7 @@ def deploy(callback_args, loglevel, logfile, lock, **kwargs):
                     buf = ''
                     while True:
                         try:
-                            content =  streamout_queue.get_nowait()
+                            content = streamout_queue.get_nowait()
                             if buf:
                                 content = buf + content
                                 buf = ''
@@ -372,7 +372,7 @@ def deploy(callback_args, loglevel, logfile, lock, **kwargs):
                     buf = ''
                     while True:
                         try:
-                            content =  streamerr_queue.get_nowait()
+                            content = streamerr_queue.get_nowait()
                             if buf:
                                 content = buf + content
                                 buf = ''
