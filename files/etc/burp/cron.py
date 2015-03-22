@@ -402,21 +402,21 @@ def deploy(callback_args, loglevel, logfile, lock, **kwargs):
                     buf = ''
                     while True:
                         try:
-                            content =  streamout_queue.get_nowait()
+                            content = streamout_queue.get_nowait()
                             if buf:
                                 content = buf + content
                                 buf = ''
                             try:
                                 stdout += content
                             except UnicodeDecodeError:
-                            stdout += streamout_queue.get_nowait()
+                                buf = content
                         except Empty:
                             break
                     stderr = ''
                     buf = ''
                     while True:
                         try:
-                            content =  streamerr_queue.get_nowait()
+                            content = streamerr_queue.get_nowait()
                             if buf:
                                 content = buf + content
                                 buf = ''
