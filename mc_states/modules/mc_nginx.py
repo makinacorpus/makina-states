@@ -357,12 +357,19 @@ def vhost_settings(domain, doc_root, **kwargs):
     nginxSettings['data'] = copy.deepcopy(nginxSettings)
     nginxSettings['data']['extra'] = copy.deepcopy(nginxSettings)
     nginxSettings['extra'] = copy.deepcopy(nginxSettings)
-    lcert, lkey, lchain = __salt__[
-        'mc_ssl.get_configured_cert'](domain, gen=True)
-    nginxSettings['ssl_cert'] = lcert + lchain
-    nginxSettings['ssl_key'] = lcert + lchain + lkey
-    if nginxSettings.get('ssl_cert', ''):
-        nginxSettings['ssl_bundle'] = ''
+
+    # to disable ssl, ssl_cert must be a empty string
+    if nginxSettings.get('ssl_cert', None) != '':
+        ssldomain = domain
+        if ssldomain in ['default']:
+            ssldomain = __grains__['fqdn']
+        lcert, lkey, lchain = __salt__[
+            'mc_ssl.get_configured_cert'](ssldomain, gen=True)
+        nginxSettings.setdefault('ssl_cert',
+                                 lcert + lchain)
+        nginxSettings.setdefault('ssl_key',
+                                 lcert + lchain + lkey)
+        nginxSettings.setdefault('ssl_bundle', '')
         certs = ['ssl_cert']
         if nginxSettings.get('ssl_cacert', ''):
             if nginxSettings['ssl_cacert_first']:
@@ -373,8 +380,8 @@ def vhost_settings(domain, doc_root, **kwargs):
             nginxSettings['ssl_bundle'] += nginxSettings[cert]
             if not nginxSettings['ssl_bundle'].endswith('\n'):
                 nginxSettings['ssl_bundle'] += '\n'
-    for k in ['ssl_bundle', 'ssl_key', 'ssl_cert', 'ssl_cacert']:
-        nginxSettings.setdefault(
-            k + '_path',
-            "/etc/ssl/nginx/{0}_{1}.pem".format(domain, k))
+        for k in ['ssl_bundle', 'ssl_key', 'ssl_cert', 'ssl_cacert']:
+            nginxSettings.setdefault(
+                k + '_path',
+                "/etc/ssl/nginx/{0}_{1}.pem".format(ssldomain, k))
     return nginxSettings
