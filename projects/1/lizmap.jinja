@@ -76,7 +76,7 @@
     - shell: /bin/ftponly
     - name: {{user}}
     - password: {{data.password}}
-    - group: {{user}}
+    - gid: {{user}}
     - fullname: {{user}} user
     - home: {{ftproot}}/{{common.name}}
 {#    - home: {{ftproot}}/{{common.name}}/{{user}} #}

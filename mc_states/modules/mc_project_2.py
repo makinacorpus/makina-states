@@ -356,7 +356,7 @@ def _step_exec(cfg, step, failhard=True):
 
 def get_default_configuration(remote_host=None):
     conf = copy.deepcopy(DEFAULT_CONFIGURATION)
-    this_host = this_localhost = socket.gethostname()
+    this_host = this_localhost = socket.getfqdn()
     this_port = 22
     if os.path.exists('/this_port'):
         with open('/this_port') as fic:

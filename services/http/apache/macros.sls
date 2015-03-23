@@ -23,7 +23,7 @@
 #       doc_root
 #           path to the document root,
 #           default is /srv/projects/<site>/www/
-#       vh_in_template_source
+#       vh_content_source
 #           a jinja template or plain file in the salt
 #           file.managed function syntax
 #           (salt:// or fullpath) for the corpse
@@ -46,13 +46,12 @@
 #
 #}
 {% macro virtualhost(domain, doc_root) %}
-{% set data = salt['mc_apache.vhost_settings'](domain,
-                                               doc_root,
-                                               **kwargs) %}
+{% set data = salt['mc_apache.vhost_settings'](domain, doc_root, **kwargs) %}
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 {% set project = data.project %}
 {% set vh_template_source = data.vh_template_source%}
-{% set vh_in_template_source = data.vh_in_template_source%}
+{% set vh_in_template_source = data.vh_content_source%}
+{% set vh_content_source = data.vh_content_source%}
 {% set active = data.active %}
 {% set avhost = data.avhost %}
 {% set evhost = data.evhost %}
@@ -83,7 +82,7 @@
     - group: root
     - mode: 664
     - name: {{ ivhost }}.conf
-    - source: {{vh_in_template_source}}
+    - source: {{vh_content_source}}
     - template: "jinja"
     - defaults:
         data: |

@@ -416,7 +416,6 @@ def a2enmod(module):
     '''
     ret = {}
     command = ['a2enmod', module]
-
     try:
         status = __salt__['cmd.retcode'](command, python_shell=False)
     except Exception as e:
@@ -559,8 +558,9 @@ def vhost_settings(domain, doc_root, **kwargs):
         'vh_template_source',
         apacheSettings['default_vh_template_source'])
     kwargs.setdefault(
-        'vh_in_template_source',
-        apacheSettings['default_vh_in_template_source'])
+        'vh_content_source',
+        kwargs.get('vh_in_template_source',
+                   apacheSettings['default_vh_in_template_source']))
     kwargs['ivhost'] = (
         "{basedir}/{number}-{domain}"
     ).format(number=number,
@@ -579,7 +579,3 @@ def vhost_settings(domain, doc_root, **kwargs):
     data = _s['mc_utils.dictupdate'](apacheSettings,
                                      kwargs)
     return data
-
-
-
-#
