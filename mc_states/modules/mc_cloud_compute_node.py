@@ -630,14 +630,24 @@ def _add_server_to_backends(reversep, frontend, backend_name, domain, ip):
     bck = _s['mc_utils.dictupdate']({'name': backend_name,
                                      'raw_opts': [],
                                      'servers': []}, bck)
+    ssl_srv = {'name': 'srv_ssl_{0}{1}'.format(
+        domain, len(bck['servers']) + 1),
+        'bind': '{0}:443'.format(ip),
+        'opts': 'check weight 100 ssl verify none'}
     srv = {'name': 'srv_{0}{1}'.format(domain, len(bck['servers']) + 1),
            'bind': '{0}:80'.format(ip),
-           'opts': 'check'}
+           'opts': 'check weight 50'}
+    servs = [srv]
+    # use backend https server first  and fallback on http
+    if kind == 'https':
+        servs[-1]['opts'] += ' backup'
+        servs.append(ssl_srv)
     [bck['raw_opts'].append(a)
      for a in default_raw_opts if a not in bck['raw_opts']]
     bck['raw_opts'].sort(key=lambda x: x)
-    if srv['bind'] not in [a.get('bind') for a in bck['servers']]:
-        bck['servers'].append(srv)
+    for srv in servs:
+        if srv['bind'] not in [a.get('bind') for a in bck['servers']]:
+            bck['servers'].append(srv)
     _backends[backend_name] = bck
     return reversep
 

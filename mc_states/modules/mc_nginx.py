@@ -98,6 +98,16 @@ def settings():
         ssl_cacert content if any
     ssl_redirect
         unconditionnal www -> ssl redirect
+    ssl_protocols
+        SSLv3 TLSv1 TLSv1.1 TLSv1.2
+    ssl_cacert_first
+            False
+    ssl_session_cache
+        shared:SSL:10m
+    ssl_session_timeout
+        10:m
+    ssl_cipher
+        IGH:!aNULL:!MD5
     user
         nginx user
     server_names_hash_bucket_size
@@ -256,7 +266,13 @@ def settings():
                 'redirect_aliases': True,
                 'port': '80',
                 'default_domains': ['localhost'],
-                'ssh_port': '443',
+                'ssl_port': '443',
+                'ssl_protocols': 'SSLv3 TLSv1 TLSv1.1 TLSv1.2',
+                'ssl_redirect': False,
+                'ssl_cacert_first': False,
+                'ssl_session_cache': 'shared:SSL:10m',
+                'ssl_session_timeout': '10:m',
+                'ssl_ciphers': 'HIGH:!aNULL:!MD5',
                 'default_activation': True,
                 'package': 'nginx',
                 'docdir': '/usr/share/doc/nginx',
@@ -293,7 +309,6 @@ def vhost_settings(domain, doc_root, **kwargs):
     '''
     Settings for the nginx macro
 
-
     ssl_cert
         ssl_cert content if any
     ssl_key
@@ -322,14 +337,15 @@ def vhost_settings(domain, doc_root, **kwargs):
     kwargs.setdefault('active', nginxSettings['default_activation'])
     kwargs.setdefault('server_name', kwargs['domain'])
     kwargs.setdefault('default_server', False)
-    kwargs.setdefault('ssl_ciphers', 'HIGH:!aNULL:!MD5')
-    kwargs.setdefault('ssl_port', 443)
-    kwargs.setdefault('ssl_protocols', 'SSLv3 TLSv1 TLSv1.1 TLSv1.2')
-    kwargs.setdefault('ssl_redirect', False)
-    kwargs.setdefault('ssl_cacert_first', False)
+    kwargs.setdefault('ssl_ciphers', nginxSettings['ssl_ciphers'])
+    kwargs.setdefault('ssl_port', nginxSettings['ssl_port'])
+    kwargs.setdefault('ssl_protocols', nginxSettings['ssl_protocols'])
+    kwargs.setdefault('ssl_redirect', nginxSettings['ssl_redirect'])
+    kwargs.setdefault('ssl_cacert_first', nginxSettings['ssl_cacert_first'])
+    kwargs.setdefault('ssl_session_cache', nginxSettings['ssl_session_cache'])
+    kwargs.setdefault('ssl_session_timeout',
+                      nginxSettings['ssl_session_timeout'])
     kwargs.setdefault('server_aliases', None)
-    kwargs.setdefault('ssl_session_cache', 'shared:SSL:10m')
-    kwargs.setdefault('ssl_session_timeout', '10m')
     kwargs.setdefault('doc_root', doc_root)
     kwargs.setdefault('vh_top_source', nginxSettings['vhost_top_template'])
     kwargs.setdefault('vh_template_source',
@@ -359,10 +375,6 @@ def vhost_settings(domain, doc_root, **kwargs):
                 nginxSettings['ssl_bundle'] += '\n'
     for k in ['ssl_bundle', 'ssl_key', 'ssl_cert', 'ssl_cacert']:
         nginxSettings.setdefault(
-            k + '_path', "/etc/ssl/nginx/{0}_{1}.pem".format(domain,
-                                                             k))
+            k + '_path',
+            "/etc/ssl/nginx/{0}_{1}.pem".format(domain, k))
     return nginxSettings
-
-
-
-#
