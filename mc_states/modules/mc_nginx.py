@@ -337,7 +337,7 @@ def vhost_settings(domain, doc_root, **kwargs):
     kwargs.setdefault('active', nginxSettings['default_activation'])
     kwargs.setdefault('server_name', kwargs['domain'])
     kwargs.setdefault('default_server', False)
-    kwargs.setdefault('ssl_ciphers', nginxSettings['ssl_session_ciphers'])
+    kwargs.setdefault('ssl_ciphers', nginxSettings['ssl_ciphers'])
     kwargs.setdefault('ssl_port', nginxSettings['ssl_port'])
     kwargs.setdefault('ssl_protocols', nginxSettings['ssl_protocols'])
     kwargs.setdefault('ssl_redirect', nginxSettings['ssl_redirect'])
