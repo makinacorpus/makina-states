@@ -635,7 +635,6 @@ def vhost_settings(domain, doc_root, **kwargs):
     apacheSettings = _s['mc_utils.dictupdate'](apacheSettings,
                                                kwargs)
     # to disable ssl, ssl_cert must be a empty string
-    apacheSettings['ssl_cert'] = ''
     if apacheSettings.get('ssl_cert', None) != '':
         ssldomain = domain
         if ssldomain in ['default']:
