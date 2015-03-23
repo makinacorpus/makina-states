@@ -609,7 +609,6 @@ def vhost_settings(domain, doc_root, **kwargs):
              domain=vhost_basename)
     apacheSettings = _s['mc_utils.dictupdate'](apacheSettings,
                                                kwargs)
-    import pdb;pdb.set_trace()  ## Breakpoint ##
     lcert, lkey, lchain = __salt__[
         'mc_ssl.get_configured_cert'](domain, gen=True)
     apacheSettings['ssl_cert'] = lcert + lchain
