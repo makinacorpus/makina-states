@@ -168,7 +168,6 @@ def _checking_modules(modules_excluded=None,
             else:
                 modifications.append({'action': 'disable',
                                       'module': module})
-    import pdb;pdb.set_trace()  ## Breakpoint ##
     for module in modules_included:
         if module + '_module' not in _shared_modules:
             if module + '_module' in _static_modules:
