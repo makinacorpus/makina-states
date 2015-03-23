@@ -105,7 +105,7 @@ def settings():
     ssl_session_cache
         shared:SSL:10m
     ssl_session_timeout
-        10:m
+        10m
     ssl_cipher
         IGH:!aNULL:!MD5
     user
@@ -271,7 +271,7 @@ def settings():
                 'ssl_redirect': False,
                 'ssl_cacert_first': False,
                 'ssl_session_cache': 'shared:SSL:10m',
-                'ssl_session_timeout': '10:m',
+                'ssl_session_timeout': '10m',
                 'ssl_ciphers': 'HIGH:!aNULL:!MD5',
                 'default_activation': True,
                 'package': 'nginx',
