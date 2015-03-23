@@ -356,28 +356,6 @@ def settings():
         #    apacheSettings['packages'].extend(
         #        'apache2-mpm-{0}'.format(mpm)
         #    )
-        lcert, lkey, lchain = __salt__[
-            'mc_ssl.get_configured_cert'](
-                __grains__['fqdn'], gen=True)
-        apacheSettings['ssl_cert'] = lcert + lchain
-        apacheSettings['ssl_key'] = lcert + lchain + lkey
-        domainp = "defaultcert_" +  __grains__['fqdn']
-        if apacheSettings.get('ssl_cert', ''):
-            apacheSettings['ssl_bundle'] = ''
-            certs = ['ssl_cert']
-            if apacheSettings.get('ssl_cacert', ''):
-                if apacheSettings['ssl_cacert_first']:
-                    certs.insert(0, 'ssl_cacert')
-                else:
-                    certs.append('ssl_cacert')
-            for cert in certs:
-                apacheSettings['ssl_bundle'] += apacheSettings[cert]
-                if not apacheSettings['ssl_bundle'].endswith('\n'):
-                    apacheSettings['ssl_bundle'] += '\n'
-        for k in ['ssl_bundle', 'ssl_key', 'ssl_cert', 'ssl_cacert']:
-            apacheSettings.setdefault(
-                k + '_path',
-                "/etc/ssl/apache/{0}_{1}.pem".format(domainp, k))
         return apacheSettings
     return _settings()
 
@@ -562,10 +540,6 @@ def vhost_settings(domain, doc_root, **kwargs):
     ssl_port/port
         port of the namevirtualhost (like in "\*:80"),
         default is "80" and "443" for ssl version
-    ssl_cert
-        ssl_cert content if any
-    ssl_key
-        ssl_key content if any
     '''
     _s = __salt__
     kwargs['domain'] = domain
@@ -660,14 +634,19 @@ def vhost_settings(domain, doc_root, **kwargs):
              domain=vhost_basename)
     apacheSettings = _s['mc_utils.dictupdate'](apacheSettings,
                                                kwargs)
-    if domain in ['default']:
-        domain = __grains__['fqdn']
-    lcert, lkey, lchain = __salt__[
-        'mc_ssl.get_configured_cert'](domain, gen=True)
-    apacheSettings['ssl_cert'] = lcert + lchain
-    apacheSettings['ssl_key'] = lcert + lchain + lkey
-    if apacheSettings.get('ssl_cert', ''):
-        apacheSettings['ssl_bundle'] = ''
+    # to disable ssl, ssl_cert must be a empty string
+    apacheSettings['ssl_cert'] = ''
+    if apacheSettings.get('ssl_cert', None) != '':
+        ssldomain = domain
+        if ssldomain in ['default']:
+            ssldomain = __grains__['fqdn']
+        lcert, lkey, lchain = __salt__[
+            'mc_ssl.get_configured_cert'](ssldomain, gen=True)
+        apacheSettings.setdefault('ssl_cert',
+                                  lcert + lchain)
+        apacheSettings.setdefault('ssl_key',
+                                  lcert + lchain + lkey)
+        apacheSettings.setdefault('ssl_bundle', '')
         certs = ['ssl_cert']
         if apacheSettings.get('ssl_cacert', ''):
             if apacheSettings['ssl_cacert_first']:
@@ -678,8 +657,8 @@ def vhost_settings(domain, doc_root, **kwargs):
             apacheSettings['ssl_bundle'] += apacheSettings[cert]
             if not apacheSettings['ssl_bundle'].endswith('\n'):
                 apacheSettings['ssl_bundle'] += '\n'
-    for k in ['ssl_bundle', 'ssl_key', 'ssl_cert', 'ssl_cacert']:
-        apacheSettings.setdefault(
-            k + '_path',
-            "/etc/ssl/apache/{0}_{1}.pem".format(domain, k))
+        for k in ['ssl_bundle', 'ssl_key', 'ssl_cert', 'ssl_cacert']:
+            apacheSettings.setdefault(
+                k + '_path',
+                "/etc/ssl/apache/{0}_{1}.pem".format(ssldomain, k))
     return apacheSettings
