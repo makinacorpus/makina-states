@@ -178,6 +178,15 @@ def settings():
                 'virtualhosts': virtualhosts,
                 'version': '2.2',
                 'Timeout': 120,
+                'vhost_template_source': (
+                    '{default_vh_template_source}'),
+                'vhost_content_source': (
+                    '{default_vh_in_template_source}'),
+                # old names, do not change, retrocompat
+                'vhost_top_template': (
+                    "salt://makina-states/files/etc/"
+                    "apache2/includes/"
+                    "top_virtualhost_template.conf"),
                 'default_vh_template_source': (
                     "salt://makina-states/files/etc/"
                     "apache2/sites-available/"
@@ -489,10 +498,20 @@ def a2dismod(module):
 def vhost_settings(domain, doc_root, **kwargs):
     '''Used by apache macro
 
+    vh_top_source
+        source (jinja) of the file.managed for
+        the virtualhost template. (empty by default)
+        this will be included at the global conf level
+
     vh_template_source
         source (jinja) of the file.managed for
-        the vhirtualhost template
-        default: http://goo.gl/RFgkHE (github)
+        the virtualhost template.
+        this will be the vhost definitions which in turn include
+        the vhost defs
+    vh_content_source
+        source (jinja) of the file.managed for
+        the virtualhost template.
+        this will be included at the vhost level
     serveradmin_mail
         data that may be used on error page
         default is webmaster@<site-name>
@@ -585,15 +604,25 @@ def vhost_settings(domain, doc_root, **kwargs):
     kwargs.setdefault('allow_htaccess', False)
     kwargs.setdefault('active', True)
     kwargs.setdefault('mode', mode)
+
     kwargs.setdefault(
         'vh_template_source',
-        apacheSettings['default_vh_template_source'])
+        apacheSettings['vhost_template_source'])
+    kwargs.setdefault(
+        'vh_top_source',
+        apacheSettings['vhost_top_template'])
+
     kwargs.setdefault(
         'vh_content_source',
         kwargs.get('vh_in_template_source',
                    apacheSettings['default_vh_in_template_source']))
     kwargs['ivhost'] = (
         "{basedir}/{number}-{domain}"
+    ).format(number=number,
+             basedir=apacheSettings['ivhostdir'],
+             domain=vhost_basename)
+    kwargs['ivhosttop'] = (
+        "{basedir}/{number}-{domain}-top"
     ).format(number=number,
              basedir=apacheSettings['ivhostdir'],
              domain=vhost_basename)

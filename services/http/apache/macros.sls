@@ -50,12 +50,14 @@
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 {% set project = data.project %}
 {% set vh_template_source = data.vh_template_source%}
-{% set vh_in_template_source = data.vh_content_source%}
 {% set vh_content_source = data.vh_content_source%}
+{% set vh_in_template_source = data.vh_content_source%}
+{% set vh_top_source = data.vh_top_source%}
 {% set active = data.active %}
 {% set avhost = data.avhost %}
 {% set evhost = data.evhost %}
 {% set ivhost = data.ivhost %}
+{% set ivhosttop = data.ivhosttop %}
 
 {% for k in ['ssl_bundle', 'ssl_key', 'ssl_cert', 'ssl_cacert'] %}
 {% set ssld = data.get(k, '') %}
@@ -96,6 +98,22 @@ makina-apache-virtualhost-{{ project }}-ssl-{{k}}:
       - mc_proxy: makina-apache-post-conf
 
 {# Virtualhost real content, shared by SSL and non-SSL virtualhosts #}
+{{ project }}-makina-apache-virtualhost-top:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: 664
+    - name: {{ ivhosttop }}.conf
+    - source: {{vh_top_source}}
+    - template: "jinja"
+    - defaults:
+        data: |
+              {{sdata}}
+    - watch:
+      - mc_proxy: makina-apache-vhostconf
+    - watch_in:
+      - mc_proxy: makina-apache-post-conf
+
 {{ project }}-makina-apache-virtualhost-content:
   file.managed:
     - user: root
