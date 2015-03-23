@@ -149,6 +149,11 @@ makina-apache-main-conf-included-modules:
       - expires
       - headers
       - deflate
+      - setenvif
+      - socache_shmcb
+      - ldap
+      - authnz_ldap
+      - ssl
       - status
     - require_in:
       - mc_apache: makina-apache-main-conf

@@ -188,6 +188,17 @@ def settings():
                     "in_virtualhost_template.conf"),
                 'KeepAlive': True,
                 'log_level': 'warn',
+                'ssl_interface': '*',
+                'ssl_ciphers': 'HIGH:!aNULL:!MD5',
+                'ssl_protocols': '+SSLv3 +TLSv1 +TLSv1.1 +TLSv1.2',
+                'ssl_session_timeout': '600',
+                'ssl_session_cache_path': (
+                    '/var/cache/apache2/{vhost_basename}'),
+                'ssl_session_cache_file_path': (
+                    '{ssl_session_cache_path}/session'),
+                'ssl_session_cache': (
+                    'shmcb:{ssl_session_cache_file_path}(512000)'),
+                'ssl_port': '443',
                 "fastcgi_params": {
                     "InitStartDelay": 1,
                     "minProcesses": 2,
@@ -510,6 +521,10 @@ def vhost_settings(domain, doc_root, **kwargs):
     ssl_port/port
         port of the namevirtualhost (like in "\*:80"),
         default is "80" and "443" for ssl version
+    ssl_cert
+        ssl_cert content if any
+    ssl_key
+        ssl_key content if any
     '''
     _s = __salt__
     kwargs['domain'] = domain
@@ -526,7 +541,6 @@ def vhost_settings(domain, doc_root, **kwargs):
     ##
     kwargs['domain'] = domain
     number = kwargs.setdefault('number', '100')
-    kwargs.setdefault('project', domain.replace('.', '_'))
 
     kwargs.setdefault(
         'serveradmin_mail', "webmaster@{0}".format(domain))
@@ -546,10 +560,27 @@ def vhost_settings(domain, doc_root, **kwargs):
     kwargs.setdefault('log_level', "warn")
     kwargs.setdefault('interface', "*")
     kwargs.setdefault('server_name', domain)
-    kwargs.setdefault('ssl_interface', "*")
     kwargs.setdefault('port', 80)
     vhost_basename = kwargs.setdefault('vhost_basename', domain)
-    kwargs.setdefault('ssl_port', 443)
+    kwargs.setdefault('project', vhost_basename.replace('.', '_'))
+    kwargs.setdefault('ssl_interface',
+                      apacheSettings['ssl_interface'])
+    kwargs.setdefault('ssl_protocols',
+                      apacheSettings['ssl_protocols'])
+    kwargs.setdefault('ssl_port',
+                      apacheSettings['ssl_port'])
+    kwargs.setdefault('ssl_ciphers',
+                      apacheSettings['ssl_ciphers'])
+    for i in [
+        'ssl_session_cache_path',
+        'ssl_session_cache_file_path',
+        'ssl_session_cache',
+    ]:
+        val = kwargs.setdefault(i, apacheSettings[i])
+        kwargs[i] = val.format(**kwargs)
+
+    kwargs.setdefault('ssl_session_timeout',
+                      apacheSettings['ssl_session_timeout'])
     kwargs.setdefault('redirect_aliases', True)
     kwargs.setdefault('allow_htaccess', False)
     kwargs.setdefault('active', True)
@@ -576,6 +607,27 @@ def vhost_settings(domain, doc_root, **kwargs):
     ).format(number=number,
              basedir=apacheSettings['vhostdir'],
              domain=vhost_basename)
-    data = _s['mc_utils.dictupdate'](apacheSettings,
-                                     kwargs)
-    return data
+    apacheSettings = _s['mc_utils.dictupdate'](apacheSettings,
+                                               kwargs)
+    import pdb;pdb.set_trace()  ## Breakpoint ##
+    lcert, lkey, lchain = __salt__[
+        'mc_ssl.get_configured_cert'](domain, gen=True)
+    apacheSettings['ssl_cert'] = lcert + lchain
+    apacheSettings['ssl_key'] = lcert + lchain + lkey
+    if apacheSettings.get('ssl_cert', ''):
+        apacheSettings['ssl_bundle'] = ''
+        certs = ['ssl_cert']
+        if apacheSettings.get('ssl_cacert', ''):
+            if apacheSettings['ssl_cacert_first']:
+                certs.insert(0, 'ssl_cacert')
+            else:
+                certs.append('ssl_cacert')
+        for cert in certs:
+            apacheSettings['ssl_bundle'] += apacheSettings[cert]
+            if not apacheSettings['ssl_bundle'].endswith('\n'):
+                apacheSettings['ssl_bundle'] += '\n'
+    for k in ['ssl_bundle', 'ssl_key', 'ssl_cert', 'ssl_cacert']:
+        apacheSettings.setdefault(
+            k + '_path',
+            "/etc/ssl/apache/{0}_{1}.pem".format(domain, k))
+    return apacheSettings

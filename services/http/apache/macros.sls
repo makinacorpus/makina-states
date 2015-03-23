@@ -57,6 +57,26 @@
 {% set evhost = data.evhost %}
 {% set ivhost = data.ivhost %}
 
+{% for k in ['ssl_bundle', 'ssl_key', 'ssl_cert', 'ssl_cacert'] %}
+{% set ssld = data.get(k, '') %}
+{% if ssld %}
+makina-apache-virtualhost-{{ project }}-ssl-{{k}}:
+  file.managed:
+    - user: www-data
+    - group: root
+    - mode: 750
+    - name: {{data[k + '_path']}}
+    - contents: |
+                {{salt['mc_utils.indent'](ssld, 16)}}
+    - makedirs: true
+    - watch:
+      - mc_proxy: makina-apache-vhostconf
+      - file: {{ project }}-makina-apache-virtualhost-content
+    - watch_in:
+      - mc_proxy: makina-apache-post-conf
+{% endif %}
+{% endfor %}
+
 {#- Virtualhost basic file including the vhost with the content in it's body #}
 {{ project }}-makina-apache-virtualhost:
   file.managed:
