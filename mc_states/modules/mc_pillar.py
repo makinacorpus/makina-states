@@ -292,7 +292,6 @@ def get_db_infrastructure_maps(ttl=60):
     return memoize_cache(_dogetdbinframaps, [], {}, cache_key, ttl)
 
 
-
 def ips_for(fqdn,
             fail_over=None,
             recurse=None,
