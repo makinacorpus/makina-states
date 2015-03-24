@@ -27,6 +27,7 @@ import string
 log = logging.getLogger(__name__)
 
 
+six = mc_states.api.six
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
 DOTTED_DOMAIN_PATTERN = '((^{0}\\.?$)|(\\.(@{0})|({0}\\.?)))$'
 __name = 'mc_pillar'
@@ -78,12 +79,14 @@ def dolog(msg):
 class IPRetrievalCycleError(IPRetrievalError):
     ''''''
 
+
 def retrieval_error(exc, fqdn, recurse=None):
     exc.fqdn = fqdn
     if recurse is None:
         recurse = []
     exc.recurse = recurse
     raise exc
+
 
 def get_fqdn_domains(fqdn):
     domains = []
@@ -203,30 +206,99 @@ def query_first(doc_types, ttl=30, **kwargs7):
     return __salt__[__name + '.query'](doc_types, ttl, **kwargs7)[0]
 
 
-def _load_network(ttl=60):
+def load_network(ttl=60):
     def _do():
         __salt__[__name + '.load_db']()
-        data = {}
-        data['cnames'] = __salt__[__name + '.query']('cnames')
-        data['ips'] = __salt__[__name + '.query']('ips')
-        data['ipsfo'] = __salt__[__name + '.query']('ipsfo')
-        data['ips_map'] = __salt__[__name + '.query']('ips_map')
-        data['ipsfo_map'] = __salt__[__name + '.query']('ipsfo_map')
+        data = {'extra_info_loading': None,
+                'raw_db_loading': None,
+                'raw_db_loaded': False,
+                'extra_info_loaded': False}
+        for i in ['cnames', 'ips', 'ipsfo', 'ips_map', 'ipsfo_map']:
+            data[i] = copy.deepcopy(__salt__[__name + '.query'](i))
         return data
     cache_key = __name + '._load_network'
     return memoize_cache(_do, [], {}, cache_key, ttl)
 
 
+def _load_network(*a, **kw):
+    '''
+    retro compat wrapper
+    '''
+    return load_network(**kw)
+
+
+def get_db_infrastructure_maps(ttl=60):
+    '''
+    Return a struct::
+
+         {'bms': {'xx-1.yyy.net': ['lxc'],
+                  'xx-4.yyy.net': ['lxc']},
+         'vms': {'zz.yyy': {'target': 'xx.yyy.net',
+                            'vt': 'kvm'},
+                 'vv.yyy.net': {'target': 'xx.yyy.net',
+                                'vt': 'kvm'},}}
+    '''
+    def _dogetdbinframaps():
+        lbms = __salt__[__name + '.query']('baremetal_hosts')
+        bms = OrderedDict()
+        vms = OrderedDict()
+        non_managed_hosts = __salt__[__name + '.query']('non_managed_hosts')
+        cloud_compute_nodes = []
+        cloud_vms = []
+        for lbm in lbms:
+            bms.setdefault(lbm, [])
+        for vt, targets in __salt__[__name + '.query']('vms').items():
+            for target, lvms in targets.items():
+                if (
+                    target not in non_managed_hosts
+                    and target not in cloud_compute_nodes
+                ):
+                    cloud_compute_nodes.append(target)
+                vts = bms.setdefault(target, [])
+                if vt not in vts:
+                    vts.append(vt)
+                if target not in bms:
+                    bms.append(target)
+                if lvms is None:
+                    log.error('No vms for {0}, error?'.format(target))
+                    continue
+                for vm in lvms:
+                    if vm not in non_managed_hosts:
+                        cloud_vms.append(vm)
+                    vms.update({vm: {'target': target,
+                                     'vt': vt}})
+        standalone_hosts = {}
+        for i in bms:
+            if (
+                i not in cloud_compute_nodes
+                and i not in non_managed_hosts
+            ):
+                standalone_hosts.setdefault(i, {})
+        data = {'bms': bms,
+                'hosts': sorted(
+                    __salt__['mc_utils.uniquify'](
+                        [a for a in bms]
+                        + [a for a in vms]
+                        + [a for a in non_managed_hosts]
+                        + [a for a in cloud_compute_nodes]
+                        + [a for a in standalone_hosts]
+                    )),
+                'standalone_hosts': standalone_hosts,
+                'cloud_compute_nodes': cloud_compute_nodes,
+                'cloud_vms': cloud_vms,
+                'vms': vms}
+        return data
+    cache_key = __name + '.get_db_infrastructure_maps'
+    return memoize_cache(_dogetdbinframaps, [], {}, cache_key, ttl)
+
+
+
 def ips_for(fqdn,
-            ips=None,
-            ips_map=None,
-            ipsfo=None,
-            ipsfo_map=None,
-            cnames=None,
             fail_over=None,
             recurse=None,
             ignore_aliases=None,
-            ignore_cnames=None, **kwa2):
+            ignore_cnames=None,
+            **kw):
     '''
     Get all ip for a domain, try as a FQDN first and then
     try to append the specified domain
@@ -242,24 +314,14 @@ def ips_for(fqdn,
     Warning this method is tightly tied to load_network_infrastructure
     '''
     resips = []
-    if (
-        (ips is None)
-        or (ips_map is None)
-        or (cnames is None)
-        or (ipsfo is None)
-        or (ipsfo_map is None)
-    ):
-        data = load_network_infrastructure()
-        if cnames is None:
-            cnames = data['cnames']
-        if ips is None:
-            ips = data['ips']
-        if ips_map is None:
-            ips_map = data['ips_map']
-        if ipsfo is None:
-            ipsfo = data['ipsfo']
-        if ipsfo_map is None:
-            ipsfo_map = data['ipsfo_map']
+    data = load_network()
+    if data['raw_db_loading'] is None:
+        data = load_raw_network_infrastructure()
+    cnames = data['cnames']
+    ips = data['ips']
+    ips_map = data['ips_map']
+    ipsfo = data['ipsfo']
+    ipsfo_map = data['ipsfo_map']
     if recurse is None:
         recurse = []
     if ignore_cnames is None:
@@ -272,6 +334,7 @@ def ips_for(fqdn,
     # first, search for real baremetal ips
     if fqdn in ips:
         resips.extend(ips[fqdn][:])
+
 
     # then failover
     if fail_over:
@@ -300,8 +363,6 @@ def ips_for(fqdn,
         ignore_aliases.append(alias_fqdn)
         try:
             alias_ips = ips_for(alias_fqdn,
-                                ips=ips, cnames=cnames, ipsfo=ipsfo,
-                                ipsfo_map=ipsfo_map, ips_map=ips_map,
                                 fail_over=fail_over,
                                 recurse=recurse,
                                 ignore_aliases=ignore_aliases,
@@ -355,8 +416,6 @@ def ips_for(fqdn,
         ignore_cnames.append(alias_cname)
         try:
             alias_ips = ips_for(alias_cname,
-                                ips=ips, cnames=cnames, ipsfo=ipsfo,
-                                ipsfo_map=ipsfo_map, ips_map=ips_map,
                                 fail_over=fail_over,
                                 recurse=recurse,
                                 ignore_aliases=ignore_aliases,
@@ -381,20 +440,14 @@ def ips_for(fqdn,
     if not resips:
         # allow fail over fallback if nothing was specified
         if fail_over is None:
-            resips = ips_for(fqdn,
-                             ips=ips, cnames=cnames, ipsfo=ipsfo,
-                             ipsfo_map=ipsfo_map, ips_map=ips_map,
-                             recurse=recurse, fail_over=True)
+            resips = ips_for(fqdn, recurse=recurse, fail_over=True)
         # for upper tld , check the @ RECORD
         if (
             (not resips)
             and ((not fqdn.startswith('@'))
                  and (fqdn.count('.') == 1))
         ):
-            resips = ips_for("@" + fqdn,
-                             ips=ips, cnames=cnames, ipsfo=ipsfo,
-                             ipsfo_map=ipsfo_map, ips_map=ips_map,
-                             recurse=recurse, fail_over=True)
+            resips = ips_for("@" + fqdn, recurse=recurse, fail_over=True)
         if not resips:
             msg = '{0}\n'.format(fqdn)
             if len(recurse) > 1:
@@ -404,8 +457,170 @@ def ips_for(fqdn,
     for ignore in [ignore_aliases, ignore_cnames]:
         if fqdn in ignore:
             ignore.pop(ignore.index(fqdn))
+    if (
+        data['raw_db_loaded']
+        and (not data['extra_info_loaded'])
+        and (data['extra_info_loading'] is None)
+    ):
+        data = load_network_infrastructure()
+        resips = ips_for(fqdn,
+                         fail_over=fail_over,
+                         recurse=recurse,
+                         ignore_aliases=ignore_aliases,
+                         ignore_cnames=ignore_cnames,
+                         **kw)
+        if not data['extra_info_loaded']:
+            raise IPRetrievalError(
+                'Pb with {0}: data did not load completly'.format(fqdn))
     resips = __salt__['mc_utils.uniquify'](resips)
     return resips
+
+
+def load_raw_network_infrastructure(ttl=60):
+    data = load_network()
+    if data['raw_db_loaded']:
+        return data
+    data['raw_db_loading'] = True
+    ips = data['ips']
+    ipsfo = data['ipsfo']
+    ips_map = data['ips_map']
+    ipsfo_map = data['ipsfo_map']
+    vms = __salt__[__name + '.query']('vms')
+    cloud_vm_attrs = __salt__[__name + '.query']('cloud_vm_attrs')
+    dbi = get_db_infrastructure_maps()
+    baremetal_hosts = dbi['bms']
+
+    for fqdn in ipsfo:
+        if fqdn in ips:
+            continue
+        ips[fqdn] = ips_for(fqdn, fail_over=True)
+
+    # ADD A Mappings for aliased ips (manual) or over ip failover
+    cvms = OrderedDict()
+    for vt, targets in vms.items():
+        for target, _vms in targets.items():
+            if _vms is None:
+                log.error('No vms for {0}, error?'.format(target))
+                continue
+            for _vm in _vms:
+                cvms[_vm] = target
+
+    cvalues = cvms.values()
+    for host, dn_ip_fos in ipsfo_map.items():
+        for ip_fo in dn_ip_fos:
+            dn = host.split('.')[0]
+            ipfo_dn = ip_fo.split('.')[0]
+            ip = ips_for(ip_fo)[0]
+            if host in cvms:
+                phost = cvms[host]
+                pdn = phost.split('.')[0]
+                ahosts = [host,
+                          '{0}.{1}.{2}'.format(dn, pdn, ip_fo),
+                          '{0}.{1}'.format(dn, ip_fo)]
+            else:
+                ahosts = ['{0}.{1}'.format(dn, ip_fo),
+                          '{1}.{0}'.format(host, ipfo_dn),
+                          'failover.{0}'.format(host)]
+                # only add an A record for a failover ip on something which
+                # is not a vm if this is an host without an entry in
+                # the ip and the vms maps
+                if (
+                    (host not in baremetal_hosts
+                     and host not in cvalues)
+                    and host not in ips
+                ):
+                    ahosts.append(host)
+            for ahost in ahosts:
+                hostips = ips.setdefault(ahost, [])
+                if ip not in hostips:
+                    hostips.append(ip)
+
+    # For all vms:
+    # if the vm still does not have yet an ip resolved
+    # map a A directly to the host
+    # If the host is mapped on an ip failover
+    # add a transitionnal cname for the vm to be mounted on this ipfo
+    # eg: direct
+    # <vm>.<host>.<domain>
+    # eg: failover
+    # <vm>.<host>.<ipfo_dn>.<domain>
+    for vm, vm_host in cvms.items():
+        if vm not in ips:
+            if vm in ips_map:
+                ips[vm] = ips_for(vm)
+            else:
+                ips[vm] = ips_for(vm_host)
+
+    # tie extra domains of vms to a A record: part1
+    # try to resolve ips for vms but let a chance
+    # for the non resolved one to come up in a later time
+    # via ips_map
+    #
+    for vm, _data in cloud_vm_attrs.items():
+        domains = _data.get('domains', [])
+        if not isinstance(domains, list):
+            continue
+        for domain in domains:
+            dips = ips.setdefault(domain, [])
+            # never append an ip of a vm is it is already defined
+            if len(dips):
+                continue
+            aliases = ips_map.get(domain, [])
+            if aliases:
+                for alias in aliases:
+                    try:
+                        for ip in ips_for(alias, fail_over=True):
+                            if ip not in dips:
+                                dips.append(ip)
+                    except IPRetrievalError:
+                        continue
+            # never append an ip if it was aliased before
+            if len(dips):
+                continue
+            try:
+                for ip in ips_for(vm, fail_over=True):
+                    if ip not in dips:
+                        dips.append(ip)
+            except IPRetrievalError:
+                continue
+
+    # add all IPS  from aliased ips to main dict
+    for fqdn in ips_map:
+        if fqdn in ips:
+            continue
+        ips[fqdn] = ips_for(fqdn)
+
+    # tie extra domains of vms to a A record: part2
+    # try to resolve leftover ips
+    for vm, _data in cloud_vm_attrs.items():
+        domains = _data.get('domains', [])
+        if not isinstance(domains, list):
+            continue
+        for domain in domains:
+            dips = ips.setdefault(domain, [])
+            # never append an ip of a vm is it is already defined
+            if len(dips):
+                continue
+            aliases = ips_map.get(domain, [])
+            if aliases:
+                for alias in aliases:
+                    try:
+                        for ip in ips_for(alias, fail_over=True):
+                            if ip not in dips:
+                                dips.append(ip)
+                    except IPRetrievalError:
+                        continue
+            # never append an ip if it was aliased before
+            if len(dips):
+                continue
+            # difference with round 1 is that here we fail on
+            # IPRetrievalError
+            for ip in ips_for(vm, fail_over=True):
+                if ip not in dips:
+                    dips.append(ip)
+    data['raw_db_loading'] = False
+    data['raw_db_loaded'] = True
+    return data
 
 
 def load_network_infrastructure(ttl=60):
@@ -417,219 +632,64 @@ def load_network_infrastructure(ttl=60):
 
     Warning this method is tightly tied to ips_for
     '''
-    def _do_nt():
-        data = _load_network()
-        cnames = data['cnames']
-        ips = data['ips']
-        ipsfo = data['ipsfo']
-        ips_map = data['ips_map']
-        ipsfo_map = data['ipsfo_map']
-        vms = __salt__[__name + '.query']('vms')
-        cloud_vm_attrs = __salt__[__name + '.query']('cloud_vm_attrs')
-        baremetal_hosts = __salt__[__name + '.query']('baremetal_hosts')
-        mx_map = __salt__[__name + '.query']('mx_map')
-        managed_dns_zones = __salt__[__name + '.query']('managed_dns_zones')
-        # add the nameservers if not configured but a managed zone
-        for zone in managed_dns_zones:
-            nssz = get_nss_for_zone(zone)
-            for nsq, slave in nssz['slaves'].items():
-                # special case
-                if nsq not in ips_map:
-                    ips_map[nsq] = [slave]
-                if slave in cnames and nsq not in ips:
-                    ips[slave] = [ip_for(cnames[slave][:-1],
-                                         ips=ips, cnames=cnames, ipsfo=ipsfo,
-                                         ipsfo_map=ipsfo_map, ips_map=ips_map,
-                                         fail_over=True)]
-                if nsq in cnames and nsq not in ips:
-                    ips[slave] = [ip_for(cnames[nsq][:-1],
-                                         ips=ips, cnames=cnames, ipsfo=ipsfo,
-                                         ipsfo_map=ipsfo_map, ips_map=ips_map,
-                                         fail_over=True)]
-                if nsq in ips_map and nsq not in ips:
-                    ips[slave] = [ip_for(nsq,
-                                         ips=ips, cnames=cnames, ipsfo=ipsfo,
-                                         ipsfo_map=ipsfo_map, ips_map=ips_map,
-                                         fail_over=True)]
-
-        for fqdn in ipsfo:
-            if fqdn in ips:
-                continue
-            ips[fqdn] = ips_for(fqdn,
-                                ips=ips, cnames=cnames, ipsfo=ipsfo,
-                                ipsfo_map=ipsfo_map, ips_map=ips_map,
-                                fail_over=True)
-
-        # ADD A Mappings for aliased ips (manual) or over ip failover
-        cvms = OrderedDict()
-        for vt, targets in vms.items():
-            for target, _vms in targets.items():
-                if _vms is None:
-                    log.error('No vms for {0}, error?'.format(target))
-                    continue
-                for _vm in _vms:
-                    cvms[_vm] = target
-
-        cvalues = cvms.values()
-        for host, dn_ip_fos in ipsfo_map.items():
-            for ip_fo in dn_ip_fos:
-                dn = host.split('.')[0]
-                ipfo_dn = ip_fo.split('.')[0]
-                ip = ips_for(ip_fo,
-                             ips=ips, cnames=cnames, ipsfo=ipsfo,
-                             ipsfo_map=ipsfo_map, ips_map=ips_map)[0]
-                if host in cvms:
-                    phost = cvms[host]
-                    pdn = phost.split('.')[0]
-                    ahosts = [host,
-                              '{0}.{1}.{2}'.format(dn, pdn, ip_fo),
-                              '{0}.{1}'.format(dn, ip_fo)]
-                else:
-                    ahosts = ['{0}.{1}'.format(dn, ip_fo),
-                              '{1}.{0}'.format(host, ipfo_dn),
-                              'failover.{0}'.format(host)]
-                    # only add an A record for a failover ip on something which
-                    # is not a vm if this is an host without an entry in
-                    # the ip and the vms maps
-                    if (
-                        (host not in baremetal_hosts
-                         and host not in cvalues)
-                        and host not in ips
-                    ):
-                        ahosts.append(host)
-                for ahost in ahosts:
-                    hostips = ips.setdefault(ahost, [])
-                    if ip not in hostips:
-                        hostips.append(ip)
-
-        # For all vms:
-        # if the vm still does not have yet an ip resolved
-        # map a A directly to the host
-        # If the host is mapped on an ip failover
-        # add a transitionnal cname for the vm to be mounted on this ipfo
-        # eg: direct
-        # <vm>.<host>.<domain>
-        # eg: failover
-        # <vm>.<host>.<ipfo_dn>.<domain>
-        for vm, vm_host in cvms.items():
-            if vm not in ips:
-                if vm in ips_map:
-                    ips[vm] = ips_for(vm,
-                                      ips=ips, cnames=cnames, ipsfo=ipsfo,
-                                      ipsfo_map=ipsfo_map, ips_map=ips_map)
-                else:
-                    ips[vm] = ips_for(vm_host,
-                                      ips=ips, cnames=cnames, ipsfo=ipsfo,
-                                      ipsfo_map=ipsfo_map, ips_map=ips_map)
-
-        # tie extra domains of vms to a A record: part1
-        # try to resolve ips for vms but let a chance
-        # for the non resolved one to come up in a later time
-        # via ips_map
-        #
-        for vm, _data in cloud_vm_attrs.items():
-            domains = _data.get('domains', [])
-            if not isinstance(domains, list):
-                continue
-            for domain in domains:
-                dips = ips.setdefault(domain, [])
-                # never append an ip of a vm is it is already defined
-                if len(dips):
-                    continue
-                aliases = ips_map.get(domain, [])
-                if aliases:
-                    for alias in aliases:
-                        try:
-                            for ip in ips_for(
-                                alias,
-                                ips=ips, cnames=cnames, ipsfo=ipsfo,
-                                ipsfo_map=ipsfo_map, ips_map=ips_map,
-                                fail_over=True
-                            ):
-                                if ip not in dips:
-                                    dips.append(ip)
-                        except IPRetrievalError:
-                            continue
-                # never append an ip if it was aliased before
-                if len(dips):
-                    continue
-                try:
-                    for ip in ips_for(vm,
-                                      ips=ips, cnames=cnames, ipsfo=ipsfo,
-                                      ipsfo_map=ipsfo_map, ips_map=ips_map,
-                                      fail_over=True):
-                        if ip not in dips:
-                            dips.append(ip)
-                except IPRetrievalError:
-                    continue
-
-        # add all IPS  from aliased ips to main dict
-        for fqdn in ips_map:
-            if fqdn in ips:
-                continue
-            ips[fqdn] = ips_for(fqdn,
-                                ips=ips, cnames=cnames, ipsfo=ipsfo,
-                                ipsfo_map=ipsfo_map, ips_map=ips_map)
-
-        nss = get_nss()['all']
-        mxs = []
-        for servers in mx_map.values():
-            for server in servers:
-                mxs.append(server)
-
-        # for:
-        #   - @ failover mappings
-        #   - nameservers
-        #   - mx
-        # add a A record # where normally we would end up with a CNAME
-        for fqdn in ipsfo_map:
-            if (fqdn.startswith('@')) or (fqdn in mxs) or (fqdn in nss):
-                if fqdn not in ips:
-                    ips[fqdn] = ips_for(fqdn,
-                                        ips=ips, cnames=cnames, ipsfo=ipsfo,
-                                        ipsfo_map=ipsfo_map, ips_map=ips_map,
-                                        fail_over=True)
-        #
-        # tie extra domains of vms to a A record: part2
-        # try to resolve leftover ips
-        #
-        for vm, _data in cloud_vm_attrs.items():
-            domains = _data.get('domains', [])
-            if not isinstance(domains, list):
-                continue
-            for domain in domains:
-                dips = ips.setdefault(domain, [])
-                # never append an ip of a vm is it is already defined
-                if len(dips):
-                    continue
-                aliases = ips_map.get(domain, [])
-                if aliases:
-                    for alias in aliases:
-                        try:
-                            for ip in ips_for(
-                                alias,
-                                ips=ips, cnames=cnames, ipsfo=ipsfo,
-                                ipsfo_map=ipsfo_map, ips_map=ips_map,
-                                fail_over=True
-                            ):
-                                if ip not in dips:
-                                    dips.append(ip)
-                        except IPRetrievalError:
-                            continue
-                # never append an ip if it was aliased before
-                if len(dips):
-                    continue
-                # difference with round 1 is that here we fail on
-                # IPRetrievalError
-                for ip in ips_for(vm,
-                                  ips=ips, cnames=cnames, ipsfo=ipsfo,
-                                  ipsfo_map=ipsfo_map, ips_map=ips_map,
-                                  fail_over=True):
-                    if ip not in dips:
-                        dips.append(ip)
+    data = load_raw_network_infrastructure()
+    ips = data['ips']
+    ipsfo = data['ipsfo']
+    ips_map = data['ips_map']
+    ipsfo_map = data['ipsfo_map']
+    vms = __salt__[__name + '.query']('vms')
+    mx_map = __salt__[__name + '.query']('mx_map')
+    managed_dns_zones = __salt__[__name + '.query']('managed_dns_zones')
+    cloud_vm_attrs = __salt__[__name + '.query']('cloud_vm_attrs')
+    dbi = get_db_infrastructure_maps()
+    baremetal_hosts = dbi['bms']
+    cnames = data['cnames']
+    if data['extra_info_loaded']:
         return data
-    cache_key = __name + '.load_network_infrastructure'
-    return memoize_cache(_do_nt, [], {}, cache_key, ttl)
+    data['extra_info_loading'] = True
+    # for each managed dns zone,
+    # we load the nameservers ip aliases if they are not explicitly
+    # configured but we have enougth information to get them
+    nss = get_nss()['all']
+    for zone in managed_dns_zones:
+        nssz = get_nss_for_zone(zone)
+        for nsq, slave in nssz['slaves'].items():
+            # special case
+            if '.' in slave and zone not in nsq:
+                continue
+            if nsq not in ips:
+                if nsq.endswith(zone) and nsq != slave:
+                    nsqs = ips.setdefault(nsq, [])
+                    try:
+                        sips = ips_for(slave, fail_over=True)
+                    except IPRetrievalError:
+                        sips = []
+                    for ip in sips:
+                        if ip not in nsqs:
+                            nsqs.append(ip)
+            if slave in cnames and slave not in ips:
+                ips[slave] = [ip_for(cnames[slave][:-1], fail_over=True)]
+            if nsq in cnames and slave not in ips:
+                ips[slave] = [ip_for(cnames[nsq][:-1], fail_over=True)]
+            if (nsq in ips or nsq in ips_map) and slave not in ips:
+                ips[slave] = [ip_for(nsq, fail_over=True)]
+    mxs = []
+    for servers in mx_map.values():
+        for server in servers:
+            mxs.append(server)
+
+    # for:
+    #   - @ failover mappings
+    #   - nameservers
+    #   - mx
+    # add a A record where normally we would end up with a CNAME
+    for fqdn in ipsfo_map:
+        if (fqdn.startswith('@')) or (fqdn in mxs) or (fqdn in nss):
+            if fqdn not in ips:
+                ips[fqdn] = ips_for(fqdn, fail_over=True)
+    data['extra_info_loading'] = False
+    data['extra_info_loaded'] = True
+    return data
 
 
 def ip_for(fqdn, *args, **kwa1):
@@ -647,7 +707,6 @@ def ip_for(fqdn, *args, **kwa1):
 
 
 def rr_entry(fqdn, targets, priority='10', record_type='A'):
-    load_network_infrastructure()
     rrs_ttls = __salt__[__name + '.query']('rrs_ttls')
     if record_type in ['MX']:
         priority = ' {0}'.format(priority)
@@ -695,12 +754,11 @@ def whitelisted(dn, ttl=60):
     '''
     Return all configured NS records for a domain'''
     def _do_whitel(dn):
-        load_network_infrastructure()
         allow = __salt__[__name + '.query']('default_allowed_ips_names')
         allow = allow.get(dn, allow['default'])
         w = []
         for fqdn in allow:
-            for ip in [a for a in ips_for(fqdn) if not a in w]:
+            for ip in [a for a in ips_for(fqdn) if a not in w]:
                 w.append(ip)
         return w
     cache_key = __name + '.whitelisted_{0}'.format(dn)
@@ -924,8 +982,7 @@ def get_ns_master(id_, dns_servers=None, default=None, ttl=60):
             dns_servers = __salt__[__name + '.query']('dns_servers')
         if not default:
             default = dns_servers['default']
-        master = dns_servers.get(
-            id_, OrderedDict()).get('master', None)
+        master = dns_servers.get(id_, OrderedDict()).get('master', None)
         if not master:
             master = default.get('master', None)
         if not master:
@@ -940,14 +997,36 @@ def get_ns_master(id_, dns_servers=None, default=None, ttl=60):
                          [id_, dns_servers, default], {}, cache_key, ttl)
 
 
-def get_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
+def get_servername_for(id_, ttl=60):
+    '''
+    For a given ip, or failover ip, retrieve the underthehood linked server or
+    vm name.
+    '''
+    def _do(id_):
+        return id_
+    cache_key = __name + '.get_servername_for{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def get_raw_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
     '''
     Grab slaves in this form::
 
         dns_servers:
             zoneid_dn:
                 slaves:
-                    - dn: fqdn
+                    - fqdn (aliased ip name, ip failover name or baremetal
+                             server address name)
+
+    This returns a map between the NS record name and it's associated server
+    name::
+
+        ns1.makina-corpus.net:
+            ovh-r5-2.makina-corpus.net
+        ns2.makina-corpus.net:
+            online-dc3-4.makina-corpus.net
+        ns3.makina-corpus.net:
+            online-dc3-3.makina-corpus.net
     '''
     def _do_get_ns_slaves(id_, dns_servers=None, default=None):
         managed_dns_zones = __salt__[__name + '.query']('managed_dns_zones')
@@ -957,20 +1036,43 @@ def get_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
             dns_servers = __salt__[__name + '.query']('dns_servers')
         if not default:
             default = dns_servers['default']
-        lslaves = dns_servers.get(
+        rlslaves = dns_servers.get(
             id_, OrderedDict()).get('slaves', OrderedDict())
-        if not lslaves:
-            lslaves = default.get('slaves', OrderedDict())
-        if lslaves and not isinstance(lslaves, list):
+        if not rlslaves:
+            rlslaves = default.get('slaves', OrderedDict())
+        if rlslaves and not isinstance(rlslaves, list):
             raise ValueError('Invalid format for slaves for {0}'.format(id_))
-        for item in lslaves:
-            if not isinstance(item, dict):
-                raise ValueError('Invalid format for slaves for {0}'.format(id_))
+        lslaves = OrderedDict()
+        for item in rlslaves:
+            # old id: FQDN format (retrocompat)
+            if isinstance(item, dict):
+                pass
+            elif isinstance(item, six.string_types):
+                item = {item: item}
+            else:
+                raise ValueError(
+                    'Invalid format for ns slaves: {0}'.format(id_))
+            for k, val in six.iteritems(item):
+                try:
+                    lslaves[k] = get_servername_for(val)
+                except KeyError:
+                    lslaves[k] = val
+        return lslaves
+    cache_key = __name + '.get_raw_ns_slaves_{0}'.format(id_)
+    return memoize_cache(_do_get_ns_slaves,
+                         [id_, dns_servers, default], {}, cache_key, ttl)
+
+
+def get_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
+    def _do_get_ns_slaves(id_, dns_servers=None, default=None):
+        lslaves = get_raw_ns_slaves(id_,
+                                    dns_servers=dns_servers,
+                                    default=default)
         slaves = OrderedDict()
-        for slave in lslaves:
+        for slave in [lslaves]:
             for nsid in [a for a in slave]:
-                target = copy.deepcopy(slave[nsid])
-                cnsid = nsid
+                target = slave[nsid]
+                ns_fqdn = nsid
                 if not isinstance(nsid, basestring):
                     raise ValueError(
                         '{0} is not a valid dn for nameserver in '
@@ -979,9 +1081,11 @@ def get_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
                     raise ValueError(
                         '{0} is not a valid dn for nameserver target in '
                         '{1}'.format(target, id_))
-                if id_ not in nsid:
-                    cnsid = '{0}.{1}'.format(nsid, id_)
-                slaves[cnsid] = target
+                if '.' not in nsid:
+                    ns_fqdn = '{0}.{1}'.format(nsid, id_)
+                if '.' not in target:
+                    target = '{0}.{1}'.format(target, id_)
+                slaves[ns_fqdn] = get_servername_for(target)
         return slaves
     cache_key = __name + '.get_ns_slaves_{0}'.format(id_)
     return memoize_cache(_do_get_ns_slaves,
@@ -1091,9 +1195,7 @@ def rrs_ns_for(domain, ttl=60):
     '''
     Return all configured NS records for a domain'''
     def _dorrsnsfor(domain):
-        db = load_network_infrastructure()
         rrs_ttls = __salt__[__name + '.query']('rrs_ttls')
-        ips = db['ips']
         all_rrs = OrderedDict()
         servers = get_nss_for_zone(domain)
         slaves = servers['slaves']
@@ -1103,8 +1205,10 @@ def rrs_ns_for(domain, ttl=60):
                 rr_entry('@', ["{0}.".format(servers['master'])],
                          rrs_ttls, record_type='NS'))
         for ns_map, fqdn in slaves.items():
-            # ensure NS A mapping is there
-            assert ips[ns_map] == ips_for(fqdn)
+            # ensure NS A mapping is there if it is on same domain
+            if fqdn.startswith(domain):
+                ip = ips_for(fqdn)
+                assert len(ip)
             rrs = all_rrs.setdefault(fqdn, [])
             dfqdn = ns_map
             if not dfqdn.endswith('.'):
@@ -1272,7 +1376,6 @@ def serial_for(domain,
           to adapt our serial if it is too low or too high
     '''
     def _doserialfor(domain, serial=None, ttl=60):
-        db = __salt__[__name + '.load_network_infrastructure']()
         serials = __salt__[__name + '.query']('dns_serials')
         # load the local pillar dns registry
         dns_reg = __salt__['mc_macros.get_local_registry'](
@@ -1436,71 +1539,6 @@ def rrs_for(domain, aslist=False):
     return rr
 
 
-def get_db_infrastructure_maps(ttl=60):
-    '''
-    Return a struct::
-
-         {'bms': {'xx-1.yyy.net': ['lxc'],
-                  'xx-4.yyy.net': ['lxc']},
-         'vms': {'zz.yyy': {'target': 'xx.yyy.net',
-                            'vt': 'kvm'},
-                 'vv.yyy.net': {'target': 'xx.yyy.net',
-                                'vt': 'kvm'},}}
-    '''
-    def _dogetdbinframaps():
-        lbms = __salt__[__name + '.query']('baremetal_hosts')
-        bms = OrderedDict()
-        vms = OrderedDict()
-        non_managed_hosts = __salt__[__name + '.query']('non_managed_hosts')
-        cloud_compute_nodes = []
-        cloud_vms = []
-        for lbm in lbms:
-            bms.setdefault(lbm, [])
-        for vt, targets in __salt__[__name + '.query']('vms').items():
-            for target, lvms in targets.items():
-                if (
-                    target not in non_managed_hosts
-                    and target not in cloud_compute_nodes
-                ):
-                    cloud_compute_nodes.append(target)
-                vts = bms.setdefault(target, [])
-                if vt not in vts:
-                    vts.append(vt)
-                if target not in bms:
-                    bms.append(target)
-                if lvms is None:
-                    log.error('No vms for {0}, error?'.format(target))
-                    continue
-                for vm in lvms:
-                    if vm not in non_managed_hosts:
-                        cloud_vms.append(vm)
-                    vms.update({vm: {'target': target,
-                                     'vt': vt}})
-        standalone_hosts = {}
-        for i in bms:
-            if (
-                i not in cloud_compute_nodes
-                and i not in non_managed_hosts
-            ):
-                standalone_hosts.setdefault(i, {})
-        data = {'bms': bms,
-                'hosts': sorted(
-                    __salt__['mc_utils.uniquify'](
-                        [a for a in bms]
-                        + [a for a in vms]
-                        + [a for a in non_managed_hosts]
-                        + [a for a in cloud_compute_nodes]
-                        + [a for a in standalone_hosts]
-                    )),
-                'standalone_hosts': standalone_hosts,
-                'cloud_compute_nodes': cloud_compute_nodes,
-                'cloud_vms': cloud_vms,
-                'vms': vms}
-        return data
-    cache_key = __name + '.get_db_infrastructure_maps'
-    return memoize_cache(_dogetdbinframaps, [], {}, cache_key, ttl)
-
-
 def get_ldap_configuration(id_=None, ttl=60):
     '''
     Ldap client configuration
@@ -1594,12 +1632,6 @@ def get_shorewall_settings(id_=None, ttl=60):
         is_ldap = is_ldap_master(id_) or is_ldap_slave(id_)
         if is_ldap:
             shw_params[p_param.format('LDAP')] = 'all'
-        # ips = load_network_infrastructure()['ips']
-        # dot not scale !
-        #for ip in ips:
-        #    sip = __salt__['mc_localsettings.get_pillar_sw_ip'](ip)
-        #    k = 'makina-states.services.firewall.shorewall.params.00_IP_{0}'.format(sip)
-        #    shw_params[k] = ",".join(ips[ip])
         for param, value in shorewall_overrides.get(id_, {}).items():
             param = 'makina-states.services.firewall.shorewall.' + param
             shw_params[param] = value
@@ -2443,18 +2475,15 @@ def get_dns_master_conf(id_):
         'managed_alias_zones'
     ).values():
         altdomains.extend(domains)
-    for domain in _s[
-        __name + '.query'](
-            'managed_dns_zones'):
+    for domain in _s[__name + '.query']('managed_dns_zones'):
         if domain not in altdomains:
             rdata[pref + '.zones.{0}'.format(domain)] = _s[
                 __name + '.format_rrs'](domain)
-    for domain, altdomains in _s[
-        __name + '.query'](
-            'managed_alias_zones').items():
+    for domain, altdomains in six.iteritems(
+        _s[__name + '.query']('managed_alias_zones')
+    ):
         for altdomain in altdomains:
-            srrs = _s[__name + '.format_rrs'](
-                domain, alt=altdomain)
+            srrs = _s[__name + '.format_rrs'](domain, alt=altdomain)
             rdata['makina-states.services.dns.bind'
                   '.zones.{0}'.format(altdomain)] = srrs
     dnsslaves = _s[__name + '.get_slaves_for'](id_)['all']
@@ -2585,12 +2614,14 @@ def get_sysnet_conf(id_):
     ips = net['ips']
     ipsfo = net['ipsfo']
     ipsfo_map = net['ipsfo_map']
+    dbi = get_db_infrastructure_maps()
+    baremetal_hosts = dbi['bms']
     if not (
         ms_vars.get('is_bm', False)
         and gconf.get('manage_network', False)
     ):
         return {}
-    if id_ in __salt__[__name + '.query']('baremetal_hosts'):
+    if id_ in baremetal_hosts:
         # always use bridge as main_if
         rdata.update(
             manage_baremetal_network(
@@ -3129,7 +3160,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
             data = _s['mc_utils.dictupdate'](data, _s[callback](id_))
         except Exception, ex:
             trace = traceback.format_exc()
-            log.error('ERROR in mc_pillar: {0}'.format(callback))
+            log.error('ERROR in mc_pillar: {0}/{1}'.format(callback, id_))
             log.error(ex)
             log.error(trace)
     if profile_enabled:
