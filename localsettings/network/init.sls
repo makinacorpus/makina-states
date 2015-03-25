@@ -1,6 +1,4 @@
-{#-
-# network configuration
-#}
+{#- # network configuration #}
 include:
   - makina-states.localsettings.network.hooks
 {% if salt['mc_services.registry']().has['firewall.shorewall'] %}
@@ -20,82 +18,98 @@ include:
 
 network-cfg-reset:
   file.managed:
-    - require_in:
-      - mc_proxy: network-last-hook
     - user: root
     - group: root
     - mode: '0755'
     - template: jinja
     - name: {{ locs.conf_dir }}/network/if-up.d/reset-net-bridges
     - source: salt://makina-states/files/etc/network/if-up.d/reset-net-bridges
+    - require_in:
+      - mc_proxy: network-cfg-gen
 
 network-cfg:
   file.managed:
-    - watch_in:
-      - file: network-cfg-reset
-      - mc_proxy: network-last-hook
     - user: root
     - group: root
     - mode: '0644'
     - template: jinja
     - name: {{ locs.conf_dir }}/network/interfaces
     - source: salt://makina-states/files/etc/network/interfaces
+    - watch_in:
+      - mc_proxy: network-cfg-gen
 
+# second chance to bring up failover ips
 {% for ifc in mcnet.interfaces_order %}
 {% set ifn = mcnet.interfaces[ifc]['ifname'] %}
+{% set addr = mcnet.interfaces[ifc].get('address', '')%}
 network-cfg-{{ifc}}:
   file.managed:
-    - watch_in:
-      - mc_proxy: network-last-hook
     - user: root
     - group: root
     - mode: '0644'
     - makedirs: true
     - template: jinja
-    - name: {{ locs.conf_dir }}/network/interfaces.d/interface.{{ifn}}.cfg
+    - name: "{{ locs.conf_dir }}/network/interfaces.d/interface.{{ifn}}.cfg"
     - source: salt://makina-states/files/etc/network/interface
-    - context:
-        ifname: {{ifc}}
-
-network-services-{{ifc}}:
-  cmd.watch:
-    - name: ifdown {{ifn}};ifconfig {{ifn}} down;ifup {{ifn}};ret=${?};ifup {{ifn}};exit ${ret}
+    - defaults:
+        ifname: "{{ifc}}"
     - watch_in:
-      - mc_proxy: network-last-hook
-      - mc_proxy: network-2nd
-    - watch:
-      - file: network-cfg
-      - file: network-cfg-{{ifc}}
-{# restart bridges after getting real nic ifs in static mode #}
-{% if 'br' in ifc %}
-{% for ifcinner in mcnet.interfaces_order %}
-{% if not 'br' in ifcinner %}
-      - file: network-cfg-{{ifcinner}}
-      - cmd: network-services-{{ifcinner}}
-{%endif %}
-{%endfor %}
-{%endif %}
+      - mc_proxy: network-cfg-gen
+
+network-services-{{ifc}}-2nd-gen:
+  file.managed:
+    - source: "salt://makina-states/files/etc/network/reconfigure_ifc.sh"
+    - name: "/etc/network/mc_reconfigure_{{ifc}}.sh"
+    - defaults:
+        addr: "{{addr}}"
+        ifn: "{{ifn}}"
+    - user: root
+    - group: root
+    - mode: 750
+    - template: jinja
+    - watch_in:
+      - mc_proxy: network-cfg-gen
 {%endfor %}
 
-network-2nd:
-  mc_proxy.hook: []
-
-# second change to bring up failover ips
 {% for ifc in mcnet.interfaces_order %}
 {% set ifn = mcnet.interfaces[ifc]['ifname'] %}
-{% set addr = mcnet.interfaces[ifc].get('address', '')%}
-{% if ('br' in ifn) and (':' in ifn) and addr%}
+# we always exit0 here to let the 2nd chance script to execute in case
+network-services-{{ifc}}:
+  cmd.watch:
+    - name: "/etc/network/mc_reconfigure_{{ifc}}.sh nofail"
+    - use_vt: true
+    - watch:
+      - mc_proxy: network-cfg-gen
+    - watch_in:
+      - mc_proxy: "network-configured-{{ifc}}"
+# restart bridges after getting real nic ifs in static mode
+{% if 'br' in ifc %}
+{% for ifcinner in mcnet.interfaces_order %}
+{% if 'br' not in ifcinner %}
+      - mc_proxy: "network-configured-{{ifcinner}}"
+{%endif %}
+{%endfor %}
+{%endif %}
+
+"network-configured-{{ifc}}":
+  mc_proxy.hook:
+    - require:
+      - mc_proxy: network-1nd
+    - require_in:
+      - mc_proxy: network-2nd
+{%endfor %}
+
+# second chance to bring up failover ips
+{% for ifc in mcnet.interfaces_order %}
+{% set ifn = mcnet.interfaces[ifc]['ifname'] %}
 network-services-{{ifc}}-2nd:
   cmd.run:
-    - name: ifdown {{ifn}};ifconfig {{ifn}} down;ifup {{ifn}};ret=${?};ifup {{ifn}};exit ${ret}
-    - onlyif: |
-              ip addr show dev "{{ifn}}" 1>/dev/null 2>/dev/null&&\
-              test "x$(ip addr show dev "{{ifn}}"|egrep "inet.*{{addr.replace('.', '\\.')}}.*scope.*global.*{{ifn}}" 2>/dev/null)" = "x"
-    - watch_in:
-      - mc_proxy: network-last-hook
+    - name: "/etc/network/mc_reconfigure_{{ifc}}.sh"
+    - use_vt: true
     - watch:
       - mc_proxy: network-2nd
-{% endif %}
+    - watch_in:
+      - mc_proxy: network-last-hook
 {%endfor %}
 
 {% endif %}
