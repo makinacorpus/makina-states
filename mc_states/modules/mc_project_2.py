@@ -3600,6 +3600,12 @@ def orchestrate(host,
                 rev=stable
         salt-call --local mc_project.orchestrate host.fr <project>\\
                 origin="https://github.com/makinacorpus/corpus-pgsql.git"
+        salt-call --local mc_project.orchestrate host.fr <project>\\
+                deploy_args=['a'] \\
+                origin="https://github.com/makinacorpus/corpus-pgsql.git"
+        salt-call --local mc_project.orchestrate host.fr <project>\\
+                deploy_kwarg={'myparam': 'a'} \\
+                origin="https://github.com/makinacorpus/corpus-pgsql.git"
 
     '''
     _s = __salt__
@@ -3763,6 +3769,12 @@ def orchestrate_task(host,
                 pillar_origin="https://github.com/mak/corpus-pillar.git" task_make_users\\
                 rev=stable
         salt-call --local mc_project.orchestrate host.fr <project> task_make_users\\
+                origin="https://github.com/makinacorpus/corpus-pgsql.git"
+        salt-call --local mc_project.orchestrate host.fr <project> task_make_users\\
+                deploy_args=['a'] \\
+                origin="https://github.com/makinacorpus/corpus-pgsql.git"
+        salt-call --local mc_project.orchestrate host.fr <project> task_make_users\\
+                deploy_kwarg={'myparam': 'a'} \\
                 origin="https://github.com/makinacorpus/corpus-pgsql.git"
 
     '''
