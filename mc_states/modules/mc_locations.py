@@ -71,7 +71,4 @@ def settings():
             })
         return locationsData
     return _settings()
-
-
-
 # vim:set et sts=4 ts=4 tw=80:

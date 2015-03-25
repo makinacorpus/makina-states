@@ -46,6 +46,7 @@ except ImportError:
 
 
 _default_marker = object()
+_marker = object()
 log = logging.getLogger(__name__)
 
 
@@ -219,7 +220,9 @@ def dictupdate(dict1, dict2):
     return salt.utils.dictupdate.update(dict1, dict2)
 
 
-_marker = object()
+def copy_dictupdate(dict1, dict2):
+    return dictupdate(copy.deepcopy(dict1),
+                      copy.deepcopy(dict2))
 
 
 def format_resolve(value,
