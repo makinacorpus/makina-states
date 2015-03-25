@@ -622,6 +622,28 @@ def load_raw_network_infrastructure(ttl=60):
     return data
 
 
+def ips_canfailover_for(*a, **kw):
+    '''
+    Get the real ips of a service, and fallback in case on failovers ips
+    but do not return ips + failovers ips if there are real ips.
+    '''
+    try:
+        ips = ips_for(*a, **kw)
+        if not ips:
+            raise IPRetrievalError()
+        return ips
+    except IPRetrievalError:
+        kw['fail_over'] = True
+        return ips_for(*a, **kw)
+
+
+def ip_canfailover_for(*a, **kw):
+    '''
+    Wrapper to get the first available ip or failover ip
+    '''
+    return ips_canfailover_for(*a, **kw)[0]
+
+
 def load_network_infrastructure(ttl=60):
     '''
     This loads the structure while validating it for
@@ -660,18 +682,18 @@ def load_network_infrastructure(ttl=60):
                 if nsq.endswith(zone) and nsq != slave:
                     nsqs = ips.setdefault(nsq, [])
                     try:
-                        sips = ips_for(slave, fail_over=True)
+                        sips = ips_canfailover_for(slave)
                     except IPRetrievalError:
                         sips = []
                     for ip in sips:
                         if ip not in nsqs:
                             nsqs.append(ip)
             if slave in cnames and slave not in ips:
-                ips[slave] = [ip_for(cnames[slave][:-1], fail_over=True)]
+                ips[slave] = [ip_canfailover_for(cnames[slave][:-1])]
             if nsq in cnames and slave not in ips:
-                ips[slave] = [ip_for(cnames[nsq][:-1], fail_over=True)]
+                ips[slave] = [ip_canfailover_for(cnames[nsq][:-1])]
             if (nsq in ips or nsq in ips_map) and slave not in ips:
-                ips[slave] = [ip_for(nsq, fail_over=True)]
+                ips[slave] = [ip_canfailover_for(nsq)]
     mxs = []
     for servers in mx_map.values():
         for server in servers:
