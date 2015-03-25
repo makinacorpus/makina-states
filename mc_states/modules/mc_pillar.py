@@ -2583,7 +2583,7 @@ def format_rrs(domain, alt=None):
     infos = _s[__name + '.get_nss_for_zone'](domain)
     master = infos['master']
     slaves = infos['slaves']
-    slave_servers = get_server_slaves_for(get_servername_for(master))
+    slave_servers = get_ns_server_slaves_for(get_servername_for(master))
     allow_transfer = []
     if slaves:
         slaveips = []
@@ -2615,38 +2615,59 @@ def slave_key(id_, dnsmaster=None, master=True):
     pref = 'makina-states.services.dns.bind'
     _s = __salt__
     rdata = {}
-    for oip in ips_for(id_, fail_over=True):
-        if not master:
-            for mip in ips_for(dnsmaster, fail_over=True):
-                # on slave side, declare the master as the tsig
-                # key consumer
-                rdata[pref + 'servers.{0}'.format(mip)] = {'keys': [oip]}
-        # on both, say to encode with the client tsig key when daemons
-        # are talking to each other
-        rdata[pref + '.keys.{0}'.format(oip)] = {
-            'secret': _s['mc_bind.tsig_for'](oip)}
+    oip = ip_for(get_servername_for(id_), fail_over=True)
+    if not master:
+        if __salt__['mc_network.is_ip'](dnsmaster):
+            mips = [dnsmaster]
+        else:
+            mips = ips_for(dnsmaster, fail_over=True)
+        for mip in mips:
+            # on slave side, declare the master as the tsig
+            # key consumer
+            rdata[pref + '.servers.{0}'.format(mip)] = {'keys': [oip]}
+    # on both, say to encode with the client tsig key when daemons
+    # are talking to each other
+    rdata[pref + '.keys.{0}'.format(oip)] = {
+        'secret': _s['mc_bind.tsig_for'](oip)}
     return rdata
 
 
-def get_dns_slave_conf(id_):
-    _s = __salt__
-    if not _s[__name + '.is_dns_slave'](id_):
-        return {}
-    pref = 'makina-states.services.dns.bind'
-    rdata = {pref: True}
-    dnsmasters = {}
-    domains = _s[__name + '.get_slaves_zones_for'](id_)
-    for domain, masterdn in domains.items():
-        master = _s[__name + '.ip_for'](masterdn)
-        dnsmasters.setdefault(masterdn, master)
-        rdata[pref + '.zones.{0}'.format(domain)] = {
-            'server_type': 'slave', 'masters': [master]}
-    for dnsmaster, masterip in dnsmasters.items():
-        rdata.update(slave_key(id_, dnsmaster, master=False))
-    return rdata
+
+def get_ns_server_masters_for(id_, ttl=60):
+    def _do(id_):
+        _s = __salt__
+
+    cache_key = __name + '.get_ns_server_slaves_for{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
-def get_server_slaves_for(id_, ttl=60):
+def get_dns_slave_conf(id_, ttl=60):
+    def _do(id_):
+        _s = __salt__
+        if not _s[__name + '.is_dns_slave'](id_):
+            return {}
+        pref = 'makina-states.services.dns.bind'
+        rdata = {pref: True}
+        candidates = OrderedDict()
+        domains = _s[__name + '.get_slaves_zones_for'](id_)
+        candidates = []
+        for domain, masterdn in domains.items():
+            for ip in ips_for(masterdn, fail_over=True):
+                if ip not in candidates:
+                    candidates.append(ip)
+            for ip in ips_for(get_servername_for(masterdn), fail_over=True):
+                if ip not in candidates:
+                    candidates.append(ip)
+            rdata[pref + '.zones.{0}'.format(domain)] = {
+                'server_type': 'slave', 'masters': candidates}
+        for ip in candidates:
+            rdata.update(slave_key(id_, ip, master=False))
+        return rdata
+    cache_key = __name + '.get_dns_slave_conf{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def get_ns_server_slaves_for(id_, ttl=60):
     def _do(id_):
         _s = __salt__
         candidates = OrderedDict()
@@ -2666,7 +2687,7 @@ def get_server_slaves_for(id_, ttl=60):
                     if sips:
                         candidates[server] = sips
         return candidates
-    cache_key = __name + '.get_server_slaves_for{0}'.format(id_)
+    cache_key = __name + '.get_ns_server_slaves_for{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
@@ -2693,10 +2714,13 @@ def get_dns_master_conf(id_, ttl=60):
                 srrs = _s[__name + '.format_rrs'](domain, alt=altdomain)
                 rdata['makina-states.services.dns.bind'
                       '.zones.{0}'.format(altdomain)] = srrs
-        candidates = get_server_slaves_for(id_)
+        candidates = get_ns_server_slaves_for(id_)
+        tsigs = []
         for slv in candidates:
             setted_slaves = rdata.setdefault(pref + '.slaves', [])
-            rdata.update(slave_key(slv))
+            tsign = get_servername_for(slv)
+            if tsign not in tsigs:
+                rdata.update(slave_key(tsign))
             for ip in candidates[slv]:
                 if ip not in setted_slaves:
                     setted_slaves.append(ip)
