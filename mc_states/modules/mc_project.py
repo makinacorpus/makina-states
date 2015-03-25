@@ -117,6 +117,9 @@ APIS = {
     'orchestrate': {
         '2': 'mc_project_2.orchestrate',
     },
+    'orchestrate_task': {
+        '2': 'mc_project_2.orchestrate_task',
+    },
 }
 
 
@@ -306,3 +309,7 @@ def remote_deploy(name, *args, **kwargs):
 
 def orchestrate(name, *args, **kwargs):
     return _api_switcher('orchestrate', name, *args, **kwargs)
+
+
+def orchestrate_task(name, *args, **kwargs):
+    return _api_switcher('orchestrate_task', name, *args, **kwargs)
