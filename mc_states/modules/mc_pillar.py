@@ -2719,12 +2719,13 @@ def get_dns_master_conf(id_, ttl=60):
         for slv in candidates:
             setted_slaves = rdata.setdefault(pref + '.slaves', [])
             tsign = get_servername_for(slv)
+            tip = ip_for(tsign)
             if tsign not in tsigs:
                 rdata.update(slave_key(tsign))
-            for ip in candidates[slv]:
-                if ip not in setted_slaves:
-                    setted_slaves.append(ip)
-                rdata[pref + '.servers.{0}'.format(ip)] = {'keys': [ip]}
+                for ip in candidates[slv]:
+                    if ip not in setted_slaves:
+                        setted_slaves.append(ip)
+                    rdata[pref + '.servers.{0}'.format(ip)] = {'keys': [tip]}
         return rdata
     cache_key = __name + '.get_dns_master_conf{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
