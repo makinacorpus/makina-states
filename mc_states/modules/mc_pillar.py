@@ -1018,15 +1018,85 @@ def get_ns_master(id_, dns_servers=None, default=None, ttl=60):
                          [id_, dns_servers, default], {}, cache_key, ttl)
 
 
-def get_servername_for(id_, ttl=60):
+def is_failover(ip, ttl=60):
+    def _do(ip):
+        if __salt__['mc_network.is_ip'](ip):
+            ndb = load_network_infrastructure()
+            for name, ips in six.iteritems(ndb['ipsfo']):
+                if ip in ips:
+                    return True
+        return False
+    cache_key = __name + '.is_failover{0}'.format(ip)
+    return memoize_cache(_do, [ip], {}, cache_key, ttl)
+
+
+def get_names_for_failover(ip, ttl=60):
+    def _do(ip):
+        if is_failover(ip):
+            ndb = load_network_infrastructure()
+            names = []
+            for name, ips in six.iteritems(ndb['ipsfo']):
+                if ip in ips and name not in names:
+                    names.append(name)
+        return names
+    cache_key = __name + '.get_names_for_failover{0}'.format(ip)
+    return memoize_cache(_do, [ip], {}, cache_key, ttl)
+
+
+def get_servername_for_ip(ip, ttl=600, no_vm=False):
     '''
     For a given ip, or failover ip, retrieve the underthehood linked server or
     vm name.
     '''
-    def _do(id_):
-        return id_
-    cache_key = __name + '.get_servername_for{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    def _do(ip):
+        name = None
+        if __salt__['mc_network.is_ip'](ip):
+            ndb = load_network_infrastructure()
+            db = get_db_infrastructure_maps()
+            if is_failover(ip):
+                # first try the ipsfo_map:
+                for ipfo_name in get_names_for_failover(ip):
+                    if ipfo_name in db['hosts']:
+                        return ipfo_name
+                    for item, ips in six.iteritems(ndb['ipsfo_map']):
+                        if ipfo_name in ips and item in db['hosts']:
+                            name = item
+                        if name:
+                            break
+                    if name:
+                        break
+            else:
+                # then fallback on ips
+                for item, ips in six.iteritems(ndb['ips']):
+                    if ip in ips and item in db['hosts']:
+                        name = item
+                    if name:
+                        break
+        return name
+    cache_key = __name + '.get_servername_for_ip{0}'.format(ip)
+    return memoize_cache(_do, [ip], {}, cache_key, ttl)
+
+
+def get_servername_for(id_or_ip, ttl=600):
+    '''
+    For a given ip, or failover ip, or dns name
+    retrieve the server or vm where is directly linked the
+    aforementioned id/ip.  Be aware that in cases of VMS, the public ip
+    can be associated to the baremetal and not the vm
+    and so the returned name can obviously be the baremetal one.
+    '''
+    def _do(id_or_ip):
+        ips = []
+        if __salt__['mc_network.is_ip'](id_or_ip):
+            ips.append(id_or_ip)
+        else:
+            ips.extend(resolve_ips(id_or_ip))
+        for ip in ips:
+            name = get_servername_for_ip(ip)
+            if name:
+                return name
+    cache_key = __name + '.get_servername_for{0}'.format(id_or_ip)
+    return memoize_cache(_do, [id_or_ip], {}, cache_key, ttl)
 
 
 def get_raw_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
@@ -1074,10 +1144,7 @@ def get_raw_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
                 raise ValueError(
                     'Invalid format for ns slaves: {0}'.format(id_))
             for k, val in six.iteritems(item):
-                try:
-                    lslaves[k] = get_servername_for(val)
-                except KeyError:
-                    lslaves[k] = val
+                lslaves[k] = val
         return lslaves
     cache_key = __name + '.get_raw_ns_slaves_{0}'.format(id_)
     return memoize_cache(_do_get_ns_slaves,
@@ -1106,7 +1173,7 @@ def get_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
                     ns_fqdn = '{0}.{1}'.format(nsid, id_)
                 if '.' not in target:
                     target = '{0}.{1}'.format(target, id_)
-                slaves[ns_fqdn] = get_servername_for(target)
+                slaves[ns_fqdn] = target
         return slaves
     cache_key = __name + '.get_ns_slaves_{0}'.format(id_)
     return memoize_cache(_do_get_ns_slaves,
@@ -1135,6 +1202,39 @@ def get_nss_for_zone(id_, ttl=60):
     return memoize_cache(_do_getnssforzone, [id_], {}, cache_key, ttl)
 
 
+def resolve_ips(name, fail_over=True, dns_query=True, ttl=60):
+    '''
+    Try to resolve the ips of a name
+    either by the database and maybe on a DNS query fallback
+    if not found
+    '''
+    def _do(name, fail_over, dns_query):
+
+        # maybe we are on a failover ip, get the alternatives ips
+        # of this host to check
+        try:
+            # if the ip is in pillar, get that
+            zips = ips_for(name, fail_over=fail_over)
+        except IPRetrievalError:
+            zips = []
+        if dns_query and not zips:
+            # else use a dns query to try to get it
+            try:
+                zips = socket.gethostbyaddr(name)[2]
+            except Exception:
+                zips = []
+        return zips
+    cache_key = __name + '.resolve_ips{0}{1}{2}'.format(name, fail_over, dns_query)
+    return memoize_cache(_do, [name, fail_over, dns_query], {}, cache_key, ttl)
+
+
+def resolve_ip(name, fail_over=True, dns_query=True):
+    '''
+    Get the first resolved IP of ips_resolve(*a)
+    '''
+    return resolve_ip(name, fail_over=fail_over, dns_query=dns_query)[0]
+
+
 def get_slaves_for(id_, ttl=60):
     '''
     Get all public exposed dns servers slaves
@@ -1151,9 +1251,21 @@ def get_slaves_for(id_, ttl=60):
     '''
     def _do_getslavesfor(id_):
         allslaves = {'z': OrderedDict(), 'all': []}
+        this_ips = resolve_ips(id_, fail_over=True)
         for zone in __salt__[__name + '.query']('managed_dns_zones'):
             zi = get_nss_for_zone(zone)
-            if id_ == zi['master']:
+            found = id_ == zi['master']
+            if not found:
+                zips = resolve_ips(zi['master'])
+                if not zips:
+                    continue
+                # search if one ip of this host matches the list of the
+                # zone master's ips
+                for ip in this_ips:
+                    if ip in zips:
+                        found = True
+                        break
+            if found:
                 slaves = allslaves['z'].setdefault(zone, [])
                 for nsid, fqdn in zi['slaves'].items():
                     if fqdn not in allslaves['all']:
@@ -1168,7 +1280,8 @@ def get_slaves_for(id_, ttl=60):
 
 def get_ns(domain, ttl=60):
     '''
-    Get the first configured public name server for domain'''
+    Get the first configured public name server for domain
+    '''
     def _do(domain):
         return get_nss_for_zone(domain)[0]
     cache_key = __name + '.get_ns_{0}'.format(domain)
@@ -1178,9 +1291,22 @@ def get_ns(domain, ttl=60):
 def get_slaves_zones_for(fqdn, ttl=60):
     def _do_getslaveszonesfor(fqdn):
         zones = {}
+        this_ips = resolve_ips(fqdn, fail_over=True)
         for zone in __salt__[__name + '.query']('managed_dns_zones'):
             zi = get_nss_for_zone(zone)
-            if fqdn in zi['slaves'].values():
+            slaves = zi['slaves'].values()
+            found = fqdn in slaves
+            if not found:
+                for slave in zi['slaves'].values():
+                    try:
+                        zips = resolve_ips(slave)
+                    except Exception:
+                        zips = []
+                    for ip in this_ips:
+                        if ip in zips:
+                            found = True
+                            break
+            if found:
                 zones[zone] = zi['master']
         return zones
     cache_key = __name + '.get_slaves_zones_for_{0}'.format(fqdn)
@@ -1189,7 +1315,8 @@ def get_slaves_zones_for(fqdn, ttl=60):
 
 def rrs_mx_for(domain, ttl=60):
     '''
-    Return all configured MX records for a domain'''
+    Return all configured MX records for a domain
+    '''
     def _do_mx(domain):
         mx_map = __salt__[__name + '.query']('mx_map')
         all_rrs = OrderedDict()
@@ -1214,7 +1341,8 @@ def rrs_mx_for(domain, ttl=60):
 
 def rrs_ns_for(domain, ttl=60):
     '''
-    Return all configured NS records for a domain'''
+    Return all configured NS records for a domain
+    '''
     def _dorrsnsfor(domain):
         rrs_ttls = __salt__[__name + '.query']('rrs_ttls')
         all_rrs = OrderedDict()
@@ -1248,7 +1376,8 @@ def rrs_ns_for(domain, ttl=60):
 
 def rrs_a_for(domain, ttl=60):
     '''
-    Return all configured A records for a domain'''
+    Return all configured A records for a domain
+    '''
     def _dorrsafor(domain):
         db = load_network_infrastructure()
         rrs_ttls = __salt__[__name + '.query']('rrs_ttls')
@@ -1275,7 +1404,8 @@ def rrs_a_for(domain, ttl=60):
 
 def rrs_raw_for(domain, ttl=60):
     '''
-    Return all configured TXT records for a domain'''
+    Return all configured TXT records for a domain
+    '''
     def _dorrsrawfor(domain):
         # add all A from simple ips
         db = load_network_infrastructure()
@@ -1298,7 +1428,8 @@ def rrs_raw_for(domain, ttl=60):
 
 def rrs_cnames_for(domain, ttl=60):
     '''
-    Return all configured CNAME records for a domain'''
+    Return all configured CNAME records for a domain
+    '''
     def _dorrscnamesfor(domain):
         db = load_network_infrastructure()
         managed_dns_zones = __salt__[__name + '.query']('managed_dns_zones')
@@ -2038,8 +2169,22 @@ def get_top_variables(ttl=15):
 
 def is_dns_slave(id_, ttl=60):
     def _do(id_):
-        if id_ in __salt__[__name + '.get_nss']()['slaves']:
+        sips = []
+        candidates = __salt__[__name + '.get_nss']()['slaves']
+        if id_ in candidates:
             return True
+        for a in candidates:
+            try:
+                sips.extend(resolve_ips(a, fail_over=True))
+            except Exception:
+                log.error(traceback.format_exc())
+        if sips:
+            try:
+                for ip in resolve_ips(id_, fail_over=True):
+                    if ip in sips:
+                        return True
+            except Exception:
+                log.error(traceback.format_exc())
         return False
     cache_key = __name + '.is_dns_slave_{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
@@ -2047,8 +2192,22 @@ def is_dns_slave(id_, ttl=60):
 
 def is_dns_master(id_, ttl=60):
     def _do(id_):
-        if id_ in __salt__[__name + '.get_nss']()['masters']:
+        candidates = __salt__[__name + '.get_nss']()['masters']
+        sips = []
+        if id_ in candidates:
             return True
+        for a in candidates:
+            try:
+                sips.extend(resolve_ips(a, fail_over=True))
+            except Exception:
+                log.error(traceback.format_exc())
+        if sips:
+            try:
+                for ip in resolve_ips(id_, fail_over=True):
+                    if ip in sips:
+                        return True
+            except Exception:
+                log.error(traceback.format_exc())
         return False
     cache_key = __name + '.is_dns_master_{0}'.format(id_)
     return memoize_cache(_do, [id_], {}, cache_key, ttl)
@@ -2424,11 +2583,15 @@ def format_rrs(domain, alt=None):
     infos = _s[__name + '.get_nss_for_zone'](domain)
     master = infos['master']
     slaves = infos['slaves']
+    slave_servers = get_server_slaves_for(get_servername_for(master))
     allow_transfer = []
     if slaves:
         slaveips = []
-        for s in slaves:
-            slaveips.append('key "{0}"'.format(_s[__name + '.ip_for'](s)))
+        for slv, ips in six.iteritems(slave_servers):
+            for ip in ips:
+                k = 'key "{0}"'.format(ip)
+                if k not in slaveips:
+                    slaveips.append(k)
         allow_transfer = slaveips
         soans = slaves.keys()[0]
     else:
@@ -2442,8 +2605,8 @@ def format_rrs(domain, alt=None):
     rdata = {'allow_transfer': allow_transfer,
              'serial': _s[__name + '.serial_for'](domain),
              'soa_ns': soans.replace(domain, alt),
-             'soa_contact': 'postmaster.{0}.'.format(domain).replace(domain,
-                                                                     alt),
+             'soa_contact': 'postmaster.{0}.'.format(
+                 domain).replace(domain, alt),
              'rrs': rrs}
     return rdata
 
@@ -2451,18 +2614,17 @@ def format_rrs(domain, alt=None):
 def slave_key(id_, dnsmaster=None, master=True):
     pref = 'makina-states.services.dns.bind'
     _s = __salt__
-    ip_for = _s[__name + '.ip_for']
     rdata = {}
-    oip = ip_for(id_)
-    if not master:
-        mip = ip_for(dnsmaster)
-        # on slave side, declare the master as the tsig
-        # key consumer
-        rdata[pref + 'servers.{0}'.format(mip)] = {'keys': [oip]}
-    # on both, say to encode with the client tsig key when daemons
-    # are talking to each other
-    rdata[pref + '.keys.{0}'.format(oip)] = {
-        'secret': _s['mc_bind.tsig_for'](oip)}
+    for oip in ips_for(id_, fail_over=True):
+        if not master:
+            for mip in ips_for(dnsmaster, fail_over=True):
+                # on slave side, declare the master as the tsig
+                # key consumer
+                rdata[pref + 'servers.{0}'.format(mip)] = {'keys': [oip]}
+        # on both, say to encode with the client tsig key when daemons
+        # are talking to each other
+        rdata[pref + '.keys.{0}'.format(oip)] = {
+            'secret': _s['mc_bind.tsig_for'](oip)}
     return rdata
 
 
@@ -2476,8 +2638,7 @@ def get_dns_slave_conf(id_):
     domains = _s[__name + '.get_slaves_zones_for'](id_)
     for domain, masterdn in domains.items():
         master = _s[__name + '.ip_for'](masterdn)
-        if masterdn not in dnsmasters:
-            dnsmasters.update({masterdn: master})
+        dnsmasters.setdefault(masterdn, master)
         rdata[pref + '.zones.{0}'.format(domain)] = {
             'server_type': 'slave', 'masters': [master]}
     for dnsmaster, masterip in dnsmasters.items():
@@ -2485,39 +2646,64 @@ def get_dns_slave_conf(id_):
     return rdata
 
 
-def get_dns_master_conf(id_):
-    _s = __salt__
-    if not _s[__name + '.is_dns_master'](id_):
-        return {}
-    pref = 'makina-states.services.dns.bind'
-    rdata = {pref: True}
-    altdomains = []
-    for domains in _s[__name + '.query'](
-        'managed_alias_zones'
-    ).values():
-        altdomains.extend(domains)
-    for domain in _s[__name + '.query']('managed_dns_zones'):
-        if domain not in altdomains:
-            rdata[pref + '.zones.{0}'.format(domain)] = _s[
-                __name + '.format_rrs'](domain)
-    for domain, altdomains in six.iteritems(
-        _s[__name + '.query']('managed_alias_zones')
-    ):
-        for altdomain in altdomains:
-            srrs = _s[__name + '.format_rrs'](domain, alt=altdomain)
-            rdata['makina-states.services.dns.bind'
-                  '.zones.{0}'.format(altdomain)] = srrs
-    dnsslaves = _s[__name + '.get_slaves_for'](id_)['all']
-    if dnsslaves:
-        # slave tsig declaration
-        rdata[pref + '.slaves'] = [_s[__name + '.ip_for'](slv)
-                                   for slv in dnsslaves]
-        for dn in dnsslaves:
-            rdata.update(slave_key(dn))
-            rdata[
-                pref + '.servers.{0}'.format(_s[__name + '.ip_for'](dn))
-            ] = {'keys': [_s[__name + '.ip_for'](dn)]}
-    return rdata
+def get_server_slaves_for(id_, ttl=60):
+    def _do(id_):
+        _s = __salt__
+        candidates = OrderedDict()
+        dnsslaves = _s[__name + '.get_slaves_for'](id_)['all']
+        if dnsslaves:
+            # slave tsig declaration
+            # for each nameserver, add it's ip as a tsig candidate
+            # but also register the baremetal IP as it will be the source
+            # ip for network dialog
+            for slv in dnsslaves:
+                ips = ips_for(slv, fail_over=True)
+                candidates[slv] = ips
+                server = get_servername_for(slv)
+                if server:
+                    sips = [ip for ip in ips_for(server, fail_over=True)
+                            if ip not in ips]
+                    if sips:
+                        candidates[server] = sips
+        return candidates
+    cache_key = __name + '.get_server_slaves_for{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+
+
+def get_dns_master_conf(id_, ttl=60):
+    def _do(id_):
+        _s = __salt__
+        if not _s[__name + '.is_dns_master'](id_):
+            return {}
+        pref = 'makina-states.services.dns.bind'
+        rdata = {pref: True}
+        altdomains = []
+        for domains in _s[__name + '.query'](
+            'managed_alias_zones'
+        ).values():
+            altdomains.extend(domains)
+        for domain in _s[__name + '.query']('managed_dns_zones'):
+            if domain not in altdomains:
+                rdata[pref + '.zones.{0}'.format(domain)] = _s[
+                    __name + '.format_rrs'](domain)
+        for domain, altdomains in six.iteritems(
+            _s[__name + '.query']('managed_alias_zones')
+        ):
+            for altdomain in altdomains:
+                srrs = _s[__name + '.format_rrs'](domain, alt=altdomain)
+                rdata['makina-states.services.dns.bind'
+                      '.zones.{0}'.format(altdomain)] = srrs
+        candidates = get_server_slaves_for(id_)
+        for slv in candidates:
+            setted_slaves = rdata.setdefault(pref + '.slaves', [])
+            rdata.update(slave_key(slv))
+            for ip in candidates[slv]:
+                if ip not in setted_slaves:
+                    setted_slaves.append(ip)
+                rdata[pref + '.servers.{0}'.format(ip)] = {'keys': [ip]}
+        return rdata
+    cache_key = __name + '.get_dns_master_conf{0}'.format(id_)
+    return memoize_cache(_do, [id_], {}, cache_key, ttl)
 
 
 def manage_network_common(fqdn):
