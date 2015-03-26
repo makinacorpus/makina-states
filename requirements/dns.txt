@@ -1,0 +1,4 @@
+suds
+python-whois-extended
+#-e git+https://github.com/ovh/python-ovh.git#egg=ovh
+ovh

@@ -334,14 +334,16 @@ def update_registry_params(registry_name, params, registry_format='yaml'):
 
 
 def update_local_registry(registry_name, params, registry_format='yaml'):
-    '''Alias to update_local_registry'''
+    '''
+    Alias to update_local_registry
+    '''
     return update_registry_params(registry_name,
                                   params,
                                   registry_format=registry_format)
 
 
 def get_registry(registry_configuration):
-    """
+    '''
     Mangle a registry of activated/unactived states to be run
     as part of the automatic highstate inclusion.
 
@@ -394,7 +396,7 @@ def get_registry(registry_configuration):
             }
         }
 
-    """
+    '''
     registry = registry_configuration.copy()
     registry.setdefault('is', {})
     registry['grains_pref'] = 'makina-states.{0}'.format(registry['kind'])

@@ -30,6 +30,12 @@ import datetime
 import re
 from salt.utils.odict import OrderedDict
 import traceback
+
+try:
+    import whois
+    HAS_PYWHOIS = True
+except ImportError:
+    HAS_PYWHOIS = False
 try:
     from ipwhois import IPWhois
     HAS_IPWHOIS = True
@@ -346,6 +352,121 @@ def settings():
     return _settings()
 
 
+def ns_whois(name, ttl=24*60*60, cache=True, whois_ttl=60*60*24*30):
+    '''
+    Make a whois request and return data
+    For evident performance questons,
+    We cache whois data for one month!'''
+    def _do(name, cache):
+        data = {'query': None}
+        if not HAS_PYWHOIS:
+            return data
+        try:
+            wreg = __salt__[
+                'mc_macros.get_local_registry'](
+                    'ns_whois_data', registry_format='pack')
+            if name in wreg:
+                if time.time() >= wreg[name]['t'] + whois_ttl:
+                    del wreg[name]
+            data = wreg.get(name, {}).get('data', {})
+            cdata = wreg.setdefault(name, {})
+            cdata.setdefault('t', time.time())
+            cdata.setdefault('data', data)
+            query = cdata.setdefault('query', {})
+            if (
+                not query
+                or not cache
+                or (
+                    not query.get('expiration_date')
+                    and query['registrar'] not in ['ovh', 'gandi'])
+            ):
+                for i in range(3):
+                    try:
+                        qdata = whois.query(name)
+                        break
+                    except (Exception,) as exc:
+                        log.error(traceback.format_exc())
+                        log.error('Sleeping/retrying in 5 sec for'
+                                  ' {0}'.format(name))
+                        time.sleep(5)
+                        if i == 2:
+                            raise exc
+                if qdata:
+                    query.update(qdata.__dict__)
+                    for a in [a for a in query]:
+                        if isinstance(query[a], set):
+                            query[a] = [b for b in query[a]]
+                        if isinstance(query[a], datetime.datetime):
+                            query[a] = query[a].isoformat()
+            if (
+                query
+                and not query.get('expiration_date')
+                and query['registrar'] not in ['ovh', 'gandi']
+            ):
+                found = False
+                if query['registrar']:
+                    for i in ['ovh', 'gandi']:
+                        if i in query['registrar'].lower():
+                            found = True
+                if not found:
+                    whoisdata = __salt__['cmd.run']('whois {0}'.format(name))
+                    if 'gandi sas' in whoisdata.lower():
+                        query['registrar'] = 'gandi'
+                    elif 'name: gandi' in whoisdata:
+                        query['registrar'] = 'gandi'
+            search_data = {'ovh': ['ovh', 'sys'],
+                           'phpnet': ['phpnet'],
+                           'gandi': ['gandi'],
+
+                           'online': ['illiad',
+                                      'proxad',
+                                      'iliad']}
+            search_data['sys'] = search_data['ovh']
+            for provider, search_terms in search_data.items():
+                for i in search_terms:
+                    for k, val in six.iteritems(
+                        query
+                    ):
+                        if k in ['registrar']:
+                            if val and i in val.lower():
+                                data['is_{0}'.format(provider)] = True
+                                break
+            __salt__['mc_macros.update_local_registry'](
+                'ns_whois_data', wreg,
+                registry_format='pack')
+        except:
+            log.error(traceback.format_exc())
+            data = {}
+        return data
+    if cache is False:
+        return _do(name, cache)
+    else:
+        cache_key = 'mc_network.,ns_whois{0}'.format(name)
+        return memoize_cache(_do, [name, cache], {}, cache_key, ttl)
+
+
+def domain_registrar(domain, ttl=24*60*60):
+    def _do(domain):
+        def _ddo(data):
+            for i in ['gandi', 'ovh']:
+                if data.get('is_{0}'.format(i)):
+                    return i
+        data = __salt__['mc_network.ns_whois'](domain)
+        ret = _ddo(data)
+        if ret:
+            return ret
+        # if not found, try without cache
+        else:
+            data = __salt__['mc_network.ns_whois'](domain, cache=False)
+            ret = _ddo(data)
+            if ret:
+                return ret
+        data = __salt__['mc_network.ns_whois'](domain, cache=False)
+        return 'unkown'
+    cache_key = 'mc_network.domain_registrar{0}'.format(domain)
+    return memoize_cache(_do, [domain], {}, cache_key, ttl)
+
+
 def whois_data(ip, ttl=24*60*60, whois_ttl=60*60*24*30):
     '''
     Make a whois request and return data
@@ -370,7 +491,9 @@ def whois_data(ip, ttl=24*60*60, whois_ttl=60*60*24*30):
             cdata.setdefault('data', data)
             search_data = {'ovh': ['ovh', 'sys'],
                            'phpnet': ['phpnet'],
-                           'online': ['proxad', 'iliad']}
+                           'online': ['proxad',
+                                      'illiad',
+                                      'iliad']}
             search_data['sys'] = search_data['ovh']
             for provider, search_terms in search_data.items():
                 for i in search_terms:

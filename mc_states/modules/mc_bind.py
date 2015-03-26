@@ -41,13 +41,17 @@ def generate_tsig(length=128):
 
 
 def tsig_for(id_, length=128):
-    kid = 'makina-states.services.dns.bind.tsig.{0}'.format(id_)
-    local_conf = __salt__['mc_macros.get_local_registry']('bind')
-    key = local_conf.get(kid, None)
+    local_conf = __salt__['mc_macros.get_local_registry'](
+        'bind_tsig', registry_format='pack')
+    key = local_conf.get(id_, None)
     if not key:
-        local_conf[kid] = generate_tsig(length=length)
-        __salt__['mc_macros.update_local_registry']('bind', local_conf)
-    return local_conf[kid]
+        local_conf[id_] = generate_tsig(length=length)
+        __salt__['mc_macros.update_local_registry'](
+            'bind_tsig', local_conf, registry_format='pack')
+        local_conf = __salt__[
+            'mc_macros.get_local_registry'](
+            'bind_tsig', registry_format='pack')
+    return local_conf[id_]
 
 
 def settings():
@@ -539,7 +543,3 @@ def get_zone(zone):
                          defaults['config_dir']))
     zdata = __salt__['mc_utils.format_resolve'](zdata)
     return zdata
-
-
-
-#
