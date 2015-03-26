@@ -23,6 +23,11 @@ import requests
 import mc_states.api
 from salt.utils.odict import OrderedDict
 
+import salt.exceptions
+
+class ClientNotActivated(salt.exceptions.SaltException):
+    """."""
+
 __name = 'provider'
 _marker = object()
 
@@ -65,12 +70,14 @@ def settings():
             'makina-states.localsettings.provider', {
                 'gandi': {
                     'default': {
+                        'activated': False,
                         'api': 'https://rpc.gandi.net/xmlrpc/',
                         'api_key': None,
                     }
                 },
                 'ovh': {
                     'default': {
+                        'activated': False,
                         'api': 'https://eu.api.ovh.com/1.0',
                         'endpoint': 'ovh-eu',
                         'login': None,
@@ -144,8 +151,11 @@ def ovh_auth(app_key=None):
                             ' https://eu.api.ovh.com/createApp/')
     return data
 
+
 def gandi_client(**kw):
     domain = kw.get('domain', None)
+    if not get_gandi_opt('activated', domain=domain):
+        raise ClientNotActivated('gandi')
     uapi = get_gandi_opt('api', domain=domain)
     apikey = get_gandi_opt('api_key', domain=domain)
     api = xmlrpclib.ServerProxy(uapi)
@@ -154,6 +164,8 @@ def gandi_client(**kw):
 
 def ovh_client(**kw):
     domain = kw.pop('domain', None)
+    if not get_ovh_opt('activated', domain=domain):
+        raise ClientNotActivated('ovh')
     if not HAS_OVH:
         raise ValueError(
             'Please install ovh bindings, pip install ovh')
