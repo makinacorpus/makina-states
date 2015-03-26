@@ -178,6 +178,15 @@ def settings():
                 'virtualhosts': virtualhosts,
                 'version': '2.2',
                 'Timeout': 120,
+                'vhost_template_source': (
+                    '{default_vh_template_source}'),
+                'vhost_content_source': (
+                    '{default_vh_in_template_source}'),
+                # old names, do not change, retrocompat
+                'vhost_top_template': (
+                    "salt://makina-states/files/etc/"
+                    "apache2/includes/"
+                    "top_virtualhost_template.conf"),
                 'default_vh_template_source': (
                     "salt://makina-states/files/etc/"
                     "apache2/sites-available/"
@@ -188,6 +197,17 @@ def settings():
                     "in_virtualhost_template.conf"),
                 'KeepAlive': True,
                 'log_level': 'warn',
+                'ssl_interface': '*',
+                'ssl_ciphers': 'HIGH:!aNULL:!MD5',
+                'ssl_protocols': '+SSLv3 +TLSv1 +TLSv1.1 +TLSv1.2',
+                'ssl_session_timeout': '600',
+                'ssl_session_cache_path': (
+                    '/var/cache/apache2/{vhost_basename}'),
+                'ssl_session_cache_file_path': (
+                    '{ssl_session_cache_path}/session'),
+                'ssl_session_cache': (
+                    'shmcb:{ssl_session_cache_file_path}(512000)'),
+                'ssl_port': '443',
                 "fastcgi_params": {
                     "InitStartDelay": 1,
                     "minProcesses": 2,
@@ -416,7 +436,6 @@ def a2enmod(module):
     '''
     ret = {}
     command = ['a2enmod', module]
-
     try:
         status = __salt__['cmd.retcode'](command, python_shell=False)
     except Exception as e:
@@ -479,10 +498,20 @@ def a2dismod(module):
 def vhost_settings(domain, doc_root, **kwargs):
     '''Used by apache macro
 
+    vh_top_source
+        source (jinja) of the file.managed for
+        the virtualhost template. (empty by default)
+        this will be included at the global conf level
+
     vh_template_source
         source (jinja) of the file.managed for
-        the vhirtualhost template
-        default: http://goo.gl/RFgkHE (github)
+        the virtualhost template.
+        this will be the vhost definitions which in turn include
+        the vhost defs
+    vh_content_source
+        source (jinja) of the file.managed for
+        the virtualhost template.
+        this will be included at the vhost level
     serveradmin_mail
         data that may be used on error page
         default is webmaster@<site-name>
@@ -527,7 +556,6 @@ def vhost_settings(domain, doc_root, **kwargs):
     ##
     kwargs['domain'] = domain
     number = kwargs.setdefault('number', '100')
-    kwargs.setdefault('project', domain.replace('.', '_'))
 
     kwargs.setdefault(
         'serveradmin_mail', "webmaster@{0}".format(domain))
@@ -547,22 +575,50 @@ def vhost_settings(domain, doc_root, **kwargs):
     kwargs.setdefault('log_level', "warn")
     kwargs.setdefault('interface', "*")
     kwargs.setdefault('server_name', domain)
-    kwargs.setdefault('ssl_interface', "*")
     kwargs.setdefault('port', 80)
     vhost_basename = kwargs.setdefault('vhost_basename', domain)
-    kwargs.setdefault('ssl_port', 443)
+    kwargs.setdefault('project', vhost_basename.replace('.', '_'))
+    kwargs.setdefault('ssl_interface',
+                      apacheSettings['ssl_interface'])
+    kwargs.setdefault('ssl_protocols',
+                      apacheSettings['ssl_protocols'])
+    kwargs.setdefault('ssl_port',
+                      apacheSettings['ssl_port'])
+    kwargs.setdefault('ssl_ciphers',
+                      apacheSettings['ssl_ciphers'])
+    for i in [
+        'ssl_session_cache_path',
+        'ssl_session_cache_file_path',
+        'ssl_session_cache',
+    ]:
+        val = kwargs.setdefault(i, apacheSettings[i])
+        kwargs[i] = val.format(**kwargs)
+
+    kwargs.setdefault('ssl_session_timeout',
+                      apacheSettings['ssl_session_timeout'])
     kwargs.setdefault('redirect_aliases', True)
     kwargs.setdefault('allow_htaccess', False)
     kwargs.setdefault('active', True)
     kwargs.setdefault('mode', mode)
+
     kwargs.setdefault(
         'vh_template_source',
-        apacheSettings['default_vh_template_source'])
+        apacheSettings['vhost_template_source'])
     kwargs.setdefault(
-        'vh_in_template_source',
-        apacheSettings['default_vh_in_template_source'])
+        'vh_top_source',
+        apacheSettings['vhost_top_template'])
+
+    kwargs.setdefault(
+        'vh_content_source',
+        kwargs.get('vh_in_template_source',
+                   apacheSettings['default_vh_in_template_source']))
     kwargs['ivhost'] = (
         "{basedir}/{number}-{domain}"
+    ).format(number=number,
+             basedir=apacheSettings['ivhostdir'],
+             domain=vhost_basename)
+    kwargs['ivhosttop'] = (
+        "{basedir}/{number}-{domain}-top"
     ).format(number=number,
              basedir=apacheSettings['ivhostdir'],
              domain=vhost_basename)
@@ -576,10 +632,32 @@ def vhost_settings(domain, doc_root, **kwargs):
     ).format(number=number,
              basedir=apacheSettings['vhostdir'],
              domain=vhost_basename)
-    data = _s['mc_utils.dictupdate'](apacheSettings,
-                                     kwargs)
-    return data
-
-
-
-#
+    apacheSettings = _s['mc_utils.dictupdate'](apacheSettings,
+                                               kwargs)
+    # to disable ssl, ssl_cert must be a empty string
+    if apacheSettings.get('ssl_cert', None) != '':
+        ssldomain = domain
+        if ssldomain in ['default']:
+            ssldomain = __grains__['fqdn']
+        lcert, lkey, lchain = __salt__[
+            'mc_ssl.get_configured_cert'](ssldomain, gen=True)
+        apacheSettings.setdefault('ssl_cert',
+                                  lcert + lchain)
+        apacheSettings.setdefault('ssl_key',
+                                  lcert + lchain + lkey)
+        apacheSettings.setdefault('ssl_bundle', '')
+        certs = ['ssl_cert']
+        if apacheSettings.get('ssl_cacert', ''):
+            if apacheSettings['ssl_cacert_first']:
+                certs.insert(0, 'ssl_cacert')
+            else:
+                certs.append('ssl_cacert')
+        for cert in certs:
+            apacheSettings['ssl_bundle'] += apacheSettings[cert]
+            if not apacheSettings['ssl_bundle'].endswith('\n'):
+                apacheSettings['ssl_bundle'] += '\n'
+        for k in ['ssl_bundle', 'ssl_key', 'ssl_cert', 'ssl_cacert']:
+            apacheSettings.setdefault(
+                k + '_path',
+                "/etc/ssl/apache/{0}_{1}.pem".format(ssldomain, k))
+    return apacheSettings

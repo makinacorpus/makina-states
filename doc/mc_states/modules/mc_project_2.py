@@ -356,7 +356,7 @@ def _step_exec(cfg, step, failhard=True):
 
 def get_default_configuration(remote_host=None):
     conf = copy.deepcopy(DEFAULT_CONFIGURATION)
-    this_host = this_localhost = socket.gethostname()
+    this_host = this_localhost = socket.getfqdn()
     this_port = 22
     if os.path.exists('/this_port'):
         with open('/this_port') as fic:
@@ -3226,32 +3226,63 @@ def sync_remote_project(host,
     return cret
 
 
-def remote_task(host, project, *args, **kw):
-    '''
-    Alias to remote_run_task
-    '''
-    return remote_run_task(host, project, *args, **kw)
-
-
-def remote_run_task(host, project, *args, **kw):
+def remote_run_task(host, project, task=None, *args, **kw):
     '''
     Run a task from the .salt directory, remotely
 
+    Task can be either given as a kwarg or the first positional argument.
+
     CLI Examples::
 
+
+        salt-call --local mc_project.remote_run_task \
+                host.fr <project> task=task_helloworld.sls
         salt-call --local mc_project.remote_run_task \
                 host.fr <project> task_helloworld.sls
         salt-call --local mc_project.remote_run_task \
                 host.fr <project> task_helloworld.sls a=b
     '''
     kw['salt_function'] = 'mc_project.run_task'
+    kw['task'] = task
     return remote_deploy(host, project, *args, **kw)
+
+
+def remote_task(host, project, *args, **kw):
+    '''
+    Alias to remote_run_task
+
+
+    CLI Examples::
+
+        salt-call --local mc_project.remote_task \
+                host.fr <project> task=task_helloworld.sls
+        salt-call --local mc_project.remote_task \
+                host.fr <project> task_helloworld.sls
+        salt-call --local mc_project.remote_task \
+                host.fr <project> task_helloworld.sls a=b
+    '''
+    return remote_run_task(host, project, *args, **kw)
 
 
 def remote_deploy(host, project, *args, **kw):
     '''
 
     Run a deployment task, remotely
+
+    host
+        host to deploy onto
+    project
+        project to deploy
+    deploy_kwarg
+        deploy kwargs
+    deploy_args
+        deploy arguments
+    deploy_only_steps/only_steps
+        set only_steps kwarg (shortcut)
+    deploy_only/only
+        set only kwarg (shortcut)
+    salt_function
+        salt deploy function (one of: mc_project.deploy/mc_project.run_task)
 
     CLI Examples::
 
@@ -3268,7 +3299,22 @@ def remote_deploy(host, project, *args, **kw):
                                                         _colors('endc'),
                                                         _colors('yellow')))
     ssh_kw = _s['mc_remote.ssh_kwargs'](kw)
-    kwarg = kw.get('kwarg', {})
+    kwarg = kw.get('deploy_kwarg', kw.get('kwarg', {}))
+    if not isinstance(kw, dict):
+        kw = {}
+    if not isinstance(kwarg, dict):
+        kwarg = {}
+    if isinstance(args, six.string_types):
+        args = args.split()
+    if not isinstance(args, list):
+        args = []
+    dargs = kw.get('deploy_args', [])
+    if isinstance(dargs, six.string_types):
+        dargs = dargs.split()
+    if not isinstance(dargs, list):
+        dargs = []
+    args = copy.deepcopy(args)
+    args.extend(copy.deepcopy(dargs))
     salt_function = kw.get('project_salt_function',
                            kw.get('salt_function', 'mc_project.deploy'))
     remote_deploy_supported_funs = ['mc_project.deploy', 'mc_project.run_task']
@@ -3306,11 +3352,19 @@ def remote_deploy(host, project, *args, **kw):
     if any([
         salt_function.endswith('.run_task')
     ]):
+        task = kwarg.get('task', kw.get('task', None))
+        if extra_args and not task:
+            task = extra_args[0]
+        elif task and not extra_args:
+            extra_args = [task]
         if not extra_args:
             failed = True
-            cret = scret = 'You should set at least one task to execute'
+            cret = scret = ('You must at least select a task as the'
+                            ' first arg or via the task keyword parameter')
             original = ValueError(scret)
         else:
+            if extra_args[0] != task:
+                extra_args.inser(0, task)
             task = extra_args[0]
             extra_args = extra_args[1:]
     if not failed:
@@ -3420,6 +3474,9 @@ def orchestrate(host,
                 pre_init_remote_hook=None,
                 post_init_remote_hook=None,
                 pre_sync_hook=None,
+                deploy_fun='mc_project.remote_deploy',
+                deploy_kwarg=None,
+                deploy_args=None,
                 post_sync_hook=None,
                 pre_hook=None,
                 post_hook=None,
@@ -3506,6 +3563,10 @@ def orchestrate(host,
         do we do the refresh_project step (overrides refresh)
     deploy
         do we do the deploy step
+    deploy_args
+        any extra deploy/run_task positional argument
+    deploy_kwarg
+        any extra deploy/run_task extra argument
     pre_init_hook/post_init_hook/\
     pre_init_remote_hook/post_init_remote_hook/\
     pre_sync_hook/post_sync_hook/\
@@ -3539,8 +3600,15 @@ def orchestrate(host,
                 rev=stable
         salt-call --local mc_project.orchestrate host.fr <project>\\
                 origin="https://github.com/makinacorpus/corpus-pgsql.git"
+        salt-call --local mc_project.orchestrate host.fr <project>\\
+                deploy_args=['a'] \\
+                origin="https://github.com/makinacorpus/corpus-pgsql.git"
+        salt-call --local mc_project.orchestrate host.fr <project>\\
+                deploy_kwarg={'myparam': 'a'} \\
+                origin="https://github.com/makinacorpus/corpus-pgsql.git"
 
     '''
+    _s = __salt__
     _remote_log('Deployment orchestration: {2}{3}{0}/{1}'.format(
         host, project, _colors('endc'), _colors('yellow')))
     pcfg = get_configuration(project, remote_host=host)
@@ -3581,6 +3649,10 @@ def orchestrate(host,
     opts['init_project'] = init_project
     opts['refresh_pillar'] = refresh_pillar
     opts['refresh_project'] = refresh_project
+    opts['only'] = only
+    opts['only_steps'] = only_steps
+    opts['deploy_args'] = deploy_args
+    opts['deploy_kwarg'] = deploy_kwarg
     #
     if init_pillar or init_project:
         crets['init_pre'] = remote_project_hook(
@@ -3634,18 +3706,115 @@ def orchestrate(host,
             post_sync_hook, host, project, opts, **kw)
     #
     if deploy:
+        ckw = copy.deepcopy(kw)
+        ckw['only'] = only
+        ckw['only_steps'] = only_steps
+        ckw['deploy_kwarg'] = deploy_kwarg
+        ckw['deploy_args'] = deploy_args
         crets['deploy_pre'] = remote_project_hook(
-            pre_hook, host, project, opts, **kw)
-        crets['deploy'] = remote_deploy(
-            host, project, only=only, only_steps=only_steps, **kw)
+            pre_hook, host, project, opts, **ckw)
+        crets['deploy'] = _s[deploy_fun](host, project, **ckw)
         crets['deploy_post'] = remote_project_hook(
-            post_hook, host, project, opts, **kw)
+            post_hook, host, project, opts, **ckw)
     msg, smsg = _remote_log(
         'Deployment orchestration: {2}{3}{0}/{1}:{2}{4} OK'.format(
             host, project,
             _colors('endc'), _colors('yellow'), _colors('light_green')))
     crets['z_msg'] = msg
     return crets
+
+
+def orchestrate_task(host,
+                     project,
+                     task,
+                     init=True,
+                     init_project=None,
+                     init_pillar=None,
+                     init_remote=True,
+                     sync=True,
+                     sync_project=None,
+                     sync_pillar=None,
+                     refresh=True,
+                     refresh_pillar=None,
+                     refresh_project=None,
+                     deploy=True,
+                     deploy_args=None,
+                     deploy_kwarg=None,
+                     pillar_origin=None,
+                     pillar_rev=None,
+                     origin=None,
+                     rev=None,
+                     pre_init_hook=None,
+                     post_init_hook=None,
+                     pre_init_remote_hook=None,
+                     post_init_remote_hook=None,
+                     pre_sync_hook=None,
+                     post_sync_hook=None,
+                     pre_hook=None,
+                     post_hook=None,
+                     only=None,
+                     only_steps=None,
+                     **kw):
+    '''
+    Orchestrate a project through mc_project._orchestrate and use
+    mc_project.remote_task <TASK NAME>
+
+    CLI Examples::
+
+        salt-call --local mc_project.orchestrate_task host.fr <project> task_make_users \\
+                origin="https://github.com/makinacorpus/corpus-pgsql.git"
+        salt-call --local mc_project.orchestrate host.fr <project> make_users\\
+                origin="https://github.com/makinacorpus/corpus-pgsql.git" task_make_users\\
+                rev=stable\\
+                pillar_origin="https://github.com/mak/corpus-pillar.git" task_make_users\\
+                rev=stable
+        salt-call --local mc_project.orchestrate host.fr <project> task_make_users\\
+                origin="https://github.com/makinacorpus/corpus-pgsql.git"
+        salt-call --local mc_project.orchestrate host.fr <project> task_make_users\\
+                deploy_args=['a'] \\
+                origin="https://github.com/makinacorpus/corpus-pgsql.git"
+        salt-call --local mc_project.orchestrate host.fr <project> task_make_users\\
+                deploy_kwarg={'myparam': 'a'} \\
+                origin="https://github.com/makinacorpus/corpus-pgsql.git"
+
+    '''
+    if isinstance(deploy_args, six.string_types):
+        deploy_args = deploy_args.split()
+    if not isinstance(deploy_args, list):
+        deploy_args = []
+    if task not in deploy_args:
+        deploy_args.insert(0, task)
+    return orchestrate(host,
+                       project,
+                       init=init,
+                       init_project=init_project,
+                       init_pillar=init_pillar,
+                       init_remote=init_remote,
+                       sync=sync,
+                       sync_project=sync_project,
+                       sync_pillar=sync_pillar,
+                       refresh=refresh,
+                       refresh_pillar=refresh_pillar,
+                       refresh_project=refresh_project,
+                       deploy=deploy,
+                       pillar_origin=pillar_origin,
+                       pillar_rev=pillar_rev,
+                       origin=origin,
+                       deploy_fun='mc_project.remote_task',
+                       deploy_args=deploy_args,
+                       deploy_kwarg=deploy_kwarg,
+                       rev=rev,
+                       pre_init_hook=pre_init_hook,
+                       post_init_hook=post_init_hook,
+                       pre_init_remote_hook=pre_init_remote_hook,
+                       post_init_remote_hook=post_init_remote_hook,
+                       pre_sync_hook=pre_sync_hook,
+                       post_sync_hook=post_sync_hook,
+                       pre_hook=pre_hook,
+                       post_hook=post_hook,
+                       only=only,
+                       only_steps=only_steps,
+                       **kw)
 
 
 def remote_project_hook(hook, host, project, opts, **kw):

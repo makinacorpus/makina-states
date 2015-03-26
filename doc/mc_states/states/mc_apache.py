@@ -42,16 +42,10 @@ import logging
 
 log = logging.getLogger(__name__)
 
-_APACHE_DEPLOYED = False
 # Modules explicitly required by states
-_MODULES_EXCLUDED = []
 # Module explicitly excluded by states
-_MODULES_INCLUDED = []
 
 _DEFAULT_MPM = 'worker'
-_shared_modules = []
-_static_modules = []
-
 
 
 def _tied_to_apacheconf(deps):
@@ -69,7 +63,7 @@ def _tied_to_apacheconf(deps):
 
 
 def _check_apache_loaded(ret):
-    if not 'apache.version' in __salt__:
+    if 'apache.version' not in __salt__:
         log.warning(
             'Use of mc_apache method without apache previously '
             'installed via pkg state.'
@@ -83,22 +77,36 @@ def _check_apache_loaded(ret):
 
 
 def _load_modules():
-    global _shared_modules
-    global _static_modules
+    _MODULES_INCLUDED = __context__.setdefault(
+        'mc_apache_MODULES_INCLUDED', [])
+    _MODULES_EXCLUDED = __context__.setdefault(
+        'mc_apache_MODULES_EXCLUDED', [])
+    _MODULES_REGISTERED = __context__.setdefault(
+        'mc_apache_MODULES_REGISTERED', [])
+    _shared_modules = __context__.setdefault(
+        'mc_apache_shared_modules', [])
+    _static_modules = __context__.setdefault(
+        'mc_apache_static_modules', [])
     if not _shared_modules and not _static_modules:
         modules = __salt__['apache.modules']()
-        _static_modules = modules.get('static', [])
-        _shared_modules = modules.get('shared', [])
+        _static_modules.extend(modules.get('static', []))
+        _shared_modules.extend(modules.get('shared', []))
+    return (
+        _MODULES_INCLUDED,
+        _MODULES_EXCLUDED,
+        _MODULES_REGISTERED,
+        _shared_modules,
+        _static_modules)
 
 
 def _checking_modules(modules_excluded=None,
                       modules_included=None,
                       blind_mode=False):
-    global _MODULES_INCLUDED
-    global _MODULES_EXCLUDED
-    global _MODULES_REGISTERED
-    global _shared_modules
-    global _static_modules
+    (_MODULES_INCLUDED,
+     _MODULES_EXCLUDED,
+     _MODULES_REGISTERED,
+     _shared_modules,
+     _static_modules) = _load_modules()
     ret = {'changes': '',
            'result': None,
            'comment': ''}
@@ -106,6 +114,10 @@ def _checking_modules(modules_excluded=None,
     _load_modules()
     modifications = []
     comments = []
+    if not modules_included:
+        modules_included = []
+    if not modules_excluded:
+        modules_excluded = []
     # manage junction of _MODULES_[INCLUDED/EXCLUDED] and given parameters
     for module in _MODULES_INCLUDED:
         if module in modules_excluded:
@@ -156,8 +168,6 @@ def _checking_modules(modules_excluded=None,
             else:
                 modifications.append({'action': 'disable',
                                       'module': module})
-        #else:
-        #    comments.append("Module {0} already disabled".format(module))
     for module in modules_included:
         if module + '_module' not in _shared_modules:
             if module + '_module' in _static_modules:
@@ -224,8 +234,11 @@ def _checking_modules(modules_excluded=None,
 def include_module(name,
                    modules,
                    **kwargs):
-    global _MODULES_INCLUDED
-    global _MODULES_EXCLUDED
+    (_MODULES_INCLUDED,
+     _MODULES_EXCLUDED,
+     _MODULES_REGISTERED,
+     _shared_modules,
+     _static_modules) = _load_modules()
     ret = {'name': name,
            'changes': {},
            'result': None,
@@ -262,7 +275,7 @@ def include_module(name,
             comments.append(
                 'Removing module {0} from exclusion list'.format(module))
             _MODULES_EXCLUDED.remove(module)
-        if not module in _MODULES_INCLUDED:
+        if module not in _MODULES_INCLUDED:
             log.info(
                 ('MC_Apache: adding module {0} to inclusion list'
                  ' because of {1}').format(module, name)
@@ -278,8 +291,16 @@ def include_module(name,
 def exclude_module(name,
                    modules,
                    **kwargs):
-    global _MODULES_INCLUDED
-    global _MODULES_EXCLUDED
+    _MODULES_INCLUDED = __context__.setdefault(
+        'mc_apache_MODULES_INCLUDED', [])
+    _MODULES_EXCLUDED = __context__.setdefault(
+        'mc_apache_MODULES_EXCLUDED', [])
+    _MODULES_REGISTERED = __context__.setdefault(
+        'mc_apache_MODULES_REGISTERED', [])
+    _shared_modules = __context__.setdefault(
+        'mc_apache_shared_modules', [])
+    _static_modules = __context__.setdefault(
+        'mc_apache_static_modules', [])
     ret = {'name': name,
            'changes': {},
            'result': None,
@@ -316,7 +337,7 @@ def exclude_module(name,
             comments.append(
                 'Removing module {0} from inclusion list'.format(module))
             _MODULES_INCLUDED.remove(module)
-        if not module in _MODULES_EXCLUDED:
+        if module not in _MODULES_EXCLUDED:
             log.info(
                 ('MC_Apache: adding module {0} to exclusion list'
                  ' because of {1}').format(module, name)
@@ -354,9 +375,12 @@ def deployed(name,
         The apache version
 
     '''
-    global _APACHE_DEPLOYED
-    global _shared_modules
-
+    _APACHE_DEPLOYED = __context__.setdefault('mc_apache_APACHE_DEPLOYED', False)
+    (_MODULES_INCLUDED,
+     _MODULES_EXCLUDED,
+     _MODULES_REGISTERED,
+     _shared_modules,
+     _static_modules) = _load_modules()
     ret = {'name': name,
            'changes': {},
            'result': None,
@@ -399,7 +423,7 @@ def deployed(name,
         cur_mpm = infos.get('server_mpm', 'unknown').lower()
         for _mpm in [
             a for a in ['event', 'worker', 'prefork']
-            if not _mpm == a
+            if not cur_mpm == a
         ]:
             if mpm not in ['unknown']:
                 break
@@ -467,9 +491,12 @@ def deployed(name,
     else:
         mpm_check_done = True
         comments.append("MPM check: " + cur_mpm + ", OK")
-
-    # Modules management
     result = _checking_modules(modules_excluded, modules_included, blind_mode)
+    ctest = __salt__['cmd.run_all']('apache2ctl configtest')
+    if ctest['retcode']:
+        comments.append('Apache conf is wrong')
+        comments.append(ctest['stderr'])
+    # Modules management
     if result['comment'] is not '':
         comments.append(result['comment'])
     if result['changes']:
@@ -504,5 +531,3 @@ def deployed(name,
     comments.append("Apache deployment: All verifications done.")
     ret['comment'] = ("\n" + " " * 19).join(comments)
     return ret
-
-#
