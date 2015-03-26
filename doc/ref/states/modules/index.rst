@@ -20,6 +20,7 @@ RemoteExecution/PaaS/ProjectManagement modules
    mc_project.rst
    mc_project_2.rst
    mc_remote.rst
+   mc_dns.rst
 
  
 Subregistries

@@ -129,7 +129,37 @@ def settings():
                 'mail_user': 'foo',
                 'mail_password': 'bar',
                 'mail_localtime': 'true',
-                'mail_subject': '[Fail2Ban {0}] <section>: Banned <ip>'.format(grains['id']),
+                'filters': {
+                    'wordpress': {
+                        'failregex': (
+                            '^%(__prefix_line)sWordpress'
+                            ' authentication failure for'
+                            ' .* from <HOST>$')
+                    }
+
+                },
+                'jails': {
+                    'wordpress': {
+                        'filter': 'wordpress',
+                        'port': 'http,https',
+                    }
+                },
+                'default_filters_opts': {
+                    'ignoreregex': ''
+                },
+                'default_jail_opts': {
+                    'port': 'ssh',
+                    'logpath': '/var/log/syslog',
+                    'banaction': 'shorewall',
+                    'maxretry': 5,
+                    'findtime': 600,
+                    'bantime': 600,
+                    'enabled': False,
+                    'filter': 'sshd',
+                },
+                'mail_subject': (
+                    '[Fail2Ban {0}] <section>: Banned <ip>'
+                ).format(grains['id']),
                 'mail_message': (
                     'Hi,<br> The IP <ip> has just been banned by Fail2Ban'
                     ' after <failures> attempts against <section>.<br>'
@@ -155,6 +185,16 @@ def settings():
                 'named_refused_tcp_enabled': 'false',
             }
         )
+        # if a filter is defined with the same name of a jail
+        # and no filter is defined for this jail
+        # make this filter as the jailname
+        for item in [a for a in data['jails']]:
+            ddata = data['jails'][item]
+            if (
+                'filter' not in ddata
+                and (item in data['filters'])
+            ):
+                ddata['filter'] = item
         return data
     return _settings()
 
