@@ -1551,8 +1551,6 @@ setup_and_maybe_update_code() {
                         die " [bs] Failed to download makina-states (${ms})"
                     fi
                 fi
-                #chmod +x ${SALT_MS}/_scripts/install_salt_modules.sh
-                #"${SALT_MS}/_s
                 cd "${ms}"
                 if [ ! -e src ];then
                     venv_path="$(get_venv_path ${ms})"
