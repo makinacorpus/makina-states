@@ -561,6 +561,7 @@ etc-{{data.name}}-dirs-perms:
             {{ settings.c.o.resetperms }}
             --dmode 0770 --fmode 0770
             --user "root" --group "{{ ugs.group }}"
+            --users "root" --groups "{{ ugs.group }}"
             --paths "{{ data.salt_root }}"
             --paths "{{ data.pillar_root }}"
             --excludes "{{ data.salt_root }}.*\/files\/.*"
@@ -576,6 +577,7 @@ etc-{{data.name}}-dirs-perms:
             {{ resetperms }}
             --fmode 0750 --dmode 0750
             --user "root" --group "{{ ugs.group }}"
+            --users "root" --groups "{{ ugs.group }}"
             --paths "{{ data.log_prefix }}"
             --paths "{{ data.run_prefix }}/{{data.name}}"
             --paths "{{ data.cache_prefix }}"
