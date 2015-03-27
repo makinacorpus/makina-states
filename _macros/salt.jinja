@@ -564,7 +564,7 @@ etc-{{data.name}}-dirs-perms:
             --users "root" --groups "{{ ugs.group }}"
             --paths "{{ data.salt_root }}"
             --paths "{{ data.pillar_root }}"
-            --excludes "{{ data.salt_root }}.*\/files\/.*"
+            --excludes "{{ data.salt_root }}.*\/files($|\/.*)"
             --excludes "{{ data.salt_root }}/_grains"
     - require:
       - mc_proxy: dummy-pre-{{data.name}}-service-restart
