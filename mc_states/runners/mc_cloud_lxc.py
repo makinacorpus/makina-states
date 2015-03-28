@@ -371,9 +371,10 @@ def vm_reconfigure(vm, ret=None, output=True, force=False):
         try:
             kw = OrderedDict()
             # XXX: using the lxc runner which is now faster and nicer.
-            args = cli(LXC_IMPLEMENTATION + '.cloud_init_interface', pdt, salt_target=cn)
+            args = cli(
+                LXC_IMPLEMENTATION + '.cloud_init_interface',
+                vm, pdt, salt_target=cn)
             for i in [
-                'name',
                 'cpu',
                 'cpuset',
                 'cpushare',
@@ -385,10 +386,13 @@ def vm_reconfigure(vm, ret=None, output=True, force=False):
                 'gateway',
                 'autostart'
             ]:
+                if i == 'memory' and not i:
+                    continue
                 if i in args:
                     kw[i] = args[i]
             _s['mc_api.time_log']('start', 'lxc_vm_init',  vm, cn)
-            cret = cli(LXC_IMPLEMENTATION + '.reconfigure', kw, salt_target=cn)
+            kw['salt_target'] = cn
+            cret = cli(LXC_IMPLEMENTATION + '.reconfigure', vm, **kw)
             _s['mc_api.time_log']('end', 'lxc_vm_end',  vm=vm)
             if not cret['result']:
                 ret['trace'] += 'FAILURE ON LXC {0}:\n{1}\n'.format(
