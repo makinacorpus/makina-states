@@ -39,6 +39,15 @@ try:
 except:
     HAS_PYLIBMC = False
 
+ONE_MINUTE = 60
+FIVE_MINUTES = 5 * ONE_MINUTE
+TEN_MINUTES = 10 * ONE_MINUTE
+ONE_HOUR = 6 * TEN_MINUTES
+HALF_HOUR = ONE_HOUR / 2
+ONE_DAY = 24 * ONE_HOUR
+ONE_MONTH = 31 * ONE_DAY
+HALF_DAY = ONE_DAY / 2
+
 _MC_SERVERS = {'cache': {}, 'error': {}}
 _CACHE_PREFIX = 'mcstates_api_cache_'
 _GLOBAL_KINDS = [
@@ -104,7 +113,7 @@ def get_mc_server(key=None,
                   binary=None,
                   behaviors=None):
     if not key:
-        keyh = _DEFAULT_MC
+        key = _DEFAULT_MC
     if not addrs:
         addrs = os.environ.get('MC_SERVER', '127.0.0.1')
     if not behaviors:
@@ -113,8 +122,10 @@ def get_mc_server(key=None,
         binary = True
     if isinstance(addrs, basestring):
         addrs = addrs.split(',')
-    addrs = tuple(addrs)
-    error, error_key = False, (key, addrs)
+    if not addrs:
+        addrs = ['127.0.0.1']
+    # log.error('addrs: {0}'.format(addrs))
+    error, error_key = False, (key, tuple(addrs))
     if HAS_PYLIBMC and key not in _MC_SERVERS['cache']:
         try:
             _MC_SERVERS['cache'][key] = pylibmc.Client(
@@ -753,11 +764,32 @@ def invalidate_memoize_cache(key=_DEFAULT_KEY,
     kw['__opts__'] = __opts__
     kw['__salt__'] = __salt__
     if key.lower() in ['all', 'purge', 'purge_all', 'all_entries']:
-        for cache in get_cache_servers(cache, memcache):
-            if is_memcache(cache):
-                cache.flush_all()
+        caches = []
+        if cache is not None:
+            caches.append(cache)
+        if isinstance(memcache, pylibmc.Client):
+            caches.append(memcache)
+        if isinstance(memcache, six.string_types):
+            caches.append(get_mc_server(memcache))
+        if not caches:
+            caches = get_cache_servers(cache=cache, memcache=memcache)
+        for c in caches:
+            if is_memcache(c):
+                for i in range(5):
+                    try:
+                        c.flush_all()
+                        break
+                    except pylibmc.NoServers:
+                        pass
+                    except (Exception,) as exc:
+                        trace = traceback.format_exc()
+                        if i == 9:
+                            log.error(exc.__class__)
+                            log.error(exc.__module__)
+                            log.error(trace)
+                            time.sleep(0.0001)
             else:
-                for i in cache:
+                for i in c:
                     remove_cache_entry(i, **kw)
     else:
         remove_cache_entry(key, **kw)

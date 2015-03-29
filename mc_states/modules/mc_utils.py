@@ -965,6 +965,20 @@ def remove_cache_entry(*args, **kw):
     return mc_states.api.remove_cache_entry(*args, **cache_kwargs(*args, **kw))
 
 
+def get_mc_server(*args, **kw):
+    '''
+    Wrapper for mc_states.api.get_local_cache
+    '''
+    return mc_states.api.get_mc_server(*args, **kw)
+
+ 
+def get_local_cache(*args):
+    '''
+    Wrapper for mc_states.api.get_local_cache
+    '''
+    return mc_states.api.get_local_cache(*args)
+
+
 def invalidate_memoize_cache(*args, **kw):
     '''
     Wrapper for mc_states.api.invalidate_memoize_cache to set __opts__
