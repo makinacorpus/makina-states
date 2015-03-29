@@ -14,7 +14,6 @@ mc_cloud / cloud registries & functions
 import os
 import copy
 import mc_states.api
-from mc_states.api import memoize_cache
 import socket
 import yaml
 import logging
@@ -179,7 +178,7 @@ def extpillar_settings(id_=None, ttl=30, *args, **kw):
         return data
     limited = kw.get('limited', False)
     cache_key = 'mc_cloud.extpillar_settings{0}{1}'.format(id_, limited)
-    return memoize_cache(_do, [id_, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
 
 
 def is_a_vm(id_=None, ttl=30):
@@ -192,7 +191,7 @@ def is_a_vm(id_=None, ttl=30):
             return True
         return False
     cache_key = 'mc_cloud.is_a_vm{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 def is_a_compute_node(id_=None, ttl=30):
     def _do(id_=None):
@@ -204,7 +203,7 @@ def is_a_compute_node(id_=None, ttl=30):
             return True
         return False
     cache_key = 'mc_cloud.is_a_compute_node{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def is_a_controller(id_=None, ttl=30):
@@ -220,7 +219,7 @@ def is_a_controller(id_=None, ttl=30):
             return True
         return False
     cache_key = 'mc_cloud.is_a_controller{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def is_a_cloud_member(id_=None):
@@ -370,7 +369,7 @@ def gather_expositions(ttl=60):
                             edata['kinds'].append(kind)
         return data
     cache_key = '{0}.{1}'.format(__name, 'gather_expositions')
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def gather_exposed_data(target, ttl=60):
@@ -421,7 +420,7 @@ def gather_exposed_data(target, ttl=60):
                     filter_exposed_data(target, gepillar, tdata['access']))
         return exposed_datas
     cache_key = '{0}.{1}.{2}'.format(__name, 'gather_exposed_data', target)
-    return memoize_cache(_do, [target], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [target], {}, cache_key, ttl)
 
 
 def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
@@ -540,7 +539,7 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
     limited = kw.get('limited', False)
     cache_key = 'mc_cloud.ext_pillar{0}{1}{2}'.format(
         id_, prefixed, limited)
-    return memoize_cache(_do, [id_, prefixed, limited], {},
+    return __salt__['mc_utils.memoize_cache'](_do, [id_, prefixed, limited], {},
                          cache_key, ttl)
 
 
@@ -634,7 +633,7 @@ def settings(ttl=60):
             data['bootsalt_branch'] = 'master'
         return data
     cache_key = '{0}.{1}'.format(__name, 'settings')
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def registry():

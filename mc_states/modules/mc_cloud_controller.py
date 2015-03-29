@@ -21,7 +21,6 @@ import os
 from salt.utils.odict import OrderedDict
 import copy
 import mc_states.api
-from mc_states.api import memoize_cache
 from salt.modules import tls as tlsm
 import M2Crypto
 
@@ -70,7 +69,7 @@ def extpillar_settings(id_=None, limited=False, ttl=30):
         return data
     cache_key = 'mc_cloud_controller.extpillar_settings{0}{1}'.format(
         id_, limited)
-    return memoize_cache(_do, [id_, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
 
 
 def ext_pillar(id_=None, prefixed=True, limited=False, ttl=30):
@@ -118,7 +117,7 @@ def ext_pillar(id_=None, prefixed=True, limited=False, ttl=30):
         return data
     cache_key = 'mc_cloud_controller.extpillar{0}{1}{2}'.format(
         id_, prefixed, limited)
-    return memoize_cache(_do, [id_, prefixed, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_, prefixed, limited], {}, cache_key, ttl)
 
 
 def settings(ttl=60):
@@ -130,7 +129,7 @@ def settings(ttl=60):
         data = _s['mc_utils.defaults'](PREFIX, default_settings())
         return data
     cache_key = '{0}.{1}'.format(__name, 'settings')
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 #

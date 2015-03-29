@@ -21,7 +21,6 @@ import copy
 
 from mc_states import saltapi
 from salt.utils.odict import OrderedDict
-from mc_states.api import memoize_cache
 
 __name = 'mc_cloud_vm'
 
@@ -167,7 +166,7 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
         return vt_settings
     cache_key = 'mc_cloud_vm.default_settings'
     return copy.deepcopy(
-        memoize_cache(_do, [cloudSettings, imgSettings], {}, cache_key, ttl))
+        __salt__['mc_utils.memoize_cache'](_do, [cloudSettings, imgSettings], {}, cache_key, ttl))
 
 
 def vm_default_settings(vm, cloudSettings, imgSettings, extpillar=False):
@@ -251,7 +250,7 @@ def vt_extpillar_settings(vt, ttl=60):
             _s[fun](cloudSettings, imgSettings), extdata)
         return data
     cache_key = 'mc_cloud_vm.vt_extpillar_settings{0}'.format(vt)
-    return memoize_cache(_do, [vt], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [vt], {}, cache_key, ttl)
 
 
 def vm_extpillar_settings(vm, limited=False, ttl=30):
@@ -310,7 +309,7 @@ def vm_extpillar_settings(vm, limited=False, ttl=30):
             ipinfos.setdefault('link', 'br0')
         return data
     cache_key = 'mc_cloud_vm.extpillar_settings{0}{1}'.format(vm, limited)
-    return memoize_cache(_do, [vm, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [vm, limited], {}, cache_key, ttl)
 
 
 def vt_extpillar(target, vt, limited=False, ttl=60):
@@ -323,7 +322,7 @@ def vt_extpillar(target, vt, limited=False, ttl=60):
             target, data, limited=limited), extdata)
         return data
     cache_key = 'mc_cloud_vm.vt_extpillar{0}{1}{2}'.format(target, vt, limited)
-    return memoize_cache(_do, [target, vt, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [target, vt, limited], {}, cache_key, ttl)
 
 
 def domains_for(vm, domains=None):
@@ -351,7 +350,7 @@ def vm_extpillar(id_, limited=False, ttl=60):
         _s['mc_cloud.add_ms_ssl_certs'](data)
         return data
     cache_key = 'mc_cloud_vm.vm_extpillar{0}{1}'.format(id_, limited)
-    return memoize_cache(_do, [id_, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
 
 
 def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
@@ -396,7 +395,7 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
     limited = kw.get('limited', False)
     cache_key = 'mc_cloud_vm.ext_pillar{0}{1}{2}'.format(
         id_, prefixed, limited)
-    return memoize_cache(_do, [id_, prefixed, limited],
+    return __salt__['mc_utils.memoize_cache'](_do, [id_, prefixed, limited],
                          {}, cache_key, ttl)
 
 
@@ -412,7 +411,7 @@ def settings(ttl=60):
         settings = _s['mc_utils.defaults'](PREFIX, vm_registry(prefixed=False))
         return settings
     cache_key = '{0}.{1}'.format(__name, 'settings')
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def vt_settings(vt=VT, ttl=60):
@@ -427,7 +426,7 @@ def vt_settings(vt=VT, ttl=60):
                 data,  _s[vt_fun](cloudSettings, imgSettings))
         return data
     cache_key = '{0}.{1}{2}'.format(__name, 'vt_settings', vt)
-    return memoize_cache(_do, [vt], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [vt], {}, cache_key, ttl)
 
 
 def vm_settings(id_=None, ttl=60):
@@ -445,7 +444,7 @@ def vm_settings(id_=None, ttl=60):
                 data, _s[fun](cloudSettings, imgSettings))
         return data
     cache_key = '{0}.{1}{2}'.format(__name, 'vts_settings', id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def vts_settings(ttl=60):
@@ -455,7 +454,7 @@ def vts_settings(ttl=60):
             data[vt] = vt_settings(vt)
         return data
     cache_key = '{0}.{1}'.format(__name, 'vts_settings')
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def vms_settings(ttl=60):
@@ -465,5 +464,5 @@ def vms_settings(ttl=60):
             data[id_] = vm_settings(id_)
         return data
     cache_key = '{0}.{1}'.format(__name, 'vms_settings')
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 # vim:set et sts=4 ts=4 tw=81:
