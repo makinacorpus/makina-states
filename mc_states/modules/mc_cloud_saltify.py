@@ -19,7 +19,6 @@ import mc_states.api
 from pprint import pformat
 from salt.utils.odict import OrderedDict
 from mc_states import saltapi
-from mc_states.api import memoize_cache
 
 __name = 'cloud_saltify'
 VT = 'saltify'
@@ -174,7 +173,7 @@ def target_extpillar(name, c_data=None, ttl=60):
             c_data, _s['mc_pillar.get_cloud_conf_for_cn'](name).get(v, {}))
         return c_data
     cache_key = '{0}.{1}'.format(PREFIX, name)
-    return memoize_cache(_do, [name, c_data], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [name, c_data], {}, cache_key, ttl)
 
 
 def _add_host(_s, done_hosts, rdata, host):
@@ -219,7 +218,7 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
             data = {PREFIX: data}
         return data
     cache_key = '{0}.ext_pillar{1}{2}'.format(PREFIX, id_, prefixed)
-    return memoize_cache(_do, [id_, prefixed], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_, prefixed], {}, cache_key, ttl)
 
 
 '''
@@ -236,7 +235,7 @@ def settings(ttl=30):
                                            default_settings(cloudSettings))
         return settings
     cache_key = '{0}.{1}'.format(PREFIX, 'settings')
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def target_settings(id_=None, ttl=30):
@@ -245,5 +244,5 @@ def target_settings(id_=None, ttl=30):
             id_ = __grains__['id']
         return settings()['targets'].get(id_, {})
     cache_key = '{0}.{1}.{2}'.format(PREFIX, 'target_settings', id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 # vim:set et sts=4 ts=4 tw=80:

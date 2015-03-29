@@ -14,7 +14,6 @@ import copy
 import logging
 import time
 import traceback
-from mc_states.api import memoize_cache, invalidate_memoize_cache
 from salt.exceptions import SaltException
 from salt.utils.odict import OrderedDict
 from mc_states.api import(
@@ -253,7 +252,7 @@ def _get_local_registry(name,
         return registry
     cache_key = RKEY.format(key, registry_format)
     force_run = not cached
-    return memoize_cache(
+    return __salt__['mc_utils.memoize_cache'](
         _do, [name, to_load, registry_format], {},
         cache_key, cachetime, force_run=force_run)
 
@@ -298,7 +297,7 @@ def get_local_registry(name,
 
 def update_registry_params(registry_name, params, registry_format='yaml'):
     '''Update the desired local registry'''
-    invalidate_memoize_cache(RKEY.format(registry_name, registry_format))
+    __salt__['mc_utils.invalidate_memoize_cache'](RKEY.format(registry_name, registry_format))
     registry = get_local_registry(
         registry_name, registry_format=registry_format)
     changes = {}
@@ -329,7 +328,7 @@ def update_registry_params(registry_name, params, registry_format='yaml'):
     if changes:
         encode_local_registry(
             registry_name, registry, registry_format=registry_format)
-        invalidate_memoize_cache(RKEY.format(registry_name, registry_format))
+        __salt__['mc_utils.invalidate_memoize_cache'](RKEY.format(registry_name, registry_format))
     return changes
 
 

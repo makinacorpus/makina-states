@@ -20,7 +20,6 @@ import datetime
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 import traceback
-from mc_states.api import memoize_cache
 import mc_states.api
 import random
 import string
@@ -33,10 +32,6 @@ DOTTED_DOMAIN_PATTERN = '((^{0}\\.?$)|(\\.(@{0})|({0}\\.?)))$'
 __name = 'mc_pillar'
 
 SUPPORTED_DB_FORMATS = ['sls', 'yaml', 'json']
-
-
-def memoize_cache(*a, **kw):
-    return __salt__['mc_utils.memoize_cache'](*a, **kw)
 
 
 def mastersalt_minion_id():
@@ -154,7 +149,7 @@ def loaddb_do(*a, **kw5):
 
 def load_db(ttl=60):
     cache_key = __name + '.load_db'
-    return memoize_cache(__salt__[__name + '.loaddb_do'],
+    return __salt__['mc_utils.memoize_cache'](__salt__[__name + '.loaddb_do'],
                          [], {}, cache_key, ttl)
 
 
@@ -195,7 +190,7 @@ def query(doc_types, ttl=30, default=_marker, **kwargs8):
             if skwargs:
                 cache_key = __name + '.query_{0}{1}'.format(
                     doc_types[0], skwargs)
-                return memoize_cache(query_filter,
+                return __salt__['mc_utils.memoize_cache'](query_filter,
                                      [doc_types[0]],
                                      kwargs8, cache_key, ttl)
             else:
@@ -221,7 +216,7 @@ def load_network(ttl=60):
             data[i] = copy.deepcopy(__salt__[__name + '.query'](i))
         return data
     cache_key = __name + '._load_network'
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def _load_network(*a, **kw):
@@ -293,7 +288,7 @@ def get_db_infrastructure_maps(ttl=60):
                 'vms': vms}
         return data
     cache_key = __name + '.get_db_infrastructure_maps'
-    return memoize_cache(_dogetdbinframaps, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_dogetdbinframaps, [], {}, cache_key, ttl)
 
 
 def ips_for(fqdn,
@@ -772,7 +767,7 @@ def rr_a(fqdn, fail_over=None, ttl=60):
         ips = ips_for(fqdn, fail_over=fail_over)
         return rr_entry(fqdn, ips)
     cache_key = __name + '.rrs_a_{0}_{1}_{2}'.format(fqdn, fqdn, fail_over)
-    return memoize_cache(_do, [fqdn, fail_over], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [fqdn, fail_over], {}, cache_key, ttl)
 
 
 def whitelisted(dn, ttl=60):
@@ -787,7 +782,7 @@ def whitelisted(dn, ttl=60):
                 w.append(ip)
         return w
     cache_key = __name + '.whitelisted_{0}'.format(dn)
-    return memoize_cache(_do_whitel, [dn], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_whitel, [dn], {}, cache_key, ttl)
 
 
 def filter_rr_str(all_rrs):
@@ -832,7 +827,7 @@ def rrs_txt_for(domain, ttl=60):
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_txt_for_{0}'.format(domain)
-    return memoize_cache(_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
 
 
 def get_ldap(ttl=60):
@@ -891,7 +886,7 @@ def get_ldap(ttl=60):
             adata['syncrepl'] = srepl
         return data
     cache_key = __name + '.getldap'
-    return memoize_cache(_do_getldap, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_getldap, [], {}, cache_key, ttl)
 
 
 def get_slapd_conf(id_, ttl=60):
@@ -921,7 +916,7 @@ def get_slapd_conf(id_, ttl=60):
                 ] = data[k]
         return rdata
     cache_key = __name + '.get_ldap_conf_for_{0}'.format(id_)
-    return memoize_cache(_do_slapd, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_slapd, [id_], {}, cache_key, ttl)
 
 
 def is_ldap_slave(id_, ttl=60):
@@ -933,7 +928,7 @@ def is_ldap_slave(id_, ttl=60):
             return True
         return False
     cache_key = __name + '.is_ldap_slave_{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def is_ldap_master(id_, ttl=60):
@@ -945,7 +940,7 @@ def is_ldap_master(id_, ttl=60):
             return True
         return False
     cache_key = __name + '.is_ldap_master_{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_nss(ttl=60):
@@ -988,7 +983,7 @@ def get_nss(ttl=60):
         dns_servers['all'].sort()
         return dns_servers
     cache_key = __name + '.get_nss'
-    return memoize_cache(_do_getnss, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_getnss, [], {}, cache_key, ttl)
 
 
 def get_ns_master(id_, dns_servers=None, default=None, ttl=60):
@@ -1018,7 +1013,7 @@ def get_ns_master(id_, dns_servers=None, default=None, ttl=60):
                     master, id_))
         return master
     cache_key = __name + '.get_ns_master_{0}'.format(id_)
-    return memoize_cache(_do_get_ns_master,
+    return __salt__['mc_utils.memoize_cache'](_do_get_ns_master,
                          [id_, dns_servers, default], {}, cache_key, ttl)
 
 
@@ -1031,7 +1026,7 @@ def is_failover(ip, ttl=60):
                     return True
         return False
     cache_key = __name + '.is_failover{0}'.format(ip)
-    return memoize_cache(_do, [ip], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [ip], {}, cache_key, ttl)
 
 
 def get_names_for_failover(ip, ttl=60):
@@ -1044,7 +1039,7 @@ def get_names_for_failover(ip, ttl=60):
                     names.append(name)
         return names
     cache_key = __name + '.get_names_for_failover{0}'.format(ip)
-    return memoize_cache(_do, [ip], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [ip], {}, cache_key, ttl)
 
 
 def get_servername_for_ip(ip, ttl=600, no_vm=False):
@@ -1078,7 +1073,7 @@ def get_servername_for_ip(ip, ttl=600, no_vm=False):
                         break
         return name
     cache_key = __name + '.get_servername_for_ip{0}'.format(ip)
-    return memoize_cache(_do, [ip], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [ip], {}, cache_key, ttl)
 
 
 def get_servername_for(id_or_ip, ttl=600):
@@ -1100,7 +1095,7 @@ def get_servername_for(id_or_ip, ttl=600):
             if name:
                 return name
     cache_key = __name + '.get_servername_for{0}'.format(id_or_ip)
-    return memoize_cache(_do, [id_or_ip], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_or_ip], {}, cache_key, ttl)
 
 
 def get_raw_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
@@ -1151,7 +1146,7 @@ def get_raw_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
                 lslaves[k] = val
         return lslaves
     cache_key = __name + '.get_raw_ns_slaves_{0}'.format(id_)
-    return memoize_cache(_do_get_ns_slaves,
+    return __salt__['mc_utils.memoize_cache'](_do_get_ns_slaves,
                          [id_, dns_servers, default], {}, cache_key, ttl)
 
 
@@ -1180,7 +1175,7 @@ def get_ns_slaves(id_, dns_servers=None, default=None, ttl=60):
                 slaves[ns_fqdn] = target
         return slaves
     cache_key = __name + '.get_ns_slaves_{0}'.format(id_)
-    return memoize_cache(_do_get_ns_slaves,
+    return __salt__['mc_utils.memoize_cache'](_do_get_ns_slaves,
                          [id_, dns_servers, default], {}, cache_key, ttl)
 
 
@@ -1203,7 +1198,7 @@ def get_nss_for_zone(id_, ttl=60):
         data = {'master': master, 'slaves': slaves}
         return data
     cache_key = __name + '.get_nss_for_zone_{0}'.format(id_)
-    return memoize_cache(_do_getnssforzone, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_getnssforzone, [id_], {}, cache_key, ttl)
 
 
 def resolve_ips(name, fail_over=True, dns_query=True, ttl=60):
@@ -1229,7 +1224,7 @@ def resolve_ips(name, fail_over=True, dns_query=True, ttl=60):
                 zips = []
         return zips
     cache_key = __name + '.resolve_ips{0}{1}{2}'.format(name, fail_over, dns_query)
-    return memoize_cache(_do, [name, fail_over, dns_query], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [name, fail_over, dns_query], {}, cache_key, ttl)
 
 
 def resolve_ip(name, fail_over=True, dns_query=True):
@@ -1279,7 +1274,7 @@ def get_slaves_for(id_, ttl=60):
         allslaves['all'].sort()
         return allslaves
     cache_key = __name + '.get_slaves_for_{0}'.format(id_)
-    return memoize_cache(_do_getslavesfor, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_getslavesfor, [id_], {}, cache_key, ttl)
 
 
 def get_ns(domain, ttl=60):
@@ -1289,7 +1284,7 @@ def get_ns(domain, ttl=60):
     def _do(domain):
         return get_nss_for_zone(domain)[0]
     cache_key = __name + '.get_ns_{0}'.format(domain)
-    return memoize_cache(_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
 
 
 def get_slaves_zones_for(fqdn, ttl=60):
@@ -1314,7 +1309,7 @@ def get_slaves_zones_for(fqdn, ttl=60):
                 zones[zone] = zi['master']
         return zones
     cache_key = __name + '.get_slaves_zones_for_{0}'.format(fqdn)
-    return memoize_cache(_do_getslaveszonesfor, [fqdn], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_getslaveszonesfor, [fqdn], {}, cache_key, ttl)
 
 
 def rrs_mx_for(domain, ttl=60):
@@ -1340,7 +1335,7 @@ def rrs_mx_for(domain, ttl=60):
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_mx_for_{0}'.format(domain)
-    return memoize_cache(_do_mx, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_mx, [domain], {}, cache_key, ttl)
 
 
 def rrs_ns_for(domain, ttl=60):
@@ -1375,7 +1370,7 @@ def rrs_ns_for(domain, ttl=60):
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_ns_for_{0}'.format(domain)
-    return memoize_cache(_dorrsnsfor, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_dorrsnsfor, [domain], {}, cache_key, ttl)
 
 
 def rrs_a_for(domain, ttl=60):
@@ -1403,7 +1398,7 @@ def rrs_a_for(domain, ttl=60):
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_a_for_{0}'.format(domain)
-    return memoize_cache(_dorrsafor, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_dorrsafor, [domain], {}, cache_key, ttl)
 
 
 def rrs_raw_for(domain, ttl=60):
@@ -1427,7 +1422,7 @@ def rrs_raw_for(domain, ttl=60):
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_raw_for_{0}'.format(domain)
-    return memoize_cache(_dorrsrawfor, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_dorrsrawfor, [domain], {}, cache_key, ttl)
 
 
 def rrs_cnames_for(domain, ttl=60):
@@ -1504,7 +1499,7 @@ def rrs_cnames_for(domain, ttl=60):
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_cnames_for_{0}'.format(domain)
-    return memoize_cache(_dorrscnamesfor, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_dorrscnamesfor, [domain], {}, cache_key, ttl)
 
 
 def serial_for(domain,
@@ -1709,7 +1704,7 @@ def get_ldap_configuration(id_=None, ttl=60):
             data = __salt__['mc_utils.dictupdate'](data, configuration_settings[id_])
         return data
     cache_key = __name + '.get_ldap_configuration{0}'.format(id_)
-    return memoize_cache(_do_ldap, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_ldap, [id_], {}, cache_key, ttl)
 
 
 def get_configuration(id_=None, ttl=60):
@@ -1722,7 +1717,7 @@ def get_configuration(id_=None, ttl=60):
             data = __salt__['mc_utils.dictupdate'](data, configuration_settings[id_])
         return data
     cache_key = __name + '.get_configuration_{0}'.format(id_)
-    return memoize_cache(_do_conf, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_conf, [id_], {}, cache_key, ttl)
 
 
 def get_snmpd_settings(id_=None, ttl=60):
@@ -1735,7 +1730,7 @@ def get_snmpd_settings(id_=None, ttl=60):
             data = __salt__['mc_utils.dictupdate'](data, snmpd_settings[id_])
         return data
     cache_key = __name + '.get_snmpd_settings_{0}'.format(id_)
-    return memoize_cache(_do_snmpd, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_snmpd, [id_], {}, cache_key, ttl)
 
 
 def get_shorewall_settings(id_=None, ttl=60):
@@ -1793,7 +1788,7 @@ def get_shorewall_settings(id_=None, ttl=60):
             shw_params[param] = value
         return shw_params
     cache_key = __name + '.get_shorewall_settings_{0}'.format(id_)
-    return memoize_cache(_do_sw, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_sw, [id_], {}, cache_key, ttl)
 
 
 def get_removed_keys(id_=None, ttl=60):
@@ -1812,7 +1807,7 @@ def get_removed_keys(id_=None, ttl=60):
                     skeys.append(key)
         return skeys
     cache_key = __name + '.get_removed_keys{0}'.format(id_)
-    return memoize_cache(_do_removed, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_removed, [id_], {}, cache_key, ttl)
 
 
 def get_sysadmins_keys(id_=None, ttl=60):
@@ -1833,7 +1828,7 @@ def get_sysadmins_keys(id_=None, ttl=60):
                     skeys.append(key)
         return skeys
     cache_key = __name + '.get_sysadmin_keys_{0}'.format(id_)
-    return memoize_cache(_do_sys_keys, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_sys_keys, [id_], {}, cache_key, ttl)
 
 
 def delete_password_for(id_, user='root', ttl=60):
@@ -1906,7 +1901,7 @@ def get_password(id_, user='root', ttl=60, regenerate=False, length=12,
     if force or regenerate:
         return _do_pass(id_, user)
     cache_key = __name + '.get_passwords_for_{0}_{1}'.format(id_, user)
-    return memoize_cache(_do_pass, [id_, user], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_pass, [id_, user], {}, cache_key, ttl)
 
 
 def get_passwords(id_, ttl=60):
@@ -1942,7 +1937,7 @@ def get_passwords(id_, ttl=60):
         passwords = {'clear': pw_id, 'crypted': crypted}
         return passwords
     cache_key = __name + '.get_passwords_{0}'.format(id_)
-    return memoize_cache(_do_pass, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_pass, [id_], {}, cache_key, ttl)
 
 
 def regenerate_passwords(ids_=None, users=None):
@@ -1973,7 +1968,7 @@ def get_ssh_groups(id_=None, ttl=60):
                 ssh_groups.append(group)
         return ssh_groups
     cache_key = __name + '.get_ssh_groups_{0}'.format(id_)
-    return memoize_cache(_do_ssh_grp, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_ssh_grp, [id_], {}, cache_key, ttl)
 
 
 def get_sudoers(id_=None, ttl=60):
@@ -1988,7 +1983,7 @@ def get_sudoers(id_=None, ttl=60):
             sudoers = []
         return sudoers
     cache_key = __name + '.get_sudoers_{0}'.format(id_)
-    return memoize_cache(_do_sudoers, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_sudoers, [id_], {}, cache_key, ttl)
 
 
 def backup_default_configuration_type_for(id_, ttl=60):
@@ -2005,7 +2000,7 @@ def backup_default_configuration_type_for(id_, ttl=60):
         return confs.get(id_, None)
     cache_key = __name + '.backup_default_configuration_type_for{0}'.format(
         id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def backup_configuration_type_for(id_, ttl=60):
@@ -2017,7 +2012,7 @@ def backup_configuration_type_for(id_, ttl=60):
             confs[id_] = id_
         return confs.get(id_, None)
     cache_key = __name + '.backup_configuration_type_for{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def backup_configuration_for(id_, ttl=60):
@@ -2069,7 +2064,7 @@ def backup_configuration_for(id_, ttl=60):
                             ddata.pop(ddata.index(item))
         return data
     cache_key = __name + '.backup_configuration_for{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def backup_server_for(id_, ttl=60):
@@ -2077,7 +2072,7 @@ def backup_server_for(id_, ttl=60):
         confs = __salt__[__name + '.query']('backup_server_map')
         return confs.get(id_, confs['default'])
     cache_key = __name + '.backup_server_for{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def backup_server(id_, ttl=60):
@@ -2085,7 +2080,7 @@ def backup_server(id_, ttl=60):
         confs = __salt__[__name + '.query']('backup_servers')
         return confs[id_]
     cache_key = __name + '.backup_server{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def is_burp_server(id_, ttl=60):
@@ -2093,7 +2088,7 @@ def is_burp_server(id_, ttl=60):
         confs = __salt__[__name + '.query']('backup_servers')
         return 'burp' in confs.get(id_, {}).get('types', [])
     cache_key = __name + '.is_burp_server{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def backup_server_settings_for(id_, ttl=60):
@@ -2158,7 +2153,7 @@ def backup_server_settings_for(id_, ttl=60):
         data['confs'] = confs
         return data
     cache_key = __name + '.backup_server_settings_for{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_top_variables(ttl=15):
@@ -2168,7 +2163,7 @@ def get_top_variables(ttl=15):
         data['non_managed_hosts'] = query('non_managed_hosts')
         return data
     cache_key = __name + '.get_top_variables'
-    return memoize_cache(_do_top, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_top, [], {}, cache_key, ttl)
 
 
 def is_dns_slave(id_, ttl=60):
@@ -2191,7 +2186,7 @@ def is_dns_slave(id_, ttl=60):
                 log.error(traceback.format_exc())
         return False
     cache_key = __name + '.is_dns_slave_{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def is_dns_master(id_, ttl=60):
@@ -2214,7 +2209,7 @@ def is_dns_master(id_, ttl=60):
                 log.error(traceback.format_exc())
         return False
     cache_key = __name + '.is_dns_master_{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_makina_states_variables(id_, ttl=60):
@@ -2240,7 +2235,7 @@ def get_makina_states_variables(id_, ttl=60):
         data['msls'] = 'minions.{eid}'.format(**data)
         return data
     cache_key = __name + '.get_makina_states_variables_{0}'.format(id_)
-    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_ms_var, [id_], {}, cache_key, ttl)
 
 
 def get_supervision_conf_kind(id_, kind, ttl=60):
@@ -2270,7 +2265,7 @@ def get_supervision_conf_kind(id_, kind, ttl=60):
         return rdata
     cache_key = __name + '.get_supervision_conf_kind{0}_{1}'.format(
         id_, kind)
-    return memoize_cache(_do, [id_, kind], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_, kind], {}, cache_key, ttl)
 
 
 def is_cloud_vm(target):
@@ -2298,7 +2293,7 @@ def get_non_supervised_hosts(ttl=60):
         return hosts
 
     cache_key = __name + '.get_non_supervised_hosts'
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def get_supervision_objects_defs(id_):
@@ -2546,7 +2541,7 @@ def get_supervision_pnp_conf(id_, ttl=60):
         k = 'makina-states.services.monitoring.pnp4nagios'
         return {k: get_supervision_conf_kind(id_, 'pnp')}
     cache_key = __name + '.get_supervision_pnp_conf{0}'.format(id_)
-    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_ms_var, [id_], {}, cache_key, ttl)
 
 
 def get_supervision_nagvis_conf(id_, ttl=60):
@@ -2554,7 +2549,7 @@ def get_supervision_nagvis_conf(id_, ttl=60):
         k = 'makina-states.services.monitoring.nagvis'
         return {k: get_supervision_conf_kind(id_, 'nagvis')}
     cache_key = __name + '.get_supervision_nagvis_conf{0}'.format(id_)
-    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_ms_var, [id_], {}, cache_key, ttl)
 
 
 def get_supervision_ui_conf(id_, ttl=60):
@@ -2562,7 +2557,7 @@ def get_supervision_ui_conf(id_, ttl=60):
         k = 'makina-states.services.monitoring.icinga_web'
         return {k: get_supervision_conf_kind(id_, 'ui')}
     cache_key = __name + '.get_supervision_ui_conf{0}'.format(id_)
-    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_ms_var, [id_], {}, cache_key, ttl)
 
 
 def is_supervision_kind(id_, kind, ttl=60):
@@ -2579,7 +2574,7 @@ def is_supervision_kind(id_, kind, ttl=60):
                 return True
         return False
     cache_key = __name + '.is_supervision_kind{0}{1}'.format(id_, kind)
-    return memoize_cache(_do, [id_, kind], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_, kind], {}, cache_key, ttl)
 
 
 def format_rrs(domain, alt=None):
@@ -2642,7 +2637,7 @@ def get_ns_server_masters_for(id_, ttl=60):
         _s = __salt__
 
     cache_key = __name + '.get_ns_server_slaves_for{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_dns_slave_conf(id_, ttl=60):
@@ -2668,7 +2663,7 @@ def get_dns_slave_conf(id_, ttl=60):
             rdata.update(slave_key(id_, ip, master=False))
         return rdata
     cache_key = __name + '.get_dns_slave_conf{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_ns_server_slaves_for(id_, ttl=60):
@@ -2692,7 +2687,7 @@ def get_ns_server_slaves_for(id_, ttl=60):
                         candidates[server] = sips
         return candidates
     cache_key = __name + '.get_ns_server_slaves_for{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_dns_master_conf(id_, ttl=60):
@@ -2732,7 +2727,7 @@ def get_dns_master_conf(id_, ttl=60):
                     rdata[pref + '.servers.{0}'.format(ip)] = {'keys': [tip]}
         return rdata
     cache_key = __name + '.get_dns_master_conf{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def manage_network_common(fqdn):
@@ -2935,7 +2930,7 @@ def get_snmpd_conf(id_, ttl=60):
                 pref + ".default_key": data['key']})
         return rdata
     cache_key = __name + '.get_snmpd_conf{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_backup_client_conf(id_):
@@ -2960,7 +2955,7 @@ def get_supervision_master_conf(id_, ttl=60):
               'icinga2.modules.cgi.enabled'] = False
         return rdata
     cache_key = __name + '.get_supervision_master_conf{0}'.format(id_)
-    return memoize_cache(_do_ms_var, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do_ms_var, [id_], {}, cache_key, ttl)
 
 
 def get_supervision_confs(id_, ttl=60):
@@ -2978,7 +2973,7 @@ def get_supervision_confs(id_, ttl=60):
             __salt__[__name + '.get_supervision_objects_defs'](id_))
         return rdata
     cache_key = __name + '.get_supervision_confs{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_sudoers_conf(id_):
@@ -3029,7 +3024,7 @@ def is_managed(id_, ttl=60):
         db = get_db_infrastructure_maps()
         return id_ in db['hosts']
     cache_key = __name + '.is__managed_{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def is_salt_managed(id_, ttl=60):
@@ -3041,7 +3036,7 @@ def is_salt_managed(id_, ttl=60):
         get_db_infrastructure_maps()
         return is_managed(id_) and id_ not in query('non_managed_hosts')
     cache_key = __name + '.is_salt_managed_{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_fail2ban_conf(id_):
@@ -3153,7 +3148,7 @@ def get_mail_conf(id_, ttl=60):
                 data[p] = mail_conf[k]
         return data
     cache_key = __name + '.get_mail_conf{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_ssh_keys_conf(id_):
@@ -3269,7 +3264,7 @@ def get_dhcpd_conf(id_, ttl=60):
         p = 'makina-states.services.dns.dhcpd'
         return {p: conf}
     cache_key = __name + '.get_dhcpd_conf{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_pkgmgr_conf(id_, ttl=60):
@@ -3291,7 +3286,7 @@ def get_pkgmgr_conf(id_, ttl=60):
             rdata[p + item] = val
         return rdata
     cache_key = __name + '.get_pkgmgr_conf{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_dns_resolvers(id_, ttl=60):
@@ -3319,7 +3314,7 @@ def get_dns_resolvers(id_, ttl=60):
             rdata[p + 'default_dnses'] = [a for a in resolvers]
         return rdata
     cache_key = __name + '.get_dns_resolvers{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def ext_pillar(id_, pillar=None, *args, **kw):
@@ -3433,14 +3428,14 @@ def get_global_conf(section, entry=10, ttl=30):
             extdata = {}
         return extdata
     cache_key = __name + '.get_global_conf{0}{1}'.format(section, entry)
-    return memoize_cache(_do, [section, entry], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [section, entry], {}, cache_key, ttl)
 
 
 def get_global_clouf_conf(entry, ttl=30):
     def _do(entry):
         return get_global_conf('cloud_settings', entry)
     cache_key = __name + '.get_global_cloudconf{0}'.format(entry)
-    return memoize_cache(_do, [entry], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [entry], {}, cache_key, ttl)
 
 
 def get_cloud_conf(ttl=30):
@@ -3478,7 +3473,7 @@ def get_cloud_conf(ttl=30):
                     dvms[vm] = cn_vms[vm] = vmdata
         return rdata
     cache_key = __name + '.get_cloud_conf'
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def get_cloud_conf_by_cns():
@@ -3502,7 +3497,7 @@ def get_cloud_conf_by_vts(ttl=30):
                 vcnvms[vm] = vmdata
         return data
     cache_key = __name + '.get_cloud_conf_by_vts'
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def get_cloud_conf_by_vms():
@@ -3561,7 +3556,7 @@ def get_domains_for(id_, ttl=60):
             todo[domain] = domain
         return todo
     cache_key = __name + '.get_domains_for{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def add_ssl_cert(common_name, cert_content, cert_key, data=None):
@@ -3593,18 +3588,18 @@ def get_ssl_conf(id_, ttl=60):
                 add_ssl_cert(cinfos.get_subject().CN, lcert, lkey, rdata)
         return rdata
     cache_key = __name + '.get_ssl_conf{0}'.format(id_)
-    return memoize_cache(_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def test():
     def do():
         log.error('foo')
         return 1
-    memoize_cache(do, [], {}, 'foo', 2)
-    memoize_cache(do, [], {}, 'foo', 2)
-    memoize_cache(do, [], {}, 'foo', 2)
+    __salt__['mc_utils.memoize_cache'](do, [], {}, 'foo', 2)
+    __salt__['mc_utils.memoize_cache'](do, [], {}, 'foo', 2)
+    __salt__['mc_utils.memoize_cache'](do, [], {}, 'foo', 2)
     time.sleep(3)
-    memoize_cache(do, [], {}, 'foo', 2)
+    __salt__['mc_utils.memoize_cache'](do, [], {}, 'foo', 2)
     from mc_states.api import _LOCAL_CACHE
     from pprint import pprint
     pprint(_LOCAL_CACHE)

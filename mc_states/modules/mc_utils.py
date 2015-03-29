@@ -951,12 +951,6 @@ def memoize_cache(*args, **kw):
     return api.memoize_cache(*args, **cache_kwargs(*args, **kw))
 
 
-def amemoize_cache(*args, **kw):
-    memoize_cache(*args, **kw)
-    import pdb;pdb.set_trace()  ## Breakpoint ##
-    return memoize_cache(*args, **kw)
-
-
 def invalidate_memoize_cache(*args, **kw):
     return mc_states.api.invalidate_memoize_cache(
         *args, **cache_kwargs(*args, **kw))

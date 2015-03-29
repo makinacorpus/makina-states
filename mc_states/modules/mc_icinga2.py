@@ -43,7 +43,6 @@ import logging
 import traceback
 import copy
 import mc_states.api
-from mc_states.api import memoize_cache
 
 __name = 'icinga2'
 _default = object()
@@ -150,7 +149,7 @@ def load_objects(core=True, ttl=120):
             })
         return data
     cache_key = 'mc_icinga2.load_objects___cache__'
-    return memoize_cache(_do, [core], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [core], {}, cache_key, ttl)
 
 
 def objects(core=True, ttl=120):
@@ -274,7 +273,7 @@ def objects(core=True, ttl=120):
                 raise
         return rdata
     cache_key = 'mc_icinga2.objects___cache__'
-    return memoize_cache(_do, [core], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [core], {}, cache_key, ttl)
 
 
 def quotev(v, valtype=''):
@@ -608,7 +607,7 @@ def autoconfigured_hosts(ttl=60):
                 host, data=data)
         return rdata
     cache_key = 'mc_icinga2.autoconfigured_hosts__cache__'
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def autoconfigured_host(host, data=None, ttl=60):
@@ -635,7 +634,7 @@ def autoconfigured_host(host, data=None, ttl=60):
             raise exc
         return rdata
     cache_key = 'mc_icinga2.autoconfigured_host__cache__{0}'.format(host)
-    return memoize_cache(_do, [host, data], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [host, data], {}, cache_key, ttl)
 
 
 def add_notification(attrs,
