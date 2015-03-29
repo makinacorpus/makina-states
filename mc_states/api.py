@@ -142,7 +142,7 @@ def get_mc_server(key=None,
         # retry failed memcache server in ten minutes
         if time.time() < (_MC_SERVERS['error'][error_key] + (10 * 60)):
             ping_test = False
-    if ping_test:
+    if HAS_PYLIBMC and ping_test:
         try:
             _MC_SERVERS['cache'][key].set('mc_states_ping', 'ping')
         except (pylibmc.WriteError,) as exc:
@@ -472,7 +472,7 @@ def cache_order(key, memcache_first=None, memoize_first=None):
         FORCE_LAST = 10000
         DEFAULT_FIRST = 300
         DEFAULT_SECOND = 500
-        if isinstance(cache, pylibmc.Client):
+        if is_memcache(cache):
             if memoize_first:
                 value += DEFAULT_SECOND
             elif memcache_first:
@@ -484,7 +484,7 @@ def cache_order(key, memcache_first=None, memoize_first=None):
                 value += DEFAULT_FIRST
             else:
                 value += DEFAULT_SECOND
-        if not isinstance(cache, pylibmc.Client):
+        if not is_memcache(cache):
             if cache is not get_local_cache():
                 value = 0
         return "{0}".format(value)
@@ -494,13 +494,15 @@ def cache_order(key, memcache_first=None, memoize_first=None):
 def get_cache_servers(cache=None,
                       memcache=None,
                       key=None,
+                      try_memcache=True,
                       memoize_first=None,
                       memcache_first=None):
     cache = get_local_cache(cache)
-    mc_server = get_mc_server(memcache)
     caches = [cache]
-    if mc_server and mc_server not in caches:
-        caches.append(mc_server)
+    if try_memcache:
+        mc_server = get_mc_server(memcache)
+        if mc_server and mc_server not in caches:
+            caches.append(mc_server)
     caches.sort(key=cache_order(key,
                                 memoize_first=memoize_first,
                                 memcache_first=memcache_first))
@@ -767,7 +769,7 @@ def invalidate_memoize_cache(key=_DEFAULT_KEY,
         caches = []
         if cache is not None:
             caches.append(cache)
-        if isinstance(memcache, pylibmc.Client):
+        if is_memcache(cache):
             caches.append(memcache)
         if isinstance(memcache, six.string_types):
             caches.append(get_mc_server(memcache))
