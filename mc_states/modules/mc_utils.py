@@ -951,6 +951,38 @@ def memoize_cache(*args, **kw):
     return api.memoize_cache(*args, **cache_kwargs(*args, **kw))
 
 
+def remove_entry(*args, **kw):
+    '''
+    Wrapper for mc_states.api.remove_cache_entry to set __opts__
+    '''
+    return mc_states.api.remove_entry(*args, **cache_kwargs(*args, **kw))
+
+
+def remove_cache_entry(*args, **kw):
+    '''
+    Wrapper for mc_states.api.remove_cache_entry to set __opts__
+    '''
+    return mc_states.api.remove_cache_entry(*args, **cache_kwargs(*args, **kw))
+
+
 def invalidate_memoize_cache(*args, **kw):
-    return mc_states.api.invalidate_memoize_cache(
-        *args, **cache_kwargs(*args, **kw))
+    '''
+    Wrapper for mc_states.api.invalidate_memoize_cache to set __opts__
+    '''
+    return mc_states.api.invalidate_memoize_cache(*args,
+                                                  **cache_kwargs(*args, **kw))
+
+
+def purge_memoize_cache(*args, **kw):
+    '''
+    Wrapper for mc_states.api.invalidate_memoize_cache to set __opts__
+    '''
+    return mc_states.api.purge_memoize_cache(*args,
+                                             **cache_kwargs(*args, **kw))
+
+
+def cache_check(*args, **kw):
+    '''
+    Wrapper for mc_states.api.invalidate_memoize_cache to set __opts__
+    '''
+    return mc_states.api.cache_check(*args, **cache_kwargs(*args, **kw))

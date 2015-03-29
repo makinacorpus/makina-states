@@ -30,6 +30,7 @@ log = logging.getLogger(__name__)
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
 DOTTED_DOMAIN_PATTERN = '((^{0}\\.?$)|(\\.(@{0})|({0}\\.?)))$'
 __name = 'mc_pillar'
+_marker = object()
 
 SUPPORTED_DB_FORMATS = ['sls', 'yaml', 'json']
 
@@ -150,59 +151,28 @@ def loaddb_do(*a, **kw5):
 def load_db(ttl=60):
     cache_key = __name + '.load_db'
     return __salt__['mc_utils.memoize_cache'](__salt__[__name + '.loaddb_do'],
-                         [], {}, cache_key, ttl)
+                                              [], {}, cache_key, ttl)
 
 
-def query_filter(doc_type, **kwargs6):
-    db = __salt__[__name + '.load_db']()
-    docs = db[doc_type]
-    if doc_type in ['ipsfo_map',
-                    'ips',
-                    'ipsfo',
-                    'hosts',
-                    'passwords_map',
-                    'burp_configurations']:
-        if 'q' in kwargs6:
+def query(doc_types, ttl=30, default=_marker, **kwargs):
+    def _do(doc_types):
+        try:
+            db = __salt__[__name + '.load_db']()
             try:
-                docs = docs[kwargs6['q']]
-            except KeyError:
-                msg = '{0} -> {1}'.format(doc_type, kwargs6['q'])
-                raise NoResultError(msg)
-    return docs
-
-
-_marker = object()
-
-
-def query(doc_types, ttl=30, default=_marker, **kwargs8):
-    skwargs = ''
-    try:
-        skwargs = json.dumps(kwargs8)
-    except:
-        try:
-            skwargs = repr(kwargs8)
-        except:
-            pass
-    if not isinstance(doc_types, list):
-        doc_types = [doc_types]
-    if len(doc_types) == 1:
-        try:
-            if skwargs:
-                cache_key = __name + '.query_{0}{1}'.format(
-                    doc_types[0], skwargs)
-                return __salt__['mc_utils.memoize_cache'](query_filter,
-                                     [doc_types[0]],
-                                     kwargs8, cache_key, ttl)
-            else:
-                return query_filter(doc_types[0], **kwargs8)
-        except NoResultError:
+                docs = db[doc_types]
+            except (IndexError, KeyError):
+                raise NoResultError('no {0} in database'.format(doc_types))
+        except (NoResultError,) as exc:
             if default is not _marker:
-                return default
-    raise RuntimeError('Invalid invocation')
-
-
-def query_first(doc_types, ttl=30, **kwargs7):
-    return __salt__[__name + '.query'](doc_types, ttl, **kwargs7)[0]
+                docs = default
+            else:
+                raise exc
+        return docs
+    cache_key = __name + '.query_{0}'.format(doc_types)
+    if default is _marker:
+        cache_key += '_default'
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [doc_types], kwargs, cache_key, ttl)
 
 
 def load_network(ttl=60):
@@ -215,8 +185,10 @@ def load_network(ttl=60):
         for i in ['cnames', 'ips', 'ipsfo', 'ips_map', 'ipsfo_map']:
             data[i] = copy.deepcopy(__salt__[__name + '.query'](i))
         return data
+    # no memcached, relies on memoize !
     cache_key = __name + '._load_network'
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [], {}, cache_key, ttl, cache='mc_pillar', pdb=True)
 
 
 def _load_network(*a, **kw):
@@ -237,7 +209,7 @@ def get_db_infrastructure_maps(ttl=60):
                  'vv.yyy.net': {'target': 'xx.yyy.net',
                                 'vt': 'kvm'},}}
     '''
-    def _dogetdbinframaps():
+    def _do():
         lbms = __salt__[__name + '.query']('baremetal_hosts')
         bms = OrderedDict()
         vms = OrderedDict()
@@ -264,8 +236,7 @@ def get_db_infrastructure_maps(ttl=60):
                 for vm in lvms:
                     if vm not in non_managed_hosts:
                         cloud_vms.append(vm)
-                    vms.update({vm: {'target': target,
-                                     'vt': vt}})
+                    vms.update({vm: {'target': target, 'vt': vt}})
         standalone_hosts = {}
         for i in bms:
             if (
@@ -287,8 +258,10 @@ def get_db_infrastructure_maps(ttl=60):
                 'cloud_vms': cloud_vms,
                 'vms': vms}
         return data
+    # no memcached, relies on memoize !
     cache_key = __name + '.get_db_infrastructure_maps'
-    return __salt__['mc_utils.memoize_cache'](_dogetdbinframaps, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [], {}, cache_key, ttl, cache='mc_pillar')
 
 
 def ips_for(fqdn,
@@ -332,7 +305,6 @@ def ips_for(fqdn,
     # first, search for real baremetal ips
     if fqdn in ips:
         resips.extend(ips[fqdn][:])
-
 
     # then failover
     if fail_over:
