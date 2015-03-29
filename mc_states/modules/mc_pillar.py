@@ -24,15 +24,19 @@ from mc_states.api import memoize_cache
 import mc_states.api
 import random
 import string
-log = logging.getLogger(__name__)
-
-
 six = mc_states.api.six
+
+
+log = logging.getLogger(__name__)
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
 DOTTED_DOMAIN_PATTERN = '((^{0}\\.?$)|(\\.(@{0})|({0}\\.?)))$'
 __name = 'mc_pillar'
 
 SUPPORTED_DB_FORMATS = ['sls', 'yaml', 'json']
+
+
+def memoize_cache(*a, **kw):
+    return __salt__['mc_utils.memoize_cache'](*a, **kw)
 
 
 def mastersalt_minion_id():

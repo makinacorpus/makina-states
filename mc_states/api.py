@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 '''
 .. _mc_states_api:
 
@@ -10,6 +11,7 @@ mc_states_api / general API functions
 __docformat__ = 'restructuredtext en'
 from time import time
 import copy
+import hashlib
 import json
 import logging
 import os
@@ -30,9 +32,6 @@ except ImportError:
     except ImportError:
         HAS_SIX = False
 try:
-    # XXX; for now disable Memcached support
-    # needs more thinking about salt/mastersalt cohabitation
-    raise Exception()
     import pylibmc
     HAS_PYLIBMC = True
 except:
@@ -69,10 +68,13 @@ AUTO_NAMES = {'_registry': 'registry',
               '_metadata': 'metadata'}
 _CACHEKEY = 'localreg_{0}_{1}'
 _LOCAL_CACHE = {}
+_DEFAULT_KEY = 'cache_key_{0}'
 _default = object()
 log = logging.getLogger(__name__)
 
 
+RE_FLAGS = re.M | re.U | re.S
+_SHA1_CACHE = {}
 STRIP_FLAGS = re.M | re.U | re.S
 STRIPPED_RES = [
     re.compile(r"\x1b\[[0-9;]*[mG]", STRIP_FLAGS),
@@ -247,8 +249,49 @@ def is_valid_ip(ip_or_name):
     return valid
 
 
-def cache_check(cache, key):
-    '''Invalidate record in cache  if expired'''
+def get_cache_key(key, __opts__):
+    '''
+    Configure a key per daemon
+    '''
+    if (
+        (not key.startswith('mcstates_api_cache_')) or
+        (key not in _SHA1_CACHE)
+    ):
+        if not __opts__:
+            __opts__ = {}
+        prefix = []
+        # if we are called from a salt function and have enougth
+        # information, be sure to modulate the cache from the minion
+        # we are calling from
+        for k in ['master',
+                  'config_dir',
+                  'conf_file',
+                  'master_port',
+                  'file_roots',
+                  'pillar_roots',
+                  'conf_prefix',
+                  'publish_port',
+                  'id',
+                  'ret_port']:
+            val = __opts__.get(k, None)
+            if val:
+                prefix.append("{0}".format(val))
+        prefix = '_'.join(prefix)
+        if prefix and not key.startswith(prefix):
+            key = "{0}_{1}".format(prefix, key)
+        if key not in _SHA1_CACHE:
+            # hex digest is CPÜ intensive, cache it a bit too
+            _SHA1_CACHE[key] = (
+                "mcstates_api_cache_" + hashlib.sha1(key).hexdigest())
+    ckey = _SHA1_CACHE[key]
+    return ckey
+
+
+def cache_check(cache, key, __opts__=None):
+    '''
+    Invalidate record in cache  if expired
+    '''
+    key = get_cache_key(key, __opts__=__opts__)
     try:
         entry = cache[key]
     except KeyError:
@@ -264,12 +307,20 @@ def cache_check(cache, key):
     return cache
 
 
-def memoize_cache(func, args=None, kwargs=None,
-                  key='cache_key_{0}',
-                  seconds=60, cache=None, force_run=False):
-    '''Memoize the func in the cache
-    in the key 'key' and store
-    the cached time in 'cache_key'
+
+def memoize_cache(func,
+                  args=None,
+                  kwargs=None,
+                  key=_DEFAULT_KEY,
+                  seconds=60,
+                  cache=None,
+                  use_memcache=False,
+                  __salt__=None,
+                  __opts__=None,
+                  force_run=False):
+    '''
+    Memoize the func in the cache in the key 'key'
+    and store the cached time in 'cache_key'
     for further check of stale cache
 
     if force_run is set, we will uncondionnaly run.
@@ -289,21 +340,38 @@ def memoize_cache(func, args=None, kwargs=None,
       ...         _do, [domain], {}, cache_key, 60)
 
     '''
+    if __salt__ is None:
+        __salt__ = {}
+    if not isinstance(__opts__, dict):
+        __salt__ = {}
+    if __opts__ is None:
+        __opts__ = {}
+    if not isinstance(__opts__, dict):
+        __opts__ = {}
     try:
         seconds = int(seconds)
     except Exception:
         # in case of errors on seconds, try to run without cache
         seconds = 1
+    memcached_users = [re.compile('.*mc_pillar.*', RE_FLAGS)]
+    if not use_memcache:
+        for memcached_user in memcached_users:
+            if memcached_user.search(key):
+                use_memcache = True
     if not seconds:
         seconds = 1
     if args is None:
         args = []
     if kwargs is None:
         kwargs = {}
+    if isinstance(func, six.string_types):
+        if func in __salt__:
+            func = __salt__[func]
     if cache is None:
         cache = _LOCAL_CACHE
-        if _MC:
+        if use_memcache and _MC:
             cache = _MC
+    key = get_cache_key(key, __opts__=__opts__)
     now = time()
     if 'last_access' not in cache:
         cache['last_access'] = now
@@ -313,9 +381,9 @@ def memoize_cache(func, args=None, kwargs=None,
     if last_access > (now + (2 * 60)):
         for k in [a for a in cache
                   if a not in ['last_access']]:
-            cache_check(cache, k)
+            cache_check(cache, k, __opts__=__opts__)
     cache['last_access'] = now
-    cache_check(cache, key)
+    cache_check(cache, key, __opts__=__opts__)
     if key not in cache:
         cache[key] = {}
     entry = cache[key]
@@ -335,7 +403,10 @@ def memoize_cache(func, args=None, kwargs=None,
     return ret
 
 
-def remove_entry(cache, key):
+def remove_entry(cache,
+                 key=_DEFAULT_KEY,
+                 __opts__=None):
+    key = get_cache_key(key, __opts__=__opts__)
     if cache is None:
         cache = _LOCAL_CACHE
         if _MC:
@@ -352,12 +423,17 @@ def remove_entry(cache, key):
         pass
 
 
-def invalidate_memoize_cache(key='cache_key_{0}', cache=None, *a, **kw):
-    remove_entry(cache, key)
+def invalidate_memoize_cache(key=_DEFAULT_KEY,
+                             cache=None,
+                             __opts__=None,
+                             *a,
+                             **kw):
+    key = get_cache_key(key, __opts__=__opts__)
+    remove_entry(cache, key, __opts__=__opts__)
     if key == 'ALL_ENTRIES':
         if _MC:
             _MC.flush_all()
         else:
             for i in cache:
-                remove_entry(cache, i)
+                remove_entry(cache, i, __opts__=__opts__)
 # vim:set et sts=4 ts=4 tw=80:

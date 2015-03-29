@@ -9,4 +9,3 @@ memcached-service-restart:
       - mc_proxy: memcached-pre-restart
     - watch_in:
       - mc_proxy: memcached-post-restart
-

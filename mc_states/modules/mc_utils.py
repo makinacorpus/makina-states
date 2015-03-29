@@ -811,10 +811,6 @@ def profile(func, *args, **kw):
     return ret, ficp, fico, ficn, ficcl, fict
 
 
-def invalidate_memoize_cache(*args, **kw):
-    return mc_states.api.invalidate_memoize_cache(*args, **kw)
-
-
 def manage_file(name, **kwargs):
     '''
     Easier wrapper to file.manage_file
@@ -923,3 +919,44 @@ def filter_host_pids(pids):
     thishost = get_container(1)
     return [a for a in pids
             if get_container(a) == thishost]
+
+
+def cache_kwargs(*args, **kw):
+    shared = {'__opts__': __opts__,
+              '__salt__': __salt__}
+    to_delete = [i for i in kw
+                 if i.startswith('__') and i not in shared]
+    dc = len(to_delete)
+    for i in shared:
+        if i not in kw:
+            dc = True
+    if dc:
+        kw = copy.deepcopy(kw)
+    [kw.pop(i, None) for i in to_delete]
+    for i, val in six.iteritems(shared):
+        if not kw.get(i):
+            kw[i] = val
+    return kw
+
+
+def memoize_cache(*args, **kw):
+    '''
+    Wrapper for mc_states.api.memoize_cache to set __opts__
+
+    CLI Examples::
+
+        mastersalt-call -lall mc_pillar.memoize_cache test.ping
+
+    '''
+    return api.memoize_cache(*args, **cache_kwargs(*args, **kw))
+
+
+def amemoize_cache(*args, **kw):
+    memoize_cache(*args, **kw)
+    import pdb;pdb.set_trace()  ## Breakpoint ##
+    return memoize_cache(*args, **kw)
+
+
+def invalidate_memoize_cache(*args, **kw):
+    return mc_states.api.invalidate_memoize_cache(
+        *args, **cache_kwargs(*args, **kw))
