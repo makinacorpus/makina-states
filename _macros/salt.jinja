@@ -781,7 +781,7 @@ salt-restart-{{ data.daemon_name }}:
     - onlyif: ls "{{ data.msr }}/.restart_{{ data.daemon_name }}"
     - require:
       - mc_proxy: dummy-pre-{{ data.daemon_name }}-service-restart
-
+      - mc_proxy: memcached-post-restart
     - require_in:
       - dummy-post-{{ data.daemon_name }}-service-restart
 

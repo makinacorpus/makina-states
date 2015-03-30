@@ -9,6 +9,7 @@
 {{ salt['mc_macros.register']('controllers', name) }}
 include:
   {% if full %}
+  - makina-states.services.cache.memcached
   - makina-states.controllers.{{csalt.name}}
   {% endif %}
   - makina-states.controllers.salt-hooks
