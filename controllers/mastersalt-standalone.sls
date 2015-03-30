@@ -29,6 +29,7 @@
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('controllers', name) }}
 include:
+  - makina-states.services.cache.memcached.hooks
   {% if full %}
   - makina-states.localsettings
   {% endif %}

@@ -449,7 +449,7 @@ update-makinastates-{{ data.name }}-git-reqs-{{i}}:
     - onlyif: test -e .git/config
     - name: |
             . {{data.venv_path}}/bin/activate
-            pip install --nodeps -e .
+            pip install --no-deps -e .
     - require:
       - virtualenv: update-makinastates-{{ data.name }}-venv
     - require_in:
@@ -781,7 +781,7 @@ salt-restart-{{ data.daemon_name }}:
     - onlyif: ls "{{ data.msr }}/.restart_{{ data.daemon_name }}"
     - require:
       - mc_proxy: dummy-pre-{{ data.daemon_name }}-service-restart
-
+      - mc_proxy: memcached-post-restart
     - require_in:
       - dummy-post-{{ data.daemon_name }}-service-restart
 
