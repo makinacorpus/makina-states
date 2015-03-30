@@ -1,4 +1,5 @@
 .*installed.cfg
+/app
 /local
 /man
 /share

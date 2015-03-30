@@ -1789,6 +1789,15 @@ setup_virtualenv() {
     pip install -U --download-cache "${PIP_CACHE}" -r requirements/requirements.txt
     if [ "x${install_git}" != "x" ];then
         pip install -U --download-cache "${PIP_CACHE}" -r requirements/git_requirements.txt
+    else
+        cwd="${PWD}"
+        for i in docker-py salttesting salt m2crypto;do
+            if [ -e "src/${i}/.git/config" ];then
+                cd "src/${i}"
+                pip install --no-deps -e .
+            fi
+            cd "${cwd}"
+        done
     fi
     pip install --no-deps -e .
     link_salt_dir "${ms_path}" "${venv_path}"
