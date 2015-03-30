@@ -431,18 +431,34 @@ update-makinastates-{{ data.name }}-git-reqs:
       - virtualenv: update-makinastates-{{ data.name }}-venv
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+    - onlyif: |
+              for i in $(egrep -e "^-e" "{{data.msr}}/requirements/git_requirements.txt"|awk -F "#egg=" '{print $2}');do
+                if [ ! -d "{{data.msr}}/src/${i}" ];then
+                  exit 0
+                fi
+              done
+              exit 1
     - requirements: "{{data.msr}}/requirements/git_requirements.txt"
     - bin_env: "{{data.venv_path}}"
     - use_vt: true
     - upgrade: true
 
-    - onlyif: |
-              for i in docker-py salttesting salt m2crypto;do
-                if [ ! -e "{{data.msr}}/${i}" ];then
-                  exit 1
-                fi
-              done
-              exit 0
+{% for i in ['docker-py',  'm2crypto', 'salt', 'salttesting'] %}
+update-makinastates-{{ data.name }}-git-reqs-{{i}}:
+  cmd.run:
+    - onlyif: test -e .git/config
+    - name: |
+            . {{data.venv_path}}/bin/activate
+            pip install --nodeps -e .
+    - require:
+      - virtualenv: update-makinastates-{{ data.name }}-venv
+    - require_in:
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+    - use_vt: true
+    - user: root
+    - cwd: "{{data.msr}}/src/{{i}}"
+{% endfor %}
+
 
 {% for i in ['lib', 'include', 'local', 'man', 'share', 'bin', 'src'] %}
 {% set ldir = "{0}/{1}".format(data.msr, i) %}
