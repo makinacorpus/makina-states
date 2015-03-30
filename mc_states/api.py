@@ -390,8 +390,9 @@ def get_cache_key(key, __opts__=None, *args, **kw):
                 arg.insert(0, func)
             if format_args or kwarg:
                 key = key.format(*format_args, **kwarg)
-        except IndexError:
-            pass
+        except Exception:
+            pass  # key may not be meaned to be formated afterall
+
         # if we are called from a salt function and have enougth
         # information, be sure to modulate the cache from the daemon
         # we are calling from (master, minion, syndic & etc.)
