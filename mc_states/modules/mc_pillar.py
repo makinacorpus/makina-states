@@ -3375,6 +3375,8 @@ def invalidate_mc_pillar():
                 mc['mc_pillar_db_md5'] = md5
     except Exception:
         log.error(traceback.format_exc())
+    except IOError:
+        pass
 
 
 def ext_pillar(id_, pillar=None, *args, **kw):
