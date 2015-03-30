@@ -442,7 +442,6 @@ def cache_order(key, memcache_first=None, memoize_first=None):
     def sort_cache_key(cache,
                        memoize_first=memoize_first,
                        memcache_first=memcache_first):
-        register_memcache_first('mc_pillar')
         ckey = get_cache_key(key)
         fun_args = _CACHE_KEYS.get(ckey, ('', None))[1]
         found = False
