@@ -3373,10 +3373,10 @@ def invalidate_mc_pillar():
                          ' invalidating whole memcached cache')
                 invalidate('all', memcache=mc)
                 mc['mc_pillar_db_md5'] = md5
-    except Exception:
-        log.error(traceback.format_exc())
     except IOError:
         pass
+    except Exception:
+        log.error(traceback.format_exc())
 
 
 def ext_pillar(id_, pillar=None, *args, **kw):
