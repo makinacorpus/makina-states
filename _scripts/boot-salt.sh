@@ -431,32 +431,34 @@ set_valid_upstreams() {
 }
 
 get_mastersalt() {
+    local pmastersalt=""
+    local mastersalt="${MASTERSALT:-}"
     # host running the mastersalt salt-master
     if [ "x${SALT_REATTACH}" != "x" ] && [ -e "${SALT_REATTACH_DIR}/minion" ];then
-         MASTERSALT="$(egrep "^master:" "${SALT_REATTACH_DIR}"/minion 2>/dev/null|awk '{print $2}'|${SED} -e "s/ //")"
+         mastersalt="$(egrep "^master:" "${SALT_REATTACH_DIR}"/minion 2>/dev/null|awk '{print $2}'|${SED} -e "s/ //")"
     fi
 
-    if [ "x${MASTERSALT}" = "x" ] && [ "x${SALT_REATTACH}" = "x" ] && [ -e "${MASTERSALT_PILLAR}/mastersalt.sls" ];then
-        PMASTERSALT="$(grep "master: " ${MASTERSALT_PILLAR}/mastersalt.sls |awk '{print $2}'|tail -n 1|${SED} -e "s/ //g")"
-        if [ "x${PMASTERSALT}" != "x" ];then
-            MASTERSALT="${PMASTERSALT}"
+    if [ "x${mastersalt}" = "x" ] && [ "x${SALT_REATTACH}" = "x" ] && [ -e "${MASTERSALT_PILLAR}/mastersalt.sls" ];then
+        pmastersalt="$(grep "master: " ${MASTERSALT_PILLAR}/mastersalt.sls |awk '{print $2}'|tail -n 1|${SED} -e "s/ //g")"
+        if [ "x${pmastersalt}" != "x" ];then
+            mastersalt="${pmastersalt}"
         fi
     fi
-    if [ "x${MASTERSALT}" = "x" ];then
+    if [ "x${mastersalt}" = "x" ];then
         for i in /etc/mastersalt/minion /etc/mastersalt/minion.d/00_global.conf;do
-            if [ "x${MASTERSALT}" = "x" ] && [ -e "${i}" ];then
-                PMASTERSALT="$(egrep "^master: " ${i} |awk '{print $2}'|tail -n 1|${SED} -e "s/ //g")"
-                if [ "x${PMASTERSALT}" != "x" ];then
-                    MASTERSALT="${PMASTERSALT}"
+            if [ "x${mastersalt}" = "x" ] && [ -e "${i}" ];then
+                pmastersalt="$(egrep "^master: " ${i} |awk '{print $2}'|tail -n 1|${SED} -e "s/ //g")"
+                if [ "x${pmastersalt}" != "x" ];then
+                    mastersalt="${pmastersalt}"
                     break
                 fi
             fi
         done
     fi
-    if [ "x${MASTERSALT}" = "x" ] && [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
-        MASTERSALT="localhost"
+    if [ "x${mastersalt}" = "x" ] && [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
+        mastersalt="localhost"
     fi
-    echo "${MASTERSALT}"
+    echo "${mastersalt}"
 }
 
 get_conf_root() {
