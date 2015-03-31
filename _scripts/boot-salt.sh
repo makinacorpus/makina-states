@@ -4178,37 +4178,43 @@ synchronize_code() {
                 fi
             fi
         fi
-        if [ "x${DO_MASTERSALT}" != "x" ] \
-            && [ "x${IS_MASTERSALT}" != "x" ] \
-            && [ "x$(get_local_mastersalt_mode)" = "xremote" ];then
-            mastersalt_call_wrapper saltutil.clear_cache
-            if [ "x${last_salt_retcode}" != "x0" ];then
-                bs_log "mastersalt cache cleared but there was a problem"
-                exit_status=1
-            else
-                if [ "x${QUIET}" = "x" ];then
-                    bs_log "mastersalt cache cleared"
-                fi
-            fi
-            if [ "x${last_salt_retcode}" != "x0" ];then
-                bs_log "refreshed mastersalt modules but there was a problem"
-                exit_status=1
-            else
-                if [ "x${QUIET}" = "x" ];then
-                    bs_log "refreshed mastersalt modules"
-                fi
-            fi
-            mastersalt_call_wrapper saltutil.refresh_modules
-            #mastersalt_call_wrapper saltutil.sync_all
-            #if [ "x${last_salt_retcode}" != "x0" ];then
-            #    bs_log "refreshed mastersalt modules but there was a problem"
-            #    exit_status=1
-            #else
-            #    if [ "x${QUIET}" = "x" ];then
-            #        bs_log "refreshed mastersalt modules"
-            #    fi
-            #fi
-        fi
+        # normally minions are now runned in multiprocessing
+        # meaning that we do not need to reload minion for it
+        # to see new code (that was not the case, a long ago).
+        # The only place would be if we stored modules in _modules
+        # on mastersalt, but here a manual call to sync is sufficient
+        # For now, refreshing the code (git pull) is totally sufficient
+        #if [ "x${DO_MASTERSALT}" != "x" ] \
+        #    && [ "x${IS_MASTERSALT}" != "x" ] \
+        #    && [ "x$(get_local_mastersalt_mode)" = "xremote" ];then
+        #    mastersalt_call_wrapper saltutil.clear_cache
+        #    if [ "x${last_salt_retcode}" != "x0" ];then
+        #        bs_log "mastersalt cache cleared but there was a problem"
+        #        exit_status=1
+        #    else
+        #        if [ "x${QUIET}" = "x" ];then
+        #            bs_log "mastersalt cache cleared"
+        #        fi
+        #    fi
+        #    if [ "x${last_salt_retcode}" != "x0" ];then
+        #        bs_log "refreshed mastersalt modules but there was a problem"
+        #        exit_status=1
+        #    else
+        #        if [ "x${QUIET}" = "x" ];then
+        #            bs_log "refreshed mastersalt modules"
+        #        fi
+        #    fi
+        #    mastersalt_call_wrapper saltutil.refresh_modules
+        #    #mastersalt_call_wrapper saltutil.sync_all
+        #    #if [ "x${last_salt_retcode}" != "x0" ];then
+        #    #    bs_log "refreshed mastersalt modules but there was a problem"
+        #    #    exit_status=1
+        #    #else
+        #    #    if [ "x${QUIET}" = "x" ];then
+        #    #        bs_log "refreshed mastersalt modules"
+        #    #    fi
+        #    #fi
+        #fi
     fi
     if [ "x${SALT_BOOT_INITIAL_HIGHSTATE}" = "x" ];then
         exit ${exit_status}
