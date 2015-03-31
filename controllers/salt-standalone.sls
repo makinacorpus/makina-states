@@ -31,11 +31,12 @@
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('controllers', name) }}
 include:
-  - makina-states.services.cache.memcached.hooks
   {% if full %}
   - makina-states.localsettings
+  - makina-states.services.cache.memcached
   {% endif %}
   - makina-states.controllers.hooks
+  - makina-states.services.cache.memcached.hooks
 {{ saltmac.install_makina_states(name, full=full) }}
 {% endmacro  %}
 {{ do(full=False)}}

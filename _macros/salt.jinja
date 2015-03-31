@@ -414,6 +414,17 @@ update-makinastates-{{ data.name }}-venv:
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
+{{data.name}}-memcached-py:
+  pip.installed:
+    - name: pylibmc
+    - bin_env: "{{data.venv_path}}"
+    - onlyif: "{{test -e p + '/bin/pip'}}"
+    - watch:
+      - virtualenv: update-makinastates-{{ data.name }}-venv
+      - mc_proxy: memcached-post-install
+    - watch_in:
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+
 update-makinastates-{{ data.name }}-reqs:
   pip.installed:
     - requirements: "{{data.msr}}/requirements/requirements.txt"
@@ -466,15 +477,15 @@ update-makinastates-{{ data.name }}-git-reqs-{{i}}:
 moveold-makinastates-{{ data.name }}-links{{i}}:
   cmd.run:
     - name: |
-            if [ ! -e "{{data.msr}}/nobackup" ];then 
+            if [ ! -e "{{data.msr}}/nobackup" ];then
               mkdir "{{data.msr}}/nobackup"
             fi
             mv "{{ldir}}" "{{bdir}}-$(date "+%F-%T-%N")"
     - target: "{{data.venv_path}}/{{i}}"
     - onlyif: |
               set -e
-              test -e "{{ldir}}" 
-              test -d "{{ldir}}" 
+              test -e "{{ldir}}"
+              test -d "{{ldir}}"
               test ! -h "{{ldir}}"
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
