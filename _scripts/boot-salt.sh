@@ -4178,7 +4178,6 @@ synchronize_code() {
                 fi
             fi
         fi
-        set -x
         if [ "x${DO_MASTERSALT}" != "x" ] \
             && [ "x${IS_MASTERSALT}" != "x" ] \
             && [ "x$(get_local_mastersalt_mode)" = "xremote" ];then
