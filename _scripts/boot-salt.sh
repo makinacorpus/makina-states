@@ -430,6 +430,34 @@ set_valid_upstreams() {
     VALID_BRANCHES=$(echo "${VALID_BRANCHES}")
 }
 
+get_mastersalt() {
+    # host running the mastersalt salt-master
+    if [ "x${SALT_REATTACH}" != "x" ] && [ -e "${SALT_REATTACH_DIR}/minion" ];then
+         MASTERSALT="$(egrep "^master:" "${SALT_REATTACH_DIR}"/minion 2>/dev/null|awk '{print $2}'|${SED} -e "s/ //")"
+    fi
+
+    if [ "x${MASTERSALT}" = "x" ] && [ "x${SALT_REATTACH}" = "x" ] && [ -e "${MASTERSALT_PILLAR}/mastersalt.sls" ];then
+        PMASTERSALT="$(grep "master: " ${MASTERSALT_PILLAR}/mastersalt.sls |awk '{print $2}'|tail -n 1|${SED} -e "s/ //g")"
+        if [ "x${PMASTERSALT}" != "x" ];then
+            MASTERSALT="${PMASTERSALT}"
+        fi
+    fi
+    if [ "x${MASTERSALT}" = "x" ];then
+        for i in /etc/mastersalt/minion /etc/mastersalt/minion.d/00_global.conf;do
+            if [ "x${MASTERSALT}" = "x" ] && [ -e "${i}" ];then
+                PMASTERSALT="$(egrep "^master: " ${i} |awk '{print $2}'|tail -n 1|${SED} -e "s/ //g")"
+                if [ "x${PMASTERSALT}" != "x" ];then
+                    MASTERSALT="${PMASTERSALT}"
+                    break
+                fi
+            fi
+        done
+    fi
+    if [ "x${MASTERSALT}" = "x" ] && [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
+        MASTERSALT="localhost"
+    fi
+    echo "${MASTERSALT}"
+}
 
 get_conf_root() {
     conf_root="${CONF_ROOT:-"/etc"}"
@@ -637,11 +665,6 @@ set_vars() {
     else
         IS_SALT_MINION="y"
     fi
-    if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
-        if [ "x${MASTERSALT}" = "x" ];then
-            MASTERSALT="localhost"
-        fi
-    fi
     if [ "x${MASTERSALT_CONTROLLER}" = "xmastersalt_master" ]\
      || [ "x$(grep -q "makina-states.controllers.mastersalt_master: true" "${MCONF_PREFIX}/grains" 2>/dev/null;echo "${?}")" = "x0" ];then
         IS_MASTERSALT_MASTER="y"
@@ -785,43 +808,25 @@ set_vars() {
 
     MASTERSALT_MASTER_IP="${MASTERSALT_MASTER_IP:-"0.0.0.0"}"
     MASTERSALT_MINION_IP="${MASTERSALT_MINION_IP:-"127.0.0.1"}"
+    MASTERSALT_MASTER_CONTROLLER_DEFAULT="mastersalt_master"
+    MASTERSALT_MASTER_CONTROLLER_INPUTED="${MASTERSALT_MASTER_CONTROLLER}"
+    MASTERSALT_MASTER_CONTROLLER="${MASTERSALT_MASTER_CONTROLLER:-${MASTERSALT_MASTER_CONTROLLER_DEFAULT}}"
+    MASTERSALT_MINION_CONTROLLER_DEFAULT="mastersalt_minion"
+    MASTERSALT_MINION_CONTROLLER_INPUTED="${MASTERSALT_MINION_CONTROLLER}"
+    MASTERSALT_MINION_CONTROLLER="${MASTERSALT_MINION_CONTROLLER:-${MASTERSALT_MINION_CONTROLLER_DEFAULT}}"
     # mastersalt variables
     if [ "x${IS_MASTERSALT}" != "x" ];then
-        MASTERSALT_MASTER_CONTROLLER_DEFAULT="mastersalt_master"
-        MASTERSALT_MASTER_CONTROLLER_INPUTED="${MASTERSALT_MASTER_CONTROLLER}"
-        MASTERSALT_MASTER_CONTROLLER="${MASTERSALT_MASTER_CONTROLLER:-${MASTERSALT_MASTER_CONTROLLER_DEFAULT}}"
-        MASTERSALT_MINION_CONTROLLER_DEFAULT="mastersalt_minion"
-        MASTERSALT_MINION_CONTROLLER_INPUTED="${MASTERSALT_MINION_CONTROLLER}"
-        MASTERSALT_MINION_CONTROLLER="${MASTERSALT_MINION_CONTROLLER:-${MASTERSALT_MINION_CONTROLLER_DEFAULT}}"
-        MASTERSALT_INPUTED="${MASTERSALT}"
-        # host running the mastersalt salt-master
         if [ "x${SALT_REATTACH}" != "x" ] && [ -e "${SALT_REATTACH_DIR}/minion" ];then
-             MASTERSALT="$(egrep "^master:" "${SALT_REATTACH_DIR}"/minion 2>/dev/null|awk '{print $2}'|${SED} -e "s/ //")"
-             MASTERSALT_MASTER_DNS="${MASTERSALT}"
-             MASTERSALT_MASTER_IP="${MASTERSALT}"
+             MASTERSALT_MASTER_DNS="$(get_mastersalt)"
+             MASTERSALT_MASTER_IP="$(get_mastersalt)"
              MASTERSALT_MASTER_PORT="$(egrep "^master_port:" "${SALT_REATTACH_DIR}"/minion|awk '{print $2}'|${SED} -e "s/ //")"
         fi
-        if [ "x${SALT_REATTACH}" = "x" ] && [ -e "${MASTERSALT_PILLAR}/mastersalt.sls" ];then
-            PMASTERSALT="$(grep "master: " ${MASTERSALT_PILLAR}/mastersalt.sls |awk '{print $2}'|tail -n 1|${SED} -e "s/ //g")"
-            if [ "x${PMASTERSALT}" != "x" ];then
-                MASTERSALT="${PMASTERSALT}"
-            fi
-        fi
-        for i in /etc/mastersalt/minion /etc/mastersalt/minion.d/00_global.conf;do
-            if [ "x${MASTERSALT}" = "x" ] && [ -e "${i}" ];then
-                PMASTERSALT="$(egrep "^master: " ${i} |awk '{print $2}'|tail -n 1|${SED} -e "s/ //g")"
-                if [ "x${PMASTERSALT}" != "x" ];then
-                    MASTERSALT="${PMASTERSALT}"
-                    break
-                fi
-            fi
-        done
-        if [ "x${MASTERSALT}" = "x" ] && [ "x${IS_MASTERSALT_MASTER}" ];then
+        if [ "x$(get_mastersalt)" = "x" ] && [ "x${IS_MASTERSALT_MASTER}" ];then
             MASTERSALT="${NICKNAME_FQDN}"
             MASTERSALT_MASTER_DNS="${NICKNAME_FQDN}"
         fi
 
-        MASTERSALT_MASTER_DNS="${MASTERSALT_MASTER_DNS:-${MASTERSALT}}"
+        MASTERSALT_MASTER_DNS="${MASTERSALT_MASTER_DNS:-$(get_mastersalt)}"
         MASTERSALT_MASTER_PORT="${MASTERSALT_MASTER_PORT:-"${MASTERSALT_PORT:-"4606"}"}"
         MASTERSALT_MASTER_PUBLISH_PORT="$(( ${MASTERSALT_MASTER_PORT} - 1 ))"
 
@@ -1068,7 +1073,7 @@ recap_(){
         bs_yellow_log "MASTERSALT variables:"
         bs_yellow_log "---------------------"
         bs_log "MASTERSALT ROOT | PILLAR: ${MASTERSALT_ROOT} | ${MASTERSALT_PILLAR}"
-        bs_log "MASTERSALT: ${MASTERSALT}"
+        bs_log "MASTERSALT: $(get_mastersalt)"
         if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
             bs_log "MASTERSALT_MASTER_IP: ${MASTERSALT_MASTER_IP}"
             bs_log "MASTERSALT_MASTER_PUBLISH_PORT ${MASTERSALT_MASTER_PUBLISH_PORT}"
@@ -1076,7 +1081,6 @@ recap_(){
         if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
             bs_log "MASTERSALT_MASTER_PORT: ${MASTERSALT_MASTER_PORT}"
             bs_log "MASTERSALT_MINION_IP: ${MASTERSALT_MINION_IP}"
-            debug_msg "MASTERSALT_INPUTED: ${MASTERSALT_INPUTED}"
             if [ "x${MASTERSALT_MINION_ID}" != "x${SALT_MINION_ID}" ];then
                 bs_log "MASTERSALT_MINION_ID: ${MASTERSALT_MINION_ID}"
             fi
@@ -3007,7 +3011,7 @@ mastersalt_minion_challenge() {
     global_tries="30"
     inner_tries="5"
     for i in `seq ${global_tries}`;do
-        if [ "x${MASTERSALT}" = "xlocalhost" ] && [ "x$(hostname|${SED} -e "s/.*devhost.*/match/")" = "xmatch" ];then
+        if [ "x$(get_mastersalt)" = "xlocalhost" ] && [ "x$(hostname|${SED} -e "s/.*devhost.*/match/")" = "xmatch" ];then
             debug_msg "Forcing salt mastersalt master restart"
             restart_local_mastersalt_masters
             sleep 10
@@ -3024,11 +3028,11 @@ mastersalt_minion_challenge() {
             fi
         done
         if [ "x${resultping}" != "x0" ];then
-            bs_log "Failed challenge mastersalt keys on ${MASTERSALT}, retry ${i}/${global_tries}"
+            bs_log "Failed challenge mastersalt keys on $(get_mastersalt), retry ${i}/${global_tries}"
             challenged_ms=""
         else
             challenged_ms="y"
-            bs_log "Successfull challenge mastersalt keys on ${MASTERSALT}"
+            bs_log "Successfull challenge mastersalt keys on $(get_mastersalt)"
             break
         fi
     done
@@ -3046,8 +3050,8 @@ salt_master_connectivity_check() {
 mastersalt_master_connectivity_check() {
     if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
     if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then return;fi
-    if [ "x$(check_connectivity ${MASTERSALT} ${MASTERSALT_MASTER_PORT} 30)" != "x0" ];then
-        die "MastersaltMaster is unreachable (${MASTERSALT}/${MASTERSALT_MASTER_PORT})"
+    if [ "x$(check_connectivity $(get_mastersalt) ${MASTERSALT_MASTER_PORT} 30)" != "x0" ];then
+        die "MastersaltMaster is unreachable ($(get_mastersalt)/${MASTERSALT_MASTER_PORT})"
     fi
 }
 
@@ -3191,7 +3195,7 @@ challenge_mastersalt_message() {
     minion_id="$(get_minion_id)"
     if [ "x${QUIET}" = "x" ]; then
         bs_log "****************************************************************"
-        bs_log "    GO ACCEPT THE KEY ON MASTERSALT (${MASTERSALT}) !!! "
+        bs_log "    GO ACCEPT THE KEY ON MASTERSALT ($(get_mastersalt)) !!! "
         bs_log "    You need on this box to run mastersalt-key -y -a ${minion_id}"
         bs_log "****************************************************************"
     fi
@@ -3227,7 +3231,7 @@ make_mastersalt_association() {
         fi
     fi
     if [ "x$(mastersalt_ping_test)" = "x0" ];then
-        debug_msg "Mastersalt minion \"${minion_id}\" already registered on ${MASTERSALT}"
+        debug_msg "Mastersalt minion \"${minion_id}\" already registered on $(get_mastersalt)"
         salt_echo "changed=false comment='mastersalt minion already registered'"
     else
         if [ "x$(mastersalt_master_processes)" = "x0" ] && [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
@@ -3286,7 +3290,7 @@ make_mastersalt_association() {
             salt_echo "changed=yes comment='salt minion registered'"
         fi
         if [ "x${registered}" = "x" ];then
-            bs_log "Failed accepting mastersalt key on ${MASTERSALT} for ${minion_id}"
+            bs_log "Failed accepting mastersalt key on $(get_mastersalt) for ${minion_id}"
             warn_log
             exit 1
         fi
@@ -3692,7 +3696,7 @@ usage() {
     bs_log "  Mastersalt settings (if any)"
     printf "    ${YELLOW}   by default, we only install a minion, unless you add -MM${NORMAL}\n"
     bs_help "    --local-mastersalt-mode" "Do we run masterless mastersalt (masterless/remote)" "$(get_local_mastersalt_mode)" y
-    bs_help "    --mastersalt <dns>" "DNS of the mastersalt master" "${MASTERSALT_MASTER_DNS}" y
+    bs_help "    --mastersalt <FQDN>" "DNS address of the mastersalt master" "${MASTERSALT_MASTER_DNS}" y
     bs_help "    --mastersalt-master-port <port>"  "Port of the mastersalt master" "${MASTERSALT_MASTER_PORT}" y
     if [ "x${SALT_LONG_HELP}" != "x" ];then
         bs_help "    --mastersalt-master-ip <ip>"  "IP of the mastersalt master" "${MASTERSALT_MASTER_IP}" y
@@ -4174,10 +4178,19 @@ synchronize_code() {
                 fi
             fi
         fi
+        set -x
         if [ "x${DO_MASTERSALT}" != "x" ] \
             && [ "x${IS_MASTERSALT}" != "x" ] \
             && [ "x$(get_local_mastersalt_mode)" = "xremote" ];then
-            mastersalt_call_wrapper saltutil.sync_all
+            mastersalt_call_wrapper saltutil.clear_cache
+            if [ "x${last_salt_retcode}" != "x0" ];then
+                bs_log "mastersalt cache cleared but there was a problem"
+                exit_status=1
+            else
+                if [ "x${QUIET}" = "x" ];then
+                    bs_log "mastersalt cache cleared"
+                fi
+            fi
             if [ "x${last_salt_retcode}" != "x0" ];then
                 bs_log "refreshed mastersalt modules but there was a problem"
                 exit_status=1
@@ -4186,6 +4199,16 @@ synchronize_code() {
                     bs_log "refreshed mastersalt modules"
                 fi
             fi
+            mastersalt_call_wrapper saltutil.refresh_modules
+            #mastersalt_call_wrapper saltutil.sync_all
+            #if [ "x${last_salt_retcode}" != "x0" ];then
+            #    bs_log "refreshed mastersalt modules but there was a problem"
+            #    exit_status=1
+            #else
+            #    if [ "x${QUIET}" = "x" ];then
+            #        bs_log "refreshed mastersalt modules"
+            #    fi
+            #fi
         fi
     fi
     if [ "x${SALT_BOOT_INITIAL_HIGHSTATE}" = "x" ];then
