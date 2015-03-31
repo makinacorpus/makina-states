@@ -418,7 +418,7 @@ update-makinastates-{{ data.name }}-venv:
   pip.installed:
     - name: pylibmc
     - bin_env: "{{data.venv_path}}"
-    - onlyif: "test -e {{p + '/bin/pip'}}"
+    - onlyif: "test -e {{data.venv_path + '/bin/pip'}}"
     - watch:
       - virtualenv: update-makinastates-{{ data.name }}-venv
       - mc_proxy: memcached-post-install
