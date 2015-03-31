@@ -12,7 +12,7 @@ include:
   - makina-states.services.cache.memcached
   - makina-states.controllers.{{csalt.name}}
   {% endif %}
-  - makina-states.controllers.mastersalt-hooks
+  - makina-states.controllers.hooks
 {{ saltmac.install_master(csalt.name, full=full) }}
 {% endmacro  %}
 {{ do(full=False)}}

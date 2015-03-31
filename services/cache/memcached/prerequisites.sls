@@ -3,7 +3,7 @@
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 include:
   - makina-states.services.cache.memcached.hooks
-  - makina-states.controllers.mastersalt-hooks
+  - makina-states.controllers.hooks
 memcached-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs: {{settings.pkgs}}

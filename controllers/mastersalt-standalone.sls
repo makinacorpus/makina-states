@@ -33,7 +33,7 @@ include:
   {% if full %}
   - makina-states.localsettings
   {% endif %}
-  - makina-states.controllers.mastersalt-hooks
+  - makina-states.controllers.hooks
 {{ saltmac.install_makina_states(name, full=full) }}
 {% endmacro  %}
 {{ do(full=False)}}
