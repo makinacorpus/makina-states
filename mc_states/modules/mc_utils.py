@@ -971,12 +971,26 @@ def get_mc_server(*args, **kw):
     '''
     return mc_states.api.get_mc_server(*args, **kw)
 
- 
+
 def get_local_cache(*args):
     '''
     Wrapper for mc_states.api.get_local_cache
     '''
     return mc_states.api.get_local_cache(*args)
+
+
+def register_memoize_first(pattern):
+    '''
+    Wrapper for mc_states.api.invalidate_memoize_cache to set __opts__
+    '''
+    return mc_states.api.register_memoize_first(pattern)
+
+
+def register_memcache_first(pattern):
+    '''
+    Wrapper for mc_states.api.invalidate_memoize_cache to set __opts__
+    '''
+    return mc_states.api.register_memcache_first(pattern)
 
 
 def invalidate_memoize_cache(*args, **kw):

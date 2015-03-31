@@ -390,8 +390,9 @@ def get_cache_key(key, __opts__=None, *args, **kw):
                 arg.insert(0, func)
             if format_args or kwarg:
                 key = key.format(*format_args, **kwarg)
-        except IndexError:
-            pass
+        except Exception:
+            pass  # key may not be meaned to be formated afterall
+
         # if we are called from a salt function and have enougth
         # information, be sure to modulate the cache from the daemon
         # we are calling from (master, minion, syndic & etc.)
@@ -422,7 +423,7 @@ def get_cache_key(key, __opts__=None, *args, **kw):
     return ckey
 
 
-def cache_order(key, memcache_first=None, memoize_first=None):
+def cache_order(key=None, memcache_first=None, memoize_first=None):
     '''
     Try to determine the priority of cache servers based on the cache
     key.
@@ -439,35 +440,46 @@ def cache_order(key, memcache_first=None, memoize_first=None):
 
     '''
     def sort_cache_key(cache,
+                       key=key,
                        memoize_first=memoize_first,
                        memcache_first=memcache_first):
-        register_memcache_first('mc_pillar')
-        ckey = get_cache_key(key)
-        fun_args = _CACHE_KEYS.get(ckey, ('', None))[1]
-        found = False
-        for spattern, repattern in six.iteritems(_USE_MEMOIZE_FIRST):
-            if spattern in fun_args:
-                found = True
-                break
-            if repattern.search(fun_args):
-                found = True
-                break
-        if found and memoize_first is None:
+        memoize_found = False
+        memcache_found = False
+        if key:
+            ckey = get_cache_key(key)
+            fun_args = _CACHE_KEYS.get(ckey, ('', None))[1]
+            for spattern, repattern in six.iteritems(_USE_MEMOIZE_FIRST):
+                if spattern in fun_args:
+                    memoize_found = True
+                    break
+                if repattern.search(fun_args):
+                    memoize_found = True
+                    break
+            for spattern, repattern in six.iteritems(_USE_MEMCACHE_FIRST):
+                if spattern in fun_args:
+                    memcache_found = True
+                    break
+                if repattern.search(fun_args):
+                    memcache_found = True
+                    break
+        if memoize_found and memoize_first is None:
             memoize_first = True
-        found = False
-        for spattern, repattern in six.iteritems(_USE_MEMCACHE_FIRST):
-            if spattern in fun_args:
-                found = True
-                break
-            if repattern.search(fun_args):
-                found = True
-                break
-        if found and memoize_first is None:
+        if memcache_found and memcache_first is None:
             memcache_first = True
         if memcache_first is None:
             memcache_first = False
         if memoize_first is None:
             memoize_first = False
+        # memcache wins, but explitly tell that the opposite
+        # cache action is first or seccond
+        if memcache_first:
+            memoize_first = False
+        else:
+            memoize_first = True
+        if memoize_first:
+            memcache_first = False
+        else:
+            memcache_first = True
         value = 0
         FORCE_LAST = 10000
         DEFAULT_FIRST = 300
@@ -484,6 +496,8 @@ def cache_order(key, memcache_first=None, memoize_first=None):
                 value += DEFAULT_FIRST
             else:
                 value += DEFAULT_SECOND
+        # if we gave a special cache= kwarg, take at at the most
+        # priority
         if not is_memcache(cache):
             if cache is not get_local_cache():
                 value = 0

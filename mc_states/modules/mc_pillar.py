@@ -3373,6 +3373,8 @@ def invalidate_mc_pillar():
                          ' invalidating whole memcached cache')
                 invalidate('all', memcache=mc)
                 mc['mc_pillar_db_md5'] = md5
+    except IOError:
+        pass
     except Exception:
         log.error(traceback.format_exc())
 
@@ -3397,6 +3399,8 @@ def ext_pillar(id_, pillar=None, *args, **kw):
     if profile_enabled:
         pr = cProfile.Profile()
         pr.enable()
+    for i in ['mc_pillar', 'mc_env.ext_pillar', 'mc_cloud.ext_pillar']:
+        __salt__['mc_utils.register_memcache_first'](i)
     for callback, copts in {
         'mc_cloud.ext_pillar': {},
         'mc_env.ext_pillar': {'only_managed': False},

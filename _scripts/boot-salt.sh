@@ -1667,10 +1667,26 @@ setup_and_maybe_update_code() {
     fi
 }
 
+service_activated() {
+    local activated=""
+    if [ "x$(grep -q manual /etc/init/${s}.override 2>/dev/null)" != "x0" ];then
+        activated="y"
+    fi
+    echo "${activated}"
+}
+
+service_exists() {
+    local sexists=""
+    if [ -e "/etc/init/${i}.conf" ] || [ -e "/etc/init.d/${i}" ];then
+        sexists="y"
+    fi
+    echo "${sexists}"
+}
+
 service_() {
     s="${1}"
     shift
-    if [ "x$(grep -q manual /etc/init/${s}.override 2>/dev/null)" != "x0" ];then
+    if [ "x$(service_activated ${s})" = "xy" ] && [ "x$(service_exists ${s})" = "xy" ];then
         if [ -e "$(which service 2>/dev/null)" ];then
             service "${s}" "${@}"
         else
@@ -2823,6 +2839,7 @@ restart_local_mastersalt_masters() {
     else
         enable_service mastersalt-master
         if [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+            service memcached restart 1>/dev/null 2>/dev/null
             service_ mastersalt-master stop
             killall_local_mastersalt_masters
             service_ mastersalt-master restart
