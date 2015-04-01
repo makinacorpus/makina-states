@@ -805,7 +805,7 @@ def invalidate_memoize_cache(key=_DEFAULT_KEY,
                             log.error(trace)
                             time.sleep(0.0001)
             else:
-                for i in c:
+                for i in [a for a in c]:
                     remove_cache_entry(i, **kw)
     else:
         remove_cache_entry(key, **kw)
