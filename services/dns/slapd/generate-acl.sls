@@ -1,5 +1,4 @@
 {% set settings = salt['mc_slapd.settings']() %}
-{% set yameld_data = salt['mc_utils.json_dump'](settings) %}
 include:
   - makina-states.services.dns.slapd.hooks
 {% if salt['mc_controllers.mastersalt_mode']() %}

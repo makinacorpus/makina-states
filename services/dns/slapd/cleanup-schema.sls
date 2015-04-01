@@ -1,8 +1,6 @@
 {% set settings = salt['mc_slapd.settings']() %}
-{% set yameld_data = salt['mc_utils.json_dump'](settings) %}
 include:
   - makina-states.services.dns.slapd.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
 slapd-d-cleanup-schema:
   file.managed:
     - name: /etc/ldap/cleanup-schema.py
@@ -41,4 +39,3 @@ slapd-d-cleanup-schema:
       - mc_proxy: slapd-pre-conf
     - watch_in:
       - mc_proxy: slapd-post-conf
-{% endif %}
