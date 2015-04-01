@@ -849,22 +849,23 @@ def get_ldap(ttl=FIVE_MINUTES):
         slavesids = [a for a in slaves]
         slavesids.sort()
         for server in slavesids:
-            adata = slaves[server]
-            master = adata.setdefault('master', None)
+            adata = copy.deepcopy(slaves.get('default', {}))
+            adata.update(slaves[server])
+            master = adata.setdefault('master', 'localhost')
+            master_port = adata.setdefault('master_port', '389')
+            srepl = adata.setdefault('syncrepl', OrderedDict())
             if masters and not master:
                 adata['master'] = [a for a in masters][0]
-            if not adata['master']:
+            if 'provider' not in srepl and not adata['master']:
                 slaves.pop(server)
                 continue
             rid = rids.setdefault(master, 100) + 1
             rids[master] = rid
-            sdata = masters.get(adata['master'], OrderedDict())
-            srepl = copy.deepcopy(sdata.setdefault('syncrepl', OrderedDict()))
-            srepl.setdefault('provider', 'ldap://{0}'.format(adata['master']))
-            srepl = _s['mc_utils.dictupdate'](
-                srepl, adata.setdefault("syncrepl", OrderedDict()))
+            srepl.setdefault('provider',
+                             'ldap://{master}:{port}'.format(
+                                 master=master, port=master_port))
             srepl['{0}rid'] = '{0}'.format(rid)
-            adata['syncrepl'] = srepl
+            slaves[server] = adata
         return data
     cache_key = __name + '.getldap'
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
@@ -3360,7 +3361,7 @@ def invalidate_mc_pillar():
             log.info('mc_pillar: DB changed,'
                      ' invalidating local cache')
             for k in [a for a in mc_states.api._CACHE_KEYS]:
-                fun = mc_states.api._CACHE_KEYS[k][1]
+                fun = mc_states.api._CACHE_KEYS[k][2]
                 if fun.startswith('mc_pillar'):
                     invalidate(k, cache=lc)
         if mc is not None:
