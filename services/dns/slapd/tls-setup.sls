@@ -3,7 +3,6 @@
 include:
   - makina-states.services.dns.slapd.hooks
   - makina-states.localsettings.ssl
-{% if salt['mc_controllers.mastersalt_mode']() %}
 cleanup-slapd-old-etc-ssl-cert:
   file.absent:
     - require_in:
@@ -12,4 +11,3 @@ cleanup-slapd-old-etc-ssl-cert:
       - /usr/local/share/ca-certificates/{{settings.cert_domain}}.crt
       - /usr/local/share/ca-certificates/cacert{{settings.cert_domain}}.crt
 {{ ssl.install_cert(settings.cert_domain, suf='ldap') }}
-{% endif %}

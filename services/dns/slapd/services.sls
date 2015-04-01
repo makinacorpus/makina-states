@@ -1,7 +1,4 @@
-{% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% set settings = salt['mc_slapd.settings']() %}
-{% set yameld_data = salt['mc_utils.json_dump'](settings) %}
-
 
 include:
   - makina-states.localsettings.ssl.hooks
@@ -26,4 +23,3 @@ slapd-service-restart:
       - mc_proxy: slapd-pre-restart
     - watch_in:
       - mc_proxy: slapd-post-restart
-

@@ -1,4 +1,3 @@
-{% if salt['mc_controllers.mastersalt_mode']() %}
 {% set settings = salt['mc_slapd.settings']() %}
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 include:
@@ -10,7 +9,6 @@ slapd-pkgs:
       - mc_proxy: slapd-pre-install
     - watch_in:
       - mc_proxy: slapd-post-install
-{% endif %}
 
 slapd-dirs:
   file.directory:
