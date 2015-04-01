@@ -22,7 +22,7 @@ mysql-msalt-pythonmysqldb-pip-install:
   pip.installed:
     - name: mysql-python==1.2.5
     - bin_env: /salt-venv/mastersalt/bin/pip
-    - onylif: test -e /salt-venv/mastersalt/bin/pip
+    - onlyif: test -e /salt-venv/mastersalt/bin/pip
     - require:
       - pkg: makina-mysql-pkgs
 
@@ -30,7 +30,7 @@ mysql-salt-pythonmysqldb-pip-install:
   pip.installed:
     - name: mysql-python==1.2.5
     - bin_env: /salt-venv/salt/bin/pip
-    - onylif: test -e /salt-venv/salt/bin/pip
+    - onlyif: test -e /salt-venv/salt/bin/pip
     - require:
       - pkg: makina-mysql-pkgs
 
