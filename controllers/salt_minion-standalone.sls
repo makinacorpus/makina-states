@@ -8,10 +8,9 @@
 {%- set name = csalt.name + '_minion' %}
 {{ salt['mc_macros.register']('controllers', name) }}
 include:
-  {% if full %}
   - makina-states.controllers.{{csalt.name}}
-  {% endif %}
   - makina-states.controllers.hooks
+  - makina-states.services.cache.memcached.hooks
 {{ saltmac.install_minion(csalt.name, full=full) }}
 {% endmacro %}
 {{ do(full=False) }}
