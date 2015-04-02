@@ -365,11 +365,12 @@ def vhost_settings(domain, doc_root, **kwargs):
             ssldomain = __grains__['fqdn']
         lcert, lkey, lchain = __salt__[
             'mc_ssl.get_configured_cert'](ssldomain, gen=True)
-        nginxSettings.setdefault('ssl_cert',
-                                 lcert + lchain)
-        nginxSettings.setdefault('ssl_key',
-                                 lcert + lchain + lkey)
-        nginxSettings.setdefault('ssl_bundle', '')
+        if not nginxSettings.get('ssl_cert'):
+            nginxSettings['ssl_cert'] = lcert + lchain
+        if not nginxSettings.get('ssl_key'):
+            nginxSettings['ssl_key'] = lcert + lchain + lkey
+        if not nginxSettings.get('ssl_bundle'):
+            nginxSettings['ssl_bundle'] = ''
         certs = ['ssl_cert']
         if nginxSettings.get('ssl_cacert', ''):
             if nginxSettings['ssl_cacert_first']:
@@ -381,7 +382,9 @@ def vhost_settings(domain, doc_root, **kwargs):
             if not nginxSettings['ssl_bundle'].endswith('\n'):
                 nginxSettings['ssl_bundle'] += '\n'
         for k in ['ssl_bundle', 'ssl_key', 'ssl_cert', 'ssl_cacert']:
-            nginxSettings.setdefault(
-                k + '_path',
-                "/etc/ssl/nginx/{0}_{1}.pem".format(ssldomain, k))
+            kpath = k + '_path'
+            if not nginxSettings.get(kpath):
+                nginxSettings.setdefault(
+                    kpath,
+                    "/etc/ssl/nginx/{0}_{1}.pem".format(ssldomain, k))
     return nginxSettings
