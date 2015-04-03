@@ -5,7 +5,9 @@ __docformat__ = 'restructuredtext en'
 
 import shutil
 import os
-import urllib
+import time
+import urllib2
+import hashlib
 import difflib
 import sys
 import traceback
@@ -25,7 +27,48 @@ VER_URL = GITHUB + VER_SLUG
 MD5_URL = GITHUB + MD5_SLUG
 DEFAULT_DIST = "trusty"
 DEFAULT_VER = "11"
+DEFAULT_BR = 'lxcbr1'
 DEFAULT_MD5 = "94c796b5c31a6eb121417d0fd210f646"
+DESCRIPTION = '''
+Maybe download and install an ubuntu makina-states compliant lxc template.
+Makina-States is a layer upon SaltStack to install, and manage bare metal
+infrastructure and projects.
+
+
+By default, this script  will:
+    - download the latest official archive (fetch infos from internet)
+    - uncompress and prepare the download tarbball
+But it can also be run offline or use different version/dist/md5.
+
+The Makina-States LXC Template needs:
+    - a filesystem with acls support (99pct the case nowadays).
+    - a network bridge for networking, by default it will
+      use the bridge: {bridge}
+    - At least 5GB free space on /var/lib/lxc (if you won't have this space,
+      use bind mounts to mount a directory from a partition where you have more
+      space)
+
+This LXC template is a tar file compressed with XZ and
+it's filename has this mandatory naming scheme:
+ makina-states-${{DIST}}-lxc-${{VER}}.tar.xz\
+ / eg: makina-states-{dist}-lxc-{ver}.tar.xz
+
+The used url will then maybe be:
+ ${{MIRROR}}/${{TARFILE}}\
+ / eg: {releases}/makina-states-{dist}-lxc-{ver}.tar.xz
+
+To run online with default options: {name}
+ * To change dist / version: {name} [-d {dist}] [-v {ver}]
+ * To use a different mirror: {name} -m http://foo
+ * To use a custom md5: {name} -s {md5}
+ * To skip md5 checking: {name} -s no
+
+To run offline: {name} -o
+This will uncompress & prepare a previously downloaded image that
+must be placed in LXCDIR: (eg: /var/lib/lxc)
+
+All modifiers can obviously be combined.
+'''
 
 
 def popen(cargs=None, shell=True, log=True):
@@ -40,11 +83,25 @@ def popen(cargs=None, shell=True, log=True):
     return ret, ps
 
 
+def check_md5(filep, md5=None):
+    if not os.path.exists(filep):
+        raise OSError('{0} does not exists'.format(filep))
+    if md5:
+        with open(filep, 'rb') as fic:
+            cmd5 = hashlib.md5(fic.read()).hexdigest()
+        if cmd5 != md5:
+            raise ValueError(
+                'md5sum failed({0}) current: {1} != {2}'
+                ''.format(filep, cmd5, md5))
+    else:
+        print('WARNING: MD5 check skipped')
+
+
 def get_ver(ver=DEFAULT_VER, dist=DEFAULT_DIST, offline=False):
     res, trace = ver, ''
     if not ver and not offline:
         try:
-            res = "{0}".format(int(urllib.urlopen(
+            res = "{0}".format(int(urllib2.urlopen(
                 VER_URL.format(dist=dist)
             ).read().strip()))
         except Exception:
@@ -76,7 +133,7 @@ def get_md5(md5=DEFAULT_MD5,
     res, trace = md5, ''
     if not md5 and not offline:
         try:
-            res = "{0}".format(urllib.urlopen(
+            res = "{0}".format(urllib2.urlopen(
                 MD5_URL.format(dist=dist)
             ).read().strip())
             if 'not found' in res.lower():
@@ -139,6 +196,35 @@ def restore_acls(adir, tar=None, force=False):
         finally:
             os.unlink('rootfs')
             os.chdir(cwd)
+
+
+def download_lxc_template(url, tar, md5=None, offline=False):
+    try:
+        # if we already have the file, early exit this func.
+        print('Already downloaded: {0}'.format(tar))
+        check_md5(tar, md5)
+        return
+    except (IOError,) as exc:
+        if offline:
+            raise exc
+    except (ValueError,) as exc:
+        if offline:
+            raise exc
+        else:
+            dtar = '{0}.{1}.sav'.format(tar, time.time())
+            print('MD5 FAILED: Moving {0} -> {1}'.format(tar, dtar))
+            os.rename(tar, dtar)
+    req = urllib2.urlopen(url)
+    CHUNK = 16 * 1024
+    print('Downloading {0}'.format(url))
+    with open(tar, 'wb') as fp:
+        while True:
+            chunk = req.read(CHUNK)
+            if not chunk:
+                break
+            fp.write(chunk)
+    check_md5(tar, md5)
+    print('Downloaded: {0}'.format(tar))
 
 
 def unpack_lxc_template(adir, tar, md5=None, force=False):
@@ -212,57 +298,18 @@ def relink_configs(adir, bridge=None):
             fic.write(ocontent)
 
 
-DESCRIPTION = '''
-Maybe download and install an ubuntu makina-states compliant lxc template.
-Makina-States is a layer upon Salstack  to install, and manage bare
-infrastructure and projects.
-
-By default, it will download the latest official archive but it can also
-download the file from another mirror.
-
-The awaitened tarfile filename has this mandatory naming scheme:
-
-        makina-states-${{DIST}}-lxc-${{VER}}.tar.xz
-        eg: makina-states-{dist}-lxc-{ver}.tar.xz
-
-The used url will be:
-
-        ${{MIRROR}}/${{TARFILE}}
-        eg: {releases}/makina-states-{dist}-lxc-{ver}.tar.xz
-
-As you see, the archive should be a tar file compressed with XZ (lzma
-compression)
-
-Run online (download, uncompress & prepare the image):
- $ restore_lxc_image.py # use defaults opts and latest image
- $ restore_lxc_image.py -v {ver}
- $ restore_lxc_image.py -d {dist} -v {ver}
-To use a different mirror
- $ restore_lxc_image.py -m http://foo
-To use a custom md5
- $ restore_lxc_image.py -d {dist} -v {ver} -s {md5}
-To skip md5 checking
- $ restore_lxc_image.py -d {dist} -v {ver} -s no
-
-
-Run offline (uncompress & prepare a previously downloaded image:
-the image must be placed in LXCDIR: (/var/lib/lxc)
- $ restore_lxc_image.py # use defaults opts and latest image
- $ restore_lxc_image.py -o -v {ver}
- $ restore_lxc_image.py -o -d {dist} -v {ver}
-To use a custom md5
- $ restore_lxc_image.py -o -d {dist} -v {ver} -s {md5}
-To skip md5 checking
- $ restore_lxc_image.py -o -d {dist} -v {ver} -s no
-'''
-
-
 def main():
     parser = argparse.ArgumentParser(
         usage=DESCRIPTION.format(ver=DEFAULT_VER,
+                                 name='./restore_lxc_image.py',
                                  md5=DEFAULT_MD5,
+                                 bridge=DEFAULT_BR,
                                  releases=RELEASES_URL,
                                  dist=DEFAULT_DIST))
+    parser.add_argument('-m', '--mirror',
+                        dest='mirror',
+                        default=RELEASES_URL,
+                        help='mirror url')
     parser.add_argument('-l', '--lxcdir',
                         dest='lxc_dir',
                         default='/var/lib/lxc',
@@ -287,12 +334,24 @@ def main():
                         default=None)
     parser.add_argument('-b', '--bridge',
                         help='default lxc bridge to use',
-                        default='lxcbr1')
+                        default=DEFAULT_BR)
+    parser.add_argument('--skip-download',
+                        default=False,
+                        action='store_true',
+                        help='skip download')
+    parser.add_argument('--skip-unpack',
+                        default=False,
+                        action='store_true',
+                        help='skip unpack')
+    parser.add_argument('--skip-relink',
+                        default=False,
+                        action='store_true',
+                        help='skip relink')
     parser.add_argument('-s', '--md5',
                         help=('MD5 of the tarball of version to use '
                               ' (latest version will be '
                               'fetched from internet if not offline.'
-                              'set to no for no md5sum check'
+                              ' set to \'no\' for no md5sum check'
                               '').format(DEFAULT_MD5),
                         default=None)
     args = parser.parse_args(sys.argv[1:])
@@ -300,7 +359,11 @@ def main():
     lxc_dir = opts['lxc_dir']
     opts['ver'] = get_ver(
         ver=opts['ver'], dist=opts['dist'], offline=opts['offline'])
-    if opts['md5'] and opts['md5'].lower().strip() == 'no':
+    if (
+        opts['md5']
+        and opts['md5'].lower().strip().replace(
+            '"', '').replace("'", '') == 'no'
+    ):
         opts['md5'] = None
     else:
         opts['md5'] = get_md5(
@@ -318,12 +381,20 @@ def main():
     adir = os.path.join(lxc_dir, bdir)
     if os.path.normpath(lxc_dir) == os.path.normpath(adir):
         raise ValueError('something went wrong when getting tar filename')
-    download_lxc_template(adir, tar, md5=opts['md5'], force=opts['force'])
-    unpack_lxc_template(adir, tar, md5=opts['md5'], force=opts['force'])
-    restore_acls(adir, tar)
-    relink_configs(adir, bridge=opts['bridge'])
-    print('Your lxc template has been installed in {0}'.format(adir))
-    print('It\'s name is {0}'.format(os.path.basename(adir)))
+    url = os.path.join(opts['mirror'], tar)
+    done = False
+    if not opts['skip_download']:
+        download_lxc_template(url, tar, md5=opts['md5'], offline=opts['offline'])
+    if not opts['skip_unpack']:
+        unpack_lxc_template(adir, tar, md5=opts['md5'], force=opts['force'])
+        restore_acls(adir, tar)
+        done = True
+    if not opts['skip_relink']:
+        relink_configs(adir, bridge=opts['bridge'])
+        done = True
+    if done:
+        print('Your lxc template has been installed in {0}'.format(adir))
+        print('It\'s name is {0}'.format(os.path.basename(adir)))
 
 
 if __name__ == '__main__':
