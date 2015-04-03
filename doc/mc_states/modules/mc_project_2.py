@@ -2058,7 +2058,7 @@ def deploy(name, *args, **kwargs):
 
 def run_task(name, only_steps, *args, **kwargs):
     '''
-    Run one or more tasks inside a project context
+    Run one or more tasks inside a project context.
 
     You can filter steps to run with only_steps
 
