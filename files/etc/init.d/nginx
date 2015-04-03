@@ -95,8 +95,8 @@ do_stop()
     pids=$(ps aux|awk '{print $11 " " $2}'|egrep ^nginx|awk '{print $2}')
     if [ "x${pids}" != "x" ];then
         echo "killing leftover ${pids}"
-        for pid in $pids;do
-            kill -9 ${pids} || /bin/true
+        for pid in ${pids};do
+            kill -9 ${pid} || /bin/true
         done
     fi
 	return "$RETVAL"

@@ -2315,6 +2315,7 @@ def get_supervision_objects_defs(id_):
             attrs.setdefault('vars.SNMP_PASS', sconf[p + 'password'])
             attrs.setdefault('vars.SNMP_CRYPT', sconf[p + 'key'])
             attrs.setdefault('vars.SNMP_USER',  sconf[p + 'user'])
+            hdata.setdefault('raid', True)
             hdata.setdefault('inotify', True)
             hdata.setdefault('sar',
                              ['cpu', 'task', 'queueln_load',

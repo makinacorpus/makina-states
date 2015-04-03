@@ -16,6 +16,7 @@ burp-cron:
     - source: "salt://makina-states/files/etc/cron.d/burpsynccron"
     - name: "/etc/cron.d/burpsynccron"
     - user: root
+    - template: jinja
     - makedirs: true
     - use_vt: true
     - require:
