@@ -756,7 +756,7 @@ def whitelisted(dn, ttl=FIVE_MINUTES):
     Return all configured NS records for a domain'''
     def _do_whitel(dn):
         allow = __salt__[__name + '.query']('default_allowed_ips_names', {})
-        allow = allow.get(dn, allow['default'])
+        allow = allow.get(dn, allow.get('default', {}))
         w = []
         for fqdn in allow:
             for ip in [a for a in ips_for(fqdn) if a not in w]:
@@ -3098,6 +3098,8 @@ def get_mail_conf(id_, ttl=ONE_DAY):
         mail_settings = __salt__[__name + '.query'](
             'mail_configurations', {})
         mail_conf = copy.deepcopy(mail_settings.get('default', {}))
+        if not mail_conf:
+            return  {}
         if id_ in mail_settings:
             idconf = copy.deepcopy(mail_settings[id_])
             if 'no_inherit' not in mail_conf:
@@ -3603,7 +3605,6 @@ def add_ssl_cert(common_name, cert_content, cert_key, data=None):
 def get_ssl_conf(id_, ttl=ONE_DAY):
     def _do(id_):
         _s = __salt__
-        p = 'makina-states.localsettings.ssl.'
         rdata = OrderedDict()
         todo = get_domains_for(id_)
         # load also a selfsigned wildcard

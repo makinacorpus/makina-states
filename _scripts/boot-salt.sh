@@ -1675,6 +1675,7 @@ setup_and_maybe_update_code() {
 
 service_activated() {
     local activated=""
+    local s="${1}"
     if [ "x$(grep -q manual /etc/init/${s}.override 2>/dev/null)" != "x0" ];then
         activated="y"
     fi
@@ -1683,14 +1684,15 @@ service_activated() {
 
 service_exists() {
     local sexists=""
-    if [ -e "/etc/init/${i}.conf" ] || [ -e "/etc/init.d/${i}" ];then
+    local s="${1}"
+    if [ -e "/etc/init/${s}.conf" ] || [ -e "/etc/init.d/${s}" ];then
         sexists="y"
     fi
     echo "${sexists}"
 }
 
 service_() {
-    s="${1}"
+    local s="${1}"
     shift
     if [ "x$(service_activated ${s})" = "xy" ] && [ "x$(service_exists ${s})" = "xy" ];then
         if [ -e "$(which service 2>/dev/null)" ];then
@@ -2323,6 +2325,11 @@ EOF
             fi
         fi
     done
+    if [ "x${IS_MASTERSALT}" != "x" ];then
+        if [ ! -e  "${MASTERSALT_PILLAR}/database.sls" ];then
+            cp -vf "${MASTERSALT_MS}/files/database.sls" "${MASTERSALT_PILLAR}/database.sls"
+        fi
+    fi
 }
 
 create_salt_tops() {
