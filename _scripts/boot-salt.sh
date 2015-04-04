@@ -3697,7 +3697,7 @@ usage() {
         bs_yellow_log "desccribe and adapt the behavior to your targeted environment"
         echo
         bs_log "Examples"
-        exemple ":" "install a saltmaster/minion"
+        exemple ":" "install a saltmaster/minion on the first run and run highstates after"
         exemple " --nodetype=devhost" "install a saltmaster/minion in 'development' mode"
         exemple " --mastersalt mastersalt.mycompany.net" "install a mastersalt minion linked to mastersalt.mycompany.net"
     fi
