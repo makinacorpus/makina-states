@@ -54,49 +54,14 @@ You will see you newly created bridge with::
               collisions:0 lg file transmission:0
               Octets reçus:135360650 (135.3 MB) Octets transmis:1160735414 (1.1 GB)
 
-Network route forwarding
--------------------------
-There is a 'systctl' option controlling weither a datagram can be sent or not
-(http://en.wikipedia.org/wiki/IP_forwarding).
-You have to enable it for LXC to work.
-Another thing will be to make it persist to further reboots.
-
-Create ``/etc/sysctl.d/99_custom.conf``
-::
-
-    net.ipv4.ip_forward = 1
-
-And reload it with::
-
-    sysctl --system
-
-Then ensure that it is enabled with::
-
-    sysctl net.ipv4.ip_forward
-
-Install the base LXC container
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Make room for space
-+++++++++++++++++++++
-First ensure that there is plenty of space on ``/var/lib/lxc``
-
-
-Download and install the lxc container is simplified through a python script.
-You can do that by issuing as root the follwing commands::
-
-    git clone https://github.com/makinacorpus/makina-states.git
-    ./_scripts/restore_lxc_image.py
-
-This will download and install your image in ``/var/lib/lxc``.
+Activate kernek forwarding
+---------------------------
+Please follow :ref:`activate_forwarding`.
 
 Install the image
 -------------------
-You can now read and proceed with the following section:
-
-:ref:`install_lxc_template`.
+You can now read and proceed with the following section, :ref:`install_lxc_template`.
 
 Note about firewalling
 ------------------------
-Last but not least,  if you use a firewall, and we hope you do so, please refer to the firewalling section for further configuration.
-
-Please read :ref:`lxc_firewall`.
+Last but not least,  if you use a firewall, and we hope you do so, please refer to the firewalling section for further configuration. Please read :ref:`lxc_firewall`.

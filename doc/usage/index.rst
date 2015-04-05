@@ -11,6 +11,7 @@ End user documentation
    write/index.rst
    misc/index.rst
    troubleshooting.rst
+   activate_forwading.rst
    install_lxc_template.rst
    lxc_firewall.rst
 
