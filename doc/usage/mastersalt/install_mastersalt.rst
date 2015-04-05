@@ -48,24 +48,26 @@ An empty file is generated for you on first install.
 
 Install a mastersalt master
 +++++++++++++++++++++++++++
-Ensure  that your local box has it's FQDN configured by running::
+Ensure that your local box FQDN is correctly configured by issuing:
 
     hostname -f
 
 You should have something like that in your /etc/hosts::
 
-    127.0.0.1   mastersaltmaster.foo.net  mastersaltmaster localhost
+    127.0.0.1 mastersaltmaster.foo.net mastersaltmaster localhost
 
 Then, you can proceed by bootstrapping mastersalt
 ::
 
-    mkdir -p /srv/mastersalt 
+    mkdir -p /srv/mastersalt
     apt-get install -y curl git
     git clone https://github.com/makinacorpus/makina-states.git /srv/mastersalt/makina-states
     /srv/mastersalt/makina-states/_scripts/boot-salt.sh --mastersalt-master --mastersalt $(hostname -f)
 
 After installation you can begin to edit **/srv/mastersalt-pillar/database.sls** and
-bring up the rest of your new saltstack based infra, piece after piece !
+bring up the rest of your new saltstack based infra, piece after piece !::
+
+    vim /srv/mastersalt-pillar/database.sls
 
 **WARNING** The mastersalt binaries are prefixed with 'master' like:
 'mastersalt', 'mastersalt-call', 'mastersalt-run', 'mastersalt-key'.
