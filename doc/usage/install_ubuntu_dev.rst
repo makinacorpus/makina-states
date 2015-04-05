@@ -22,71 +22,12 @@ The first thing you ll have to do is to persist the network bridge.
 For this, on ubuntu, the simpliest thing is to inspire ourselves from the
 default lxc-net configuration and create the following configuration file
 
-First, create this upstart job ``/etc/init/lxc-net-makina.conf``:
+First, create **as root** this upstart job ``/etc/init/lxc-net-makina.conf``::
 
-    description "lxc makina network"
-    author "Mathieu Le Marec - Pasquet <kiorky@cryptelium.net>"
+    curl --silent https://raw.githubusercontent.com/makinacorpus/makina-states/stable/files/gen/etc/init/lxc-net-makina.conf >> /etc/init/lxc-net-makina.conf
+    chmod 644 lxc-net-makina.conf
 
-    start on starting lxc
-    stop on stopped lxc
-
-    env USE_LXC_BRIDGE="True"
-    env LXC_MAKINA_BRIDGE="lxcbr1"
-    env LXC_MAKINA_ADDR="10.5.0.1"
-    env LXC_MAKINA_NETMASK="255.255.0.0"
-    env LXC_MAKINA_NETWORK="10.5.0.0/16"
-    env varrun="/var/run/lxc"
-    env LXC_DOMAIN=""
-    env LXC_MAKINA_DOMAIN=""
-
-    pre-start script
-            [ -f /etc/default/lxc ] && . /etc/default/lxc
-
-            [ "x$USE_LXC_BRIDGE" = "xtrue" ] || { stop; exit 0; }
-
-            cleanup() {
-                    # dnsmasq failed to start, clean up the bridge
-                    iptables -t nat -D POSTROUTING -s ${LXC_MAKINA_NETWORK} ! -d ${LXC_MAKINA_NETWORK} -j MASQUERADE || true
-                    ifconfig ${LXC_MAKINA_BRIDGE} down || true
-                    brctl delbr ${LXC_MAKINA_BRIDGE} || true
-            }
-
-            if [ -d /sys/class/net/${LXC_MAKINA_BRIDGE} ]; then
-                    if [ ! -f ${varrun}/network_up ]; then
-                            # bridge exists, but we didn't start it
-                            stop;
-                    fi
-                    exit 0;
-            fi
-
-            # set up the lxc network
-            brctl addbr ${LXC_MAKINA_BRIDGE} || { echo "Missing bridge support in kernel"; stop; exit 0; }
-            echo 1 > /proc/sys/net/ipv4/ip_forward
-            mkdir -p ${varrun}
-            ifconfig ${LXC_MAKINA_BRIDGE} ${LXC_MAKINA_ADDR} netmask ${LXC_MAKINA_NETMASK} up
-            iptables -t nat -A POSTROUTING -s ${LXC_MAKINA_NETWORK} ! -d ${LXC_MAKINA_NETWORK} -j MASQUERADE
-
-            LXC_MAKINA_DOMAIN_ARG=""
-            if [ -n "$LXC_MAKINA_DOMAIN" ]; then
-                    LXC_MAKINA_DOMAIN_ARG="-s $LXC_MAKINA_DOMAIN"
-            fi
-            touch ${varrun}/network_up
-    end script
-
-    post-stop script
-            [ -f /etc/default/lxc ] && . /etc/default/lxc
-            [ -f "${varrun}/network_up" ] || exit 0;
-            # if $LXC_MAKINA_BRIDGE has attached interfaces, don't shut it down
-            ls /sys/class/net/${LXC_MAKINA_BRIDGE}/brif/* > /dev/null 2>&1 && exit 0;
-
-            if [ -d /sys/class/net/${LXC_MAKINA_BRIDGE} ]; then
-                    ifconfig ${LXC_MAKINA_BRIDGE} down
-                    iptables -t nat -D POSTROUTING -s ${LXC_MAKINA_NETWORK} ! -d ${LXC_MAKINA_NETWORK} -j MASQUERADE || true
-                    brctl delbr ${LXC_MAKINA_BRIDGE}
-            fi
-            rm -f ${varrun}/network_up
-    end script
-
+Don't forget that you can read the upstart job but basically, it creates the bridge and then masquerade the outband traffic.
 
 Then reload it with::
 
@@ -133,8 +74,8 @@ Then ensure that it is enabled with::
     sysctl net.ipv4.ip_forward
 
 
-Network firewalling and masquerating
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A note on  network firewalling and masquerating (optional)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This part is optionnal, and is relevant only if you use a firewall.
 
 To ensure internet connectivity, you ll have to ``masquerade`` the 10.5/16
@@ -174,7 +115,7 @@ ufw
 
 iptables
 +++++++++
-
+This means that you manage your firewall manually, you are on your own baby, just allow the traffic from and to lxcbr1 (10.5/16) and masquerade it.
 
 Install the base LXC container
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
