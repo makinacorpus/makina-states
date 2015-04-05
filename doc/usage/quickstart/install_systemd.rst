@@ -1,10 +1,28 @@
-Install LXC makina-states on Fedora Host
-===========================================
-Install lxc
---------------
-Official doc: https://help.ubuntu.com/lts/serverguide/lxc.html
+Install LXC makina-states on a systemd based host (debian/archlinux/fedora)
+================================================================================
+This applies to:
 
-First install LXC
+    - debian >= jessie
+    - archlinux
+    - fedora
+
+Install lxc on ArchLinux
+--------------------------
+install LXC
+::
+
+ sudo pacman install deboostrap lxc
+
+Install lxc on debian
+----------------------
+install LXC
+::
+
+ sudo pacman install deboostrap lxc
+
+Install lxc on Fedora
+-------------------------------
+install LXC
 ::
 
  sudo yum install deboostrap lxc
@@ -24,12 +42,12 @@ The first thing you ll have to do is to persist the network bridge.
 For this, on fedora, the simpliest thing is to inspire ourselves from the
 default ubuntu lxc-net configuration and create the following configuration file
 
-First, create **as root** this upstart job ``/etc/systemd/system/lxc-net-makina``::
+First, create **as root** this systemd Unit ``/etc/systemd/system/lxc-net-makina``::
 
-    curl --silent https://raw.githubusercontent.com/makinacorpus/makina-states/stable/files/gen/etc/init/lxc-net-makina.conf >> /etc/init/lxc-net-makina.conf
-    chmod 644 lxc-net-makina.conf
+    curl --silent https://raw.githubusercontent.com/makinacorpus/makina-states/stable/files/gen/etc/systemd/system/lxc-net-makina >> /etc/systemd/system/lxc-net-makina
+    chmod 644 lxc-net-makina
 
-Don't forget that you can read the upstart job but basically, it creates the bridge and then masquerade the outband traffic.
+Don't forget that you can read the systemd job but basically, it creates the bridge and then masquerade the outband traffic.
 
 Then reload it with::
 
@@ -54,25 +72,9 @@ You will see you newly created bridge with::
               collisions:0 lg file transmission:0
               Octets reçus:135360650 (135.3 MB) Octets transmis:1160735414 (1.1 GB)
 
-Network route forwarding
--------------------------
-There is a 'systctl' option controlling weither a datagram can be sent or not
-(http://en.wikipedia.org/wiki/IP_forwarding).
-You have to enable it for LXC to work.
-Another thing will be to make it persist to further reboots.
-
-Create ``/etc/sysctl.d/99_custom.conf``
-::
-
-    net.ipv4.ip_forward = 1
-
-And reload it with::
-
-    sysctl --system
-
-Then ensure that it is enabled with::
-
-    sysctl net.ipv4.ip_forward
+Activate kernel forwarding
+---------------------------
+Please follow :ref:`activate_forwarding`.
 
 Install the image
 -------------------
@@ -82,3 +84,8 @@ You can now proceed with the following section, :ref:`install_lxc_template`.
 Note about firewalling
 ------------------------
 Last but not least,  if you use a firewall, and we hope you do so, please refer to the firewalling section for further configuration. Please read :ref:`lxc_firewall`.
+
+On fedora you may be using:
+
+    - :ref:`install_lxc_firewalld`
+    - :ref:`install_lxc_shorewall`
