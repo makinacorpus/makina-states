@@ -155,18 +155,7 @@ dummy-post-{{ data.service_name }}-service-restart:
 {%- set pillarRoot = resolver('{pillar_root}', data) %}
 {%- set localMsr = resolver('{salt_root}/makina-states', data) %}
 {%- set repos = data['confRepos'] %}
-{% for cur_name in  [
-  'salt',
-  'salt-call',
-  'salt-cloud',
-  'salt-cp',
-  'salt-key',
-  'salt-master',
-  'salt-minion',
-  'salt-run',
-  'salt-ssh',
-  'salt-syndic',
-] -%}
+{% for cur_name in  data['bins'] -%}
 {%-  if cur_name == 'salt' %}
 {%-    set src = 'salt' %}
 {%-  else %}
@@ -188,18 +177,7 @@ salt-{{ data.name }}-{{cur_name}}-bin:
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 {% endfor %}
-{% for manfile in [
-        'salt.1',
-        'salt-call.1',
-        'salt-cloud.1',
-        'salt-cp.1',
-        'salt-key.1',
-        'salt-master.1',
-        'salt-minion.1',
-        'salt-run.1',
-        'salt-ssh.1',
-        'salt-syndic.1',
-        'salt.7',] %}
+{% for manfile in data['mans'] %}
 {% set mansection = manfile.split('.')[1] %}
 salt-man-{{manfile}}-{{ data.name }}:
   file.symlink:
@@ -357,7 +335,7 @@ salt-{{ data.name }}-{{ i }}:
     - require:
       - mc_proxy: dummy-pre-{{ data.name }}-checkouts
     - onlyif: ls -d "{{ git }}"
-    - unless: if [[ -d "{{ git }}" ]];then cd "{{ rdata['target'] }}" && grep -q "filemode = false" .git/config;fi
+    - unless: if [ -d "{{ git }}" ];then cd "{{ rdata['target'] }}" && grep -q "filemode = false" .git/config;fi
   {# on each run, update the code -#}
   mc_git.latest:
     - name: {{ rdata['name'] }}
@@ -418,7 +396,9 @@ update-makinastates-{{ data.name }}-venv:
   pip.installed:
     - name: pylibmc
     - bin_env: "{{data.venv_path}}"
-    - onlyif: "test -e {{data.venv_path + '/bin/pip'}}"
+    - onlyif: |
+              test -e {{data.venv_path + '/bin/pip'}}
+              test "x$({{data.venv_path + '/bin/python'}} -c 'import pylibmc' 1>/dev/null 2>/dev/null;echo $?)" != "x0"
     - watch:
       - virtualenv: update-makinastates-{{ data.name }}-venv
       - mc_proxy: memcached-post-install
@@ -431,6 +411,7 @@ update-makinastates-{{ data.name }}-reqs:
     - bin_env: "{{data.venv_path}}"
     - upgrade: true
     - use_vt: true
+    - unless: "{{data.msr}}/_scripts/check_pip.sh {{data.name}}"
     - require_in:
       - virtualenv: update-makinastates-{{ data.name }}-venv
     - require_in:
@@ -457,7 +438,6 @@ update-makinastates-{{ data.name }}-git-reqs:
 {% for i in ['docker-py',  'm2crypto', 'salt', 'salttesting'] %}
 update-makinastates-{{ data.name }}-git-reqs-{{i}}:
   cmd.run:
-    - onlyif: test -e .git/config
     - name: |
             . {{data.venv_path}}/bin/activate
             pip install --no-deps -e .
@@ -465,7 +445,10 @@ update-makinastates-{{ data.name }}-git-reqs-{{i}}:
       - virtualenv: update-makinastates-{{ data.name }}-venv
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
-    - use_vt: true
+    - onlyif: |
+              set -e
+              test -e .git/config
+              "{{data.venv_path}}/bin/python" "{{data.msr}}/_scripts/modules_check.py"
     - user: root
     - cwd: "{{data.msr}}/src/{{i}}"
 {% endfor %}

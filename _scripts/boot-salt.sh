@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#
 # SEE MAKINA-STATES DOCS FOR FURTHER INSTRUCTIONS (or ../README.rst):
 #
 #    - https://github.com/makinacorpus/makina-states
@@ -649,6 +648,8 @@ set_vars() {
     SALT_MINION_CONTROLLER_DEFAULT="salt_minion"
     SALT_MINION_CONTROLLER_INPUTED="${SALT_MINION_CONTROLLER}"
     SALT_MINION_CONTROLLER="${SALT_MINION_CONTROLLER:-$SALT_MINION_CONTROLLER_DEFAULT}"
+    DO_PIP="${DO_PIP:-}"
+    DO_MS_PIP="${DO_MS_PIP:-}"
     SALT_LIGHT_INSTALL=""
     NICKNAME_FQDN="$(get_minion_id)"
     if [ "x$(echo "${NICKNAME_FQDN}"|grep -q \.;echo ${?})" = "x0" ];then
@@ -921,6 +922,8 @@ set_vars() {
         MASTERSALT_BOOT_SKIP_HIGHSTATE=""
         SALT_BOOT_SKIP_CHECKOUTS="${FORCE_SALT_BOOT_SKIP_CHECKOUTS:-}"
         SALT_REBOOTSTRAP="y"
+        DO_PIP="y"
+        DO_MS_PIP="y"
         BUILDOUT_REBOOTSTRAP="y"
     fi
     if [ "x${QUIET}" = "x" ];then
@@ -938,13 +941,12 @@ set_vars() {
         SALT_LIGHT_INSTALL="y"
     fi
 
-
     # export variables to support a restart
-
-    export DO_MASTERSALT DO_SALT FORCE_SALT_BOOT_SKIP_CHECKOUTS
+    export DO_PIP DO_MS_PIP DO_MASTERSALT DO_SALT DO_REFRESH_MODULES
+    export FORCE_SALT_BOOT_SKIP_CHECKOUTS
     export ONLY_BUILDOUT_REBOOTSTRAP SALT_LIGHT_INSTALL
     export EGGS_GIT_DIRS
-    export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS DO_REFRESH_MODULES
+    export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS
     export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE SALT_BOOT_INITIAL_HIGHSTATE
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
     export MS_BRANCH FORCE_MS_BRANCH
@@ -988,6 +990,41 @@ set_vars() {
     export mastersalt_master_changed mastersalt_minion_challenge
     export salt_master_changed salt_minion_challenge
 
+}
+
+do_pip() {
+    # test if salt binaries are there & working
+    ret=""
+    kind="${1:-"salt"}"
+    bins="salt salt-api salt-call salt-cloud salt-cp salt-jenkins-build"
+    bins="${bins} salt-key salt-master salt-minion salt-run salt-ssh"
+    bins="${bins} salt-syndic salt-unity"
+    if [ "x${DO_PIP}" = "x" ];then
+        for i in ${bins};do
+            bin="${VENV_PATH}/${kind}/bin/${i}"
+            if [ ! -e "${bin}" ];then
+                ret="1"
+                break
+            else
+                py="${VENV_PATH}/${kind}/bin/python"
+                fic="$(mktemp)"
+                # strip the exec part of the pip wrapper, but let the code import
+                # to maybe throw an import error signaling a broken pip install
+                sed -e "s/exec(compile(\(.*\)))/compile(\1)/g" "${bin}" > "${fic}"
+                "${py}" "${fic}" 1>/dev/null 2>/dev/null
+                if [ "x${?}" != "x0" ];then
+                    ret="1"
+                    break
+                fi
+                rm -f "${fic}"
+            fi
+        done
+    fi
+    echo "${ret}"
+}
+
+do_mastersalt_pip() {
+    do_pip mastersalt
 }
 
 # --------- PROGRAM START
@@ -1531,7 +1568,7 @@ setup_and_maybe_update_code() {
         fi
         if [ "x${skip_co}" = "x" ];then
             if [ "x${QUIET}" = "x" ];then
-                bs_yellow_log "If you want to skip checkouts, next time do export FORCE_SALT_BOOT_SKIP_CHECKOUTS=1"
+                bs_yellow_log "If you want to skip checkouts, next time do export FORCE_SALT_BOOT_SKIP_CHECKOUTS=y"
             fi
             for ms in ${SALT_MSS};do
                 if [ ! -d "${ms}/.git" ];then
@@ -1583,7 +1620,9 @@ setup_and_maybe_update_code() {
                             fi
                         fi
                     fi
-                    if [ -e "${i}/.git" ] && [ "x${do_update}" != "x" ];then
+                    if [ -e "${i}/.git" ]\
+                        && [ "x${FORCE_SALT_BOOT_SKIP_CHECKOUTS}" = "x" ]\
+                        && [ "x${do_update}" != "x" ];then
                         "${SED}" -i -e "s/filemode =.*/filemode=false/g" "${i}/.git/config" 2>/dev/null
                         remote="remotes/origin/"
                         co_branch="master"
@@ -1810,20 +1849,28 @@ setup_virtualenv() {
     if [ ! -e requirements/requirements.txt ];then
         git pull
     fi
-    pip install -U --download-cache "${PIP_CACHE}" -r requirements/requirements.txt
-    if [ "x${install_git}" != "x" ];then
-        pip install -U --download-cache "${PIP_CACHE}" -r requirements/git_requirements.txt
-    else
-        cwd="${PWD}"
-        for i in docker-py salttesting salt m2crypto;do
-            if [ -e "src/${i}/.git/config" ];then
-                cd "src/${i}"
-                pip install --no-deps -e .
-            fi
-            cd "${cwd}"
-        done
+    do_pip_func="do_pip"
+    if [ "x${venv_path}" = "x${MASTERSALT_VENV_PATH}" ];then
+        do_pip_func="do_mastersalt_pip"
     fi
-    pip install --no-deps -e .
+    if [ "x$(${do_pip_func})" = "x" ];then
+        bs_log "Pip install in place"
+    else
+        pip install -U --download-cache "${PIP_CACHE}" -r requirements/requirements.txt
+        if [ "x${install_git}" != "x" ];then
+            pip install -U --download-cache "${PIP_CACHE}" -r requirements/git_requirements.txt
+        else
+            cwd="${PWD}"
+            for i in docker-py salttesting salt m2crypto;do
+                if [ -e "src/${i}/.git/config" ];then
+                    cd "src/${i}"
+                    pip install --no-deps -e .
+                fi
+                cd "${cwd}"
+            done
+        fi
+        pip install --no-deps -e .
+    fi
     link_salt_dir "${ms_path}" "${venv_path}"
 }
 
@@ -2984,7 +3031,9 @@ minion_challenge() {
         if [ "x${SALT_MASTER_DNS}" = "xlocalhost" ] && [ "x$(hostname|${SED} -e "s/.*devhost.*/match/")" = "xmatch" ];then
             debug_msg "Forcing salt master restart"
             restart_local_masters
-            sleep 10
+            if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
+                sleep 10
+            fi
         fi
         restart_local_minions
         resultping="1"
@@ -3023,7 +3072,9 @@ mastersalt_minion_challenge() {
         if [ "x$(get_mastersalt)" = "xlocalhost" ] && [ "x$(hostname|${SED} -e "s/.*devhost.*/match/")" = "xmatch" ];then
             debug_msg "Forcing salt mastersalt master restart"
             restart_local_mastersalt_masters
-            sleep 10
+            if [ "x$(get_local_mastersalt_mode)" != "xmasterless" ];then
+                sleep 10
+            fi
         fi
         restart_local_mastersalt_minions
         resultping="1"
@@ -3118,7 +3169,9 @@ make_association() {
     fi
     if [ "x${BS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
         restart_local_masters
-        sleep 10
+        if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
+            sleep 10
+        fi
     fi
     if [ "x${BS_ASSOCIATION_RESTART_MINION}" != "x" ];then
         restart_local_minions
@@ -3148,7 +3201,9 @@ make_association() {
         if [ "x${SALT_MASTER_DNS}" = "xlocalhost" ];then
             debug_msg "Forcing salt master restart"
             restart_local_masters
-            sleep 10
+            if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
+                sleep 10
+            fi
         fi
         if [ "x${SALT_MASTER_DNS}" != "xlocalhost" ] &&  [ "x${SALT_NO_CHALLENGE}" = "x" ];then
             challenge_message
@@ -3447,7 +3502,9 @@ install_mastersalt_daemons() {
         if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ] && [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
             debug_msg "Forcing mastersalt master restart"
             restart_local_mastersalt_masters
-            sleep 10
+            if [ "x$(get_local_mastersalt_mode)" != "xmasterless" ];then
+                sleep 10
+            fi
         else
             debug_msg "Forcing mastersalt master shutdown"
             killall_local_mastersalt_masters
@@ -3640,7 +3697,7 @@ usage() {
         bs_yellow_log "desccribe and adapt the behavior to your targeted environment"
         echo
         bs_log "Examples"
-        exemple ":" "install a saltmaster/minion"
+        exemple ":" "install a saltmaster/minion on the first run and run highstates after"
         exemple " --nodetype=devhost" "install a saltmaster/minion in 'development' mode"
         exemple " --mastersalt mastersalt.mycompany.net" "install a mastersalt minion linked to mastersalt.mycompany.net"
     fi
@@ -3770,6 +3827,9 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x-S" ] || [ "x${1}" = "x--skip-checkouts" ];then
             SALT_BOOT_SKIP_CHECKOUTS="y";argmatch="1"
+        fi
+        if [ "x${1}" = "x-s" ] || [ "x${1}" = "x--force-pip-install" ];then
+            DO_MS_PIP="y";DO_PIP="y";argmatch="1"
         fi
         if [ "x${1}" = "x-s" ] || [ "x${1}" = "x--skip-highstates" ];then
             SALT_BOOT_SKIP_HIGHSTATES=y;argmatch="1"
@@ -4348,12 +4408,15 @@ postinstall() {
     fi
 }
 
-
-if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
+setup() {
     detect_os
     set_progs
     parse_cli_opts $LAUNCH_ARGS
     set_vars # real variable affectation
+}
+
+if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
+    setup
     if [ "x$(dns_resolve localhost)" = "x${DNS_RESOLUTION_FAILED}" ];then
         die "${DNS_RESOLUTION_FAILED}"
     fi
