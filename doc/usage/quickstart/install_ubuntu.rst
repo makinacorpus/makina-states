@@ -1,5 +1,6 @@
-Install LXC makina-states on Ubuntu Host
-===========================================
+Install LXC makina-states on ubuntu with upstart
+===========================================================
+
 Install lxc
 --------------
 Official doc: https://help.ubuntu.com/lts/serverguide/lxc.html

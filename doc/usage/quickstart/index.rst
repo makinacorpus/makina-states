@@ -13,5 +13,5 @@ For this to work, you have plenty of solutions.
    :maxdepth: 1
 
    install_ubuntu.rst
-   install_fedora.rst
+   install_systemd.rst
 
