@@ -12,6 +12,9 @@ Although if you created the system-D or  upstart job and it does that for you, i
 For this, you have plenty of options depending of what firewalling software you
 are using.
 
+
+.. _install_lxc_shorewall:
+
 shorewall
 ++++++++++
 You ll have to add a ``masq`` in ``/etc/shorewall/masq``::
@@ -38,11 +41,17 @@ Then reload shorewall::
 
     shorewall safe-restart
 
+.. _install_lxc_firewalld:
+
 firewalld
 ++++++++++++
 
+.. _install_lxc_ufw:
+
 ufw
 +++
+
+.. _install_lxc_iptables
 
 iptables
 +++++++++
