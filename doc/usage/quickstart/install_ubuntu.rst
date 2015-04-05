@@ -54,7 +54,7 @@ You will see you newly created bridge with::
               collisions:0 lg file transmission:0
               Octets reçus:135360650 (135.3 MB) Octets transmis:1160735414 (1.1 GB)
 
-Activate kernek forwarding
+Activate kernel forwarding
 ---------------------------
 Please follow :ref:`activate_forwarding`.
 
@@ -66,7 +66,7 @@ Note about firewalling
 ------------------------
 Last but not least,  if you use a firewall, and we hope you do so, please refer to the firewalling section for further configuration. Please read :ref:`lxc_firewall`.
 
-On ubuntu you maybe using:
+On ubuntu you may be using:
 
     - :ref:`install_lxc_ufw`
     - :ref:`install_lxc_shorewall`
