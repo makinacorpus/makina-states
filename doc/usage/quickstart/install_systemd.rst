@@ -83,7 +83,7 @@ You can now proceed with the following section, :ref:`install_lxc_template`.
 
 Note about firewalling
 ------------------------
-Last but not least,  if you use a firewall, and we hope you do so, please refer to the firewalling section for further configuration. Please read :ref:`lxc_firewall`.
+Last but not least, if you use a firewall, and we hope you do so, please refer to the firewalling section for further configuration. Please read :ref:`lxc_firewall`.
 
 On fedora you may be using:
 
