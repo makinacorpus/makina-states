@@ -109,6 +109,7 @@ Upgrade will:
     - redo the daemon configuration if necessary
     - redo the daemon association if necessary
     - do the highstates (salt and masterone if any)
+
 ::
 
     boot-salt.sh -C --upgrade

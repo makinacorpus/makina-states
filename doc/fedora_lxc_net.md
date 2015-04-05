@@ -29,8 +29,3 @@ firewall-cmd --permanent --zone=lxc --add-interface=lxcbr1
 firewall-cmd --permanent --zone=lxc --set-target=ACCEPT
 ```
 
-Reload firewall
----------------------
-```
-firewall-cmd --reload
-```

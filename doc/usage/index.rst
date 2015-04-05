@@ -4,15 +4,13 @@ End user documentation
 .. toctree::
    :maxdepth: 1
 
-   about.rst
-   install.rst
-   configure.rst
-   install_mastersalt.rst
+   quickstart/index.rst
+   general/index.rst
+   mastersalt/index.rst
    projects/index.rst
-   troubleshooting.rst
    write/index.rst
    misc/index.rst
-
-
-
+   troubleshooting.rst
+   install_lxc_template.rst
+   lxc_firewall.rst
 

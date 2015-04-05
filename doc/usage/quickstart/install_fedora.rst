@@ -1,3 +1,5 @@
+Install LXC makina-states on Fedora Host
+===========================================
 Install lxc
 --------------
 Official doc: https://help.ubuntu.com/lts/serverguide/lxc.html
@@ -5,7 +7,7 @@ Official doc: https://help.ubuntu.com/lts/serverguide/lxc.html
 First install LXC
 ::
 
- sudo apt-get install lxc
+ sudo yum install deboostrap lxc
 
 Prepare network connectivity
 -------------------------------
@@ -17,12 +19,12 @@ They use the ``10.5/16`` network and ``10.5.0.1`` as the default gateway.
 For this to work, you have plenty of solutions.
 
 Network bridge
-~~~~~~~~~~~~~~~
+----------------
 The first thing you ll have to do is to persist the network bridge.
-For this, on ubuntu, the simpliest thing is to inspire ourselves from the
-default lxc-net configuration and create the following configuration file
+For this, on fedora, the simpliest thing is to inspire ourselves from the
+default ubuntu lxc-net configuration and create the following configuration file
 
-First, create **as root** this upstart job ``/etc/init/lxc-net-makina.conf``::
+First, create **as root** this upstart job ``/etc/systemd/system/lxc-net-makina``::
 
     curl --silent https://raw.githubusercontent.com/makinacorpus/makina-states/stable/files/gen/etc/init/lxc-net-makina.conf >> /etc/init/lxc-net-makina.conf
     chmod 644 lxc-net-makina.conf
@@ -52,9 +54,8 @@ You will see you newly created bridge with::
               collisions:0 lg file transmission:0
               Octets reçus:135360650 (135.3 MB) Octets transmis:1160735414 (1.1 GB)
 
-
 Network route forwarding
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
 There is a 'systctl' option controlling weither a datagram can be sent or not
 (http://en.wikipedia.org/wiki/IP_forwarding).
 You have to enable it for LXC to work.
@@ -73,56 +74,15 @@ Then ensure that it is enabled with::
 
     sysctl net.ipv4.ip_forward
 
+Install the image
+-------------------
 
-A note on  network firewalling and masquerating (optional)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This part is optionnal, and is relevant only if you use a firewall.
+You can now proceed with the following section:
 
-To ensure internet connectivity, you ll have to ``masquerade`` the 10.5/16
-network to ensure the big internet dialog.
-Although the upstart job does that for you, if you use an aditionnal firewall, you ll have also to double the configuration in it.
-For this, you have plenty of options depending of what firewalling software you
-are using.
+:ref:`install_lxc_template`.
 
-shorewall
-++++++++++
-You ll have to add a ``masq`` in ``/etc/shorewall/masq``::
+Note about firewalling
+------------------------
+Last but not least,  if you use a firewall, and we hope you do so, please refer to the firewalling section for further configuration.
 
-    br0 lxcbr1  -   -   -   -   -
-
-Replace br0 with your primary interface like ``eth0`` or ``em1``?
-
-You ll have to create a **lxc** zone in ``/etc/shorewall/zones``::
-
-    lxc ipv4  -   -   -
-
-You ll have then to attach lxcbr1 to a **lxc** zone in ``/etc/shorewall/interfaces``::
-
-    lxc lxcbr1  routeback,bridge,tcpflags,nosmurfs
-
-Then, you ll mark this lxc zone as trusted in ``/etc/shorewall/policy``,
-Make sure that the lxc rules are prior to any blocking rules.::
-
-    lxc net ACCEPT  -   -
-    $FW lxc ACCEPT  -   -
-
-Then reload shorewall::
-
-    shorewall safe-restart
-
-ufw
-+++
-
-iptables
-+++++++++
-This means that you manage your firewall manually, you are on your own baby, just allow the traffic from and to lxcbr1 (10.5/16) and masquerade it.
-
-Install the base LXC container
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Download and install the lxc container is simplified through a python script.
-You can do that by issuing as root the follwing commands::
-
-    git clone https://github.com/makinacorpus/makina-states.git
-    ./_scripts/restore_lxc_image.py
-
-This will download and install your image in ``/var/lib/lxc``.
+Please read :ref:`lxc_firewall`.
