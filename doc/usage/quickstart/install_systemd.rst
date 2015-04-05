@@ -8,24 +8,26 @@ This applies to:
 
 Install lxc on ArchLinux
 --------------------------
-install LXC
+install LXC & tools
 ::
 
- sudo pacman install deboostrap lxc
+ sudo pacman -S deboostrap lxc bridge-utils netctl yum
+
+debootstrap and yum are from AUR.
 
 Install lxc on debian
 ----------------------
 install LXC
 ::
 
- sudo pacman install deboostrap lxc
+ sudo apt-get install deboostrap lxc bridge-utils
 
 Install lxc on Fedora
 -------------------------------
 install LXC
 ::
 
- sudo yum install deboostrap lxc
+ sudo yum install deboostrap lxc bridge-utils
 
 Prepare network connectivity
 -------------------------------
