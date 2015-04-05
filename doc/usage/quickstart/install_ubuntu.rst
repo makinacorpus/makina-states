@@ -8,7 +8,7 @@ Official doc: https://help.ubuntu.com/lts/serverguide/lxc.html
 First install LXC
 ::
 
- sudo apt-get install lxc
+ sudo apt-get install lxc bridge-utils
 
 Prepare network connectivity
 -------------------------------
