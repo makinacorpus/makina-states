@@ -249,7 +249,6 @@ def restart_container(container):
 def allow_user_and_root(container):
     users = ['root']
     sudoer = os.environ.get('SUDO_USER', '')
-    users = ['root', 'mpa']
     if sudoer:
         users.append(sudoer)
     ssh_keys = []
