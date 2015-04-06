@@ -13,59 +13,49 @@
 #  config: config path (opt)
 # and it will create an ubuntu templated lxc host
 #}
+{%- set vmdata = salt['mc_cloud_vm.settings']() %}
+{%- set data = vmdata.vts.lxc %}
+{% set extra_confs = {} %}
 include:
   - makina-states.services.virt.lxc.hooks
+
+
 {% if salt['mc_controllers.mastersalt_mode']() %}
-
 {% if grains['os'] in ['Ubuntu'] -%}
-etc-init-lxcconf:
+{% set extra_confs = {
+  '/etc/init/lxc-net-makina.conf': {},
+} %}
+
+{% elif grains['os'] in ['Debian'] -%}
+{% set extra_confs = {'/etc/init.d/lxc-net-makina': {}} %}
+
+# assume systemd 
+{% else %}
+{% set extra_confs = {'/etc/systemd/system/lxc-net-makina': {}} %}
+{% endif%}
+
+{% set extra_confs = salt['mc_utils.copy_dictupdate'](
+  data['host_confs'], extra_confs) %}
+
+{% for f, fdata in extra_confs.items() %}
+{% set template = fdata.get('template', 'jinja') %}
+lxc-conf-{{f}}:
   file.managed:
-    - name: /etc/init/lxc.conf
-    - source: salt://makina-states/files/etc/init/lxc.conf
-    - mode: 750
-    - user: root
-    - group: root
+    - name: "{{fdata.get('target', f)}}"
+    - source: "{{fdata.get('source', 'salt://makina-states/files'+f)}}"
+    - mode: "{{fdata.get('mode', 750)}}"
+    - user: "{{fdata.get('user', 'root')}}"
+    - group:  "{{fdata.get('group', 'root')}}"
+    {% if template %}
+    - template: "{{template}}"
+    {%endif%}
     - watch:
       - mc_proxy: lxc-pre-conf
     - watch_in:
       - mc_proxy: lxc-post-conf
-{% endif %}
+{% endfor %}
+
 {% if grains['os'] in ['Debian'] -%}
-lxc-ubuntu-template:
-  file.managed:
-    - name: /usr/share/lxc/templates/lxc-ubuntu
-    - source: salt://makina-states/files/usr/share/lxc/templates/lxc-ubuntu
-    - mode: 750
-    - user: root
-    - group: root
-    - watch:
-      - mc_proxy: lxc-pre-conf
-    - watch_in:
-      - mc_proxy: lxc-post-conf
-
-lxc-dnsmasq:
-  file.managed:
-    - name: /etc/dnsmasq.d/lxc
-    - source: salt://makina-states/files/etc/dnsmasq.d/lxc
-    - mode: 750
-    - user: root
-    - group: root
-    - watch:
-      - mc_proxy: lxc-pre-conf
-    - watch_in:
-      - mc_proxy: lxc-post-conf
-
-etc-default-lxc:
-  file.managed:
-    - name: /etc/default/lxc
-    - source: salt://makina-states/files/etc/default/lxc
-    - user: root
-    - group: root
-    - watch:
-      - mc_proxy: lxc-pre-conf
-    - watch_in:
-      - mc_proxy: lxc-post-conf
-
 lxc-mount-cgroup:
   mount.mounted:
     - name: /sys/fs/cgroup
@@ -74,31 +64,6 @@ lxc-mount-cgroup:
     - mkmnt: True
     - opts:
       - defaults
-    - watch:
-      - mc_proxy: lxc-pre-conf
-    - watch_in:
-      - mc_proxy: lxc-post-conf
-
-etc-init.d-lxc-net:
-  file.managed:
-    - name: /etc/init.d/lxc-net
-    - source: salt://makina-states/files/etc/init.d/lxc-net.sh
-    - mode: 750
-    - user: root
-    - group: root
-    - watch:
-      - mc_proxy: lxc-pre-conf
-    - watch_in:
-      - mc_proxy: lxc-post-conf
-
-c-/etc/apparmor.d/lxc/lxc-default:
-  file.managed:
-    - name: /etc/apparmor.d/lxc/lxc-default
-    - source: salt://makina-states/files/etc/apparmor.d/lxc/lxc-default
-    - makedirs: true
-    - mode: 644
-    - user: root
-    - group: root
     - watch:
       - mc_proxy: lxc-pre-conf
     - watch_in:
