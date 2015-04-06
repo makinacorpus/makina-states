@@ -199,6 +199,33 @@ def start_container(container):
         raise ValueError('{0} wont start'.format(container))
 
 
+def regen_sshconfig(container):
+    cmd = ("lxc-attach -n '{0}' --"
+           " rm -f /etc/ssh/ssh_host_*{{key,pub}}").format(container)
+    ret, ps = popen(cmd)
+    if ps.returncode:
+        print(ret[0])
+        print(ret[1])
+        raise ValueError('error while removing old ssh key in'
+                         ' {0}'.format(container))
+    cmd = ("lxc-attach -n '{0}' --"
+           " dpkg-reconfigure openssh-server").format(container)
+    ret, ps = popen(cmd)
+    if ps.returncode:
+        print(ret[0])
+        print(ret[1])
+        raise ValueError('error while reconfiguring ssh'
+                         ' in {0}'.format(container))
+    cmd = ("lxc-attach -n '{0}' --"
+           " service ssh restart").format(container)
+    ret, ps = popen(cmd)
+    if ps.returncode:
+        print(ret[0])
+        print(ret[1])
+        raise ValueError('error while restarting ssh'
+                         ' in {0}'.format(container))
+
+
 def restart_container(container):
     stop_container(container)
     start_container(container)
@@ -260,7 +287,8 @@ def main():
     if opts['snapshot'] not in [None, 'aufs', 'overlayfs']:
         raise ValueError('invalid snapshot type')
     if not os.path.exists(lxc_dir):
-        raise ValueError('LXC top dir does not exists, did you installed lxc')
+        raise ValueError('LXC top dir does not exists, '
+                         'did you installed lxc')
     if not opts['ip']:
         opts['ip'] = get_available_ip(lxc_dir)
     if not opts['mac']:
