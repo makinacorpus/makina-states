@@ -409,6 +409,14 @@ def settings(ttl=60):
     def _do():
         _s = __salt__
         settings = _s['mc_utils.defaults'](PREFIX, vm_registry(prefixed=False))
+        # allow non mastersalt mode to work, use default settings
+        svts = settings.setdefault('vts', OrderedDict())
+        if not svts:
+            cloudSettings = _s['mc_cloud.settings']()
+            imgSettings = _s['mc_cloud_images.settings']()
+            for vt in _s['mc_cloud_compute_node.get_vts']():
+                vt_fun = 'mc_cloud_{0}.vt_default_settings'.format(vt)
+                svts[vt] = _s[vt_fun](cloudSettings, imgSettings)
         return settings
     cache_key = '{0}.{1}'.format(__name, 'settings')
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
@@ -417,7 +425,7 @@ def settings(ttl=60):
 def vt_settings(vt=VT, ttl=60):
     def _do(vt):
         _s = __salt__
-        data = settings()['vms'].get(vt, {})
+        data = settings()['vts'].get(vt, {})
         if data:
             vt_fun = 'mc_cloud_{0}.vt_default_settings'.format(vt)
             cloudSettings = _s['mc_cloud.settings']()
@@ -450,6 +458,9 @@ def vm_settings(id_=None, ttl=60):
 def vts_settings(ttl=60):
     def _do():
         data = OrderedDict()
+        # allow non mastersalt mode to work, default settings
+        if not data.get('vts', {}):
+            data['vts'] = __salt__['mc_cloud_compute_node.get_vts']()
         for vt in data['vts']:
             data[vt] = vt_settings(vt)
         return data
