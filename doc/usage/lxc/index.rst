@@ -2,8 +2,9 @@ Lxc informations
 ======================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
 
    install_template.rst
    firewalls.rst
+
 

@@ -1,3 +1,4 @@
+
 .. _install_lxc_template:
 
 Install the base LXC container
@@ -16,7 +17,7 @@ Make room for space (optional)
 
 Mount your origin partition
 ++++++++++++++++++++++++++++++++
-When you have this partition,, first ensure that it is mounted, and it has a
+When you have this partition, first ensure that it is mounted, and it has a
 relevant entry on your ``/etc/fstab`` for it to be mounted at boot time.
 
 For example, Imagine that you have mounted your data partition in ``/home``,
@@ -55,7 +56,7 @@ Remapping a directory from this partition is as simple as:
 
     - adding a new entry at the bottom of your fstab::
 
-        /home/var/lib/lxc /var/lib/lxc none defaults,exec 0 0
+        /home/var/lib/lxc /var/lib/lxc none bind,defaults,exec 0 0
 
 You will obviously replace ``/home`` by the mountpoint location of your extra big data partititon.
 You will obviously replace ``/home/var/lib/lxc`` by the directory you had created previously.
@@ -74,19 +75,26 @@ Which should be the same that::
 
 As it is now on your fstab, it will survive to reboots.
 
-Now, that means that  ``/home/var/lib/lxc`` is mounted in place of ``/var/lib/lxc``.
-Anything which is written to or accessed from ``/var/lib/lxc`` will instead be written in
-``/home/var/lib/lxc``.
+- That means that  ``/home/var/lib/lxc`` is mounted in place of ``/var/lib/lxc``
+- Anything which is written to or accessed from ``/var/lib/lxc``
+  will instead be written in ``/home/var/lib/lxc``.
 
 .. _install_lxc_template_image:
 
 Install base LXC Image
 --------------------------------
 Download and install the lxc container is simplified through a python script.
+
+Download a copy of makina-states, which contains helpers::
+
+    git clone https://github.com/makinacorpus/makina-states.git -b stable
+
 You can do that by issuing as root those following commands::
 
-    git clone https://github.com/makinacorpus/makina-states.git
-    ./_scripts/restore_lxc_image.py
+    cd makina-states
+    git checkout stable
+    # either sudo, or use a root shell
+    sudo ./_scripts/restore_lxc_image.py
 
 This will download and install your image in ``/var/lib/lxc``.
 

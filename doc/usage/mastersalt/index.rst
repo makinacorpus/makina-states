@@ -2,6 +2,6 @@ Mastersalt documentation
 ==========================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    install_mastersalt.rst

@@ -82,7 +82,7 @@ Please follow :ref:`activate_forwarding`.
 
 Install the image
 -------------------
-You can now proceed with the following section, :ref:`install_lxc_template`.
+You can now read and proceed with the following section, :ref:`install_lxc_template`.
 
 Note about firewalling
 ------------------------

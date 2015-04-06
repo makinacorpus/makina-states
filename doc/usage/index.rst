@@ -1,7 +1,5 @@
 End user documentation
 ======================
-
-
 Installation and basic usage
 ----------------------------
 .. toctree::
@@ -22,7 +20,7 @@ Lifecycle
 Additionnal docs
 ------------------
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    misc/index.rst
    troubleshooting.rst
