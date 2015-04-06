@@ -5,4 +5,7 @@ find mc_states -type f|while read f
 do
     sed -i -re "/from __future/d" "$f"
 done
+if [ "x${1}" != "nobuild" ];then
+    make html
+fi
 # vim:set et sts=4 ts=4 tw=80:

@@ -10,6 +10,3 @@ Design
    macros.rst
    hooks.rst
    modes.rst
-
-
-

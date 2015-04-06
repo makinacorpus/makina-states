@@ -14,4 +14,3 @@ For this to work, you have plenty of solutions.
 
    install_ubuntu.rst
    install_systemd.rst
-

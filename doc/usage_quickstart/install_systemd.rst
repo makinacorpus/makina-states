@@ -46,10 +46,10 @@ default ubuntu lxc-net configuration and create the following configuration file
 
 First, create **as root** this systemd Unit ``/etc/systemd/system/lxc-net-makina`` & helpers::
 
-    for i in /etc/systemd/system/lxc-net-makina /etc/lxc-net-makina.sh /etc/reset-net-bridges;do
+    for i in /etc/systemd/system/lxc-net-makina.service /etc/lxc-net-makina.sh /etc/reset-net-bridges;do
         curl --silent "https://raw.githubusercontent.com/makinacorpus/makina-states/stable/files${i}" > "${i}"
     done
-    chmod 644 /etc/systemd/system/lxc-net-makina;chmod 755 /etc/lxc-net-makina.sh /etc/reset-net-bridges
+    chmod 644 /etc/systemd/system/lxc-net-makina.service;chmod 755 /etc/lxc-net-makina.sh /etc/reset-net-bridges
 
 Don't forget that you can read the systemd job but basically, it creates the bridge and then masquerade the outband traffic.
 
@@ -82,14 +82,14 @@ Please follow :ref:`activate_forwarding`.
 
 Install the image
 -------------------
-
-You can now proceed with the following section, :ref:`install_lxc_template`.
+You can now read and proceed with the following section, :ref:`install_lxc_template`.
 
 Note about firewalling
 ------------------------
-Last but not least, if you use a firewall, and we hope you do so, please refer to the firewalling section for further configuration. Please read :ref:`lxc_firewall`.
+Last but not least, if you use a firewall, and we hope you do so, please refer to the firewalling section for further configuration. Please read :ref:`lxc_firewall` .
 
 On fedora you may be using:
 
     - :ref:`install_lxc_firewalld`
     - :ref:`install_lxc_shorewall`
+

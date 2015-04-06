@@ -141,6 +141,15 @@ def vt_default_settings(cloudSettings, imgSettings):
                          'fstab': None,
                          'lxc_conf': [],
                          'lxc_conf_unset': []},
+            'host_confs': {
+                '/etc/apparmor.d/lxc/lxc-default': {'mode': 644},
+                '/etc/default/lxc': {},
+                '/etc/default/lxc-net-makina': {},
+                '/etc/dnsmasq.d/lxc': {},
+                '/etc/reset-net-bridges': {},
+                '/etc/lxc-net-makina.sh': {},
+                '/usr/share/lxc/templates/lxc-ubuntu': {'template': None},
+            },
             'lxc_cloud_profiles': {
                 'xxxtrem': {'size': '2000g'},
                 'xxtrem': {'size': '1000g'},

@@ -2062,8 +2062,8 @@ def run_task(name, only_steps, *args, **kwargs):
 
     You can filter steps to run with only_steps
 
-    All sls in .salt which are a task (beginning with task_ will be searched
-    and the one matching only_steps (string or list) will be executed
+    All sls in ``.salt`` which are a task (all files beginning with task_ will be searched
+    and the one matching only_steps (string or list) will be executed)
     '''
     if not only_steps:
         raise _stop_proc('One task at least must be providen')
@@ -2533,6 +2533,7 @@ def sync_git_directory(directory,
                        rev=None,
                        sync_remote='sync',
                        refresh=False,
+                       local_branch=None,
                        **kw):
 
     '''
@@ -2544,6 +2545,8 @@ def sync_git_directory(directory,
         remote origin <url>
     rev
         changeset to deploy
+    local_branch
+        local branch to set to
     sync_remote
         name of the remote
     refresh
@@ -2571,9 +2574,18 @@ def sync_git_directory(directory,
             remotes = _s['git.remotes'](directory, user=user)
         except Exception:
             remotes = {}
+        if local_branch is None:
+            local_branch = 'master'
         if refresh and (sync_remote in remotes):
             cret['fetch'] = _s['git.fetch'](
                 directory, sync_remote, user=user)
+            cret['stash_local_changes'] = _s['git.stash'](
+                directory,
+                user=user)
+            cret['go_to_{0}'.format(local_branch)] = _s['git.checkout'](
+                directory,
+                local_branch,
+                user=user)
             cret['sync'] = _s['git.reset'](
                 directory,
                 '--hard {0}/{1}'.format(sync_remote, rev),

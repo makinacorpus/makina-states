@@ -218,7 +218,7 @@ def vm_default_settings(vm,
         vtsettings = _s['mc_cloud_vm.vt_extpillar'](target, vt)
     else:
         vt = extdata.get('vt', vt)
-        vtsettings = copy.deepcopy(vt_settings(vt))
+        vtsettings = vt_settings(vt)
     if extpillar:
         node = 'mc_cloud_compute_node.'
         ssh_port = _s[node + 'get_ssh_port'](vm)
@@ -235,16 +235,17 @@ def vm_default_settings(vm,
         # if it is not a distant minion, use private gateway ip
         if _s['mc_pillar.mastersalt_minion_id']() == target:
             master = vtsettings['defaults']['gateway']
-    data = _s['mc_utils.dictupdate'](vtsettings['defaults'], {
-        'name': vm,
-        'expose': [],
-        'expose_limited': {},
-        'vt': vtsettings['vt'],
-        'target': target,
-        'master': master,
-        'domains': [vm],
-        'ssh_reverse_proxy_port': ssh_port,
-        'snmp_reverse_proxy_port': snmp_port})
+    data = _s['mc_utils.dictupdate'](
+        copy.deepcopy(vtsettings['defaults']),
+        {'name': vm,
+         'expose': [],
+         'expose_limited': {},
+         'vt': vtsettings['vt'],
+         'target': target,
+         'master': master,
+         'domains': [vm],
+         'ssh_reverse_proxy_port': ssh_port,
+         'snmp_reverse_proxy_port': snmp_port})
     return copy.deepcopy(data)
 
 

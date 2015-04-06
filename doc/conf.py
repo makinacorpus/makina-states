@@ -655,7 +655,9 @@ sys.path.insert(0, os.path.abspath(D))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo']
+extensions = ['sphinx.ext.autodoc', 
+              'sphinx.ext.doctest', 
+              'sphinx.ext.todo']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -700,11 +702,11 @@ exclude_patterns = []
 #default_role = None
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
-#add_function_parentheses = True
+# add_function_parentheses = True
 
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).
-#add_module_names = True
+# add_module_names = True
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
@@ -729,8 +731,6 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
     import sphinx_rtd_theme
     html_theme = 'sphinx_rtd_theme'
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-
-
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -866,8 +866,11 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'MakinaStates', u'Makina States Documentation',
-   u'Mathieu Le Marec - Pasquet, Régis Leroy & Makina Corpus folks', 'MakinaStates', 'One line description of project.',
+  ('index',
+   'MakinaStates',
+   u'Makina States Documentation',
+   u'Mathieu Le Marec - Pasquet, Régis Leroy & Makina Corpus folks',
+   'MakinaStates', 'One line description of project.',
    'Miscellaneous'),
 ]
 
@@ -881,5 +884,4 @@ texinfo_documents = [
 #texinfo_show_urls = 'footnote'
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
-#texinfo_no_detailmenu = False
-
+# texinfo_no_detailmenu = False
