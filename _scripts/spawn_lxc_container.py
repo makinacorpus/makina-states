@@ -397,6 +397,9 @@ def main():
     adir = os.path.join(lxc_dir, opts['name'])
     arootfs = os.path.join(adir, 'rootfs')
     aconfig = os.path.join(adir, 'config')
+    fqdn = opts['name']
+    if '.' not in opts['name']:
+        fqdn = '{0}.lxc.local'.format(opts['name'])
     force = opts['force']
     if opts['snapshot'] not in [None, 'aufs', 'overlayfs']:
         raise ValueError('invalid snapshot type')
@@ -411,19 +414,16 @@ def main():
         raise ValueError('Invalid origin container: {0}'.format(odir))
     if 'linux' not in sys.platform.lower():
         raise ValueError('This must be run on linux')
-    if os.path.exists(arootfs) and not force:
+    if os.path.exists(adir) and not force:
         raise ValueError('{0} already created'.format(adir))
-    if not os.path.exists(arootfs):
+    if not os.path.exists(adir):
         clone_template(opts['origin'], opts['name'], snapshot=opts['snapshot'])
-    if not os.path.exists(arootfs):
+    if not os.path.exists(adir):
         raise ValueError('{0} does not exists'.format(adir))
     edit_config(aconfig, opts['bridge'], opts['ip'], opts['mac'])
     restart_container(opts['name'])
     regen_sshconfig(opts['name'])
     allow_user_and_root(opts['name'])
-    fqdn = opts['name']
-    if '.' not in opts['name']:
-        fqdn = '{0}.lxc.local'.format(opts['name'])
     fix_hosts(opts['name'], fqdn)
     print('--')
     print('Your container is in {0}'.format(adir))
