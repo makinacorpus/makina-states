@@ -162,25 +162,30 @@ def system(cmd):
     return os.system(cmd)
 
 
-def restore_acls(adir, tar=None, force=False):
+def restore_acls(adir, ftar=None, force=False):
+    tar = os.path.basename(ftar)
     aclflag = os.path.join(adir, ".{0}{1}aclsdone".format(
         tar, socket.getfqdn()))
-    cwd = os.getcwd()
+    rootfs = os.path.join(adir, 'rootfs')
+    sub_rootfs = os.path.join(rootfs, 'rootfs')
     if (
         (not os.path.exists(aclflag)
          and os.path.exists(os.path.join(adir, 'acls.txt'))
-         and os.path.exists(os.path.join(adir, 'rootfs')))
+         and os.path.exists(rootfs))
         or force
     ):
         with open(os.path.join(adir, 'acls.txt')) as fic:
-            with open(os.path.join(adir, 'rootfs/acls.txt'), 'w') as fic2:
+            with open(os.path.join(rootfs, 'acls.txt'), 'w') as fic2:
                 fic2.write(fic.read())
-        if os.path.exists('rootfs') and os.path.islink('rootfs'):
-            os.unlink('rootfs')
+        if os.path.exists(sub_rootfs) and os.path.islink(sub_rootfs):
+            os.unlink(sub_rootfs)
         try:
-            os.symlink('.', 'rootfs')
+            os.symlink('.', sub_rootfs)
             print('Restoring acls in {0}'.format(adir))
-            ret, ps = popen('chroot . /usr/bin/setfacl --restore=acls.txt')
+            print(os.getcwd())
+            ret, ps = popen(
+                'chroot "{0}" /usr/bin/setfacl --restore=acls.txt'
+                ''.format(rootfs))
             if ps.returncode:
                 # exit always on error as there were sockets while creating acl
                 # files
@@ -189,35 +194,39 @@ def restore_acls(adir, tar=None, force=False):
                 else:
                     print(ret[0])
                     print(ret[1])
-                    print('error while restoring acls in {0}'.format(adir))
+                    print('error while restoring acls in {0}'.format(rootfs))
                     sys.exit(1)
             with open(aclflag, 'w') as fic:
                 fic.write('')
         finally:
-            os.unlink('rootfs')
-            os.chdir(cwd)
+            os.unlink(sub_rootfs)
 
 
 def download_lxc_template(url, tar, md5=None, offline=False):
     try:
         # if we already have the file, early exit this func.
-        print('Already downloaded: {0}'.format(tar))
         check_md5(tar, md5)
+        print('Already downloaded: {0}'.format(tar))
         return
     except (IOError,) as exc:
         if offline:
             raise exc
+    except (OSError,) as exc:
+        # not downloaded
+        pass
     except (ValueError,) as exc:
+        # failed md5
         if offline:
             raise exc
         else:
             dtar = '{0}.{1}.sav'.format(tar, time.time())
             print('MD5 FAILED: Moving {0} -> {1}'.format(tar, dtar))
             os.rename(tar, dtar)
-    req = urllib2.urlopen(url)
-    CHUNK = 16 * 1024
     print('Downloading {0}'.format(url))
+    print(' in {0}'.format(tar))
     with open(tar, 'wb') as fp:
+        req = urllib2.urlopen(url)
+        CHUNK = 16 * 1024
         while True:
             chunk = req.read(CHUNK)
             if not chunk:
@@ -227,8 +236,9 @@ def download_lxc_template(url, tar, md5=None, offline=False):
     print('Downloaded: {0}'.format(tar))
 
 
-def unpack_lxc_template(adir, tar, md5=None, force=False):
+def unpack_lxc_template(adir, ftar, md5=None, force=False):
     adirtmp = adir + ".dl.tmp"
+    tar = os.path.basename(ftar)
     unflag = os.path.join(adir, ".{0}unpacked".format(tar))
     if (
         not os.path.exists(os.path.join(adir, 'rootfs/root'))
@@ -241,9 +251,9 @@ def unpack_lxc_template(adir, tar, md5=None, force=False):
             shutil.rmtree(adirtmp)
         if not os.path.exists(adirtmp):
             os.makedirs(adirtmp)
-        print('Unpacking {0} in {1}'.format(tar, adirtmp))
+        print('Unpacking {0} in {1}'.format(ftar, adirtmp))
         ret, ps = popen('tar xJf "{tar}" -C "{adirtmp}"'.format(
-            tar=tar, adirtmp=adirtmp))
+            tar=ftar, adirtmp=adirtmp))
         if ps.returncode:
             print(ret[0])
             print(ret[1])
@@ -379,15 +389,17 @@ def main():
     tar = "makina-states-{dist}-lxc-{ver}.tar.xz".format(**opts)
     bdir = re.sub('(-lxc-[^-]*)*$', '', tar.split(".tar.xz", 1)[0])
     adir = os.path.join(lxc_dir, bdir)
+    ftar = os.path.join(lxc_dir, tar)
     if os.path.normpath(lxc_dir) == os.path.normpath(adir):
         raise ValueError('something went wrong when getting tar filename')
     url = os.path.join(opts['mirror'], tar)
     done = False
     if not opts['skip_download']:
-        download_lxc_template(url, tar, md5=opts['md5'], offline=opts['offline'])
+        download_lxc_template(
+            url, ftar, md5=opts['md5'], offline=opts['offline'])
     if not opts['skip_unpack']:
-        unpack_lxc_template(adir, tar, md5=opts['md5'], force=opts['force'])
-        restore_acls(adir, tar)
+        unpack_lxc_template(adir, ftar, md5=opts['md5'], force=opts['force'])
+        restore_acls(adir, ftar)
         done = True
     if not opts['skip_relink']:
         relink_configs(adir, bridge=opts['bridge'])
