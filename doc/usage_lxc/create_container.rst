@@ -16,6 +16,7 @@ There are some steps involved in cloning a makina-states based container:
     - clone the LXC container
     - reset the lxc bare informations like the mac, and the ip
     - reset the SSH and salt information inside the new container
+    - maybe mark the salt installations (salt & mastersalt) as masterless
 
 For this we created a simple helper freeing you from this hassle.
 
@@ -31,7 +32,17 @@ The name of the container will become it's **minion_id**.
 
 A good idea is to name containers with a FQDN like::
 
-    ./_scripts/spawn_container.py --ip=10.5.0.3 --name=myproject.lxc.local
+    ./_scripts/spawn_container.py [--mac=xx:xx:xx:xx:xx:xx] [--ip=10.5.0.3] --name=myproject.lxc.local
+
+The ip and mac will be generated from non allocated ports, if they are not
+specified, you can then edit the LXC config to get them::
+
+    vim /var/lib/lxc/<container_name>/config
+
+They are the value of:
+
+    - ``lxc.network.ipv4``
+    - ``lxc.network.hwaddr``
 
 Network configuration
 ----------------------
