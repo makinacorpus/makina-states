@@ -1,7 +1,7 @@
 SNMPD configuration
 ====================
 
-See :ref:`mc_module_supervisor` for configuration options.
+See :ref:`module_mc_supervisor` for configuration options.
 
 Exposed Hooks:
     - supervisor-pre-install
@@ -12,5 +12,4 @@ Exposed Hooks:
     - supervisor-post-restart
 
 Pillar value start with **makina-states.services.monitoring.supervisor**.
-
 

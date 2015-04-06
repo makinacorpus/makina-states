@@ -1,6 +1,6 @@
 casper configuration
 =====================
-see :ref:`mc_module_casperjs`
+see :ref:`module_mc_casperjs`
 
 Install casper.js
 

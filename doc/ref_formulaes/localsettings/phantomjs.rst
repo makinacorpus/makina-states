@@ -1,6 +1,6 @@
 phantomjs configuration
 ===========================
-see :ref:`mc_module_phantomjs`
+see :ref:`module_mc_phantomjs`
 
 Install phantom.js
 

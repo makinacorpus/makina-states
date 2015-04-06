@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 '''
 
-.. _runner_mc_cloud_vm:
+.. _runner_mc_cloud_saltify:
 
-mc_cloud_lxc runner
+mc_cloud_saltify runner
 ==========================
+
 
 '''
 # -*- coding: utf-8 -*-
