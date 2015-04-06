@@ -33,6 +33,7 @@ find /etc/*salt/pki/master/minions*/*\
     /var/log/*.log\
     /var/log/mastersalt/*.gz\
     /var/log/salt/*.gz\
+    /etc/ssh/ssh_host_*{key,pub}\
     /var/log/mastersalt/mastersalt-master\
     /var/log/mastersalt/mastersalt-minion\
     /var/log/salt/salt-master\
