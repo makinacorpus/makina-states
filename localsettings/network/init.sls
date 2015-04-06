@@ -23,7 +23,7 @@ network-cfg-reset:
     - mode: '0755'
     - template: jinja
     - name: {{ locs.conf_dir }}/network/if-up.d/reset-net-bridges
-    - source: salt://makina-states/files/etc/network/if-up.d/reset-net-bridges
+    - source: salt://makina-states/files/etc/reset-net-bridges
     - require_in:
       - mc_proxy: network-cfg-gen
 

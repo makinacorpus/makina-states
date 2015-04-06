@@ -46,6 +46,7 @@ lxc-conf-{{f}}:
     - mode: "{{fdata.get('mode', 750)}}"
     - user: "{{fdata.get('user', 'root')}}"
     - group:  "{{fdata.get('group', 'root')}}"
+    - makedirs: true
     {% if template %}
     - template: "{{template}}"
     {%endif%}
