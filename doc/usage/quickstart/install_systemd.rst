@@ -44,10 +44,12 @@ The first thing you ll have to do is to persist the network bridge.
 For this, on fedora, the simpliest thing is to inspire ourselves from the
 default ubuntu lxc-net configuration and create the following configuration file
 
-First, create **as root** this systemd Unit ``/etc/systemd/system/lxc-net-makina``::
+First, create **as root** this systemd Unit ``/etc/systemd/system/lxc-net-makina`` & helpers::
 
-    curl --silent https://raw.githubusercontent.com/makinacorpus/makina-states/stable/files/gen/etc/systemd/system/lxc-net-makina >> /etc/systemd/system/lxc-net-makina
-    chmod 644 lxc-net-makina
+    for i in /etc/systemd/system/lxc-net-makina /etc/lxc-net-makina.sh /etc/reset-net-bridges;do
+        curl --silent "https://raw.githubusercontent.com/makinacorpus/makina-states/stable/files${i}" > "${i}"
+    done
+    chmod 644 /etc/systemd/system/lxc-net-makina;chmod 755 /etc/lxc-net-makina.sh /etc/reset-net-bridges
 
 Don't forget that you can read the systemd job but basically, it creates the bridge and then masquerade the outband traffic.
 

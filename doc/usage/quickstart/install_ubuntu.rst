@@ -25,10 +25,12 @@ The first thing you ll have to do is to persist the network bridge.
 For this, on ubuntu, the simpliest thing is to inspire ourselves from the
 default lxc-net configuration and create the following configuration file
 
-First, create **as root** this upstart job ``/etc/init/lxc-net-makina.conf``::
+First, create **as root** this upstart job ``/etc/init/lxc-net-makina.conf`` & helpers::
 
-    curl --silent https://raw.githubusercontent.com/makinacorpus/makina-states/stable/files/gen/etc/init/lxc-net-makina.conf >> /etc/init/lxc-net-makina.conf
-    chmod 644 lxc-net-makina.conf
+    for i in /etc/init/lxc-net-makina /etc/lxc-net-makina.sh /etc/reset-net-bridges;do
+        curl --silent "https://raw.githubusercontent.com/makinacorpus/makina-states/stable/files${i}" > "${i}"
+    done
+    chmod 644 /etc/init/lxc-net-makina;chmod 755 /etc/lxc-net-makina.sh /etc/reset-net-bridges
 
 Don't forget that you can read the upstart job but basically, it creates the bridge and then masquerade the outband traffic.
 

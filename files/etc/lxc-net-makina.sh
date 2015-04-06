@@ -48,21 +48,25 @@ start() {
     if [ "x${LXC_MAKINA_DOMAIN}" != "x" ];then
         LXC_MAKINA_DOMAIN_ARG="-s ${LXC_MAKINA_DOMAIN}"
 	fi
-	touch "${varrun}/network_up"
+    # relink interfaces with their bridges if the script exists
+    relink_script=""
+    for i in /etc/network/if-up.d/reset-net-bridges /etc/reset-net-bridges;do
+        if [ -e "${i}" ];then
+            relink_script="${i}"
+            break
+        fi
+    done
+    if [ "x${relink_script}" != "x" ];then
+        "${relink_script}"
+    fi
 }
 
 stop() {
-	if [ -f "${varrun}/network_up" ];then
-        exit 0;
-    fi
-	# if $LXC_MAKINA_BRIDGE has attached interfaces, don't shut it down
-	ls "/sys/class/net/${LXC_MAKINA_BRIDGE}/brif/"* > /dev/null 2>&1 && exit 0;
 	if [ -d "/sys/class/net/${LXC_MAKINA_BRIDGE}" ]; then
 		ifconfig ${LXC_MAKINA_BRIDGE} down
 		iptables -t nat -D POSTROUTING -s "${LXC_MAKINA_NETWORK}" ! -d "${LXC_MAKINA_NETWORK}" -j MASQUERADE || true
-		brctl delbr ${LXC_MAKINA_BRIDGE}
+		brctl delbr "${LXC_MAKINA_BRIDGE}"
 	fi
-	rm -f "${varrun}/network_up"
 }
 
 set -e
@@ -70,7 +74,7 @@ if [ "x${1}" = "xstart" ];then
     start
 elif [ "x${1}" = "xstop" ];then
     stop
-elif [ "x${1}" = "xrestart" ] || [ "x${1}" = "xreload"];then
+elif [ "x${1}" = "xrestart" ] || [ "x${1}" = "xreload" ];then
     stop
     start
 else
