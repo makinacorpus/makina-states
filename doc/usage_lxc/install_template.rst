@@ -98,8 +98,9 @@ You can do that by issuing as root those following commands::
 
 This will download and install your image in ``/var/lib/lxc``.
 
-Note about firewalling
+Finish installation
 ------------------------
-Last but not least,  if you use a firewall, and we hope you do so, please refer to the firewalling section for further configuration.
+If you were following the general installation procedure for the LXC procedure, you may go back to the general docuementation by following one of those following links:
 
-Please read :ref:`lxc_firewall` .
+    - :ref:`lxc_upstart_install_firewalling`
+    - :ref:`lxc_systemd_install_firewalling`
