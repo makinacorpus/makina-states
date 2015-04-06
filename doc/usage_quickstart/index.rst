@@ -1,4 +1,4 @@
-Bootstrap your makina-states environment
+Test a lxc based makina-states environment
 ==========================================
 
 In makina-states, our LXC images are known to use a network bridge called

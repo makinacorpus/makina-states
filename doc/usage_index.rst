@@ -4,8 +4,9 @@ Installation and basic usage
 .. toctree::
    :maxdepth: 1
 
-   usage_quickstart/index.rst
+   usage_about.rst
    usage_general/index.rst
+   usage_quickstart/index.rst
    usage_mastersalt/index.rst
 
 Lifecycle
