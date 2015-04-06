@@ -15,7 +15,6 @@ import logging
 import copy
 import random
 import os
-from mc_states.api import memoize_cache
 import msgpack
 import mc_states.api
 from salt.utils.odict import OrderedDict
@@ -181,7 +180,7 @@ def get_targets(vt=None, ttl=30):
                     vms.setdefault(vmname, {'vt': cvt, 'target': t})
         return data
     cache_key = 'mc_cloud_cn.get_targets{0}'.format(vt)
-    return copy.deepcopy(memoize_cache(_do, [vt], {}, cache_key, ttl))
+    return copy.deepcopy(__salt__['mc_utils.memoize_cache'](_do, [vt], {}, cache_key, ttl))
 
 
 def get_vms(vt=None, vm=None, ttl=30):
@@ -199,7 +198,7 @@ def get_vms(vt=None, vm=None, ttl=30):
         _targets = get_targets(vt=vt)
         return rdata
     cache_key = 'mc_cloud_cn.get_vm{0}{1}'.format(vt, vm)
-    return memoize_cache(_do, [vt, vm], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [vt, vm], {}, cache_key, ttl)
 
 
 def get_vm(vm, ttl=30):
@@ -209,7 +208,7 @@ def get_vm(vm, ttl=30):
         except KeyError:
             raise KeyError('{0} vm not found'.format(vm))
     cache_key = 'mc_cloud_cn.get_vm{0}'.format(vm)
-    return memoize_cache(_do, [vm], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [vm], {}, cache_key, ttl)
 
 
 def target_for_vm(vm, target=None, ttl=30):
@@ -219,7 +218,7 @@ def target_for_vm(vm, target=None, ttl=30):
     def _do(vm, target=None):
         return get_vm(vm)['target']
     cache_key = 'mc_cloud_cn.target_for_vm{0}{1}'.format(vm, target)
-    return memoize_cache(_do, [vm, target], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [vm, target], {}, cache_key, ttl)
 
 
 def vt_for_vm(vm, target=None):
@@ -820,7 +819,7 @@ def cn_extpillar_settings(id_=None, limited=False, ttl=30):
         data['vts'] = conf.get('vts', [])
         return data
     cache_key = 'mc_cloud_cn.cn_extpillar_settings{0}{1}'.format(id_, limited)
-    return copy.deepcopy(memoize_cache(
+    return copy.deepcopy(__salt__['mc_utils.memoize_cache'](
         _do, [id_, limited], {}, cache_key, ttl))
 
 
@@ -840,7 +839,7 @@ def extpillar_settings(id_=None, limited=False, ttl=30):
         return data
     cache_key = 'mc_cloud_cn.extpillar_settings{0}{1}'.format(
         id_, limited)
-    return memoize_cache(_do, [id_, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
 
 
 def ext_pillar(id_, prefixed=True, ttl=120, *args, **kw):
@@ -887,7 +886,7 @@ def ext_pillar(id_, prefixed=True, ttl=120, *args, **kw):
     limited = kw.get('limited', False)
     cache_key = 'mc_cloud_compute_node.ext_pillar{0}{1}{2}'.format(
         id_, prefixed, limited)
-    return memoize_cache(_do, [id_, prefixed, limited],
+    return __salt__['mc_utils.memoize_cache'](_do, [id_, prefixed, limited],
                          {}, cache_key, ttl)
 
 
@@ -987,5 +986,5 @@ def settings(ttl=60):
         data = _s['mc_utils.defaults'](PREFIX, default_settings())
         return data
     cache_key = '{0}.{1}'.format(__name, 'settings')
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 # vim:set et sts=4 ts=4 tw=80:

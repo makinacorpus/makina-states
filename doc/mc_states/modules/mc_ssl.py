@@ -26,7 +26,6 @@ from copy import deepcopy
 import os
 from salt.utils.odict import OrderedDict
 import mc_states.api
-from mc_states.api import memoize_cache
 import M2Crypto
 try:
     import OpenSSL
@@ -1072,7 +1071,7 @@ def common_settings(ttl=60):
                      'certificates': OrderedDict()})
         return data
     cache_key = 'mc_ssl.common_settings'
-    return deepcopy(memoize_cache(_do, [], {}, cache_key, ttl))
+    return deepcopy(__salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl))
 
 
 def reload_settings(data=None):
@@ -1145,7 +1144,7 @@ def get_configured_cert(domain, gen=False, ttl=60):
         pretendants.sort(key=selfsigned_last)
         return pretendants[0]
     cache_key = 'mc_ssl.get_configured_cert{0}'.format(domain)
-    return memoize_cache(_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
 
 
 def settings():
@@ -1211,5 +1210,5 @@ def get_cert_infos(domain, ttl=60):
                 'key': '{0}/{1}.key'.format(spath, domain)}
 
     cache_key = 'mc_ssl.get_cert_infos{0}'.format(domain)
-    return memoize_cache(_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
 # vim:set et sts=4 ts=4 tw=80:

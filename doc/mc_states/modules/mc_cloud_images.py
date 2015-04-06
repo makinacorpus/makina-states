@@ -17,7 +17,6 @@ import os
 import copy
 import yaml
 import mc_states.api
-from mc_states.api import memoize_cache
 
 from mc_states import saltapi
 
@@ -128,7 +127,7 @@ def extpillar_settings(id_=None, limited=False, ttl=30):
         return data
     cache_key = 'mc_cloud_images.extpillar_settings{0}{1}'.format(
         id_, limited)
-    return memoize_cache(_do, [id_, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
 
 
 def ext_pillar(id_, prefixed=True, *args, **kw):
@@ -177,7 +176,7 @@ def settings(ttl=60):
             data['lxc']['cron_sync'] = cron_sync
         return data
     cache_key = '{0}.{1}'.format(__name, 'settings')
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def _run(cmd):

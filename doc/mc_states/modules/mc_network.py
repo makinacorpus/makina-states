@@ -42,7 +42,6 @@ try:
 except ImportError:
     HAS_IPWHOIS = False
 
-from mc_states.api import memoize_cache
 from mc_states.api import six
 from mc_states.api import is_valid_ip
 import contextlib
@@ -442,7 +441,7 @@ def ns_whois(name, ttl=24*60*60, cache=True, whois_ttl=60*60*24*30):
         return _do(name, cache)
     else:
         cache_key = 'mc_network.,ns_whois{0}'.format(name)
-        return memoize_cache(_do, [name, cache], {}, cache_key, ttl)
+        return __salt__['mc_utils.memoize_cache'](_do, [name, cache], {}, cache_key, ttl)
 
 
 def domain_registrar(domain, ttl=24*60*60):
@@ -464,7 +463,7 @@ def domain_registrar(domain, ttl=24*60*60):
         data = __salt__['mc_network.ns_whois'](domain, cache=False)
         return 'unkown'
     cache_key = 'mc_network.domain_registrar{0}'.format(domain)
-    return memoize_cache(_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
 
 
 def whois_data(ip, ttl=24*60*60, whois_ttl=60*60*24*30):
@@ -514,7 +513,7 @@ def whois_data(ip, ttl=24*60*60, whois_ttl=60*60*24*30):
             data = {}
         return data
     cache_key = 'mc_network.whois_data_{0}'.format(ip)
-    return memoize_cache(_do, [ip, whois_ttl], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [ip, whois_ttl], {}, cache_key, ttl)
 
 
 def is_phpnet(ip):

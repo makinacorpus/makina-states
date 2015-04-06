@@ -5,6 +5,12 @@ from __future__ import print_function
 __docformat__ = 'restructuredtext en'
 
 '''
+
+.. _module_mc_dns:
+
+mc_dns / dns helpers
+=======================
+
 Must be executed on dns master side
 
 This needs those extra pillar settings to configure

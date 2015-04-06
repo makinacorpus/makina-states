@@ -2,6 +2,12 @@
 __docformat__ = 'restructuredtext en'
 
 '''
+
+.. _module_mc_dns:
+
+mc_dns / dns helpers
+=======================
+
 Must be executed on dns master side
 
 This needs those extra pillar settings to configure
@@ -19,7 +25,6 @@ import string
 from salt.utils.odict import OrderedDict
 import os
 import re
-from mc_states.api import memoize_cache
 from mc_states import saltapi
 from mc_states import api
 six = api.six
@@ -81,7 +86,7 @@ def settings(ttl=15*60):
             'makina-states.dns', {})
         return settings
     cache_key = 'mc_dns.settings'
-    return memoize_cache(_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def gandi_glues(domain, dnss):
@@ -261,7 +266,7 @@ def get_gandi_handled_domains(domain=None, ttl=300):
         return sorted(__salt__['mc_utils.uniquify'](
             [a['fqdn'] for a in api.domain.list(apikey)]))
     cache_key = 'mc_dns.get_gandi_handled_domains{0}'.format(domain)
-    return memoize_cache(_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
 
 
 def get_ovh_handled_domains(domain=None, ttl=300):
@@ -269,7 +274,7 @@ def get_ovh_handled_domains(domain=None, ttl=300):
         client = __salt__['mc_provider.ovh_client'](domain=domain)
         return sorted(client.get('/domain'))
     cache_key = 'mc_dns.get_ovh_handled_domains{0}'.format(domain)
-    return memoize_cache(_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
 
 
 def domain_registrar(domain):
