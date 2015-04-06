@@ -29,7 +29,7 @@ include:
 {% elif grains['os'] in ['Debian'] -%}
 {% set extra_confs = {'/etc/init.d/lxc-net-makina': {}} %}
 
-# assume systemd 
+# assume systemd
 {% else %}
 {% set extra_confs = {'/etc/systemd/system/lxc-net-makina': {}} %}
 {% endif%}
