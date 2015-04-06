@@ -6,3 +6,4 @@ lxc makina-states documentation
 
    firewalls.rst
    install_template.rst
+   create_container.rst

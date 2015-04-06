@@ -27,7 +27,8 @@ Install lxc on Fedora
 install LXC
 ::
 
- sudo yum install deboostrap lxc bridge-utils
+ sudo yum install deboostrap lxc bridge-utils lxc-extra
+ service lxc restart
 
 Prepare network connectivity
 -------------------------------
@@ -97,3 +98,8 @@ On fedora you may be using:
     - :ref:`install_lxc_firewalld`
     - :ref:`install_lxc_shorewall`
 
+.. _install_lxc_systemd_conclusion:
+
+Conclusion (systemD based host)
+---------------------------------------
+Well done, you may now enjoy your new container
