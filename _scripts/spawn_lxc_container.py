@@ -4,6 +4,7 @@ __docformat__ = 'restructuredtext en'
 
 import glob
 import shutil
+import time
 import os
 import time
 import urllib2
@@ -306,6 +307,41 @@ def allow_user_and_root(container):
                 raise ValueError('Cant add {1} in '
                                  ' {0}'.format(container, k))
 
+
+def fix_salt(container,
+             fqdn,
+             mastersalt=None,
+             local_salt_mode='masterless',
+             local_mastersalt_mode='masterless'):
+    if not mastersalt:
+        mastersalt = fqdn
+    cmd = (
+        "lxc-attach -n '{0}' --"
+        ' test -e /srv/mastersalt/makina-states/_scripts/boot-salt.sh'
+    ).format(container)
+    ret, ps = popen(cmd)
+    if ps.returncode:
+        return
+    cmd = (
+        "lxc-attach -n '{3}' --"
+        ' /srv/mastersalt/makina-states/_scripts/boot-salt.sh'
+        ' --local-salt-mode {1}'
+        ' --local-mastersalt-mode {2}'
+        ' -m {0}'
+        ' --mastersalt {4}'
+        ' --salt-master-dns {0};'
+        '').format(fqdn,
+                   local_salt_mode,
+                   local_mastersalt_mode,
+                   container,
+                   mastersalt)
+    ret, ps = popen(cmd)
+    if ps.returncode:
+        print(ret[0])
+        print(ret[1])
+        raise ValueError('Cant reset salt in  {0}'.format(container))
+
+
 def fix_hosts(container, fqdn):
     host = fqdn.split('.')[0]
     cmd = ("echo '{1}' | lxc-attach -n '{0}' --"
@@ -422,9 +458,25 @@ def main():
         raise ValueError('{0} does not exists'.format(adir))
     edit_config(aconfig, opts['bridge'], opts['ip'], opts['mac'])
     restart_container(opts['name'])
-    regen_sshconfig(opts['name'])
+    tries = [a for a in range(10)]
+    ssh_done = False
+    traces = []
+    while tries:
+        tries.pop()
+        try:
+            regen_sshconfig(opts['name'])
+            ssh_done = True
+            break
+        except:
+            print('retrying ssh config if it is first boot')
+            traces.append(traceback.format_exc())
+            time.sleep(1)
+    if not ssh_done:
+        print('\n'.join(traces))
+        raise ValueError('Cant reset ssh in {0}'.format(opts['name']))
     allow_user_and_root(opts['name'])
     fix_hosts(opts['name'], fqdn)
+    fix_salt(opts['name'], fqdn)
     print('--')
     print('Your container is in {0}'.format(adir))
     print('   config: {0}'.format(aconfig))
