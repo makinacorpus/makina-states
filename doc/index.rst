@@ -12,9 +12,13 @@ Please note that the documentation is far from complete, more over on the usage 
 Please have more a look on the reference chapters.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    usage/index.rst
+
+.. toctree::
+   :maxdepth: 2
+
    ref/index.rst
 
 Indices and tables
@@ -23,7 +27,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-
-
 
