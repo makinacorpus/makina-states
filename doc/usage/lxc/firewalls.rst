@@ -1,6 +1,5 @@
-.. _lxc_firewall:
 
-.. contents::
+.. _lxc_firewall:
 
 Network firewalling and masquerating a makina-states LXC based image
 =====================================================================

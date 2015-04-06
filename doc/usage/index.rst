@@ -26,4 +26,3 @@ Additionnal docs
    troubleshooting.rst
    activate_forwarding.rst
    lxc/index.rst
-

@@ -86,9 +86,10 @@ You can now read and proceed with the following section, :ref:`install_lxc_templ
 
 Note about firewalling
 ------------------------
-Last but not least, if you use a firewall, and we hope you do so, please refer to the firewalling section for further configuration. Please read :ref:`lxc_firewall`.
+Last but not least, if you use a firewall, and we hope you do so, please refer to the firewalling section for further configuration. Please read :ref:`lxc_firewall` .
 
 On fedora you may be using:
 
     - :ref:`install_lxc_firewalld`
     - :ref:`install_lxc_shorewall`
+
