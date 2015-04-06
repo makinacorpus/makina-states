@@ -249,7 +249,6 @@ def restart_container(container):
 def allow_user_and_root(container):
     users = ['root']
     sudoer = os.environ.get('SUDO_USER', '')
-    users = ['root', 'mpa']
     if sudoer:
         users.append(sudoer)
     ssh_keys = []
@@ -304,8 +303,46 @@ def allow_user_and_root(container):
                    "").format(container, k)
             ret, ps = popen(cmd)
             if ps.returncode:
-                raise ValueError('Cant add {1 in '
+                raise ValueError('Cant add {1} in '
                                  ' {0}'.format(container, k))
+
+def fix_hosts(container, fqdn):
+    host = fqdn.split('.')[0]
+    cmd = ("echo '{1}' | lxc-attach -n '{0}' --"
+           " tee /etc/hostname"
+           "").format(container, host)
+    ret, ps = popen(cmd)
+    if ps.returncode:
+        raise ValueError('Cant set host in '
+                         ' {0}'.format(container))
+    cmd = ("lxc-attach -n '{0}' --"
+           " hostname {1}"
+           "").format(container, host)
+    ret, ps = popen(cmd)
+    if ps.returncode:
+        raise ValueError('Cant affect host in '
+                         ' {0}'.format(container))
+    container_hosts = container_cat(container, '/etc/hosts')
+    to_add = []
+    for ip in ['127.0.0.1', '127.0.0.1']:
+        h = ' '.join([fqdn, host])
+        if not re.search(
+            '{0}( |\t).*{1}(\t| |$)'.format(ip, h),
+            container_hosts,
+            flags=re.M
+        ):
+            to_add.append('{0} {1}'.format(ip, h))
+    if to_add:
+        container_hosts = ('\n'.join(to_add) +
+                           '\n' + container_hosts +
+                           '\n'.join(to_add))
+        cmd = ("echo \"{1}\"|lxc-attach -n '{0}' --"
+               " tee /etc/hosts"
+               "").format(container, container_hosts)
+        ret, ps = popen(cmd)
+        if ps.returncode:
+            raise ValueError('Cant set hosts in '
+                             ' {0}'.format(container))
 
 
 def main():
@@ -384,6 +421,10 @@ def main():
     restart_container(opts['name'])
     regen_sshconfig(opts['name'])
     allow_user_and_root(opts['name'])
+    fqdn = opts['name']
+    if '.' not in opts['name']:
+        fqdn = '{0}.lxc.local'.format(opts['name'])
+    fix_hosts(opts['name'], fqdn)
     print('--')
     print('Your container is in {0}'.format(adir))
     print('   config: {0}'.format(aconfig))
