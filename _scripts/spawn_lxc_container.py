@@ -23,6 +23,10 @@ DESCRIPTION = '''
 Create a container from another container
 If the IP address or the MAC address is not specified, it will be generated.
 
+It will add your default ssh_keys inside the container for you to log inside
+with ssh.
+No password will be used by default.
+
 Examples:
 {name} -n mytest
 {name} -n mytest -s overlayfs
@@ -73,6 +77,18 @@ def clone_template(origin, new, snapshot=None):
         print('error while creating {0} from {1}'
               ''.format(new, origin))
         sys.exit(1)
+
+
+def container_cat(container, filep):
+    cmd = ("lxc-attach -n '{0}' --"
+           " cat '{1}'").format(container, filep)
+    ret, ps = popen(cmd)
+    if ps.returncode:
+        print(ret[0])
+        print(ret[1])
+        raise IOError('error while cating {1}'
+                      ' in {0}'.format(container, filep))
+    return ret[0]
 
 
 def edit_config(lxc_config, bridge, ip, mac):
@@ -159,7 +175,6 @@ def get_available_ip(lxc_dir='/var/lib/lxc'):
     return ip
 
 
-
 def get_container_status(container):
     ret, ps = popen('lxc-ls --fancy')
     if ps.returncode:
@@ -229,6 +244,68 @@ def regen_sshconfig(container):
 def restart_container(container):
     stop_container(container)
     start_container(container)
+
+
+def allow_user_and_root(container):
+    users = ['root']
+    sudoer = os.environ.get('SUDO_USER', '')
+    users = ['root', 'mpa']
+    if sudoer:
+        users.append(sudoer)
+    ssh_keys = []
+    for user in users:
+        home = os.path.expanduser('~{0}'.format(user))
+        for i in glob.glob(home + '/.ssh/id_*.pub'):
+            with open(i) as fic:
+                content = fic.read().strip()
+                if content not in ssh_keys:
+                    ssh_keys.append(content)
+    if not ssh_keys:
+        raise ValueError('Please gen an sshkey with ssh-keygen')
+    cmd = ("lxc-attach -n '{0}' --"
+           " test -e /root/.ssh").format(container)
+    ret, ps = popen(cmd)
+    if ps.returncode:
+        cmd = ("lxc-attach -n '{0}' --"
+               " mkdir -p /root/.ssh").format(container)
+        ret, ps = popen(cmd)
+        if ps.returncode:
+            print(ret[0])
+            print(ret[1])
+            raise ValueError('Cant create /root/.ssh in container')
+    cmd = ("lxc-attach -n '{0}' --"
+           " chmod 700 /root/.ssh").format(container)
+    ret, ps = popen(cmd)
+    if ps.returncode:
+        raise ValueError('Cant chmod /root/.ssh in container')
+    cmd = ("lxc-attach -n '{0}' --"
+           " touch /root/.ssh/authorized_keys").format(container)
+    ret, ps = popen(cmd)
+    if ps.returncode:
+        raise ValueError('Cant touch /root/.ssh/authorized_keys in container'
+                         ' {0}'.format(container))
+    cmd = ("lxc-attach -n '{0}' --"
+           " chmod 700 /root/.ssh/authorized_keys").format(container)
+    ret, ps = popen(cmd)
+    if ps.returncode:
+        raise ValueError('Cant touch /root/.ssh/authorized_keys in container'
+                         ' {0}'.format(container))
+    cmd = ("lxc-attach -n '{0}' --"
+           " chmod 700 /root/").format(container)
+    ret, ps = popen(cmd)
+    if ps.returncode:
+        raise ValueError('Cant chmod /root/ in container'
+                         ' {0}'.format(container))
+    container_keys = container_cat(container, '/root/.ssh/authorized_keys')
+    for k in ssh_keys:
+        if k not in container_keys:
+            cmd = ("echo '{1}' | lxc-attach -n '{0}' --"
+                   " tee -a /root/.ssh/authorized_keys"
+                   "").format(container, k)
+            ret, ps = popen(cmd)
+            if ps.returncode:
+                raise ValueError('Cant add {1 in '
+                                 ' {0}'.format(container, k))
 
 
 def main():
@@ -306,6 +383,7 @@ def main():
     edit_config(aconfig, opts['bridge'], opts['ip'], opts['mac'])
     restart_container(opts['name'])
     regen_sshconfig(opts['name'])
+    allow_user_and_root(opts['name'])
     print('--')
     print('Your container is in {0}'.format(adir))
     print('   config: {0}'.format(aconfig))
