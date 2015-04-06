@@ -1,19 +1,21 @@
 # -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
-
 '''
-
 .. _module_mc_dns:
 
 mc_dns / dns helpers
 =======================
 
+
+
 Must be executed on dns master side
 
 This needs those extra pillar settings to configure
 mc_provider (api settings)
+
+
 '''
 
+__docformat__ = 'restructuredtext en'
 import pprint
 import logging
 import traceback
@@ -28,6 +30,7 @@ import re
 from mc_states import saltapi
 from mc_states import api
 six = api.six
+
 
 try:
     from suds.xsd.doctor import ImportDoctor, Import
