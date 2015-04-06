@@ -4,7 +4,7 @@ SNMPD configuration
 we provide only snmpv3 configuration and totally disable snmpv2 for security
 considerations.
 
-See :ref:`mc_module_snmpd` for configuration options.
+See :ref:`module_mc_snmpd` for configuration options.
 
 Exposed Hooks:
     - snmpd-pre-install

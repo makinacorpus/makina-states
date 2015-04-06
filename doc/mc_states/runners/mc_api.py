@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
 
-.. _mc_runners_mc_api:
+.. _runner_mc_api:
 
 mc_api
 ======

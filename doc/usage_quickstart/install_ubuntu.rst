@@ -61,12 +61,17 @@ Activate kernel forwarding
 ---------------------------
 Please follow :ref:`activate_forwarding`.
 
-Install the image
--------------------
+.. _lxc_upstart_install_image:
+
+Install the image on ubuntu
+-------------------------------
 You can now read and proceed with the following section, :ref:`install_lxc_template`.
 
-Note about firewalling
-------------------------
+
+.. _lxc_upstart_install_firewalling:
+
+Note about firewalling on ubuntu
+----------------------------------
 Last but not least, if you use a firewall, and we hope you do so, please refer to the firewalling section for further configuration. Please read :ref:`lxc_firewall`.
 
 On ubuntu you may be using:

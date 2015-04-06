@@ -73,6 +73,12 @@ Then reload shorewall::
 
     shorewall safe-restart
 
+You may want to continue with:
+
+    - :ref:`lxc_upstart_install_firewalling`
+    - :ref:`lxc_systemd_install_firewalling`
+ 
+
 .. _install_lxc_firewalld:
 
 firewalld
@@ -95,6 +101,11 @@ Masquerade whatever what are your public zones with one or more of the following
     firewall-cmd --permanent --zone=external --add-masquerade
     firewall-cmd --permanent --zone=public --add-masquerade
 
+You may want to continue with:
+
+    - :ref:`lxc_upstart_install_firewalling`
+    - :ref:`lxc_systemd_install_firewalling`
+ 
 .. _install_lxc_ufw:
 
 ufw
@@ -121,8 +132,21 @@ ufw
 
 - You will have to add here any network you are bridging from the lxcbr1 bridge (and by default we use 10.5/16).
 
+You may want to continue with:
+
+    - :ref:`lxc_upstart_install_firewalling`
+    - :ref:`lxc_systemd_install_firewalling`
+ 
+
 .. _install_lxc_iptables:
 
 iptables
 +++++++++
 This means that you manage your firewall manually, you are on your own baby, just allow the traffic from and to lxcbr1 (10.5/16) and masquerade it.
+
+You may want to continue with:
+
+    - :ref:`lxc_upstart_install_firewalling`
+    - :ref:`lxc_systemd_install_firewalling`
+
+

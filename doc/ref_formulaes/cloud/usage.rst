@@ -71,6 +71,8 @@ Runners:
     - :ref:`runner_mc_cloud_compute_node`
     - :ref:`runner_mc_cloud_saltify`
     - :ref:`runner_mc_cloud_vm`
+    - :ref:`runner_mc_cloud_lxc`
+    - :ref:`runner_mc_cloud_kvm`
 
 Configuration modules
 ++++++++++++++++++++++

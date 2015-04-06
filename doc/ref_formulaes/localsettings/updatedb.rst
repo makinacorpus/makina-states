@@ -1,6 +1,6 @@
 updatedb configuration
 ======================
 
-see :ref:`mc_module_updatedb`
+see :ref:`module_mc_updatedb`
 
 

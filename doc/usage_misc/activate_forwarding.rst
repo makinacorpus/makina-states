@@ -20,3 +20,7 @@ Then ensure that it is enabled with::
 
     sysctl net.ipv4.ip_forward
 
+You may want to continue with:
+
+    - :ref:`lxc_upstart_install_image`
+    - :ref:`lxc_systemd_install_image`

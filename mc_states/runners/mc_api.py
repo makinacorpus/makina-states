@@ -2,7 +2,7 @@
 from __future__ import absolute_import, print_function
 '''
 
-.. _mc_runners_mc_api:
+.. _runner_mc_api:
 
 mc_api
 ======

@@ -673,7 +673,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Makina States'
-copyright = u'2014, Mathieu Le Marec Pasquet, Régis Leroy & Makina Corpus folks'
+copyright = u'2014 -> 2015, Mathieu Le Marec Pasquet, Régis Leroy & Makina Corpus folks'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
