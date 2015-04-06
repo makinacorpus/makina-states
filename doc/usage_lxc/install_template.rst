@@ -26,7 +26,7 @@ you will have to have or to add  one like which looks like one on those followin
     # Origin target fstype fsopts * *
     UUID=19710386-5ed2-4b6c-b289-628adac75e5b /home ext4 defaults 0 0
     # those lines are equivalent
-    # /dev/sdc4                                 /home ext4 default 0 0
+    # /dev/sdc4                               /home ext4 default 0 0
 
 If you want to use ``UUIDS``, you can find the uuid belonging to one partition like
 this::
