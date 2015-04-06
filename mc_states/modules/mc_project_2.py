@@ -2058,12 +2058,12 @@ def deploy(name, *args, **kwargs):
 
 def run_task(name, only_steps, *args, **kwargs):
     '''
-    Run one or more tasks inside a project context
+    Run one or more tasks inside a project context.
 
     You can filter steps to run with only_steps
 
-    All sls in .salt which are a task (beginning with task_ will be searched
-    and the one matching only_steps (string or list) will be executed
+    All sls in ``.salt`` which are a task (all files beginning with task_ will be searched
+    and the one matching only_steps (string or list) will be executed)
     '''
     if not only_steps:
         raise _stop_proc('One task at least must be providen')
