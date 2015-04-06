@@ -11,7 +11,7 @@ Registries
    mc_localsettings.rst
    mc_services.rst
 
- 
+
 RemoteExecution/PaaS/ProjectManagement modules
 ------------------------------------------------
 .. toctree::
@@ -22,7 +22,7 @@ RemoteExecution/PaaS/ProjectManagement modules
    mc_remote.rst
    mc_dns.rst
 
- 
+
 Subregistries
 --------------
 .. toctree::

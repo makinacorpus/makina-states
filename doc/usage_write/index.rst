@@ -5,6 +5,3 @@ Writing new states
    :maxdepth: 1
 
    service.rst
-
-
-

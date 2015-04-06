@@ -7,9 +7,9 @@ Implementation design & details
 .. toctree::
    :maxdepth: 2
 
-   design/index.rst
-   qa/index.rst
-   packaging/index.rst
+   ref_design/index.rst
+   ref_qa/index.rst
+   ref_packaging/index.rst
 
 
 States & modules reference
@@ -17,17 +17,16 @@ States & modules reference
 .. toctree::
    :maxdepth: 4
 
-   states/index.rst
-
+   ref_states/index.rst
 
 Formulaes & macros helpers reference
 -------------------------------------
 .. toctree::
    :maxdepth: 3
 
-   formulaes/index.rst
+   ref_formulaes/index.rst
 
 .. toctree::
    :maxdepth: 2
 
-   macros/index.rst
+   ref_macros/index.rst
