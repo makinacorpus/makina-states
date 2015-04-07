@@ -41,10 +41,14 @@ Reference
    usage_general/configure.rst
    usage_general/install.rst
    usage_projects/project_creation.rst
+   usage_projects/project_corpus.rst
+   usage_projects/project_list.rst
    usage_mastersalt/install_mastersalt.rst
    usage_misc/troubleshooting.rst
    usage_write/service.rst
    usage_about.rst
+
+
 
 Indices and tables
 ==================
