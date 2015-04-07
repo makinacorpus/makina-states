@@ -7,3 +7,4 @@ Projects docs
 
    project_list.rst
    project_creation.rst
+   project_corpus.rst
