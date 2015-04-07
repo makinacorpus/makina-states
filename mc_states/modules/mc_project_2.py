@@ -1966,28 +1966,29 @@ def sync_modules(name, *args, **kwargs):
 
 
 def deploy(name, *args, **kwargs):
-    '''Deploy a project
+    '''
+    Deploy a project
 
     Only run install step::
 
-        salt-call --local -lall mc_project.deploy <name> only=install
+        salt-call --local -ldebug mc_project.deploy <name> only=install
 
     Run only one or certain install step::
 
-        salt mc_project.deploy only=install only_steps=00_foo
-        salt mc_project.deploy only=install only_steps=00_foo,02_bar
+        salt-call --local -ldebug mc_project.deploy <name> only=install only_steps=00_foo
+        salt-call --local -ldebug mc_project.deploy <name> only=install only_steps=00_foo,02_bar
 
     Only run install & fixperms step::
 
-        salt-call --local -lall mc_project.deploy <name> only=install,fixperms
+        salt-call --local -ldebug mc_project.deploy <name> only=install,fixperms
 
     Deploy entirely (this is what is run whithin the git hook)::
 
-        salt-call --local -lall mc_project.deploy <name>
+        salt-call --local -ldebug mc_project.deploy <name>
 
     Skip a particular step::
 
-        salt-call mc_project.deploy <name> skip_release_sync=True \\
+        salt-call --local -ldebug mc_project.deploy <name> skip_release_sync=True \\
                 skip_archive=True skip_notify=True
 
     '''
