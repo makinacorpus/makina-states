@@ -7,5 +7,5 @@ ExecStart=/etc/lxc-net-makina.sh start
 ExecStop=/etc/lxc-net-makina.sh stop
 RemainAfterExit=yes
 
-# [Install]
-# WantedBy=multi-user.target
+[Install]
+WantedBy=multi-user.target
