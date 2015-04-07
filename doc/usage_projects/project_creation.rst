@@ -10,7 +10,7 @@ This page is the most important thing you ll have to read about makina-states as
 
 Specifications
 ------------------
-See `corpus spec <https://github.com/makinacorpus/corpus.reactor/blob/master/doc/spec_v2.rst>`_
+See the original spec on :ref:`project_corpus` .
 
 Initialization
 ++++++++++++++++
