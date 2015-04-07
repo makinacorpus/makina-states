@@ -92,13 +92,13 @@ def container_cat(container, filep):
     return ret[0]
 
 
-def edit_config(lxc_config, bridge, ip, mac):
+def edit_config(lxc_config, bridge, ip, mac, nm):
     with open(lxc_config) as fic:
         content = fic.read()
     ocontent = content
     configs = {'lxc.network.hwaddr': mac,
                'lxc.network.link': bridge,
-               'lxc.network.ipv4': ip}
+               'lxc.network.ipv4': '{0}/{1}'.format(ip, nm)}
     for k in configs:
         val = configs[k]
         # REPLACE ONLY THE FIRST BRIDGE !
@@ -393,6 +393,10 @@ def main():
                         dest='mac',
                         default=None,
                         help='mac of the new container')
+    parser.add_argument('-n', '--network-mask',
+                        dest='nm',
+                        default='16',
+                        help='network mask of the new container')
     parser.add_argument('-f', '--force',
                         dest='force',
                         action='store_true',
@@ -456,7 +460,7 @@ def main():
         clone_template(opts['origin'], opts['name'], snapshot=opts['snapshot'])
     if not os.path.exists(adir):
         raise ValueError('{0} does not exists'.format(adir))
-    edit_config(aconfig, opts['bridge'], opts['ip'], opts['mac'])
+    edit_config(aconfig, opts['bridge'], opts['ip'], opts['mac'], opts['nm'])
     restart_container(opts['name'])
     tries = [a for a in range(10)]
     ssh_done = False
