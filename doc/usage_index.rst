@@ -9,8 +9,8 @@ Installation and basic usage
    usage_quickstart/index.rst
    usage_mastersalt/index.rst
 
-Lifecycle
---------------
+Projects for developers
+-------------------------
 
 .. toctree::
    :maxdepth: 1
@@ -26,3 +26,4 @@ Additionnal docs
 
    usage_misc/index.rst
    usage_lxc/index.rst
+
