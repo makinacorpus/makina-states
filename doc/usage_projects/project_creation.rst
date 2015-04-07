@@ -77,23 +77,23 @@ git foo
 
 Sumup
 ++++++++
-- To sum all that up, when beginning project you will:
+To sum all that up, when beginning project you will:
 
-    - Initialize if not done a project structure with ``salt-call --local mc_project.deploy project``
-    - add a **.salt** folder alongside your project codebase (in it's git repo).
-    - deploy it, either by:
+- Initialize if not done a project structure with ``salt-call --local mc_project.deploy project``
+- add a **.salt** folder alongside your project codebase (in it's git repo).
+- deploy it, either by:
 
-        - git push --force your **pillar** files to ``host:/srv/projects/project/git/pillar.git``
-        - git push --force your **project code** to ``host:/srv/projects/project/git/project.git``
-          (this last push triggers a deploy)
+    - git push --force your **pillar** files to ``host:/srv/projects/project/git/pillar.git``
+    - git push --force your **project code** to ``host:/srv/projects/project/git/project.git``
+      (this last push triggers a deploy)
 
-    - or
+- or
 
-        - edit/commit/push --force directly in ``host:/srv/projects/project/pillar``
-        - edit/commit/push --force directly in ``host:/srv/projects/project``
-        - Launch the ``salt-call --local mc_project.deploy <name> only=install,fixperms`` dance
+    - edit/commit/push --force directly in ``host:/srv/projects/project/pillar``
+    - edit/commit/push --force directly in ``host:/srv/projects/project``
+    - Launch the ``salt-call --local mc_project.deploy <name> only=install,fixperms`` dance
 
-    - reiterate
+- reiterate
 
 Configuration variables
 --------------------------
