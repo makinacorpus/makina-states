@@ -79,10 +79,16 @@ On ubuntu you may be using:
     - :ref:`install_lxc_ufw`
     - :ref:`install_lxc_shorewall`
 
+Install a new container
+------------------------
+- Refer to :ref:`create_lxc_container`
+
 .. _install_lxc_ubuntu_conclusion:
 
 Conclusion (ubuntu)
 -----------------------
 Well done, you may now enjoy your new container
+You may want to continue with:
 
+    - :ref:`projects_intro`
 
