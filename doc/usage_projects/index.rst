@@ -13,7 +13,6 @@ and you push onto those remotes for your application to be deployed.
 
 The whole stack is composed of saltstack, makina-states and corpus.
 
-
 Specifications
 ------------------
 See `corpus spec <https://github.com/makinacorpus/corpus.reactor/blob/master/doc/spec_v2.rst>`_
