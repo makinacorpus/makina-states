@@ -37,9 +37,10 @@ Reference
    usage_quickstart/install_ubuntu.rst
    usage_misc/activate_forwarding.rst
    usage_lxc/firewalls.rst
-   usage_lxc/install_template.rst 
+   usage_lxc/install_template.rst
    usage_general/configure.rst
    usage_general/install.rst
+   usage_projects/project_creation.rst
    usage_mastersalt/install_mastersalt.rst
    usage_misc/troubleshooting.rst
    usage_write/service.rst
@@ -51,4 +52,5 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
 

@@ -1,13 +1,23 @@
+Project management
+=====================
+
 
 .. _project_creation:
 
-Example of a project workflow
+Intro
 --------------------------------
+This page is the most important thing you ll have to read about makina-states as a **developer consumer**, take the time it needs and deserves.
+
+Specifications
+------------------
+See `corpus spec <https://github.com/makinacorpus/corpus.reactor/blob/master/doc/spec_v2.rst>`_
+
 Initialization
 ++++++++++++++++
 - a project in corpus / makina-states is a git repository checkout which contains the code
   and a well known saltstack based procedure to deploy it
   from end to end in the **.salt** folder.
+- By default the project procedure is done via a `masterless salt call <http://docs.saltstack.com/en/latest/topics/tutorials/quickstart.html>`_.
 - The first thing to do is to create a **nest** from such a project, **IF IT IS NOT ALREADY DONE** (just ls /srv/projects to check)::
 
     salt-call --local mc_project.deploy <your_project_name> # dont be long, dont use - & _
@@ -40,7 +50,11 @@ Initialization
 
 - What you want to do is to replace the ``project`` folder by your repo.
   This one contains your code, as asual, plus the **.salt** folder,
-- **WELL Understand** what is a `salt SLS <http://docs.saltstack.com/en/latest/topics/tutorials/starting_states.html#moving-beyond-a-single-sls>`_ , it is the nerve of the war.
+- **WELL Understand** what is :
+
+    - a `salt SLS <http://docs.saltstack.com/en/latest/topics/tutorials/starting_states.html#moving-beyond-a-single-sls>`_ , it is the nerve of the war.
+    - the `Pillar of salt <http://docs.saltstack.com/en/latest/topics/tutorials/pillar.html>`.
+
 - **be ware**, on the production server the ``.git/config`` is linked with the
   makina-states machinery and you cannot replace it blindly, you must use :ref:`git foo` to
   do it.
