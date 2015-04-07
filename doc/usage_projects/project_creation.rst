@@ -115,17 +115,17 @@ Either directly from the deployment host as root::
 Or only by pushing well placed git changesets, from your local box,
 
     - If needed on the pillar, it does not trigger a deploy
-    - And on the project remote, it triggers here the deploy
+    - And on the project remote, it triggers here the deploy::
 
-    git clone host:/srv/projects/project/git/pillar.git
-    vim init.sls
-    git commit -am up;git push
-    git clone git@github.com/makinacorpus/myawsomeproject.git
-    git remote add prod /srv/projects/project/git/project.git
-    git fetch --all
-    git push prod <mybranch>:master
-    eg: git push prod <mybranch>:master
-    eg: git push prod awsome_feature:master
+        git clone host:/srv/projects/project/git/pillar.git
+        vim init.sls
+        git commit -am up;git push
+        git clone git@github.com/makinacorpus/myawsomeproject.git
+        git remote add prod /srv/projects/project/git/project.git
+        git fetch --all
+        git push prod <mybranch>:master
+        eg: git push prod <mybranch>:master
+        eg: git push prod awsome_feature:master
 
 The ``<branchname>:master`` is really important as everything in the production git repositories is wired on the master branch. You can push any branch you want from your original repository, but in production, there is only **master**.
 
