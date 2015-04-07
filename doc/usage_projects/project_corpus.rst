@@ -411,24 +411,25 @@ For now, at makinacorpus, we think this way:
 
     - linked to this mastersalt as a mastersalt minion
     - a salt minion linked to a salt master which is probably local
-      and controlled by **project members aka devs**
+      and controlled by **project members aka devs**, by default these salt minion
+      and salt master services are toggled off and the salt-call should be runned **masterless** (salt-call --local)
 
 Initialisation of a cloud controller
 -----------------------------------------
-Complex, contact @makinacorpus
+Complex, contact `@makinacorpus <mailto:sysadmin@makina-corpus.com>`_.
 
-This incude
-- Setting up the dns master for the cloud controlled zone.
-- Setting up the cloud database
-- Setting up a basic pillar and mastersalt setup to finnish the box install
-- Configuring up mastersalt to use pgsql extpillar
-- Configuring up corpus.reactor and corpus.web on top of mastersalt
+This incude:
+
+    - Setting up the dns master & slaves for the cloud controlled zone.
+    - Setting up the cloud database
+    - Setting up at least one compute node to deploy projects
+    - Deploying vms
 
 Request of a compute node or a container
 ------------------------------------------
 - Edit the mastersalt database file to include your compute node and vms
   configuration.
-- Run any appropriate mastersalt **mc_cloud_XX** runners to deploy your compute
+- Run any appropriate mastersalt runners to deploy & operate your compute
   nodes and vms
 
 Initialisation of a compute node
@@ -494,9 +495,9 @@ In either way, the trigger is a git push.
 
 The nerve of the war: jinja macros and states, and execution modules
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-Project states writing is done by layering a set of macros in a certain order.
-Those macros will define and order salt states to deploy and amintain object from end to end.
-The salt states and macros will bose abuse of execution modules to gather informations but also act on the underlying system.
+Project states writing is done by layering a set of saltstacl **sls** files  in a certain order.
+Those will ensure an automatic deployment from end to end.
+The salt states and macros will abuse of execution modules to gather informations but also act on the underlying system.
 
 The project common data structure
 ++++++++++++++++++++++++++++++++++
@@ -528,17 +529,18 @@ This must be done:
 
 The project configuration registry execution module helper
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-The base execution module used for project management is mc_project module + all
-api specific mc_project_APIN modules.
+The base execution module used for project management is ``mc_project module``.
+
+It will call under the hood the latest **API** version of the mc_project module.
+
+eg: ``mc_project_2.*``
+
 This will define methods for:
 
 - Crafting the base **configuration** data structure
 - initialising the project filesystem layout, pillar and downloading the base sourcecode for deployment (salt branch)
 - deploying and upgrading an already installed project.
 - Setting a project configuration
-
-This module should know then how to redirect to the desired API specific
-mc_project module (eg: mc_project_2 for the project APIV2)
 
 If there are too many changes in a project layout, obviously a new project API
 module should be created and registered for the others to keep stability.
@@ -611,10 +613,7 @@ EG: in .salt/notify.sls we will have something that looks to::
     include:
       - makina-states.projects.2.generic.notify
 
-- Some installers example:
-    - generic
-      base sls used by all other macros
-    - `tilestream <https://github.com/makinacorpus/tilestream-salt>`_
+- Some installers example: :ref:`projects_project_list`
 
 Project initialisation
 -----------------------
@@ -625,12 +624,12 @@ You will need in prerequisites:
 
 A new project initialisation on a developpment box can be done as follow::
 
-    salt-call -lall mc_project.init_project <NAME>
+    salt-call --loccal -ldebug  mc_project.deploy <NAME>
 
 When the project is initialized, you can pull locally the 2 given remotes.
 If you missed them, you can retrieve them in the configuration::
 
-    salt-call -lall mc_project.get_configuration <NAME>
+    salt-call --local -ldebug mc_project.get_configuration <NAME>
 
 You can then push your changes to your preferred central repository (company, github)
 
