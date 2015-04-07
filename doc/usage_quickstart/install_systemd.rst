@@ -56,6 +56,7 @@ Don't forget that you can read the systemd job but basically, it creates the bri
 
 Then reload it with::
 
+    systemctl enable lxc-net-makina
     service lxc-net-makina restart
 
 You will see you newly created bridge with::
