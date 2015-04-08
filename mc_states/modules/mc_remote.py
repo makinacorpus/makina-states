@@ -1875,10 +1875,10 @@ def mastersalt_call(*a, **kw):
 
 def local_mastersalt_call(*a, **kw):
     '''
-    Execute mastersalt-call locally, in another shell
+    Execute mastersalt-call locally, maybe in another shell
     see salt-call
     '''
-    return mastersalt_call(*a, **kw)
+    return mastersalt_call(None, *a, **kw)
 
 
 def local_salt_call(*a, **kw):
