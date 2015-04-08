@@ -548,17 +548,21 @@ On node side, after ext pillar is loaded
 '''
 
 
-def is_(typ):
-    is_proxied = False
-    gr = 'makina-states.cloud.is.{0}'.format(typ)
-    try:
-        with open('/etc/mastersalt/grains') as fic:
-            is_proxied = bool(yaml.load(fic).get(gr))
-    except Exception:
-        pass
-    if not is_proxied:
-        is_proxied = __salt__['mc_utils.get'](gr)
-    return is_proxied
+def is_(typ, ttl=120):
+    def _do(typ):
+        is_proxied = False
+        gr = 'makina-states.cloud.is.{0}'.format(typ)
+        try:
+            with open('/etc/mastersalt/grains') as fic:
+                is_proxied = bool(yaml.load(fic).get(gr))
+        except Exception:
+            pass
+        if not is_proxied:
+            # work both in salt mode and mastersalt mode
+            is_proxied = __salt__['mc_remote.local_mastersalt_call']('mc_utils.get', gr)
+        return is_proxied
+    cache_key = '{0}.{1}.{2}'.format(__name, 'is_', typ)
+    return __salt__['mc_utils.memoize_cache'](_do, [typ], {}, cache_key, ttl)
 
 
 def is_vm():
