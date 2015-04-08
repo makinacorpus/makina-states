@@ -549,7 +549,7 @@ On node side, after ext pillar is loaded
 
 
 def is_(typ, ttl=120):
-    def _do(typ):
+    def _do(typ, ttl):
         is_proxied = False
         gr = 'makina-states.cloud.is.{0}'.format(typ)
         try:
@@ -559,10 +559,13 @@ def is_(typ, ttl=120):
             pass
         if not is_proxied:
             # work both in salt mode and mastersalt mode
-            is_proxied = __salt__['mc_remote.local_mastersalt_call']('mc_utils.get', gr)
+            is_proxied = __salt__[
+                'mc_remote.local_mastersalt_call'
+            ]('mc_utils.get', gr, ttl=ttl)
         return is_proxied
     cache_key = '{0}.{1}.{2}'.format(__name, 'is_', typ)
-    return __salt__['mc_utils.memoize_cache'](_do, [typ], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [typ, ttl], {}, cache_key, ttl)
 
 
 def is_vm():

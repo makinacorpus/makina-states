@@ -544,7 +544,6 @@ def _cache_entry(local_reg, key, ttl=1):
 
 
 def store_local_cache(registry, local_reg, ttl=1):
-    save = False
     now = time.time()
     # expire old entries
     for k in [a for a in local_reg]:
@@ -572,6 +571,7 @@ def save_local_cached_entry(value,
     data = _cache_entry(local_reg, sha1_key, ttl=ttl)
     now = time.time()
     if (now > data['time'] + ttl) or (value is not _default):
+        data['ttl'] = ttl
         data['time'] = now
         data['value'] = value
         local_reg[sha1_key] = data
