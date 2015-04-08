@@ -219,6 +219,7 @@ def vm_default_settings(vm,
     else:
         vt = extdata.get('vt', vt)
         vtsettings = vt_settings(vt)
+        target = extdata.get('target', vtsettings['defaults']['target'])
     if extpillar:
         node = 'mc_cloud_compute_node.'
         ssh_port = _s[node + 'get_ssh_port'](vm)
@@ -229,7 +230,6 @@ def vm_default_settings(vm,
     ssh_port = extdata.get('ssh_port', ssh_port)
     snmp_port = extdata.get('snmp_port', snmp_port)
     master = extdata.get('master', vtsettings['defaults']['master'])
-    target = extdata.get('target', vtsettings['defaults']['target'])
     master = vtsettings['defaults']['master']
     if extpillar:
         # if it is not a distant minion, use private gateway ip
