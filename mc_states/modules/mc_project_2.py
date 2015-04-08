@@ -221,7 +221,12 @@ def _sls_exec(name, cfg, sls):
     old_retcode = __context__.get('retcode', 0)
     pillar = __salt__['mc_utils.dictupdate'](copy.deepcopy(cfg['sls_default_pillar']),
                                              copy.deepcopy(__pillar__))
-    cret = __salt__['state.sls'](sls.format(**cfg), concurrent=True, pillar=pillar)
+    # UGLY HACK for the lazyloader
+    try:
+        __salt__['mc_utils.add_stuff_to_opts'](__opts__)
+        cret = __salt__['state.sls'](sls.format(**cfg), concurrent=True, pillar=pillar)
+    finally:
+        __salt__['mc_utils.remove_stuff_from_opts'](__opts__)
     ret['return'] = cret
     comment = ''
     __context__.setdefault('retcode', 0)
