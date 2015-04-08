@@ -557,10 +557,10 @@ def is_(typ, ttl=120):
             ]('mc_utils.get', gr, ttl=ttl)
         days15 = 15*24*60*60
         # if we are a 'kind', (result: True), cache it way longer
-        ret = _fdo(typ, days15)
+        ret = _fdo(typ, days15)['result']
         # in other case, retry in case of vm and  without using cache
         if (typ in ['vm']) and not ret:
-            ret = _fdo(typ, 0)
+            ret = _fdo(typ, 0)['result']
         return ret
     cache_key = '{0}.{1}.{2}'.format(__name, 'is_', typ)
     return __salt__['mc_utils.memoize_cache'](do, [typ], {}, cache_key, ttl)
