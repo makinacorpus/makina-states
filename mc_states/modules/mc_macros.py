@@ -591,9 +591,10 @@ def get_local_cached_entry(key,
     data = _cache_entry(local_reg, sha1_key, ttl=ttl)
     now = time.time()
     value = _default
-    if now <= data['time'] + ttl:
+    if ttl and (now <= data['time'] + ttl):
         value = data['value']
-    return value
+    data['value'] = value
+    return data
 
 
 def filecache_fun(func,
@@ -624,10 +625,11 @@ def filecache_fun(func,
             key += '{1}'.format(repr(kwargs))
         except Exception:
             key += ''
-    value = get_local_cached_entry(key, ttl=ttl)
+    data = get_local_cached_entry(key, ttl=ttl)
+    value = data['value']
     # if value is default, we have either no value
     # or the cache entry was expired
-    if (ttl < 1) or (value is _default):
+    if value is _default:
         if args is not None and kwargs is not None:
             value = func(*args, **kwargs)
         elif args is not None and (kwargs is None):
