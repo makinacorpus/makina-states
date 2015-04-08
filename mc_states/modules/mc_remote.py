@@ -1438,6 +1438,172 @@ def unparse_ret(ret, transformer, minion_id):
     return ret, log_trace
 
 
+def low_salt_call(host,
+                  use_vt,
+                  remote,
+                  fun,
+                  arg,
+                  kwarg,
+                  kwargs,
+                  outputter,
+                  salt_call_bin,
+                  salt_call_script,
+                  loglevel,
+                  masterless,
+                  new_shell,
+                  ttl=0):
+    if isinstance(kwargs, dict):
+        kwargs = copy.deepcopy(kwargs)
+        for k in [a for a in kwargs]:
+            if k.startswith('__pub_'):
+                kwargs.pop(k, None)
+    def _do(host,
+            use_vt,
+            remote,
+            fun,
+            arg,
+            kwarg,
+            kwargs,
+            outputter,
+            salt_call_bin,
+            salt_call_script,
+            loglevel,
+            masterless,
+            new_shell):
+        kw = ssh_kwargs(kwargs)
+        sh_wrapper_debug = kw.get('sh_wrapper_debug', '')
+        level = kw.setdefault('vt_loglevel', loglevel)
+        rand = _LETTERSDIGITS_RE.sub(
+            '_', salt.utils.pycrypto.secure_password(64))
+        tmpdir = kw.get('tmpdir', tempfile.tempdir or '/tmp')
+        outfile = os.path.join(tmpdir, '{0}.out'.format(rand))
+        result_sep = RESULT_SEP.format(outfile)
+        sarg = ''
+        for i in arg:
+            try:
+                if isinstance(i, (six.text_type, six.string_types)):
+                    i = __salt__['mc_utils.magicstring'](i)
+                if i is None:
+                    val = 'null'
+                elif not isinstance(i, (string_types,
+                                        integer_types,
+                                        long,
+                                        complex,
+                                        bytearray,
+                                        float)):
+                    pass
+                else:
+                    val = yamldump_arg(i)
+                val = ' {0}'.format(pipes.quote(val))
+                sarg += val
+            except Exception:
+                try:
+                    raise ValueError('Cannot serialize {0}'.format(arg))
+                except Exception:
+                    raise ValueError(u'Cannot serialize {0}'.format(arg))
+        for k, i in kwarg.items():
+            try:
+                if isinstance(i, (six.text_type, six.string_types)):
+                    i = __salt__['mc_utils.magicstring'](i)
+                val = yamldump_arg(i)
+                sarg += ' {0}={1}'.format(pipes.quote(k), pipes.quote(val))
+            except Exception:
+                try:
+                    raise ValueError('Cannot serialize {0}'.format(arg))
+                except Exception:
+                    raise ValueError(u'Cannot serialize {0}'.format(arg))
+        skwargs = _mangle_kw_for_script({
+            'outputter': '--out="{0}"'.format(outputter),
+            'local': bool(masterless) and '--local' or '',
+            'sh_wrapper_debug': sh_wrapper_debug,
+            'loglevel': '-l{0}'.format(loglevel),
+            'vt_loglevel': '-l{0}'.format(level),
+            'salt_call_bin': salt_call_bin,
+            'salt_call_script': salt_call_script,
+            'outfile': outfile,
+            'quoted_outfile': pipes.quote(outfile),
+            'result_sep': pipes.quote(result_sep),
+            'fun': fun,
+            'arg': arg,
+            'kwarg': kwarg,
+            'sarg': sarg})
+        if not remote:
+            # use to call:
+            # or call mastersalt
+            if new_shell:
+                try:
+                    script = salt_call_script.format(**skwargs)
+                    ret = __salt__['cmd.run_all'](
+                        script,
+                        python_shell=True,
+                        runas=kw['ssh_user'],
+                        use_vt=use_vt)
+                finally:
+                    if os.path.exists(skwargs['quoted_outfile']):
+                        os.remove(skwargs['quoted_outfile'])
+            # or a salt ommand from another shell
+            else:
+                fun = skwargs['fun']
+                args = skwargs['arg']
+                kwargs = skwargs['kwarg']
+                func = __salt__[fun]
+                if args is not None and kwargs is not None:
+                    ret = func(*args, **kwargs)
+                elif args is not None and (kwargs is None):
+                    ret = func(*args)
+                elif (args is None) and kwargs is not None:
+                    ret = func(**kwargs)
+                else:
+                    ret = func()
+                ret = {'raw_result': ret,
+                       'result_sep': result_sep,
+                       'result': ret}
+        else:
+            try:
+                if level in ['trace', 'garbage']:
+                    level = 'debug'
+                if level in ['error', 'warning']:
+                    level = 'info'
+                try:
+                    script = salt_call_script.format(**skwargs)
+                    ret = ssh(host, script, **kw)
+                except (Exception, SystemExit, KeyboardInterrupt) as exc:
+                    typ, eargs, _trace = sys.exc_info()
+                    _reraise(exc, trace=_trace)
+                    level = "error"
+            finally:
+                delete_remote(
+                    host, skwargs['quoted_outfile'], level=level, **kw)
+        ret['sh_wrapper_debug'] = sh_wrapper_debug
+        ret['result_sep'] = result_sep
+        ret['result_type'] = outputter
+        ret['raw_result'] = (
+            'NO RETURN inside temporary file: {0}'
+            ''.format(outfile))
+        return ret
+    ret = __salt__['mc_macros.filecache_fun'](
+        _do, args=[host,
+                   use_vt,
+                   remote,
+                   fun,
+                   arg,
+                   kwarg,
+                   kwargs,
+                   outputter,
+                   salt_call_bin,
+                   salt_call_script,
+                   loglevel,
+                   masterless,
+                   new_shell],
+        ttl=ttl,
+        prefix='mc_remote.low_salt_call')
+    return ret
+
+
+def get_localhost():
+    return None, __grains__['id'], '127.0.0.1', 'localhost'
+
+
 def salt_call(host,
               fun=None,
               arg=None,
@@ -1452,8 +1618,10 @@ def salt_call(host,
               salt_call_script=None,
               strip_out=None,
               hard_failure=False,
-              remote=True,
+              remote=None,
               use_vt=True,
+              new_shell=None,
+              ttl=0,
               *args,
               **kwargs):
     '''
@@ -1491,13 +1659,28 @@ def salt_call(host,
         override default salt call wrapper shell script
     remote
         use salt locally (you must set host to None !
+    new_shell
+        if we execute locally, new_shell can be set to false to
+        execute directly the salt function instead of calling a new shell
+        to call the function, this can be used in conjunction with ttl
+        to cache results easily, eg ::
+
+             salt-call --local -lall mc_remote.salt_call fun=test.ping \\
+                host=127.0.0.1 new_shell=False ttl=60
+
+             salt-call --local mc_remote.mastersalt_call fun=mc_cloud.settings \\
+                host=127.0.0.1 new_shell=False ttl=60
+
     use_vt
         When ran locally, use use_vt to stream output
     args
         are appended to arg as arguments to the called salt function
     kwargs
         They are forwarded to ssh helper functions !
-
+    ttl
+       Use file cache based execution (the result will be cached for X seconds).
+       If the cache is not expired, the result will be used and the function
+       wont be executed.
     CLI Examples::
 
         salt-call --local mc_remote.salt_call \\
@@ -1533,7 +1716,6 @@ def salt_call(host,
         sc = True
     kwargs.setdefault('ssh_display_ssh_output', dso)
     kwargs.setdefault('ssh_show_running_cmd', sc)
-    kw = ssh_kwargs(kwargs)
     if arg is None:
         arg = []
     if not args:
@@ -1569,47 +1751,18 @@ def salt_call(host,
     arg, kwarg = salt.utils.args.parse_input(arg, condition=False)
     if not HAS_ARGS:
         raise OSError('Missing salt.utils.args')
-    sarg = ''
-    for i in arg:
-        try:
-            if isinstance(i, (six.text_type, six.string_types)):
-                i = __salt__['mc_utils.magicstring'](i)
-            if i is None:
-                val = 'null'
-            elif not isinstance(i, (string_types,
-                                    integer_types,
-                                    long,
-                                    complex,
-                                    bytearray,
-                                    float)):
-                pass
+    if host in get_localhost():
+        if 'mastersalt' in salt_call_bin:
+            if __salt__['mc_controllers.mastersalt_mode']():
+                new_shell = False
             else:
-                val = yamldump_arg(i)
-            val = ' {0}'.format(pipes.quote(val))
-            sarg += val
-        except Exception:
-            try:
-                raise ValueError('Cannot serialize {0}'.format(arg))
-            except Exception:
-                raise ValueError(u'Cannot serialize {0}'.format(arg))
-    for k, i in kwarg.items():
-        try:
-            if isinstance(i, (six.text_type, six.string_types)):
-                i = __salt__['mc_utils.magicstring'](i)
-            val = yamldump_arg(i)
-            sarg += ' {0}={1}'.format(pipes.quote(k), pipes.quote(val))
-        except Exception:
-            try:
-                raise ValueError('Cannot serialize {0}'.format(arg))
-            except Exception:
-                raise ValueError(u'Cannot serialize {0}'.format(arg))
-    rand = _LETTERSDIGITS_RE.sub('_', salt.utils.pycrypto.secure_password(64))
-    tmpdir = kw.get('tmpdir', tempfile.tempdir or '/tmp')
-    outfile = os.path.join(tmpdir, '{0}.out'.format(rand))
-    result_sep = RESULT_SEP.format(outfile)
-    sh_wrapper_debug = kw.get('sh_wrapper_debug', '')
-    if not kw.get('vt_loglevel'):
-        kw['vt_loglevel'] = loglevel
+                new_shell = True
+        if remote is None:
+            remote = False
+    if new_shell is None:
+        new_shell = True
+    if remote is None:
+        remote = True
     if masterless is None:
         if 'mastersalt' in salt_call_bin:
             masterless = False
@@ -1617,58 +1770,36 @@ def salt_call(host,
             masterless = True
     else:
         masterless = bool(masterless)
-    skwargs = _mangle_kw_for_script({
-        'outputter': '--out="{0}"'.format(outputter),
-        'local': bool(masterless) and '--local' or '',
-        'sh_wrapper_debug': sh_wrapper_debug,
-        'loglevel': '-l{0}'.format(loglevel),
-        'vt_loglevel': '-l{0}'.format(kw['vt_loglevel']),
-        'salt_call_bin': salt_call_bin,
-        'salt_call_script': salt_call_script,
-        'outfile': outfile,
-        'quoted_outfile': pipes.quote(outfile),
-        'result_sep': pipes.quote(result_sep),
-        'fun': fun,
-        'arg': arg,
-        'kwarg': kwarg,
-        'sarg': sarg})
-    script = salt_call_script.format(**skwargs)
-    level = kw["vt_loglevel"]
+    # uglyness for caching a bit based on calling args
+    ret = low_salt_call(host,
+                        use_vt,
+                        remote,
+                        fun,
+                        arg,
+                        kwarg,
+                        kwargs,
+                        outputter,
+                        salt_call_bin,
+                        salt_call_script,
+                        loglevel,
+                        masterless,
+                        new_shell,
+                        ttl=ttl)
     if not remote:
-        try:
-            ret = __salt__['cmd.run_all'](
-                script, python_shell=True, runas=kw['ssh_user'], use_vt=use_vt)
-        finally:
-            if os.path.exists(skwargs['quoted_outfile']):
-                os.remove(skwargs['quoted_outfile'])
-    else:
-        try:
-            if level in ['trace', 'garbage']:
-                level = 'debug'
-            if level in ['error', 'warning']:
-                level = 'info'
-            try:
-                ret = ssh(host, script, **kw)
-            except (Exception, SystemExit, KeyboardInterrupt) as exc:
-                typ, eargs, _trace = sys.exc_info()
-                _reraise(exc, trace=_trace)
-                level = "error"
-        finally:
-            delete_remote(host, skwargs['quoted_outfile'], level=level, **kw)
-    ret['result_type'] = outputter
-    ret['raw_result'] = 'NO RETURN FROM {0}'.format(outfile)
+        if not new_shell:
+            unparse = False
     log_trace = None
-    if ret['stdout']:
+    if ret.get('stdout'):
         collect, result = False, ''
         for line in ret['stdout'].splitlines():
             skip_collect = False
             if collect:
-                if sh_wrapper_debug:
+                if ret['sh_wrapper_debug']:
                     skip_collect = _SKIP_LINE_RE.search(line)
                 if not skip_collect:
                     result += line
                     result += "\n"
-            if line.startswith(result_sep):
+            if line.startswith(ret['result_sep']):
                 collect = True
         ret['raw_result'] = ret['result'] = result
     if ret.get('retcode', 0):
@@ -1740,9 +1871,7 @@ def local_mastersalt_call(*a, **kw):
     Execute mastersalt-call locally, in another shell
     see salt-call
     '''
-    kw.setdefault('remote', False)
-    kw.setdefault('salt_call_bin', 'mastersalt-call')
-    return mastersalt_call(None, *a, **kw)
+    return mastersalt_call(*a, **kw)
 
 
 def local_salt_call(*a, **kw):
