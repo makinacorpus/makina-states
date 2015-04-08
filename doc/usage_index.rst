@@ -1,13 +1,23 @@
+Makina-States, the Glue PaaS platform: usage
+=============================================
+
+.. toctree::
+   :maxdepth: 1
+
+   usage_about.rst
+
+
 Installation and basic usage
 ----------------------------
 
 .. toctree::
    :maxdepth: 1
 
-   usage_about.rst
    usage_general/index.rst
    usage_quickstart/index.rst
    usage_mastersalt/index.rst
+
+.. _projects_intro:
 
 Projects for developers
 -------------------------
@@ -15,8 +25,9 @@ Projects for developers
 .. toctree::
    :maxdepth: 1
 
-   usage_projects/index.rst
-   usage_write/index.rst
+   usage_projects/project_list.rst
+   usage_projects/project_creation.rst
+   usage_projects/project_corpus.rst
 
 Additionnal docs
 ------------------
@@ -26,4 +37,6 @@ Additionnal docs
 
    usage_misc/index.rst
    usage_lxc/index.rst
+   usage_write/index.rst
+
 
