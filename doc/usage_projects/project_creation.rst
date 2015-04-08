@@ -37,10 +37,11 @@ Initialization
         |    |-  .git
         |    |-  codebase
         |    |-  .salt
-        |        |- archive.sls fixperms.sls notify.sls rollback.sls
+        |        |- _{_modules,_states,_runners,_sdb, ...}: optional custom salt python modules to install
         |        |- PILLAR.sample
         |        |- task_foo.sls
         |        |- 00_deploy.sls
+        |        |- archive.sls fixperms.sls notify.sls rollback.sls
         |
         |- git/project.git: bare git repos synchronnized (bi-directional)
         |                   with project/ used by git push style deployment
@@ -109,10 +110,6 @@ To sum all that up, when beginning project you will:
 
 - reiterate
 
-Configuration variables
---------------------------
-We provide in **mc_project** a powerfull mecanism to define default variables used in your deployments, that you can safely override in the salt pillar files. This means that you can set some default values for eg a domain name or a password, and input the production values that you won't commit inside your project codebase.
-
 Deploying, two ways of doing things
 ------------------------------------------
 To build and deploy your project we provide two styles of doing style that should be appropriate for most use cases.
@@ -142,6 +139,115 @@ Or only by pushing well placed git changesets, from your local box,
         eg: git push prod awsome_feature:master
 
 The ``<branchname>:master`` is really important as everything in the production git repositories is wired on the master branch. You can push any branch you want from your original repository, but in production, there is only **master**.
+
+SaltStack integration
+--------------------------
+As you know in makina-states, there are 2 concurrent salt installs, one for **salt**, the one that you use,
+and one for **mastersalt** for the devil ops.
+In makina-states, we use by default:
+
+- a virtualenv inside ``/salt-venv/salt``
+- `salt from a fork <https://github.com/makina-corpus/salt.git>`_ installed inside ``/salt-venv/salt/src/salt``
+- the salt file root resides, as usual, in ``/srv/salt``
+- the salt pillar root resides, as usual, in ``/srv/pillar``
+- the salt configuration root resides, as usual, in ``/etc/salt``
+
+As you see, the project layout seems not integration on those following folders, but in fact, the project
+initialisation routines made symlinks to integrate it which look like::
+
+    /srv/salt/makina-projects/<your_project_name>>  -> /srv/projects/<your_project_name>/project§/.salt
+    /srv/pillar/makina-projects/<your_project_name> -> /srv/projects/<your_project_name>/pillar
+
+- The pillar is auto included in the **pillar top** (``/srv/pîllar/top.sls``).
+- The project salt files are not and **must not** be included in the salt **top** for further highstates unless
+  you know what you are doing.
+
+You can unlink your project from salt with::
+
+    salt-call --local -ldebug mc_project.unlink <your_project_name>
+
+You can link project from salt with::
+
+    salt-call --local -ldebug mc_project.link <your_project_name>
+
+Configuration variables
+++++++++++++++++++++++++++
+We provide in **mc_project** a powerfull mecanism to define default variables used in your deployments.
+hat you can safely override in the salt pillar files.
+This means that you can set some default values for, eg a domain name or a password, and input the production values that you won't commit along side your project codebase.
+
+- Default values have to be stored inside the **PILLAR.sample** file.
+- Some of those variables, the one at the first level are mostly read only and setup by makina-states itself.
+  The most important are:
+
+    - ``name``: project name
+    - ``user``: the system user of your project
+    - ``group``: the system group of your project
+    - ``data``: top level free variables mapping
+    - ``project_root``: project root absolute path
+    - ``data_root``: persistent folder absolute path
+    - ``default_env``: environment (staging/prod/dev)
+    - ``pillar_root``: absolute path to the pillar
+    - ``fqdn``: machine FQDN
+
+- The enly variables that you can edit at the first level are:
+
+    - **default_env**: environement (valid values are staging/dev/prod)
+    - **env_defaults**: indexed by **env** dict that overloads data (pillar will still have the priority)
+    - **os_defaults**: indexed by **os** dict that overloads data (pillar will still have the priority)
+
+- The other variables, members of the **data** sub entry are free for you to add/edit.
+- Any thing in the pillar (``pillar/init.sls``) overloads what is in ``project/.salt/PILLAR.sample``.
+
+So, we have a data structure with at least 2 levels, the second level is only starting from the **data** key.
+
+You can get and consult the result of the configuration assemblage like this::
+
+    salt-call --local -ldebug mc_project.get_configuration <your_project_name>
+
+
+Example
+
+in ``project/.salt/PILLAR.sample``, you have:
+
+    makina-projects.projectname:
+      data:
+        start_cmd: 'myprog'
+
+
+in ``pillar/init.sls``, you have:
+
+    makina-projects.projectname:
+      data:
+        start_cmd: 'myprog2'
+
+- In your states files, you can access the configuration via the magic ``opts.ms_project`` variable.
+- In your modules or file templates, you can access the configuration via ``salt['mc_project.get_configuration'(name)``.
+- A tip for loading the configuration from a template is doing something like that:
+
+.. code-block:: yaml
+
+    # project/.salt/00_deploy.sls
+    {% set cfg = opts.ms_project %}
+    toto:
+      file.managed:
+          - name: "source://makina-projects/{{cfg.name}}/files/etc/foo"
+          - target: /etc/foo
+          - user {{cfg.user}}
+          - group {{cfg.user}}
+          - defaults:
+              project: {{cfg.name}}
+
+    # project/.salt/files/etc/foo
+    {% set cfg = opts.ms_project %}
+    My Super Template of {{cfg.name}} will run {{cfg.data.start_cmd}}
+
+Filesystem considerations
+--------------------------
+We use `POSIX Acls <http://en.wikipedia.org/wiki/Access_control_list#Filesystem_ACLs>`_ in
+various places on your project folders.
+At first, it feels a bit complicated, but it will enable you to smoothlessly edit your files or run
+your programs with appropriate users without loosing security.
 
 Related topics
 ---------------------

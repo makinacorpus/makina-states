@@ -468,7 +468,7 @@ This will in order:
     - dns
     - firewall rules
 
-- Run the mastersalt container highstate.
+- Run the mastersalt highstate.
 
 Initialisation of a project
 ++++++++++++++++++++++++++++++++++++++
@@ -509,27 +509,9 @@ Overview
 - all those macros will take as input this **configuration** data structure which is a mapping containing all variables and metadata about your project.
 - this common data mapping is not copied over but passed always as a reference, this mean that you can change settings in a macro and see those changes in later macros.
 
-Local configuration state
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-As a project can stay in production for a while without be redeployed, we need
-to gather static informations on how he got deploymed.
-The previous quoted mapping should be partially and enoughtly saved to know
-enought of local installation not to break it.
-
-The project state must save:
-    - all configuration variables
-    - the project api_version
-
-This must be done:
-
-    - After a sucessful deployment
-    - After a sucessful initialization
-    - By calling the set_configuration method with one or more specified
-      arguments in the form parameters=value
-
 The project configuration registry execution module helper
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-The base execution module used for project management is ``mc_project module``.
+The base execution module used for project management is :ref:`module_mc_project`
 
 It will call under the hood the latest **API** version of the mc_project module.
 
@@ -549,42 +531,16 @@ APIV2
 ++++++
 The project execution module interface (APIV2)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-**name** is the project name.
+Note that there two parts in the module:
 
-mc_project.init_project(name, \*\*kwargs)
-    initialise the local project layout and configuration.
-    any kwarg will override its counterpart in default project configuration
+- One set of methods are the one you are most likely to use handle local deployment
+- One another set of methods is able to handle remote deployments over ssh.
+  The only requirement for the other host is that makina-states should be installed
+  first and ssh access should be configured previously to any deploy call.
+  The requirement was to have only a basic ssh access, that why we did not go
+  for a RAET or 0Mq salt deployment structure here.
 
-mc_project.deploy_project(name, only=None)
-    (re)play entirely the project deployment while maybe limiting to a/some specific
-    step(s)
-
-mc_project.get_configuration(name)
-    get the local project configuration mapping
-
-mc_project.set_configuration(name, cfg=None, \*\*kwargs)
-    save a total configuration or particular configuration paramaters locally
-
-mc_project.archive(name, \*args, \*\*kwargs)
-    do the archive procedure
-
-mc_project.sync_hooks(name, \*args, \*\*kwargs)
-    regenerate git hooks
-
-mc_project.sync_modules(name, \*args, \*\*kwargs)
-    deploy salt modules inside .salt
-
-mc_project.release_sync(name, \*args, \*\*kwargs)
-    do the release-sync procedure
-
-mc_project.install(name, \*args, \*\*kwargs)
-    do the install procedure
-
-mc_project.notify(name, \*args, \*\*kwargs)
-    do the notifiation procedure
-
-mc_project.rollback(name, \*args, \*\*kwargs)
-    do the rollback procedure
+See :ref:`module_mc_project_2`
 
 The project sls interface (APIV2)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -615,38 +571,9 @@ EG: in .salt/notify.sls we will have something that looks to::
 
 - Some installers example: :ref:`projects_project_list`
 
-Project initialisation
------------------------
-You will need in prerequisites:
-
-    - 2 git repositories to contain your project and your pillar
-    - A development VM based on makina-corpus/vms
-
-A new project initialisation on a developpment box can be done as follow::
-
-    salt-call --loccal -ldebug  mc_project.deploy <NAME>
-
-When the project is initialized, you can pull locally the 2 given remotes.
-If you missed them, you can retrieve them in the configuration::
-
-    salt-call --local -ldebug mc_project.get_configuration <NAME>
-
-You can then push your changes to your preferred central repository (company, github)
-
-Project installation
------------------------
-Once the project is initialized, you can deploy it by issuing
-a git push to the development or production environment, this will
-run the full deployment procedure
-
-But, if you are testing your stuff or want to run it manually, just
-log on your environment and issue::
-
-    salt-call -lall mc_project.deploy <NAME> only=install,fixperms
-
-Indeed, this will only run the sub steps which install the project and not
-the overhead of the archive+release_sync+rollback+notify procedure.
-
+Project initialisation & installation
+----------------------------------------
+Refer to :ref:`project_creation`
 
 corpus CLI Tools (not implemented yet)
 -----------------------------------------------------
@@ -738,15 +665,4 @@ List for a specific compute node tenant
 - corpus project_destroy <API_ENDPOINT> <UUID_ENV> <project>
 
   Destroys and free any project resources on a located endpoint
-
-- corpus trim <API_ENDPOINT> <UUID_ENV> <guest> <size>
-
-  Remove <size> from project storage disk usage.
-
-- corpus enlarge <API_ENDPOINT> <UUID_ENV> <guest> <size>
-
-  Resize the project storage size with <size>
-
-For now size is not configurable and will be fixed at 5gb
-
 
