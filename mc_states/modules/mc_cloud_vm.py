@@ -486,8 +486,8 @@ def vms_settings(ttl=60):
 
 def vm_host_and_port(ttl=600):
     def do():
+        res = __grains__['id'], 22
         def fdo():
-            res = __grains__['id'], 22
             ret = __salt__['mc_remote.local_mastersalt_call']('mc_cloud.is_vm')
             if ret['result']:
                 ret = __salt__['mc_remote.local_mastersalt_call']('mc_cloud_vm.vm_settings')
@@ -496,6 +496,8 @@ def vm_host_and_port(ttl=600):
                     host = ret['result']['target']
                     port = ret['result']['ssh_reverse_proxy_port']
                     res = host, port
+                if port == 22:
+                    raise ValueError('no conf found, inconsistent, use default')
             return res
         return __salt__['mc_macros.filecache_fun'](
             fdo,
