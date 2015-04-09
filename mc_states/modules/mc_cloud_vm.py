@@ -490,7 +490,7 @@ def vm_host_and_port(ttl=600):
             res = __grains__['id'], 22
             ret = __salt__['mc_remote.local_mastersalt_call']('mc_cloud.is_vm')
             if ret['result']:
-                ret = __salt__['mc_remote.local_mastersalt_call']('mc_cloud_vm.vm_settings', ttl=15*24*60*60)
+                ret = __salt__['mc_remote.local_mastersalt_call']('mc_cloud_vm.vm_settings')
                 res = ret['result']
                 if 'target' in res and 'ssh_reverse_proxy_port' in res:
                     host = ret['result']['target']
@@ -500,28 +500,9 @@ def vm_host_and_port(ttl=600):
         return __salt__['mc_macros.filecache_fun'](
             fdo,
             prefix='mastersalt_cloud_vm_host_port_{0}'.format(__grains__['id']),
-            ttl = 5 * 24 * 60 * 60  )
+            ttl = 5 * 24 * 60 * 60)
     cache_key = '{0}.{1}.{2}'.format(__name, 'vm_host_and_port', '')
     return __salt__['mc_utils.memoize_cache'](do, [], {}, cache_key, ttl)
-
-
-def is_(typ, ttl=120):
-    def do(typ):
-        def _fdo(typ, ttl):
-            gr = 'makina-states.cloud.is.{0}'.format(typ)
-            return __salt__[
-                'mc_remote.local_mastersalt_call'
-            ]('mc_utils.get', gr, ttl=ttl)
-        days15 = 15*24*60*60
-        # if we are a 'kind', (result: True), cache it way longer
-        ret = _fdo(typ, days15)['result']
-        # in other case, retry in case of vm and  without using cache
-        if (typ in ['vm']) and not ret:
-            ret = _fdo(typ, 0)['result']
-        return ret
-    cache_key = '{0}.{1}.{2}'.format(__name, 'is_', typ)
-    return __salt__['mc_utils.memoize_cache'](do, [typ], {}, cache_key, ttl)
-
 
 
 def vm_settings(id_=None, ttl=60):
