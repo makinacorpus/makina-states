@@ -371,6 +371,8 @@ def get_default_configuration(remote_host=None):
             this_host = fic.read().splitlines()[0].strip()
     if not remote_host:
         remote_host = __grains__['fqdn']
+    if __salt__['mc_cloud.is_vm']:
+        this_host, this_port = __salt__['mc_cloud_vm.vm_host_and_port']()
     conf['remote_host'] = remote_host
     conf['this_host'] = this_host
     conf['this_localhost'] = this_localhost
@@ -2491,14 +2493,6 @@ def report():
     ret = ''
     target = __grains__['id']
     dconf = get_default_configuration()
-    try:
-        vmconf = __salt__['mc_cloud_vm.vm_settings']()
-        if not vmconf and isinstance(vmconf, dict):
-            raise ValueError('not a vm')
-    except ValueError:
-        vmconf = {
-            'ssh_reverse_proxy_port': '22',
-        }
 
     ips = [a
            for a in __grains__.get('ipv4', [])
@@ -2517,7 +2511,7 @@ Port {dconf[this_port]}
 User root
 ServerAliveInterval 5
 
-'''.format(conf=vmconf, id=target, ips=ips, dconf=dconf)
+'''.format(id=target, ips=ips, dconf=dconf)
     projects = os.listdir(pt)
     if projects:
         ret += 'Projects:'

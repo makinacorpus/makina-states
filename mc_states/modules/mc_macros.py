@@ -543,6 +543,10 @@ def _cache_entry(local_reg, key, ttl=1):
     return data
 
 
+def default_cache_value():
+    return _default
+
+
 def store_local_cache(registry, local_reg, ttl=1):
     now = time.time()
     # expire old entries
@@ -584,6 +588,7 @@ def save_local_cached_entry(value,
 def get_local_cached_entry(key,
                            default=_default,
                            ttl=1,
+                           soft=False,
                            registry='disk_cache'):
     local_reg = __salt__['mc_macros.get_local_registry'](
         registry, registry_format='pack')
@@ -594,6 +599,8 @@ def get_local_cached_entry(key,
     if ttl and (now <= data['time'] + ttl):
         value = data['value']
     data['value'] = value
+    if value is _default and not soft:
+        raise KeyError(key)
     return data
 
 
@@ -625,7 +632,7 @@ def filecache_fun(func,
             key += '{1}'.format(repr(kwargs))
         except Exception:
             key += ''
-    data = get_local_cached_entry(key, ttl=ttl)
+    data = get_local_cached_entry(key, ttl=ttl, soft=True)
     value = data['value']
     # if value is default, we have either no value
     # or the cache entry was expired
