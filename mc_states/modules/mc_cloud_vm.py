@@ -495,14 +495,15 @@ def vm_host_and_port(ttl=600):
                 if 'target' in res and 'ssh_reverse_proxy_port' in res:
                     host = ret['result']['target']
                     port = ret['result']['ssh_reverse_proxy_port']
-                    res = host, port
-                if port == 22:
-                    raise ValueError('no conf found, inconsistent, use default')
+                    return host, port
+            raise ValueError('no conf found, inconsistent, use default')
+        try:
+            return __salt__['mc_macros.filecache_fun'](
+                fdo,
+                prefix='mastersalt_cloud_vm_host_port_{0}'.format(__grains__['id']),
+                ttl = 5 * 24 * 60 * 60)
+        except ValueError:
             return res
-        return __salt__['mc_macros.filecache_fun'](
-            fdo,
-            prefix='mastersalt_cloud_vm_host_port_{0}'.format(__grains__['id']),
-            ttl = 5 * 24 * 60 * 60)
     cache_key = '{0}.{1}.{2}'.format(__name, 'vm_host_and_port', '')
     return __salt__['mc_utils.memoize_cache'](do, [], {}, cache_key, ttl)
 
