@@ -114,7 +114,7 @@ configurations:
     manage_ssh_ip_restrictions: false
     manage_sudoers: true
     manage_network: true
-    manage_snmpd: true
+    manage_snmpd: false
     manage_hosts: true
     manage_shorewall: true
     manage_fail2ban: true
