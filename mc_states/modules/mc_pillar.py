@@ -2404,7 +2404,15 @@ def get_supervision_objects_defs(id_):
             no_common_checks = vdata.get('no_common_checks', False)
             if tipaddr == host_ip and vt in ['lxc']:
                 no_common_checks = True
-            if tipaddr != host_ip and vt in ['lxc', 'docker']:
+            other_ips = [a.get('ip', None)
+                         for a in query('cloud_vm_attrs').get(
+                             vm, {}).get('additional_ips',[])
+                         if a.get('ip', None)]
+            if (
+                tipaddr in other_ips
+                and tipaddr != host_ip
+                and vt in ['lxc', 'docker']
+            ):
                 # specific ip on lxc, monitor eth1
                 nic_cards.append('eth1')
             groups = attrs.setdefault('groups', [])

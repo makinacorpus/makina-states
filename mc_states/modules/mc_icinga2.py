@@ -1055,26 +1055,29 @@ def autoconfigure_host(host,
             'mongodb_memory_mapped',
             'mongodb_memory'])
     if 'mysql' in processes:
-        services_enabled_types.extend(['mysql_connection_time',
-                                       'mysql_tablecache_hitrate',
-                                       'mysql_table_fragmentation',
-                                       'mysql_long_running_procs',
-                                       'mysql_open_files',
-                                       'mysql_index_usage',
-                                       'mysql_qcache_lowmem_prunes',
-                                       # more noise than good
-                                       # 'mysql_table_lock_contention',
-                                       'mysql_log_waits',
-                                       'mysql_threads_cached',
-                                       'mysql_threads_running',
-                                       'mysql_threads_connected',
-                                       'mysql_threads_created',
-                                       'mysql_connects_aborted',
-                                       'mysql_threads_connected',
-                                       'mysql_slow_queries',
-                                       'mysql_bufferpool_hitrate',
-                                       'mysql_bufferpool_wait_free',
-                                       'mysql_tmp_disk_tables'])
+        services_enabled_types.extend([])
+        # disable automatic mysql probes, they have not much use for now
+        # and cause more harm than good
+        # services_enabled_types.extend(['mysql_connection_time',
+        #                                'mysql_tablecache_hitrate',
+        #                                'mysql_table_fragmentation',
+        #                                'mysql_long_running_procs',
+        #                                'mysql_open_files',
+        #                                'mysql_index_usage',
+        #                                'mysql_qcache_lowmem_prunes',
+        #                                # more noise than good
+        #                                # 'mysql_table_lock_contention',
+        #                                'mysql_log_waits',
+        #                                'mysql_threads_cached',
+        #                                'mysql_threads_running',
+        #                                'mysql_threads_connected',
+        #                                'mysql_threads_created',
+        #                                'mysql_connects_aborted',
+        #                                'mysql_threads_connected',
+        #                                'mysql_slow_queries',
+        #                                'mysql_bufferpool_hitrate',
+        #                                'mysql_bufferpool_wait_free',
+        #                                'mysql_tmp_disk_tables'])
     for s in services:
         if (
             s not in services_enabled_types
