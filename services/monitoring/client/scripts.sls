@@ -1,4 +1,14 @@
 {% set data = salt['mc_monitoring.settings']() %}
+
+{% set dodl=True %}
+{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if grains['os'] in ['Debian'] %}
+{% if grains["osrelease"][0] < "6" %}
+{% set dodl=False %}
+{% endif %}
+{% endif %}
+{% endif %}
+
 install-nagios-plugins:
   pkg.installed:
     - pkgs:
@@ -11,7 +21,17 @@ install-nagios-plugins:
       {% if grains['os'] not in ['Debian'] %}
       - nagios-plugins-extra
       {% endif %}
+      {% if grains['os'] in ['Debian'] %}
+      - libsnmp15
+      {% else %}
+      - libsnmp30
+      {% endif %}
+      - libsnmp-base
+      - libsnmp-perl
+      - nagios-plugins-basic
+      - libsnmp-dev
       - nagios-plugins-openstack
+      - libsensors4
       - libcrypt-des-perl
       - libxml-xpath-perl
       - libsys-statistics-linux-perl
