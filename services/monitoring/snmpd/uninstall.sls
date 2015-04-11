@@ -27,3 +27,7 @@ snmpd-{{f}}:
     - require:
       - pkg: snmp-uninstall
 {% endfor %}
+
+snmp-reg-off:
+  cmd.run:
+    - name: 'sed -i -re "s/makina-states.services.monitoring.snmpd:.*/makina-states.services.monitoring.snmpd: false/g" /etc/*salt/makina-states/*'
