@@ -10,6 +10,8 @@ fi
 
 REMOVE="
 /tmp/.saltcloud
+/root/.cache
+/home/*/.cache
 "
 
 WIPE="
@@ -100,16 +102,40 @@ done
 find /srv/pillar /srv/mastersalt-pillar /etc/*salt/minion* -type f|while read i
 do
     sed -i -re "s/master:.*/master: 0.0.0.1/g" "$i" || /bin/true
+    sed -i -re "s/id:.*/id: localminion/g" "$i" || /bin/true
 done
 find /etc/shorewall/rules -type f|while read i
 do
     sed -i -re "s/ACCEPT.? +net:?.*fw +-/ACCEPT net fw/g" "$i" || /bin/true
 done
-find /root /home /var -name .bash_history | while read fic;do echo >"${fic}";done
+find / -name .ssh | while read i;do
+echo $i
+    if [ -d "${i}" ];then
+        pushd "${i}" 1>/dev/null 2>&1
+        for i in config authorized_keys authorized_keys2;do
+            if [ -f "${i}" ];then echo >"${i}";fi
+        done
+        ls -1 known_hosts id_* 2>/dev/null| while read f;do rm -vf "${f}";done
+        popd 1>/dev/null 2>&1
+    fi
+done
+find /root /home /var -name .bash_history -or -name .viminfo\
+    | while read fic;do echo >"${fic}";done
 find /etc/init/*salt* | grep -v override | while read fic
     do
         echo manual > ${fic//.conf}.override
     done
+for i in\
+    /etc/makina-states/local_salt_mode \
+    /etc/makina-states/local_mastersalt_mode \
+;do
+    if [ -e "${i}" ];then echo masterless > "${i}";fi
+done
+if [ -e /etc/.git ];then
+    rm -rf /etc/.git
+    etckeeper init || /bin/true
+    etckeeper commit "init" || /bin/true
+fi
 if which getfacl 1>/dev/null 2>/dev/null;then
     getfacl -R / > /acls.txt || /bin/true
 fi
