@@ -15,6 +15,8 @@ REMOVE="
 "
 
 WIPE="
+/etc/mastersalt/makina-states/
+/etc/salt/makina-states/
 /etc/makina-states/*.pack
 /etc/makina-states/*.yaml
 
@@ -53,8 +55,6 @@ FILE_REMOVE="
 /var/lib/apt/lists
 /etc/salt/pki
 /etc/mastersalt/pki 
-/etc/mastersalt/makina-states/
-/etc/salt/makina-states/
 "
 FILE_WIPE="
 /var/log

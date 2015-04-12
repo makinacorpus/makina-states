@@ -2989,6 +2989,7 @@ salt_ping_test() {
     if [ "x${DO_SALT}" = "x" ];then return;fi
     # test in a subshell as this can be bloquant
     # salt cloud would then fail badly on this
+    if [ x"${local_salt_mode}" = "xmasterless" ];then return;fi
     rm -f "${SALT_BOOT_LOCK_FILE}" "${LAST_RETCODE_FILE}"
     (
         touch "${SALT_BOOT_LOCK_FILE}";
@@ -3018,6 +3019,7 @@ salt_ping_test() {
 
 mastersalt_ping_test() {
     if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ x"${local_mastersalt_mode}" = "xmasterless" ];then return;fi
     # test in a subshell as this can be bloquant
     # salt cloud would then fail badly on this
     rm -f "${SALT_BOOT_LOCK_FILE}" "${LAST_RETCODE_FILE}"
