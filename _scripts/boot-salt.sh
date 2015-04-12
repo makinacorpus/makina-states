@@ -28,6 +28,17 @@ EOF
     fi
 }
 
+get_curgitpackid() {
+    # default cron sync code each minutes, pack each half day
+    python << EOF
+try:
+    with open('${1}') as fic:
+        print int(fic.read().strip()) % ((60/15)*(24/2))
+except Exception:
+    print 0
+EOF
+}
+
 # be sure to have a populated base path
 THIS="${0}"
 LAUNCH_ARGS=${@}
@@ -1706,6 +1717,23 @@ setup_and_maybe_update_code() {
             done
         fi
     fi
+    # pack git repositories in salt scope
+    find\
+        "${VENV_PATH}"\
+        "${SALT_ROOT}"\
+        "${MASTERSALT_ROOT}"\
+        "${SALT_PILLAR}"\
+        "${MASTERSALT_PILLAR}"\
+        -name .git -type d|while read f;do
+        cd "${f}/.."
+        gmarker=".git/curgitpackid"
+        if [ "x$(get_curgitpackid "${gmarker}")" = "x0" ];then
+            bs_log "Git packing ${f}"
+            git prune || /bin/true
+            git gc --aggressive || /bin/true
+        fi
+        echo "$(($(get_curgitpackid "${gmarker}")+1))" > "${gmarker}"
+    done
     check_restartmarker_and_maybe_restart
     if [ "x${SALT_BOOT_IN_RESTART}" = "x" ] && [ "x$(is_basedirs_there)" = "x" ];then
         die "Base directories are not present"
