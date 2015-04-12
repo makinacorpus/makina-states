@@ -63,10 +63,10 @@ lxc-cleanup:
     - group: root
     - mode: 0755
 
-lxc-snap.sh:
+makinastates-snapshot.sh:
   file.managed:
-    - name: /sbin/lxc-snap.sh
-    - source: salt://makina-states/files/sbin/lxc-snap.sh
+    - name: /sbin/makinastates-snapshot.sh
+    - source: salt://makina-states/files/sbin/makinastates-snapshot.sh
     - user: root
     - group: root
     - mode: 0755

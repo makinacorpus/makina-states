@@ -2311,9 +2311,12 @@ def get_supervision_objects_defs(id_):
             sconf = get_snmpd_conf(id_)
             p = ('makina-states.services.monitoring.'
                  'snmpd.default_')
-            attrs.setdefault('vars.SNMP_PASS', sconf[p + 'password'])
-            attrs.setdefault('vars.SNMP_CRYPT', sconf[p + 'key'])
-            attrs.setdefault('vars.SNMP_USER',  sconf[p + 'user'])
+            attrs.setdefault('vars.SNMP_PASS', sconf.get(
+                p + 'password', 'secret'))
+            attrs.setdefault('vars.SNMP_CRYPT', sconf.get(
+                p + 'key', 'key'))
+            attrs.setdefault('vars.SNMP_USER',  sconf.get(
+                p + 'user', 'root'))
             hdata.setdefault('raid', True)
             hdata.setdefault('inotify', True)
             hdata.setdefault('sar',
@@ -2384,9 +2387,12 @@ def get_supervision_objects_defs(id_):
             p = ('makina-states.services.monitoring.'
                  'snmpd.default_')
             attrs.setdefault('vars.makina_host', host)
-            attrs.setdefault('vars.SNMP_PASS', sconf[p + 'password'])
-            attrs.setdefault('vars.SNMP_CRYPT', sconf[p + 'key'])
-            attrs.setdefault('vars.SNMP_USER',  sconf[p + 'user'])
+            attrs.setdefault('vars.SNMP_PASS',  sconf.get(
+                p + 'password', 'secret'))
+            attrs.setdefault('vars.SNMP_CRYPT', sconf.get(
+                p + 'key', 'key'))
+            attrs.setdefault('vars.SNMP_USER',  sconf.get(
+                p + 'user', 'root'))
             if host not in parents:
                 parents.append(host)
             # set the local ip for snmp and ssh
