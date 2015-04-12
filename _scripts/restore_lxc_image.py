@@ -21,13 +21,14 @@ socket.setdefaulttimeout(2)
 GITHUB = "https://raw.githubusercontent.com/makinacorpus/makina-states/stable/"
 RELEASES_URL = (
     'http://sourceforge.net/projects/makinacorpus/files/makina-states')
-VER_SLUG = "versions/makina-states-{dist}-lxc_version.txt"
+VER_SLUG = "versions/makina-states-{dist}-{flavor}_version.txt"
 MD5_SLUG = "{0}.md5".format(VER_SLUG)
 VER_URL = GITHUB + VER_SLUG
 MD5_URL = GITHUB + MD5_SLUG
 DEFAULT_DIST = "trusty"
-DEFAULT_VER = "11"
+DEFAULT_FLAVOR = "lxc"
 DEFAULT_BR = 'lxcbr1'
+DEFAULT_VER = "11"
 DEFAULT_MD5 = "94c796b5c31a6eb121417d0fd210f646"
 DESCRIPTION = '''
 Maybe download and install an ubuntu makina-states compliant lxc template.
@@ -50,12 +51,12 @@ The Makina-States LXC Template needs:
 
 This LXC template is a tar file compressed with XZ and
 it's filename has this mandatory naming scheme:
- makina-states-${{DIST}}-lxc-${{VER}}.tar.xz\
- / eg: makina-states-{dist}-lxc-{ver}.tar.xz
+ makina-states-${{DIST}}-{flavor}-${{VER}}.tar.xz\
+ / eg: makina-states-{dist}-{flavor}-{ver}.tar.xz
 
 The used url will then maybe be:
  ${{MIRROR}}/${{TARFILE}}\
- / eg: {releases}/makina-states-{dist}-lxc-{ver}.tar.xz
+ / eg: {releases}/makina-states-{dist}-{flavor}-{ver}.tar.xz
 
 To run online with default options: {name}
  * To change dist / version: {name} [-d {dist}] [-v {ver}]
@@ -202,7 +203,7 @@ def restore_acls(adir, ftar=None, force=False):
             os.unlink(sub_rootfs)
 
 
-def download_lxc_template(url, tar, md5=None, offline=False):
+def download_template(url, tar, md5=None, offline=False):
     try:
         # if we already have the file, early exit this func.
         check_md5(tar, md5)
@@ -236,7 +237,7 @@ def download_lxc_template(url, tar, md5=None, offline=False):
     print('Downloaded: {0}'.format(tar))
 
 
-def unpack_lxc_template(adir, ftar, md5=None, force=False):
+def unpack_template(adir, ftar, md5=None, force=False):
     adirtmp = adir + ".dl.tmp"
     tar = os.path.basename(ftar)
     unflag = os.path.join(adir, ".{0}unpacked".format(tar))
@@ -313,6 +314,7 @@ def main():
         usage=DESCRIPTION.format(ver=DEFAULT_VER,
                                  name='./restore_lxc_image.py',
                                  md5=DEFAULT_MD5,
+                                 flavor=DEFAULT_FLAVOR,
                                  bridge=DEFAULT_BR,
                                  releases=RELEASES_URL,
                                  dist=DEFAULT_DIST))
@@ -325,6 +327,10 @@ def main():
                         default='/var/lib/lxc',
                         action='store_true',
                         help='LXC top directory')
+    parser.add_argument('--flavor',
+                        dest='flavor',
+                        default=DEFAULT_FLAVOR,
+                        help='flavor')
     parser.add_argument('-o', '--offline',
                         default=False,
                         action='store_true',
@@ -386,8 +392,10 @@ def main():
     if not os.path.exists(lxc_dir):
         raise ValueError(
             "{0} does not exists, please install lxc".format(lxc_dir))
-    tar = "makina-states-{dist}-lxc-{ver}.tar.xz".format(**opts)
-    bdir = re.sub('(-lxc-[^-]*)*$', '', tar.split(".tar.xz", 1)[0])
+    tar = "makina-states-{dist}-{flavor}-{ver}.tar.xz".format(**opts)
+    bdir = re.sub('(-{flavor}-[^-]*)*$'.format(**opts),
+                  '',
+                  tar.split(".tar.xz", 1)[0])
     adir = os.path.join(lxc_dir, bdir)
     ftar = os.path.join(lxc_dir, tar)
     if os.path.normpath(lxc_dir) == os.path.normpath(adir):
@@ -395,10 +403,10 @@ def main():
     url = os.path.join(opts['mirror'], tar)
     done = False
     if not opts['skip_download']:
-        download_lxc_template(
+        download_template(
             url, ftar, md5=opts['md5'], offline=opts['offline'])
     if not opts['skip_unpack']:
-        unpack_lxc_template(adir, ftar, md5=opts['md5'], force=opts['force'])
+        unpack_template(adir, ftar, md5=opts['md5'], force=opts['force'])
         restore_acls(adir, ftar)
         done = True
     if not opts['skip_relink']:

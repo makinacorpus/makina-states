@@ -35,32 +35,10 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        saltmods = __salt__
-        grains = __grains__
-        pillar = __pillar__
-        logrotateInterfaces = {}
-        ddata = {}
-        grainsPref = 'makina-states.localsettings.'
-
-        # logrotation settings
-        # This will generate a rotate_variables in the form
-        # rotate_variables = {
-        #     'days': 31,
-        # }
-        #
-        # include the macro in your states and use:
-        #   {{ rotate.days }}
-        data = saltmods['mc_utils.defaults'](
+        data = __salt__['mc_utils.defaults'](
             'makina-states.localsettings.rotate', {
                 'days':  '365',
             })
         return data
     return _settings()
-
-
-
-#
-# -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
-
 # vim:set et sts=4 ts=4 tw=80:
