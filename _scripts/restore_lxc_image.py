@@ -28,8 +28,8 @@ MD5_URL = GITHUB + MD5_SLUG
 DEFAULT_DIST = "trusty"
 DEFAULT_FLAVOR = "lxc"
 DEFAULT_BR = 'lxcbr1'
-DEFAULT_VER = "11"
-DEFAULT_MD5 = "94c796b5c31a6eb121417d0fd210f646"
+DEFAULT_VER = '14'
+DEFAULT_MD5 = '7be985a7965d0228178aad06f6ad0a4c'
 DESCRIPTION = '''
 Maybe download and install an ubuntu makina-states compliant lxc template.
 Makina-States is a layer upon SaltStack to install, and manage bare metal
