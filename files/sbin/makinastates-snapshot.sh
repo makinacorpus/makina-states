@@ -15,6 +15,13 @@ REMOVE="
 "
 
 WIPE="
+/etc/mastersalt/makina-states/
+/etc/salt/makina-states/
+/etc/makina-states/*.pack
+/etc/makina-states/*.yaml
+
+/etc/mastersalt/makina-states
+/etc/salt/makina-states
 /usr/local/share/ca-certificates/
 
 /var/cache/salt/salt-master
