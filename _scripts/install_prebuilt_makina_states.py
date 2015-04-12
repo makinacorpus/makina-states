@@ -39,7 +39,7 @@ DONT INSTALL ON ANYTHING ELSE THAN TRUSTY UNLESS YOU KNOW WHAT's YOU ARE
 DOING
 
 Prerequisites:
-    apt-get install xz-utils python rsync acl
+    apt-get install python
 
 usage:
     {name}
@@ -204,15 +204,39 @@ def download_template(url, tar, md5=None, offline=False):
     print('Downloaded: {0}'.format(tar))
 
 
+def setup_prereqs(offline=False):
+    apt = False
+    cmd = 'lsb_release -i -s'
+    ret, ps = popen(cmd)
+    if ret[0]:
+        if ret[0].lower().strip() in ['ubuntu', 'debian']:
+            apt = True
+    if apt and not offline:
+        cmd = 'apt-get update'
+        ret, ps = popen(cmd)
+        if ps.returncode:
+            print(ret[0])
+            print(ret[1])
+            raise ValueError('Cant update apt')
+        cmd = 'apt-get install -y --force-yes xz-utils python rsync acl'
+        ret, ps = popen(cmd)
+        if ps.returncode:
+            print(ret[0])
+            print(ret[1])
+            raise ValueError('Cant install prereqs')
+
+
 def unpack_template(adir, ftar, md5=None, force=False):
     adir = os.path.normpath(os.path.abspath(adir))
     adirtmp = os.path.join(os.getcwd(), "makina-states.tmp")
     tar = os.path.basename(ftar)
-    unflag = os.path.join("/etc/makina-states/prebuilt".format(tar))
+    if not os.path.exists('/etc/makina-states'):
+        os.makedirs('/etc/makina-states')
+    unflag = os.path.join("/etc/makina-states/prebuilt.{0}".format(tar))
     if force or (
         not os.path.exists(unflag)
-        and not os.path.exists("/srv/salt/makina-states/")
-        and not os.path.exists("/srv/mastersalt/makina-states/")
+        and not os.path.exists("e/srv/salt/makina-states/")
+        and not os.path.exists("e/srv/mastersalt/makina-states/")
     ):
         if os.path.exists(adirtmp):
             shutil.rmtree(adirtmp)
@@ -257,19 +281,6 @@ def install_salt(fqdn,
     ret, ps = popen(cmd)
     if ps.returncode:
         return
-    cmd = 'lsb_release -i -s'
-    ret, ps = popen(cmd)
-    apt = False
-    if ret[0]:
-        if ret[0].lower().strip() in ['ubuntu', 'debian']:
-            apt = True
-    if apt and not offline:
-        cmd = 'apt-get update'
-        ret, ps = popen(cmd)
-        if ps.returncode:
-            print(ret[0])
-            print(ret[1])
-            raise ValueError('Cant update apt')
     cmd = (
         '/srv/mastersalt/makina-states/_scripts/boot-salt.sh'
         ' -C'
@@ -388,6 +399,10 @@ def main():
                         default=False,
                         action='store_true',
                         help='skip unpack')
+    parser.add_argument('--skip-prereqs',
+                        default=False,
+                        action='store_true',
+                        help='skip prereqs')
     parser.add_argument('--skip-salt',
                         default=False,
                         action='store_true',
@@ -402,6 +417,8 @@ def main():
         raise ValueError('Must be run either as root or via sudo')
     if not opts['skip_hosts']:
         fix_hosts(opts['fqdn'])
+    if not opts['skip_prereqs']:
+        setup_prereqs(offline=opts['offline'])
     if not opts['skip_download']:
         download_template(url, ftar, md5=opts['md5'], offline=opts['offline'])
     if not opts['skip_unpack']:
