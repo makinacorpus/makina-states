@@ -23,18 +23,7 @@ WIPE="
 /var/cache/mastersalt/master-master
 /var/cache/mastersalt/mastersalt-minion
 
-/etc/salt/pki/master/minions
-/etc/mastersalt/pki/master/minions
-
-/etc/mastersalt/pki/minion
-/etc/salt/pki/minion
 /tmp
-
-/etc/salt/pki/master/master.pem
-/etc/salt/pki/master/master.pub
-
-/etc/mastersalt/pki/master/master.pem
-/etc/mastersalt/pki/master/master.pub
 
 /etc/ssh/ssh_host*key
 /etc/ssh/ssh_host*pub
@@ -57,6 +46,8 @@ WIPE="
 FILE_REMOVE="
 /var/cache/apt/archives/
 /var/lib/apt/lists
+/etc/salt/pki
+/etc/mastersalt/pki 
 "
 FILE_WIPE="
 /var/log

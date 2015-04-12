@@ -4,6 +4,7 @@ python:
 
 # matrix:
 install:
-    - sudo ./_scripts/boot-salt.sh -C -n travis
+    - sudo python ./_scripts/install_travis.py
+    - sudo ./_scripts/boot-salt.sh --upgrade -C
 
-script: ./_scripts/boot-salt.sh -C -s -S --test
+script: sudo python _scripts/local_tests.py

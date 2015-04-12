@@ -184,7 +184,19 @@ def _run(cmd):
 
 
 def sf_release(images=None):
-    '''Upload the makina-states container lxc tarball to sourceforge;
+    '''
+    Upload a prebuild makina-states layout in different flavors for various
+    distributions to sourceforge.
+
+    For now this includes:
+
+        - lxc container based on Ubuntu LTS (trusty)
+        - current ubuntu LTS based tarball containing the minimum vital
+          to bring back to like makina-states without rebuilding it
+          totally from scratch. This contains a slimed version of
+          the containere files ffrom /salt-venv /srv/*salt /etc/*salt
+          /var/log/*salt /var/cache/*salt /var/lib/*salt /usr/bin/*salt*
+
     this is used in makina-states.cloud.lxc as a base
     for other containers.
 
@@ -194,7 +206,7 @@ def sf_release(images=None):
 
     Do a release::
 
-        salt-call -all mc_lxc.sf_release
+        mastersalt-call -all mc_lxc.sf_release
     '''
     _s = __salt__
     _cli = _s.get
@@ -216,18 +228,31 @@ def sf_release(images=None):
         ver_file = os.path.join(
             root,
             'makina-states/versions/{0}-lxc_version.txt'.format(img))
+        sa_ver_file = os.path.join(
+            root,
+            'makina-states/versions/{0}-standalone_version.txt'.format(img))
         try:
             cur_ver = int(open(ver_file).read().strip())
         except:
             cur_ver = 0
+        try:
+            sa_cur_ver = int(open(sa_ver_file).read().strip())
+        except:
+            sa_cur_ver = 0
+        sa_next_ver = sa_cur_ver + 1
         next_ver = cur_ver + 1
         user = _cli('mc_utils.get')('makina-states.sf_user', 'kiorky')
         dest = '{1}-lxc-{0}.tar.xz'.format(next_ver, img)
+        sa_dest = '{1}-standalone-{0}.tar.xz'.format(next_ver, img)
         container_p = '/var/lib/lxc/{0}'.format(img)
         fdest = '/var/lib/lxc/{0}'.format(dest)
+        sa_fdest = '/var/lib/lxc/{0}'.format(sa_dest)
         if not os.path.exists(container_p):
             _errmsg(ret, '{0} container does not exists'.format(img))
         aclf = os.path.join(container_p, 'acls.txt')
+        # all release flavors are releated, so we just check one here
+        # and this must be the last one produced
+        # if the last one is not present, all flavors will be rebuilt
         if not os.path.exists(fdest):
             cmd = 'getfacl -R . > acls.txt'
             cret = _cli('cmd.run_all')(
@@ -250,41 +275,81 @@ def sf_release(images=None):
                         acls.append(i)
             with open(aclf, 'w') as w:
                 w.write(''.join(acls))
-            cmd = ('tar cJfp {0} . '
-                   '--ignore-failed-read --numeric-owner').format(fdest)
+            cmd = ('tar cJfp {0} '
+                   ' etc/init.d/mastersalt-*'
+                   ' etc/init.d/salt-*'
+                   ' etc/init/mastersalt-*'
+                   ' etc/init/salt-*'
+                   ' etc/{{mastersalt,salt}}'
+                   ' srv/{{mastersalt-pillar,pillar}}'
+                   ' srv/{{salt,mastersalt}}'
+                   ' usr/bin/mastersalt-*'
+                   ' usr/bin/mastersalt'
+                   ' usr/bin/salt-*'
+                   ' salt-venv'
+                   ' usr/bin/salt'
+                   ' var/cache/{{mastersalt,salt}}'
+                   ' var/run/{{mastersalt,salt}}'
+                   ' --ignore-failed-read --numeric-owner').format(sa_fdest)
             cret = _cli('cmd.run_all')(
                 cmd,
-                cwd=container_p,
+                cwd=os.path.join(container_p, "rootfs"),
                 python_shell=True,
                 env={'XZ_OPT': '-7e'},
-                salt_timeout=60 * 60)
+                salt_timeout=60*60)
             if cret['retcode']:
-                _errmsg(ret, 'error with compressing')
-        cmd = 'rsync -avzP {0} {1}@{2}/{3}.tmp'.format(
-            fdest, user, SFTP_URL, dest)
-        cret = _cli('cmd.run_all')(
-            cmd, cwd=container_p, python_shell=True, salt_timeout=8 * 60 * 60)
-        if cret['retcode']:
-            return _errmsg(ret, 'error with uploading')
-        cmd = 'echo "rename {0}.tmp {0}" | sftp {1}@{2}'.format(dest,
-                                                                user,
-                                                                SFTP_URL)
-        cret = _cli('cmd.run_all')(
-            cmd, cwd=container_p, python_shell=True, salt_timeout=60)
-        if cret['retcode']:
-            _errmsg(ret, 'error with renaming')
+                _errmsg(ret, 'error with compressing standalone tarball')
+            cmd = ('tar cJfp {0} . '
+                   '--ignore-failed-read --numeric-owner').format(fdest)
+            try:
+                cret = _cli('cmd.run_all')(
+                    cmd,
+                    cwd=container_p,
+                    python_shell=True,
+                    env={'XZ_OPT': '-7e'},
+                    salt_timeout=60*60)
+                if cret['retcode']:
+                    _errmsg(ret, 'error with compressing')
+                    if os.path.exists(fdest):
+                        os.remove(fdest)
+            except Exception:
+                if os.path.exists(fdest):
+                    os.remove(fdest)
+        for _fdest, _dest in [(fdest, dest), (sa_fdest, sa_dest)]:
+            cmd = 'rsync -avzP {0} {1}@{2}/{3}.tmp'.format(
+                _fdest, user, SFTP_URL, _dest)
+            cret = _cli('cmd.run_all')(
+                cmd, cwd=container_p, python_shell=True, salt_timeout=8*60*60)
+            if cret['retcode']:
+                return _errmsg(ret, 'error with uploading')
+            cmd = 'echo "rename {0}.tmp {0}" | sftp {1}@{2}'.format(_dest,
+                                                                    user,
+                                                                    SFTP_URL)
+            cret = _cli('cmd.run_all')(
+                cmd, cwd=container_p, python_shell=True, salt_timeout=60)
+            if cret['retcode']:
+                _errmsg(ret, 'error with renaming')
         cmd = "md5sum {0} |awk '{{print $1}}'".format(fdest)
         cret = _cli('cmd.run_all')(
-            cmd, cwd=container_p, python_shell=True, salt_timeout=60 * 60)
+            cmd, cwd=container_p, python_shell=True, salt_timeout=60*60)
         if cret['retcode']:
             _errmsg(ret, 'error with md5')
         with open(ver_file + ".md5", 'w') as f:
             f.write("{0}".format(cret['stdout']))
         with open(ver_file, 'w') as f:
             f.write("{0}".format(next_ver))
+        cmd = "md5sum {0} |awk '{{print $1}}'".format(sa_fdest)
+        cret = _cli('cmd.run_all')(
+            cmd, cwd=container_p, python_shell=True, salt_timeout=60*60)
+        if cret['retcode']:
+            _errmsg(ret, 'error with md5 from standalone')
+        with open(sa_ver_file + ".md5", 'w') as f:
+            f.write("{0}".format(cret['stdout']))
+        with open(sa_ver_file, 'w') as f:
+            f.write("{0}".format(sa_next_ver))
         cmd = (
-            ('git add *-lxc*version*txt*;'
-             'git commit versions -m "new lxc release {0}";'
+            ('git add *-version*txt*;'
+             'git commit versions -m "new release {0}";'
              'git push').format(next_ver))
         cret = _cli('cmd.run_all')(cmd,
                                    cwd=root + '/makina-states',
