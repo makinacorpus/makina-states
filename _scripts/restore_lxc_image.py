@@ -321,14 +321,14 @@ def main():
     parser.add_argument('-m', '--mirror',
                         dest='mirror',
                         default=RELEASES_URL,
-                        help='mirror url')
+                        help='mirror url ({0})'.format(RELEASES_URL))
     parser.add_argument('-l', '--lxcdir',
                         dest='lxc_dir',
                         default='/var/lib/lxc',
                         action='store_true',
                         help='LXC top directory')
     parser.add_argument('--flavor',
-                        dest='flavor',
+                        dest='flavor ({0})'.format(DEFAULT_FLAVOR),
                         default=DEFAULT_FLAVOR,
                         help='flavor')
     parser.add_argument('-o', '--offline',
