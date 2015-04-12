@@ -1772,9 +1772,10 @@ def salt_call(host,
         remote = True
     if masterless is None:
         if 'mastersalt' in salt_call_bin:
-            masterless = False
+            fun_ = 'mc_controllers.local_mastersalt_mode'
         else:
-            masterless = True
+            fun_ = 'mc_controllers.local_salt_mode'
+        masterless = __salt__[fun_]() == 'masterless'
     else:
         masterless = bool(masterless)
     # uglyness for caching a bit based on calling args
