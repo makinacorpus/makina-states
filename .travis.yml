@@ -4,7 +4,7 @@ python:
 
 # matrix:
 install:
-    - sudo python ./_scripts/install_travis.py
-    - sudo ./_scripts/boot-salt.sh --upgrade -C
+    - sudo apt-get install xz-utils python rsync acl
+    - sudo python ./_scripts/install_prebuild_makina_states.py
 
 script: sudo python _scripts/local_tests.py

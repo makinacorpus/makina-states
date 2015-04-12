@@ -20,6 +20,7 @@ socket.setdefaulttimeout(2)
 
 DEFAULT_BR = 'lxcbr1'
 DEFAULT_CONTAINER = 'makina-states-trusty'
+DEFAULT_BRANCH = 'stable'
 DESCRIPTION = '''
 Create a container from another container
 If the IP address or the MAC address is not specified, it will be generated.
@@ -36,14 +37,19 @@ Examples:
 '''
 
 
-def popen(cargs=None, shell=True, log=True):
+def popen(cargs=None, shell=True, log=True, stream=None):
+    if stream is None:
+        stream = False
     if log:
         print('Running: {0}'.format(cargs))
     if not cargs:
         cargs = []
     ret, ps = None, None
     if cargs:
-        ps = Popen(cargs, shell=shell, stdout=PIPE, stderr=PIPE)
+        if stream:
+            ps = Popen(cargs, shell=shell)
+        else:
+            ps = Popen(cargs, shell=shell, stdout=PIPE, stderr=PIPE)
         ret = ps.communicate()
     return ret, ps
 
@@ -308,13 +314,18 @@ def allow_user_and_root(container):
                                  ' {0}'.format(container, k))
 
 
-def fix_salt(container,
-             fqdn,
-             mastersalt=None,
-             local_salt_mode='masterless',
-             local_mastersalt_mode='masterless'):
+def install_salt(container,
+                 fqdn,
+                 mastersalt=None,
+                 local_salt_mode='masterless',
+                 local_mastersalt_mode='masterless',
+                 offline=None,
+                 update=None,
+                 branch=DEFAULT_BRANCH):
     if not mastersalt:
         mastersalt = fqdn
+    if update is None:
+        update = False
     cmd = (
         "lxc-attach -n '{0}' --"
         ' test -e /srv/mastersalt/makina-states/_scripts/boot-salt.sh'
@@ -325,17 +336,26 @@ def fix_salt(container,
     cmd = (
         "lxc-attach -n '{3}' --"
         ' /srv/mastersalt/makina-states/_scripts/boot-salt.sh'
+        ' -C'
         ' --local-salt-mode {1}'
         ' --local-mastersalt-mode {2}'
         ' -m {0}'
+        ' -b {5}'
         ' --mastersalt {4}'
-        ' --salt-master-dns {0};'
+        ' --salt-master-dns {0}'
         '').format(fqdn,
                    local_salt_mode,
                    local_mastersalt_mode,
                    container,
-                   mastersalt)
-    ret, ps = popen(cmd)
+                   mastersalt,
+                   branch)
+    if update:
+        cmd2 = cmd + ' --refresh-modules'
+        if not offline:
+            ret, ps = popen(cmd2, stream=True)
+            if ps.returncode:
+                raise ValueError('Cant update salt')
+    ret, ps = popen(cmd+";")
     if ps.returncode:
         print(ret[0])
         print(ret[1])
@@ -412,6 +432,13 @@ def main():
                         default=DEFAULT_CONTAINER,
                         help=('origin container (default:'
                               ' {0})').format(DEFAULT_CONTAINER))
+    parser.add_argument('--branch',
+                        help='default branch ({0})'.format(DEFAULT_BRANCH),
+                        default=DEFAULT_BRANCH)
+    parser.add_argument('-u', '--update',
+                        default=False,
+                        action='store_true',
+                        help='Run a git pull in salt dirs prior to install')
     parser.add_argument('-b', '--bridge',
                         help=('default lxc bridge to use (default:'
                               ' {0})').format(DEFAULT_BR),
@@ -424,6 +451,14 @@ def main():
                         default=None,
                         help=('snapshot type (aufs|overlayfs)'
                               ' (default: None)'))
+    parser.add_argument('--skip-hosts',
+                        default=False,
+                        action='store_true',
+                        help='skip hosts')
+    parser.add_argument('--skip-salt',
+                        default=False,
+                        action='store_true',
+                        help='skip salt')
     args = parser.parse_args(sys.argv[1:])
     opts = vars(args)
     if os.getuid() not in [0]:
@@ -435,7 +470,6 @@ def main():
     orootfs = os.path.join(odir, 'rootfs')
     oconfig = os.path.join(odir, 'config')
     adir = os.path.join(lxc_dir, opts['name'])
-    arootfs = os.path.join(adir, 'rootfs')
     aconfig = os.path.join(adir, 'config')
     fqdn = opts['name']
     if '.' not in opts['name']:
@@ -457,7 +491,8 @@ def main():
     if os.path.exists(adir) and not force:
         raise ValueError('{0} already created'.format(adir))
     if not os.path.exists(adir):
-        clone_template(opts['origin'], opts['name'], snapshot=opts['snapshot'])
+        clone_template(
+            opts['origin'], opts['name'], snapshot=opts['snapshot'])
     if not os.path.exists(adir):
         raise ValueError('{0} does not exists'.format(adir))
     edit_config(aconfig, opts['bridge'], opts['ip'], opts['mac'], opts['nm'])
@@ -479,8 +514,14 @@ def main():
         print('\n'.join(traces))
         raise ValueError('Cant reset ssh in {0}'.format(opts['name']))
     allow_user_and_root(opts['name'])
-    fix_hosts(opts['name'], fqdn)
-    fix_salt(opts['name'], fqdn)
+    if not opts['skip_hosts']:
+        fix_hosts(opts['name'], fqdn)
+    if not opts['skip_salt']:
+        install_salt(opts['name'],
+                     fqdn,
+                     branch=opts['branch'],
+                     update=opts['update'],
+                     offline=opts['offline'])
     print('--')
     print('Your container is in {0}'.format(adir))
     print('   config: {0}'.format(aconfig))

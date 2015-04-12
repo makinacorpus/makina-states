@@ -26,21 +26,39 @@ VER_SLUG = "versions/makina-states-{dist}-{flavor}_version.txt"
 MD5_SLUG = "{0}.md5".format(VER_SLUG)
 VER_URL = GITHUB + VER_SLUG
 MD5_URL = GITHUB + MD5_SLUG
-DEFAULT_DIST = "trusty"
-DEFAULT_FLAVOR = "standalone"
-DEFAULT_VER = "11"
-DEFAULT_MD5 = "94c796b5c31a6eb121417d0fd210f646"
-DESCRIPTION = ''''''
+DEFAULT_DIST = 'trusty'
+DEFAULT_FLAVOR = 'standalone'
+DEFAULT_VER = '14'
+DEFAULT_MD5 = "7be985a7965d0228178aad06f6ad0a4c"
+DEFAULT_BRANCH = 'stable'
+DESCRIPTION = '''
+Install a prebuilt version of makina-states directly on the system
+
+WARNING: for now only ubuntu-trusty is supported
+DONT INSTALL ON ANYTHING ELSE THAN TRUSTY UNLESS YOU KNOW WHAT's YOU ARE
+DOING
+
+Prerequisites:
+    apt-get install xz-utils python rsync acl
+
+usage:
+    {name}
+'''
 
 
-def popen(cargs=None, shell=True, log=True):
+def popen(cargs=None, shell=True, log=True, stream=None):
+    if stream is None:
+        stream = False
     if log:
         print('Running: {0}'.format(cargs))
     if not cargs:
         cargs = []
     ret, ps = None, None
     if cargs:
-        ps = Popen(cargs, shell=shell, stdout=PIPE, stderr=PIPE)
+        if stream:
+            ps = Popen(cargs, shell=shell)
+        else:
+            ps = Popen(cargs, shell=shell, stdout=PIPE, stderr=PIPE)
         ret = ps.communicate()
     return ret, ps
 
@@ -225,7 +243,12 @@ def unpack_template(adir, ftar, md5=None, force=False):
 def install_salt(fqdn,
                  mastersalt=None,
                  local_salt_mode='masterless',
-                 local_mastersalt_mode='masterless'):
+                 local_mastersalt_mode='masterless',
+                 offline=None,
+                 update=None,
+                 branch=DEFAULT_BRANCH):
+    if update is None:
+        update = False
     if not mastersalt:
         mastersalt = fqdn
     cmd = (
@@ -234,18 +257,38 @@ def install_salt(fqdn,
     ret, ps = popen(cmd)
     if ps.returncode:
         return
+    cmd = 'lsb_release -i -s'
+    ret, ps = popen(cmd)
+    apt = False
+    if ret[0]:
+        if ret[0].lower().strip() in ['ubuntu', 'debian']:
+            apt = True
+    if apt and not offline:
+        cmd = 'apt-get update'
+        ret, ps = popen(cmd)
+        if ps.returncode:
+            print(ret[0])
+            print(ret[1])
+            raise ValueError('Cant update apt')
     cmd = (
         '/srv/mastersalt/makina-states/_scripts/boot-salt.sh'
+        ' -C'
         ' --local-salt-mode {1}'
         ' --local-mastersalt-mode {2}'
+        ' -b {4}'
         ' -m {0}'
-        ' --mastersalt {4}'
-        ' --salt-master-dns {0};'
-    ).format(fqdn, local_salt_mode, local_mastersalt_mode, mastersalt)
-    ret, ps = popen(cmd)
+        ' --mastersalt {3}'
+        ' --salt-master-dns {0}'
+    ).format(
+        fqdn, local_salt_mode, local_mastersalt_mode, mastersalt, branch)
+    if update:
+        cmd2 = cmd + ' --refresh-modules'
+        if not offline:
+            ret, ps = popen(cmd2, stream=True)
+            if ps.returncode:
+                raise ValueError('Cant update salt')
+    ret, ps = popen(cmd, stream=True)
     if ps.returncode:
-        print(ret[0])
-        print(ret[1])
         raise ValueError('Cant reset salt')
 
 
@@ -255,7 +298,7 @@ def fix_hosts(fqdn):
     ret, ps = popen(cmd)
     if ps.returncode:
         raise ValueError('Cant set host')
-    cmd = "hostname {1}".format(host)
+    cmd = "hostname {0}".format(host)
     ret, ps = popen(cmd)
     if ps.returncode:
         raise ValueError('Cant affect host')
@@ -273,7 +316,7 @@ def fix_hosts(fqdn):
         container_hosts = ('\n'.join(to_add) +
                            '\n' + container_hosts +
                            '\n'.join(to_add))
-        cmd = "echo \"{1}\"|tee /etc/hosts".format(container_hosts)
+        cmd = "echo \"{0}\"|tee /etc/hosts".format(container_hosts)
         ret, ps = popen(cmd)
         if ps.returncode:
             raise ValueError('Cant set hosts')
@@ -289,32 +332,39 @@ def main():
                                  dist=DEFAULT_DIST))
     parser.add_argument('--fqdn',
                         default=socket.getfqdn(),
-                        help='fqdn')
+                        help='fqdn of this host')
     parser.add_argument('--dist',
                         default=DEFAULT_DIST,
-                        help='dist')
+                        help='dist ({0})'.format(DEFAULT_DIST))
     parser.add_argument('--flavor',
                         default=DEFAULT_FLAVOR,
-                        help='flavor')
+                        help='flavor ({0})'.format(DEFAULT_FLAVOR))
     parser.add_argument('--ver',
                         default=DEFAULT_VER,
-                        help='version')
+                        help='version ({0}'.format(DEFAULT_VER))
     parser.add_argument('-m', '--mirror',
                         dest='mirror',
                         default=RELEASES_URL,
-                        help='mirror url')
+                        help='mirror url ({0})'.format(RELEASES_URL))
     parser.add_argument('-a', '--dest',
                         default="/",
                         dest="adir",
-                        help='destination dir')
+                        help='destination dir (/)')
     parser.add_argument('-o', '--offline',
                         default=False,
                         action='store_true',
                         help='Run offline and assume tar is already there')
+    parser.add_argument('-u', '--update',
+                        default=False,
+                        action='store_true',
+                        help='Run a git pull in salt dirs prior to install')
     parser.add_argument('-f', '--force',
                         default=False,
                         action='store_true',
                         help='Force unpack again')
+    parser.add_argument('--branch',
+                        help='default branch ({0})'.format(DEFAULT_BRANCH),
+                        default=DEFAULT_BRANCH)
     parser.add_argument('-s', '--md5',
                         help=('MD5 of the tarball of version to use '
                               ' (latest version will be '
@@ -359,7 +409,10 @@ def main():
     if not opts['skip_acls']:
         restore_acls(adir, ftar)
     if not opts['skip_salt']:
-        install_salt(opts['fqdn'])
+        install_salt(opts['fqdn'],
+                     update=opts['update'],
+                     branch=opts['branch'],
+                     offline=opts['offline'])
 
 
 if __name__ == '__main__':
