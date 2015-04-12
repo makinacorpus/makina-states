@@ -29,6 +29,7 @@ etc-shorewall-{{config}}:
     - name: {{config}}
     - source : {{cdata.get('template', 'salt://makina-states/files'+config)}}
     - template: jinja
+    - makedirs: {{cdata.get('makedirs', False)}}
     - user: root
     - group: root
     - mode: "{{mode}}"
