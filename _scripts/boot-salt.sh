@@ -1289,14 +1289,14 @@ get_saltcall_args() {
     if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
         LOCAL="--local"
     fi
-    echo "${LOCAL} $(get_module_args "${LOCAL}" "${SALT_ROOT}" "${SALT_MS}")"
+    echo "${LOCAL} $(get_module_args "${SALT_ROOT}" "${SALT_MS}")"
 }
 
 get_mastersaltcall_args() {
     if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
         LOCAL="--local"
     fi
-    echo "${LOCAL} $(get_module_args "${LOCAL}" "${MASTERSALT_ROOT}" "${MASTERSALT_MS}")"
+    echo "${LOCAL} $(get_module_args "${MASTERSALT_ROOT}" "${MASTERSALT_MS}")"
 }
 
 salt_call_wrapper_() {
