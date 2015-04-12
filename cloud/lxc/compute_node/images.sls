@@ -62,9 +62,9 @@ restore-specialfiles-{{name}}:
     - name: {{name}}
     - watch:
       - cmd: restore-specialfiles-{{name}}
-{{name}}-makinastates-snaphot:
+{{name}}-makinastates-snapshot:
   cmd.run:
-    - name: chroot /var/lib/lxc/{{name}}/rootfs /sbin/makinastates-snaphot.sh
+    - name: chroot /var/lib/lxc/{{name}}/rootfs /sbin/makinastates-snapshot.sh
     - onlyif: test -e /var/lib/lxc/{{name}}/rootfs/etc/salt/pki/minion/minion.pub
     - watch:
       - lxc: {{name}}-stop-default-lxc-container
@@ -72,7 +72,7 @@ restore-specialfiles-{{name}}:
   file.absent:
     - name: {{sprefix}}/pki/master/minions/{{name}}
     - watch:
-      - cmd: {{name}}-makinastates-snaphot
+      - cmd: {{name}}-makinastates-snapshot
 {% endfor %}
 maybe-only-one-gen-lxc-images:
   mc_proxy.hook : []
