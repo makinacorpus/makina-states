@@ -122,5 +122,17 @@ def registry():
     return _registry()
 
 
+def _local_salt_mode(typ, mode):
+    fmode = '/etc/makina-states/local_{0}_mode'.format(typ)
+    if os.path.exists(fmode):
+        with open(fmode) as fic:
+            mode = fic.read().strip()
+    return mode
 
-#
+
+def local_mastersalt_mode():
+    return _local_salt_mode('mastersalt', 'remote')
+
+
+def local_salt_mode():
+    return _local_salt_mode('salt', 'masterless')

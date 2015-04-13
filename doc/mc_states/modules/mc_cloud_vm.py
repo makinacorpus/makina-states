@@ -219,6 +219,7 @@ def vm_default_settings(vm,
     else:
         vt = extdata.get('vt', vt)
         vtsettings = vt_settings(vt)
+        target = extdata.get('target', vtsettings['defaults']['target'])
     if extpillar:
         node = 'mc_cloud_compute_node.'
         ssh_port = _s[node + 'get_ssh_port'](vm)
@@ -229,7 +230,6 @@ def vm_default_settings(vm,
     ssh_port = extdata.get('ssh_port', ssh_port)
     snmp_port = extdata.get('snmp_port', snmp_port)
     master = extdata.get('master', vtsettings['defaults']['master'])
-    target = extdata.get('target', vtsettings['defaults']['target'])
     master = vtsettings['defaults']['master']
     if extpillar:
         # if it is not a distant minion, use private gateway ip
@@ -484,8 +484,34 @@ def vms_settings(ttl=60):
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
+def vm_host_and_port(ttl=600):
+    def do():
+        res = __grains__['id'], 22
+        def fdo():
+            ret = __salt__['mc_remote.local_mastersalt_call']('mc_cloud.is_vm')
+            if ret['result']:
+                ret = __salt__['mc_remote.local_mastersalt_call']('mc_cloud_vm.vm_settings')
+                res = ret['result']
+                if 'target' in res and 'ssh_reverse_proxy_port' in res:
+                    host = ret['result']['target']
+                    port = ret['result']['ssh_reverse_proxy_port']
+                    return host, port
+            raise ValueError('no conf found, inconsistent, use default')
+        try:
+            return __salt__['mc_macros.filecache_fun'](
+                fdo,
+                prefix='mastersalt_cloud_vm_host_port_{0}'.format(__grains__['id']),
+                ttl = 5 * 24 * 60 * 60)
+        except ValueError:
+            return res
+    cache_key = '{0}.{1}.{2}'.format(__name, 'vm_host_and_port', '')
+    return __salt__['mc_utils.memoize_cache'](do, [], {}, cache_key, ttl)
+
+
 def vm_settings(id_=None, ttl=60):
     def _do(id_):
+        if not id_:
+            id_ = __grains__['id']
         return vms_settings().get(id_, {})
     cache_key = '{0}.{1}{2}'.format(__name, 'vm_settings', id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)

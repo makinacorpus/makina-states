@@ -475,13 +475,14 @@ def sf_release(images=None, flavors=None, sync=True):
     this is used in makina-states.cloud.lxc as a base
     for other containers.
 
-    pillar/grain parameters:
-
-        makina-states.sf user
+    pillar/grain parameters: see mc_cloud_images.settings &
+    mc_cloud_images.complete_images to set appropriate parameters
+    for git, sourceforce, & etc urls & users
 
     Do a release::
 
-        mastersalt-call -all mc_lxc.sf_release
+        mastersalt-call -all mc_lxc.sf_release makina-states-trusty\\
+            [flavor=[lxc/standalone]] sync=True|False
     '''
     _s = __salt__
     imgSettings = _s['mc_cloud_images.settings']()

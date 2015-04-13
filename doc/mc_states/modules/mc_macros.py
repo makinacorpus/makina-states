@@ -11,6 +11,8 @@ mc_macros / macros helpers
 import msgpack
 import os
 import copy
+import json
+import hashlib
 import logging
 import time
 import traceback
@@ -524,6 +526,136 @@ def autoinclude(reg, additional_includes=None):
     sls += '\n{0}\n'.format(
         __salt__['mc_macros.unregister'](reg['kind'], slss, suf='auto'))
     return sls
+
+
+def get_local_cache_key(key):
+    key_entry = hashlib.sha256("{0}".format(key)).hexdigest()
+    return key_entry
+
+
+def _cache_entry(local_reg, key, ttl=1):
+    data = local_reg.get(key, OrderedDict())
+    if not isinstance(data, dict):
+        data = OrderedDict()
+    data.setdefault('ttl', ttl)
+    data.setdefault('value', _default)
+    data.setdefault('time', time.time())
+    return data
+
+
+def default_cache_value():
+    return _default
+
+
+def store_local_cache(registry, local_reg, ttl=1):
+    now = time.time()
+    # expire old entries
+    for k in [a for a in local_reg]:
+        data = _cache_entry(local_reg, k)
+        if now > data['time'] + data['ttl']:
+            local_reg.pop(k, None)
+    __salt__['mc_macros.update_local_registry'](
+        registry, local_reg, registry_format='pack')
+    local_reg = __salt__['mc_macros.get_local_registry'](
+        registry, registry_format='pack')
+    return local_reg
+
+
+def save_local_cached_entry(value,
+                            key=None,
+                            sha1_key=None,
+                            ttl=1,
+                            registry='disk_cache'):
+    if not (key or sha1_key):
+        raise ValueError('provide at least key or sha1_key')
+    if not sha1_key:
+        sha1_key = get_local_cache_key(key)
+    local_reg = __salt__['mc_macros.get_local_registry'](
+        registry, registry_format='pack')
+    data = _cache_entry(local_reg, sha1_key, ttl=ttl)
+    now = time.time()
+    if (now > data['time'] + ttl) or (value is not _default):
+        data['ttl'] = ttl
+        data['time'] = now
+        data['value'] = value
+        local_reg[sha1_key] = data
+        local_reg = store_local_cache(registry,
+                                      local_reg,
+                                      ttl=ttl)
+    return local_reg
+
+
+def get_local_cached_entry(key,
+                           default=_default,
+                           ttl=1,
+                           soft=False,
+                           registry='disk_cache'):
+    local_reg = __salt__['mc_macros.get_local_registry'](
+        registry, registry_format='pack')
+    sha1_key = get_local_cache_key(key)
+    data = _cache_entry(local_reg, sha1_key, ttl=ttl)
+    now = time.time()
+    value = _default
+    if ttl and (now <= data['time'] + ttl):
+        value = data['value']
+    data['value'] = value
+    if value is _default and not soft:
+        raise KeyError(key)
+    return data
+
+
+def filecache_fun(func,
+                  args=None,
+                  kwargs=None,
+                  registry='disk_cache',
+                  prefix=None,
+                  ttl=1):
+    if isinstance(kwargs, dict):
+        kwargs = copy.deepcopy(kwargs)
+        for k in [a for a in kwargs]:
+            if k.startswith('__pub_'):
+                kwargs.pop(k, None)
+    if not prefix:
+        prefix = '{0}'.format(func)
+    key = '{0}_'.format(prefix)
+    try:
+        key += json.dumps(args)
+    except TypeError:
+        try:
+            key += '{0}'.format(repr(args))
+        except Exception:
+            key += ''
+    try:
+        key += json.dumps(kwargs)
+    except TypeError:
+        try:
+            key += '{1}'.format(repr(kwargs))
+        except Exception:
+            key += ''
+    data = get_local_cached_entry(key, ttl=ttl, soft=True)
+    value = data['value']
+    # if value is default, we have either no value
+    # or the cache entry was expired
+    if value is _default:
+        if args is not None and kwargs is not None:
+            value = func(*args, **kwargs)
+        elif args is not None and (kwargs is None):
+            value = func(*args)
+        elif (args is None) and kwargs is not None:
+            value = func(**kwargs)
+        else:
+            value = func()
+        try:
+            save_local_cached_entry(value,
+                                    key,
+                                    registry=registry,
+                                    ttl=ttl)
+        except Exception:
+            log.error(traceback.format_exc())
+            # dont fail for a failed cache set
+    else:
+        log.garbage('Using filecache !')
+    return value
 
 
 def dump():

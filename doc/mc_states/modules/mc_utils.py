@@ -18,6 +18,7 @@ from salt.exceptions import SaltException
 import crypt
 import re
 import logging
+import hashlib
 import salt.utils
 from salt.utils.odict import OrderedDict
 from salt.utils import yamldumper
@@ -48,6 +49,30 @@ except ImportError:
 _default_marker = object()
 _marker = object()
 log = logging.getLogger(__name__)
+
+
+def hash(string, typ='md5', func='hexdigest'):
+    '''
+    Return the hash of a string
+    CLI Examples::
+
+        salt-call --local mc_utils.hash foo
+        salt-call --local mc_utils.hash foo md5
+        salt-call --local mc_utils.hash foo sha1
+        salt-call --local mc_utils.hash foo sha224
+        salt-call --local mc_utils.hash foo sha256
+        salt-call --local mc_utils.hash foo sha384
+        salt-call --local mc_utils.hash foo sha512
+
+    '''
+    if func not in ['hexdigest', 'digest']:
+        func = 'hexdigest'
+
+    if typ not in [
+        'md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'
+    ]:
+        raise TypeError('{0} is not valid hash'.format(typ))
+    return getattr(getattr(hashlib, typ)(string), func)()
 
 
 def uniquify(*a, **kw):
@@ -714,12 +739,46 @@ def json_load(data):
     return api.json_load(data)
 
 
+def remove_stuff_from_opts(__opts):
+    opts = __context__.setdefault('mc_opts', __opts)
+    if opts is not __opts:
+        for k in [a for a in __opts]:
+            if k not in opts:
+                __opts.pop(k, None)
+            elif opts[k] != __opts[k]:
+                __opts[k] = opts[k]
+    __context__.pop('mc_opts', None)
+    return __opts
+
+
+
+def add_stuff_to_opts(__opts):
+    opts = __context__.setdefault('mc_opts', __opts)
+    if opts is __opts:
+        # UGLY HACK for the lazyloader
+        old_opts = copy.deepcopy(__opts)
+        try:
+            __opts['grains'] = __grains__
+        except Exception:
+            pass
+        try:
+            __opts['pillar'] = __pillar__
+        except Exception:
+            pass
+        __context__['mc_opts'] = old_opts
+    return __opts
+
+
 def sls_load(sls, get_inner=False):
     if not os.path.exists(sls):
         raise OSError('does not exists: {0}'.format(sls))
-    jinjarend = salt.loader.render(__opts__, __salt__)
-    data_l = salt.template.compile_template(
-        sls, jinjarend, __opts__['renderer'], 'base')
+    try:
+        add_stuff_to_opts(__opts__)
+        jinjarend = salt.loader.render(__opts__, __salt__)
+        data_l = salt.template.compile_template(
+            sls, jinjarend, __opts__['renderer'], 'base')
+    finally:
+        remove_stuff_from_opts(__opts__)
     if isinstance(data_l, (dict, list, set)) and get_inner:
         if len(data_l) == 1:
             if isinstance(data_l, dict):
