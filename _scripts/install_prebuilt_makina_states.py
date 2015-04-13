@@ -339,7 +339,7 @@ def fix_hosts(fqdn):
 
 def get_fqdn(fqdn=None):
     if fqdn is None:
-        socket.getfqdn()
+        fqdn = socket.getfqdn()
     ret, ps = popen('cat /etc/hosts')
     out = ret[0].strip()
     print('hosts')
