@@ -3581,8 +3581,6 @@ def get_cloud_conf(ttl=TEN_MINUTES):
         for vt, targets in _s[__name + '.query']('vms', {}).items():
             if vt not in supported_vts:
                 continue
-            if not _settings.get(vt, False):
-                continue
             for cn, vms in targets.items():
                 if cn in _s[__name + '.query']('non_managed_hosts', {}):
                     continue
