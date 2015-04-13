@@ -78,7 +78,10 @@ def check_md5(filep, md5=None):
         print('WARNING: MD5 check skipped')
 
 
-def get_ver(ver=DEFAULT_VER, dist=DEFAULT_DIST, offline=False):
+def get_ver(ver=DEFAULT_VER,
+            dist=DEFAULT_DIST,
+            flavor=DEFAULT_FLAVOR,
+            offline=False):
     res, trace = ver, ''
     if not ver and not offline:
         try:
@@ -95,7 +98,7 @@ def get_ver(ver=DEFAULT_VER, dist=DEFAULT_DIST, offline=False):
                 os.path.dirname(
                     os.path.dirname(
                         os.path.abspath(sys.argv[0]))),
-                VER_SLUG.format(dist=dist)
+                VER_SLUG.format(flavor=flavor, dist=dist)
             )) as fic:
                 res = fic.read().strip()
         except IOError:
@@ -105,7 +108,7 @@ def get_ver(ver=DEFAULT_VER, dist=DEFAULT_DIST, offline=False):
             print(trace)
         raise ValueError('No default version')
     return res
-
+ 
 
 def get_md5(md5=DEFAULT_MD5,
             ver=DEFAULT_VER,
@@ -145,7 +148,7 @@ def system(cmd):
 
 def restore_acls(adir, ftar=None, force=False):
     tar = os.path.basename(ftar)
-    aclflag = os.path.join(adir, ".{0}aclsdone".format(tar)
+    aclflag = os.path.join(adir, ".{0}aclsdone".format(tar))
     if (
         (not os.path.exists(aclflag)
          and os.path.exists(os.path.join(adir, 'acls.txt'))
@@ -360,6 +363,7 @@ def main():
                         default=DEFAULT_DIST,
                         help='dist ({0})'.format(DEFAULT_DIST))
     parser.add_argument('--flavor',
+                        dest='flavor',
                         default=DEFAULT_FLAVOR,
                         help='flavor ({0})'.format(DEFAULT_FLAVOR))
     parser.add_argument('--ver',
@@ -422,6 +426,23 @@ def main():
     args = parser.parse_args(sys.argv[1:])
     opts = vars(args)
     opts['fqdn'] = get_fqdn(opts['fqdn'])
+    opts['ver'] = get_ver(
+        ver=opts['ver'],
+        dist=opts['dist'],
+        flavor=opts['flavor'],
+        offline=opts['offline'])
+    if (
+        opts['md5']
+        and opts['md5'].lower().strip().replace(
+            '"', '').replace("'", '') == 'no'
+    ):
+        opts['md5'] = None
+    else:
+        opts['md5'] = get_md5(
+            md5=opts['md5'],
+            ver=opts['ver'],
+            dist=opts['dist'],
+            offline=opts['offline'])
     tar = "makina-states-{dist}-{flavor}-{ver}.tar.xz".format(**opts)
     url = os.path.join(opts['mirror'], tar)
     adir = os.path.abspath(opts['adir'])

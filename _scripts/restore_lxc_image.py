@@ -331,9 +331,9 @@ def main():
                         action='store_true',
                         help='LXC top directory')
     parser.add_argument('--flavor',
-                        dest='flavor ({0})'.format(DEFAULT_FLAVOR),
+                        dest='flavor',
                         default=DEFAULT_FLAVOR,
-                        help='flavor')
+                        help='flavor ({0})'.format(DEFAULT_FLAVOR))
     parser.add_argument('-o', '--offline',
                         default=False,
                         action='store_true',
