@@ -133,6 +133,7 @@ def get_ver(ver=DEFAULT_VER,
 def get_md5(md5=DEFAULT_MD5,
             ver=DEFAULT_VER,
             dist=DEFAULT_DIST,
+            flavor=DEFAULT_FLAVOR,
             offline=False):
     res, trace = md5, ''
     if not md5 and not offline:
@@ -152,7 +153,7 @@ def get_md5(md5=DEFAULT_MD5,
                 os.path.dirname(
                     os.path.dirname(
                         os.path.abspath(sys.argv[0]))),
-                MD5_SLUG.format(dist=dist)
+                MD5_SLUG.format(flavor=flavor, dist=dist)
             )) as fic:
                 res = fic.read().strip()
         except IOError:
@@ -392,6 +393,7 @@ def main():
             md5=opts['md5'],
             ver=opts['ver'],
             dist=opts['dist'],
+            flavor=opts['flavor'],
             offline=opts['offline'])
     if 'linux' not in sys.platform.lower():
         raise ValueError('This must be run on linux')
