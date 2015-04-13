@@ -2400,11 +2400,12 @@ EOF
             fi
         fi
     done
-    if [ "x${IS_MASTERSALT}" != "x" ];then
-        if [ ! -e  "${MASTERSALT_PILLAR}/database.sls" ];then
-            cp -vf "${MASTERSALT_MS}/files/database.sls" "${MASTERSALT_PILLAR}/database.sls"
-        fi
-    fi
+    # do not copy anymore
+    # if [ "x${IS_MASTERSALT}" != "x" ];then
+    #     if [ ! -e  "${MASTERSALT_PILLAR}/database.sls" ];then
+    #         cp -vf "${MASTERSALT_MS}/files/database.sls" "${MASTERSALT_PILLAR}/database.sls"
+    #     fi
+    # fi
 }
 
 create_salt_tops() {
