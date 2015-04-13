@@ -39,9 +39,6 @@ WIPE="
 /etc/ssl/cloud
 /etc/ssl/nginx
 
-/srv/mastersalt-pillar/
-/srv/pillar/
-
 /srv/salt/makina-states/.bootlogs/*
 /srv/mastersalt/makina-states/.bootlogs/*
 
@@ -51,6 +48,8 @@ WIPE="
 /var/log/*.gz
 "
 FILE_REMOVE="
+/srv/mastersalt-pillar/
+/srv/pillar/
 /var/cache/apt/archives/
 /var/lib/apt/lists
 /etc/salt/pki
