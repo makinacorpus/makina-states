@@ -144,8 +144,7 @@ def system(cmd):
 
 def restore_acls(adir, ftar=None, force=False):
     tar = os.path.basename(ftar)
-    aclflag = os.path.join(adir, ".{0}{1}aclsdone".format(
-        tar, socket.getfqdn()))
+    aclflag = os.path.join(adir, ".{0}aclsdone".format(tar)
     if (
         (not os.path.exists(aclflag)
          and os.path.exists(os.path.join(adir, 'acls.txt'))
@@ -235,8 +234,8 @@ def unpack_template(adir, ftar, md5=None, force=False):
     unflag = os.path.join("/etc/makina-states/prebuilt.{0}".format(tar))
     if force or (
         not os.path.exists(unflag)
-        and not os.path.exists("e/srv/salt/makina-states/")
-        and not os.path.exists("e/srv/mastersalt/makina-states/")
+        and not os.path.exists("/srv/salt/makina-states/")
+        and not os.path.exists("/srv/mastersalt/makina-states/")
     ):
         if os.path.exists(adirtmp):
             shutil.rmtree(adirtmp)
@@ -333,6 +332,16 @@ def fix_hosts(fqdn):
             raise ValueError('Cant set hosts')
 
 
+def get_fqdn(fqdn=None):
+    if fqdn is None:
+        socket.getfqdn()
+    ret = popen('cat /etc/hosts')
+    out = ret[0].strip()
+    print('hosts')
+    print(out)
+    return fqdn
+
+
 def main():
     parser = argparse.ArgumentParser(
         usage=DESCRIPTION.format(ver=DEFAULT_VER,
@@ -342,7 +351,7 @@ def main():
                                  releases=RELEASES_URL,
                                  dist=DEFAULT_DIST))
     parser.add_argument('--fqdn',
-                        default=socket.getfqdn(),
+                        default=None,
                         help='fqdn of this host')
     parser.add_argument('--dist',
                         default=DEFAULT_DIST,
@@ -409,12 +418,26 @@ def main():
                         help='skip salt')
     args = parser.parse_args(sys.argv[1:])
     opts = vars(args)
+    opts['fqdn'] = get_fqdn(opts['fqdn'])
     tar = "makina-states-{dist}-{flavor}-{ver}.tar.xz".format(**opts)
     url = os.path.join(opts['mirror'], tar)
     adir = os.path.abspath(opts['adir'])
     ftar = os.path.abspath(os.path.join(os.getcwd(), tar))
     if os.getuid() not in [0]:
         raise ValueError('Must be run either as root or via sudo')
+    if (
+        (
+            os.path.exists('/srv/salt/makina-states')
+            or os.path.exists('/srv/mastersalt/makina-states')
+        )
+        and
+        (
+            os.path.exists('/usr/bin/salt')
+            and os.path.exists('/usr/bin/salt-call')
+            and os.path.exists('/etc/makina-states')
+        )
+    ) and not opts['force']:
+        raise ValueError('Makina-States is already installed')
     if not opts['skip_hosts']:
         fix_hosts(opts['fqdn'])
     if not opts['skip_prereqs']:
