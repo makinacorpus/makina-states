@@ -95,34 +95,70 @@ format: 1
 #   - backup_mode: backup method for this host
 configurations:
   default:
-    mastersalt: {{opts['id']}}
-    # you may use here a DNS targetting a failover ip
-    mastersaltdn: {{opts['id']}}
-    mastersalt_port: 4606
-    cloud_control_lxc: true
-    cloud_control_kvm: true
-    domain: mydomain.tld
-    mastersalt_master: false
-    cloud_master: false
-    manage_autoupgrades: true
-    manage_packages: true
-    manage_mails: true
-    manage_backups: true
-    manage_passwords: true
-    manage_ssh_groups: true
-    manage_ssh_keys: true
-    manage_ssh_ip_restrictions: false
-    manage_sudoers: true
-    manage_network: true
-    manage_snmpd: false
-    manage_hosts: true
-    manage_shorewall: true
-    manage_fail2ban: true
-    manage_ntp_server: false
-    mail_mode: relay
-    default_env: prod
-    ldap_client: false
     backup_mode: burp
+    cloud_control_kvm: true
+    cloud_control_lxc: true
+    cloud_master: false
+    default_env: prod
+    domain: mydomain.tld
+    ldap_client: false
+    mail_mode: relay
+    manage_autoupgrades: true
+    manage_backup_server: true
+    manage_backups: true
+    manage_custompillar: true
+    manage_fail2ban: true
+    manage_hosts: true
+    manage_mails: true
+    manage_network: true
+    manage_ntp_server: false
+    manage_packages: true
+    manage_passwords: true
+    manage_shorewall: true
+    manage_snmpd: false
+    manage_ssh_groups: true
+    manage_ssh_ip_restrictions: false
+    manage_ssh_keys: true
+    manage_sudoers: true
+    mastersaltdn: {{opts['id']}}
+    mastersalt_master: false
+    mastersalt: {{opts['id']}}
+    mastersalt_port: 4606
+    # you may use here a DNS targetting a failover ip
+    manage_dns_server: true
+    manage_check_raid: true
+   # dont expose too much configuration in images templates
+  msr-lxc-ref-precise.foo.net:
+    cloud_control_kvm: false
+    cloud_control_lxc: false
+    cloud_master: false
+    ldap_client: false
+    manage_autoupgrades: false
+    manage_backup_server: false
+    manage_backups: false
+    manage_check_raid: false
+    manage_custompillar: false
+    manage_dhcp: false
+    manage_dns_resolvers: false
+    manage_dns_server: false
+    manage_fail2ban: false
+    manage_hosts: false
+    manage_mails: false
+    manage_network: false
+    manage_ntp_server: false
+    manage_packages: false
+    manage_passwords: false
+    manage_shorewall: false
+    manage_slapd: false
+    manage_snmpd: false
+    manage_ssh_groups: false
+    manage_ssh_ip_restrictions: false
+    manage_ssh_keys: false
+    manage_ssh_server: false
+    manage_ssl: false
+    manage_sudoers: false
+    mastersalt_master: false
+    supervision_client: false
 #  provider3-99.mydomain.tld:
 #    manage_network: false
 #    manage_ntp_server: true

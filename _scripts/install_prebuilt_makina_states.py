@@ -7,6 +7,7 @@ import shutil
 import time
 import os
 import socket
+import pprint
 import time
 import urllib2
 import hashlib
@@ -77,7 +78,10 @@ def check_md5(filep, md5=None):
         print('WARNING: MD5 check skipped')
 
 
-def get_ver(ver=DEFAULT_VER, dist=DEFAULT_DIST, offline=False):
+def get_ver(ver=DEFAULT_VER,
+            dist=DEFAULT_DIST,
+            flavor=DEFAULT_FLAVOR,
+            offline=False):
     res, trace = ver, ''
     if not ver and not offline:
         try:
@@ -94,7 +98,7 @@ def get_ver(ver=DEFAULT_VER, dist=DEFAULT_DIST, offline=False):
                 os.path.dirname(
                     os.path.dirname(
                         os.path.abspath(sys.argv[0]))),
-                VER_SLUG.format(dist=dist)
+                VER_SLUG.format(flavor=flavor, dist=dist)
             )) as fic:
                 res = fic.read().strip()
         except IOError:
@@ -104,17 +108,18 @@ def get_ver(ver=DEFAULT_VER, dist=DEFAULT_DIST, offline=False):
             print(trace)
         raise ValueError('No default version')
     return res
-
+ 
 
 def get_md5(md5=DEFAULT_MD5,
             ver=DEFAULT_VER,
             dist=DEFAULT_DIST,
+            flavor=DEFAULT_FLAVOR,
             offline=False):
     res, trace = md5, ''
     if not md5 and not offline:
         try:
             res = "{0}".format(urllib2.urlopen(
-                MD5_URL.format(dist=dist)
+                MD5_URL.format(dist=dist, flavor=flavor)
             ).read().strip())
             if 'not found' in res.lower():
                 res = ''
@@ -128,7 +133,7 @@ def get_md5(md5=DEFAULT_MD5,
                 os.path.dirname(
                     os.path.dirname(
                         os.path.abspath(sys.argv[0]))),
-                MD5_SLUG.format(dist=dist)
+                MD5_SLUG.format(flavor=flavor, dist=dist)
             )) as fic:
                 res = fic.read().strip()
         except IOError:
@@ -144,8 +149,7 @@ def system(cmd):
 
 def restore_acls(adir, ftar=None, force=False):
     tar = os.path.basename(ftar)
-    aclflag = os.path.join(adir, ".{0}{1}aclsdone".format(
-        tar, socket.getfqdn()))
+    aclflag = os.path.join(adir, ".{0}aclsdone".format(tar))
     if (
         (not os.path.exists(aclflag)
          and os.path.exists(os.path.join(adir, 'acls.txt'))
@@ -235,8 +239,8 @@ def unpack_template(adir, ftar, md5=None, force=False):
     unflag = os.path.join("/etc/makina-states/prebuilt.{0}".format(tar))
     if force or (
         not os.path.exists(unflag)
-        and not os.path.exists("e/srv/salt/makina-states/")
-        and not os.path.exists("e/srv/mastersalt/makina-states/")
+        and not os.path.exists("/srv/salt/makina-states/")
+        and not os.path.exists("/srv/mastersalt/makina-states/")
     ):
         if os.path.exists(adirtmp):
             shutil.rmtree(adirtmp)
@@ -333,6 +337,12 @@ def fix_hosts(fqdn):
             raise ValueError('Cant set hosts')
 
 
+def get_fqdn(fqdn=None):
+    if fqdn is None:
+        fqdn = socket.getfqdn()
+    return fqdn
+
+
 def main():
     parser = argparse.ArgumentParser(
         usage=DESCRIPTION.format(ver=DEFAULT_VER,
@@ -342,16 +352,17 @@ def main():
                                  releases=RELEASES_URL,
                                  dist=DEFAULT_DIST))
     parser.add_argument('--fqdn',
-                        default=socket.getfqdn(),
+                        default=None,
                         help='fqdn of this host')
     parser.add_argument('--dist',
                         default=DEFAULT_DIST,
                         help='dist ({0})'.format(DEFAULT_DIST))
     parser.add_argument('--flavor',
+                        dest='flavor',
                         default=DEFAULT_FLAVOR,
                         help='flavor ({0})'.format(DEFAULT_FLAVOR))
     parser.add_argument('--ver',
-                        default=DEFAULT_VER,
+                        default=None,
                         help='version ({0}'.format(DEFAULT_VER))
     parser.add_argument('-m', '--mirror',
                         dest='mirror',
@@ -409,12 +420,44 @@ def main():
                         help='skip salt')
     args = parser.parse_args(sys.argv[1:])
     opts = vars(args)
+    opts['fqdn'] = get_fqdn(opts['fqdn'])
+    opts['ver'] = get_ver(
+        ver=opts['ver'],
+        dist=opts['dist'],
+        flavor=opts['flavor'],
+        offline=opts['offline'])
+    if (
+        opts['md5']
+        and opts['md5'].lower().strip().replace(
+            '"', '').replace("'", '') == 'no'
+    ):
+        opts['md5'] = None
+    else:
+        opts['md5'] = get_md5(
+            md5=opts['md5'],
+            ver=opts['ver'],
+            flavor=opts['flavor'],
+            dist=opts['dist'],
+            offline=opts['offline'])
     tar = "makina-states-{dist}-{flavor}-{ver}.tar.xz".format(**opts)
     url = os.path.join(opts['mirror'], tar)
     adir = os.path.abspath(opts['adir'])
     ftar = os.path.abspath(os.path.join(os.getcwd(), tar))
     if os.getuid() not in [0]:
         raise ValueError('Must be run either as root or via sudo')
+    if (
+        (
+            os.path.exists('/srv/salt/makina-states')
+            or os.path.exists('/srv/mastersalt/makina-states')
+        )
+        and
+        (
+            os.path.exists('/usr/bin/salt')
+            and os.path.exists('/usr/bin/salt-call')
+            and os.path.exists('/etc/makina-states')
+        )
+    ) and not opts['force']:
+        raise ValueError('Makina-States is already installed')
     if not opts['skip_hosts']:
         fix_hosts(opts['fqdn'])
     if not opts['skip_prereqs']:

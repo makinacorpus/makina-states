@@ -98,12 +98,15 @@ def check_md5(filep, md5=None):
         print('WARNING: MD5 check skipped')
 
 
-def get_ver(ver=DEFAULT_VER, dist=DEFAULT_DIST, offline=False):
+def get_ver(ver=DEFAULT_VER,
+            dist=DEFAULT_DIST,
+            flavor=DEFAULT_FLAVOR,
+            offline=False):
     res, trace = ver, ''
     if not ver and not offline:
         try:
             res = "{0}".format(int(urllib2.urlopen(
-                VER_URL.format(dist=dist)
+                VER_URL.format(dist=dist, flavor=flavor)
             ).read().strip()))
         except Exception:
             trace = traceback.format_exc()
@@ -115,7 +118,7 @@ def get_ver(ver=DEFAULT_VER, dist=DEFAULT_DIST, offline=False):
                 os.path.dirname(
                     os.path.dirname(
                         os.path.abspath(sys.argv[0]))),
-                VER_SLUG.format(dist=dist)
+                VER_SLUG.format(flavor=flavor, dist=dist)
             )) as fic:
                 res = fic.read().strip()
         except IOError:
@@ -130,12 +133,13 @@ def get_ver(ver=DEFAULT_VER, dist=DEFAULT_DIST, offline=False):
 def get_md5(md5=DEFAULT_MD5,
             ver=DEFAULT_VER,
             dist=DEFAULT_DIST,
+            flavor=DEFAULT_FLAVOR,
             offline=False):
     res, trace = md5, ''
     if not md5 and not offline:
         try:
             res = "{0}".format(urllib2.urlopen(
-                MD5_URL.format(dist=dist)
+                MD5_URL.format(dist=dist, flavor=flavor)
             ).read().strip())
             if 'not found' in res.lower():
                 res = ''
@@ -149,7 +153,7 @@ def get_md5(md5=DEFAULT_MD5,
                 os.path.dirname(
                     os.path.dirname(
                         os.path.abspath(sys.argv[0]))),
-                MD5_SLUG.format(dist=dist)
+                MD5_SLUG.format(flavor=flavor, dist=dist)
             )) as fic:
                 res = fic.read().strip()
         except IOError:
@@ -328,9 +332,9 @@ def main():
                         action='store_true',
                         help='LXC top directory')
     parser.add_argument('--flavor',
-                        dest='flavor ({0})'.format(DEFAULT_FLAVOR),
+                        dest='flavor',
                         default=DEFAULT_FLAVOR,
-                        help='flavor')
+                        help='flavor ({0})'.format(DEFAULT_FLAVOR))
     parser.add_argument('-o', '--offline',
                         default=False,
                         action='store_true',
@@ -374,7 +378,10 @@ def main():
     opts = vars(args)
     lxc_dir = opts['lxc_dir']
     opts['ver'] = get_ver(
-        ver=opts['ver'], dist=opts['dist'], offline=opts['offline'])
+        ver=opts['ver'],
+        dist=opts['dist'],
+        flavor=opts['flavor'],
+        offline=opts['offline'])
     if (
         opts['md5']
         and opts['md5'].lower().strip().replace(
@@ -386,6 +393,7 @@ def main():
             md5=opts['md5'],
             ver=opts['ver'],
             dist=opts['dist'],
+            flavor=opts['flavor'],
             offline=opts['offline'])
     if 'linux' not in sys.platform.lower():
         raise ValueError('This must be run on linux')
