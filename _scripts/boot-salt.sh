@@ -710,6 +710,7 @@ set_vars() {
         if [ "x${SALT_REATTACH_DIR}" = "x" ] || [ ! -e "${SALT_REATTACH_DIR}" ] ;then
             if [ "x$(echo "${0}"|${SED} -e "s/.*saltcloud.*/match/g")" = "xmatch" ];then
                 SALT_REATTACH_DIR="${SALT_REATTACH_DIR:-"$(dirname ${0})"}"
+                FORCE_LOCAL_MASTERSALT_MODE="remote"
             else
                 echo "Invalid --reattach-dir: ${SALT_REATTACH_DIR}"
                 exit
