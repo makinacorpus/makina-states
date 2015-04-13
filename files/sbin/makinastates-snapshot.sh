@@ -39,8 +39,8 @@ WIPE="
 /etc/ssl/cloud
 /etc/ssl/nginx
 
-/srv/mastersalt-pillar/top.sls
-/srv/pillar/top.sls
+/srv/mastersalt-pillar/
+/srv/pillar/
 
 /srv/salt/makina-states/.bootlogs/*
 /srv/mastersalt/makina-states/.bootlogs/*
