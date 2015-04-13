@@ -5,6 +5,6 @@ python:
 # matrix:
 install:
     - sudo apt-get install xz-utils python rsync acl
-    - sudo python ./_scripts/install_prebuild_makina_states.py
+    - sudo python ./_scripts/install_prebuilt_makina_states.py
 
 script: sudo python _scripts/local_tests.py
