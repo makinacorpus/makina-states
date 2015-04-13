@@ -7,6 +7,7 @@ import shutil
 import time
 import os
 import socket
+import pprint
 import time
 import urllib2
 import hashlib
@@ -339,6 +340,8 @@ def get_fqdn(fqdn=None):
     out = ret[0].strip()
     print('hosts')
     print(out)
+    pprint.pprint(os.environ)
+
     return fqdn
 
 
