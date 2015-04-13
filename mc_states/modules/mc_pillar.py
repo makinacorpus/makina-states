@@ -1694,15 +1694,26 @@ def get_ldap_configuration(id_=None, ttl=TEN_MINUTES):
 
 
 def get_configuration(id_=None, ttl=TEN_MINUTES):
-    def _do(id_, sysadmins=None):
+    def _do(id_, mid):
         _s = __salt__
         _settings = _s[__name + '.query']('configurations', {})
         data = copy.deepcopy(_settings.get('default', {}))
         if id_ in _settings:
             data = _s['mc_utils.dictupdate'](data, _settings[id_])
+        mdn = mid.split('.')[1:]
+        if not mdn:
+            mdn = ['local']
+        mdn = '.'.join(mdn)
+        data.setdefault('default_env', 'prod')
+        data.setdefault('mastersalt_port', 4606)
+        data.setdefault('mastersalt', mid)
+        data.setdefault('mastersaltdn', mid)
+        data.setdefault('domain', mdn)
         return data
     cache_key = __name + '.get_configuration_{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+    mid = __opts__['id']
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [id_, mid], {}, cache_key, ttl)
 
 
 def get_snmpd_settings(id_=None, ttl=ONE_DAY):
@@ -1727,7 +1738,6 @@ def get_shorewall_settings(id_=None, ttl=FIVE_MINUTES):
         qry = __salt__[__name + '.query']
         allowed_ips = __salt__[__name + '.whitelisted'](id_)
         shorewall_overrides = qry('shorewall_overrides', {})
-        cfg = get_configuration(id_)
         allowed_to_ping = ['all']
         allowed_to_ntp = allowed_ips[:]
         allowed_to_snmp = allowed_ips[:]
@@ -1750,7 +1760,7 @@ def get_shorewall_settings(id_=None, ttl=FIVE_MINUTES):
                     'ping':  'net:'+','.join(allowed_to_ping),
                     'snmp': 'net:'+','.join(allowed_to_snmp),
                     'ntp': 'net:'+','.join(allowed_to_ntp)}
-        restrict_ssh = cfg.get('manage_ssh_ip_restrictions', False)
+        restrict_ssh = gconf.get('manage_ssh_ip_restrictions', False)
         if not restrict_ssh:
             restrict['ssh'] = 'all'
         for param in [a for a in restrict]:
@@ -2637,7 +2647,7 @@ def slave_key(id_, dnsmaster=None, master=True):
 def get_dns_slave_conf(id_, ttl=TEN_MINUTES):
     def _do(id_):
         gconf = get_configuration(id_)
-        if not gconf.get('manage_dns_server', False):
+        if not gconf.get('manage_dns_server', True):
             return {}
         _s = __salt__
         if not _s[__name + '.is_dns_slave'](id_):
@@ -2957,13 +2967,13 @@ def get_backup_client_conf(id_, ttl=ONE_DAY):
     def _do(id_):
         gconf = get_configuration(id_)
         rdata = {}
-        if gconf.get('manage_backups', False):
-            conf = __salt__[__name + '.get_configuration'](id_)
-            mode = conf['backup_mode']
-            if mode == 'rdiff':
-                rdata['makina-states.services.backup.rdiff-backup'] = True
-            elif 'burp' in mode:
-                rdata['makina-states.services.backup.burp.client'] = True
+        if not gconf.get('manage_backups', True):
+            return {}
+        mode = gconf.get('backup_mode', 'burp')
+        if mode == 'rdiff':
+            rdata['makina-states.services.backup.rdiff-backup'] = True
+        elif 'burp' in mode:
+            rdata['makina-states.services.backup.burp.client'] = True
         return rdata
     cache_key = __name + '.get_backup_client_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3017,12 +3027,13 @@ def get_packages_conf(id_, ttl=ONE_DAY):
         gconf = get_configuration(id_)
         rdata = {}
         pref = "makina-states.localsettings.pkgs.apt"
-        if gconf.get('manage_packages', False):
-            rdata.update({
-                pref + ".ubuntu.mirror": "http://mirror.ovh.net/ftp.ubuntu.com/",
-                pref + ".debian.mirror": (
-                    "http://mirror.ovh.net/ftp.debian.org/debian/")
-            })
+        if not gconf.get('manage_packages', True):
+            return {}
+        rdata.update({
+            pref + ".ubuntu.mirror": "http://mirror.ovh.net/ftp.ubuntu.com/",
+            pref + ".debian.mirror": (
+                "http://mirror.ovh.net/ftp.debian.org/debian/")
+        })
         return rdata
     cache_key = __name + '.get_packages_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3032,8 +3043,9 @@ def get_shorewall_conf(id_, ttl=ONE_DAY):
     def _do(id_):
         gconf = get_configuration(id_)
         rdata = {}
-        if gconf.get('manage_shorewall', False):
-            rdata.update(__salt__[__name + '.get_shorewall_settings'](id_))
+        if not gconf.get('manage_shorewall', True):
+            return {}
+        rdata.update(__salt__[__name + '.get_shorewall_settings'](id_))
         return rdata
     cache_key = __name + '.get_shorewall_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3077,12 +3089,13 @@ def is_salt_managed(id_, ttl=ONE_DAY):
 def get_fail2ban_conf(id_, ttl=ONE_DAY):
     def _do(id_):
         gconf = get_configuration(id_)
+        if not gconf.get('manage_fail2ban', {}):
+            return {}
         rdata = {}
         pref = "makina-states.services.firewall.fail2ban"
-        if gconf.get('manage_snmpd', False):
-            rdata.update({
-                pref: True,
-                pref + ".ignoreip": __salt__[__name + '.whitelisted'](id_)})
+        rdata.update({
+            pref: True,
+            pref + ".ignoreip": __salt__[__name + '.whitelisted'](id_)})
         return rdata
     cache_key = __name + '.get_fail2ban_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3091,13 +3104,14 @@ def get_fail2ban_conf(id_, ttl=ONE_DAY):
 def get_ntp_server_conf(id_, ttl=ONE_DAY):
     def _do(id_):
         gconf = get_configuration(id_)
+        if not gconf.get('manage_ntp_server', True):
+            return {}
         rdata = {}
-        if gconf.get('manage_ntp_server', False):
-            rdata.update({
-                'makina-states.services.base.ntp.kod': False,
-                'makina-states.services.base.ntp.peer': False,
-                'makina-states.services.base.ntp.trap': False,
-                'makina-states.services.base.ntp.query': False})
+        rdata.update({
+            'makina-states.services.base.ntp.kod': False,
+            'makina-states.services.base.ntp.peer': False,
+            'makina-states.services.base.ntp.trap': False,
+            'makina-states.services.base.ntp.query': False})
         return rdata
     cache_key = __name + '.get_ntp_server_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3447,6 +3461,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         __name + '.get_autoupgrade_conf': {'only_managed': False},
         __name + '.get_backup_client_conf': {'only_managed': False},
         __name + '.get_burp_server_conf': {},
+        __name + '.get_exposed_global_conf': {},
         __name + '.get_check_raid_conf': {},
         __name + '.get_custom_pillar_conf': {'only_managed': False},
         __name + '.get_dhcpd_conf': {'only_managed': False},
@@ -3517,6 +3532,19 @@ def ext_pillar(id_, pillar=None, *args, **kw):
     return data
 
 
+def get_exposed_global_conf(id_, ttl=TEN_MINUTES):
+    def _do(id_):
+        p = 'makina-states.pillar.gconf'
+        exdata = {}
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_exposed_glocal_conf', True):
+            return {}
+        exdata = {p: copy.deepcopy(gconf)}
+        return exdata
+    cache_key = __name + '.get_exposed_global_conf{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+
+
 def get_global_conf(section, entry=10, ttl=TEN_MINUTES):
     def _do(section, entry):
         _s = __salt__
@@ -3529,7 +3557,8 @@ def get_global_conf(section, entry=10, ttl=TEN_MINUTES):
             extdata = {}
         return extdata
     cache_key = __name + '.get_global_conf{0}{1}'.format(section, entry)
-    return __salt__['mc_utils.memoize_cache'](_do, [section, entry], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [section, entry], {}, cache_key, ttl)
 
 
 def get_global_clouf_conf(entry, ttl=TEN_MINUTES):

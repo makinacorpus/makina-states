@@ -63,75 +63,83 @@ format: 1
 #     b.foo.net: {}
 #     c.foo.net: {}
 
-# Configuration of hosts based on toggle switch and core
+# Configuration of hosts based on toggle switches to activate or not
+# an mc_pillar function
+# Activating an extpillar does not mean that it will totally enable a feature
+# but disabling it will totally remove any exposed information of the function
 # key values informations
+#   - backup_mode: backup method for this host
+#   - backup_mode: backup mode to use, only avalaible for now is 'burp', see burp_configurations
+#   - cloud_master: switch to configure this host as a cloud master
+#   - default_env: prod
+#   - domain: mydomain.tld
+#   - ldap_client: does this host needs to wire it's PAM & NSS to a ldap server
+#   - mail_mode: mail mode to use, only avalaible for now is 'relay', see mail_configurations
+#   - manage_autoupgrades: switch to activate postupgrade
+#   - manage_backup_server: switch to activate configuration for selected backup servers
+#   - manage_backups: switch to enable backups on that box
+#   - manage_check_raid: switch to install raid checks (only on baremetal)
+#   - manage_custompillar: switch to activate custom pillar loading
+#   - manage_dhcp: switch to activate dhcp server configuration
+#   - manage_dns_resolvers: switch to activate dns resolution configuration
+#   - manage_dns_server: switch to activate dns servers configuration
+#   - manage_fail2ban: switch to activate and configure fail2ban
+#   - manage_hosts: switch to configure /etc/hosts
+#   - manage_mails: switch to enable mail client/server on that box
+#   - manage_network: switch to manage network interfaces
+#   - manage_ntp_server: manage a ntp server on that box
+#   - manage_packages: switch to configure the package manager
+#   - manage_passwords: switch to configure passwords for root,
+#   - manage_shorewall: switch to activate and configure shorewall
+#   - manage_slapd: switch to activate slapd servers configuration
+#   - manage_snmpd: switch to configure snmpd (v3), see snmpd_settings
+#   - manage_ssh_groups: switch to configure ssh allowed groups
+#   - manage_ssh_ip_restrictions: false
 #   - manage_ssh_ip_restrictions: if on, restrict ssh access to ips in default_allowed_ips_names
+#   - manage_ssh_keys: switch to configure ssh keys for configured users
+#                      sysadmin and other configured system users
+#   - manage_ssh_server: switch to activate ssh server servers configuration
+#   - manage_ssl: switch to activate ssl certs exposure
+#   - manage_sudoers: switch to configure sudoers
 #   - mastersalt:  configure the mastersalt Minion id/real FQDN
 #   - mastersaltdn: configure the mastersalt uri
-#   - mastersalt_port: configure the mastersalt port
-#   - domain: mydomain.tld
 #   - mastersalt_master: switch to configure this host as a mastersalt master
-#   - cloud_master: switch to configure this host as a cloud master
-#   - manage_autoupgrades: switch to activate postupgrade
-#   - manage_packages: switch to configure the package manager
-#   - manage_mails: switch to enable mail client/server on that box
-#   - manage_ssh_groups: switch to configure ssh allowed groups
-#   - manage_ssh_keys: switch to configure ssh keys for configured users
-#   - manage_ssh_ip_restrictions: false
-#   - manage_passwords: switch to configure passwords for root,
-#                       sysadmin and other configured system users
-#   - manage_sudoers: switch to configure sudoers
-#   - manage_network: switch to manage network interfaces
-#   - manage_snmpd: switch to configure snmpd (v3), see snmpd_settings
-#   - manage_hosts: switch to configure /etc/hosts
-#   - manage_shorewall: switch to activate and configure shorewall
-#   - manage_fail2ban: switch to activate and configure fail2ban
-#   - manage_ntp_server: manage a ntp server on that box
-#   - backup_mode: backup mode to use, only avalaible for now is 'burp', see burp_configurations
-#   - mail_mode: mail mode to use, only avalaible for now is 'relay', see mail_configurations
-#   - default_env: prod
-#   - ldap_client: does this host needs to wire it's PAM & NSS to a ldap server
-#   - manage_backups: switch to enable backups on that box
-#   - backup_mode: backup method for this host
+#   - mastersalt_port: configure the mastersalt port
+#   - supervision_client:  does this host needs to install supervision client tools
+#   - cloud_control_kvm: signals that this cluster master will be abl to orchetrate kvms vms
+#   - cloud_control_lxc: signals that this cluster master will be abl to orchetrate lxc vms
+#   - cloud_master: signals that this host is a cluster master
+#   - cloud_master: signals that this host is a mastersalt master (singleton)
+#    manage_exposed_glocal_conf: expose global conf flags via pillar
 configurations:
   default:
-    backup_mode: burp
-    cloud_control_kvm: true
-    cloud_control_lxc: true
-    cloud_master: false
-    default_env: prod
-    domain: mydomain.tld
-    ldap_client: false
+    # you may use here a DNS targetting a failover ip (default to real master name)
+    #mastersaltdn: mastersalt.makina-corpus.net
     mail_mode: relay
-    manage_autoupgrades: true
-    manage_backup_server: true
-    manage_backups: true
-    manage_custompillar: true
-    manage_fail2ban: true
-    manage_hosts: true
-    manage_mails: true
-    manage_network: true
-    manage_ntp_server: false
-    manage_packages: true
-    manage_passwords: true
-    manage_shorewall: true
-    manage_snmpd: false
-    manage_ssh_groups: true
-    manage_ssh_ip_restrictions: false
-    manage_ssh_keys: true
-    manage_sudoers: true
-    mastersaltdn: {{opts['id']}}
-    mastersalt_master: false
-    mastersalt: {{opts['id']}}
-    mastersalt_port: 4606
-    # you may use here a DNS targetting a failover ip
-    manage_dns_server: true
-    manage_check_raid: true
-   # dont expose too much configuration in images templates
+  mymaster.foo.net:
+    mastersalt_master: true
+    cloud_master: true
+    #custom_pillar:
+    #  makina-states.localsettings.provider:
+    #    gandi:
+    #      default:
+    #        api_key: "xxx"
+    #        activated: true
+    #    ovh:
+    #      default:
+    #        login: "cgxxx-ovh"
+    #        activated: true
+    #        password: "xxx"
+    #        application_name: "mc_makinastates2"
+    #        application_description: "mc_makinastates2"
+    #        application_key: "axxx"
+    #        application_secret: "xxx
+    #        consumer_key: "xxx"
   msr-lxc-ref-precise.foo.net:
     cloud_control_kvm: false
     cloud_control_lxc: false
     cloud_master: false
+    manage_exposed_glocal_conf: false
     ldap_client: false
     manage_autoupgrades: false
     manage_backup_server: false

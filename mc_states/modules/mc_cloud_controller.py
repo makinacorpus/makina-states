@@ -61,8 +61,8 @@ def extpillar_settings(id_=None, limited=False, ttl=30):
         _s = __salt__
         gconf = _s['mc_pillar.get_configuration'](
             _s['mc_pillar.mastersalt_minion_id']())
-        gdata = {'vts': {'lxc': gconf.get('cloud_control_lxc', False),
-                           'kvm': gconf.get('cloud_control_kvm', False)}}
+        gdata = {'vts': {'lxc': gconf.get('cloud_control_lxc', True),
+                         'kvm': gconf.get('cloud_control_kvm', True)}}
         extdata = _s['mc_pillar.get_global_clouf_conf']('cloud')
         data = _s['mc_utils.dictupdate'](default_settings(),
                                          _s['mc_utils.dictupdate'](gdata, extdata))
