@@ -106,7 +106,7 @@ def get_ver(ver=DEFAULT_VER,
     if not ver and not offline:
         try:
             res = "{0}".format(int(urllib2.urlopen(
-                VER_URL.format(dist=dist)
+                VER_URL.format(dist=dist, flavor=flavor)
             ).read().strip()))
         except Exception:
             trace = traceback.format_exc()
@@ -139,7 +139,7 @@ def get_md5(md5=DEFAULT_MD5,
     if not md5 and not offline:
         try:
             res = "{0}".format(urllib2.urlopen(
-                MD5_URL.format(dist=dist)
+                MD5_URL.format(dist=dist, flavor=flavor)
             ).read().strip())
             if 'not found' in res.lower():
                 res = ''

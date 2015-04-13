@@ -119,7 +119,7 @@ def get_md5(md5=DEFAULT_MD5,
     if not md5 and not offline:
         try:
             res = "{0}".format(urllib2.urlopen(
-                MD5_URL.format(dist=dist)
+                MD5_URL.format(dist=dist, flavor=flavor)
             ).read().strip())
             if 'not found' in res.lower():
                 res = ''
@@ -340,7 +340,7 @@ def fix_hosts(fqdn):
 def get_fqdn(fqdn=None):
     if fqdn is None:
         socket.getfqdn()
-    ret = popen('cat /etc/hosts')
+    ret, ps = popen('cat /etc/hosts')
     out = ret[0].strip()
     print('hosts')
     print(out)
