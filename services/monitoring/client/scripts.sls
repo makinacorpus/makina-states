@@ -56,7 +56,7 @@ monitoring-{{f}}:
       - service: monitoring-sysstat-svc
 {% endfor %}
 
-{% if data.has_sysstat %}
+{% if data.has_sysstat and grains['oscodename'] not in ['precise']%}
 monitoring-sysstat-svc:
   service.running:
     - name: sysstat
