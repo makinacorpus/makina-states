@@ -155,7 +155,8 @@ def settings():
         if LooseVersion('4.5.10') >= LooseVersion(sw_ver):
             shwIfformat = '?FORMAT 2'
         if LooseVersion('4.5.10') > LooseVersion(sw_ver) > LooseVersion('4.1'):
-            shwIfformat = 'FORMAT 2'
+            # shwIfformat = 'FORMAT 2'
+            shwIfformat = ''
         elif LooseVersion(sw_ver) <= LooseVersion('4.1'):
             shwIfformat = '#?{0}'.format(shwIfformat)
         permissive_mode = False
