@@ -1708,6 +1708,7 @@ def get_configuration(id_=None, ttl=TEN_MINUTES):
         data.setdefault('mastersalt_port', 4606)
         data.setdefault('mastersalt', mid)
         data.setdefault('mastersaltdn', mid)
+        data.setdefault('mastersalt_master', mid == id_)
         data.setdefault('domain', mdn)
         return data
     cache_key = __name + '.get_configuration_{0}'.format(id_)

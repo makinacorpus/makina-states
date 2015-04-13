@@ -14,6 +14,8 @@ include:
   - makina-states.localsettings.nscd
   - makina-states.localsettings.users.hooks
 
+{% set settings = salt['mc_ldap.settings']() %}
+
 {% set olddeb= False %}
 {% set skip = False %}
 {% if grains['os'] == 'Debian' -%}
@@ -22,18 +24,32 @@ include:
 {% set olddeb = True %}
 {% endif %}
 {% endif %}
-ldap-pkgs:
-  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
+{% if not settings.enabled %}
+ldap-pkgs-purge:
+  pkg.purged:
     - pkgs:
       - libpam-ldap{%if not olddeb%}d{%endif%}
       - libnss-ldapd
+      - nslcd
+    - watch:
+      - mc_proxy: localldap-pre-install
+    - watch_in:
+      - mc_proxy: localldap-post-install
+{% endif %}
+ldap-pkgs:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
+    - pkgs:
+      {% if settings.enabled %}
+      - libpam-ldap{%if not olddeb%}d{%endif%}
+      - libnss-ldapd
+      {% if not skip %}
+      - nslcd
+      {%endif%}
+      {% endif %}
       - ldap-utils
       - libsasl2-modules
       - sasl2-bin
       - python-ldap
-      {% if not skip %}
-      - nslcd
-      {%endif%}
       {% if grains['os_family'] == 'Debian' -%}
       - libldap2-dev
       - libsasl2-dev
@@ -44,8 +60,13 @@ ldap-pkgs:
       - mc_proxy: localldap-post-install
 
 nslcd:
+  {% if settings.enabled %}
   service.running:
     - enable: True
+  {% else %}
+  service.dead:
+    - enable: False
+  {% endif %}
     - watch:
       - pkg: ldap-pkgs
       - file: nslcd
@@ -75,7 +96,11 @@ nslcd-nsswitch-conf:
       - mc_proxy: users-pre-hook
     - name: {{ locs.conf_dir }}/nsswitch.conf
     - pattern: '^(?P<title>passwd|group|shadow):\s*compat( ldap)*'
+    {% if settings.enabled %}
     - repl: '\g<title>: compat ldap'
+    {% else %}
+    - repl: '\g<title>: compat'
+    {% endif %}
     - flags: ['MULTILINE', 'DOTALL']
     - watch:
       - mc_proxy: localldap-pre-conf
