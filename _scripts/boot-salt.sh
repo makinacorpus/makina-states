@@ -64,6 +64,7 @@ is_lxc() {
 }
 
 set_progs() {
+    UNAME="${UNAME:-"$(uname | awk '{print tolower($1)}')"}"
     SED=$(which sed)
     if [ "x${UNAME}" != "xlinux" ];then
         SED=$(which gsed)
@@ -243,9 +244,11 @@ dns_resolve() {
 
 detect_os() {
     # make as a function to be copy/pasted as-is in multiple scripts
-    UNAME="$(uname | awk '{print tolower($1)}')"
+    set_progs
+    UNAME="${UNAME:-"$(uname | awk '{print tolower($1)}')"}"
     IS_UBUNTU=""
     IS_DEBIAN=""
+    CONF_ROOT="${CONF_ROOT:-"/etc"}"
     if [ -e "${CONF_ROOT}/lsb-release" ];then
         . ${CONF_ROOT}/lsb-release
         if [ "x${DISTRIB_CODENAME}" = "xlucid" ]\
