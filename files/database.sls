@@ -136,14 +136,17 @@ configurations:
     #        application_secret: "xxx
     #        consumer_key: "xxx"
   msr-lxc-ref-precise.foo.net:
+    manage_backups: true
+    manage_packages: true
+    manage_shorewall: true
+    manage_autoupgrades: true
+    supervision_client: true
     cloud_control_kvm: false
     cloud_control_lxc: false
     cloud_master: false
     manage_exposed_glocal_conf: false
     ldap_client: false
-    manage_autoupgrades: false
     manage_backup_server: false
-    manage_backups: false
     manage_check_raid: false
     manage_custompillar: false
     manage_dhcp: false
@@ -154,9 +157,7 @@ configurations:
     manage_mails: false
     manage_network: false
     manage_ntp_server: false
-    manage_packages: false
     manage_passwords: false
-    manage_shorewall: false
     manage_slapd: false
     manage_snmpd: false
     manage_ssh_groups: false
@@ -166,7 +167,7 @@ configurations:
     manage_ssl: false
     manage_sudoers: false
     mastersalt_master: false
-    supervision_client: false
+
 #  provider3-99.mydomain.tld:
 #    manage_network: false
 #    manage_ntp_server: true
