@@ -3380,11 +3380,13 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         pillar = OrderedDict()
     if not has_db():
         dbpath = get_db()
+        msg = (
+            'MC_PILLAR not loader:\n'
+            'DATABASE DOES NOT EXISTS: ' + dbpath
+        ).replace('.json', '.{json,sls,yaml}')
         if 'mastersalt' in dbpath:
-            msg = 'DATABASE DOES NOT EXISTS: ' + dbpath
-            raise ValueError(msg)
-        else:
-            return {}
+            log.error(msg)
+        return {}
     try:
         profile_enabled = kw.get('profile', False)
     except:
