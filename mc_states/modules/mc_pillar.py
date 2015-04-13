@@ -2913,13 +2913,13 @@ def get_snmpd_conf(id_, ttl=60):
             data['key'] = secure_password(32)
             __salt__['mc_macros.update_local_registry'](
                 'pillar_snmpd', local_conf, registry_format='pack')
-        rdata[pref] = True
+        rdata[pref] = data.get('activated', False)
         if (
-            gconf.get('manage_snmpd', False)
-            and id_ not in query('non_managed_hosts', {})
+            id_ not in query('non_managed_hosts', {})
         ):
+            activated = gconf.get('manage_snmpd', False)
             rdata.update({
-                pref: True,
+                pref: activated,
                 pref + ".default_user": data['user'],
                 pref + ".default_password": data['password'],
                 pref + ".default_key": data['key']})
