@@ -2311,9 +2311,12 @@ def get_supervision_objects_defs(id_):
             sconf = get_snmpd_conf(id_)
             p = ('makina-states.services.monitoring.'
                  'snmpd.default_')
-            attrs.setdefault('vars.SNMP_PASS', sconf[p + 'password'])
-            attrs.setdefault('vars.SNMP_CRYPT', sconf[p + 'key'])
-            attrs.setdefault('vars.SNMP_USER',  sconf[p + 'user'])
+            attrs.setdefault('vars.SNMP_PASS', sconf.get(
+                p + 'password', 'secret'))
+            attrs.setdefault('vars.SNMP_CRYPT', sconf.get(
+                p + 'key', 'key'))
+            attrs.setdefault('vars.SNMP_USER',  sconf.get(
+                p + 'user', 'root'))
             hdata.setdefault('raid', True)
             hdata.setdefault('inotify', True)
             hdata.setdefault('sar',
@@ -2384,9 +2387,12 @@ def get_supervision_objects_defs(id_):
             p = ('makina-states.services.monitoring.'
                  'snmpd.default_')
             attrs.setdefault('vars.makina_host', host)
-            attrs.setdefault('vars.SNMP_PASS', sconf[p + 'password'])
-            attrs.setdefault('vars.SNMP_CRYPT', sconf[p + 'key'])
-            attrs.setdefault('vars.SNMP_USER',  sconf[p + 'user'])
+            attrs.setdefault('vars.SNMP_PASS',  sconf.get(
+                p + 'password', 'secret'))
+            attrs.setdefault('vars.SNMP_CRYPT', sconf.get(
+                p + 'key', 'key'))
+            attrs.setdefault('vars.SNMP_USER',  sconf.get(
+                p + 'user', 'root'))
             if host not in parents:
                 parents.append(host)
             # set the local ip for snmp and ssh
@@ -2404,7 +2410,15 @@ def get_supervision_objects_defs(id_):
             no_common_checks = vdata.get('no_common_checks', False)
             if tipaddr == host_ip and vt in ['lxc']:
                 no_common_checks = True
-            if tipaddr != host_ip and vt in ['lxc', 'docker']:
+            other_ips = [a.get('ip', None)
+                         for a in query('cloud_vm_attrs').get(
+                             vm, {}).get('additional_ips',[])
+                         if a.get('ip', None)]
+            if (
+                tipaddr in other_ips
+                and tipaddr != host_ip
+                and vt in ['lxc', 'docker']
+            ):
                 # specific ip on lxc, monitor eth1
                 nic_cards.append('eth1')
             groups = attrs.setdefault('groups', [])
@@ -2899,13 +2913,13 @@ def get_snmpd_conf(id_, ttl=60):
             data['key'] = secure_password(32)
             __salt__['mc_macros.update_local_registry'](
                 'pillar_snmpd', local_conf, registry_format='pack')
-        rdata[pref] = True
+        rdata[pref] = data.get('activated', False)
         if (
-            gconf.get('manage_snmpd', False)
-            and id_ not in query('non_managed_hosts', {})
+            id_ not in query('non_managed_hosts', {})
         ):
+            activated = gconf.get('manage_snmpd', False)
             rdata.update({
-                pref: True,
+                pref: activated,
                 pref + ".default_user": data['user'],
                 pref + ".default_password": data['password'],
                 pref + ".default_key": data['key']})
@@ -3366,11 +3380,13 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         pillar = OrderedDict()
     if not has_db():
         dbpath = get_db()
+        msg = (
+            'MC_PILLAR not loader:\n'
+            'DATABASE DOES NOT EXISTS: ' + dbpath
+        ).replace('.json', '.{json,sls,yaml}')
         if 'mastersalt' in dbpath:
-            msg = 'DATABASE DOES NOT EXISTS: ' + dbpath
-            raise ValueError(msg)
-        else:
-            return {}
+            log.error(msg)
+        return {}
     try:
         profile_enabled = kw.get('profile', False)
     except:

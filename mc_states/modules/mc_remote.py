@@ -1668,7 +1668,7 @@ def salt_call(host,
              salt-call --local -lall mc_remote.salt_call fun=test.ping \\
                 host=127.0.0.1 new_shell=False ttl=60
 
-             salt-call --local mc_remote.mastersalt_call fun=mc_cloud.settings \\
+             salt-call --local mc_remote.mastersalt_call fun=mc_cl.settings \\
                 host=127.0.0.1 new_shell=False ttl=60
 
     use_vt
@@ -1678,9 +1678,10 @@ def salt_call(host,
     kwargs
         They are forwarded to ssh helper functions !
     ttl
-       Use file cache based execution (the result will be cached for X seconds).
+       Use filecache based execution (the result will be cached for X seconds).
        If the cache is not expired, the result will be used and the function
        wont be executed.
+
     CLI Examples::
 
         salt-call --local mc_remote.salt_call \\

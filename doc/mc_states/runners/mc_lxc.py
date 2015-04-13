@@ -99,7 +99,7 @@ def sync_container(cmd_runner, ret, origin, destination,
                     origin, destination))
             ret['result'] = False
             return ret
-        cmd = 'chroot {0} /sbin/lxc-snap.sh'.format(destination)
+        cmd = 'chroot {0} /sbin/makinastates-snapshot.sh'.format(destination)
         cret = cmd_runner(cmd)
         if cret['retcode']:
             ret['comment'] += (
