@@ -340,12 +340,6 @@ def fix_hosts(fqdn):
 def get_fqdn(fqdn=None):
     if fqdn is None:
         fqdn = socket.getfqdn()
-    ret, ps = popen('cat /etc/hosts')
-    out = ret[0].strip()
-    print('hosts')
-    print(out)
-    pprint.pprint(os.environ)
-
     return fqdn
 
 
@@ -368,7 +362,7 @@ def main():
                         default=DEFAULT_FLAVOR,
                         help='flavor ({0})'.format(DEFAULT_FLAVOR))
     parser.add_argument('--ver',
-                        default=DEFAULT_VER,
+                        default=None,
                         help='version ({0}'.format(DEFAULT_VER))
     parser.add_argument('-m', '--mirror',
                         dest='mirror',
@@ -449,6 +443,7 @@ def main():
     url = os.path.join(opts['mirror'], tar)
     adir = os.path.abspath(opts['adir'])
     ftar = os.path.abspath(os.path.join(os.getcwd(), tar))
+    import pdb;pdb.set_trace()  ## Breakpoint ##
     if os.getuid() not in [0]:
         raise ValueError('Must be run either as root or via sudo')
     if (
