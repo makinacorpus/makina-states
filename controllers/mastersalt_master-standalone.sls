@@ -10,6 +10,7 @@
 include:
   - makina-states.controllers.{{csalt.name}}
   - makina-states.controllers.hooks
+  - makina-states.localsettings.git
   - makina-states.services.cache.memcached.hooks
 {{ saltmac.install_master(csalt.name, full=full) }}
 {% endmacro  %}

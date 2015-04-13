@@ -7,10 +7,9 @@
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {{ salt['mc_macros.register']('localsettings', 'git') }}
 {%- set locs = salt['mc_locations.settings']() %}
-
 include:
   - makina-states.localsettings.users
-
+  - makina-states.localsettings.git.hooks
 {%- for i, data in usersettings.users.items() %}
 {%- set home = data['home'] %}
 gitorious_base_ssh_configs-group-{{ i }}:
@@ -45,4 +44,27 @@ global-git-config:
     - source: salt://makina-states/files/etc/gitconfig
     - mode: 755
     - template: jinja
+{% endif %}
+
+{% if grains['oscodename'] in ['precise'] %}
+git-recent-base:
+  pkgrepo.managed:
+    - humanname: git ppa
+    - name: deb http://ppa.launchpad.net/git-core/ppa/ubuntu {{grains['oscodename']}} main
+    - dist: {{grains['oscodename']}}
+    - file: /etc/apt/sources.list.d/git.list
+    - keyid: E1DF1F24
+    - keyserver: keyserver.ubuntu.com
+    - watch:
+      - mc_proxy: install-recent-git-pre
+
+git-recent-pkgs:
+  pkg.latest:
+    - pkgs:
+      - git
+    - watch:
+      - mc_proxy: install-recent-git-pre
+      - pkgrepo: git-recent-base
+    - watch_in:
+      - mc_proxy: install-recent-git-post
 {% endif %}

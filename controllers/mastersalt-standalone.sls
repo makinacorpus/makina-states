@@ -33,6 +33,7 @@ include:
   - makina-states.services.cache.memcached
   - makina-states.localsettings
   {% endif %}
+  - makina-states.localsettings.git
   - makina-states.controllers.hooks
   - makina-states.services.cache.memcached.hooks
 {{ saltmac.install_makina_states(name, full=full) }}

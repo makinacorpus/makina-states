@@ -9,6 +9,7 @@
 {{ salt['mc_macros.register']('controllers', name) }}
 include:
   - makina-states.controllers.{{csalt.name}}
+  - makina-states.localsettings.git
   - makina-states.controllers.hooks
   - makina-states.services.cache.memcached.hooks
 {{ saltmac.install_minion(csalt.name, full=full) }}
