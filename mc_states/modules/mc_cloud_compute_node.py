@@ -164,7 +164,7 @@ def get_targets(vt=None, ttl=30):
         data = OrderedDict()
         cloudSettings = __salt__['mc_cloud.extpillar_settings']()
         vm_confs = __salt__['mc_pillar.get_cloud_conf_by_vts']()
-        dvts = [a for a in VIRT_TYPES if cloudSettings.get(a)]
+        dvts = [a for a in VIRT_TYPES if a in vm_confs]
         for cvt in dvts:
             all_vt_infos = vm_confs.get(cvt, {})
             for t in all_vt_infos:

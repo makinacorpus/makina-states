@@ -1708,10 +1708,11 @@ def get_configuration(id_=None, ttl=TEN_MINUTES):
         data.setdefault('mastersalt_port', 4606)
         data.setdefault('mastersalt', mid)
         data.setdefault('mastersaltdn', mid)
+        data.setdefault('mastersalt_master', mid == id_)
         data.setdefault('domain', mdn)
         return data
     cache_key = __name + '.get_configuration_{0}'.format(id_)
-    mid = __opts__['id']
+    mid = mastersalt_minion_id()
     return __salt__['mc_utils.memoize_cache'](
         _do, [id_, mid], {}, cache_key, ttl)
 
@@ -3580,8 +3581,6 @@ def get_cloud_conf(ttl=TEN_MINUTES):
         supported_vts = _s['mc_cloud_compute_node.get_vts']()
         for vt, targets in _s[__name + '.query']('vms', {}).items():
             if vt not in supported_vts:
-                continue
-            if not _settings.get(vt, False):
                 continue
             for cn, vms in targets.items():
                 if cn in _s[__name + '.query']('non_managed_hosts', {}):

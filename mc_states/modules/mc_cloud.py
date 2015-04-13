@@ -166,8 +166,8 @@ def extpillar_settings(id_=None, ttl=30, *args, **kw):
                     # states registry settings
                     'generic': True,
                     'saltify': True,
-                    'lxc': conf.get('cloud_control_lxc', False),
-                    'kvm': conf.get('cloud_control_kvm', False)}
+                    'lxc': conf.get('cloud_control_lxc', True),
+                    'kvm': conf.get('cloud_control_kvm', True)}
             ), extdata)
         if not data['bootsalt_branch']:
             data['bootsalt_branch'] = {'dev': 'master',
