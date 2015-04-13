@@ -11,6 +11,7 @@ include:
   - makina-states.controllers.{{csalt.name}}
   - makina-states.controllers.hooks
   - makina-states.services.cache.memcached.hooks
+  - makina-states.localsettings.git
 {{ saltmac.install_minion(csalt.name, full=full) }}
 {% endmacro  %}
 {{ do(full=False)}}

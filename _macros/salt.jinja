@@ -345,6 +345,7 @@ salt-{{ data.name }}-{{ i }}:
     {% endif %}
     - require:
       - cmd: salt-{{ data.name }}-{{ i }}
+      - mc_proxy: install-recent-git-post
   {% if link %}
   file.symlink:
     - target:  {{link.target}}
