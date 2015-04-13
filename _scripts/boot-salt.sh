@@ -2400,11 +2400,12 @@ EOF
             fi
         fi
     done
-    if [ "x${IS_MASTERSALT}" != "x" ];then
-        if [ ! -e  "${MASTERSALT_PILLAR}/database.sls" ];then
-            cp -vf "${MASTERSALT_MS}/files/database.sls" "${MASTERSALT_PILLAR}/database.sls"
-        fi
-    fi
+    # do not copy anymore
+    # if [ "x${IS_MASTERSALT}" != "x" ];then
+    #     if [ ! -e  "${MASTERSALT_PILLAR}/database.sls" ];then
+    #         cp -vf "${MASTERSALT_MS}/files/database.sls" "${MASTERSALT_PILLAR}/database.sls"
+    #     fi
+    # fi
 }
 
 create_salt_tops() {
@@ -3825,6 +3826,7 @@ parse_cli_opts() {
             # will read /tmp/.<>/minion's master's value
             IS_MASTERSALT="yes"
             SALT_BOOT_SKIP_HIGHSTATES="1"
+            FORCE_LOCAL_MASTERSALT_MODE="remote"
             FORCE_IS_MASTERSALT="yes"
             FORCE_IS_MASTERSALT_MINION="yes"
         fi
