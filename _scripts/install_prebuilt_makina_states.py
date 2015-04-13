@@ -443,7 +443,6 @@ def main():
     url = os.path.join(opts['mirror'], tar)
     adir = os.path.abspath(opts['adir'])
     ftar = os.path.abspath(os.path.join(os.getcwd(), tar))
-    import pdb;pdb.set_trace()  ## Breakpoint ##
     if os.getuid() not in [0]:
         raise ValueError('Must be run either as root or via sudo')
     if (
