@@ -1711,7 +1711,7 @@ def get_configuration(id_=None, ttl=TEN_MINUTES):
         data.setdefault('domain', mdn)
         return data
     cache_key = __name + '.get_configuration_{0}'.format(id_)
-    mid = __opts__['id']
+    mid = mastersalt_minion_id()
     return __salt__['mc_utils.memoize_cache'](
         _do, [id_, mid], {}, cache_key, ttl)
 
