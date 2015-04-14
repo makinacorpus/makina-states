@@ -260,6 +260,7 @@ def settings():
                     ('starttls', "yes"),
                     ('tls_reqcert', "allow"),
                     ('timeout', 3),
+                    ('attrs', '*,+'),
                     ('scope', 'sub'),
                     ('retry', "5 5 5 +"),
                     ('type', 'refreshAndPersist'),
@@ -299,7 +300,7 @@ def settings():
                 if i not in cn_config_files:
                     cn_config_files.append(i)
         for mode, key in OrderedDict([
-            ('writer', 'write'),
+            ('writer', 'manage'),
             ('reader', 'read',)
         ]).items():
             for group in data['{0}_groups'.format(mode)]:
