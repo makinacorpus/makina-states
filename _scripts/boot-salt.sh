@@ -3600,6 +3600,9 @@ highstate_in_mastersalt_env() {
         warn_log
         if [ "x${last_salt_retcode}" != "x0" ];then
             bs_log "Failed highstate for mastersalt"
+            if [ "x${TRAVIS}" != "x" ];then
+                cat "${MASTERSALT_MS}"/.bootlogs/*
+            fi
             exit 1
         fi
         warn_log
@@ -3624,6 +3627,9 @@ highstate_in_salt_env() {
         if [ "x${last_salt_retcode}" != "x0" ];then
             bs_log "Failed highstate"
             warn_log
+            if [ "x${TRAVIS}" != "x" ];then
+                cat "${MASTERSALT_MS}"/.bootlogs/*
+            fi
             exit 1
         fi
         warn_log
