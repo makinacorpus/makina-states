@@ -21,20 +21,28 @@ install-nagios-plugins:
       {% if grains['os'] not in ['Debian'] %}
       - nagios-plugins-extra
       {% endif %}
+      - libsnmp-base
+      - libsnmp-perl
+      - nagios-plugins-basic
+      - libsnmp-dev
+      - libsensors4
+      - libcrypt-des-perl
+      - libxml-xpath-perl
+      - libsys-statistics-linux-perl
+      {% if grains['oscodename'] in ['precise'] %}
+      - nagios-plugins
+      - nagios-plugins-basic
+      - nagios-plugins-standard
+      - nagios-plugins-extra
+      - nagios-plugins-contrib
+      {% else %}
+      - nagios-plugins-openstack
       {% if grains['os'] in ['Debian'] %}
       - libsnmp15
       {% else %}
       - libsnmp30
       {% endif %}
-      - libsnmp-base
-      - libsnmp-perl
-      - nagios-plugins-basic
-      - libsnmp-dev
-      - nagios-plugins-openstack
-      - libsensors4
-      - libcrypt-des-perl
-      - libxml-xpath-perl
-      - libsys-statistics-linux-perl
+      {% endif %}
 
 {% for f, mode in {
   '/etc/default/sysstat': 555,
@@ -57,6 +65,7 @@ monitoring-{{f}}:
 {% endfor %}
 
 {% if data.has_sysstat %}
+and grains['oscodename']%}
 monitoring-sysstat-svc:
   service.running:
     - name: sysstat
