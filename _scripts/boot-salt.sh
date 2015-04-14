@@ -156,7 +156,7 @@ warn_log() {
 }
 
 travis_log() {
-    if [ "x${SALT_NODETYPE}" = "xtravis" ];then
+    if [ "x$(get_salt_nodetype)" = "xtravis" ];then
         cat "${SALT_BOOT_OUTFILE}"
         cat "${SALT_BOOT_LOGFILE}"
         cat "${SALT_BOOT_CMDFILE}"
@@ -531,32 +531,52 @@ get_bootsalt_mode() {
     echo "${bootsalt_mode}"
 }
 
-get_salt_nodetype() {
-    default_nodetype="server"
-    if [ "x$(is_lxc)" != "x0" ];then
-        default_nodetype="lxccontainer"
+store_nodetype() {
+    n="${1}"
+    if [ "x${n}" != "x" ];then
+        store_conf nodetype "${n}"
     fi
-    if [ "x${FORCE_SALT_NODETYPE}" != "x" ];then
-        default_nodetype=""
-    fi
-    nodetype="${SALT_NODETYPE:-${1:-$default_nodetype}}"
-    # verify that the requested branch exists
-    if [ "x${FORCE_SALT_NODETYPE}" = "x" ];then
-        savednodetype="$(get_conf nodetype)"
-        if [ "x${savednodetype}" != "x" ];then
-            nodetype="${savednodetype}"
-        fi
-    fi
-    if [ "x${nodetype}" != "x" ];then
+}
+
+validate_nodetype() {
+    n="${1}"
+    if [ "x${n}" != "x" ];then
         if [ -e "${SALT_MS}" ];then
-            if [ ! -e "${SALT_MS}/nodetypes/${nodetype}.sls" ];then
-                # invalid nodetype
-                nodetype=""
-            else
-                store_conf nodetype "${nodetype}"
-            fi
+            saltms="${SALT_MS}"
+        elif [ -e "${MASTERSALT_MS}" ];then
+            saltms="${MASTERSALT_MS}"
+        else
+            saltms=""
+        fi
+        if [ ! -e "${saltms}/nodetypes/${n}.sls" ];then
+            # invalid nodetype, use default
+            n=""
         fi
     fi
+    echo "${n}"
+}
+
+get_default_nodetype() {
+    DEFAULT_NT="$(validate_nodetype $(get_conf nodetype))"
+    if [ "${DEFAULT_NT}" = "x" ];then
+        if [ "x${TRAVIS}" = "!x" ];then
+            DEFAULT_NT="travis"
+        elif [ "x$(is_lxc)" != "x0" ];then
+            DEFAULT_NT="lxccontainer"
+        else
+            DEFAULT_NT="server"
+        fi
+    fi
+    echo "$(validate_nodetype ${DEFAULT_NT})"
+}
+
+get_salt_nodetype() {
+    nodetype="$(validate_nodetype ${FORCE_SALT_NODETYPE:-$(get_default_nodetype)})"
+    if [ "x${nodetype}" = "x" ];then
+        nodetype="$(get_default_nodetype)"
+    fi
+    # verify that the requested branch exists
+    store_nodetype "${nodetype}"
     echo "${nodetype}"
 }
 
@@ -920,13 +940,13 @@ set_vars() {
     fi
 
     if [ "x$(get_ms_branch)" = "x" ] \
-        && [ "x${SALT_NODETYPE}" != "xtravis" ];then
+        && [ "x$(get_salt_nodetype)" != "xtravis" ];then
         bs_yellow_log "Valid branches: $(echo ${VALID_BRANCHES})"
         die "Please provide a valid \$MS_BRANCH (inputed: "${MS_BRANCH}")"
     fi
     if [ "x$(get_salt_nodetype)" = "x" ];then
         bs_yellow_log "Valid nodetypes $(echo $(ls "${SALT_MS}/nodetypes"|"${SED}" -e "s/.sls//"))"
-        die "Please provide a valid nodetype (inputed: "${SALT_NODETYPE_INPUTED}")"
+        die "Please provide a valid nodetype (inputed: "$(get_salt_nodetype)")"
     fi
 
     # just tell to bootstrap and run highstates
@@ -983,7 +1003,7 @@ set_vars() {
     export MASTERSALT_VENV_PATH SALT_VENV_PATH PIP_CACHE
     export MCONF_PREFIX CONF_PREFIX
     #
-    export SALT_NODETYPE FORCE_SALT_NODETYPE
+    export FORCE_SALT_NODETYPE
     export MASTERSALT_MINION_CONTROLLER MASTERSALT_MASTER_CONTROLLER
     export SALT_MINION_CONTROLLER SALT_MASTER_CONTROLLER
     #
@@ -1004,6 +1024,13 @@ set_vars() {
     export mastersalt_master_changed mastersalt_minion_challenge
     export salt_master_changed salt_minion_challenge
 
+}
+
+setup() {
+    detect_os
+    set_progs
+    parse_cli_opts $LAUNCH_ARGS
+    set_vars # real variable affectation
 }
 
 do_pip() {
@@ -1314,14 +1341,14 @@ salt_call_wrapper_() {
     else
         saltargs="${saltargs} -lquiet"
     fi
-    if [ "x${SALT_NODETYPE}" = "xtravis" ];then
+    if [ "x$(get_salt_nodetype)" = "xtravis" ];then
         touch /tmp/travisrun
         ( while [ -f /tmp/travisrun ];do sleep 15;echo "keep me open";sleep 45;done; )&
     fi
     echo "$(date): ${salt_call_prefix}/bin/salt-call $saltargs ${@}" >> "$cmdf"
     ${salt_call_prefix}/bin/salt-call ${saltargs} ${@}
     last_salt_retcode=${?}
-    if [ "x${SALT_NODETYPE}" = "xtravis" ];then
+    if [ "x$(get_salt_nodetype)" = "xtravis" ];then
         rm -f /tmp/travisrun
     fi
     STATUS="NOTSET"
@@ -1502,7 +1529,7 @@ sys_info(){
 }
 
 travis_sys_info() {
-    if [ "x${SALT_NODETYPE}" = "xtravis" ] && [ "x${TRAVIS_DEBUG}" != "x" ];then
+    if [ "x$(get_salt_nodetype)" = "xtravis" ] && [ "x${TRAVIS_DEBUG}" != "x" ];then
         sys_info
     fi
 }
@@ -1999,10 +2026,54 @@ kill_ms_daemons() {
     killall_local_masters
 }
 
+has_sshd() {
+    has_=""
+    if which sshd 2>/dev/null 1>/dev/null;then
+        has_="1"
+    fi
+    has_=""
+    if [ "x${has_sshd}" = "x" ];then
+        for i in /usr /usr/local /usr;do
+            for j in sbin bin;do
+                if [ -x "${i}/${j}/sshd" ];then
+                    has_="1"
+                    break
+                fi
+            done
+            if [ "x${has_sshd}" != "x" ];then
+                break
+            fi
+        done
+    fi
+    echo "${has_}"
+}
+
 regenerate_openssh_keys() {
     bs_log "Regenerating sshd server keys"
-    /bin/rm /etc/ssh/ssh_host_*
-    dpkg-reconfigure openssh-server
+    if which dpkg-reconfigure 2>/dev/null 1>/dev/null;then
+        if [ "$(has_sshd)" != "x" ];then
+            /bin/rm /etc/ssh/ssh_host_*
+            dpkg-reconfigure openssh-server
+        fi
+    fi
+}
+
+check_ssh_keys() {
+    ssh_gen_keys="1"
+    for suf in "" "_key";do
+        for i in dsa ecdsa ed25519 rsa;do
+            key="/etc/ssh/ssh_host_${i}${suf}"
+            c="${key}.pub"
+            if [ -e "${c}" ] && [ -e "${key}" ];then
+                # key exists, do not regen
+                ssh_gen_keys=""
+                break
+            fi
+        done
+    done
+    if [ "x${ssh_gen_keys}" != "x" ];then
+        regenerate_openssh_keys
+    fi
 }
 
 get_yaml_value() {
@@ -2491,9 +2562,6 @@ maybe_wire_reattached_conf() {
     # install salt cloud keys &  reconfigure any preprovisionned daemons
     if [ "x${SALT_REATTACH}" != "x" ];then
         bs_log "SaltCloud mode: killing daemons"
-        if [ "x$(is_lxc)" != "x0" ];then
-            regenerate_openssh_keys
-        fi
         kill_ms_daemons
         # remove any provisionned init overrides
         if [ "x$(find /etc/init/*salt*.override 2>/dev/null|wc -l|${SED} "s/ //g")" != "x0" ];then
@@ -2664,6 +2732,7 @@ EOF
 }
 
 create_salt_skeleton() {
+    check_ssh_keys
     create_core_conf
     create_pillars
     create_salt_tops
@@ -3160,7 +3229,7 @@ challenge_message() {
 }
 
 get_delay_time() {
-    if [ "x${SALT_NODETYPE}" = "xtravis" ];then
+    if [ "x$(get_salt_nodetype)" = "xtravis" ];then
         echo 15
     else
         echo 3
@@ -3184,7 +3253,7 @@ make_association() {
         challenge_message
     fi
     debug_msg "ack"
-    if [ "x${SALT_NODETYPE}" = "xtravis" ];then
+    if [ "x$(get_salt_nodetype)" = "xtravis" ];then
         set -x
         service_ salt-minion restart
     #   . /etc/profile
@@ -3601,6 +3670,7 @@ highstate_in_mastersalt_env() {
         if [ "x${last_salt_retcode}" != "x0" ];then
             bs_log "Failed highstate for mastersalt"
             if [ "x${TRAVIS}" != "x" ];then
+                cat /etc/shorewall/rules
                 cat "${MASTERSALT_MS}"/.bootlogs/*
             fi
             exit 1
@@ -4050,7 +4120,9 @@ parse_cli_opts() {
             MASTERSALT_MASTER_PUBLISH_PORT="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x-n" ] || [ "x${1}" = "x--nodetype" ];then
-            FORCE_SALT_NODETYPE="1"; SALT_NODETYPE="${2}"; sh="2";argmatch="1"
+            FORCE_SALT_NODETYPE="${2}";
+            sh="2";
+            argmatch="1"
         fi
         if [ "x${1}" = "x-g" ] || [ "x${1}" = "x--makina-states-url" ];then
             MAKINASTATES_URL="${2}";sh="2";argmatch="1"
@@ -4449,15 +4521,9 @@ postinstall() {
     fi
 }
 
-setup() {
-    detect_os
-    set_progs
-    parse_cli_opts $LAUNCH_ARGS
-    set_vars # real variable affectation
-}
-
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     setup
+
     if [ "x$(dns_resolve localhost)" = "x${DNS_RESOLUTION_FAILED}" ];then
         die "${DNS_RESOLUTION_FAILED}"
     fi

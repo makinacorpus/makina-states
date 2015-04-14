@@ -111,27 +111,24 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        saltmods = __salt__
-        grains = __grains__
-        locations = __salt__['mc_locations.settings']()
+        _s = __salt__
         # users data
         data = {}
         data.update(get_default_groups())
         data['sudoers'] = []
         data['sysadmins'] = []
         sysadmins_keys = []
-        fr = __salt__['mc_utils.salt_root']()
-        sshd = os.path.join(fr, 'files/ssh')
-        vagrant_key_path = os.path.join(fr, 'files/ssh/vagrant.pub')
-        if saltmods['mc_macros.is_item_active'](
+        if _s['mc_macros.is_item_active'](
             'nodetypes', 'vagrantvm'
         ):
             sysadmins_keys.append('salt://makina-states/files/ssh/vagrant.pub')
         data['defaultSysadmins'] = get_default_sysadmins()
-        grainsPref = 'makina-states.localsettings.'
         # the following part just feed the above users & user_keys variables
         #default  sysadmin settings
-        data['admin'] = saltmods['mc_utils.defaults'](
+        sudoers = []
+        if _s['mc_nodetypes.is_travis']():
+            sudoers.append('travis')
+        data['admin'] = _s['mc_utils.defaults'](
             'makina-states.localsettings.admin', {
                 'sudoers': [],
                 'sysadmin_password': None,
@@ -140,7 +137,7 @@ def settings():
                 'absent_keys': [],
             }
         )
-        data['admin']['sudoers'] = __salt__['mc_project.uniquify'](
+        data['admin']['sudoers'] = _s['mc_project.uniquify'](
             data['admin']['sudoers'])
 
         if (
@@ -164,7 +161,7 @@ def settings():
                 if not a in data['admin']['sysadmins_keys']:
                     data['admin']['sysadmins_keys'].append(a)
         users = data['users'] = get_default_users()
-        data['sshkeys'] = saltmods['mc_utils.defaults'](
+        data['sshkeys'] = _s['mc_utils.defaults'](
             'makina-states.localsettings.sshkeys', default_keys)
         # default  home
         root = users.setdefault('root', {})
@@ -214,7 +211,3 @@ def settings():
                     udata['ssh_keys'].append(k)
         return data
     return _settings()
-
-
-
-# vim:set et sts=4 ts=4 tw=80:

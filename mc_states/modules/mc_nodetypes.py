@@ -32,13 +32,28 @@ def settings():
     return _settings()
 
 
+def is_travis():
+    travis = False
+    tflag = '/etc/makina-states/nodetype'
+    if (
+        os.path.exists(tflag)
+        or os.environ.get('TRAVIS', 'false') == 'true'
+    ):
+        travis = True
+    if os.path.exists(tflag) and not travis:
+        with open(tflag) as f:
+            try:
+                travis = f.read().strip().lower() == 'travis'
+            except Exception:
+                travis = False
+    return travis
+
+
 def registry():
     '''nodetypes registry registry'''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _registry():
-        travis = False
-        if os.environ.get('TRAVIS', 'false') == 'true':
-            travis = True
+        travis = is_travis()
         reg = __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults={
