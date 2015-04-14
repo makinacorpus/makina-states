@@ -65,7 +65,6 @@ monitoring-{{f}}:
 {% endfor %}
 
 {% if data.has_sysstat %}
-and grains['oscodename']%}
 monitoring-sysstat-svc:
   service.running:
     - name: sysstat
