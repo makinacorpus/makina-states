@@ -41,6 +41,17 @@ etc-shorewall-{{config}}:
 shorewall-test-cfg:
   file.exists:
     - name: {{ locs.conf_dir }}/shorewall/shorewall.conf
+    - require:
+      - mc_proxy: shorewall-postconf
+    - require:
+      - mc_proxy: shorewall-activation
+
+shorewall-test-goodcfg-p:
+  cmd.run:
+    - name: shorewall check
+    - stateful: True
+    - require:
+      - mc_proxy: shorewall-test-cfg
     - watch:
       - mc_proxy: shorewall-postconf
     - watch_in:
@@ -51,6 +62,7 @@ shorewall-test-goodcfg:
     - name: shorewall check && echo "changed=false"
     - stateful: True
     - watch:
+      - cmd: shorewall-test-goodcfg-p
       - mc_proxy: shorewall-postconf
     - watch_in:
       - mc_proxy: shorewall-activation
