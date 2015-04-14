@@ -367,7 +367,7 @@ def main():
                         default=None,
                         help='fqdn of this host')
     parser.add_argument('--dist',
-                        default=DEFAULT_DIST,
+                        default=default_dist,
                         help='dist ({0})'.format(default_dist))
     parser.add_argument('--flavor',
                         dest='flavor',
