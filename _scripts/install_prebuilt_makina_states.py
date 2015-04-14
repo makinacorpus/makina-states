@@ -208,6 +208,17 @@ def download_template(url, tar, md5=None, offline=False):
     print('Downloaded: {0}'.format(tar))
 
 
+def get_dist(default_dist=DEFAULT_DIST):
+    cmd = 'lsb_release -c -s'
+    ret, ps = popen(cmd)
+    if ret[0]:
+        if ret[0].lower().strip() in [
+            'precise', 'trusty', 'utopic', 'vivid'
+        ]:
+            return ret[0].lower().strip()
+    return default_dist
+
+
 def setup_prereqs(offline=False):
     apt = False
     cmd = 'lsb_release -i -s'
@@ -344,19 +355,20 @@ def get_fqdn(fqdn=None):
 
 
 def main():
+    default_dist = get_dist(DEFAULT_DIST)
     parser = argparse.ArgumentParser(
         usage=DESCRIPTION.format(ver=DEFAULT_VER,
                                  name='./install_prebuild_makina_states.py',
                                  md5=DEFAULT_MD5,
                                  flavor=DEFAULT_FLAVOR,
                                  releases=RELEASES_URL,
-                                 dist=DEFAULT_DIST))
+                                 dist=default_dist))
     parser.add_argument('--fqdn',
                         default=None,
                         help='fqdn of this host')
     parser.add_argument('--dist',
                         default=DEFAULT_DIST,
-                        help='dist ({0})'.format(DEFAULT_DIST))
+                        help='dist ({0})'.format(default_dist))
     parser.add_argument('--flavor',
                         dest='flavor',
                         default=DEFAULT_FLAVOR,
