@@ -368,6 +368,8 @@ def settings():
         for iface, ips in gifaces:
             if iface in configuredifs:
                 continue
+            if iface.startswith('veth'):
+                continue
             if 'lo' in iface:
                 continue
             z = 'net'
