@@ -558,16 +558,24 @@ validate_nodetype() {
 
 get_default_nodetype() {
     DEFAULT_NT="$(validate_nodetype $(get_conf nodetype))"
+    fallback_nt="server"
     if [ "${DEFAULT_NT}" = "x" ];then
-        if [ "x${TRAVIS}" = "!x" ];then
+        if [ "x${TRAVIS}" != "x" ];then
             DEFAULT_NT="travis"
         elif [ "x$(is_lxc)" != "x0" ];then
             DEFAULT_NT="lxccontainer"
         else
-            DEFAULT_NT="server"
+            DEFAULT_NT="${fallback_nt}"
         fi
     fi
-    echo "$(validate_nodetype ${DEFAULT_NT})"
+    if [ "x${DEFAULT_NT}" = "xlxccontainer" ] && [ "x$(is_lxc)" = "x0" ] ;then
+            DEFAULT_NT="${fallback_nt}"
+    fi
+    DEFAULT_NT="$(validate_nodetype ${DEFAULT_NT})"
+    if [ "x${DEFAULT_NT}" = "x" ];then
+        DEFAULT_NT="${fallback_nt}"
+    fi
+    echo "${DEFAULT_NT}"
 }
 
 get_salt_nodetype() {
@@ -637,26 +645,26 @@ set_vars() {
     IS_MASTERSALT_MASTER="${IS_MASTERSALT_MASTER:-}"
     IS_MASTERSALT_MINION="${IS_MASTERSALT_MINION:-}"
     MAKINASTATES_URL="${MAKINASTATES_URL:-"https://github.com/makinacorpus/makina-states.git"}"
-    DEFAULT_MS_BRANCH="master"
-    if [ "x${TRAVIS}" != "x" ];then
-        DEFAULT_MS_BRANCH="changeset:$(git log|head -n1|awk '{print $2}')"
-    fi
-    MS_BRANCH="${MS_BRANCH:-${DEFAULT_MS_BRANCH}}"
-    FORCE_MS_BRANCH="${FORCE_MS_BRANCH:-""}"
     PREFIX="${PREFIX:-${ROOT}srv}"
     BIN_DIR="${BIN_DIR:-${ROOT}usr/bin}"
+    SALT_MS="${SALT_ROOT}/makina-states"
     SALT_PILLAR="${SALT_PILLAR:-$PREFIX/pillar}"
     SALT_BOOT_SYNC_CODE="${SALT_BOOT_SYNC_CODE:-}"
     SALT_BOOT_NOCONFIRM="${SALT_BOOT_NOCONFIRM:-}"
     SALT_ROOT="${SALT_ROOT:-$PREFIX/salt}"
     SALT_BOOT_OUTFILE="${SALT_MS}/.boot_salt.$(get_chrono).out"
     SALT_BOOT_LOGFILE="${SALT_MS}/.boot_salt.$(get_chrono).log"
-    SALT_MS="${SALT_ROOT}/makina-states"
     MASTERSALT_PILLAR="${MASTERSALT_PILLAR:-$PREFIX/mastersalt-pillar}"
     MASTERSALT_ROOT="${MASTERSALT_ROOT:-$PREFIX/mastersalt}"
     MASTERSALT_MS="${MASTERSALT_ROOT}/makina-states"
     TMPDIR="${TMPDIR:-"/tmp"}"
     VENV_PATH="${VENV_PATH:-"/salt-venv"}"
+    DEFAULT_MS_BRANCH="master"
+    if [ "x$(get_salt_nodetype)" = "xtravis" ];then
+        DEFAULT_MS_BRANCH="changeset:$(git log|head -n1|awk '{print $2}')"
+    fi
+    MS_BRANCH="${MS_BRANCH:-${DEFAULT_MS_BRANCH}}"
+    FORCE_MS_BRANCH="${FORCE_MS_BRANCH:-""}"
     EGGS_GIT_DIRS="docker-py m2crypto salt salttesting"
     PIP_CACHE="${VENV_PATH}/cache"
     SALT_VENV_PATH="${VENV_PATH}/salt"
@@ -1136,8 +1144,8 @@ recap_(){
         bs_log "-> Will upgrade makina-states"
     fi
     if [ "x${debug}" != "x" ];then
-        bs_log "ROOT: $ROOT"
-        bs_log "PREFIX: $PREFIX"
+        bs_log "ROOT: ${ROOT}"
+        bs_log "PREFIX: ${PREFIX}"
     fi
     if [ "x${VENV_REBOOTSTRAP}" != "x" ];then
         bs_log "Rebootstrap virtualenv"
@@ -1259,12 +1267,12 @@ lazy_apt_get_install() {
     to_install=""
     for i in ${@};do
          if [ "x$(is_apt_installed ${i})" != "xyes" ];then
-             to_install="$to_install ${i}"
+             to_install="${to_install} ${i}"
          fi
     done
     if [ "x${to_install}" != "x" ];then
-        bs_log "Installing $to_install"
-        apt-get install -y --force-yes $to_install
+        bs_log "Installing ${to_install}"
+        apt-get install -y --force-yes ${to_install}
     fi
 }
 
@@ -1394,7 +1402,7 @@ for i in ['state.highstate', 'state.sls']:
     if i in "${saltargs//\"/} ${@//\"/}":
         statecheck = True
 if statecheck:
-    with codecs.open("$outf", "r", "utf-8") as fic:
+    with codecs.open("${outf}", "r", "utf-8") as fic:
         fdata = fic.read()
         if not fdata:
             print("no file content")
@@ -4278,19 +4286,19 @@ check_alive() {
         seconds="$(echo "$psline"|awk '{print $2}')"
         pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
         if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "$((60*60*12))" ];then
-            bs_log "Something went wrong with last restart(mastersalt), killing old salt call process: $pid"
-            bs_log "$psline"
+            bs_log "Something went wrong with last restart(mastersalt), killing old salt call process: ${pid}"
+            bs_log "${psline}"
             killall_local_mastersalt_masters
             killall_local_mastersalt_minions
         fi
     done
     ps_etime|sort -n -k2|egrep "salt-call"|grep -v mastersalt|grep -v grep|while read psline;
     do
-        seconds="$(echo "$psline"|awk '{print $2}')"
-        pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
+        seconds="$(echo "${psline}"|awk '{print $2}')"
+        pid="$(filter_host_pids $(echo ${psline}|awk '{print $1}'))"
         if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "$((60*60*12))" ];then
-            bs_log "Something went wrong with last restart(salt), killing old salt call process: $pid"
-            bs_log "$psline"
+            bs_log "Something went wrong with last restart(salt), killing old salt call process: ${pid}"
+            bs_log "${psline}"
             killall_local_masters
             killall_local_minions
         fi
@@ -4298,11 +4306,11 @@ check_alive() {
     # kill all old (master)salt ping call (> 120 sec)
     ps_etime|sort -n -k2|egrep "salt-call"|grep test.ping|grep mastersalt|grep -v grep|while read psline;
     do
-        seconds="$(echo "$psline"|awk '{print $2}')"
+        seconds="$(echo "${psline}"|awk '{print $2}')"
         pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
         if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "$((60*2))" ];then
-            bs_log "MasterSalt PING stalled, killing old salt call process: $pid"
-            bs_log "$psline"
+            bs_log "MasterSalt PING stalled, killing old salt call process: ${pid}"
+            bs_log "${psline}"
             kill -9 "${pid}"
             killall_local_mastersalt_masters
             killall_local_mastersalt_minions
@@ -4310,11 +4318,11 @@ check_alive() {
     done
     ps_etime|sort -n -k2|egrep "salt-call"|grep test.ping|grep -v mastersalt|grep -v grep|while read psline;
     do
-        seconds="$(echo "$psline"|awk '{print $2}')"
-        pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
+        seconds="$(echo "${psline}"|awk '{print $2}')"
+        pid="$(filter_host_pids $(echo ${psline}|awk '{print $1}'))"
         if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "$((60*2))" ];then
-            bs_log "Salt PING stalled, killing old salt call process: $pid"
-            bs_log "$psline"
+            bs_log "Salt PING stalled, killing old salt call process: ${pid}"
+            bs_log "${psline}"
             kill -9 "${pid}"
             killall_local_masters
             killall_local_minions

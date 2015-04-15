@@ -11,6 +11,7 @@ fi
 REMOVE="
 /tmp/.saltcloud
 /root/.cache
+/etc/makina-states/nodetype
 /home/*/.cache
 "
 
@@ -52,7 +53,6 @@ FILE_REMOVE="
 /srv/pillar/
 /var/cache/apt/archives/
 /var/lib/apt/lists
-/etc/makina-states/nodetype
 /etc/salt/pki
 /etc/mastersalt/pki
 "
@@ -105,6 +105,12 @@ done
 find /etc/shorewall/rules -type f|while read i
 do
     sed -i -re "s/ACCEPT.? +net:?.*fw +-/ACCEPT net fw/g" "$i" || /bin/true
+done
+for i in salt mastersalt;do
+    j="/etc/${i}/grains"
+    if [ -e "${j}" ];then
+        sed -i -re "/makina-states.nodetypes.*: (true|false)/ d" "${j}" || /bin/true
+    fi
 done
 find / -name .ssh | while read i;do
 echo $i

@@ -82,12 +82,20 @@ def get__salt__(__salt__from_exec=None):
     return _s
 
 
+def snapshot_container(cmd_runner, destination):
+    cmd = ('if [ -e \'{0}/sbin/makinastates-snapshot.sh\' ];then'
+           ' chroot \'{0}\' /sbin/makinastates-snapshot.sh;'
+           'fi').format(destination)
+    cret = cmd_runner(cmd)
+    return cret
+
+
 def sync_container(cmd_runner, ret, origin, destination,
                    __salt__from_exec=None, force=False):
     _s = get__salt__(__salt__from_exec)
     fname = 'mc_lxc.sync_container'
     _s['mc_api.time_log'](
-        'end', fname, origin, destination, force=force)
+        'start', fname, origin, destination, force=force)
     if os.path.exists(origin) and os.path.exists(destination):
         if test_same_versions(origin, destination, force=force):
             return ret
@@ -100,8 +108,7 @@ def sync_container(cmd_runner, ret, origin, destination,
                     origin, destination))
             ret['result'] = False
             return ret
-        cmd = 'chroot {0} /sbin/makinastates-snapshot.sh'.format(destination)
-        cret = cmd_runner(cmd)
+        cret = snapshot_container(cmd_runner, destination)
         if cret['retcode']:
             ret['comment'] += (
                 '\nRSYNC(local builder) reset failed {0}'.format(

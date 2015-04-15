@@ -249,6 +249,24 @@ def get_vars(container='makina-states-trusty', flavor='standalone'):
     return data
 
 
+def snapshot(container, flavor, *args, **kwargs):
+    gvars = get_vars(container, flavor)
+    cret = mc_lxc.snapshot_container(_run, gvars['rootfs'])
+    if cret['retcode']:
+        raise _imgerror(
+            '{0}/{1}: snapshot failed'.format(container, flavor),
+            cret=cret)
+    return cret
+
+
+def snapshot_standalone(container, *args, **kwargs):
+    return snapshot(container, 'lxc', *args, **kwargs)
+
+
+def snapshot_lxc(container, *args, **kwargs):
+    return snapshot(container, 'lxc', *args, **kwargs)
+
+
 def save_acls(container, flavor, *args, **kwargs):
     _s = __salt__
     gvars = get_vars(container, flavor)
@@ -500,8 +518,6 @@ def sf_release(images=None, flavors=None, sync=True):
             imgSettings, gret,
             __salt__from_exec=_s,
             _cmd_runner=_run, force=True)
-    if not gret['result']:
-        return gret
     for img in images:
         imgdata = imgSettings['lxc']['images'][img]
         iflavors = copy.deepcopy(flavors)
@@ -517,6 +533,7 @@ def sf_release(images=None, flavors=None, sync=True):
             subrets.setdefault('result', True)
             try:
                 for step in [
+                    'snapshot',
                     'save_acls',
                     'archive',
                     'upload',
