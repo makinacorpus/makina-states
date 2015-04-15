@@ -1031,6 +1031,7 @@ set_vars() {
     export yaml_file_changed yaml_added_value yaml_edited_value
     export mastersalt_master_changed mastersalt_minion_challenge
     export salt_master_changed salt_minion_challenge
+    export TRAVIS
 
 }
 
