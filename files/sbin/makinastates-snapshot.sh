@@ -106,6 +106,12 @@ find /etc/shorewall/rules -type f|while read i
 do
     sed -i -re "s/ACCEPT.? +net:?.*fw +-/ACCEPT net fw/g" "$i" || /bin/true
 done
+for i in salt mastersalt;do
+    j="/etc/${i}/grains"
+    if [ -e "${j}" ];then
+        sed -i -re "/makina-states.nodetypes.*: (true|false)/ d" "${j}" || /bin/true
+    fi
+done
 find / -name .ssh | while read i;do
 echo $i
     if [ -d "${i}" ];then
