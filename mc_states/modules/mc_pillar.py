@@ -2856,25 +2856,23 @@ def manage_baremetal_network(fqdn, ipsfo, ipsfo_map,
 
 def get_sysnet_conf(id_, ttl=ONE_DAY):
     def _do(id_):
+        _s = __salt__
         gconf = get_configuration(id_)
-        ms_vars = get_makina_states_variables(id_)
         rdata = {}
-        net = __salt__[__name + '.load_network_infrastructure']()
+        net = _s[__name + '.load_network_infrastructure']()
         ips = net['ips']
         ipsfo = net['ipsfo']
         ipsfo_map = net['ipsfo_map']
         dbi = get_db_infrastructure_maps()
         baremetal_hosts = dbi['bms']
-        if not (
-            ms_vars.get('is_bm', False)
-            and gconf.get('manage_network', False)
-        ):
+        ifc = gconf.get('main_network_interface', 'br0')
+        if not gconf.get('manage_network', True) or not is_salt_managed(id_):
             return {}
         if id_ in baremetal_hosts:
             # always use bridge as main_if
             rdata.update(
                 manage_baremetal_network(
-                    id_, ipsfo, ipsfo_map, ips, ifc='br0'))
+                    id_, ipsfo, ipsfo_map, ips, ifc=ifc))
         else:
             for vt, targets in __salt__[
                 __name + '.query', {}
@@ -2894,9 +2892,10 @@ def get_sysnet_conf(id_, ttl=ONE_DAY):
         net_ext_pillar = query('network_settings', {}).get(id_, {})
         if net_ext_pillar and rdata.get(pref, None):
             for i in range(len(rdata[pref])):
-                for ifc in [ifc for ifc in net_ext_pillar
-                            if ifc in rdata[pref][i]]:
-                    rdata[pref][i][ifc] = __salt__['mc_utils.dictupdate'](
+                for ifc in [
+                    ifc for ifc in net_ext_pillar if ifc in rdata[pref][i]
+                ]:
+                    rdata[pref][i][ifc] = _s['mc_utils.dictupdate'](
                         rdata[pref][i][ifc], net_ext_pillar[ifc])
         return rdata
     cache_key = __name + '.get_sysnet_conf{0}'.format(id_)
