@@ -91,6 +91,10 @@ set_progs() {
     export SED GETENT PERL PYTHON DIG NSLOOKUP PS
 }
 
+sanitize_changeset() {
+    echo "${1}" | sed -e "s/changeset://g"
+}
+
 bs_log(){
     printf "${RED}[bs] ${@}${NORMAL}\n";
 }
@@ -432,15 +436,14 @@ set_valid_upstreams() {
     fi
     # if we pin a particular changeset make hat as a valid branch
     # also add if we had a particular changeset saved in conf
-    for msb in "${MS_BRANCH}" "$(get_conf branch)";do
-        thistest="$(echo "${msb}" | grep -q "changeset:";echo "${?}")"
-        if [ "x${thistest}" = "x0" ];then
-            ch="$(echo "${msb}"|${SED} -e "s/changeset://g")"
-            if [ "x$(git log "$ch" | wc -l|sed -e "s/ //g")"  != "x0" ];then
-                VALID_BRANCHES="${VALID_BRANCHES} ${ch} changeset:$ch"
-            fi
+    msb="$(get_ms_branch)"
+    thistest="$(echo "${msb}" | grep -q "changeset:";echo "${?}")"
+    if [ "x${thistest}" = "x0" ];then
+        ch="$(sanitize_changeset "${msb}")"
+        if [ "x$(git log "$ch" | wc -l|sed -e "s/ //g")"  != "x0" ];then
+            VALID_BRANCHES="${VALID_BRANCHES} ${ch} changeset:$ch"
         fi
-    done
+    fi
     # remove \n
     VALID_BRANCHES=$(echo "${VALID_BRANCHES}")
 }
@@ -504,21 +507,29 @@ set_conf() {
     store_conf "${@}"
 }
 
-get_ms_branch() {
-    get_ms_branch_branch="${MS_BRANCH}"
-    # verify that the requested branch OR changeset exists
-    thistest="$(echo "${VALID_BRANCHES}" | grep -q "${get_ms_branch_branch}";echo "${?}")"
-    if [ "x${thistest}" = "x0" ];then
-        branch=""
-    fi
-    if [ "x${FORCE_MS_BRANCH}" = "x" ];then
-        savedbranch="$(get_conf branch)"
-        thistest="$(echo "${VALID_BRANCHES}"|grep -q "${savedbranch}";echo "${?}")"
-        if [ "x${savedbranch}" != "x" ] && [ "x${thistest}" = "x0" ];then
-            get_ms_branch_branch="${savedbranch}"
+validate_changeset() {
+    if [ "x${1}" != "x" ];then
+        thistest="$(echo "${VALID_BRANCHES}" | grep -q "${1}";echo "${?}")"
+        if [ "x${thistest}" = "x0" ];then
+            echo "${1}"
         fi
     fi
-    echo "${get_ms_branch_branch}"
+}
+
+get_ms_branch() {
+    DEFAULT_MS_BRANCH="master"
+    vmsb=""
+    for msb in "${MS_BRANCH}" "$(get_conf branch)";do
+        msb="$(validate_changeset ${msb})"
+        if [ "x${msb}" != "x" ];then
+            vmsb="${vmsb}"
+            break
+        fi
+    done
+    if [ "x${vmsb}" = "x" ];then
+        vmsb="${DEFAULT_MS_BRANCH}"
+    fi
+    echo "${vmsb}"
 }
 
 get_bootsalt_mode() {
@@ -663,12 +674,7 @@ set_vars() {
     MASTERSALT_MS="${MASTERSALT_ROOT}/makina-states"
     TMPDIR="${TMPDIR:-"/tmp"}"
     VENV_PATH="${VENV_PATH:-"/salt-venv"}"
-    DEFAULT_MS_BRANCH="master"
-    if [ "x$(get_salt_nodetype)" = "xtravis" ];then
-        DEFAULT_MS_BRANCH="changeset:$(git log|head -n1|awk '{print $2}')"
-    fi
-    MS_BRANCH="${MS_BRANCH:-${DEFAULT_MS_BRANCH}}"
-    FORCE_MS_BRANCH="${FORCE_MS_BRANCH:-""}"
+    set_valid_upstreams
     EGGS_GIT_DIRS="docker-py m2crypto salt salttesting"
     PIP_CACHE="${VENV_PATH}/cache"
     SALT_VENV_PATH="${VENV_PATH}/salt"
@@ -685,7 +691,6 @@ set_vars() {
     bootstrap_pref="makina-states.bootstraps"
     bootstrap_nodetypes_pref="${bootstrap_pref}.nodetypes"
     bootstrap_controllers_pref="${bootstrap_pref}.controllers"
-    set_valid_upstreams
 
     # nodetypes (calculed now in get_salt_nodetype) and controllers sls
     SALT_MASTER_CONTROLLER_DEFAULT="salt_master"
@@ -951,10 +956,9 @@ set_vars() {
         salt_bootstrap_minion="${bootstrap_controllers_pref}.${SALT_MINION_CONTROLLER}"
     fi
 
-    if [ "x$(get_ms_branch)" = "x" ] \
-        && [ "x$(get_salt_nodetype)" != "xtravis" ];then
+    if [ "x$(get_ms_branch)" = "x" ];then
         bs_yellow_log "Valid branches: $(echo ${VALID_BRANCHES})"
-        die "Please provide a valid \$MS_BRANCH (inputed: "${MS_BRANCH}")"
+        die "Please provide a valid \$MS_BRANCH (or -b \$branch) (inputed: "$(get_ms_branch)")"
     fi
     if [ "x$(get_salt_nodetype)" = "x" ];then
         bs_yellow_log "Valid nodetypes $(echo $(ls "${SALT_MS}/nodetypes"|"${SED}" -e "s/.sls//"))"
@@ -995,7 +999,7 @@ set_vars() {
     export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS
     export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE SALT_BOOT_INITIAL_HIGHSTATE
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
-    export MS_BRANCH FORCE_MS_BRANCH
+    export MS_BRANCH="$(get_ms_branch)"
     export IS_SALT IS_SALT_MASTER IS_SALT_MINION
     export IS_MASTERSALT IS_MASTERSALT_MASTER IS_MASTERSALT_MINION
     export FORCE_IS_SALT FORCE_IS_SALT_MASTER FORCE_IS_SALT_MINION
@@ -1657,7 +1661,7 @@ setup_and_maybe_update_code() {
                         ms_branch="$(get_ms_branch)"
                         thistest="$(echo "${ms_branch}" | grep -q "changeset:";echo "${?}")"
                         if [ "x${thistest}" = "x0" ];then
-                            ms_branch="$(echo "${ms_branch}"|${SED} -e "s/changeset://g")"
+                            ms_branch="$(sanitize_changeset "${ms_branch}")"
                             remote=""
                             branch_pref="changeset_"
                         fi
@@ -1708,10 +1712,10 @@ setup_and_maybe_update_code() {
                         co_branch="master"
                         pref=""
                         if [ "x${i}" = "x${ms}" ];then
-                            co_branch="$(get_ms_branch "${i}")"
+                            co_branch="$(get_ms_branch)"
                             thistest="$(echo "${co_branch}" | grep -q "changeset:";echo "${?}")"
                             if [ "x${thistest}" = "x0" ];then
-                                co_branch="$(echo "${co_branch}"|${SED} -e "s/changeset://g")"
+                                co_branch="$(sanitize_changeset "${co_branch}")"
                                 pref="changeset:"
                                 is_changeset="1"
                                 branch_pref="changeset_"
@@ -2172,7 +2176,7 @@ edit_yaml_file() {
 
 reconfigure_mastersalt_master() {
     if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
-    branch_id="$(get_ms_branch|"${SED}" -e "s/changeset://g")"
+    branch_id="$(sanitize_changeset $(get_ms_branch))"
     master="${1:-${MASTERSALT_MASTER_DNS}}"
     master_ip="${2:-${MASTERSALT_MASTER_IP}}"
     port="${3:-${MASTERSALT_MASTER_PORT}}"
@@ -2234,7 +2238,7 @@ reconfigure_mastersalt_master() {
 
 reconfigure_salt_master() {
     if [ "x${DO_SALT}" = "x" ];then return;fi
-    branch_id="$(get_ms_branch|"${SED}" -e "s/changeset://g")"
+    branch_id="$(sanitize_changeset $(get_ms_branch))"
     master="${1:-${SALT_MASTER_DNS}}"
     master_ip="${2:-${SALT_MASTER_IP}}"
     port="${3:-${SALT_MASTER_PORT}}"
@@ -2299,7 +2303,7 @@ reconfigure_salt_master() {
 
 reconfigure_mastersalt_minion() {
     if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
-    branch_id="$(get_ms_branch|"${SED}" -e "s/changeset://g")"
+    branch_id="$(sanitize_changeset $(get_ms_branch))"
     setted_id="${1:-$(get_minion_id)}"
     master="${1:-${MASTERSALT_MASTER_DNS}}"
     port="${2:-${MASTERSALT_MASTER_PORT}}"
@@ -2388,7 +2392,7 @@ reconfigure_mastersalt_minion() {
 
 reconfigure_salt_minion() {
     if [ "x${DO_SALT}" = "x" ];then return;fi
-    branch_id="$(get_ms_branch|"${SED}" -e "s/changeset://g")"
+    branch_id="$(sanitize_changeset $(get_ms_branch))"
     setted_id="${1:-$(get_minion_id)}"
     master="${1:-${SALT_MASTER_DNS}}"
     port="${2:-${SALT_MASTER_PORT}}"
@@ -3843,7 +3847,7 @@ usage() {
     fi
     echo
     bs_log "  General settings"
-    bs_help "    -b|--branch <branch>" "MakinaStates branch to use" "${MS_BRANCH}" y
+    bs_help "    -b|--branch <branch>" "MakinaStates branch to use" "$(get_ms_branch)" y
     bs_help "    -h|--help / -l/--long-help" "this help message or the long & detailed one" "" y
     bs_help "    -C|--no-confirm" "Do not ask for start confirmation" "" y
     bs_help "    -S|--skip-checkouts" "Skip initial checkouts / updates" "" y
@@ -4164,7 +4168,7 @@ parse_cli_opts() {
             PREFIX="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x-b" ] || [ "x${1}" = "x--branch" ];then
-            FORCE_MS_BRANCH=1;MS_BRANCH="${2}";sh="2";argmatch="1"
+            MS_BRANCH="${2}";sh="2";argmatch="1"
         fi
         if [ "x${argmatch}" != "x1" ];then
             USAGE="1"
