@@ -320,16 +320,16 @@ get_module_args() {
 interactive_tempo(){
     if [ "x${SALT_REATTACH}" = "x" ];then
         tempo="${@}"
-        tempo_txt="$tempo"
-        if [ -f "${PYTHON}" ] && [ $tempo_txt -ge 60 ];then
-            tempo_txt="$(python -c "print $tempo / 60") minute(s)"
+        tempo_txt="${tempo}"
+        if [ -f "${PYTHON}" ] && [ ${tempo_txt} -ge 60 ];then
+            tempo_txt="$(python -c "print ${tempo} / 60") minute(s)"
         else
-            tempo_txt="$tempo second(s)"
+            tempo_txt="${tempo} second(s)"
         fi
-        bs_yellow_log "The installation will continue in $tempo_txt"
+        bs_yellow_log "The installation will continue in ${tempo_txt}"
         bs_yellow_log "unless you press enter to continue or C-c to abort"
         bs_yellow_log "-------------------  ????  -----------------------"
-        read -t $tempo
+        read -t ${tempo}
         bs_yellow_log "Continuing..."
     fi
 }
@@ -627,13 +627,13 @@ set_vars() {
         DO_SALT=""
     fi
     if [ "x${DISTRIB_CODENAME}" != "xlenny" ];then
-        BASE_PACKAGES="$BASE_PACKAGES libyaml-dev python2.7 python2.7-dev"
-        BASE_PACKAGES="$BASE_PACKAGES libzmq3-dev"
+        BASE_PACKAGES="${BASE_PACKAGES} libyaml-dev python2.7 python2.7-dev"
+        BASE_PACKAGES="${BASE_PACKAGES} libzmq3-dev"
     fi
-    BASE_PACKAGES="$BASE_PACKAGES swig libssl-dev debconf-utils python-virtualenv"
-    BASE_PACKAGES="$BASE_PACKAGES vim git rsync"
-    BASE_PACKAGES="$BASE_PACKAGES libgmp3-dev"
-    BASE_PACKAGES="$BASE_PACKAGES libffi-dev"
+    BASE_PACKAGES="${BASE_PACKAGES} swig libssl-dev debconf-utils python-virtualenv"
+    BASE_PACKAGES="${BASE_PACKAGES} vim git rsync"
+    BASE_PACKAGES="${BASE_PACKAGES} libgmp3-dev"
+    BASE_PACKAGES="${BASE_PACKAGES} libffi-dev"
     BRANCH_PILLAR_ID="makina-states.salt.makina-states.rev"
     MAKINASTATES_TEST=${MAKINASTATES_TEST:-}
     SALT_BOOT_INITIAL_HIGHSTATE="${SALT_BOOT_INITIAL_HIGHSTATE:-}"
@@ -1162,23 +1162,23 @@ recap_(){
             bs_log "SALT_MASTER_IP: ${SALT_MASTER_IP}"
         fi
         if [ "x${IS_SALT_MINION}" != "x" ];then
-            bs_log "SALT_MASTER_DNS: $SALT_MASTER_DNS"
+            bs_log "SALT_MASTER_DNS: ${SALT_MASTER_DNS}"
             bs_log "SALT_MASTER_PORT: ${SALT_MASTER_PORT}"
-            bs_log "SALT_MINION_IP: $SALT_MINION_IP"
-            bs_log "SALT_MINION_ID: $SALT_MINION_ID"
+            bs_log "SALT_MINION_IP: ${SALT_MINION_IP}"
+            bs_log "SALT_MINION_ID: ${SALT_MINION_ID}"
         fi
         if [ "x${debug}" != "x" ];then
-            bs_log "SALT_MASTER_PUBLISH_PORT: $SALT_MASTER_PUBLISH_PORT"
-            bs_log "salt_bootstrap_nodetype: $salt_bootstrap_nodetype"
+            bs_log "SALT_MASTER_PUBLISH_PORT: ${SALT_MASTER_PUBLISH_PORT}"
+            bs_log "salt_bootstrap_nodetype: ${salt_bootstrap_nodetype}"
             if [ "x${IS_SALT_MASTER}" != "x" ];then
-                bs_log "salt_bootstrap_master: $salt_bootstrap_master"
-                bs_log "SALT_MASTER_CONTROLLER: $SALT_MASTER_CONTROLLER"
-                debug_msg "SALT_MASTER_CONTROLLER_INPUTED: $SALT_MASTER_CONTROLLER_INPUTED"
+                bs_log "salt_bootstrap_master: ${salt_bootstrap_master}"
+                bs_log "SALT_MASTER_CONTROLLER: ${SALT_MASTER_CONTROLLER}"
+                debug_msg "SALT_MASTER_CONTROLLER_INPUTED: ${SALT_MASTER_CONTROLLER_INPUTED}"
             fi
             if [ "x${IS_SALT_MINION}" != "x" ];then
-                bs_log "salt_bootstrap_minion: $salt_bootstrap_minion"
-                bs_log "SALT_MINION_CONTROLLER: $SALT_MINION_CONTROLLER"
-                debug_msg "SALT_MINION_CONTROLLER_INPUTED: $SALT_MINION_CONTROLLER_INPUTED"
+                bs_log "salt_bootstrap_minion: ${salt_bootstrap_minion}"
+                bs_log "SALT_MINION_CONTROLLER: ${SALT_MINION_CONTROLLER}"
+                debug_msg "SALT_MINION_CONTROLLER_INPUTED: ${SALT_MINION_CONTROLLER_INPUTED}}"
             fi
         fi
     fi
@@ -4268,8 +4268,8 @@ check_alive() {
     # kill all check alive
     ps_etime|sort -n -k2|egrep "boot-salt.*alive"|grep -v grep|while read psline;
     do
-        seconds="$(echo "$psline"|awk '{print $2}')"
-        pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
+        seconds="$(echo "${psline}"|awk '{print $2}')"
+        pid="$(filter_host_pids $(echo ${psline}|awk '{print $1}'))"
         if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "300" ];then
             bs_log "something was wrong with last restart, killing old check alive process: $pid"
             bs_log "${psline}"
@@ -4283,8 +4283,8 @@ check_alive() {
     # kill all old (master)salt call (> 12 hours)
     ps_etime|sort -n -k2|egrep "salt-call"|grep mastersalt|grep -v grep|while read psline;
     do
-        seconds="$(echo "$psline"|awk '{print $2}')"
-        pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
+        seconds="$(echo "${psline}"|awk '{print $2}')"
+        pid="$(filter_host_pids $(echo ${psline}|awk '{print $1}'))"
         if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "$((60*60*12))" ];then
             bs_log "Something went wrong with last restart(mastersalt), killing old salt call process: ${pid}"
             bs_log "${psline}"
