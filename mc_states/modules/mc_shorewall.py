@@ -930,13 +930,13 @@ def settings():
                 for i in ['lxc', 'kvm', 'docker']:
                     if i in data['zones']:
                         append_rules_for_zones(
-                        data['default_rules'],
-                        {'action': action,
-                         'source': i,
-                         'dest': "all",
-                         'proto': proto,
-                         'dport': '4971,4972,4973,4974'},
-                        zones=data['internal_zones'])
+                            data['default_rules'],
+                            {'action': action,
+                             'source': i,
+                             'dest': "all",
+                             'proto': proto,
+                             'dport': '4971,4972,4973,4974'},
+                            zones=data['internal_zones'])
                 append_rules_for_zones(
                     data['default_rules'],
                     {'action': action,
@@ -947,16 +947,17 @@ def settings():
                     zones=data['internal_zones'])
             # also accept configured hosts
             burpsettings = _s['mc_burp.settings']()
-            clients = 'net:'
-            clients += ','.join(prefered_ips(burpsettings['clients']))
-            for proto in protos:
-                append_rules_for_zones(
-                    data['default_rules'], {'action': action,
-                                            'source': clients,
-                                            'dest': "all",
-                                            'proto': proto,
-                                            'dport': '4971,4972'},
-                    zones=data['internal_zones'])
+            clist = prefered_ips(burpsettings['clients'])
+            if clist:
+                clients = 'net:{0}'.format(','.join(clist))
+                for proto in protos:
+                    append_rules_for_zones(
+                        data['default_rules'], {'action': action,
+                                                'source': clients,
+                                                'dest': "all",
+                                                'proto': proto,
+                                                'dport': '4971,4972'},
+                        zones=data['internal_zones'])
         # ATTENTION WE MERGE, so reverse order to append at begin
         data['default_rules'].reverse()
         for rdata in data['default_rules']:
