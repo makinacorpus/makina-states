@@ -1911,6 +1911,27 @@ setup_virtualenv() {
     if [ "x${venv_path}" = "x${MASTERSALT_VENV_PATH}" ];then
         do_pip_func="do_mastersalt_pip"
     fi
+
+    if [ "x$(${do_pip_func})" = "x" ];then
+        # check if well known modules are not missing
+        bs_log "Checking python install completness"
+        ${venv_path}/bin/python << EOF
+
+import dns
+import docker
+import salt
+import chardet
+import M2Crypto
+import OpenSSL
+import urllib3
+import ipaddr
+import ipwhois
+import pyasn1
+EOF
+        if [ "x${?}" != "x0" ];then
+            do_pip_func="1"
+        fi
+    fi
     if [ "x$(${do_pip_func})" = "x" ];then
         bs_log "Pip install in place"
     else
