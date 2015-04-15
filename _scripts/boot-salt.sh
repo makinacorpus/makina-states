@@ -3302,23 +3302,6 @@ make_association() {
         challenge_message
     fi
     debug_msg "ack"
-    #if [ "x$(get_salt_nodetype)" = "xtravis" ];then
-    #    set -x
-    #    service_ salt-minion restart
-    ##   . /etc/profile
-    ##   for i in `seq 4`;do
-    ##       #( salt-minion -lall )&
-    ##       sleep 15
-    ##       uname -ar
-    ##   done
-    ##    cat /etc/init/salt*.conf
-    ##    cat /var/log/upstart/salt* /var/log/salt/*minion*
-    ##    ls -lrt /var/log/salt
-    ##    ls -lrt /var/log/upstart
-    ##    cat /var/log/salt/salt-master
-    ##    cat /var/log/salt/salt-minion
-    #     set +x
-    #fi
     if [ "x${BS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
         restart_local_masters
         if [ "x$(get_local_salt_mode)" != "xmasterless" ];then

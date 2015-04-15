@@ -25,7 +25,8 @@ BOOTSALT_ARGS="${BOOTSALT_ARGS} --local-salt-mode masterless"
 BOOTSALT_ARGS="${BOOTSALT_ARGS} --local-mastersalt-mode masterless"
 BOOTSALT_ARGS="${BOOTSALT_ARGS} -n travis"
 if ! ./_scripts/boot-salt.sh ${BOOTSALT_ARGS};then
-    cat .bootlogs/*
+    cat /etc/shorewall/rules
+    # cat .bootlogs/*
     exit 1
 fi
 exit ${?}
