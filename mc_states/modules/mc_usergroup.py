@@ -117,16 +117,14 @@ def settings():
         data.update(get_default_groups())
         data['sudoers'] = []
         data['sysadmins'] = []
+        sudoers = []
         sysadmins_keys = []
-        if _s['mc_macros.is_item_active'](
-            'nodetypes', 'vagrantvm'
-        ):
-            sysadmins_keys.append('salt://makina-states/files/ssh/vagrant.pub')
         data['defaultSysadmins'] = get_default_sysadmins()
         # the following part just feed the above users & user_keys variables
         # default  sysadmin settings
-        sudoers = []
-        if _s['mc_nodetypes.is_nt']('travis'):
+        if _s['mc_macros.is_item_active']('nodetypes', 'vagrantvm'):
+            sysadmins_keys.append('salt://makina-states/files/ssh/vagrant.pub')
+        if _s['mc_macros.is_item_active']('nodetypes', 'travis'):
             sudoers.append('travis')
         data['admin'] = _s['mc_utils.defaults'](
             'makina-states.localsettings.admin', {
@@ -134,18 +132,14 @@ def settings():
                 'sysadmin_password': None,
                 'root_password': None,
                 'sysadmins_keys': sysadmins_keys,
-                'absent_keys': [],
-            }
-        )
+                'absent_keys': []})
         data['admin']['sudoers'] = _s['mc_project.uniquify'](
             data['admin']['sudoers'])
-
         if (
             data['admin']['root_password']
             and not data['admin']['sysadmin_password']
         ):
             data['admin']['sysadmin_password'] = data['admin']['root_password']
-
         if (
             data['admin']['sysadmin_password']
             and not data['admin']['root_password']
@@ -194,8 +188,7 @@ def settings():
             ssh_absent_keys = udata.setdefault('ssh_absent_keys', [])
             for k in data['admin']['absent_keys']:
                 if k not in ssh_absent_keys:
-                    ssh_absent_keys.append(
-                        deepcopy(k))
+                    ssh_absent_keys.append(deepcopy(k))
             for k in data['sshkeys'].get(i, []):
                 if k not in ssh_keys:
                     ssh_keys.append(k)
