@@ -1037,7 +1037,7 @@ check_py_modules() {
     # test if salt binaries are there & working
     kind="${1:-"salt"}"
     bin="${VENV_PATH}/${kind}/bin/python"
-    ${bin} << EOF
+    "${bin}" << EOF
 import dns
 import docker
 import salt
