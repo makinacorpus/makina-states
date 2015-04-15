@@ -432,9 +432,12 @@ set_valid_upstreams() {
         fi
         if [ -e "${SALT_MS}" ];then
             VALID_BRANCHES="${VALID_BRANCHES} $(echo $(cd "${SALT_MS}" && git branch| cut -c 3-))"
+            VALID_BRANCHES="${VALID_BRANCHES} $(echo $(cd "${SALT_MS}" && git log --pretty=format:'%h %H'))"
+
         fi
         if [ -e "${MASTERSALT_MS}" ];then
             VALID_BRANCHES="${VALID_BRANCHES} $(echo $(cd "${MASTERSALT_MS}" && git branch| cut -c 3-))"
+            VALID_BRANCHES="${VALID_BRANCHES} $(echo $(cd "${MASTERSALT_MS}" && git log --pretty=format:'%h %H'))"
         fi
     fi
     # remove \n
@@ -507,13 +510,6 @@ validate_changeset() {
     ret=""
     # if we pin a particular changeset make hat as a valid branch
     # also add if we had a particular changeset saved in conf
-    thistest="$(echo "${msb}" | grep -q "changeset:";echo "${?}")"
-    if [ "x${thistest}" = "x0" ];then
-        ch="$(sanitize_changeset "${msb}")"
-        if [ "x$(git log "${ch}" | wc -l|sed -e "s/ //g")"  != "x0" ];then
-            VALID_BRANCHES="${VALID_BRANCHES} ${ch} changeset:${ch}"
-        fi
-    fi
     # remove
     if [ "x${msb}" != "x" ];then
         c="$(sanitize_changeset ${msb})"
@@ -528,6 +524,7 @@ validate_changeset() {
 }
 
 get_ms_branch() {
+    set_valid_upstreams
     DEFAULT_MS_BRANCH="master"
     vmsb=""
     for msb in "${MS_BRANCH}" "$(get_conf branch)";do
@@ -966,6 +963,7 @@ set_vars() {
         salt_bootstrap_minion="${bootstrap_controllers_pref}.${SALT_MINION_CONTROLLER}"
     fi
 
+    set_valid_upstreams
     if [ "x$(get_ms_branch)" = "x" ];then
         bs_yellow_log "Valid branches: $(echo ${VALID_BRANCHES})"
         die "Please provide a valid \$MS_BRANCH (or -b \$branch) (inputed: "$(get_ms_branch)")"
