@@ -1033,6 +1033,32 @@ setup() {
     set_vars # real variable affectation
 }
 
+check_py_modules() {
+    # test if salt binaries are there & working
+    kind="${1:-"salt"}"
+    bin="${VENV_PATH}/${kind}/bin/python"
+    ${bin} << EOF
+import dns
+import docker
+import salt
+import chardet
+import M2Crypto
+import OpenSSL
+import urllib3
+import ipaddr
+import ipwhois
+import pyasn1
+EOF
+    if [ "x${?}" != "x0" ];then
+        echo "1"
+    fi
+}
+
+
+check_mastersalt_py_modules() {
+    check_py_modules mastersalt
+}
+
 do_pip() {
     # test if salt binaries are there & working
     ret=""
@@ -1908,33 +1934,24 @@ setup_virtualenv() {
         git pull
     fi
     do_pip_func="do_pip"
+    do_check_mods="check_py_modules"
     if [ "x${venv_path}" = "x${MASTERSALT_VENV_PATH}" ];then
         do_pip_func="do_mastersalt_pip"
+        do_check_mods="check_mastersalt_py_modules"
     fi
-
+    will_do_pip="y"
     if [ "x$(${do_pip_func})" = "x" ];then
-        # check if well known modules are not missing
-        bs_log "Checking python install completness"
-        ${venv_path}/bin/python << EOF
-
-import dns
-import docker
-import salt
-import chardet
-import M2Crypto
-import OpenSSL
-import urllib3
-import ipaddr
-import ipwhois
-import pyasn1
-EOF
-        if [ "x${?}" != "x0" ];then
-            do_pip_func="1"
+        will_do_pip=""
+    fi
+    if [ "x${will_do_pip}" = "x" ];then
+        if [ "x$(${do_check_mods})" != "x" ];then
+            bs_log "Python install incomplete"
+            will_do_pip="y"
+        else
+            bs_log "Pip install in place"
         fi
     fi
-    if [ "x$(${do_pip_func})" = "x" ];then
-        bs_log "Pip install in place"
-    else
+    if [ "x${will_do_pip}" != "x" ];then
         pip install -U --download-cache "${PIP_CACHE}" -r requirements/requirements.txt
         if [ "x${install_git}" != "x" ];then
             pip install -U --download-cache "${PIP_CACHE}" -r requirements/git_requirements.txt
