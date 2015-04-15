@@ -3,9 +3,12 @@ sudo: required
 python:
   - 2.7
 
+env:
+    - MS_BRANCH=travis
+
 # matrix:
 install:
-    - sudo apt-get install xz-utils python rsync acl
-    - sudo python ./_scripts/install_prebuilt_makina_states.py
+    - sudo -E ./_scripts/travis_install.sh
 
 script: sudo python _scripts/local_tests.py
+

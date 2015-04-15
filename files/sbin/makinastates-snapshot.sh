@@ -52,8 +52,9 @@ FILE_REMOVE="
 /srv/pillar/
 /var/cache/apt/archives/
 /var/lib/apt/lists
+/etc/makina-states/nodetype
 /etc/salt/pki
-/etc/mastersalt/pki 
+/etc/mastersalt/pki
 "
 FILE_WIPE="
 /var/log

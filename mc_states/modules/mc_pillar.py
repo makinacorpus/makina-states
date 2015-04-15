@@ -29,7 +29,7 @@ six = mc_states.api.six
 
 log = logging.getLogger(__name__)
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
-DOTTED_DOMAIN_PATTERN = '((^{0}\\.?$)|(\\.(@{0})|({0}\\.?)))$'
+DOTTED_DOMAIN_PATTERN = '(^{domain}|@{domain}|\\.{domain})\\.?$'
 __name = 'mc_pillar'
 _marker = object()
 
@@ -784,10 +784,11 @@ def rrs_txt_for(domain, ttl=FIVE_MINUTES):
     Return all configured NS records for a domain
     '''
     def _do(domain):
-        rrs_ttls = __salt__[__name + '.query']('rrs_ttls', {})
-        rrs_txts = __salt__[__name + '.query']('rrs_txt', {})
+        _s = __salt__
+        rrs_ttls = _s[__name + '.query']('rrs_ttls', {})
+        rrs_txts = _s[__name + '.query']('rrs_txt', {})
         all_rrs = OrderedDict()
-        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain),
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
                                re.M | re.U | re.S | re.I)
         for rrscols in rrs_txts:
             for fqdn, rrs in rrscols.items():
@@ -811,121 +812,36 @@ def rrs_txt_for(domain, ttl=FIVE_MINUTES):
     return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
 
 
-def get_ldap(ttl=FIVE_MINUTES):
+def rrs_srv_for(domain, ttl=FIVE_MINUTES):
     '''
-    Get a map of relationship between name servers
-    that is used in the pillar to attribute roles
-    and configuration to name servers
-
-    This return a mapping in the form::
-
-        {
-            all: [list of all nameservers],
-            masters: mapping of mappings {master: [list of related slaves]},
-            slaves: mapping of mappings {slave: [list of related masters]},
-        }
-
-    For each zone, if slaves are declared without master,
-    the default masters would be added as master for this zone if any defaults.
-
+    Return all configured TXT records for a domain
     '''
-    def _do():
+    def _do(domain):
         _s = __salt__
-        data = OrderedDict()
-        masters = data.setdefault('masters', OrderedDict())
-        slaves = data.setdefault('slaves', OrderedDict())
-        default = _s[__name + '.query']('ldap_maps', {}).get(
-            'default', OrderedDict())
-        for kind in ['masters', 'slaves']:
-            for server, adata in _s[
-                __name + '.query'
-            ]('ldap_maps', {}).get(kind, OrderedDict()).items():
-                sdata = data[kind][server] = copy.deepcopy(adata)
-                for k, val in default.items():
-                    sdata.setdefault(k, val)
-                sdata.setdefault('cert_domain', server)
-                # maybe generate and get the ldap certificates info
-        rids = {}
-        slavesids = [a for a in slaves]
-        slavesids.sort()
-        for server in slavesids:
-            adata = copy.deepcopy(slaves.get('default', {}))
-            adata.update(slaves[server])
-            master = adata.setdefault('master', 'localhost')
-            master_port = adata.setdefault('master_port', '389')
-            srepl = adata.setdefault('syncrepl', OrderedDict())
-            if masters and not master:
-                adata['master'] = [a for a in masters][0]
-            if 'provider' not in srepl and not adata['master']:
-                slaves.pop(server)
-                continue
-            rid = rids.setdefault(master, 100) + 1
-            rids[master] = rid
-            srepl.setdefault('provider',
-                             'ldap://{master}:{port}'.format(
-                                 master=master, port=master_port))
-            srepl['{0}rid'] = '{0}'.format(rid)
-            slaves[server] = adata
-        return data
-    cache_key = __name + '.getldap'
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
-
-
-def get_slapd_conf(id_, ttl=ONE_DAY):
-    '''
-    Return pillar information to configure makina-states.services.dns.slapd
-    '''
-    def _do(id_):
-        gconf = get_configuration(id_)
-        if not gconf.get('manage_slapd', True):
-            return {}
-        is_master = is_ldap_master(id_)
-        is_slave = is_ldap_slave(id_)
-        if is_master and is_slave:
-            raise ValueError(
-                'Cant be at the same time master and ldap slave: {0}'.format(id_))
-        conf = get_ldap()
-        data = OrderedDict()
-        if is_master:
-            data = conf['masters'][id_]
-            data['mode'] = 'master'
-        elif is_slave:
-            data = conf['slaves'][id_]
-            data['mode'] = 'slave'
-        rdata = OrderedDict()
-        if data:
-            rdata['makina-states.services.dns.slapd'] = True
-            for k in data:
-                rdata[
-                    'makina-states.services.dns.slapd.{0}'.format(k)
-                ] = data[k]
-        return rdata
-    cache_key = __name + '.get_ldap_conf_for_{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
-
-
-def is_ldap_slave(id_, ttl=ONE_DAY):
-    def _do(id_):
-        if (
-            is_managed(id_)
-            and id_ in get_ldap()['slaves']
-        ):
-            return True
-        return False
-    cache_key = __name + '.is_ldap_slave_{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
-
-
-def is_ldap_master(id_, ttl=ONE_DAY):
-    def _do(id_):
-        if (
-            is_managed(id_)
-            and id_ in get_ldap()['masters']
-        ):
-            return True
-        return False
-    cache_key = __name + '.is_ldap_master_{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+        rrs_ttls = _s[__name + '.query']('rrs_ttls', {})
+        rrs_srvs = _s[__name + '.query']('rrs_srv', {})
+        all_rrs = OrderedDict()
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
+                               re.M | re.U | re.S | re.I)
+        for fqdn, rrs in rrs_srvs.items():
+            if domain_re.search(fqdn):
+                srvrrs = all_rrs.setdefault(fqdn, [])
+                if isinstance(rrs, basestring):
+                    rrs = [rrs]
+                dfqdn = fqdn
+                if not dfqdn.endswith('.'):
+                    dfqdn += '.'
+                for rr in rr_entry(
+                    fqdn, ['{0}'.format(r) for r in rrs],
+                    rrs_ttls,
+                    record_type='SRV'
+                ).split('\n'):
+                    if rr not in srvrrs:
+                        srvrrs.append(rr)
+        rr = filter_rr_str(all_rrs)
+        return rr
+    cache_key = __name + '.rrs_srv_for_{0}'.format(domain)
+    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
 
 
 def get_nss(ttl=FIVE_MINUTES):
@@ -1368,7 +1284,7 @@ def rrs_a_for(domain, ttl=FIVE_MINUTES):
         rrs_ttls = __salt__[__name + '.query']('rrs_ttls', {})
         ips = db['ips']
         all_rrs = OrderedDict()
-        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain),
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
                                re.M | re.U | re.S | re.I)
         # add all A from simple ips
         for fqdn in ips:
@@ -1384,7 +1300,8 @@ def rrs_a_for(domain, ttl=FIVE_MINUTES):
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_a_for_{0}'.format(domain)
-    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [domain], {}, cache_key, ttl)
 
 
 def rrs_raw_for(domain, ttl=FIVE_MINUTES):
@@ -1397,7 +1314,7 @@ def rrs_raw_for(domain, ttl=FIVE_MINUTES):
         rrs_raw = __salt__[__name + '.query']('rrs_raw', {})
         ips = db['ips']
         all_rrs = OrderedDict()
-        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain),
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
                                re.M | re.U | re.S | re.I)
         for fqdn in rrs_raw:
             if domain_re.search(fqdn):
@@ -1425,7 +1342,7 @@ def rrs_cnames_for(domain, ttl=FIVE_MINUTES):
         cnames = db['cnames']
         ips = db['ips']
         all_rrs = OrderedDict()
-        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain),
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
                                re.M | re.U | re.S | re.I)
 
         # filter out CNAME which have also A records
@@ -1669,12 +1586,130 @@ def rrs_for(domain, aslist=False):
         rrs_txt_for(domain) + '\n' +
         rrs_raw_for(domain) + '\n' +
         rrs_mx_for(domain) + '\n' +
+        rrs_srv_for(domain) + '\n' +
         rrs_a_for(domain) + '\n' +
         rrs_cnames_for(domain)
     )
     if aslist:
         rr = [a.strip() for a in rr.split('\n') if a.strip()]
     return rr
+
+
+def get_ldap(ttl=FIVE_MINUTES):
+    '''
+    Get a map of relationship between name servers
+    that is used in the pillar to attribute roles
+    and configuration to name servers
+
+    This return a mapping in the form::
+
+        {
+            all: [list of all nameservers],
+            masters: mapping of mappings {master: [list of related slaves]},
+            slaves: mapping of mappings {slave: [list of related masters]},
+        }
+
+    For each zone, if slaves are declared without master,
+    the default masters would be added as master for this zone if any defaults.
+
+    '''
+    def _do():
+        _s = __salt__
+        data = OrderedDict()
+        masters = data.setdefault('masters', OrderedDict())
+        slaves = data.setdefault('slaves', OrderedDict())
+        default = _s[__name + '.query']('ldap_maps', {}).get(
+            'default', OrderedDict())
+        for kind in ['masters', 'slaves']:
+            for server, adata in _s[
+                __name + '.query'
+            ]('ldap_maps', {}).get(kind, OrderedDict()).items():
+                sdata = data[kind][server] = copy.deepcopy(adata)
+                for k, val in default.items():
+                    sdata.setdefault(k, val)
+                sdata.setdefault('cert_domain', server)
+                # maybe generate and get the ldap certificates info
+        rids = {}
+        slavesids = [a for a in slaves]
+        slavesids.sort()
+        for server in slavesids:
+            adata = copy.deepcopy(slaves.get('default', {}))
+            adata.update(slaves[server])
+            master = adata.setdefault('master', 'localhost')
+            master_port = adata.setdefault('master_port', '389')
+            srepl = adata.setdefault('syncrepl', OrderedDict())
+            if masters and not master:
+                adata['master'] = [a for a in masters][0]
+            if 'provider' not in srepl and not adata['master']:
+                slaves.pop(server)
+                continue
+            rid = rids.setdefault(master, 100) + 1
+            rids[master] = rid
+            srepl.setdefault('provider',
+                             'ldap://{master}:{port}'.format(
+                                 master=master, port=master_port))
+            srepl['{0}rid'] = '{0}'.format(rid)
+            slaves[server] = adata
+        return data
+    cache_key = __name + '.getldap'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+def get_slapd_conf(id_, ttl=ONE_DAY):
+    '''
+    Return pillar information to configure makina-states.services.dns.slapd
+    '''
+    def _do(id_):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_slapd', True):
+            return {}
+        is_master = is_ldap_master(id_)
+        is_slave = is_ldap_slave(id_)
+        if is_master and is_slave:
+            raise ValueError(
+                'Cant be at the same time master and ldap slave: {0}'.format(id_))
+        conf = get_ldap()
+        data = OrderedDict()
+        if is_master:
+            data = conf['masters'][id_]
+            data['mode'] = 'master'
+        elif is_slave:
+            data = conf['slaves'][id_]
+            data['mode'] = 'slave'
+        rdata = OrderedDict()
+        if data:
+            rdata['makina-states.services.dns.slapd'] = True
+            for k in data:
+                rdata[
+                    'makina-states.services.dns.slapd.{0}'.format(k)
+                ] = data[k]
+        return rdata
+    cache_key = __name + '.get_ldap_conf_for_{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+
+
+def is_ldap_slave(id_, ttl=ONE_DAY):
+    def _do(id_):
+        if (
+            is_managed(id_)
+            and id_ in get_ldap()['slaves']
+        ):
+            return True
+        return False
+    cache_key = __name + '.is_ldap_slave_{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+
+
+def is_ldap_master(id_, ttl=ONE_DAY):
+    def _do(id_):
+        if (
+            is_managed(id_)
+            and id_ in get_ldap()['masters']
+        ):
+            return True
+        return False
+    cache_key = __name + '.is_ldap_master_{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_ldap_configuration(id_=None, ttl=TEN_MINUTES):
@@ -2856,25 +2891,23 @@ def manage_baremetal_network(fqdn, ipsfo, ipsfo_map,
 
 def get_sysnet_conf(id_, ttl=ONE_DAY):
     def _do(id_):
+        _s = __salt__
         gconf = get_configuration(id_)
-        ms_vars = get_makina_states_variables(id_)
         rdata = {}
-        net = __salt__[__name + '.load_network_infrastructure']()
+        net = _s[__name + '.load_network_infrastructure']()
         ips = net['ips']
         ipsfo = net['ipsfo']
         ipsfo_map = net['ipsfo_map']
         dbi = get_db_infrastructure_maps()
         baremetal_hosts = dbi['bms']
-        if not (
-            ms_vars.get('is_bm', False)
-            and gconf.get('manage_network', False)
-        ):
+        ifc = gconf.get('main_network_interface', 'br0')
+        if not gconf.get('manage_network', True) or not is_salt_managed(id_):
             return {}
         if id_ in baremetal_hosts:
             # always use bridge as main_if
             rdata.update(
                 manage_baremetal_network(
-                    id_, ipsfo, ipsfo_map, ips, ifc='br0'))
+                    id_, ipsfo, ipsfo_map, ips, ifc=ifc))
         else:
             for vt, targets in __salt__[
                 __name + '.query', {}
@@ -2894,9 +2927,10 @@ def get_sysnet_conf(id_, ttl=ONE_DAY):
         net_ext_pillar = query('network_settings', {}).get(id_, {})
         if net_ext_pillar and rdata.get(pref, None):
             for i in range(len(rdata[pref])):
-                for ifc in [ifc for ifc in net_ext_pillar
-                            if ifc in rdata[pref][i]]:
-                    rdata[pref][i][ifc] = __salt__['mc_utils.dictupdate'](
+                for ifc in [
+                    ifc for ifc in net_ext_pillar if ifc in rdata[pref][i]
+                ]:
+                    rdata[pref][i][ifc] = _s['mc_utils.dictupdate'](
                         rdata[pref][i][ifc], net_ext_pillar[ifc])
         return rdata
     cache_key = __name + '.get_sysnet_conf{0}'.format(id_)

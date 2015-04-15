@@ -46,6 +46,14 @@ shorewall-test-cfg:
     - watch_in:
       - mc_proxy: shorewall-activation
 
+shorewall-test-goodcfg-p:
+  cmd.run:
+    - name: shorewall check
+    - require:
+      - file: shorewall-test-cfg
+    - require_in:
+      - cmd: shorewall-test-goodcfg
+
 shorewall-test-goodcfg:
   cmd.run:
     - name: shorewall check && echo "changed=false"
