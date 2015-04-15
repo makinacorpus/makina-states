@@ -8,9 +8,7 @@ env:
 
 # matrix:
 install:
-    - env
-    - sudo apt-get install xz-utils python rsync acl
-    - if ! sudo -E python ./_scripts/install_prebuilt_makina_states.py --branch ${MS_BRANCH};then sudo -E cat /srv/mastersalt/makina-states/.bootlogs/*;exit 1;fi
+    - sudo -E ./_scripts/travis_install.sh
 
 script: sudo python _scripts/local_tests.py
 
