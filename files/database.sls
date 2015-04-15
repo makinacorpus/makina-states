@@ -481,6 +481,11 @@ ssh_groups:
 #     mail2.mydomain.com: {priority: 20}
 #     mx.my-domain.com: {priority: 10}
 
+
+# SRV RECORDS
+rrs_srv:
+  _autodiscover._tcp.foo.net: "0 5 443 mail.foo.net"
+
 # TXT DNS record to add in a zone
 # rrs_txt:
 #   - dkim._domainkey.foo.com: "v=DKIM1; p=AAA/BBB+CCCfDDD FFF"
