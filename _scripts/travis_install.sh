@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-OLD_MS_BRANCH="${MS_BRANCH:-stable}"
+OLD_MS_BRANCH="${TRAVIS_COMMIT:-stable}"
+MS_BRANCH="$(git log|head -n1|awk '{print $2}')"
+CMS_BRANCH="changeset:${MS_BRANCH}"
 env
 set -x
 apt-get install xz-utils python rsync acl
@@ -20,7 +22,7 @@ fi
 cd /srv/mastersalt/makina-states
 git fetch --all
 git reset --hard remotes/origin/${MS_BRANCH}
-BOOTSALT_ARGS="${BOOTSALT_ARGS:-"-C -b ${MS_BRANCH}"}"
+BOOTSALT_ARGS="${BOOTSALT_ARGS:-"-C -b ${CMS_BRANCH}"}"
 BOOTSALT_ARGS="${BOOTSALT_ARGS} --local-salt-mode masterless"
 BOOTSALT_ARGS="${BOOTSALT_ARGS} --local-mastersalt-mode masterless"
 BOOTSALT_ARGS="${BOOTSALT_ARGS} -n travis"

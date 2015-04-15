@@ -3,9 +3,6 @@ sudo: required
 python:
   - 2.7
 
-env:
-    - MS_BRANCH=travis
-
 # matrix:
 install:
     - sudo -E ./_scripts/travis_install.sh
