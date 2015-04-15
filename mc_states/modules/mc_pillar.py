@@ -2818,6 +2818,7 @@ def manage_bridged_fo_kvm_network(fqdn, host, ipsfo,
             ]
         }
     }]
+    return rdata
 
 
 def manage_baremetal_network(fqdn, ipsfo, ipsfo_map,
@@ -2900,18 +2901,16 @@ def get_sysnet_conf(id_, ttl=ONE_DAY):
         ipsfo_map = net['ipsfo_map']
         dbi = get_db_infrastructure_maps()
         baremetal_hosts = dbi['bms']
-        ifc = gconf.get('main_network_interface', 'br0')
+        mifc = gconf.get('main_network_interface', 'br0')
         if not gconf.get('manage_network', True) or not is_salt_managed(id_):
             return {}
         if id_ in baremetal_hosts:
             # always use bridge as main_if
             rdata.update(
                 manage_baremetal_network(
-                    id_, ipsfo, ipsfo_map, ips, ifc=ifc))
+                    id_, ipsfo, ipsfo_map, ips, ifc=mifc))
         else:
-            for vt, targets in __salt__[
-                __name + '.query', {}
-            ]('vms').items():
+            for vt, targets in _s[__name + '.query']('vms', {}).items():
                 if vt != 'kvm':
                     continue
                 for target, vms in targets.items():
@@ -2919,9 +2918,9 @@ def get_sysnet_conf(id_, ttl=ONE_DAY):
                         log.error('No vms for {0}, error?'.format(target))
                     if id_ not in vms:
                         continue
-                    manage_bridged_fo_kvm_network(
-                        id_, target, ipsfo,
-                        ipsfo_map, ips)
+                    rdata.update(
+                        manage_bridged_fo_kvm_network(
+                            id_, target, ipsfo, ipsfo_map, ips))
         pref = ('makina-states.localsettings.network.'
                 'ointerfaces')
         net_ext_pillar = query('network_settings', {}).get(id_, {})
