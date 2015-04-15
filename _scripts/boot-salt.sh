@@ -3707,10 +3707,10 @@ highstate_in_mastersalt_env() {
         bs_log "    export MASTERSALT_BOOT_SKIP_HIGHSTATE=1 to skip (dangerous)"
         LOCAL=""
         if [ "x$(mastersalt_ping_test)" != "x0" ];then
-            LOCAL="--local $LOCAL"
+            LOCAL="--local ${LOCAL}"
             bs_yellow_log " [bs] mastersalt highstate running offline !"
         fi
-        mastersalt_call_wrapper $LOCAL state.highstate
+        mastersalt_call_wrapper ${LOCAL} state.highstate
         if [ "x${SALT_BOOT_DEBUG}" != "x" ];then cat "${SALT_BOOT_OUTFILE}";fi
         warn_log
         if [ "x${last_salt_retcode}" != "x0" ];then
