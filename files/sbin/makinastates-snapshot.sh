@@ -11,6 +11,7 @@ fi
 REMOVE="
 /tmp/.saltcloud
 /root/.cache
+/etc/makina-states/nodetype
 /home/*/.cache
 "
 
@@ -52,7 +53,6 @@ FILE_REMOVE="
 /srv/pillar/
 /var/cache/apt/archives/
 /var/lib/apt/lists
-/etc/makina-states/nodetype
 /etc/salt/pki
 /etc/mastersalt/pki
 "
