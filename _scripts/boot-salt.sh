@@ -420,7 +420,9 @@ get_minion_id() {
 }
 
 set_valid_upstreams() {
-    if [ "x${SETTED_VALID_UPSTREAM}" != "x" ];then return:fi
+    if [ "x${SETTED_VALID_UPSTREAM}" != "x" ];then
+        return
+    fi
     if [ ! -e "$(which git 2>/dev/null)" ];then
         VALID_BRANCHES="master stable"
     fi
@@ -512,7 +514,7 @@ validate_changeset() {
             VALID_BRANCHES="${VALID_BRANCHES} ${ch} changeset:${ch}"
         fi
     fi
-    # remove    
+    # remove
     if [ "x${msb}" != "x" ];then
         c="$(sanitize_changeset ${msb})"
         thistest="$(echo "${VALID_BRANCHES}" | grep -q "${c}";echo "${?}")"
