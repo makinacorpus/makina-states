@@ -420,6 +420,7 @@ get_minion_id() {
 }
 
 set_valid_upstreams() {
+    if [ "x${SETTED_VALID_UPSTREAM}" != "x" ];then return:fi
     if [ ! -e "$(which git 2>/dev/null)" ];then
         VALID_BRANCHES="master stable"
     fi
@@ -434,17 +435,8 @@ set_valid_upstreams() {
             VALID_BRANCHES="${VALID_BRANCHES} $(echo $(cd "${MASTERSALT_MS}" && git branch| cut -c 3-))"
         fi
     fi
-    # if we pin a particular changeset make hat as a valid branch
-    # also add if we had a particular changeset saved in conf
-    msb="$(get_ms_branch)"
-    thistest="$(echo "${msb}" | grep -q "changeset:";echo "${?}")"
-    if [ "x${thistest}" = "x0" ];then
-        ch="$(sanitize_changeset "${msb}")"
-        if [ "x$(git log "$ch" | wc -l|sed -e "s/ //g")"  != "x0" ];then
-            VALID_BRANCHES="${VALID_BRANCHES} ${ch} changeset:$ch"
-        fi
-    fi
     # remove \n
+    SETTED_VALID_UPSTREAM="1"
     VALID_BRANCHES=$(echo "${VALID_BRANCHES}")
 }
 
@@ -508,11 +500,28 @@ set_conf() {
 }
 
 validate_changeset() {
-    if [ "x${1}" != "x" ];then
-        thistest="$(echo "${VALID_BRANCHES}" | grep -q "${1}";echo "${?}")"
-        if [ "x${thistest}" = "x0" ];then
-            echo "${1}"
+    set_valid_upstreams
+    msb="${1}"
+    ret=""
+    # if we pin a particular changeset make hat as a valid branch
+    # also add if we had a particular changeset saved in conf
+    thistest="$(echo "${msb}" | grep -q "changeset:";echo "${?}")"
+    if [ "x${thistest}" = "x0" ];then
+        ch="$(sanitize_changeset "${msb}")"
+        if [ "x$(git log "${ch}" | wc -l|sed -e "s/ //g")"  != "x0" ];then
+            VALID_BRANCHES="${VALID_BRANCHES} ${ch} changeset:${ch}"
         fi
+    fi
+    # remove    
+    if [ "x${msb}" != "x" ];then
+        c="$(sanitize_changeset ${msb})"
+        thistest="$(echo "${VALID_BRANCHES}" | grep -q "${c}";echo "${?}")"
+        if [ "x${thistest}" = "x0" ];then
+            ret="${msb}"
+        fi
+    fi
+    if [ "x${ret}" != "x" ];then
+       echo "${ret}"
     fi
 }
 
@@ -520,9 +529,9 @@ get_ms_branch() {
     DEFAULT_MS_BRANCH="master"
     vmsb=""
     for msb in "${MS_BRANCH}" "$(get_conf branch)";do
-        msb="$(validate_changeset ${msb})"
-        if [ "x${msb}" != "x" ];then
-            vmsb="${vmsb}"
+        cmsb="$(validate_changeset ${msb})"
+        if [ "x${cmsb}" != "x" ];then
+            vmsb="${cmsb}"
             break
         fi
     done
@@ -674,7 +683,6 @@ set_vars() {
     MASTERSALT_MS="${MASTERSALT_ROOT}/makina-states"
     TMPDIR="${TMPDIR:-"/tmp"}"
     VENV_PATH="${VENV_PATH:-"/salt-venv"}"
-    set_valid_upstreams
     EGGS_GIT_DIRS="docker-py m2crypto salt salttesting"
     PIP_CACHE="${VENV_PATH}/cache"
     SALT_VENV_PATH="${VENV_PATH}/salt"
