@@ -557,19 +557,21 @@ validate_nodetype() {
 }
 
 get_default_nodetype() {
-    DEFAULT_NT="$(validate_nodetype $(get_conf nodetype))"
+    saved_nt="$(validate_nodetype $(get_conf nodetype))"
     fallback_nt="server"
-    if [ "${DEFAULT_NT}" = "x" ];then
+    DEFAULT_NT="${saved_nt}"
+    if [ "${saved_nt}" = "x" ] || [ "x${saved_nt}" = "x${fallback_nt}" ];then
+        DEFAULT_NT=""
+    fi
+    if [ "x${DEFAULT_NT}" = "x" ];then
         if [ "x${TRAVIS}" != "x" ];then
             DEFAULT_NT="travis"
         elif [ "x$(is_lxc)" != "x0" ];then
             DEFAULT_NT="lxccontainer"
-        else
-            DEFAULT_NT="${fallback_nt}"
         fi
     fi
     if [ "x${DEFAULT_NT}" = "xlxccontainer" ] && [ "x$(is_lxc)" = "x0" ] ;then
-            DEFAULT_NT="${fallback_nt}"
+        DEFAULT_NT="${fallback_nt}"
     fi
     DEFAULT_NT="$(validate_nodetype ${DEFAULT_NT})"
     if [ "x${DEFAULT_NT}" = "x" ];then
@@ -3300,23 +3302,23 @@ make_association() {
         challenge_message
     fi
     debug_msg "ack"
-    if [ "x$(get_salt_nodetype)" = "xtravis" ];then
-        set -x
-        service_ salt-minion restart
-    #   . /etc/profile
-    #   for i in `seq 4`;do
-    #       #( salt-minion -lall )&
-    #       sleep 15
-    #       uname -ar
-    #   done
-    #    cat /etc/init/salt*.conf
-    #    cat /var/log/upstart/salt* /var/log/salt/*minion*
-    #    ls -lrt /var/log/salt
-    #    ls -lrt /var/log/upstart
-    #    cat /var/log/salt/salt-master
-    #    cat /var/log/salt/salt-minion
-         set +x
-    fi
+    #if [ "x$(get_salt_nodetype)" = "xtravis" ];then
+    #    set -x
+    #    service_ salt-minion restart
+    ##   . /etc/profile
+    ##   for i in `seq 4`;do
+    ##       #( salt-minion -lall )&
+    ##       sleep 15
+    ##       uname -ar
+    ##   done
+    ##    cat /etc/init/salt*.conf
+    ##    cat /var/log/upstart/salt* /var/log/salt/*minion*
+    ##    ls -lrt /var/log/salt
+    ##    ls -lrt /var/log/upstart
+    ##    cat /var/log/salt/salt-master
+    ##    cat /var/log/salt/salt-minion
+    #     set +x
+    #fi
     if [ "x${BS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
         restart_local_masters
         if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
@@ -3744,10 +3746,6 @@ highstate_in_salt_env() {
         if [ "x${last_salt_retcode}" != "x0" ];then
             bs_log "Failed highstate"
             warn_log
-            if [ "x${TRAVIS}" != "x" ];then
-                cat "${MASTERSALT_MS}"/.bootlogs/*
-            fi
-            exit 1
         fi
         warn_log
         salt_echo "changed=yes comment='salt highstate run'"

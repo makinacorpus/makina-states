@@ -23,6 +23,7 @@ git reset --hard remotes/origin/${MS_BRANCH}
 BOOTSALT_ARGS="${BOOTSALT_ARGS:-"-C -b ${MS_BRANCH}"}"
 BOOTSALT_ARGS="${BOOTSALT_ARGS} --local-salt-mode masterless"
 BOOTSALT_ARGS="${BOOTSALT_ARGS} --local-mastersalt-mode masterless"
+BOOTSALT_ARGS="${BOOTSALT_ARGS} -n travis"
 if ! ./_scripts/boot-salt.sh ${BOOTSALT_ARGS};then
     cat .bootlogs/*
     exit 1
