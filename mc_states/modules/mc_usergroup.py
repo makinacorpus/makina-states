@@ -124,9 +124,9 @@ def settings():
             sysadmins_keys.append('salt://makina-states/files/ssh/vagrant.pub')
         data['defaultSysadmins'] = get_default_sysadmins()
         # the following part just feed the above users & user_keys variables
-        #default  sysadmin settings
+        # default  sysadmin settings
         sudoers = []
-        if _s['mc_nodetypes.is_nt']('travis):
+        if _s['mc_nodetypes.is_nt']('travis'):
             sudoers.append('travis')
         data['admin'] = _s['mc_utils.defaults'](
             'makina-states.localsettings.admin', {
