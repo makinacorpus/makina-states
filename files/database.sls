@@ -483,12 +483,18 @@ ssh_groups:
 
 
 # SRV RECORDS
-rrs_srv:
-  _autodiscover._tcp.foo.net: "0 5 443 mail.foo.net"
+# rrs_srv:
+#   _autodiscover._tcp.foo.net: "0 5 443 mail.foo.net"
+#   _autodiscover._tcp.foo.net:
+#     - "0 5 443 mail.foo.net"
+#     - "0 6 443 mail2.foo.net"
 
 # TXT DNS record to add in a zone
 # rrs_txt:
 #   - dkim._domainkey.foo.com: "v=DKIM1; p=AAA/BBB+CCCfDDD FFF"
+#   - dkim2._domainkey.foo.com:
+#      - "v=DKIM1; p=AAA/BBB+CCCfDDD FFF"
+#      - "v=DKIM2; p=AAA/BBB+CCCfDDD FFF"
 
 # Raw DNS record to add as is in a zone
 # rrs_raw:
