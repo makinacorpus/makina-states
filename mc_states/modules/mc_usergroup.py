@@ -126,7 +126,7 @@ def settings():
         # the following part just feed the above users & user_keys variables
         #default  sysadmin settings
         sudoers = []
-        if _s['mc_nodetypes.is_travis']():
+        if _s['mc_nodetypes.is_nt']('travis):
             sudoers.append('travis')
         data['admin'] = _s['mc_utils.defaults'](
             'makina-states.localsettings.admin', {
@@ -157,8 +157,8 @@ def settings():
                       'password': data['admin']['sysadmin_password']}
         default_keys = {'root': data['admin']['sysadmins_keys']}
         if 'sysadmin_keys' in data['admin']:
-            for a in data['admin']['sysadmin_keys'] :
-                if not a in data['admin']['sysadmins_keys']:
+            for a in data['admin']['sysadmin_keys']:
+                if a not in data['admin']['sysadmins_keys']:
                     data['admin']['sysadmins_keys'].append(a)
         users = data['users'] = get_default_users()
         data['sshkeys'] = _s['mc_utils.defaults'](

@@ -151,7 +151,9 @@ warn_log() {
         if [ -e "${SALT_BOOT_CMDFILE}" ];then
             bs_log "    - ${SALT_BOOT_CMDFILE}"
         fi
-        travis_log
+        if [ "x${TRAVIS_DEBUG}" != "x" ];then
+            travis_log
+        fi
     fi
 }
 
