@@ -40,6 +40,23 @@ fi
 # Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
 . /lib/lsb/init-functions
 
+CONFIG="$(echo ${DAEMON_ARGS}|awk -F "-c" '{print $2}')"
+is_lxc() {
+    echo  "$(cat -e /proc/1/environ |grep container=lxc|wc -l|sed -e "s/ //g")"
+}
+filter_host_pids() {
+    if [ "x$(is_lxc)" != "x0" ];then
+        echo "${@}"
+    else
+        for pid in ${@};do
+            if [ "x$(grep -q lxc /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
+                 echo ${pid}
+             fi
+        done
+    fi
+}
+
+
 #
 # Function that starts the daemon/service
 #
