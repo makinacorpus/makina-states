@@ -1,8 +1,10 @@
 import unittest
 import mc_states.api
 
+from . import base
 
-class TestCase(unittest.TestCase):
+
+class TestCase(base.ModuleCase):
     def test_is_valid_ip(self):
         self.assertTrue(mc_states.api.is_valid_ip("::1"))
         self.assertTrue(mc_states.api.is_valid_ip("1::1"))
@@ -11,5 +13,3 @@ class TestCase(unittest.TestCase):
         self.assertFalse(mc_states.api.is_valid_ip("255"))
         self.assertFalse(mc_states.api.is_valid_ip("a"))
         self.assertFalse(mc_states.api.is_valid_ip("www.foobar.com"))
-
-#
