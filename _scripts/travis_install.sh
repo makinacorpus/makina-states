@@ -1,34 +1,43 @@
 #!/usr/bin/env bash
+CWD="${PWD}"
+REPO="/srv/ms.git"
 OLD_MS_BRANCH="${TRAVIS_COMMIT:-stable}"
 MS_BRANCH="$(git log|head -n1|awk '{print $2}')"
 CMS_BRANCH="changeset:${MS_BRANCH}"
-env
+BOOTSALT_ARGS=""
+BOOTSALT_ARGS="${BOOTSALT_ARGS} -C -b ${CMS_BRANCH}"
+BOOTSALT_ARGS="${BOOTSALT_ARGS} --local-salt-mode masterless"
+BOOTSALT_ARGS="${BOOTSALT_ARGS} --local-mastersalt-mode masterless"
+BOOTSALT_ARGS="${BOOTSALT_ARGS} -n travis"
 set -x
+env
 apt-get install xz-utils python rsync acl
-set -e
-./_scripts/install_prebuilt_makina_states.py --skip-salt
-set +e
+if !  ./_scripts/install_prebuilt_makina_states.py --skip-salt;then
+    exit 1
+fi
 if [ -f /etc/makina-states/nodetype ];then
     rm -vf /etc/makina-states/nodetype
 fi
 sed -i -re "/makina-states.nodetypes.*: (true|false)/ d" /etc/*salt/grains
+rm -f .git/shallow
+git clone --mirror --bare . "${REPO}"
 cd /srv/salt/makina-states
+git remote rm travis || /bin/true
+git remote add travis "${REPO}"
 git fetch --all
-git reset --hard remotes/origin/${MS_BRANCH} \
- || export MS_BRANCH="stable"
-if [ "x${MS_BRANCH}" != "x${OLD_MS_BRANCH}" ];then
-    git reset --hard remotes/origin/${MS_BRANCH}
-fi
+git reset --hard ${MS_BRANCH}
 cd /srv/mastersalt/makina-states
+git remote rm travis || /bin/true
+git remote add travis "${REPO}"
 git fetch --all
-git reset --hard remotes/origin/${MS_BRANCH}
-BOOTSALT_ARGS="${BOOTSALT_ARGS:-"-C -b ${CMS_BRANCH}"}"
-BOOTSALT_ARGS="${BOOTSALT_ARGS} --local-salt-mode masterless"
-BOOTSALT_ARGS="${BOOTSALT_ARGS} --local-mastersalt-mode masterless"
-BOOTSALT_ARGS="${BOOTSALT_ARGS} -n travis"
+git reset --hard ${MS_BRANCH}
 if ! ./_scripts/boot-salt.sh ${BOOTSALT_ARGS};then
+    cat /etc/shorewall/params
     cat /etc/shorewall/rules
-    # cat .bootlogs/*
+    shorewall check
+    for i in $(ls .bootlogs/* -1t | head -n 5);do
+        cat "${i}"
+    done
     exit 1
 fi
 exit ${?}
