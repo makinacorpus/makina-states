@@ -321,9 +321,10 @@ def settings():
                 if p in ['SSH', 'DNS', 'PING', 'WEB', 'MUMBLE']:
                     default = 'all'
                 if p == 'BURP':
-                    default = 'net:'
                     bclients = prefered_ips(burpsettings['clients'])
-                    default += ','.join(bclients)
+                    if bclients:
+                        default = 'net:'
+                        default += ','.join(bclients)
                 data['default_params'].setdefault(
                     'RESTRICTED_{0}'.format(p), default)
             for r, rdata in data['default_params'].items():
@@ -979,7 +980,3 @@ def settings():
 
         return data
     return _settings()
-
-
-
-#

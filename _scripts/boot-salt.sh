@@ -52,6 +52,7 @@ SALT_BOOT_DEBUG="${SALT_BOOT_DEBUG:-}"
 SALT_BOOT_DEBUG_LEVEL="${SALT_BOOT_DEBUG_LEVEL:-all}"
 ALIVE_MARKER="/tmp/mastersalt_alive"
 VALID_BRANCHES=""
+VALID_CHANGESETS=""
 PATH="${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
 if [ -h "${THIS}" ];then
     THIS="$(readlink ${THIS})"
@@ -155,14 +156,12 @@ warn_log() {
         if [ -e "${SALT_BOOT_CMDFILE}" ];then
             bs_log "    - ${SALT_BOOT_CMDFILE}"
         fi
-        if [ "x${TRAVIS_DEBUG}" != "x" ];then
-            travis_log
-        fi
+        travis_log
     fi
 }
 
 travis_log() {
-    if [ "x$(get_salt_nodetype)" = "xtravis" ];then
+    if [ "x${TRAVIS_DEBUG}" != "x" ] && [ "x$(get_salt_nodetype)" = "xtravis" ];then
         cat "${SALT_BOOT_OUTFILE}"
         cat "${SALT_BOOT_LOGFILE}"
         cat "${SALT_BOOT_CMDFILE}"
@@ -430,19 +429,21 @@ set_valid_upstreams() {
         if [ "x${SALT_BOOT_LIGHT_VARS}" = "x" ];then
             VALID_BRANCHES="$(echo "$(git ls-remote "${MAKINASTATES_URL}"|grep "refs/heads"|awk -F/ '{print $3}'|grep -v HEAD)")"
         fi
-        if [ -e "${SALT_MS}" ];then
+        if [ -e "${SALT_MS}/.git/config" ];then
+            SETTED_VALID_UPSTREAM="1"
             VALID_BRANCHES="${VALID_BRANCHES} $(echo $(cd "${SALT_MS}" && git branch| cut -c 3-))"
-            VALID_BRANCHES="${VALID_BRANCHES} $(echo $(cd "${SALT_MS}" && git log --pretty=format:'%h %H'))"
+            VALID_CHANGESETS="${VALID_CHANGESETS} $(echo $(cd "${SALT_MS}" && git log --pretty=format:'%h %H'))"
 
         fi
-        if [ -e "${MASTERSALT_MS}" ];then
+        if [ -e "${MASTERSALT_MS}/.git/config" ];then
+            SETTED_VALID_UPSTREAM="1"
             VALID_BRANCHES="${VALID_BRANCHES} $(echo $(cd "${MASTERSALT_MS}" && git branch| cut -c 3-))"
-            VALID_BRANCHES="${VALID_BRANCHES} $(echo $(cd "${MASTERSALT_MS}" && git log --pretty=format:'%h %H'))"
+            VALID_CHANGESETS="${VALID_CHANGESETS} $(echo $(cd "${MASTERSALT_MS}" && git log --pretty=format:'%h %H'))"
         fi
     fi
     # remove \n
-    SETTED_VALID_UPSTREAM="1"
-    VALID_BRANCHES=$(echo "${VALID_BRANCHES}")
+    VALID_BRANCHES=$(echo $(echo "${VALID_BRANCHES}"|tr -s [:space:] \\n|sort -u))
+    VALID_CHANGESETS=$(echo $(echo "${VALID_CHANGESETS}"|tr -s [:space:] \\n|sort -u))
 }
 
 get_mastersalt() {
@@ -508,15 +509,27 @@ validate_changeset() {
     set_valid_upstreams
     msb="${1}"
     ret=""
-    # if we pin a particular changeset make hat as a valid branch
     # also add if we had a particular changeset saved in conf
     # remove
     if [ "x${msb}" != "x" ];then
         c="$(sanitize_changeset ${msb})"
-        thistest="$(echo "${VALID_BRANCHES}" | grep -q "${c}";echo "${?}")"
+        thistest="$(echo "${VALID_CHANGESETS}" "${VALID_BRANCHES}" | grep -q "${c}";echo "${?}")"
         if [ "x${thistest}" = "x0" ];then
             ret="${msb}"
         fi
+
+    fi
+    # if we pin a particular changeset make hat as a valid branch
+    if [ "x${ret}" = "x" ];then
+        for saltms in "${SALT_MS}" "${MASTERSALT_MS}";do
+            if [ -e "${saltms}/.git" ];then
+                thistest="$(cd "${saltms}" && git log "${msb}" 2>/dev/null 1>/dev/null;echo ${?})"
+                if [ "x${thistest}" = "x0" ];then
+                    ret="${msb}"
+                    break
+                fi
+            fi
+        done
     fi
     if [ "x${ret}" != "x" ];then
        echo "${ret}"
@@ -962,9 +975,8 @@ set_vars() {
         salt_bootstrap_master="${bootstrap_controllers_pref}.${SALT_MASTER_CONTROLLER}"
         salt_bootstrap_minion="${bootstrap_controllers_pref}.${SALT_MINION_CONTROLLER}"
     fi
-
     set_valid_upstreams
-    if [ "x$(get_ms_branch)" = "x" ];then
+    if [ "x${MS_BRANCH}" != "x" ] && [ "x$(validate_changeset ${MS_BRANCH})" = "x" ];then
         bs_yellow_log "Valid branches: $(echo ${VALID_BRANCHES})"
         die "Please provide a valid \$MS_BRANCH (or -b \$branch) (inputed: "$(get_ms_branch)")"
     fi
@@ -1580,6 +1592,7 @@ sys_info(){
 }
 
 travis_sys_info() {
+    return
     if [ "x$(get_salt_nodetype)" = "xtravis" ] && [ "x${TRAVIS_DEBUG}" != "x" ];then
         sys_info
     fi
@@ -3715,13 +3728,8 @@ highstate_in_mastersalt_env() {
         warn_log
         if [ "x${last_salt_retcode}" != "x0" ];then
             bs_log "Failed highstate for mastersalt"
-            if [ "x${TRAVIS}" != "x" ];then
-                cat /etc/shorewall/rules
-                cat "${MASTERSALT_MS}"/.bootlogs/*
-            fi
             exit 1
         fi
-        warn_log
         salt_echo "changed=yes comment='mastersalt highstate run'"
     else
         salt_echo "changed=false comment='mastersalt highstate skipped'"
@@ -3740,20 +3748,17 @@ highstate_in_salt_env() {
             LOCAL="--local ${LOCAL}"
         fi
         salt_call_wrapper ${LOCAL} state.highstate
+        if [ "x${SALT_BOOT_DEBUG}" != "x" ];then cat "${SALT_BOOT_OUTFILE}";fi
+        warn_log
         if [ "x${last_salt_retcode}" != "x0" ];then
             bs_log "Failed highstate"
-            warn_log
+            exit 1
         fi
-        warn_log
         salt_echo "changed=yes comment='salt highstate run'"
     else
         salt_echo "changed=false comment='salt highstate skipped'"
     fi
-    if [ "x${SALT_BOOT_DEBUG}" != "x" ];then cat "$SALT_BOOT_OUTFILE";fi
-
-    # --------- stateful state return: mark as freshly installed
     if [ "x${SALT_BOOT_NOW_INSTALLED}" != "x" ];then
-        warn_log
         salt_echo "changed=yes comment='salt installed and configured'"
     fi
 
