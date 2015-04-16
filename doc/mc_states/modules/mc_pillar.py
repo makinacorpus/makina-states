@@ -29,7 +29,7 @@ six = mc_states.api.six
 
 log = logging.getLogger(__name__)
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
-DOTTED_DOMAIN_PATTERN = '((^{0}\\.?$)|(\\.(@{0})|({0}\\.?)))$'
+DOTTED_DOMAIN_PATTERN = '(^{domain}|@{domain}|\\.{domain})\\.?$'
 __name = 'mc_pillar'
 _marker = object()
 
@@ -784,10 +784,11 @@ def rrs_txt_for(domain, ttl=FIVE_MINUTES):
     Return all configured NS records for a domain
     '''
     def _do(domain):
-        rrs_ttls = __salt__[__name + '.query']('rrs_ttls', {})
-        rrs_txts = __salt__[__name + '.query']('rrs_txt', {})
+        _s = __salt__
+        rrs_ttls = _s[__name + '.query']('rrs_ttls', {})
+        rrs_txts = _s[__name + '.query']('rrs_txt', {})
         all_rrs = OrderedDict()
-        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain),
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
                                re.M | re.U | re.S | re.I)
         for rrscols in rrs_txts:
             for fqdn, rrs in rrscols.items():
@@ -811,118 +812,36 @@ def rrs_txt_for(domain, ttl=FIVE_MINUTES):
     return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
 
 
-def get_ldap(ttl=FIVE_MINUTES):
+def rrs_srv_for(domain, ttl=FIVE_MINUTES):
     '''
-    Get a map of relationship between name servers
-    that is used in the pillar to attribute roles
-    and configuration to name servers
-
-    This return a mapping in the form::
-
-        {
-            all: [list of all nameservers],
-            masters: mapping of mappings {master: [list of related slaves]},
-            slaves: mapping of mappings {slave: [list of related masters]},
-        }
-
-    For each zone, if slaves are declared without master,
-    the default masters would be added as master for this zone if any defaults.
-
+    Return all configured TXT records for a domain
     '''
-    def _do():
+    def _do(domain):
         _s = __salt__
-        data = OrderedDict()
-        masters = data.setdefault('masters', OrderedDict())
-        slaves = data.setdefault('slaves', OrderedDict())
-        default = _s[__name + '.query']('ldap_maps', {}).get(
-            'default', OrderedDict())
-        for kind in ['masters', 'slaves']:
-            for server, adata in _s[
-                __name + '.query'
-            ]('ldap_maps', {}).get(kind, OrderedDict()).items():
-                sdata = data[kind][server] = copy.deepcopy(adata)
-                for k, val in default.items():
-                    sdata.setdefault(k, val)
-                sdata.setdefault('cert_domain', server)
-                # maybe generate and get the ldap certificates info
-        rids = {}
-        slavesids = [a for a in slaves]
-        slavesids.sort()
-        for server in slavesids:
-            adata = copy.deepcopy(slaves.get('default', {}))
-            adata.update(slaves[server])
-            master = adata.setdefault('master', 'localhost')
-            master_port = adata.setdefault('master_port', '389')
-            srepl = adata.setdefault('syncrepl', OrderedDict())
-            if masters and not master:
-                adata['master'] = [a for a in masters][0]
-            if 'provider' not in srepl and not adata['master']:
-                slaves.pop(server)
-                continue
-            rid = rids.setdefault(master, 100) + 1
-            rids[master] = rid
-            srepl.setdefault('provider',
-                             'ldap://{master}:{port}'.format(
-                                 master=master, port=master_port))
-            srepl['{0}rid'] = '{0}'.format(rid)
-            slaves[server] = adata
-        return data
-    cache_key = __name + '.getldap'
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
-
-
-def get_slapd_conf(id_, ttl=ONE_DAY):
-    '''
-    Return pillar information to configure makina-states.services.dns.slapd
-    '''
-    def _do(id_):
-        is_master = is_ldap_master(id_)
-        is_slave = is_ldap_slave(id_)
-        if is_master and is_slave:
-            raise ValueError(
-                'Cant be at the same time master and ldap slave: {0}'.format(id_))
-        conf = get_ldap()
-        data = OrderedDict()
-        if is_master:
-            data = conf['masters'][id_]
-            data['mode'] = 'master'
-        elif is_slave:
-            data = conf['slaves'][id_]
-            data['mode'] = 'slave'
-        rdata = OrderedDict()
-        if data:
-            rdata['makina-states.services.dns.slapd'] = True
-            for k in data:
-                rdata[
-                    'makina-states.services.dns.slapd.{0}'.format(k)
-                ] = data[k]
-        return rdata
-    cache_key = __name + '.get_ldap_conf_for_{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
-
-
-def is_ldap_slave(id_, ttl=ONE_DAY):
-    def _do(id_):
-        if (
-            is_managed(id_)
-            and id_ in get_ldap()['slaves']
-        ):
-            return True
-        return False
-    cache_key = __name + '.is_ldap_slave_{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
-
-
-def is_ldap_master(id_, ttl=ONE_DAY):
-    def _do(id_):
-        if (
-            is_managed(id_)
-            and id_ in get_ldap()['masters']
-        ):
-            return True
-        return False
-    cache_key = __name + '.is_ldap_master_{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+        rrs_ttls = _s[__name + '.query']('rrs_ttls', {})
+        rrs_srvs = _s[__name + '.query']('rrs_srv', {})
+        all_rrs = OrderedDict()
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
+                               re.M | re.U | re.S | re.I)
+        for fqdn, rrs in rrs_srvs.items():
+            if domain_re.search(fqdn):
+                srvrrs = all_rrs.setdefault(fqdn, [])
+                if isinstance(rrs, basestring):
+                    rrs = [rrs]
+                dfqdn = fqdn
+                if not dfqdn.endswith('.'):
+                    dfqdn += '.'
+                for rr in rr_entry(
+                    fqdn, ['{0}'.format(r) for r in rrs],
+                    rrs_ttls,
+                    record_type='SRV'
+                ).split('\n'):
+                    if rr not in srvrrs:
+                        srvrrs.append(rr)
+        rr = filter_rr_str(all_rrs)
+        return rr
+    cache_key = __name + '.rrs_srv_for_{0}'.format(domain)
+    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
 
 
 def get_nss(ttl=FIVE_MINUTES):
@@ -1365,7 +1284,7 @@ def rrs_a_for(domain, ttl=FIVE_MINUTES):
         rrs_ttls = __salt__[__name + '.query']('rrs_ttls', {})
         ips = db['ips']
         all_rrs = OrderedDict()
-        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain),
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
                                re.M | re.U | re.S | re.I)
         # add all A from simple ips
         for fqdn in ips:
@@ -1381,7 +1300,8 @@ def rrs_a_for(domain, ttl=FIVE_MINUTES):
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_a_for_{0}'.format(domain)
-    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [domain], {}, cache_key, ttl)
 
 
 def rrs_raw_for(domain, ttl=FIVE_MINUTES):
@@ -1394,7 +1314,7 @@ def rrs_raw_for(domain, ttl=FIVE_MINUTES):
         rrs_raw = __salt__[__name + '.query']('rrs_raw', {})
         ips = db['ips']
         all_rrs = OrderedDict()
-        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain),
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
                                re.M | re.U | re.S | re.I)
         for fqdn in rrs_raw:
             if domain_re.search(fqdn):
@@ -1422,7 +1342,7 @@ def rrs_cnames_for(domain, ttl=FIVE_MINUTES):
         cnames = db['cnames']
         ips = db['ips']
         all_rrs = OrderedDict()
-        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain),
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
                                re.M | re.U | re.S | re.I)
 
         # filter out CNAME which have also A records
@@ -1666,12 +1586,130 @@ def rrs_for(domain, aslist=False):
         rrs_txt_for(domain) + '\n' +
         rrs_raw_for(domain) + '\n' +
         rrs_mx_for(domain) + '\n' +
+        rrs_srv_for(domain) + '\n' +
         rrs_a_for(domain) + '\n' +
         rrs_cnames_for(domain)
     )
     if aslist:
         rr = [a.strip() for a in rr.split('\n') if a.strip()]
     return rr
+
+
+def get_ldap(ttl=FIVE_MINUTES):
+    '''
+    Get a map of relationship between name servers
+    that is used in the pillar to attribute roles
+    and configuration to name servers
+
+    This return a mapping in the form::
+
+        {
+            all: [list of all nameservers],
+            masters: mapping of mappings {master: [list of related slaves]},
+            slaves: mapping of mappings {slave: [list of related masters]},
+        }
+
+    For each zone, if slaves are declared without master,
+    the default masters would be added as master for this zone if any defaults.
+
+    '''
+    def _do():
+        _s = __salt__
+        data = OrderedDict()
+        masters = data.setdefault('masters', OrderedDict())
+        slaves = data.setdefault('slaves', OrderedDict())
+        default = _s[__name + '.query']('ldap_maps', {}).get(
+            'default', OrderedDict())
+        for kind in ['masters', 'slaves']:
+            for server, adata in _s[
+                __name + '.query'
+            ]('ldap_maps', {}).get(kind, OrderedDict()).items():
+                sdata = data[kind][server] = copy.deepcopy(adata)
+                for k, val in default.items():
+                    sdata.setdefault(k, val)
+                sdata.setdefault('cert_domain', server)
+                # maybe generate and get the ldap certificates info
+        rids = {}
+        slavesids = [a for a in slaves]
+        slavesids.sort()
+        for server in slavesids:
+            adata = copy.deepcopy(slaves.get('default', {}))
+            adata.update(slaves[server])
+            master = adata.setdefault('master', 'localhost')
+            master_port = adata.setdefault('master_port', '389')
+            srepl = adata.setdefault('syncrepl', OrderedDict())
+            if masters and not master:
+                adata['master'] = [a for a in masters][0]
+            if 'provider' not in srepl and not adata['master']:
+                slaves.pop(server)
+                continue
+            rid = rids.setdefault(master, 100) + 1
+            rids[master] = rid
+            srepl.setdefault('provider',
+                             'ldap://{master}:{port}'.format(
+                                 master=master, port=master_port))
+            srepl['{0}rid'] = '{0}'.format(rid)
+            slaves[server] = adata
+        return data
+    cache_key = __name + '.getldap'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+def get_slapd_conf(id_, ttl=ONE_DAY):
+    '''
+    Return pillar information to configure makina-states.services.dns.slapd
+    '''
+    def _do(id_):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_slapd', True):
+            return {}
+        is_master = is_ldap_master(id_)
+        is_slave = is_ldap_slave(id_)
+        if is_master and is_slave:
+            raise ValueError(
+                'Cant be at the same time master and ldap slave: {0}'.format(id_))
+        conf = get_ldap()
+        data = OrderedDict()
+        if is_master:
+            data = conf['masters'][id_]
+            data['mode'] = 'master'
+        elif is_slave:
+            data = conf['slaves'][id_]
+            data['mode'] = 'slave'
+        rdata = OrderedDict()
+        if data:
+            rdata['makina-states.services.dns.slapd'] = True
+            for k in data:
+                rdata[
+                    'makina-states.services.dns.slapd.{0}'.format(k)
+                ] = data[k]
+        return rdata
+    cache_key = __name + '.get_ldap_conf_for_{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+
+
+def is_ldap_slave(id_, ttl=ONE_DAY):
+    def _do(id_):
+        if (
+            is_managed(id_)
+            and id_ in get_ldap()['slaves']
+        ):
+            return True
+        return False
+    cache_key = __name + '.is_ldap_slave_{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+
+
+def is_ldap_master(id_, ttl=ONE_DAY):
+    def _do(id_):
+        if (
+            is_managed(id_)
+            and id_ in get_ldap()['masters']
+        ):
+            return True
+        return False
+    cache_key = __name + '.is_ldap_master_{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_ldap_configuration(id_=None, ttl=TEN_MINUTES):
@@ -1691,19 +1729,34 @@ def get_ldap_configuration(id_=None, ttl=TEN_MINUTES):
 
 
 def get_configuration(id_=None, ttl=TEN_MINUTES):
-    def _do(id_, sysadmins=None):
-        configuration_settings = __salt__[__name + '.query'](
-            'configurations', {})
-        data = copy.deepcopy(configuration_settings['default'])
-        if id_ in configuration_settings:
-            data = __salt__['mc_utils.dictupdate'](data, configuration_settings[id_])
+    def _do(id_, mid):
+        _s = __salt__
+        _settings = _s[__name + '.query']('configurations', {})
+        data = copy.deepcopy(_settings.get('default', {}))
+        if id_ in _settings:
+            data = _s['mc_utils.dictupdate'](data, _settings[id_])
+        mdn = mid.split('.')[1:]
+        if not mdn:
+            mdn = ['local']
+        mdn = '.'.join(mdn)
+        data.setdefault('default_env', 'prod')
+        data.setdefault('mastersalt_port', 4606)
+        data.setdefault('mastersalt', mid)
+        data.setdefault('mastersaltdn', mid)
+        data.setdefault('mastersalt_master', mid == id_)
+        data.setdefault('domain', mdn)
         return data
     cache_key = __name + '.get_configuration_{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+    mid = mastersalt_minion_id()
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [id_, mid], {}, cache_key, ttl)
 
 
 def get_snmpd_settings(id_=None, ttl=ONE_DAY):
     def _do(id_, sysadmins=None):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_snmpd', False):
+            return {}
         snmpd_settings = __salt__[__name + '.query']('snmpd_settings', {})
         data = copy.deepcopy(snmpd_settings['default'])
         if id_ in snmpd_settings:
@@ -1715,10 +1768,12 @@ def get_snmpd_settings(id_=None, ttl=ONE_DAY):
 
 def get_shorewall_settings(id_=None, ttl=FIVE_MINUTES):
     def _do(id_, sysadmins=None):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_shorewall', True):
+            return {}
         qry = __salt__[__name + '.query']
         allowed_ips = __salt__[__name + '.whitelisted'](id_)
         shorewall_overrides = qry('shorewall_overrides', {})
-        cfg = get_configuration(id_)
         allowed_to_ping = ['all']
         allowed_to_ntp = allowed_ips[:]
         allowed_to_snmp = allowed_ips[:]
@@ -1741,7 +1796,7 @@ def get_shorewall_settings(id_=None, ttl=FIVE_MINUTES):
                     'ping':  'net:'+','.join(allowed_to_ping),
                     'snmp': 'net:'+','.join(allowed_to_snmp),
                     'ntp': 'net:'+','.join(allowed_to_ntp)}
-        restrict_ssh = cfg.get('manage_ssh_ip_restrictions', False)
+        restrict_ssh = gconf.get('manage_ssh_ip_restrictions', False)
         if not restrict_ssh:
             restrict['ssh'] = 'all'
         for param in [a for a in restrict]:
@@ -1788,6 +1843,9 @@ def get_removed_keys(id_=None, ttl=ONE_DAY):
 
 def get_sysadmins_keys(id_=None, ttl=ONE_DAY):
     def _do(id_, sysadmins=None):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_ssh_keys', True):
+            return {}
         sysadmins_keys_map = __salt__[__name + '.query']('sysadmins_keys_map', {})
         keys_map = __salt__[__name + '.query']('keys_map', {})
         skeys = []
@@ -1831,8 +1889,6 @@ def get_password(id_, user='root', ttl=ONE_DAY, regenerate=False, length=12,
     Return user/password mappings for a particular host from
     a global pillar passwords map. Create it if not done
     '''
-    if not id_:
-        id_ = __opts__['id']
     def _do_pass(id_, user='root'):
         db_reg = __salt__[__name + '.query']('passwords_map', {})
         db_id = db_reg.setdefault(id_, {})
@@ -1947,6 +2003,9 @@ def get_ssh_groups(id_=None, ttl=ONE_DAY):
 
 def get_sudoers(id_=None, ttl=ONE_DAY):
     def _do_sudoers(id_, sysadmins=None):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_sudoers', True):
+            return {}
         sudoers_map = __salt__[__name + '.query']('sudoers_map', {})
         sudoers = sudoers_map.get(id_, [])
         if is_salt_managed(id_):
@@ -2070,13 +2129,16 @@ def is_burp_server(id_, ttl=ONE_MONTH):
 
 def backup_server_settings_for(id_, ttl=TEN_MINUTES):
     def _do(id_):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_backup_server', True):
+            return {}
         data = OrderedDict()
         db = get_db_infrastructure_maps()
-        ndb = load_network_infrastructure()
+        load_network_infrastructure()
+        _s = __salt__
         # pretendants are all managed baremetals excluding non managed
         # hosts and current backup server
         # db['non_managed_hosts'] + [id_]
-        gconf = get_configuration(id_)
         try:
             backup_excluded = query('backup_excluded', {})
             if not isinstance(backup_excluded, list):
@@ -2087,28 +2149,28 @@ def backup_server_settings_for(id_, ttl=TEN_MINUTES):
             log.error(trace)
             backup_excluded = []
         backup_excluded.extend(['default', 'default-vm', id_])
-        manual_hosts = __salt__[__name + '.query']('backup_manual_hosts', {})
-        non_managed_hosts = __salt__[__name + '.query']('non_managed_hosts', {})
+        manual_hosts = _s[__name + '.query']('backup_manual_hosts', {})
+        non_managed_hosts = _s[__name + '.query']('non_managed_hosts', {})
         backup_excluded.extend(
-            [a for a in __salt__[__name + '.query']('non_managed_hosts', {})
+            [a for a in _s[__name + '.query']('non_managed_hosts', {})
              if a not in manual_hosts])
         bms = [a for a in db['bms']
                if a not in backup_excluded
-               and get_configuration(a)['manage_backups']]
+               and get_configuration(a).get('manage_backups', True)]
         vms = [a for a in db['vms']
                if a not in backup_excluded
-               and get_configuration(a)['manage_backups']]
-        cmap = __salt__[__name + '.query']('backup_configuration_map', {})
-        manual_hosts = __salt__['mc_utils.uniquify']([
+               and get_configuration(a).get('manage_backups', True)]
+        cmap = _s[__name + '.query']('backup_configuration_map', {})
+        manual_hosts = _s['mc_utils.uniquify']([
             a for a in ([a for a in cmap] + manual_hosts)
             if a not in backup_excluded
-            and __salt__[__name + '.ip_for'](a)  # ip is resolvable via our pillar
+            and _s[__name + '.ip_for'](a)  # ip is resolvable via our pillar
             and a not in bms
             and a not in vms])
         # filter all baremetals and vms if they are tied to this backup
         # server
         server_conf = data.setdefault('server_conf',
-                                      __salt__[__name + '.backup_server'](id_))
+                                      _s[__name + '.backup_server'](id_))
         confs = data.setdefault('confs', {})
         for host in bms + vms + manual_hosts:
             if host in backup_excluded:
@@ -2116,7 +2178,7 @@ def backup_server_settings_for(id_, ttl=TEN_MINUTES):
             server = backup_server_for(host)
             if not server == id_:
                 continue
-            conf =__salt__[__name + '.backup_configuration_for'](host)
+            conf = _s[__name + '.backup_configuration_for'](host)
             # for vms, set the vm host as the gateway by default (if
             # not defined)
             if host in vms and host not in non_managed_hosts:
@@ -2618,17 +2680,11 @@ def slave_key(id_, dnsmaster=None, master=True):
     return rdata
 
 
-
-def get_ns_server_masters_for(id_, ttl=FIVE_MINUTES):
-    def _do(id_):
-        _s = __salt__
-
-    cache_key = __name + '.get_ns_server_slaves_for{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
-
-
 def get_dns_slave_conf(id_, ttl=TEN_MINUTES):
     def _do(id_):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_dns_server', True):
+            return {}
         _s = __salt__
         if not _s[__name + '.is_dns_slave'](id_):
             return {}
@@ -2679,6 +2735,9 @@ def get_ns_server_slaves_for(id_, ttl=FIVE_MINUTES):
 
 def get_dns_master_conf(id_, ttl=TEN_MINUTES):
     def _do(id_):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_dns_server', True):
+            return {}
         _s = __salt__
         if not _s[__name + '.is_dns_master'](id_):
             return {}
@@ -2717,12 +2776,18 @@ def get_dns_master_conf(id_, ttl=TEN_MINUTES):
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
-def manage_network_common(fqdn):
-    rdata = {
-        'makina-states.localsettings.network.managed': True,
-        'makina-states.localsettings.hostname': fqdn.split('.')[0]
-    }
-    return rdata
+def manage_network_common(id_, ttl=TEN_MINUTES):
+    def _do(id_):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_network', True):
+            return {}
+        rdata = {
+            'makina-states.localsettings.network.managed': True,
+            'makina-states.localsettings.hostname': id_.split('.')[0]
+        }
+        return rdata
+    cache_key = __name + '.manage_network_common{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def manage_bridged_fo_kvm_network(fqdn, host, ipsfo,
@@ -2753,6 +2818,7 @@ def manage_bridged_fo_kvm_network(fqdn, host, ipsfo,
             ]
         }
     }]
+    return rdata
 
 
 def manage_baremetal_network(fqdn, ipsfo, ipsfo_map,
@@ -2826,29 +2892,25 @@ def manage_baremetal_network(fqdn, ipsfo, ipsfo_map,
 
 def get_sysnet_conf(id_, ttl=ONE_DAY):
     def _do(id_):
+        _s = __salt__
         gconf = get_configuration(id_)
-        ms_vars = get_makina_states_variables(id_)
         rdata = {}
-        net = __salt__[__name + '.load_network_infrastructure']()
+        net = _s[__name + '.load_network_infrastructure']()
         ips = net['ips']
         ipsfo = net['ipsfo']
         ipsfo_map = net['ipsfo_map']
         dbi = get_db_infrastructure_maps()
         baremetal_hosts = dbi['bms']
-        if not (
-            ms_vars.get('is_bm', False)
-            and gconf.get('manage_network', False)
-        ):
+        mifc = gconf.get('main_network_interface', 'br0')
+        if not gconf.get('manage_network', True) or not is_salt_managed(id_):
             return {}
         if id_ in baremetal_hosts:
             # always use bridge as main_if
             rdata.update(
                 manage_baremetal_network(
-                    id_, ipsfo, ipsfo_map, ips, ifc='br0'))
+                    id_, ipsfo, ipsfo_map, ips, ifc=mifc))
         else:
-            for vt, targets in __salt__[
-                __name + '.query', {}
-            ]('vms').items():
+            for vt, targets in _s[__name + '.query']('vms', {}).items():
                 if vt != 'kvm':
                     continue
                 for target, vms in targets.items():
@@ -2856,17 +2918,18 @@ def get_sysnet_conf(id_, ttl=ONE_DAY):
                         log.error('No vms for {0}, error?'.format(target))
                     if id_ not in vms:
                         continue
-                    manage_bridged_fo_kvm_network(
-                        id_, target, ipsfo,
-                        ipsfo_map, ips)
+                    rdata.update(
+                        manage_bridged_fo_kvm_network(
+                            id_, target, ipsfo, ipsfo_map, ips))
         pref = ('makina-states.localsettings.network.'
                 'ointerfaces')
         net_ext_pillar = query('network_settings', {}).get(id_, {})
         if net_ext_pillar and rdata.get(pref, None):
             for i in range(len(rdata[pref])):
-                for ifc in [ifc for ifc in net_ext_pillar
-                            if ifc in rdata[pref][i]]:
-                    rdata[pref][i][ifc] = __salt__['mc_utils.dictupdate'](
+                for ifc in [
+                    ifc for ifc in net_ext_pillar if ifc in rdata[pref][i]
+                ]:
+                    rdata[pref][i][ifc] = _s['mc_utils.dictupdate'](
                         rdata[pref][i][ifc], net_ext_pillar[ifc])
         return rdata
     cache_key = __name + '.get_sysnet_conf{0}'.format(id_)
@@ -2875,6 +2938,9 @@ def get_sysnet_conf(id_, ttl=ONE_DAY):
 
 def get_check_raid_conf(id_, ttl=ONE_DAY):
     def _do(id_):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_check_raid', True):
+            return {}
         rdata = {}
         maps = __salt__[__name + '.get_db_infrastructure_maps']()
         pref = "makina-states.nodetypes.check_raid"
@@ -2888,10 +2954,11 @@ def get_check_raid_conf(id_, ttl=ONE_DAY):
 def get_supervision_client_conf(id_, ttl=ONE_DAY):
     def _do(id_):
         gconf = get_configuration(id_)
+        if not gconf.get('supervision_client', True):
+            return {}
         rdata = {}
         pref = "makina-states.services.monitoring.client"
-        if gconf.get('supervision_client', False):
-            rdata.update({pref: True})
+        rdata.update({pref: True})
         return rdata
     cache_key = __name + '.get_supervision_client_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -2900,6 +2967,8 @@ def get_supervision_client_conf(id_, ttl=ONE_DAY):
 def get_snmpd_conf(id_, ttl=60):
     def _do(id_):
         gconf = get_configuration(id_)
+        if not gconf.get('manage_snmpd', False):
+            return {}
         rdata = {}
         pref = "makina-states.services.monitoring.snmpd"
         if is_salt_managed(id_):
@@ -2932,13 +3001,13 @@ def get_backup_client_conf(id_, ttl=ONE_DAY):
     def _do(id_):
         gconf = get_configuration(id_)
         rdata = {}
-        if gconf.get('manage_backups', False):
-            conf = __salt__[__name + '.get_configuration'](id_)
-            mode = conf['backup_mode']
-            if mode == 'rdiff':
-                rdata['makina-states.services.backup.rdiff-backup'] = True
-            elif 'burp' in mode:
-                rdata['makina-states.services.backup.burp.client'] = True
+        if not gconf.get('manage_backups', True):
+            return {}
+        mode = gconf.get('backup_mode', 'burp')
+        if mode == 'rdiff':
+            rdata['makina-states.services.backup.rdiff-backup'] = True
+        elif 'burp' in mode:
+            rdata['makina-states.services.backup.burp.client'] = True
         return rdata
     cache_key = __name + '.get_backup_client_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -2992,12 +3061,13 @@ def get_packages_conf(id_, ttl=ONE_DAY):
         gconf = get_configuration(id_)
         rdata = {}
         pref = "makina-states.localsettings.pkgs.apt"
-        if gconf.get('manage_packages', False):
-            rdata.update({
-                pref + ".ubuntu.mirror": "http://mirror.ovh.net/ftp.ubuntu.com/",
-                pref + ".debian.mirror": (
-                    "http://mirror.ovh.net/ftp.debian.org/debian/")
-            })
+        if not gconf.get('manage_packages', True):
+            return {}
+        rdata.update({
+            pref + ".ubuntu.mirror": "http://mirror.ovh.net/ftp.ubuntu.com/",
+            pref + ".debian.mirror": (
+                "http://mirror.ovh.net/ftp.debian.org/debian/")
+        })
         return rdata
     cache_key = __name + '.get_packages_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3007,8 +3077,9 @@ def get_shorewall_conf(id_, ttl=ONE_DAY):
     def _do(id_):
         gconf = get_configuration(id_)
         rdata = {}
-        if gconf.get('manage_shorewall', False):
-            rdata.update(__salt__[__name + '.get_shorewall_settings'](id_))
+        if not gconf.get('manage_shorewall', True):
+            return {}
+        rdata.update(__salt__[__name + '.get_shorewall_settings'](id_))
         return rdata
     cache_key = __name + '.get_shorewall_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3019,8 +3090,8 @@ def get_autoupgrade_conf(id_, ttl=ONE_DAY):
         rdata = {}
         if is_managed(id_):
             gconf = get_configuration(id_)
-            rdata['makina-states.localsettings.autoupgrade'] = gconf[
-                'manage_autoupgrades']
+            rdata['makina-states.localsettings.autoupgrade'] = gconf.get(
+                'manage_autoupgrades', True)
         return rdata
     cache_key = __name + '.get_autoupgrade_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3052,12 +3123,13 @@ def is_salt_managed(id_, ttl=ONE_DAY):
 def get_fail2ban_conf(id_, ttl=ONE_DAY):
     def _do(id_):
         gconf = get_configuration(id_)
+        if not gconf.get('manage_fail2ban', {}):
+            return {}
         rdata = {}
         pref = "makina-states.services.firewall.fail2ban"
-        if gconf.get('manage_snmpd', False):
-            rdata.update({
-                pref: True,
-                pref + ".ignoreip": __salt__[__name + '.whitelisted'](id_)})
+        rdata.update({
+            pref: True,
+            pref + ".ignoreip": __salt__[__name + '.whitelisted'](id_)})
         return rdata
     cache_key = __name + '.get_fail2ban_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3066,13 +3138,14 @@ def get_fail2ban_conf(id_, ttl=ONE_DAY):
 def get_ntp_server_conf(id_, ttl=ONE_DAY):
     def _do(id_):
         gconf = get_configuration(id_)
+        if not gconf.get('manage_ntp_server', True):
+            return {}
         rdata = {}
-        if gconf.get('manage_ntp_server', False):
-            rdata.update({
-                'makina-states.services.base.ntp.kod': False,
-                'makina-states.services.base.ntp.peer': False,
-                'makina-states.services.base.ntp.trap': False,
-                'makina-states.services.base.ntp.query': False})
+        rdata.update({
+            'makina-states.services.base.ntp.kod': False,
+            'makina-states.services.base.ntp.peer': False,
+            'makina-states.services.base.ntp.trap': False,
+            'makina-states.services.base.ntp.query': False})
         return rdata
     cache_key = __name + '.get_ntp_server_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3175,6 +3248,9 @@ def get_mail_conf(id_, ttl=ONE_DAY):
 
 def get_ssh_keys_conf(id_, ttl=ONE_DAY):
     def _do(id_):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_ssh_server', True):
+            return {}
         rdata = {}
         pref = "makina-states.services.base.ssh.server"
         adm_pref = "makina-states.localsettings.admin.sysadmins_keys"
@@ -3193,12 +3269,13 @@ def get_ssh_keys_conf(id_, ttl=ONE_DAY):
 def get_ssh_groups_conf(id_, ttl=ONE_DAY):
     def _do(id_):
         gconf = get_configuration(id_)
+        if not gconf.get('manage_ssh_groups', True):
+            return {}
         rdata = {}
         pref = "makina-states.services.base.ssh.server"
-        if gconf.get('manage_ssh_groups', False):
-            rdata.update({
-                pref + ".allowgroups": __salt__[__name + '.get_ssh_groups'](id_),
-                pref + ".chroot_sftp": True})
+        rdata.update({
+            pref + ".allowgroups": __salt__[__name + '.get_ssh_groups'](id_),
+            pref + ".chroot_sftp": True})
         return rdata
     cache_key = __name + '.get_ssh_groups_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3206,14 +3283,15 @@ def get_ssh_groups_conf(id_, ttl=ONE_DAY):
 
 def get_etc_hosts_conf(id_):
     gconf = get_configuration(id_)
+    if not gconf.get('manage_hosts', True):
+        return {}
     rdata = {}
-    if gconf.get('manage_hosts', False):
-        hosts = __salt__[__name + '.query']('hosts', {}).get(id_, [])
-        if hosts:
-            dhosts = rdata.setdefault('makina-bosts', [])
-            for entry in hosts:
-                ip = entry.get('ip', __salt__[__name + '.ip_for'](id_))
-                dhosts.append({'ip': ip, 'hosts': entry['hosts']})
+    hosts = __salt__[__name + '.query']('hosts', {}).get(id_, [])
+    if hosts:
+        dhosts = rdata.setdefault('makina-bosts', [])
+        for entry in hosts:
+            ip = entry.get('ip', __salt__[__name + '.ip_for'](id_))
+            dhosts.append({'ip': ip, 'hosts': entry['hosts']})
     return rdata
 
 
@@ -3229,30 +3307,32 @@ def get_passwords_conf(id_):
       the groups which have access to specific machines
     '''
     gconf = get_configuration(id_)
+    if not gconf.get('manage_passwords', True):
+        return {}
     # load objects
     get_makina_states_variables(id_)
     rdata = {}
     pref = "makina-states.localsettings"
     apref = pref + ".admin"
-    if gconf.get('manage_passwords', False):
-        passwords = __salt__[__name + '.get_passwords'](id_)
-        for user, password in passwords['crypted'].items():
-            if user not in ['root', 'sysadmin']:
-                rdata[
-                    pref + '.users.{0}.password'.format(
-                        user)] = password
-        rdata.update({
-            apref + ".root_password": passwords['crypted']['root'],
-            apref + ".sysadmin_password": passwords['crypted']['sysadmin']})
+    passwords = __salt__[__name + '.get_passwords'](id_)
+    for user, password in passwords['crypted'].items():
+        if user not in ['root', 'sysadmin']:
+            rdata[
+                pref + '.users.{0}.password'.format(
+                    user)] = password
+    rdata.update({
+        apref + ".root_password": passwords['crypted']['root'],
+        apref + ".sysadmin_password": passwords['crypted']['sysadmin']})
     return rdata
 
 
 def get_custom_pillar_conf(id_, ttl=TEN_MINUTES):
     def _do(id_):
-        rdata = {}
         gconf = get_configuration(id_)
-        if gconf.get('custom_pillar'):
-            rdata.update(gconf['custom_pillar'])
+        if not gconf.get('custom_pillar', True):
+            return {}
+        rdata = {}
+        rdata.update(gconf.get('custom_pillar', {}))
         return rdata
     cache_key = __name + '.get_custom_pillar_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3260,6 +3340,9 @@ def get_custom_pillar_conf(id_, ttl=TEN_MINUTES):
 
 def get_burp_server_conf(id_, ttl=HALF_DAY):
     def _do(id_):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_backup_server', True):
+            return {}
         rdata = {}
         if __salt__[__name + '.is_burp_server'](id_):
             conf = __salt__[__name + '.backup_server_settings_for'](id_)
@@ -3284,6 +3367,9 @@ def get_burp_server_conf(id_, ttl=HALF_DAY):
 
 def get_dhcpd_conf(id_, ttl=600):
     def _do(id_):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_dhcp', True):
+            return {}
         conf = __salt__[__name + '.query']('dhcpd_conf', {}).get(id_, {})
         if not conf:
             return {}
@@ -3296,6 +3382,9 @@ def get_dhcpd_conf(id_, ttl=600):
 def get_pkgmgr_conf(id_, ttl=600):
     def _do(id_):
         rdata = {}
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_packages', True):
+            return {}
         conf = __salt__[__name + '.query']('pkgmgr_conf', {})
         conf = conf.get(
             id_,
@@ -3312,6 +3401,9 @@ def get_pkgmgr_conf(id_, ttl=600):
 
 def get_dns_resolvers(id_, ttl=600):
     def _do(id_):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_dns_resolvers', True):
+            return {}
         rdata = {}
         db = get_db_infrastructure_maps()
         resolvers = set()
@@ -3403,6 +3495,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         __name + '.get_autoupgrade_conf': {'only_managed': False},
         __name + '.get_backup_client_conf': {'only_managed': False},
         __name + '.get_burp_server_conf': {},
+        __name + '.get_exposed_global_conf': {},
         __name + '.get_check_raid_conf': {},
         __name + '.get_custom_pillar_conf': {'only_managed': False},
         __name + '.get_dhcpd_conf': {'only_managed': False},
@@ -3473,6 +3566,19 @@ def ext_pillar(id_, pillar=None, *args, **kw):
     return data
 
 
+def get_exposed_global_conf(id_, ttl=TEN_MINUTES):
+    def _do(id_):
+        p = 'makina-states.pillar.gconf'
+        exdata = {}
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_exposed_glocal_conf', True):
+            return {}
+        exdata = {p: copy.deepcopy(gconf)}
+        return exdata
+    cache_key = __name + '.get_exposed_global_conf{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+
+
 def get_global_conf(section, entry=10, ttl=TEN_MINUTES):
     def _do(section, entry):
         _s = __salt__
@@ -3485,7 +3591,8 @@ def get_global_conf(section, entry=10, ttl=TEN_MINUTES):
             extdata = {}
         return extdata
     cache_key = __name + '.get_global_conf{0}{1}'.format(section, entry)
-    return __salt__['mc_utils.memoize_cache'](_do, [section, entry], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [section, entry], {}, cache_key, ttl)
 
 
 def get_global_clouf_conf(entry, ttl=TEN_MINUTES):
@@ -3507,8 +3614,6 @@ def get_cloud_conf(ttl=TEN_MINUTES):
         supported_vts = _s['mc_cloud_compute_node.get_vts']()
         for vt, targets in _s[__name + '.query']('vms', {}).items():
             if vt not in supported_vts:
-                continue
-            if not _settings.get(vt, False):
                 continue
             for cn, vms in targets.items():
                 if cn in _s[__name + '.query']('non_managed_hosts', {}):
@@ -3621,6 +3726,9 @@ def add_ssl_cert(common_name, cert_content, cert_key, data=None):
 def get_ssl_conf(id_, ttl=ONE_DAY):
     def _do(id_):
         _s = __salt__
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_ssl', True):
+            return {}
         rdata = OrderedDict()
         todo = get_domains_for(id_)
         # load also a selfsigned wildcard

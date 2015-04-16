@@ -155,7 +155,8 @@ def settings():
         if LooseVersion('4.5.10') >= LooseVersion(sw_ver):
             shwIfformat = '?FORMAT 2'
         if LooseVersion('4.5.10') > LooseVersion(sw_ver) > LooseVersion('4.1'):
-            shwIfformat = 'FORMAT 2'
+            # shwIfformat = 'FORMAT 2'
+            shwIfformat = ''
         elif LooseVersion(sw_ver) <= LooseVersion('4.1'):
             shwIfformat = '#?{0}'.format(shwIfformat)
         permissive_mode = False
@@ -320,9 +321,10 @@ def settings():
                 if p in ['SSH', 'DNS', 'PING', 'WEB', 'MUMBLE']:
                     default = 'all'
                 if p == 'BURP':
-                    default = 'net:'
                     bclients = prefered_ips(burpsettings['clients'])
-                    default += ','.join(bclients)
+                    if bclients:
+                        default = 'net:'
+                        default += ','.join(bclients)
                 data['default_params'].setdefault(
                     'RESTRICTED_{0}'.format(p), default)
             for r, rdata in data['default_params'].items():
@@ -366,6 +368,8 @@ def settings():
                         configuredifs.append(ifcc)
         for iface, ips in gifaces:
             if iface in configuredifs:
+                continue
+            if iface.startswith('veth'):
                 continue
             if 'lo' in iface:
                 continue
@@ -927,13 +931,13 @@ def settings():
                 for i in ['lxc', 'kvm', 'docker']:
                     if i in data['zones']:
                         append_rules_for_zones(
-                        data['default_rules'],
-                        {'action': action,
-                         'source': i,
-                         'dest': "all",
-                         'proto': proto,
-                         'dport': '4971,4972,4973,4974'},
-                        zones=data['internal_zones'])
+                            data['default_rules'],
+                            {'action': action,
+                             'source': i,
+                             'dest': "all",
+                             'proto': proto,
+                             'dport': '4971,4972,4973,4974'},
+                            zones=data['internal_zones'])
                 append_rules_for_zones(
                     data['default_rules'],
                     {'action': action,
@@ -944,16 +948,17 @@ def settings():
                     zones=data['internal_zones'])
             # also accept configured hosts
             burpsettings = _s['mc_burp.settings']()
-            clients = 'net:'
-            clients += ','.join(prefered_ips(burpsettings['clients']))
-            for proto in protos:
-                append_rules_for_zones(
-                    data['default_rules'], {'action': action,
-                                            'source': clients,
-                                            'dest': "all",
-                                            'proto': proto,
-                                            'dport': '4971,4972'},
-                    zones=data['internal_zones'])
+            clist = prefered_ips(burpsettings['clients'])
+            if clist:
+                clients = 'net:{0}'.format(','.join(clist))
+                for proto in protos:
+                    append_rules_for_zones(
+                        data['default_rules'], {'action': action,
+                                                'source': clients,
+                                                'dest': "all",
+                                                'proto': proto,
+                                                'dport': '4971,4972'},
+                        zones=data['internal_zones'])
         # ATTENTION WE MERGE, so reverse order to append at begin
         data['default_rules'].reverse()
         for rdata in data['default_rules']:
@@ -975,7 +980,3 @@ def settings():
 
         return data
     return _settings()
-
-
-
-#

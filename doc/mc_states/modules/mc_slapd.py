@@ -239,7 +239,7 @@ def settings():
                 'SLAPD_CONF': '/etc/ldap/slapd.d',
                 'SLAPD_PIDFILE': '',
                 'SLAPD_SERVICES': 'ldaps:/// ldap:/// ldapi:///',
-                'SLAPD_NO_START': "",
+                'SLAPD_NO_START': '',
                 'SLAPD_SENTINEL_FILE': '/etc/ldap/noslapd',
                 'SLAPD_OPTIONS': '',
                 'init_ldif': 'salt://makina-states/files/etc/ldap/init.ldif',
@@ -257,14 +257,16 @@ def settings():
                 'loglevel': 'sync',
                 'syncprov': True,
                 'syncrepl': OrderedDict([
-                    ('starttls', "yes"),
-                    ('tls_reqcert', "allow"),
+                    ('starttls', 'yes'),
+                    ('tls_reqcert', 'allow'),
                     ('timeout', 3),
+                    # ('attrs', '*,+'),
                     ('scope', 'sub'),
-                    ('retry', "5 5 5 +"),
+                    ('retry', '5 5 5 +'),
+                    ('sizelimit', 'unlimited'),
                     ('type', 'refreshAndPersist'),
-                    ('interval', "00:00:04:00")]),
-                'olcloglevel': "sync",
+                    ('interval', '00:00:04:00')]),
+                'olcloglevel': 'sync',
                 'cert_domain': grains['id'],
                 'acls': [],
                 'acls_schema': default_acl_schema,
@@ -299,7 +301,7 @@ def settings():
                 if i not in cn_config_files:
                     cn_config_files.append(i)
         for mode, key in OrderedDict([
-            ('writer', 'write'),
+            ('writer', 'manage'),
             ('reader', 'read',)
         ]).items():
             for group in data['{0}_groups'.format(mode)]:
@@ -368,12 +370,9 @@ def settings():
                 val = data['syncrepl'][k]
                 srepl += ' {0}={1}'.format(k, sync_ldap_quote(k, val))
                 srepl = srepl.strip()
+            data['c_syncrepl'] = srepl
             data['s_syncrepl'] = encode_ldap("olcSyncrepl", srepl)
         __salt__['mc_macros.update_registry_params'](
             'slapd', local_conf, registry_format='pack')
         return data
     return _settings()
-
-
-
-#

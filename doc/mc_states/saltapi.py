@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 '''
 
 .. _mc_saltapi:
@@ -25,21 +26,22 @@ from salt.utils import check_state_result
 import time
 
 import salt.utils
+from salt.utils.odict import OrderedDict
+import salt.utils.vt
 from salt.client import LocalClient
-from salt.exceptions import (
-    SaltException,
-    EauthAuthenticationError,
-    SaltClientError,
-    SaltRunnerError
-)
+import salt.exceptions
 from salt.runner import RunnerClient
 from mc_states import api
+
+# let do some alias imports for api consumers to let them
+# import also from saltapi to limit the imports todo
 from mc_states.api import memoize_cache
+from mc_states.api import get_cache_key
 from mc_states.api import six
 from mc_states.api import asbool
 from mc_states.api import STRIPPED_RES
 from mc_states.api import strip_colors
-import salt.utils.vt
+from mc_states.api import magicstring
 
 
 log = logging.getLogger(__name__)
@@ -114,7 +116,7 @@ __CACHED_FUNS = {
     'mc_localsettings.settings': 600}
 
 
-class SaltExit(SaltException):
+class SaltExit(salt.exceptions.SaltException):
     pass
 
 
@@ -158,7 +160,7 @@ class SaltCopyError(SaltRudeError):
     pass
 
 
-class MessageError(SaltException):
+class MessageError(salt.exceptions.SaltException):
     pass
 
 
@@ -374,7 +376,10 @@ def wait_running_job(target,
             try:
                 cret = conn.cmd(**rkwargs)
                 break
-            except (SaltClientError, EauthAuthenticationError) as exc:
+            except (
+                salt.exceptions.SaltClientError,
+                salt.exceptions.EauthAuthenticationError
+            ) as exc:
                 if thistry > findtries:
                     raise exc
                 time.sleep(poll)
@@ -414,7 +419,10 @@ def submit_async_job(target,
                                  kwarg=kw,
                                  **arkwargs)
             break
-        except (SaltClientError, EauthAuthenticationError) as exc:
+        except (
+            salt.exceptions.SaltClientError,
+            salt.exceptions.EauthAuthenticationError
+        ) as exc:
             if thistry > findtries:
                 raise exc
             time.sleep(poll)
@@ -428,7 +436,10 @@ def submit_async_job(target,
             cret = conn.cmd(tgt=target, fun='saltutil.find_job',
                             arg=[jid], **rkwargs)
             break
-        except (SaltClientError, EauthAuthenticationError) as exc:
+        except (
+            salt.exceptions.SaltClientError,
+            salt.exceptions.EauthAuthenticationError
+        ) as exc:
             if thistry > findtries:
                 raise exc
             time.sleep(poll)
@@ -493,7 +504,10 @@ def run(target, fun, args, kw, rkwargs=None, conn=None, **run_kw):
         try:
             ret = conn.cmd(target, fun, args, kwarg=kw, **rkwargs)[target]
             break
-        except (SaltClientError, EauthAuthenticationError) as exc:
+        except (
+            salt.exceptions.SaltClientError,
+            salt.exceptions.EauthAuthenticationError
+        ) as exc:
             if thistry > findtries:
                 raise exc
             time.sleep(0.4)
@@ -647,16 +661,154 @@ def client(fun, *args, **kw):
                          cache_key, ttl, force_run=force_run)
 
 
+def concat_res_or_rets(ret,
+                       cret=None,
+                       result_keys=None,
+                       output_keys=None,
+                       dict_keys=None,
+                       omit=None):
+    '''
+    Convenient and magical way to merge 2 structures
+    or strings for usage in salt functions:
+
+        - concatenate string with string:
+            join them (separated with a newline)
+
+        - concatenate string with dict:
+            append all output keys from dict in the
+            string separated by a new line and prefixed
+            by the output key identfier
+
+        - concatenate dict with dict:
+            merge corresponding keys in an intelligent way:
+
+                - result from ret is setted to false
+                  if cret's one is setted to False
+                - merge output keys (separate with newline)
+                - merge dict keys by updating or creating
+                  the corresponding key in ret from cret
+
+        - concatenate dict with string:
+            concatenate (with newlineà)
+            the string in all output keys
+
+    ::
+
+        >>> merge_res_or_ret('a', 'b')
+        'a\nb'
+        >>> merge_res_or_ret({'stdout': 'a', 'stderr': 'b'}, 'de')
+        {'stdout': 'a\nde', 'stderr': 'b\nde'}
+        >>> merge_res_or_ret({'stdout': 'a', 'stderr': 'b'},
+        ...                  {'stdout': 'c', 'stderr': 'd'})
+        {'stdout': 'a\nc', 'stderr': 'b\nd'}
+        >>> merge_res_or_ret({'result': True}, {'result': False})
+        {'result': False}
+        >>> merge_res_or_ret({}, {'result': False})
+        {}
+        >>> merge_res_or_ret({'changes': {1: 2, 3: 4, 5: 6}},
+        ...                  {'changes': {1: 3, 3: 4}})
+        {'changes': {1: 3, 3: 4, 5: 6}}
+        >>> merge_res_or_ret('oo', {'stdout': 'a', 'stderr': 'b'})
+        'oo\nSTDOUT: a\nSTDERR: b'
+
+    '''
+    if not result_keys:
+        result_keys = ['result']
+    if not output_keys:
+        output_keys = ['stdout', 'stderr',
+                       'comment' 'trace', 'output']
+    if not dict_keys:
+        dict_keys = ['changes']
+    if not omit:
+        omit = []
+    if not isinstance(ret, (six.string_types, dict)):
+        ret = api.asstring(ret)
+    if not isinstance(cret, (six.string_types, dict)):
+        cret = api.asstring(cret)
+    if isinstance(cret, six.string_types) and isinstance(ret, dict):
+        cret = {'stdout': cret, 'comment': cret,
+                'trace': cret, 'output': cret}
+    if isinstance(ret, six.string_types):
+        ret = api.magicstring(ret)
+    elif isinstance(ret, dict):
+        for k in output_keys:
+            if k in omit:
+                continue
+            val = ret.get(k, None)
+            if isinstance(val, six.string_types):
+                ret[k] = api.magicstring(val)
+    for k in result_keys:
+        if (
+            isinstance(cret, dict)
+            and isinstance(ret, dict)
+            and (k in cret)
+        ):
+            if not cret.get(k):
+                ret[k] = False
+    if isinstance(ret, dict):
+        for k in output_keys:
+            if not cret:
+                break
+            elif k in omit:
+                continue
+            val = api.asstring(ret.get(k, None))
+            oval = api.asstring(cret.get(k, None))
+            if oval:
+                formatting = "{0}\n{1}"
+                if not val:
+                    formatting = "{1}"
+                if val != oval:
+                    ret[k] = formatting.format(
+                        api.magicstring(val),
+                        api.magicstring(oval))
+    if isinstance(ret, six.string_types) and cret:
+        if isinstance(cret, dict):
+            for k in output_keys:
+                if k not in cret:
+                    continue
+                if k in omit:
+                    continue
+                val = cret[k]
+                if not val:
+                    continue
+                sval = api.magicstring(val)
+                ret = '{0}\n{1}: {2}'.format(
+                    ret, k.upper(), sval)
+        elif isinstance(cret, six.string_types) and cret:
+            ret = '{0}\n{1}'.format(
+                api.magicstring(ret),
+                api.magicstring(cret))
+    if isinstance(ret, dict) and isinstance(cret, dict):
+        for k in dict_keys:
+            if k in omit:
+                continue
+            if k in cret or k in ret:
+                d1 = ret.get(k, OrderedDict())
+                d2 = cret.get(k, OrderedDict())
+                if isinstance(d1, dict) and isinstance(d2, dict):
+                    ret[k] = dictupdate(d1, d2)
+    return ret
+
+
+def merge_results(ret, cret):
+    # sometime we delete some stuff from the to be merged  results
+    # dict to only keep some infos
+    return concat_res_or_rets(ret, cret)
+
+
+def rich_error(klass=salt.exceptions.SaltException,
+               msg='error',
+               cret=None):
+    msg = concat_res_or_rets(msg, cret)
+    return klass(msg)
+
+
 def _errmsg(ret, msg):
-    err = '\n{0}\n'.format(msg)
-    for k in ['comment', 'trace']:
-        if ret[k]:
-            err += '\n{0}:\n{1}\n'.format(k, ret[k])
-    raise SaltExit(err)
+    raise rich_error(SaltExit, msg, ret)
 
 
-def errmsg(msg):
-    raise MessageError(msg)
+def errmsg(msg, ret=None):
+    raise rich_error(MessageError, msg, ret)
 
 
 def salt_output(ret,
@@ -805,23 +957,6 @@ def process_cloud_return(name, info, driver='saltify', ret=None):
     else:
         ret['result'] = False
         ret['comment'] += '\nFailed to saltify {0}'.format(name)
-    return ret
-
-
-def merge_results(ret, cret):
-    # sometime we delete some stuff from the to be merged  results
-    # dict to only keep some infos
-    if 'result' in cret:
-        if not cret['result']:
-            ret['result'] = False
-    for k in ['output', 'comment', 'trace']:
-        if k not in ret:
-            ret[k] = ''
-        if cret.get(k, None) is not None:
-            ret[k] += "\n{0}".format(cret[k])
-    for k in ['changes']:
-        if k in cret and k in ret:
-            ret[k] = dictupdate(ret[k], cret[k])
     return ret
 
 

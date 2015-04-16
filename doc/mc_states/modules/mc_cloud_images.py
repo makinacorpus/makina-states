@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 '''
 .. _module_mc_cloud_images:
 
@@ -47,11 +48,7 @@ class ImgStepError(ImgError):
 
 
 def _imgerror(msg, cret=None):
-    if cret is not None:
-        for i in ['stdout', 'stderr']:
-            msg += '\n{0}'.format(
-                __salt__['mc_utils.magicstring'](cret[i]))
-    return ImgStepError(msg)
+    msg = saltapi.rich_error(ImgError, msg, cret)
 
 
 def complete_images(data):
@@ -246,6 +243,24 @@ def get_vars(container='makina-states-trusty', flavor='standalone'):
     data['next_ver'] = next_ver
     data = _s['mc_utils.format_resolve'](data)
     return data
+
+
+def snapshot(container, flavor, *args, **kwargs):
+    gvars = get_vars(container, flavor)
+    cret = mc_lxc.snapshot_container(_run, gvars['rootfs'])
+    if cret['retcode']:
+        raise _imgerror(
+            '{0}/{1}: snapshot failed'.format(container, flavor),
+            cret=cret)
+    return cret
+
+
+def snapshot_standalone(container, *args, **kwargs):
+    return snapshot(container, 'lxc', *args, **kwargs)
+
+
+def snapshot_lxc(container, *args, **kwargs):
+    return snapshot(container, 'lxc', *args, **kwargs)
 
 
 def save_acls(container, flavor, *args, **kwargs):
@@ -499,8 +514,6 @@ def sf_release(images=None, flavors=None, sync=True):
             imgSettings, gret,
             __salt__from_exec=_s,
             _cmd_runner=_run, force=True)
-    if not gret['result']:
-        return gret
     for img in images:
         imgdata = imgSettings['lxc']['images'][img]
         iflavors = copy.deepcopy(flavors)
@@ -516,6 +529,7 @@ def sf_release(images=None, flavors=None, sync=True):
             subrets.setdefault('result', True)
             try:
                 for step in [
+                    'snapshot',
                     'save_acls',
                     'archive',
                     'upload',
