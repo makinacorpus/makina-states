@@ -29,7 +29,16 @@ def mroot():
 
 
 def lint_tests():
-    return
+    try:
+        result = __salt__['cmd.run_all'](
+            '_scripts/pylint.sh -f colorized mc_states',
+            use_vt=True, cwd=mroot())
+        if result['retcode']:
+            raise _error('Pylint tests failed', result)
+    except salt.exceptions.CommandExecutionError:
+        trace = traceback.format_exc()
+        raise _error('Problem with pylint install:\n {0}'.format(
+            api.magicstring(trace)))
 
 
 def unit_tests():
@@ -51,10 +60,7 @@ def run_tests(flavors=None):
     if isinstance(flavors, basestring):
         flavors = flavors.split(',')
     failures = {}
-    for step in [
-        'lint',
-        'unit'
-    ]:
+    for step in ['lint', 'unit']:
         try:
             utils.test_setup()
             __salt__['mc_test.{0}_tests'.format(step)]()
@@ -65,6 +71,10 @@ def run_tests(flavors=None):
             break
         finally:
             utils.test_teardown()
+    # for now, lint is not a failure
+    acceptables = ['lint']
+    for i in acceptables:
+        failures.pop(i, None)
     if failures:
         _failures = dict([(a, "{0}".format(failures[a])) for a in failures])
         salt.output.display_output(_failures, opts=__opts__)

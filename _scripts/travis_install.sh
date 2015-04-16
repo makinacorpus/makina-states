@@ -43,5 +43,9 @@ fi
 cat /etc/sudoers
 # be sure to let travis be sudoer, in case
 echo "travis ALL=NOPASSWD: ALL">>/etc/sudoers
+for i in mastersalt salt;do
+    cd /srv/${i}/makina-states
+    bin/pip install -r requirements/dev.txt
+done
 exit ${?}
 # vim:set et sts=4 ts=4 tw=0:
