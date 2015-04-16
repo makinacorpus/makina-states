@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, print_function
-__docformat__ = 'restructuredtext en'
-
 import unittest
-
-from . import base
+from .. import base
 from mc_states.modules import mc_utils
 from mock import patch, Mock
+
+__docformat__ = 'restructuredtext en'
 
 
 class TestCase(base.ModuleCase):
@@ -38,10 +37,8 @@ class TestCase(base.ModuleCase):
         '''
         Test that the passed dictionnary is well updated
         and not copied over'''
-        data = {
-            '1': 'foo',
-            '2': {'aa': 2}
-        }
+        data = {'1': 'foo',
+                '2': {'aa': 2}}
         with patch.dict(
             mc_utils.__salt__,
             {'mc_utils.dictupdate': mc_utils.dictupdate,

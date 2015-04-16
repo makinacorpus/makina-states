@@ -16,21 +16,20 @@ import hashlib
 import logging
 import time
 import traceback
-from salt.exceptions import SaltException
-from salt.utils.odict import OrderedDict
-from mc_states.api import(
-    _GLOBAL_KINDS,
-    _SUB_REGISTRIES,
-)
-
-_default_activation_status = object()
-
-# cache variable
-_REGISTRY = {}
-_LOCAL_REG_CACHE = {}
 import yaml
 from salt.utils import yamldumper
 from salt.renderers.yaml import get_yaml_loader
+from salt.exceptions import SaltException
+from salt.utils.odict import OrderedDict
+from mc_states.api import _GLOBAL_KINDS
+from mc_states.api import _SUB_REGISTRIES
+import mc_states.api
+import mc_states.saltapi
+
+# cache variable
+_REGISTRY = {}
+_default_activation_status = object()
+_LOCAL_REG_CACHE = {}
 
 log = logging.getLogger(__name__)
 DEFAULT_SUF = 'makina-states.local'
@@ -529,8 +528,7 @@ def autoinclude(reg, additional_includes=None):
 
 
 def get_local_cache_key(key):
-    key_entry = hashlib.sha256("{0}".format(key)).hexdigest()
-    return key_entry
+    return mc_states.saltapi.get_cache_key(key, __opts__)
 
 
 def _cache_entry(local_reg, key, ttl=1):

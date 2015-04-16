@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import, print_function
 '''
 .. _module_mc_cloud_images:
@@ -48,11 +49,7 @@ class ImgStepError(ImgError):
 
 
 def _imgerror(msg, cret=None):
-    if cret is not None:
-        for i in ['stdout', 'stderr']:
-            msg += '\n{0}'.format(
-                __salt__['mc_utils.magicstring'](cret[i]))
-    return ImgStepError(msg)
+    msg = saltapi.rich_error(ImgError, msg, cret)
 
 
 def complete_images(data):

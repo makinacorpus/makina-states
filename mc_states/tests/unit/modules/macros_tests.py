@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
-
+from __future__ import absolute_import, division,  print_function
 import unittest
-
-from . import base
+from .. import base
 from mc_states.modules import (
     mc_utils,
     mc_macros
@@ -80,8 +78,8 @@ class TestCase(base.ModuleCase):
                 ta = mc_macros.kinds()
                 ta.sort()
                 self.assertEqual(ta,
-                                  ['cloud', 'controllers', 'localsettings',
-                                   'nodetypes', 'services'])
+                                 ['cloud', 'controllers', 'localsettings',
+                                  'nodetypes', 'services'])
                 self.assertEqual(
                     results['controllers'],
                     {'metadata': {2: 3},
@@ -105,38 +103,26 @@ class TestCase(base.ModuleCase):
                      'settings': {1: 4}})
 
     def test_is_item_active(self):
-        def _get(a, *ar, **kw):
+        def _get(a, default=None, *ar, **kw):
             return {
                 'makina-states.foo.prefix.1': True,
                 'makina-states.foo.prefix.2': False,
-            }.get(a)
-
-        with patch.dict(self._salt,
-                        {'mc_utils.get': Mock(
-                            side_effect=_get)}):
+            }.get(a, default)
+        with patch.dict(self._salt, {
+            'mc_utils.get': _get,
+        }):
+            mc_macros.is_item_active('foo', 'prefix.1')
             self.assertTrue(mc_macros.is_item_active('foo', 'prefix.1'))
             self.assertFalse(mc_macros.is_item_active('foo', 'prefix.2'))
-        with patch.dict(
-            self._salt,
-            {
-                'mc_utils.get': mc_utils.get
-            }
-        ):
+        with patch.dict(self._salt, {
+            'mc_utils.get': _get,
+        }):
             self.assertTrue(
                 mc_macros.is_item_active('foo', 'prefix.a',
                                          default_status=True))
             self.assertFalse(
                 mc_macros.is_item_active('foo', 'prefix.b',
                                          default_status=False))
-
-    def test_registry_kind_get(self):
-        with patch.dict(self._salt,
-                        {'mc_macros.is_item_active': Mock(
-                            return_value=True)}):
-            foo = mc_macros.registry_kind_get('foo')
-        self.assertEqual(foo, {})
-        self.assertTrue(foo is mc_macros._REGISTRY['foo'])
-
 
 if __name__ == '__main__':
     unittest.main()
