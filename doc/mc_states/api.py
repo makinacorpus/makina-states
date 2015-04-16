@@ -10,6 +10,7 @@ mc_states_api / general API functions
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
 import time
+import datetime
 import copy
 import hashlib
 import json
@@ -21,6 +22,12 @@ import traceback
 import salt.output
 from salt.utils.odict import OrderedDict
 import salt.loader
+
+try:
+    import chardet
+    HAS_CHARDET = True
+except ImportError:
+    HAS_CHARDET = False
 
 
 # try to import fix from various places (readthedoc!!!)
@@ -49,19 +56,14 @@ ONE_MONTH = 31 * ONE_DAY
 HALF_DAY = ONE_DAY / 2
 
 _MC_SERVERS = {'cache': {}, 'error': {}}
-_CACHE_PREFIX = 'mcstates_api_cache_'
-_GLOBAL_KINDS = [
-    'localsettings',
-    'services',
-    'controllers',
-    'nodetypes',
-    'cloud',
-]
-_SUB_REGISTRIES = [
-    'metadata',
-    'settings',
-    'registry',
-]
+# trick to be mutable and changed in tests
+_CACHE_PREFIX = {'key': 'mcstates_api_cache_'}
+_GLOBAL_KINDS = ['localsettings',
+                 'services',
+                 'controllers',
+                 'nodetypes',
+                 'cloud']
+_SUB_REGISTRIES = ['metadata', 'settings', 'registry']
 NETWORK = '10.5.0.0'
 NETMASK = '16'
 RUNNER_CACHE_TIME = 24 * 60 * 60
@@ -73,19 +75,16 @@ _DEFAULT_MC = 'default'
 _LOCAL_CACHES = {}
 _DEFAULT_KEY = 'cache_key_{0}'
 _default = object()
-log = logging.getLogger('mc_states.api')
-
-
 RE_FLAGS = re.M | re.U | re.S
+STRIP_FLAGS = RE_FLAGS
 _CACHE_KEYS = {}
-STRIP_FLAGS = re.M | re.U | re.S
 STRIPPED_RES = [
     re.compile(r"\x1b\[[0-9;]*[mG]", STRIP_FLAGS),
     re.compile(r"\x1b.*?[mGKH]", STRIP_FLAGS)]
 
 _USE_MEMCACHE_FIRST = OrderedDict()
 _USE_MEMOIZE_FIRST = OrderedDict()
-
+log = logging.getLogger('mc_states.api')
 
 def get_local_cache(key=None):
     if not key:
@@ -174,6 +173,17 @@ def asbool(item):
     if item in [True, 1, '1', 'yes', 'y', 'o', 'oui']:
         item = True
     return bool(item)
+
+
+def asstring(val):
+    ret = ''
+    if val is None:
+        ret = ''
+    elif isinstance(val, (bool, int, float, complex, long)):
+        ret = "{0}".format(val)
+    else:
+        ret = repr(val)
+    return ret
 
 
 def uniquify(seq):
@@ -275,18 +285,6 @@ def lazy_subregistry_get(__salt__, registry):
     return wrapper
 
 
-def dump(__salt__, kind, filters=None):
-    if not filters:
-        filters = []
-    REG = copy.deepcopy(
-        __salt__['mc_macros.registry_kind_get'](kind)
-    )
-    for filt in filters:
-        if filt not in REG:
-            del REG[filt]
-    return REG
-
-
 def filter_locals(reg, filter_list=None):
     '''
     Filter a dictionnary feeded with all the local
@@ -369,6 +367,8 @@ def get_cache_key(key, __opts__=None, *args, **kw):
     # if we have a sha key, use that
     if key in six.iterkeys(_CACHE_KEYS):
         ckey = key
+    if key.startswith(_CACHE_PREFIX['key']):
+        ckey = key
     if not ckey:
         func = kw.get('fun', None)
         arg = kw.get('arg', None)
@@ -378,7 +378,9 @@ def get_cache_key(key, __opts__=None, *args, **kw):
         prefix = []
         try:
             if not ('{' in key and '}' in key):
-                raise IndexError('key is not formatted')
+                raise IndexError('key is not formatted,'
+                                 ' skip early'
+                                 ' (error is passed later)')
             format_args = []
             if arg is None:
                 arg = []
@@ -418,7 +420,9 @@ def get_cache_key(key, __opts__=None, *args, **kw):
             sha = "{0}_{1}".format(prefix, key)
         else:
             sha = key
-        ckey = _CACHE_PREFIX + hashlib.sha1(key).hexdigest()
+        ckey = "{0}_{1}".format(
+            _CACHE_PREFIX['key'],
+            hashlib.sha1(key).hexdigest())
         _CACHE_KEYS[ckey] = (sha, key)
     return ckey
 
@@ -813,4 +817,61 @@ def invalidate_memoize_cache(key=_DEFAULT_KEY,
 
 def purge_memoize_cache(*args, **kwargs):
     return invalidate_memoize_cache('all', *args, **kwargs)
+
+
+def magicstring(thestr):
+    """
+    Convert any string to UTF-8 ENCODED on
+    e"""
+    if not HAS_CHARDET:
+        log.error('No chardet support !')
+        return thestr
+    seek = False
+    if (
+        isinstance(thestr, (int, float, long,
+                            datetime.date,
+                            datetime.time,
+                            datetime.datetime))
+    ):
+        thestr = "{0}".format(thestr)
+    if isinstance(thestr, unicode):
+        try:
+            thestr = thestr.encode('utf-8')
+        except Exception:
+            seek = True
+    if seek:
+        try:
+            detectedenc = chardet.detect(thestr).get('encoding')
+        except Exception:
+            detectedenc = None
+        if detectedenc:
+            sdetectedenc = detectedenc.lower()
+        else:
+            sdetectedenc = ''
+        if sdetectedenc.startswith('iso-8859'):
+            detectedenc = 'ISO-8859-15'
+
+        found_encodings = [
+            'ISO-8859-15', 'TIS-620', 'EUC-KR',
+            'EUC-JP', 'SHIFT_JIS', 'GB2312', 'utf-8', 'ascii',
+        ]
+        if sdetectedenc not in ('utf-8', 'ascii'):
+            try:
+                if not isinstance(thestr, unicode):
+                    thestr = thestr.decode(detectedenc)
+                thestr = thestr.encode(detectedenc)
+            except Exception:
+                for idx, i in enumerate(found_encodings):
+                    try:
+                        if not isinstance(thestr, unicode) and detectedenc:
+                            thestr = thestr.decode(detectedenc)
+                        thestr = thestr.encode(i)
+                        break
+                    except Exception:
+                        if idx == (len(found_encodings) - 1):
+                            raise
+    if isinstance(thestr, unicode):
+        thestr = thestr.encode('utf-8')
+    thestr = thestr.decode('utf-8').encode('utf-8')
+    return thestr
 # vim:set et sts=4 ts=4 tw=80:

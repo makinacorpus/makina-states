@@ -366,7 +366,11 @@ def vm_extpillar(id_, limited=False, ttl=60):
         data['domains'] = domains_for(id_, data['domains'])
         data['ssl_certs'] = _s['mc_cloud.ssl_certs_for'](
             id_, data['domains'], data['ssl_certs'])
-        _s['mc_cloud.add_ms_ssl_certs'](data)
+        gconf = _s['mc_pillar.get_configuration'](id_)
+        if gconf.get('manage_ssl', True):
+            data['ssl_certs'] = _s['mc_cloud.ssl_certs_for'](
+                id_, data['domains'], data['ssl_certs'])
+            _s['mc_cloud.add_ms_ssl_certs'](data)
         return data
     cache_key = 'mc_cloud_vm.vm_extpillar{0}{1}'.format(id_, limited)
     return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
@@ -409,13 +413,16 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
                 vm, limited=limited)
             vm_settings['vt'] = vt
             vms_pillar[vm] = vm_settings
-            _s['mc_cloud.add_ms_ssl_certs'](data, vm_settings)
+            vgconf = _s['mc_pillar.get_configuration'](vm)
+            if vgconf.get('manage_ssl', True):
+                _s['mc_cloud.add_ms_ssl_certs'](
+                    data, vm_settings)
         return data
     limited = kw.get('limited', False)
     cache_key = 'mc_cloud_vm.ext_pillar{0}{1}{2}'.format(
         id_, prefixed, limited)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_, prefixed, limited],
-                         {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [id_, prefixed, limited], {}, cache_key, ttl)
 
 
 '''

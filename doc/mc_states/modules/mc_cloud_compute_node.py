@@ -164,7 +164,7 @@ def get_targets(vt=None, ttl=30):
         data = OrderedDict()
         cloudSettings = __salt__['mc_cloud.extpillar_settings']()
         vm_confs = __salt__['mc_pillar.get_cloud_conf_by_vts']()
-        dvts = [a for a in VIRT_TYPES if cloudSettings.get(a)]
+        dvts = [a for a in VIRT_TYPES if a in vm_confs]
         for cvt in dvts:
             all_vt_infos = vm_confs.get(cvt, {})
             for t in all_vt_infos:
@@ -833,9 +833,11 @@ def extpillar_settings(id_=None, limited=False, ttl=30):
                     'mc_cloud_vm.vm_extpillar_settings'](_vm)
         # can only be done after some infos is loaded
         data['domains'] = domains_for(id_, data['domains'])
-        data['ssl_certs'] = _s['mc_cloud.ssl_certs_for'](
-            id_, data['domains'], data['ssl_certs'])
-        _s['mc_cloud.add_ms_ssl_certs'](data)
+        gconf = _s['mc_pillar.get_configuration'](id_)
+        if gconf.get('manage_ssl', True):
+            data['ssl_certs'] = _s['mc_cloud.ssl_certs_for'](
+                id_, data['domains'], data['ssl_certs'])
+            _s['mc_cloud.add_ms_ssl_certs'](data)
         return data
     cache_key = 'mc_cloud_cn.extpillar_settings{0}{1}'.format(
         id_, limited)
