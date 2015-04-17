@@ -57,7 +57,7 @@ def unit_tests(tests=None,
     if doctests:
         in_args += ' --with-doctest'
     failed = OrderedDict()
-    sucess = OrderedDict()
+    success = OrderedDict()
     for test in tests:
         try:
             result = __salt__['cmd.run_all'](
@@ -68,7 +68,7 @@ def unit_tests(tests=None,
             if result['retcode']:
                 failed[test] = result
             else:
-                sucess[test] = result
+                success[test] = result
         except salt.exceptions.CommandExecutionError:
             trace = traceback.format_exc()
             raise _error('Problem with nose install:\n {0}'.format(
@@ -78,7 +78,7 @@ def unit_tests(tests=None,
         for ffail in failed:
             fail = saltapi.concat_res_or_rets(fail, ffail)
         raise _error('Doctest tests failed', fail)
-    return sucess
+    return success
 
 
 def run_tests(flavors=None, use_vt=True):
@@ -86,12 +86,12 @@ def run_tests(flavors=None, use_vt=True):
         flavors = []
     if isinstance(flavors, basestring):
         flavors = flavors.split(',')
-    sucess = OrderedDict()
+    success = OrderedDict()
     failures = OrderedDict()
     for step in ['lint', 'unit']:
         try:
             utils.test_setup()
-            sucess[step] = __salt__['mc_test.{0}_tests'.format(step)](use_vt=use_vt)
+            success[step] = __salt__['mc_test.{0}_tests'.format(step)](use_vt=use_vt)
         except (TestError,) as exc:
             failures[step] = exc
         except (Exception,):
@@ -109,7 +109,7 @@ def run_tests(flavors=None, use_vt=True):
         raise TestError('test failure => non 0 exit code')
     # if no failure, be sure not to mark retcode as a failure
     __context__['retcode'] = 0
-    return sucess
+    return success
 
 
 def run_travis_tests(use_vt=False):
