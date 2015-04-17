@@ -447,7 +447,7 @@ def deploy(callback_args, loglevel, logfile, lock, **kwargs):
                     exitcode = 1
                     break
         if not exitcode:
-            worker_logger.info('Worker has deployed sucessfully')
+            worker_logger.info('Worker has deployed successfully')
             logflush()
         else:
             worker_logger.error('Worker has failed the deployment')
@@ -858,7 +858,7 @@ def main():
     elif exitcode:
         logger.error('Deployment failed')
     else:
-        logger.info('Deployment sucess')
+        logger.info('Deployment success')
     # from now, every child log goes to a file
     toggle_log(False, True)
     # remove multiprocess handlers
