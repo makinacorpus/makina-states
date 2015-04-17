@@ -9,7 +9,6 @@ mc_cloud_compute_node / cloud compute node related functions
 
 '''
 
-__docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import copy

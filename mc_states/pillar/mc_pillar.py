@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 '''
 code may seem not very pythonic, this is because at first, this is
 a port for a jinja based dynamic pillar

@@ -4,7 +4,6 @@
 mc_lxc / Spin up LXC containers and attach them to (master)salt
 ================================================================
 '''
-__docformat__ = 'restructuredtext en'
 from salt.states import postgres_extension as postgres
 import difflib
 import datetime

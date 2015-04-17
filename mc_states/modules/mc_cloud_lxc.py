@@ -9,7 +9,6 @@ mc_cloud_lxc / lxc registry for compute nodes
 
 
 '''
-__docformat__ = 'restructuredtext en'
 
 # Import python libs
 import os

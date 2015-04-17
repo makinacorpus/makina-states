@@ -11,7 +11,6 @@ mc_cloud_kvm runner
 
 '''
 # -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 
 # Import python libs
 import os

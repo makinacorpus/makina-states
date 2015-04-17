@@ -12,7 +12,6 @@ mc_cloud_saltify / cloud related variables
 - LXC driver profile and containers settings are in :ref:`module_mc_lxc`.
 
 '''
-__docformat__ = 'restructuredtext en'
 # Import salt libs
 import copy
 import mc_states.api

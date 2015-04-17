@@ -10,7 +10,6 @@ mc_cloud_vm / vm registry for compute nodes
 
 
 '''
-__docformat__ = 'restructuredtext en'
 
 # Import python libs
 import logging

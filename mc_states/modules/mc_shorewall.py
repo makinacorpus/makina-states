@@ -10,7 +10,6 @@ mc_shorewall / shorewall functions
 
 '''
 
-__docformat__ = 'restructuredtext en'
 # Import python libs
 import socket
 import logging

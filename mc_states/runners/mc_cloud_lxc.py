@@ -10,7 +10,6 @@ mc_cloud_lxc runner
 
 '''
 # -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 
 # Import python libs
 import os
