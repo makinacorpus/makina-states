@@ -88,10 +88,20 @@ disable=W0142,
   W0611,
   W0612,
   C0302,
+  R0912,
+  R0915,
   C0112,
+  W0212,
+  R0914,
+  W0703,
   E8731
 
 # TO REACTIVATE ONE AFTER ONE
+# [W0703(broad-except),
+# [R0912(too-many-branches)
+# [R0915(too-many-statements)
+# [R0914(too-many-locals)
+# [W0212(protected-access),
 # C0112(empty-docstring)
 # C0302(too-many-lines
 # W0612(unused-variable),

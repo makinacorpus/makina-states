@@ -726,7 +726,7 @@ def rr_entry(fqdn, targets, priority='10', record_type='A'):
     rr = '{0}{1}{2} {3}{4} {5}\n'.format(
         fqdn_entry, ttl, IN, record_type, priority, targets[0])
     for ip in targets[1:]:
-        ttl = rrs_ttls.get(fqdn_entry,  '')
+        ttl = rrs_ttls.get(fqdn_entry, '')
         if ttl:
             ttl = ' {0}'.format(ttl)
         rr += '       {0}{1}{2} {3}{4} {5}\n'.format(
@@ -2345,6 +2345,7 @@ def get_supervision_objects_defs(id_):
                              'ping': False}
     providers = __salt__['mc_network.providers']()
     physical_hosts_to_check = set()
+    host = 'HOST'
     if is_supervision_kind(id_, 'master'):
         data = __salt__[__name + '.query']('supervision_configurations', {})
         defs = data.get('definitions', {})
@@ -2391,10 +2392,11 @@ def get_supervision_objects_defs(id_):
             for vt in __salt__['mc_cloud_compute_node.get_all_vts']():
                 attrs['vars.{0}'.format(vt)] = vt in vts
                 if vt in vts:
-                    [groups.append(i)
-                     for i in ['HG_HYPERVISOR',
-                               'HG_HYPERVISOR_{0}'.format(vt)]
-                     if i not in groups]
+                    for i in [
+                        'HG_HYPERVISOR', 'HG_HYPERVISOR_{0}'.format(vt)
+                    ]:
+                        if i not in groups:
+                            groups.append(i)
             # try to guess provider from name to avoid a whois lookup
             host_provider = None
             for provider in providers:
@@ -2409,14 +2411,17 @@ def get_supervision_objects_defs(id_):
                         host_provider = provider
                         break
             if host_provider:
-                [groups.append(i)
-                 for i in ['HG_PROVIDER',
-                           'HG_PROVIDER_{0}'.format(host_provider)]
-                 if i not in groups]
-            [groups.append(i)
-             for i in ['HG_HOSTS', 'HG_BMS']
-             if i not in groups]
-            if host not in __salt__[__name + '.query']('non_managed_hosts', {}):
+                for i in [
+                    'HG_PROVIDER', 'HG_PROVIDER_{0}'.format(host_provider)
+                ]:
+                    if i not in groups:
+                        groups.append(i)
+            for i in ['HG_HOSTS', 'HG_BMS']:
+                if i not in groups:
+                    groups.append(i)
+            if host not in __salt__[__name + '.query'](
+                'non_managed_hosts', {}
+            ):
                 ds = hdata.setdefault('disk_space', [])
                 for i in ['/', '/srv']:
                     if i not in ds:
@@ -2460,8 +2465,8 @@ def get_supervision_objects_defs(id_):
             # set the local ip for snmp and ssh
             if vm_parent == host:
                 ssh_host = snmp_host = 'localhost'
-                ext_pillar = __salt__['mc_cloud_vm.vm_extpillar'](vm)
-                ssh_host = snmp_host = ext_pillar['ip']
+                eext_pillar = __salt__['mc_cloud_vm.vm_extpillar'](vm)
+                ssh_host = snmp_host = eext_pillar['ip']
             # we can access sshd and snpd on cloud vms
             # thx to special port mappings
             if is_cloud_vm(vm) and (vm_parent != host) and vt in ['lxc']:
@@ -2484,9 +2489,9 @@ def get_supervision_objects_defs(id_):
                 # specific ip on lxc, monitor eth1
                 nic_cards.append('eth1')
             groups = attrs.setdefault('groups', [])
-            [groups.append(i)
-             for i in ['HG_HOSTS', 'HG_VMS', 'HG_VM_{0}'.format(vt)]
-             if i not in groups]
+            for i in ['HG_HOSTS', 'HG_VMS', 'HG_VM_{0}'.format(vt)]:
+                if i not in groups:
+                    groups.append(i)
             # those checks are useless on lxc
             if vt in ['lxc'] and vm in __salt__[__name + '.query']('non_managed_hosts', {}):
                 no_common_checks = True
@@ -2574,8 +2579,8 @@ def get_supervision_objects_defs(id_):
                         'address': '127.0.0.1'}}
         # be sure to skip non supervised hosts
         for h in [
-            h for h in defs['autoconfigured_hosts']
-            if h in non_supervised_hosts
+            hh for hh in defs['autoconfigured_hosts']
+            if hh in non_supervised_hosts
         ]:
             defs['autoconfigured_hosts'].pop(h, None)
         rdata.update({'icinga2_definitions': defs})
@@ -3479,10 +3484,8 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         if 'mastersalt' in dbpath:
             log.error(msg)
         return {}
-    try:
+    if isinstance(kw, dict):
         profile_enabled = kw.get('profile', False)
-    except:
-        profile_enabled = False
     data = {}
     if profile_enabled:
         pr = cProfile.Profile()
@@ -3750,23 +3753,12 @@ def get_ssl_conf(id_, ttl=ONE_DAY):
 
 
 def test():
-    def do():
-        log.error('foo')
-        return 1
-    __salt__['mc_utils.memoize_cache'](do, [], {}, 'foo', 2)
-    __salt__['mc_utils.memoize_cache'](do, [], {}, 'foo', 2)
-    __salt__['mc_utils.memoize_cache'](do, [], {}, 'foo', 2)
-    time.sleep(3)
-    __salt__['mc_utils.memoize_cache'](do, [], {}, 'foo', 2)
-    from mc_states.api import _LOCAL_CACHE
-    from pprint import pprint
-    pprint(_LOCAL_CACHE)
+    return True
 
 
 def loaded():
     stack = inspect.stack()
     fun_names = [n[3] for n in stack]
-
     try:
         ret = __pillar__.get(__name + '.loaded', False)
         if ret and (
