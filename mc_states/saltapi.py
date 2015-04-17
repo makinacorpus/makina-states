@@ -669,47 +669,45 @@ def concat_res_or_rets(ret,
                        omit=None):
     '''
     Convenient and magical way to merge 2 structures
-    or strings for usage in salt functions:
+    or strings for usage in salt functions.
 
-        - concatenate string with string:
-            join them (separated with a newline)
+    concatenate string with string
+        join them (separated with a newline)
+    concatenate string with dict:
+        append all output keys from dict in the
+        string separated by a new line and prefixed
+        by the output key identfier
+    concatenate dict with string:
+        concatenate (with newlineà)
+        the string in all output keys
+    concatenate dict with dict:
+        merge corresponding keys in an intelligent way:
 
-        - concatenate string with dict:
-            append all output keys from dict in the
-            string separated by a new line and prefixed
-            by the output key identfier
+        - result from ret is setted to false
+          if cret's one is setted to False
+        - merge output keys (separate with newline)
+        - merge dict keys by updating or creating
+          the corresponding key in ret from cret
 
-        - concatenate dict with dict:
-            merge corresponding keys in an intelligent way:
+    .. doctest:: example
 
-                - result from ret is setted to false
-                  if cret's one is setted to False
-                - merge output keys (separate with newline)
-                - merge dict keys by updating or creating
-                  the corresponding key in ret from cret
-
-        - concatenate dict with string:
-            concatenate (with newlineà)
-            the string in all output keys
-
-    ::
-
-        >>> merge_res_or_ret('a', 'b')
-        'a\nb'
-        >>> merge_res_or_ret({'stdout': 'a', 'stderr': 'b'}, 'de')
-        {'stdout': 'a\nde', 'stderr': 'b\nde'}
-        >>> merge_res_or_ret({'stdout': 'a', 'stderr': 'b'},
-        ...                  {'stdout': 'c', 'stderr': 'd'})
-        {'stdout': 'a\nc', 'stderr': 'b\nd'}
-        >>> merge_res_or_ret({'result': True}, {'result': False})
-        {'result': False}
-        >>> merge_res_or_ret({}, {'result': False})
-        {}
-        >>> merge_res_or_ret({'changes': {1: 2, 3: 4, 5: 6}},
-        ...                  {'changes': {1: 3, 3: 4}})
-        {'changes': {1: 3, 3: 4, 5: 6}}
-        >>> merge_res_or_ret('oo', {'stdout': 'a', 'stderr': 'b'})
-        'oo\nSTDOUT: a\nSTDERR: b'
+    >>> from mc_states.saltapi import concat_res_or_rets
+    >>> concat_res_or_rets({}, {'result': False})
+    {'result': False}
+    >>> concat_res_or_rets({'result': True}, {'result': False})
+    {'result': False}
+    >>> concat_res_or_rets('oo', {'stdout': 'a', 'stderr': 'b'})
+    'oo\\nSTDOUT: a\\nSTDERR: b'
+    >>> concat_res_or_rets('a', 'b')
+    'a\\nb'
+    >>> concat_res_or_rets({'stdout': 'a', 'stderr': 'b'}, 'de')
+    {'stdout': 'a\\nde', 'stderr': 'b\\nde'}
+    >>> concat_res_or_rets({'stdout': 'a', 'stderr': 'b'},
+    ...                    {'stdout': 'c', 'stderr': 'd'})
+    {'stdout': 'a\\nc', 'stderr': 'b\\nd'}
+    >>> concat_res_or_rets({'changes': {1: 2, 3: 4, 5: 6}},
+    ...                    {'changes': {1: 3, 3: 4}})
+    {'changes': {1: 3, 3: 4, 5: 6}}
 
     '''
     if not result_keys:

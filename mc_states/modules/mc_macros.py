@@ -132,18 +132,15 @@ def is_active(registry, name):
 
 
 def yaml_load_local_registry(name, registryf):
-    with open(registryf, 'r') as fic:
-        registry = yaml.load(fic, Loader=get_yaml_loader(''))
-        if not registry:
-            registry = {}
-        return registry
+    registry = __salt__['mc_utils.json_load'](fic)
+    if not registry:
+        registry = {}
+    return registry
 
 
 def yaml_dump_local_registry(registry):
-    content = yaml.dump(
-        registry,
-        default_flow_style=False,
-        Dumper=yamldumper.SafeOrderedDumper)
+    content = __salt__['mc_utils.yaml_dump'](
+        registry, nonewline=False)
     return content
 
 
@@ -153,7 +150,8 @@ def pack_load_local_registry(name, registryf):
         if os.path.exists(registryf):
             with open(registryf) as fic:
                 rvalue = fic.read()
-                value = msgpack.unpackb(rvalue)['value']
+                value = __salt__['mc_utils.msgpack_load'](
+                    rvalue)
     except msgpack.exceptions.UnpackValueError:
         log.error('decoding error, removing stale {0}'.format(registryf))
         os.unlink(registryf)
@@ -162,9 +160,10 @@ def pack_load_local_registry(name, registryf):
 
 
 def pack_dump_local_registry(registry):
-    '''encode in a file using msgpack backend'''
-    content = msgpack.packb({'value': registry})
-    return content
+    '''
+    encode in a file using msgpack backend
+    '''
+    return __salt__['mc_utils.msgpack_dump'](registry)
 
 
 def encode_local_registry(name, registry, registry_format='yaml'):
@@ -429,7 +428,9 @@ def get_registry(registry_configuration):
 
 
 def construct_registry_configuration(name, defaults=None):
-    '''Helper to factorise registry mappings'''
+    '''
+    Helper to factorise registry mappings
+    '''
     metadata_reg = __salt__['mc_{0}.metadata'.format(name)]()
     if not defaults:
         defaults = {}
@@ -441,7 +442,9 @@ def construct_registry_configuration(name, defaults=None):
 
 
 def unregister(kind, slss, data=None, suf=''):
-    '''Unregister a/some service(s) in the local registry'''
+    '''
+    Unregister a/some service(s) in the local registry
+    '''
     state = '\n'
     if isinstance(slss, basestring):
         slss = [slss]
@@ -462,7 +465,9 @@ def unregister(kind, slss, data=None, suf=''):
 
 
 def register(kind, slss, data=None, suf=''):
-    '''Register a/some service(s) in the local registry'''
+    '''
+    Register a/some service(s) in the local registry
+    '''
     state = '\n'
     if isinstance(slss, basestring):
         slss = [slss]
@@ -483,7 +488,9 @@ def register(kind, slss, data=None, suf=''):
 
 
 def autoinclude(reg, additional_includes=None):
-    '''Helper to autoload & (un)register services in a top file'''
+    '''
+    Helper to autoload & (un)register services in a top file
+    '''
     sls = ''
     if not additional_includes:
         additional_includes = []
@@ -608,6 +615,23 @@ def filecache_fun(func,
                   registry='disk_cache',
                   prefix=None,
                   ttl=1):
+    '''
+    Execute a function and store the result in a filebased cache
+
+    func
+        func to execute
+    args
+        positional args to func
+    kwargs
+        kwargs to func
+    registry
+        name of the file inside /etc/makina-states
+    prefix
+        cache key
+    ttl
+        if 0: do not use cache
+    '''
+
     if isinstance(kwargs, dict):
         kwargs = copy.deepcopy(kwargs)
         for k in [a for a in kwargs]:
