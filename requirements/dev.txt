@@ -1,2 +1,6 @@
 modernize
 -e git+https://github.com/saltstack/salt-pylint.git#egg=salt-pylint
+nosexcover
+nose
+coveralls
+
