@@ -84,8 +84,10 @@ def get_wildcard(domain):
 
 def domain_match_wildcard(domain, wildcard_or_domain):
     '''
-    Test if a common name matches a wild card::
+    Test if a common name matches a wild card
 
+        >>> from mc_states.modules.mc_ssl \\
+        ...     import domain_match_wildcard as match_wildcard
         >>> match_wildcard('foo.dom.net', '*.foo.dom.net')
         True
         >>> match_wildcard('www.foo.dom.net', '*.foo.dom.net')
@@ -120,8 +122,9 @@ def domain_match(domain, cert_domain, wildcard_match=False):
     '''
     Test if a domain exactly match other domain
     the other domain can be a wildcard, and
-    this only match top level wildcards as per openssl spec::
+    this only match top level wildcards as per openssl spec
 
+        >>> from mc_states.modules.mc_ssl import domain_match
         >>> domain_match('a.com', 'a.com')
         True
         >>> domain_match('a.com', '*.a.com')
@@ -136,6 +139,7 @@ def domain_match(domain, cert_domain, wildcard_match=False):
         False
         >>> domain_match('a.a', '*.a')
         False
+
     '''
     ret = False
     if domain.lower() == cert_domain.lower():

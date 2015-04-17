@@ -71,10 +71,12 @@ def sexec(mod, func, *a, **kw):
             from salt.states import user as suser
             __salt__['mc_state.exec'](suser, 'present', 'foo')
 
-     Eg::
+     Eg
 
-      >>> from salt.states import file as sfile
-      >>> __salt__['mc_state.sexec'](
+     .. code-block:: python
+
+        from salt.states import file as sfile
+        __salt__['mc_state.sexec'](
             sfile, 'managed', name = os.path.join(lgit, 'hooks/pre-receive'),
             source=(
             'salt://makina-states/files/projects/2/'

@@ -40,6 +40,7 @@ Subregistries
    mc_cloud_lxc.rst
    mc_cloud.rst
    mc_cloud_saltify.rst
+   mc_dumper.rst
    mc_dbsmartbackup.rst
    mc_dhcpd.rst
    mc_env.rst

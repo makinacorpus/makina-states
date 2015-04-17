@@ -505,7 +505,10 @@ def set_allocated_ip(vm, ip, target=None):
     '''
     Allocate an ip for a vm on a compute node for a specific vt
 
-    >>> set_allocated_ip(target, vmname, '2.2.3.4')
+    .. doctest:: example
+
+    >>> set_allocated_ip('foo.bar.net', 'mybm.bar.net', '2.2.3.4') \
+        # doctest:+SKIP
 
     '''
     if target is None:

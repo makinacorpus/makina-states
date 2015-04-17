@@ -5,6 +5,7 @@ import os
 import traceback
 import salt.exceptions
 import salt.output
+from salt.utils.odict import OrderedDict
 
 from mc_states import api
 from mc_states import saltapi
@@ -27,11 +28,11 @@ def mroot():
     return os.path.join(froot(), 'makina-states')
 
 
-def lint_tests():
+def lint_tests(use_vt=True):
     try:
         result = __salt__['cmd.run_all'](
             '_scripts/pylint.sh -f colorized mc_states',
-            use_vt=True, cwd=mroot())
+            use_vt=use_vt, cwd=mroot())
         if result['retcode']:
             raise _error('Pylint tests failed', result)
     except salt.exceptions.CommandExecutionError:
@@ -40,20 +41,41 @@ def lint_tests():
             api.magicstring(trace)))
 
 
-def unit_tests():
-    try:
-        result = __salt__['cmd.run_all'](
-            'bin/nosetests -s -v --exe -w mc_states/tests/unit',
-            use_vt=True, cwd=mroot())
-        if result['retcode']:
-            raise _error('Unit tests failed', result)
-    except salt.exceptions.CommandExecutionError:
-        trace = traceback.format_exc()
-        raise _error('Problem with nose install:\n {0}'.format(
-            api.magicstring(trace)))
+def unit_tests(tests=None, doctests=True, use_vt=True):
+    in_args = '--exe -e mc_tests -v -s'
+    if isinstance(tests, basestring):
+        tests = tests.split(',')
+    if not tests:
+        tests = ['mc_states']
+    if doctests:
+        in_args += ' --with-doctest'
+    in_args += ' -w mc_states'
+    failed = OrderedDict()
+    sucess = OrderedDict()
+    for test in tests:
+        try:
+            result = __salt__['cmd.run_all'](
+                'bin/nosetests {0} {1}'.format(
+                    in_args, test),
+                output_loglevel='debug',
+                use_vt=use_vt, cwd=mroot())
+            if result['retcode']:
+                failed[test] = result
+            else:
+                sucess[test] = result
+        except salt.exceptions.CommandExecutionError:
+            trace = traceback.format_exc()
+            raise _error('Problem with nose install:\n {0}'.format(
+                api.magicstring(trace)))
+    if failed:
+        fail = failed.pop([a for a in failed][0])
+        for ffail in failed:
+            fail = saltapi.concat_res_or_rets(fail, ffail)
+        raise _error('Doctest tests failed', fail)
+    return sucess
 
 
-def run_tests(flavors=None):
+def run_tests(flavors=None, use_vt=True):
     if not flavors:
         flavors = []
     if isinstance(flavors, basestring):
@@ -62,7 +84,7 @@ def run_tests(flavors=None):
     for step in ['lint', 'unit']:
         try:
             utils.test_setup()
-            __salt__['mc_test.{0}_tests'.format(step)]()
+            __salt__['mc_test.{0}_tests'.format(step)](use_vt=use_vt)
         except (TestError,) as exc:
             failures[step] = exc
         except (Exception,):
@@ -82,6 +104,6 @@ def run_tests(flavors=None):
     __context__['retcode'] = 0
 
 
-def run_travis_tests():
-    return run_tests('travis')
+def run_travis_tests(use_vt=False):
+    return run_tests('travis', use_vt=use_vt)
 # vim:set et sts=4 ts=4 tw=80:

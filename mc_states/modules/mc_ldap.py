@@ -255,15 +255,14 @@ def get_handler(uri, **ckw):
       scope
         default query scope
 
-    ::
+    .. code-block:: python
 
-       >>> with get_handler("ldap://ldap.foo.net",
+        with get_handler("ldap://ldap.foo.net",
                            base="dc=foo,dc=org",
                            user="uid=xxx,ou=People,dc=x",
                                 password="xxx") as h:
-       ...     h.query('objectClass=person')
-       ...     h.query('objectClass=groupOfNames')
-       >>>
+            h.query('objectClass=person')
+            h.query('objectClass=groupOfNames')
 
     '''
     if not HAS_LDAP:
