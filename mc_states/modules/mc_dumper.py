@@ -26,16 +26,11 @@ except ImportError:
         Dumper as yDumper)
 from salt.utils import yamldumper
 from mc_states import api
+from mc_states import saltapi
 
 
 def sanitize_kw(kw):
-    ckw = copy.deepcopy(kw)
-    for k in kw:
-        if k in ['is_file']:
-            ckw.pop(k)
-        elif ('__pub_' in k) and (k in ckw):
-            ckw.pop(k)
-    return ckw
+    return saltapi.sanitize_kw(kw, omit=['is_file'])
 
 
 def yencode(string, *args, **kw):
