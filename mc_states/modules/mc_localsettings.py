@@ -16,6 +16,9 @@ ipsan = re.compile('(\.|-|_)', re.M | re.U)
 slssan1 = re.compile('(minions\.)?(old|bm|(vm)(\.(lxc|kvm))?)\.([^.]*\.)?')
 slssan2 = re.compile(
     '(makina-states.cloud\.)?(compute_nodes?|(vms?)(\.(lxc|kvm))?)\.')
+# this is one of the core regs, we cant cache it
+# using the regular cache funcs
+_reg = {}
 
 
 def metadata():
@@ -26,8 +29,8 @@ def metadata():
     return _metadata()
 
 
-def _get_ldapVariables(saltmods):
-    return saltmods['mc_ldap.settings']()
+def _get_ldapVariables(_s):
+    return _s['mc_ldap.settings']()
 
 
 def _ldapEn(__salt__):
@@ -42,32 +45,29 @@ def settings():
 
     WILL DISAPPEAR IN A NEAR FUTURE
     '''
-    @mc_states.api.lazy_subregistry_get(__salt__, __name)
-    def _settings():
+    if not _reg:
         data = {}
-        saltmods = __salt__  # affect to a var to see further pep8 errors
-        pillar = __pillar__
-        resolver = saltmods['mc_utils.format_resolve']
+        _s = __salt__  # affect to a var to see further pep8 errors
         data['grainsPref'] = 'makina-states.localsettings.'
-        data['default_env'] = saltmods['mc_env.settings']()['env']
-        data['locations'] = saltmods['mc_locations.settings']()
-        data['etckeeper'] = saltmods['mc_etckeeper.settings']()
+        data['default_env'] = _s['mc_env.settings']()['env']
+        data['locations'] = _s['mc_locations.settings']()
+        data['etckeeper'] = _s['mc_etckeeper.settings']()
 
-        data['timezoneSettings'] = saltmods['mc_timezone.settings']()
-        data['rotate'] = saltmods['mc_logrotate.settings']()
+        data['timezoneSettings'] = _s['mc_timezone.settings']()
+        data['rotate'] = _s['mc_logrotate.settings']()
 
         # LDAP integration
-        data['ldapVariables'] = saltmods['mc_ldap.settings']()
+        data['ldapVariables'] = _s['mc_ldap.settings']()
         data['ldapEn'] = data['ldapVariables']['enabled']
 
-        data['nodejsSettings'] = saltmods['mc_nodejs.settings']()
-        data['pythonSettings'] = saltmods['mc_python.settings']()
+        data['nodejsSettings'] = _s['mc_nodejs.settings']()
+        data['pythonSettings'] = _s['mc_python.settings']()
         # user management
-        data.update(saltmods['mc_usergroup.settings']())
-        data.update(saltmods['mc_network.settings']())
+        data.update(_s['mc_usergroup.settings']())
+        data.update(_s['mc_network.settings']())
 
         # retro compat wrappers
-        data['pkgSettings'] = saltmods['mc_pkgs.settings']()
+        data['pkgSettings'] = _s['mc_pkgs.settings']()
         data['installmode'] = data['pkgSettings']['installmode']
         data['keyserver'] = data['pkgSettings']['keyserver']
         data['dist'] = data['pkgSettings']['dist']
@@ -83,22 +83,22 @@ def settings():
         data['lts_dist'] = data['pkgSettings']['lts_dist']
 
         # JDK default version
-        data['jdkSettings'] = saltmods['mc_java.settings']()
+        data['jdkSettings'] = _s['mc_java.settings']()
         data['jdkDefaultVer'] = data['jdkSettings']['default_jdk_ver']
 
-        data['rvmSettings'] = rvmSettings = saltmods['mc_rvm.settings']()
+        data['rvmSettings'] = rvmSettings = _s['mc_rvm.settings']()
         data['rvm_url'] = rvmSettings['url']
         data['rubies'] = rvmSettings['rubies']
         data['rvm_user'] = rvmSettings['user']
         data['rvm_group'] = rvmSettings['group']
 
-        data['SSLSettings'] = saltmods['mc_ssl.settings']()
-        localesdef = saltmods['mc_locales.settings']()
+        data['SSLSettings'] = _s['mc_ssl.settings']()
+        localesdef = _s['mc_locales.settings']()
         data['locales'] = localesdef['locales']
         data['default_locale'] = localesdef['locale']
         # expose any defined variable to the callees
-        return data
-    return _settings()
+        _reg.update(data)
+    return _reg
 
 
 def registry():
@@ -145,8 +145,6 @@ def registry():
     return _registry()
 
 
-
-
 def get_pillar_fqdn(sls, template):
     '''
     if template name is none, it is a directly
@@ -179,6 +177,3 @@ def get_pillar_sw_ip(ip):
     return ipsan.sub('_', ip).replace(
         '@', 'AROBASE').replace(
             '*', 'DOTSTAR')
-
-
-#

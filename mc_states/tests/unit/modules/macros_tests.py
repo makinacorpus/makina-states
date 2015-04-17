@@ -4,13 +4,51 @@ import unittest
 from .. import base
 from mc_states.modules import (
     mc_utils,
+    mc_locations,
     mc_macros
 )
 from mock import patch, Mock
 
 
 class TestCase(base.ModuleCase):
-    _mods = (mc_macros, mc_utils)
+    _mods = (mc_macros, mc_locations, mc_utils)
+
+    def test_get_regitry_paths(self):
+        locs = mc_locations.settings()
+        with patch.dict(
+            mc_macros.__opts__, {'config_dir': 'salt'}
+        ):
+            ret = mc_macros.get_registry_paths('myreg')
+            self.assertEqual(
+                ret,
+                {'context':
+                 '{root_dir}etc/salt/makina-states/myreg.pack'.format(**locs),
+                 'global':
+                 '{root_dir}etc/makina-states/myreg.pack'.format(**locs),
+                 'mastersalt':
+                 '{root_dir}etc/mastersalt/'
+                 'makina-states/myreg.pack'.format(**locs),
+                 'salt':
+                 '{root_dir}etc/salt/'
+                 'makina-states/myreg.pack'.format(**locs)})
+        with patch.dict(
+            mc_macros.__opts__, {'config_dir': 'mastersalt'}
+        ):
+            ret = mc_macros.get_registry_paths('myreg')
+            self.assertEqual(
+                ret,
+                {'context':
+                 '{root_dir}etc/mastersalt/'
+                 'makina-states/myreg.pack'.format(**locs),
+                 'global':
+                 '{root_dir}etc/makina-states/'
+                 'myreg.pack'.format(**locs),
+                 'mastersalt':
+                 '{root_dir}etc/mastersalt/'
+                 'makina-states/myreg.pack'.format(**locs),
+                 'salt':
+                 '{root_dir}etc/salt/makina-states/'
+                 'myreg.pack'.format(**locs)})
 
     def test_load_registries(self):
         self.assertEquals(mc_macros._REGISTRY, {})

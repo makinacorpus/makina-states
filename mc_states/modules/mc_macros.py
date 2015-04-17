@@ -135,14 +135,13 @@ def is_active(registry, name):
 
 
 def get_registry_paths(name, registry_format='pack'):
-    #locs = __salt__['mc_locations.settings']()
-    etc = '/etc'
+    locs = __salt__['mc_locations.settings']()
+    etc = locs['conf_dir']
     ctx_pref = 'salt'
     if 'mastersalt' in __opts__['config_dir']:
         ctx_pref = 'mastersalt'
-    confs = {
-        'mastersalt': '{0}/{1}/makina-states/{2}.{3}'.format(
-            etc, 'mastersalt',  name, registry_format),
+    confs = {'mastersalt': '{0}/{1}/makina-states/{2}.{3}'.format(
+        etc, 'mastersalt',  name, registry_format),
         'salt': '{0}/{1}/makina-states/{2}.{3}'.format(
             etc, 'salt',  name, registry_format),
         'global': '{0}/{1}/{2}.{3}'.format(
@@ -481,7 +480,9 @@ def unregister(kind, slss, data=None, suf=''):
     data = locals()
     if slss:
         data['name'] = '-'.join(slss)
-        state += 'makina-states-unregister.{kind}.{name}{suf}:\n'.format(**data)
+        state += (
+            'makina-states-unregister.{kind}'
+            '.{name}{suf}:\n').format(**data)
         state += '  mc_registry.absent:\n'
         state += '    - name: {kind}\n'.format(**data)
         state += '    - slss:\n'

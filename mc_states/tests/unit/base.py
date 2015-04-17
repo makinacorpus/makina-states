@@ -13,6 +13,8 @@ from mc_states.modules import mc_localsettings as mmc_localsettings
 from mc_states.modules import mc_pillar as mmc_pillar
 from mc_states.modules import mc_utils as mmc_utils
 from mc_states.modules import mc_dumper as mmc_dumper
+from mc_states.modules import mc_locations as mmc_locations
+from mc_states.modules import mc_macros as mmc_macros
 import mc_states.tests.utils
 
 J = os.path.join
@@ -30,6 +32,7 @@ DUNDERS = {
         'context': {}}}
 DUNDERS['modules'] = copy.deepcopy(DUNDERS['default'])
 DUNDERS['modules']['salt'] = {
+    'mc_locations.settings': mmc_locations.settings,
     'mc_dumper.sanitize_kw': mmc_dumper.sanitize_kw,
     'mc_dumper.yencode': mmc_dumper.yencode,
     'mc_dumper.cyaml_load': mmc_dumper.cyaml_load,
@@ -48,10 +51,13 @@ DUNDERS['modules']['salt'] = {
         mmc_pillar.get_sysadmins_keys),
     'mc_pillar.ip_for': mmc_pillar.ip_for,
     'mc_pillar.ips_for': mmc_pillar.ips_for,
+    'mc_macros.get_local_registry': mmc_macros.get_local_registry,
     'mc_pillar.load_db': mmc_pillar.load_db,
     'mc_pillar.query': mmc_pillar.query,
     'mc_pillar.whitelisted': mmc_pillar.whitelisted,
     'mc_utils.local_minion_id': mmc_utils.local_minion_id,
+    'mc_utils.format_resolve': mmc_utils.format_resolve,
+    'mc_utils.defaults': mmc_utils.defaults,
     'mc_utils.get': mmc_utils.get,
     'mc_utils.dictupdate': mmc_utils.dictupdate,
     'mc_utils.uniquify': mmc_utils.uniquify,
