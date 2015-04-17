@@ -46,7 +46,7 @@ def unit_tests(tests=None,
                coverage=True,
                doctests=True,
                use_vt=True):
-    in_args = '--exe -e mc_tests -v -s'
+    in_args = '--exe -e mc_test -v -s'
     if isinstance(tests, basestring):
         tests = tests.split(',')
     if not tests:
@@ -86,11 +86,12 @@ def run_tests(flavors=None, use_vt=True):
         flavors = []
     if isinstance(flavors, basestring):
         flavors = flavors.split(',')
-    failures = {}
+    sucess = OrderedDict()
+    failures = OrderedDict()
     for step in ['lint', 'unit']:
         try:
             utils.test_setup()
-            __salt__['mc_test.{0}_tests'.format(step)](use_vt=use_vt)
+            sucess[step] = __salt__['mc_test.{0}_tests'.format(step)](use_vt=use_vt)
         except (TestError,) as exc:
             failures[step] = exc
         except (Exception,):
@@ -108,6 +109,7 @@ def run_tests(flavors=None, use_vt=True):
         raise TestError('test failure => non 0 exit code')
     # if no failure, be sure not to mark retcode as a failure
     __context__['retcode'] = 0
+    return sucess
 
 
 def run_travis_tests(use_vt=False):
