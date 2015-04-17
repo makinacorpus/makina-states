@@ -87,9 +87,13 @@ disable=W0142,
   W1401,
   W0611,
   W0612,
+  C0302,
+  C0112,
   E8731
 
 # TO REACTIVATE ONE AFTER ONE
+# C0112(empty-docstring)
+# C0302(too-many-lines
 # W0612(unused-variable),
 # W0611(unused-import
 # W1401(anomalous-backslash-in-string),

@@ -395,6 +395,7 @@ def cached_zone_headers():
     keys = ['views', 'server_type', 'template', 'source',
             'zoneid', 'fqdn', 'fpath']
     zpref = 'makina-states.services.dns.bind.zones'
+
     @mc_states.api.lazy_subregistry_get(__salt__, zpref)
     def _settings():
         zones = __salt__['mc_utils.defaults'](zpref, {})
@@ -515,7 +516,7 @@ def get_zone(zone):
             zdata['server_type'], zone))
     if not views:
         for v in defaults['default_views']:
-            if not v in views:
+            if v not in views:
                 views.append(v)
     zdata.setdefault('template', True)
     if (
@@ -525,7 +526,7 @@ def get_zone(zone):
         zdata['notify'] = True
         if zdata['slaves']:
             for slv in zdata['slaves']:
-                if not slv in zdata["allow_transfer"]:
+                if slv not in zdata["allow_transfer"]:
                     zdata["allow_transfer"].append(slv)
     if (
         zdata['server_type'] == 'slave'

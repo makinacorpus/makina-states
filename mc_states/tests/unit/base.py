@@ -48,13 +48,34 @@ DUNDERS['modules']['salt'] = {
     'mc_dumper.msgpack_dump': mmc_dumper.msgpack_dump,
     'mc_dumper.json_load': mmc_dumper.json_load,
     'mc_dumper.json_dump': mmc_dumper.json_dump,
-    'mc_localsettings.get_pillar_sw_ip': (
-        mmc_localsettings.get_pillar_sw_ip),
-    'mc_pillar.get_sysadmins_keys': (
-        mmc_pillar.get_sysadmins_keys),
+    'mc_localsettings.get_pillar_sw_ip':
+    mmc_localsettings.get_pillar_sw_ip,
+    'mc_pillar.get_sysadmins_keys':
+    mmc_pillar.get_sysadmins_keys,
     'mc_pillar.ip_for': mmc_pillar.ip_for,
     'mc_pillar.ips_for': mmc_pillar.ips_for,
-    'mc_macros.get_local_registry': mmc_macros.get_local_registry,
+    'mc_utils.yaml_dump':
+    mmc_utils.yaml_dump,
+    'mc_utils.yaml_load':
+    mmc_utils.yaml_load,
+    'mc_utils.msgpack_dump':
+    mmc_utils.msgpack_dump,
+    'mc_utils.msgpack_load':
+    mmc_utils.msgpack_load,
+    'mc_macros.yaml_load_local_registry':
+    mmc_macros.yaml_load_local_registry,
+    'mc_macros.yaml_load_local_registry':
+    mmc_macros.yaml_load_local_registry,
+    'mc_macros.yaml_dump_local_registry':
+    mmc_macros.yaml_dump_local_registry,
+    'mc_macros.pack_load_local_registry':
+    mmc_macros.pack_load_local_registry,
+    'mc_macros.pack_dump_local_registry':
+    mmc_macros.pack_dump_local_registry,
+    'mc_macros.get_local_registry':
+    mmc_macros.get_local_registry,
+    'mc_macros.update_local_registry':
+    mmc_macros.update_local_registry,
     'mc_pillar.load_db': mmc_pillar.load_db,
     'mc_pillar.query': mmc_pillar.query,
     'mc_pillar.whitelisted': mmc_pillar.whitelisted,
@@ -65,6 +86,7 @@ DUNDERS['modules']['salt'] = {
     'mc_utils.dictupdate': mmc_utils.dictupdate,
     'mc_utils.uniquify': mmc_utils.uniquify,
     'mc_utils.unix_crypt': mmc_utils.unix_crypt,
+    'mc_utils.invalidate_memoize_cache': mmc_utils.invalidate_memoize_cache,
     'mc_utils.generate_password': mmc_utils.generate_password,
     'mc_utils.memoize_cache': mmc_utils.memoize_cache}
 

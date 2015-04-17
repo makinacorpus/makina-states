@@ -23,6 +23,20 @@ class TestCase(base.ModuleCase):
              mc_locations,
              mc_utils)
 
+    def test_tsig(self):
+        ret1 = mc_bind.tsig_for('foo')
+        self.assertTrue(len(ret1) > 64)
+        ret2 = mc_bind.tsig_for('foo')
+        ret3 = mc_bind.tsig_for('foo3')
+        ret4 = mc_bind.tsig_for('foo3')
+        self.assertTrue(ret3 == ret4)
+        self.assertTrue(ret1 == ret2)
+        self.assertTrue(ret1 != ret3)
+
+    def test_gtsig(self):
+        ret1 = mc_bind.generate_tsig(128)
+        self.assertTrue(len(ret1.decode('base64')) == 128)
+
     def test_settings(self):
         locs = mc_locations.settings()
         with patch.dict(self._grains, {'os': 'Ubuntu',
