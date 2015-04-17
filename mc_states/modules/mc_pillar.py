@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 __docformat__ = 'restructuredtext en'
-import random
 import re
 import inspect
 import os
-import cProfile, pstats
-import json
+import cProfile
+import pstats
 import copy
 import hashlib
 # Import python libs
@@ -14,17 +13,19 @@ import dns
 import socket
 import logging
 import time
-from pprint import pformat
-import copy
 import mc_states.api
 import datetime
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 import traceback
-import mc_states.api
-import random
-import string
 six = mc_states.api.six
+
+socket_errors = (
+    socket.timeout,
+    socket.error,
+    socket.herror,
+    socket.gaierror
+)
 
 
 log = logging.getLogger(__name__)
@@ -238,7 +239,7 @@ def get_db_infrastructure_maps(ttl=FIVE_MINUTES):
                 if vt not in vts:
                     vts.append(vt)
                 if target not in bms:
-                    bms.append(target)
+                    bms[target] = []
                 if lvms is None:
                     log.error('No vms for {0}, error?'.format(target))
                     continue
@@ -317,7 +318,7 @@ def ips_for(fqdn,
 
     # then failover
     if fail_over:
-        if (fqdn in ipsfo):
+        if fqdn in ipsfo:
             resips.append(ipsfo[fqdn])
         for ipfo in ipsfo_map.get(fqdn, []):
             resips.append(ipsfo[ipfo])
@@ -718,7 +719,7 @@ def rr_entry(fqdn, targets, priority='10', record_type='A'):
         fqdn_entry = '@'
     elif not fqdn.endswith('.'):
         fqdn_entry += '.'
-    ttl = rrs_ttls.get(fqdn_entry,  '')
+    ttl = rrs_ttls.get(fqdn_entry, '')
     IN = ''
     if record_type in ['NS', 'MX']:
         IN = ' IN'
@@ -895,7 +896,7 @@ def get_ns_master(id_, dns_servers=None, default=None, ttl=ONE_DAY):
             zoneid_dn:
                 master: fqfn
     '''
-    def _do_get_ns_master(id_, dns_servers=None, default=None):
+    def _do(id_, dns_servers=None, default=None):
         managed_dns_zones = __salt__[__name + '.query'](
             'managed_dns_zones', {})
         if id_ not in managed_dns_zones:
@@ -915,8 +916,8 @@ def get_ns_master(id_, dns_servers=None, default=None, ttl=ONE_DAY):
                     master, id_))
         return master
     cache_key = __name + '.get_ns_master_{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do_get_ns_master,
-                         [id_, dns_servers, default], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [id_, dns_servers, default], {}, cache_key, ttl)
 
 
 def is_failover(ip, ttl=ONE_MONTH):
@@ -1122,11 +1123,13 @@ def resolve_ips(name, fail_over=True, dns_query=True, ttl=FIVE_MINUTES):
             # else use a dns query to try to get it
             try:
                 zips = socket.gethostbyaddr(name)[2]
-            except Exception:
+            except socket_errors:
                 zips = []
         return zips
-    cache_key = __name + '.resolve_ips{0}{1}{2}'.format(name, fail_over, dns_query)
-    return __salt__['mc_utils.memoize_cache'](_do, [name, fail_over, dns_query], {}, cache_key, ttl)
+    cache_key = __name + '.resolve_ips{0}{1}{2}'.format(
+        name, fail_over, dns_query)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [name, fail_over, dns_query], {}, cache_key, ttl)
 
 
 def resolve_ip(name, fail_over=True, dns_query=True):
@@ -1199,10 +1202,7 @@ def get_slaves_zones_for(fqdn, ttl=FIVE_MINUTES):
             found = fqdn in slaves
             if not found:
                 for slave in zi['slaves'].values():
-                    try:
-                        zips = resolve_ips(slave)
-                    except Exception:
-                        zips = []
+                    zips = resolve_ips(slave)
                     for ip in this_ips:
                         if ip in zips:
                             found = True
@@ -1373,12 +1373,12 @@ def rrs_cnames_for(domain, ttl=FIVE_MINUTES):
                         )
                     ):
                         checks.append(tcname)
-                for test in checks:
+                for atest in checks:
                     # raise exc if not found
                     # but only if we manage the domain of the targeted
                     # rr
                     try:
-                        ips_for(test, fail_over=True)
+                        ips_for(atest, fail_over=True)
                     except IPRetrievalError, exc:
                         do_raise = False
                         fqdmns = get_fqdn_domains(exc.fqdn)
@@ -1394,11 +1394,11 @@ def rrs_cnames_for(domain, ttl=FIVE_MINUTES):
                     and cname.endswith(domain)
                 ):
                     dcname = '{0}.'.format(dcname)
-                ttl = rrs_ttls.get(cname,  '')
+                ttl = rrs_ttls.get(cname, '')
                 entry = '{0} {1} CNAME {2}'.format(
                     dcname, ttl, rr)
                 if entry not in rrs:
-                        rrs.append(entry)
+                    rrs.append(entry)
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_cnames_for_{0}'.format(domain)
@@ -1485,9 +1485,9 @@ def serial_for(domain,
             resolver = dns.resolver.Resolver()
             resolver.timeout = 10
             resolver.lifetime = 10
-            query = resolver.query(domain, 'NS', tcp=True)
+            aquery = resolver.query(domain, 'NS', tcp=True)
             dns_serial = 0
-            for qns in query:
+            for qns in aquery:
                 ns = qns.to_text()
                 if not ns.endswith('.'):
                     ns += domain + '.'
@@ -1950,12 +1950,12 @@ def get_passwords(id_, ttl=ONE_DAY):
         pw_reg = __salt__['mc_macros.get_local_registry'](
             'passwords_map', registry_format='pack')
         db_reg = __salt__[__name + '.query']('passwords_map', {})
-        users, crypted, store= [], {}, False
+        users, crypted, store = [], {}, False
         pw_id = pw_reg.setdefault(id_, {})
         db_id = db_reg.setdefault(id_, {})
         for users_list in [pw_id, db_id, defaults_users]:
             for user in users_list:
-                if not user in users:
+                if user not in users:
                     users.append(user)
         for user in users:
             pws = get_password(id_, user)
@@ -1992,7 +1992,7 @@ def get_ssh_groups(id_=None, ttl=ONE_DAY):
     def _do_ssh_grp(id_, sysadmins=None):
         db_ssh_groups = __salt__[__name + '.query']('ssh_groups', {})
         ssh_groups = db_ssh_groups.get(
-            id_,  db_ssh_groups['default'])
+            id_, db_ssh_groups['default'])
         for group in db_ssh_groups['default']:
             if group not in ssh_groups:
                 ssh_groups.append(group)
@@ -2010,7 +2010,7 @@ def get_sudoers(id_=None, ttl=ONE_DAY):
         sudoers = sudoers_map.get(id_, [])
         if is_salt_managed(id_):
             for s in sudoers_map['default']:
-                if s not in (sudoers + ['infra']):
+                if s not in sudoers + ['infra']:
                     sudoers.append(s)
         else:
             sudoers = []
@@ -2377,7 +2377,7 @@ def get_supervision_objects_defs(id_):
                 p + 'password', 'secret'))
             attrs.setdefault('vars.SNMP_CRYPT', sconf.get(
                 p + 'key', 'key'))
-            attrs.setdefault('vars.SNMP_USER',  sconf.get(
+            attrs.setdefault('vars.SNMP_USER', sconf.get(
                 p + 'user', 'root'))
             hdata.setdefault('raid', True)
             hdata.setdefault('inotify', True)
@@ -2449,11 +2449,11 @@ def get_supervision_objects_defs(id_):
             p = ('makina-states.services.monitoring.'
                  'snmpd.default_')
             attrs.setdefault('vars.makina_host', host)
-            attrs.setdefault('vars.SNMP_PASS',  sconf.get(
+            attrs.setdefault('vars.SNMP_PASS', sconf.get(
                 p + 'password', 'secret'))
             attrs.setdefault('vars.SNMP_CRYPT', sconf.get(
                 p + 'key', 'key'))
-            attrs.setdefault('vars.SNMP_USER',  sconf.get(
+            attrs.setdefault('vars.SNMP_USER', sconf.get(
                 p + 'user', 'root'))
             if host not in parents:
                 parents.append(host)
@@ -2474,7 +2474,7 @@ def get_supervision_objects_defs(id_):
                 no_common_checks = True
             other_ips = [a.get('ip', None)
                          for a in query('cloud_vm_attrs').get(
-                             vm, {}).get('additional_ips',[])
+                             vm, {}).get('additional_ips', [])
                          if a.get('ip', None)]
             if (
                 tipaddr in other_ips
@@ -3186,7 +3186,7 @@ def get_mail_conf(id_, ttl=ONE_DAY):
             'mail_configurations', {})
         mail_conf = copy.deepcopy(mail_settings.get('default', {}))
         if not mail_conf:
-            return  {}
+            return {}
         if id_ in mail_settings:
             idconf = copy.deepcopy(mail_settings[id_])
             if 'no_inherit' not in mail_conf:
