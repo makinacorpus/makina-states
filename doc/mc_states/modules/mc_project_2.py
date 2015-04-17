@@ -590,6 +590,16 @@ def _get_contextual_cached_project(name, remote_host=None):
     return cfg
 
 
+def refresh_cached_configuration(name, *args, **kwargs):
+    '''
+    To inter operate with external tools, we will
+    cache a serialized configuration inside the project root
+    '''
+    get_configuration(name *args, **kwargs)
+    json_cfg = __salt__['mc_utils.json_dump'](cfg)
+    pack_cfg = __salt__['mc_utils.json_dump'](cfg)
+
+
 def get_configuration(name, *args, **kwargs):
     '''
     Return a configuration data structure needed data for
@@ -2070,7 +2080,7 @@ def run_task(name, only_steps, *args, **kwargs):
 
     You can filter steps to run with only_steps
 
-    All sls in ``.salt`` which are a task (all files beginning with task_ will be searched
+    All sls in ``.salt`` which are a task (all files beginning with task\_ will be searched
     and the one matching only_steps (string or list) will be executed)
     '''
     if not only_steps:

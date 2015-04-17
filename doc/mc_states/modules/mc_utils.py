@@ -4,38 +4,34 @@
 
 mc_utils / Some usefull small tools
 ====================================
+
+
+
 '''
 
 # Import salt libs
-import datetime
-import copy
-import os
-import salt.utils.dictupdate
 from pprint import pformat
+import copy
 import cProfile
-import pstats
-from salt.exceptions import SaltException
 import crypt
-import re
-import logging
+import datetime
 import hashlib
-import salt.utils
-from salt.utils.odict import OrderedDict
-from salt.utils import yamldumper
-import salt.loader
-from mc_states import api
+import logging
+import os
+import pstats
+import re
 
-from salt.ext import six as six
-
-import mc_states.api
-import yaml
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
-from salt.utils.pycrypto import secure_password
-import salt.utils.network
 from salt.config import master_config, minion_config
+from salt.exceptions import SaltException
+import salt.utils
+import salt.utils.dictupdate
+import salt.utils.network
+from salt.utils.pycrypto import secure_password
+from salt.utils.odict import OrderedDict
+import salt.loader
+from salt.ext import six as six
+from mc_states import api
+import mc_states.api
 
 _CACHE = {'mid': None}
 _default_marker = object()
@@ -117,12 +113,17 @@ def local_minion_id(force=False):
 
 def magicstring(thestr):
     """
-    Convert any string to UTF-8 ENCODED on
+    Convert any string to UTF-8 ENCODED one
     """
     return api.magicstring(thestr)
 
 
 def generate_stored_password(key, length=None, force=False, value=None):
+    '''
+    Generate and store a password.
+    At soon as one is stored with a specific key, it will never be renegerated
+    unless you set force to true.
+    '''
     if length is None:
         length = 16
     reg = __salt__[
@@ -150,7 +151,7 @@ def generate_password(length=None):
 
 
 class _CycleError(Exception):
-    """."""
+    '''.'''
 
 
 def deepcopy(arg):
@@ -190,6 +191,10 @@ def dictupdate(dict1, dict2):
 
 
 def copy_dictupdate(dict1, dict2):
+    '''
+    Similar to dictupdate but with deepcopy of two
+    merged dicts first.
+    '''
     return dictupdate(copy.deepcopy(dict1),
                       copy.deepcopy(dict2))
 
@@ -198,7 +203,7 @@ def format_resolve(value,
                    original_dict=None,
                    global_tries=50,
                    this_call=0, topdb=False):
-    """Resolve a dict of formatted strings, mappings & list to a valued dict
+    '''Resolve a dict of formatted strings, mappings & list to a valued dict
     Please also read the associated test::
 
         {"a": ["{b}", "{c}", "{e}"],
@@ -216,7 +221,7 @@ def format_resolve(value,
          "e": "{d}",
         }
 
-    """
+    '''
     if not original_dict:
         original_dict = OrderedDict()
     if this_call == 0 and not original_dict and isinstance(value, dict):
@@ -304,36 +309,51 @@ def format_resolve(value,
 
 
 def is_a_str(value):
-    """."""
+    '''
+    is the value a stirng
+    '''
     return isinstance(value, six.string_types)
 
 
 def is_a_bool(value):
-    """."""
+    '''
+    is the value a bool
+    '''
     return isinstance(value, bool)
 
 
 def is_a_int(value):
-    """."""
+    '''
+    is the value an int
+    '''
     return isinstance(value, int)
 
 
 def is_a_float(value):
-    """."""
+    '''
+    is the value a float
+    '''
     return isinstance(value, float)
 
 
 def is_a_complex(value):
-    """."""
+    '''
+    is the value a complex
+    '''
     return isinstance(value, complex)
 
 
 def is_a_long(value):
-    """."""
+    '''
+    is the value a long
+    '''
     return isinstance(value, long)
 
 
 def is_a_number(value):
+    '''
+    is the value a number
+    '''
     return (
         is_a_int(value)
         or is_a_float(value)
@@ -343,26 +363,37 @@ def is_a_number(value):
 
 
 def is_a_set(value):
-    """."""
+    '''
+    is the value a set
+    '''
     return isinstance(value, set)
 
 
 def is_a_tuple(value):
-    """."""
+    '''
+    is the value a tuple
+    '''
     return isinstance(value, tuple)
 
 
 def is_a_list(value):
-    """."""
+    '''
+    is the value a list
+    '''
     return isinstance(value, list)
 
 
 def is_a_dict(value):
-    """."""
+    '''
+    is the value a dict
+    '''
     return isinstance(value, dict)
 
 
 def is_iter(value):
+    '''
+    is the value iterable (list, set, dict tuple)
+    '''
     return (
         is_a_list(value)
         or is_a_dict(value)
@@ -431,6 +462,7 @@ def get(key, default='',
     .. code-block:: bash
 
         salt '*' mc_utils.get pkg:apache
+
     '''
     _s, _g, _p, _o = __salt__, __grains__, __pillar__, __opts__
     if local_registry is None:
@@ -463,19 +495,20 @@ def get(key, default='',
 
 
 def get_uniq_keys_for(prefix):
-    """Return keys for prefix:
+    '''
+    Return keys for prefix:
+
         - if prefix is in conf
         - All other keys of depth + 1
 
-
-        With makina.foo prefix:
+    With makina.foo prefix:
 
         - returns makina.foo
         - returns makina.foo.1
         - dont returns makina.foo.1.1
         - dont returns makina
         - dont returns makina.other
-    """
+    '''
 
     keys = OrderedDict()
     for mapping in (__pillar__,
@@ -619,43 +652,6 @@ def sanitize_kw(kw):
     return ckw
 
 
-def cyaml_load(*args, **kw):
-    args = list(args)
-    close = False
-    if args and isinstance(args[0], basestring) and os.path.exists(args[0]):
-        args[0] = open(args[0])
-        close = True
-    ret = yaml.load(Loader=Loader, *args,
-                    **__salt__['mc_utils.sanitize_kw'](kw))
-    if close:
-        args[0].close()
-    return ret
-
-
-def cyaml_dump(*args, **kw):
-    args = list(args)
-    close = False
-    if args and isinstance(args[0], basestring) and os.path.exists(args[0]):
-        args[0] = open(args[0])
-        close = True
-    ret = yaml.dump(Dumper=Dumper, *args,
-                    **__salt__['mc_utils.sanitize_kw'](kw))
-    if close:
-        args[0].close()
-    return ret
-
-
-def yaml_dump(data, flow=False, nonewline=True):
-    """."""
-    content = yaml.dump(
-        data,
-        default_flow_style=flow,
-        Dumper=yamldumper.SafeOrderedDumper)
-    if nonewline:
-        content = content.replace('\n', ' ')
-    return yencode(content)
-
-
 def salt_root():
     '''get salt root from either pillar or opts (minion or master)'''
     salt = __salt__['mc_salt.settings']()
@@ -668,21 +664,6 @@ def msr():
     return salt['c']['o']['msr']
 
 
-def iyaml_dump(data):
-    """."""
-    return yaml_dump(data, flow=True)
-
-
-def json_dump(data, pretty=False):
-    """."""
-    return api.json_dump(data, pretty=pretty)
-
-
-def json_load(data):
-    """."""
-    return api.json_load(data)
-
-
 def remove_stuff_from_opts(__opts):
     opts = __context__.setdefault('mc_opts', __opts)
     if opts is not __opts:
@@ -693,7 +674,6 @@ def remove_stuff_from_opts(__opts):
                 __opts[k] = opts[k]
     __context__.pop('mc_opts', None)
     return __opts
-
 
 
 def add_stuff_to_opts(__opts):
@@ -734,13 +714,10 @@ def sls_load(sls, get_inner=False):
     return data_l
 
 
-def yencode(string):
-    """."""
-    return api.yencode(string)
-
-
 def file_read(fic):
-    """."""
+    '''
+    read the content a file
+    '''
     data = ''
     with open(fic, 'r') as f:
         data = f.read()
@@ -944,7 +921,7 @@ def cache_kwargs(*args, **kw):
 
 def memoize_cache(*args, **kw):
     '''
-    Wrapper for mc_states.api.memoize_cache to set __opts__
+    Wrapper for :meth:`~mc_states.api.memoize_cache` to set __opts__
 
     CLI Examples::
 
@@ -956,49 +933,49 @@ def memoize_cache(*args, **kw):
 
 def remove_entry(*args, **kw):
     '''
-    Wrapper for mc_states.api.remove_cache_entry to set __opts__
+    Wrapper for :meth:`~mc_states.api.remove_cache_entry` to set __opts__
     '''
     return mc_states.api.remove_entry(*args, **cache_kwargs(*args, **kw))
 
 
 def remove_cache_entry(*args, **kw):
     '''
-    Wrapper for mc_states.api.remove_cache_entry to set __opts__
+    Wrapper for :meth:`~mc_states.api.remove_cache_entry` to set __opts__
     '''
     return mc_states.api.remove_cache_entry(*args, **cache_kwargs(*args, **kw))
 
 
 def get_mc_server(*args, **kw):
     '''
-    Wrapper for mc_states.api.get_local_cache
+    Wrapper for :meth:`~mc_states.api.get_local_cache`
     '''
     return mc_states.api.get_mc_server(*args, **kw)
 
 
 def get_local_cache(*args):
     '''
-    Wrapper for mc_states.api.get_local_cache
+    Wrapper for :meth:`~mc_states.api.get_local_cache`
     '''
     return mc_states.api.get_local_cache(*args)
 
 
 def register_memoize_first(pattern):
     '''
-    Wrapper for mc_states.api.invalidate_memoize_cache to set __opts__
+    Wrapper for :meth:`~mc_states.api.invalidate_memoize_cache` to set __opts__
     '''
     return mc_states.api.register_memoize_first(pattern)
 
 
 def register_memcache_first(pattern):
     '''
-    Wrapper for mc_states.api.invalidate_memoize_cache to set __opts__
+    Wrapper for :meth:`~mc_states.api.invalidate_memoize_cache` to set __opts__
     '''
     return mc_states.api.register_memcache_first(pattern)
 
 
 def invalidate_memoize_cache(*args, **kw):
     '''
-    Wrapper for mc_states.api.invalidate_memoize_cache to set __opts__
+    Wrapper for :meth:`~mc_states.api.invalidate_memoize_cache` to set __opts__
     '''
     return mc_states.api.invalidate_memoize_cache(*args,
                                                   **cache_kwargs(*args, **kw))
@@ -1006,7 +983,7 @@ def invalidate_memoize_cache(*args, **kw):
 
 def purge_memoize_cache(*args, **kw):
     '''
-    Wrapper for mc_states.api.invalidate_memoize_cache to set __opts__
+    Wrapper for :meth:`~mc_states.api.invalidate_memoize_cache` to set __opts__
     '''
     return mc_states.api.purge_memoize_cache(*args,
                                              **cache_kwargs(*args, **kw))
@@ -1014,6 +991,91 @@ def purge_memoize_cache(*args, **kw):
 
 def cache_check(*args, **kw):
     '''
-    Wrapper for mc_states.api.invalidate_memoize_cache to set __opts__
+    Wrapper for :meth:`~mc_states.api.invalidate_memoize_cache` to set __opts__
     '''
     return mc_states.api.cache_check(*args, **cache_kwargs(*args, **kw))
+
+
+def yencode(*args, **kw):
+    '''
+    Retro compat to :meth:`mc_states.modules.mc_dump.yencode`
+    '''
+    return __salt__['mc_dumper.yencode'](*args, **kw)
+
+
+def cyaml_load(*args, **kw):
+    '''
+    Retro compat to :meth:`mc_states.modules.mc_dump.cyaml_load`
+    '''
+    return __salt__['mc_dumper.cyaml_load'](*args, **kw)
+
+
+def yaml_load(*args, **kw):
+    '''
+    Retro compat to :meth:`mc_states.modules.mc_dump.yaml_load`
+    '''
+    return __salt__['mc_dumper.yaml_load'](*args, **kw)
+
+
+def yaml_dump(*args, **kw):
+    '''
+    Retro compat to :meth:`mc_states.modules.mc_dump.old_yaml_dump`
+    '''
+    return __salt__['mc_dumper.old_yaml_dump'](*args, **kw)
+
+
+def cyaml_dump(*args, **kw):
+    '''
+    Retro compat to :meth:`mc_states.modules.mc_dump.cyaml_dump`
+    '''
+    return __salt__['mc_dumper.cyaml_dump'](*args, **kw)
+
+
+def old_yaml_dump(*args, **kw):
+    '''
+    Retro compat to :meth:`mc_states.modules.mc_dump.old_yaml_dump`
+    '''
+    return __salt__['mc_dumper.old_yaml_dump'](*args, **kw)
+
+
+def nyaml_dump(*args, **kw):
+    '''
+    Retro compat to :meth:`mc_states.modules.mc_dump.yaml_dump`
+    '''
+    return __salt__['mc_dumper.yaml_dump'](*args, **kw)
+
+
+def iyaml_dump(*args, **kw):
+    '''
+    Retro compat to :meth:`mc_states.modules.mc_dump.iyaml_dump`
+    '''
+    return __salt__['mc_dumper.iyaml_dump'](*args, **kw)
+
+
+def msgpack_load(*args, **kw):
+    '''
+    Retro compat to :meth:`mc_states.modules.mc_dump.msgpack_load`
+    '''
+    return __salt__['mc_dumper.msgpack_load'](*args, **kw)
+
+
+def msgpack_dump(*args, **kw):
+    '''
+    Retro compat to :meth:`mc_states.modules.mc_dump.old_msgpack_dump`
+    '''
+    return __salt__[
+        'mc_dumper.msgpack_dump'](*args, **kw)
+
+
+def json_load(*args, **kw):
+    '''
+    Retro compat to :meth:`mc_states.modules.mc_dump.json_load`
+    '''
+    return __salt__['mc_dumper.json_load'](*args, **kw)
+
+
+def json_dump(*args, **kw):
+    '''
+    Retro compat to :meth:`mc_states.modules.mc_dump.old_json_dump`
+    '''
+    return __salt__['mc_dumper.json_dump'](*args, **kw)

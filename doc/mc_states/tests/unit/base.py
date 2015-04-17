@@ -12,6 +12,7 @@ except ImportError:
 from mc_states.modules import mc_localsettings as mmc_localsettings
 from mc_states.modules import mc_pillar as mmc_pillar
 from mc_states.modules import mc_utils as mmc_utils
+from mc_states.modules import mc_dumper as mmc_dumper
 import mc_states.tests.utils
 
 J = os.path.join
@@ -29,6 +30,18 @@ DUNDERS = {
         'context': {}}}
 DUNDERS['modules'] = copy.deepcopy(DUNDERS['default'])
 DUNDERS['modules']['salt'] = {
+    'mc_dumper.sanitize_kw': mmc_dumper.sanitize_kw,
+    'mc_dumper.yencode': mmc_dumper.yencode,
+    'mc_dumper.cyaml_load': mmc_dumper.cyaml_load,
+    'mc_dumper.yaml_load': mmc_dumper.yaml_load,
+    'mc_dumper.yaml_dump': mmc_dumper.yaml_dump,
+    'mc_dumper.cyaml_dump': mmc_dumper.cyaml_dump,
+    'mc_dumper.old_yaml_dump': mmc_dumper.old_yaml_dump,
+    'mc_dumper.iyaml_dump': mmc_dumper.iyaml_dump,
+    'mc_dumper.msgpack_load': mmc_dumper.msgpack_load,
+    'mc_dumper.msgpack_dump': mmc_dumper.msgpack_dump,
+    'mc_dumper.json_load': mmc_dumper.json_load,
+    'mc_dumper.json_dump': mmc_dumper.json_dump,
     'mc_localsettings.get_pillar_sw_ip': (
         mmc_localsettings.get_pillar_sw_ip),
     'mc_pillar.get_sysadmins_keys': (
@@ -44,8 +57,7 @@ DUNDERS['modules']['salt'] = {
     'mc_utils.uniquify': mmc_utils.uniquify,
     'mc_utils.unix_crypt': mmc_utils.unix_crypt,
     'mc_utils.generate_password': mmc_utils.generate_password,
-    'mc_utils.memoize_cache': mmc_utils.memoize_cache
-}
+    'mc_utils.memoize_cache': mmc_utils.memoize_cache}
 
 
 class ModuleCase(unittest.TestCase):
