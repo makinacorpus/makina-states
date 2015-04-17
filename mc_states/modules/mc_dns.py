@@ -18,7 +18,6 @@ mc_provider (api settings)
 
 '''
 
-__docformat__ = 'restructuredtext en'
 import pprint
 import logging
 import traceback

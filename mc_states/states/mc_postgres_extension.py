@@ -4,7 +4,6 @@ mc_postgres_extension / Wrapper to automaticly set the rigth pgsql to attack
 ==============================================================================
 '''
 from salt.states import postgres_extension as postgres
-__docformat__ = 'restructuredtext en'
 
 
 def absent(name, *args, **kw):

@@ -7,7 +7,6 @@ mc_mysql / mysql functions
 ============================================
 '''
 
-__docformat__ = 'restructuredtext en'
 # Import python libs
 import copy
 import logging

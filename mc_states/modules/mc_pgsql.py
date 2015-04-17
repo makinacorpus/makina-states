@@ -8,7 +8,6 @@ mc_pgsql / Postgresql related functions
 =======================================
 '''
 # -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 import re
 import os
 import copy

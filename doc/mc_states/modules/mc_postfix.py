@@ -6,7 +6,6 @@ mc_postfix / postfix functions
 ============================================
 '''
 
-__docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import mc_states.api

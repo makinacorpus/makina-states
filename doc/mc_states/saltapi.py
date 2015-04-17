@@ -48,7 +48,7 @@ log = logging.getLogger(__name__)
 _CLIENTS = {}
 _marker = object()
 _RUNNERS = {}
-LXC_IMPLEMENTATION = 'mc_lxc_fork'
+# LXC_IMPLEMENTATION = 'mc_lxc_fork'
 LXC_IMPLEMENTATION = 'lxc'
 DEFAULT_POLL = 0.4
 __RESULT = {'comment': '',
@@ -967,4 +967,22 @@ def _get_ssh_ret(**kw):
                                          'stderr': '',
                                          'trace': ''},
                                         kw)
+
+
+def sanitize_kw(kw, omit=None, default=True):
+    ckw = copy.deepcopy(kw)
+    if not omit:
+        omit = []
+    if isinstance(omit, six.string_types):
+        omit = omit.split(',')
+    if default:
+        omit.append('^__pub')
+    for k in [a for a in ckw]:
+        if not isinstance(k, six.string_types):
+            continue
+        else:
+            for pattern in omit:
+                if re.search(pattern,  k):
+                    ckw.pop(k, None)
+    return ckw
 # vim:set et sts=4 ts=4 tw=80:

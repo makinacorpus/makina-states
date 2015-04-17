@@ -12,9 +12,7 @@ Useful functions to locate a particular host
 or setting
 '''
 
-__docformat__ = 'restructuredtext en'
 # -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 # Import python libs
 import xmlrpclib
 import logging

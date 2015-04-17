@@ -14,7 +14,6 @@ Convenient functions to use a salt infra as an api
 Internal module used as api.
 '''
 # -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 import salt.output
 from pprint import pformat
 from mc_states.api import memoize_cache

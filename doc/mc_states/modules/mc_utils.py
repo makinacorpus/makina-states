@@ -472,7 +472,10 @@ def get(key, default='',
             if key.startswith(pref):
                 local_registry = reg
                 break
-    if isinstance(local_registry, basestring):
+    if (
+        isinstance(local_registry, basestring)
+        and local_registry not in ['localsettings']
+    ):
         local_registry = _s['mc_macros.get_local_registry'](
             local_registry, registry_format=registry_format)
     ret = traverse_dict(_o, key, delimiter=delimiter)

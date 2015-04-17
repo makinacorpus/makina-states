@@ -9,7 +9,6 @@ mc_project_1 / project settings regitry APIV1
 '''
 # -*- coding: utf-8 -*-
 # Import salt libs
-__docformat__ = 'restructuredtext en'
 
 _default_activation_status = object()
 from mc_states.api import is_valid_ip

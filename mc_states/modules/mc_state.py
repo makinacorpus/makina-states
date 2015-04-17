@@ -7,7 +7,6 @@ mc_state / module to execute functions on salt
 ================================================
 '''
 
-__docformat__ = 'restructuredtext en'
 
 import hashlib
 

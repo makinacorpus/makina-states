@@ -12,7 +12,6 @@ mc_cloud_images / cloud images release managment & delivery
 Please also have a look at the runner.
 '''
 
-__docformat__ = 'restructuredtext en'
 # Import python libs
 import traceback
 import logging

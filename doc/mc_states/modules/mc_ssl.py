@@ -127,8 +127,6 @@ def domain_match(domain, cert_domain, wildcard_match=False):
         >>> from mc_states.modules.mc_ssl import domain_match
         >>> domain_match('a.com', 'a.com')
         True
-        >>> domain_match('a.com', '*.a.com')
-        False
         >>> domain_match('a.a.com', '*.a.com')
         True
         >>> domain_match('a.a.a.com', '*.a.com')
@@ -139,10 +137,16 @@ def domain_match(domain, cert_domain, wildcard_match=False):
         False
         >>> domain_match('a.a', '*.a')
         False
+        >>> domain_match('a.com', '*.a.com')
+        True
+        >>> domain_match('a.com', '*.a.a.com')
+        False
 
     '''
     ret = False
-    if domain.lower() == cert_domain.lower():
+    domain = domain.lower()
+    cert_domain = cert_domain.lower()
+    if domain == cert_domain:
         ret = True
     if cert_domain.startswith('*.') and not ret:
         wildcard_match = True

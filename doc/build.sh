@@ -3,7 +3,8 @@ cd "$(dirname "${0}")"
 rsync -azv ../mc_states/ mc_states/
 find mc_states -type f|while read f
 do
-    sed -i -re "/from __future/d" "${f}"
+    grep -v 'from __future' "${f}" > "${f}.tmp"
+    mv -f "${f}.tmp" "${f}"
 done
 if [ "x${1}" != "nobuild" ];then
     make html

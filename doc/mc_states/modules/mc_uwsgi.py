@@ -6,7 +6,6 @@ mc_uwsgi / uwsgi functions
 ============================================
 '''
 
-__docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import copy

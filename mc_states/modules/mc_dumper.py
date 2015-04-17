@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-__doc__ = '''
+'''
 .. _module_mc_dumper:
 
 mc_dumper / Some useful wrappers to dump/load values
@@ -10,12 +10,11 @@ mc_dumper / Some useful wrappers to dump/load values
 
 
 '''
-__docformat__ = 'restructuredtext en'
+
 
 import os
 import yaml
 import msgpack
-import copy
 try:
     from yaml import (
         CLoader as yLoader,

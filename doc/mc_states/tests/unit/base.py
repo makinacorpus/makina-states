@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 
 import os
 import copy
@@ -9,10 +8,14 @@ try:
 except ImportError:
     import unittest
 
+
+from salt.modules import grains as sgrains
 from mc_states.modules import mc_localsettings as mmc_localsettings
 from mc_states.modules import mc_pillar as mmc_pillar
 from mc_states.modules import mc_utils as mmc_utils
 from mc_states.modules import mc_dumper as mmc_dumper
+from mc_states.modules import mc_locations as mmc_locations
+from mc_states.modules import mc_macros as mmc_macros
 import mc_states.tests.utils
 
 J = os.path.join
@@ -30,6 +33,8 @@ DUNDERS = {
         'context': {}}}
 DUNDERS['modules'] = copy.deepcopy(DUNDERS['default'])
 DUNDERS['modules']['salt'] = {
+    'grains.filter_by': sgrains.filter_by,
+    'mc_locations.settings': mmc_locations.settings,
     'mc_dumper.sanitize_kw': mmc_dumper.sanitize_kw,
     'mc_dumper.yencode': mmc_dumper.yencode,
     'mc_dumper.cyaml_load': mmc_dumper.cyaml_load,
@@ -42,20 +47,45 @@ DUNDERS['modules']['salt'] = {
     'mc_dumper.msgpack_dump': mmc_dumper.msgpack_dump,
     'mc_dumper.json_load': mmc_dumper.json_load,
     'mc_dumper.json_dump': mmc_dumper.json_dump,
-    'mc_localsettings.get_pillar_sw_ip': (
-        mmc_localsettings.get_pillar_sw_ip),
-    'mc_pillar.get_sysadmins_keys': (
-        mmc_pillar.get_sysadmins_keys),
+    'mc_localsettings.get_pillar_sw_ip':
+    mmc_localsettings.get_pillar_sw_ip,
+    'mc_pillar.get_sysadmins_keys':
+    mmc_pillar.get_sysadmins_keys,
     'mc_pillar.ip_for': mmc_pillar.ip_for,
     'mc_pillar.ips_for': mmc_pillar.ips_for,
+    'mc_utils.yaml_dump':
+    mmc_utils.yaml_dump,
+    'mc_utils.yaml_load':
+    mmc_utils.yaml_load,
+    'mc_utils.msgpack_dump':
+    mmc_utils.msgpack_dump,
+    'mc_utils.msgpack_load':
+    mmc_utils.msgpack_load,
+    'mc_macros.yaml_load_local_registry':
+    mmc_macros.yaml_load_local_registry,
+    'mc_macros.yaml_load_local_registry':
+    mmc_macros.yaml_load_local_registry,
+    'mc_macros.yaml_dump_local_registry':
+    mmc_macros.yaml_dump_local_registry,
+    'mc_macros.pack_load_local_registry':
+    mmc_macros.pack_load_local_registry,
+    'mc_macros.pack_dump_local_registry':
+    mmc_macros.pack_dump_local_registry,
+    'mc_macros.get_local_registry':
+    mmc_macros.get_local_registry,
+    'mc_macros.update_local_registry':
+    mmc_macros.update_local_registry,
     'mc_pillar.load_db': mmc_pillar.load_db,
     'mc_pillar.query': mmc_pillar.query,
     'mc_pillar.whitelisted': mmc_pillar.whitelisted,
     'mc_utils.local_minion_id': mmc_utils.local_minion_id,
+    'mc_utils.format_resolve': mmc_utils.format_resolve,
+    'mc_utils.defaults': mmc_utils.defaults,
     'mc_utils.get': mmc_utils.get,
     'mc_utils.dictupdate': mmc_utils.dictupdate,
     'mc_utils.uniquify': mmc_utils.uniquify,
     'mc_utils.unix_crypt': mmc_utils.unix_crypt,
+    'mc_utils.invalidate_memoize_cache': mmc_utils.invalidate_memoize_cache,
     'mc_utils.generate_password': mmc_utils.generate_password,
     'mc_utils.memoize_cache': mmc_utils.memoize_cache}
 

@@ -109,7 +109,6 @@ the default dictionary.
 
 '''
 
-__docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import mc_states.api

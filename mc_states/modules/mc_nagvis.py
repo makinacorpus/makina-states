@@ -10,7 +10,6 @@ rotations and actions subdictionaries.
 
 '''
 
-__docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import copy

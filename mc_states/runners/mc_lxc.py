@@ -12,7 +12,6 @@ mc_lxc
 Jobs for lxc managment
 '''
 # -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 
 # Import python libs
 import os

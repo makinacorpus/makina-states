@@ -29,7 +29,6 @@ hostname, the booleans are set to True.
 
 '''
 
-__docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import copy
