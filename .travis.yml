@@ -15,6 +15,7 @@ env:
 install: [sudo -E ./_scripts/travis_install.sh]
 script: sudo -E ./_scripts/travis_test.sh
 after_sucess: [sudo -E /srv/mastersalt/makina-states/_scripts/travis_aftersucess.sh]
-notifications:
-  irc:
-    - "irc.freenode.org#makinacorpus"
+#too noisy
+#notifications:
+#  irc:
+#    - "irc.freenode.org#makinacorpus"
