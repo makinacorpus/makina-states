@@ -1078,6 +1078,7 @@ check_py_modules() {
 import dns
 import docker
 import salt
+import tornado.ioloop
 import chardet
 import M2Crypto
 import OpenSSL
