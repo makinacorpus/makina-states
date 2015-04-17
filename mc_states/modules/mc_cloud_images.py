@@ -310,7 +310,7 @@ def get_ret(**kwargs):
     ret = kwargs.get('ret',
                      {'result': True,
                       'comment':
-                      'sucess',
+                      'success',
                       'changes': {}})
     return ret
 
