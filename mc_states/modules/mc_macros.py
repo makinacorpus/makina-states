@@ -31,6 +31,10 @@ _REGISTRY = {}
 _default_activation_status = object()
 _LOCAL_REG_CACHE = {}
 
+
+
+NOT_SHARED = ['controllers', 'services', 'nodetypes',
+              'localsettings', 'cloud']
 log = logging.getLogger(__name__)
 DEFAULT_SUF = 'makina-states.local'
 DEFAULT_LOCAL_REG_NAME = '{0}.{{0}}'.format(DEFAULT_SUF)
@@ -87,7 +91,7 @@ def is_item_active(registry_name,
 
 def load_kind_registries(kind):
     # load all registries
-    if not kind in _REGISTRY:
+    if kind not in _REGISTRY:
         _REGISTRY[kind] = {}
     for registry in _SUB_REGISTRIES:
         if registry in _REGISTRY[kind]:
@@ -117,43 +121,84 @@ def kinds():
 def metadata(kind, grain=None, state=None, bases=None):
     if bases is None:
         bases = []
-    return {
-        'kind': kind,
-        'bases': bases
-    }
+    return {'kind': kind, 'bases': bases}
 
 
 def is_active(registry, name):
-    '''Is the queried service active in the registry'''
+    '''
+    Is the queried service active in the registry
+    '''
     try:
         return name in registry['actives']
     except:
         return False
 
 
-def yaml_load_local_registry(name, registryf):
-    registry = __salt__['mc_utils.json_load'](fic)
+def get_registry_paths(name, registry_format='pack'):
+    #locs = __salt__['mc_locations.settings']()
+    etc = '/etc'
+    ctx_pref = 'salt'
+    if 'mastersalt' in __opts__['config_dir']:
+        ctx_pref = 'mastersalt'
+    confs = {
+        'mastersalt': '{0}/{1}/makina-states/{2}.{3}'.format(
+            etc, 'mastersalt',  name, registry_format),
+        'salt': '{0}/{1}/makina-states/{2}.{3}'.format(
+            etc, 'salt',  name, registry_format),
+        'global': '{0}/{1}/{2}.{3}'.format(
+            etc, 'makina-states',  name, registry_format),
+        'context': '{0}/{1}/makina-states/{2}.{3}'.format(
+            etc, ctx_pref,  name, registry_format)}
+    return confs
+
+
+def get_registry_path(name,
+                      registry_format='yaml',
+                      registryf=None,
+                      context=None):
+    confs = get_registry_paths(
+        name, registry_format=registry_format)
+    if registryf and os.path.exists(registryf):
+        return registryf
+    if context is None or context not in confs:
+        if name in NOT_SHARED:
+            context = 'context'
+        else:
+            context = 'global'
+    registryf = confs[context]
+    return registryf
+
+
+def yaml_load_local_registry(name, registryf=None):
+    registry = __salt__['mc_utils.yaml_load'](
+        get_registry_path(name,
+                          registryf=registryf,
+                          registry_format='yaml'),
+        is_file=True)
     if not registry:
         registry = {}
     return registry
 
 
 def yaml_dump_local_registry(registry):
-    content = __salt__['mc_utils.yaml_dump'](
-        registry, nonewline=False)
+    content = __salt__['mc_utils.yaml_dump'](registry,
+                                             nonewline=False)
     return content
 
 
-def pack_load_local_registry(name, registryf):
+def pack_load_local_registry(name, registryf=None):
     value = {}
+    regpath = get_registry_path(name,
+                                registryf=registryf,
+                                registry_format='pack')
     try:
-        if os.path.exists(registryf):
-            with open(registryf) as fic:
+        if os.path.exists(regpath):
+            with open(regpath) as fic:
                 rvalue = fic.read()
                 value = __salt__['mc_utils.msgpack_load'](
                     rvalue)
     except msgpack.exceptions.UnpackValueError:
-        log.error('decoding error, removing stale {0}'.format(registryf))
+        log.error('decoding error, removing stale {0}'.format(regpath))
         os.unlink(registryf)
         value = {}
     return value
@@ -167,18 +212,8 @@ def pack_dump_local_registry(registry):
 
 
 def encode_local_registry(name, registry, registry_format='yaml'):
-    locs = __salt__['mc_locations.settings']()
-    not_shared = ['controllers', 'services', 'nodetypes',
-                  'localsettings', 'cloud']
-
-    if name not in not_shared:
-        registryf = os.path.join(
-            locs['conf_dir'], 'makina-states/{0}.{1}'.format(
-                name, registry_format))
-    else:
-        registryf = os.path.join(
-            __opts__['config_dir'], 'makina-states/{0}.{1}'.format(
-                name, registry_format))
+    registryf = get_registry_path(
+        name, registry_format=registry_format)
     dregistry = os.path.dirname(registryf)
     if not os.path.exists(dregistry):
         os.makedirs(dregistry)
@@ -200,11 +235,12 @@ def encode_local_registry(name, registry, registry_format='yaml'):
 
 
 def _get_local_registry(name,
-                       cached=True,
-                       cachetime=60,
-                       registry_format='yaml'):
-    '''Get local registry
-    Masteralt & Salt share the local registries
+                        cached=True,
+                        cachetime=60,
+                        registry_format='yaml'):
+    '''
+    Get local registry
+    Masteralt & Salt share all the local registries
     unless for the main ones:
 
         - controllers
@@ -216,38 +252,27 @@ def _get_local_registry(name,
     For backward compatibility, we take care to load and merge
     shared registries in mastersalt & salt prefix if any is found.
     '''
-    not_shared = ['controllers', 'services', 'nodetypes',
-                  'localsettings', 'cloud']
-    mastersalt_registryf = '{0}/makina-states/{1}.{2}'.format(
-        '/etc/mastersalt',  name, registry_format)
-    salt_registryf = '{0}/makina-states/{1}.{2}'.format(
-        '/etc/salt',  name, registry_format)
-    shared_registryf = os.path.join(
-        '/etc/makina-states/{0}.{1}'.format(name, registry_format))
     # cache local registries one minute
     key = '{0}_{1}'.format('mcreg', name)
-    if name not in not_shared:
-        to_load = [mastersalt_registryf,
-                   salt_registryf,
-                   shared_registryf]
+    if name not in NOT_SHARED:
+        to_load = ['global', 'context', 'mastersalt', 'salt']
     else:
-        to_load = [
-            '{0}/makina-states/{1}.{2}'.format(
-                __opts__['config_dir'], name, registry_format)
-        ]
+        to_load = ['context']
+
     def _do(name, to_load, registry_format):
+        registryfs = get_registry_paths(
+            name, registry_format=registry_format)
         registry = OrderedDict()
-        for registryf in to_load:
+        for prefix in to_load:
+            registryf = registryfs[prefix]
             dregistry = os.path.dirname(registryf)
             if not os.path.exists(dregistry):
                 os.makedirs(dregistry)
             if os.path.exists(registryf):
-                registry = __salt__[
-                    'mc_utils.dictupdate'](
-                        registry,
-                        __salt__[
-                            'mc_macros.{0}_load_local_registry'.format(
-                                registry_format)](name, registryf))
+                data = __salt__[
+                    'mc_macros.{0}_load_local_registry'.format(
+                        registry_format)](name, registryf)
+                registry = __salt__['mc_utils.dictupdate'](registry, data)
             _unprefix(registry, name)
         return registry
     cache_key = RKEY.format(key, registry_format)
@@ -296,8 +321,11 @@ def get_local_registry(name,
 
 
 def update_registry_params(registry_name, params, registry_format='yaml'):
-    '''Update the desired local registry'''
-    __salt__['mc_utils.invalidate_memoize_cache'](RKEY.format(registry_name, registry_format))
+    '''
+    Update the desired local registry
+    '''
+    __salt__['mc_utils.invalidate_memoize_cache'](
+        RKEY.format(registry_name, registry_format))
     registry = get_local_registry(
         registry_name, registry_format=registry_format)
     changes = {}

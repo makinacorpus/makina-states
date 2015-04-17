@@ -31,7 +31,9 @@ from mc_states import api
 def sanitize_kw(kw):
     ckw = copy.deepcopy(kw)
     for k in kw:
-        if ('__pub_' in k) and (k in ckw):
+        if k in ['is_file']:
+            ckw.pop(k)
+        elif ('__pub_' in k) and (k in ckw):
             ckw.pop(k)
     return ckw
 
@@ -41,6 +43,16 @@ def yencode(string, *args, **kw):
     wrapper to :meth:`~mc_states_api.yencode`
     '''
     return api.yencode(string)
+
+
+def first_arg_is_file(*args, **kwargs):
+    is_file = kwargs.get('is_file', None)
+    if is_file is None:
+        is_file = (
+            args and
+            isinstance(args[0], basestring) and
+            os.path.exists(args[0]))
+    return bool(is_file)
 
 
 def cyaml_load(*args, **kw):
@@ -54,7 +66,8 @@ def cyaml_load(*args, **kw):
     close = False
     ret = None
     kw.setdefault('Loader', yLoader)
-    if args and isinstance(args[0], basestring) and os.path.exists(args[0]):
+    is_file = first_arg_is_file(*args, **kw)
+    if is_file:
         args[0] = open(args[0])
         close = True
     try:
