@@ -165,8 +165,7 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
+        locs = __salt__['mc_locations.settings']()
         os_defaults = __salt__['grains.filter_by']({
             'Debian': {
                 'pkgs': ['bind9',
@@ -175,18 +174,26 @@ def settings():
                 'transfers_out': '20000',
                 'transfers_in': '20000',
                 'forwarders': [],
-                'config_dir': '/etc/bind',
-                'bind_config': '/etc/bind/named.conf',
-                'acl_config': '/etc/bind/named.conf.acl',
-                'views_config': '/etc/bind/named.conf.views',
+                'config_dir':
+                '{conf_dir}/bind'.format(**locs),
+                'bind_config':
+                '{conf_dir}/bind/named.conf'.format(**locs),
+                'acl_config':
+                '{conf_dir}/bind/named.conf.acl'.format(**locs),
+                'views_config':
+                '{conf_dir}/bind/named.conf.views'.format(**locs),
                 'servers_config': (
-                    '/etc/bind/named.conf.servers'),
-                'logging_config': '/etc/bind/named.conf.logging',
-                'local_config': '/etc/bind/named.conf.local',
-                'options_config': '/etc/bind/named.conf.options',
-                'key_config': '/etc/bind/named.conf.key',
+                    '{conf_dir}/bind/named.conf.servers'.format(**locs)),
+                'logging_config':
+                '{conf_dir}/bind/named.conf.logging'.format(**locs),
+                'local_config':
+                '{conf_dir}/bind/named.conf.local'.format(**locs),
+                'options_config':
+                '{conf_dir}/bind/named.conf.options'.format(**locs),
+                'key_config':
+                '{conf_dir}/bind/named.conf.key'.format(**locs),
                 'default_zones_config': (
-                    '/etc/bind/named.conf.default-zones'),
+                    '{conf_dir}/bind/named.conf.default-zones').format(**locs),
                 'cache_directory': '/var/cache/bind',
                 'named_directory': '/var/cache/bind/zones',
                 'dnssec': True,
@@ -197,9 +204,9 @@ def settings():
             },
             'RedHat': {
                 'pkgs': ['bind'],
-                'config_dir': '/etc',
-                'bind_config': '/etc/named.conf',
-                'local_config': '/etc/named.conf.local',
+                'config_dir': '{conf_dir}'.format(**locs),
+                'bind_config': '{conf_dir}/named.conf'.format(**locs),
+                'local_config': '{conf_dir}/named.conf.local'.format(**locs),
                 'cache_directory': '/var/named',
                 'named_directory': '/var/named/data',
                 'user': 'root',
@@ -212,8 +219,8 @@ def settings():
             os_defaults, {
                 'default_dnses': [],
                 'log_dir': '/var/log/named',
-                "rndc_conf": "/etc/rndc.conf",
-                "rndc_key": "/etc/bind/rndc.key",
+                "rndc_conf": "{conf_dir}/rndc.conf".format(**locs),
+                "rndc_key": "{conf_dir}/bind/rndc.key".format(**locs),
                 'default_views': OrderedDict([
                     ('internal', {
                         'match_clients': ['local'],
@@ -357,7 +364,7 @@ def settings():
                 raise ValueError(
                     'no secret for {0}'.format(k))
         for i in ['127.0.0.1', '8.8.8.8', '4.4.4.4']:
-            if not i in data['default_dnses']:
+            if i not in data['default_dnses']:
                 data['default_dnses'].append(i)
         data['default_dnses'] = __salt__['mc_utils.uniquify'](data['default_dnses'])
         return data
@@ -388,6 +395,7 @@ def cached_zone_headers():
     keys = ['views', 'server_type', 'template', 'source',
             'zoneid', 'fqdn', 'fpath']
     zpref = 'makina-states.services.dns.bind.zones'
+
     @mc_states.api.lazy_subregistry_get(__salt__, zpref)
     def _settings():
         zones = __salt__['mc_utils.defaults'](zpref, {})
@@ -508,7 +516,7 @@ def get_zone(zone):
             zdata['server_type'], zone))
     if not views:
         for v in defaults['default_views']:
-            if not v in views:
+            if v not in views:
                 views.append(v)
     zdata.setdefault('template', True)
     if (
@@ -518,7 +526,7 @@ def get_zone(zone):
         zdata['notify'] = True
         if zdata['slaves']:
             for slv in zdata['slaves']:
-                if not slv in zdata["allow_transfer"]:
+                if slv not in zdata["allow_transfer"]:
                     zdata["allow_transfer"].append(slv)
     if (
         zdata['server_type'] == 'slave'

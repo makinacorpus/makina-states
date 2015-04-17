@@ -41,17 +41,22 @@ def lint_tests(use_vt=True):
             api.magicstring(trace)))
 
 
-def unit_tests(tests=None, doctests=True, use_vt=True):
-    in_args = '--exe -e mc_tests -v -s'
+def unit_tests(tests=None,
+               coverage=True,
+               doctests=True,
+               use_vt=True):
+    in_args = '--exe -e mc_test -v -s'
     if isinstance(tests, basestring):
         tests = tests.split(',')
     if not tests:
         tests = ['mc_states']
+    if coverage:
+        in_args += (' --with-xcoverage'
+                    ' --xcoverage-file=.coverage.xml')
     if doctests:
         in_args += ' --with-doctest'
-    in_args += ' -w mc_states'
     failed = OrderedDict()
-    sucess = OrderedDict()
+    success = OrderedDict()
     for test in tests:
         try:
             result = __salt__['cmd.run_all'](
@@ -62,7 +67,7 @@ def unit_tests(tests=None, doctests=True, use_vt=True):
             if result['retcode']:
                 failed[test] = result
             else:
-                sucess[test] = result
+                success[test] = result
         except salt.exceptions.CommandExecutionError:
             trace = traceback.format_exc()
             raise _error('Problem with nose install:\n {0}'.format(
@@ -72,7 +77,7 @@ def unit_tests(tests=None, doctests=True, use_vt=True):
         for ffail in failed:
             fail = saltapi.concat_res_or_rets(fail, ffail)
         raise _error('Doctest tests failed', fail)
-    return sucess
+    return success
 
 
 def run_tests(flavors=None, use_vt=True):
@@ -80,11 +85,12 @@ def run_tests(flavors=None, use_vt=True):
         flavors = []
     if isinstance(flavors, basestring):
         flavors = flavors.split(',')
-    failures = {}
+    success = OrderedDict()
+    failures = OrderedDict()
     for step in ['lint', 'unit']:
         try:
             utils.test_setup()
-            __salt__['mc_test.{0}_tests'.format(step)](use_vt=use_vt)
+            success[step] = __salt__['mc_test.{0}_tests'.format(step)](use_vt=use_vt)
         except (TestError,) as exc:
             failures[step] = exc
         except (Exception,):
@@ -102,6 +108,7 @@ def run_tests(flavors=None, use_vt=True):
         raise TestError('test failure => non 0 exit code')
     # if no failure, be sure not to mark retcode as a failure
     __context__['retcode'] = 0
+    return success
 
 
 def run_travis_tests(use_vt=False):

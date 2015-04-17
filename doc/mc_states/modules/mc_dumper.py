@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__doc__ = '''
+'''
 .. _module_mc_dumper:
 
 mc_dumper / Some useful wrappers to dump/load values
@@ -7,12 +7,11 @@ mc_dumper / Some useful wrappers to dump/load values
 
 
 '''
-__docformat__ = 'restructuredtext en'
+
 
 import os
 import yaml
 import msgpack
-import copy
 try:
     from yaml import (
         CLoader as yLoader,
@@ -23,14 +22,11 @@ except ImportError:
         Dumper as yDumper)
 from salt.utils import yamldumper
 from mc_states import api
+from mc_states import saltapi
 
 
 def sanitize_kw(kw):
-    ckw = copy.deepcopy(kw)
-    for k in kw:
-        if ('__pub_' in k) and (k in ckw):
-            ckw.pop(k)
-    return ckw
+    return saltapi.sanitize_kw(kw, omit=['is_file'])
 
 
 def yencode(string, *args, **kw):
@@ -38,6 +34,16 @@ def yencode(string, *args, **kw):
     wrapper to :meth:`~mc_states_api.yencode`
     '''
     return api.yencode(string)
+
+
+def first_arg_is_file(*args, **kwargs):
+    is_file = kwargs.get('is_file', None)
+    if is_file is None:
+        is_file = (
+            args and
+            isinstance(args[0], basestring) and
+            os.path.exists(args[0]))
+    return bool(is_file)
 
 
 def cyaml_load(*args, **kw):
@@ -51,7 +57,8 @@ def cyaml_load(*args, **kw):
     close = False
     ret = None
     kw.setdefault('Loader', yLoader)
-    if args and isinstance(args[0], basestring) and os.path.exists(args[0]):
+    is_file = first_arg_is_file(*args, **kw)
+    if is_file:
         args[0] = open(args[0])
         close = True
     try:
