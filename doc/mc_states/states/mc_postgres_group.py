@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 '''
 mc_posrgres_group / Wrapper to automaticly set the rigth pgsql to attack
 ========================================================================

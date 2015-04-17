@@ -13,7 +13,6 @@ because of the lightness of the configuration
 
 '''
 
-__docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import copy

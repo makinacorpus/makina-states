@@ -6,7 +6,6 @@ mc_postgres_user / Wrapper to automaticly set the rigth pgsql to attack
 
 
 '''
-__docformat__ = 'restructuredtext en'
 from salt.states import postgres_user as postgres
 
 def absent(name, *args, **kw):

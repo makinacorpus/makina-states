@@ -24,7 +24,6 @@ Do not forget to sync salt cache::
 
 '''
 
-__docformat__ = 'restructuredtext en'
 import copy
 # Import python libs
 import logging

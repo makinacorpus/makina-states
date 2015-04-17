@@ -14,7 +14,6 @@ makina.devhost_num
     devhost num if any
 '''
 
-__docformat__ = 'restructuredtext en'
 import os
 import subprocess
 

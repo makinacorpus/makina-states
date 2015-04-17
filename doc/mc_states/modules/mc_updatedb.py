@@ -10,7 +10,6 @@ mc_updatedb / updatedb functions
 
 '''
 
-__docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import os

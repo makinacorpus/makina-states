@@ -32,7 +32,6 @@ hostname, the booleans are set to True.
 
 '''
 
-__docformat__ = 'restructuredtext en'
 # Import python libs
 
 from salt.utils.odict import OrderedDict

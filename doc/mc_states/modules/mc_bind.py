@@ -10,7 +10,6 @@ mc_bind / named/bind functions
 For the documentation on usage, please look :ref:`bind_documentation`.
 '''
 
-__docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import mc_states.api

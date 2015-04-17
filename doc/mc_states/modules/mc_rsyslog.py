@@ -9,7 +9,6 @@ mc_rsyslog / rsyslog functions
 
 '''
 
-__docformat__ = 'restructuredtext en'
 # Import python libs
 import logging
 import os
