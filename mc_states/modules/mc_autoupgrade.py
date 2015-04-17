@@ -25,11 +25,9 @@ def settings():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         _s = __salt__
-        grains = __grains__
-        pillar = __pillar__
-        locations = __salt__['mc_locations.settings']()
+        _g = __grains__
         origins = []
-        if grains['os'] in ['Debian']:
+        if _g['os'] in ['Debian']:
             origins.append("Debian:stable")
         origins.append("${distro_id}:${distro_codename}-security")
         data = _s['mc_utils.defaults'](
@@ -44,15 +42,10 @@ def settings():
                     "remove_unused": "false",
                     "mail": "root",
                     "autofix": "true",
-                    'blacklist': [
-                    ],
+                    'blacklist': [],
                     'origins': origins,
                 }
             }
         )
         return data
     return _settings()
-
-
-
-#
