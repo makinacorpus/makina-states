@@ -177,7 +177,9 @@ def asbool(item):
 
 def asstring(val):
     ret = ''
-    if val is None:
+    if isinstance(val, six.string_types):
+        ret = val
+    elif val is None:
         ret = ''
     elif isinstance(val, (bool, int, float, complex, long)):
         ret = "{0}".format(val)
@@ -355,12 +357,14 @@ def get_cache_key(key, __opts__=None, *args, **kw):
 
     EG::
 
-        >>> key = get_cache_key(mystring)
-        >>> key = get_cache_key(_CACHE_PREFIX + '<some-sha1>')
-        >>> key = get_cache_key('foo_{0}{1}{name}',
-                                {'fun': 'mc_states.foo',
-                                 'arg': [1],
-                                 'kwarg': {'name': 'foobar'}})
+    .. code-block:: python
+
+        key = get_cache_key(mystring)
+        key = get_cache_key(_CACHE_PREFIX + '<some-sha1>')
+        key = get_cache_key('foo_{0}{1}{name}',
+                            {'fun': 'mc_states.foo',
+                             'arg': [1],
+                             'kwarg': {'name': 'foobar'}})
 
     '''
     ckey = None

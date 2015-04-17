@@ -1,9 +1,20 @@
 language: python
 sudo: required
 python: [2.7]
+env:
+  global:
+    - secure: |+
+       vxVDlYvUzf2Oh3w6TEgoBFGYsWo7V+zwiqSxFA65x2HkV9pW3JI3KvjTo
+       /8jcqpa0ozTR5M/W8FzsqHu3MjlOQTv9ScPfV4Nz0T+eJpNUsQWSQQ1S0
+       PqpXjarWfDbb0YOo9B100NSrVxYontp/ehW2jUoapBoJc4hU7j5BDbPoA=
+
 # 3 tests goals & achievments here:
 # - install the standalone image (test the release artifacts & flags are in place)
 # - smoke test the basic mastersalt/salt highstate
 # - install the environment for further unit/integration tests
 install: [sudo -E ./_scripts/travis_install.sh]
 script: sudo -E ./_scripts/travis_test.sh
+after_sucess: [sudo -E /srv/mastersalt/makina-states/_scripts/travis_aftersucess.sh]
+notifications:
+  irc:
+    - "irc.freenode.org#makinacorpus"

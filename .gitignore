@@ -56,3 +56,4 @@ boot_salt_top
 .restart_salt
 .restart_salt_minion
 /files/root/admin_scripts/nagios/nagios_plugins/
+.coverage*

@@ -691,6 +691,7 @@ def concat_res_or_rets(ret,
 
     .. doctest:: example
 
+    >>> from collections import OrderedDict
     >>> from mc_states.saltapi import concat_res_or_rets
     >>> concat_res_or_rets({}, {'result': False})
     {'result': False}
@@ -700,11 +701,12 @@ def concat_res_or_rets(ret,
     'oo\\nSTDOUT: a\\nSTDERR: b'
     >>> concat_res_or_rets('a', 'b')
     'a\\nb'
-    >>> concat_res_or_rets({'stdout': 'a', 'stderr': 'b'}, 'de')
-    {'stdout': 'a\\nde', 'stderr': 'b\\nde'}
-    >>> concat_res_or_rets({'stdout': 'a', 'stderr': 'b'},
+    >>> concat_res_or_rets(OrderedDict([('stdout', 'a'), ('stderr', 'b')]),
+    ...                    'de')
+    OrderedDict([('stdout', 'a\\nde'), ('stderr', 'b'), ('output', 'de')])
+    >>> concat_res_or_rets(OrderedDict([('stdout', 'a'), ('stderr', 'b')]),
     ...                    {'stdout': 'c', 'stderr': 'd'})
-    {'stdout': 'a\\nc', 'stderr': 'b\\nd'}
+    OrderedDict([('stdout', 'a\\nc'), ('stderr', 'b\\nd')])
     >>> concat_res_or_rets({'changes': {1: 2, 3: 4, 5: 6}},
     ...                    {'changes': {1: 3, 3: 4}})
     {'changes': {1: 3, 3: 4, 5: 6}}
