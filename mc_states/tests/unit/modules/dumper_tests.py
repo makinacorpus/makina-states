@@ -49,6 +49,7 @@ class TestCase(base.ModuleCase):
         with patch.dict(self._salt, {
             'mc_macros.is_item_active': Mock(side_effect=_get)}
         ):
+            pass
 
 
 if __name__ == '__main__':
