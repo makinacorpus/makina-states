@@ -132,7 +132,7 @@ def is_active(registry, name):
 
 
 def yaml_load_local_registry(name, registryf):
-    registry = __salt__['mc_utils.json_load'](fic)
+    registry = __salt__['mc_utils.json_load'](name)
     if not registry:
         registry = {}
     return registry
