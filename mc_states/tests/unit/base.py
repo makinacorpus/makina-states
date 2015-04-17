@@ -9,6 +9,8 @@ try:
 except ImportError:
     import unittest
 
+
+from salt.modules import grains as sgrains
 from mc_states.modules import mc_localsettings as mmc_localsettings
 from mc_states.modules import mc_pillar as mmc_pillar
 from mc_states.modules import mc_utils as mmc_utils
@@ -32,6 +34,7 @@ DUNDERS = {
         'context': {}}}
 DUNDERS['modules'] = copy.deepcopy(DUNDERS['default'])
 DUNDERS['modules']['salt'] = {
+    'grains.filter_by': sgrains.filter_by,
     'mc_locations.settings': mmc_locations.settings,
     'mc_dumper.sanitize_kw': mmc_dumper.sanitize_kw,
     'mc_dumper.yencode': mmc_dumper.yencode,
