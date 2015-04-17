@@ -34,9 +34,8 @@ class TestCase(base.ModuleCase):
             )
 
     def test_defaults_mutable(self):
-        '''
-        Test that the passed dictionnary is well updated
-        and not copied over'''
+        # Test that the passed dictionnary is well updated
+        # and not copied over
         data = {'1': 'foo',
                 '2': {'aa': 2}}
         with patch.dict(
