@@ -29,11 +29,10 @@ EOF
 }
 
 get_curgitpackid() {
-    # default cron sync code each minutes, pack each half day
     python << EOF
 try:
     with open('${1}') as fic:
-        print int(fic.read().strip()) % ((60/15)*(24/2))
+        print int(fic.read().strip())
 except Exception:
     print 0
 EOF
@@ -1060,6 +1059,7 @@ set_vars() {
     export mastersalt_master_changed mastersalt_minion_challenge
     export salt_master_changed salt_minion_challenge
     export TRAVIS
+    export FORCE_GIT_PACK ONLY_GIT_PACK
 
 }
 
@@ -1629,6 +1629,78 @@ is_basedirs_there() {
     echo "${there}"
 }
 
+validadate_git_repo() {
+    ret="1"
+    for i in branches config HEAD index info objects refs;do
+        if [ ! -e "${1}/${i}" ];then
+            ret=""
+        fi
+    done
+    echo "${ret}"
+}
+
+get_valid_git_repo() {
+    repo="${1}"
+    ret=""
+    if [ "x${repo}" = "x" ];then
+        repo="${PWD}"
+    fi
+    if [ "x$(validadate_git_repo "${repo}/.git")" = "x1" ];then
+        ret="${repo}/.git"
+    elif [ "x$(validadate_git_repo "${repo}")" = "x1" ];then
+        ret="${repo}"
+    fi
+    echo "${ret}"
+}
+
+get_pack_marker() {
+     gmarker="$(get_valid_git_repo "${@}")/curgitpackid"
+     if [ "x${gmarker}" != "x/curgitpackid" ];then
+         echo "${gmarker}"
+     fi
+}
+
+get_pack_marker_value() {
+    marker=$(get_pack_marker "${@}")
+    if [ "x${marker}" != "x" ];then
+        echo "$(get_curgitpackid "${marker}")"
+    else
+        echo 0
+    fi
+}
+
+increment_gitpack_id() {
+    repo="$(get_valid_git_repo "${@}")"
+    if [ "x${repo}" != "x" ];then
+        marker="$(get_pack_marker "${repo}")"
+        echo "$(( $(get_pack_marker_value "${repo}") + 1 ))" > "${marker}"
+    fi
+}
+
+git_pack() {
+    bs_log "Maybe packing git repositories"
+    # pack git repositories in salt scope
+    find\
+        "${VENV_PATH}"\
+        "${SALT_ROOT}"\
+        "${MASTERSALT_ROOT}"\
+        "${SALT_PILLAR}"\
+        "${MASTERSALT_PILLAR}"\
+        -name .git -type d|while read f;do
+        cd "${f}/.."
+        # pack each 10th call
+        git_counter="$(($(get_pack_marker_value) % 10))"
+        if [ "x${git_counter}" = "x0" ];then
+            bs_log "Git packing ${f}"
+            git prune || /bin/true
+            git gc --aggressive || /bin/true
+        else
+            bs_log "Git packing ${f} skipped (${git_counter}/10)"
+        fi
+        increment_gitpack_id
+    done
+}
+
 setup_and_maybe_update_code() {
     onlysync=""
     for arg in ${@};do
@@ -1798,6 +1870,7 @@ setup_and_maybe_update_code() {
                             fi
                         fi
                         if [ "x${?}" = "x0" ];then
+                            increment_gitpack_id
                             if [ "x${QUIET}" = "x" ];then
                                 bs_yellow_log "Downloaded/updated ${i}"
                             fi
@@ -1812,23 +1885,6 @@ setup_and_maybe_update_code() {
             done
         fi
     fi
-    # pack git repositories in salt scope
-    find\
-        "${VENV_PATH}"\
-        "${SALT_ROOT}"\
-        "${MASTERSALT_ROOT}"\
-        "${SALT_PILLAR}"\
-        "${MASTERSALT_PILLAR}"\
-        -name .git -type d|while read f;do
-        cd "${f}/.."
-        gmarker=".git/curgitpackid"
-        if [ "x$(get_curgitpackid "${gmarker}")" = "x0" ];then
-            bs_log "Git packing ${f}"
-            git prune || /bin/true
-            git gc --aggressive || /bin/true
-        fi
-        echo "$(($(get_curgitpackid "${gmarker}")+1))" > "${gmarker}"
-    done
     check_restartmarker_and_maybe_restart
     if [ "x${SALT_BOOT_IN_RESTART}" = "x" ] && [ "x$(is_basedirs_there)" = "x" ];then
         die "Base directories are not present"
@@ -3898,6 +3954,8 @@ usage() {
     bs_help "    --only-do-mastersalt" "Skip any salt step" "" y
     bs_help "    --no-mastersalt" "Do not install mastersalt daemons" "" y
     bs_help "    --no-salt" "Do not install salt daemons" "" y
+    bs_help "    --pack" "Do run git pack (gc) if necessary" "" y
+    bs_help "    --only-pack" "Do run git pack (gc) if necessary and skip any further step" "" y
     if [ "x${SALT_LONG_HELP}" != "x" ];then
         bs_help "    -M|--salt-master" "install a salt master" "${IS_SALT_MASTER}" y
         bs_help "    -N|--salt-minion" "install a salt minion" "${IS_SALT_MINION}" y
@@ -3987,11 +4045,11 @@ parse_cli_opts() {
         if [ "x${1}" = "x-S" ] || [ "x${1}" = "x--skip-checkouts" ];then
             SALT_BOOT_SKIP_CHECKOUTS="y";argmatch="1"
         fi
-        if [ "x${1}" = "x-s" ] || [ "x${1}" = "x--force-pip-install" ];then
-            DO_MS_PIP="y";DO_PIP="y";argmatch="1"
-        fi
         if [ "x${1}" = "x-s" ] || [ "x${1}" = "x--skip-highstates" ];then
             SALT_BOOT_SKIP_HIGHSTATES=y;argmatch="1"
+        fi
+        if [ "x${1}" = "x--force-pip-install" ];then
+            DO_MS_PIP="y";DO_PIP="y";argmatch="1"
         fi
         if [ "x${1}" = "x-C" ] || [ "x${1}" = "x--no-confirm" ];then
             SALT_BOOT_NOCONFIRM="y";argmatch="1"
@@ -4026,6 +4084,15 @@ parse_cli_opts() {
             SALT_BOOT_SKIP_CHECKOUTS="1"
             SALT_BOOT_CHECK_ALIVE="y"
             SALT_BOOT_RESTART_MINIONS="y";argmatch="1"
+        fi
+        if [ "x${1}" = "x--only-pack" ];then
+            FORCE_GIT_PACK="1"
+            ONLY_GIT_PACK="1"
+            argmatch="1"
+        fi
+        if [ "x${1}" = "x--pack" ];then
+            FORCE_GIT_PACK="1"
+            argmatch="1"
         fi
         if [ "x${1}" = "x--refresh-modules" ];then
             SALT_BOOT_LIGHT_VARS="1"
@@ -4597,6 +4664,12 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     fi
     if [ "x${DO_REFRESH_MODULES}" != "x" ];then
         synchronize_code
+    fi
+    if [ "x${FORCE_GIT_PACK}" = "x1" ];then
+        git_pack
+        if [ "x${ONLY_GIT_PACK}" = "x1" ];then
+            exit ${?}
+        fi
     fi
     cleanup_old_installs
     if [ "x${SALT_BOOT_RESTART_MINIONS}" != "x" ];then
