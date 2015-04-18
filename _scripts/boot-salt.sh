@@ -1665,7 +1665,7 @@ get_pack_marker_value() {
     if [ "x${marker}" != "x" ];then
         echo "$(get_curgitpackid "${marker}")"
     else
-        echo 0
+        echo -1
     fi
 }
 
