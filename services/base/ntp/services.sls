@@ -28,3 +28,15 @@ ntpd:
     - name: ntp
     {%- endif %}
 {%- endif %}
+
+ntpd-sync:
+{% if data['activated'] %}
+  cmd.run:
+    - name: /sbin/ntp-sync.sh
+    - stateful: true
+    - watch_in:
+      - mc_proxy: ntp-post-restart-hook
+    - watch:
+      - service: ntpd
+      - mc_proxy: ntp-pre-restart-hook
+{%- endif %}

@@ -35,6 +35,7 @@ class TestCase(base.ModuleCase):
             mc_states.api.invalidate_memoize_cache('localreg_ntp_settings')
             data = mc_ntp.settings()
             self.assertTrue(data['activated'])
+            self.assertTrue(data['defaults']['NTPSYNC'] != 'no')
         with patch.dict(self._grains, {
             'makina.lxc': True,
             'makina.docker': False
@@ -42,6 +43,7 @@ class TestCase(base.ModuleCase):
             mc_states.api.invalidate_memoize_cache('localreg_ntp_settings')
             data = mc_ntp.settings()
             self.assertFalse(data['activated'])
+            self.assertTrue(data['defaults']['NTPSYNC'] == 'no')
         with patch.dict(self._grains, {
             'makina.lxc': False,
             'makina.docker': True
@@ -49,6 +51,7 @@ class TestCase(base.ModuleCase):
             mc_states.api.invalidate_memoize_cache('localreg_ntp_settings')
             data = mc_ntp.settings()
             self.assertFalse(data['activated'])
+            self.assertTrue(data['defaults']['NTPSYNC'] == 'no')
 
 if __name__ == '__main__':
     unittest.main()
