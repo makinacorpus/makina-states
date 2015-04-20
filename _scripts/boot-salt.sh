@@ -2878,15 +2878,17 @@ create_salt_skeleton() {
 # ------------ SALT INSTALLATION PROCESS
 
 filter_host_pids() {
+    pids=""
     if [ "x$(is_lxc)" != "x0" ];then
-        echo "${@}"
+        pids="${pids} $(echo "${@}")"
     else
         for pid in ${@};do
             if [ "x$(grep -q lxc /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
-                 echo ${pid}
+                pids="${pids} $(echo "${pid}")"
              fi
          done
     fi
+    echo "${pids}" | sed -e "s/\(^ \+\)\|\( \+$\)//g"
 }
 
 mastersalt_master_processes() {

@@ -67,9 +67,6 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
-        locations = __salt__['mc_locations.settings']()
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.base.ntp', {
                 'servers': [
@@ -86,6 +83,7 @@ def settings():
                 'restrict': [
                 ],
                 'default_all': True,
+                'activated': None,
                 'block_ext': False,
                 'ignore': False,
                 'kod': True,
@@ -98,8 +96,25 @@ def settings():
                 'modify': False,
                 'query': False,
                 'default_flags': None,
+                'configs': {
+                    '/etc/cron.d/ntpsync': {
+                        'mode': '700',
+                    },
+                    '/etc/default/ntpdate': {
+                    },
+                    '/etc/ntp.conf': {
+                    },
+                    '/sbin/ntp-sync.sh': {
+                        'mode': '755',
+                    }
+                }
             }
         )
+        for g in ['makina.lxc', 'makina.docker']:
+            if __grains__.get(g, False):
+                data['activated'] = False
+        if data['activated'] is None:
+            data['activated'] = True
         if data['default_flags'] is None:
             data['default_flags'] = ''
             for item in ['kod', 'limited', 'lowpriotrap']:

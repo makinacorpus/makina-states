@@ -20,11 +20,13 @@ filter_host_pids() {
     fi
     echo "${pids}" | sed -e "s/\(^ \+\)\|\( \+$\)//g"
 }
+
 if which service 1>/dev/null 2>&1;then
     svc="service "
 else
     svc="/etc/init.d"
 fi
+
 pids=$(filter_host_pids $(ps aux|grep ntpd|grep -v grep|awk '{print $2}'))
 if [ "x$(is_lxc)" = "x0" ] && [ "x${pids}" != "x" ];then
     ${svc}ntp stop 2>&1
