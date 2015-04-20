@@ -95,6 +95,12 @@ def settings():
                 'trust': True,
                 'modify': False,
                 'query': False,
+                'defaults': {
+                    'NTPSERVERS': '"ntp.ubuntu.com"',
+                    'NTPDATE_USE_NTP_CONF': '"yes"',
+                    'NTPOPTIONS': '""',
+                },
+                'upstream': 'ntp.org',
                 'default_flags': None,
                 'configs': {
                     '/etc/cron.d/ntpsync': {
@@ -115,6 +121,9 @@ def settings():
                 data['activated'] = False
         if data['activated'] is None:
             data['activated'] = True
+        data['defaults']['NTPSYNC'] = '"yes"'
+        if not data['activated']:
+            data['defaults']['NTPSYNC'] = '"no"'
         if data['default_flags'] is None:
             data['default_flags'] = ''
             for item in ['kod', 'limited', 'lowpriotrap']:
