@@ -110,6 +110,9 @@ def settings():
                     },
                     '/etc/ntp.conf': {
                     },
+                    '/sbin/ntp-kill.sh': {
+                        'mode': '755',
+                    },
                     '/sbin/ntp-sync.sh': {
                         'mode': '755',
                     }
