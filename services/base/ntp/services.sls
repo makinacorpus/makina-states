@@ -1,7 +1,7 @@
 {% set data = salt['mc_ntp.settings']() %}
 include:
   - makina-states.services.base.ntp.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}  
+{% if salt['mc_controllers.mastersalt_mode']() %}
 {%- if grains['os'] not in ['Debian', 'Ubuntu'] %}
 ntpdate-svc:
   service.enabled:
@@ -19,7 +19,7 @@ ntpd:
 {% else %}
   service.dead:
     - enable: false
-{%- endif %} 
+{%- endif %}
     - watch_in:
       - mc_proxy: ntp-post-restart-hook
     - watch:
@@ -33,6 +33,16 @@ ntpd:
 ntpd-sync:
   cmd.run:
     - name: /sbin/ntp-sync.sh
+    - stateful: true
+    - watch_in:
+      - mc_proxy: ntp-post-restart-hook
+    - watch:
+      - service: ntpd
+      - mc_proxy: ntp-pre-restart-hook
+{%else%}
+ntpd-kill:
+  cmd.run:
+    - name: /sbin/ntp-kill.sh
     - stateful: true
     - watch_in:
       - mc_proxy: ntp-post-restart-hook
