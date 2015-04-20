@@ -16,6 +16,7 @@ from mc_states.modules import mc_utils as mmc_utils
 from mc_states.modules import mc_dumper as mmc_dumper
 from mc_states.modules import mc_locations as mmc_locations
 from mc_states.modules import mc_macros as mmc_macros
+from mc_states.modules import mc_ntp as mmc_ntp
 import mc_states.tests.utils
 
 J = os.path.join
@@ -34,6 +35,7 @@ DUNDERS = {
 DUNDERS['modules'] = copy.deepcopy(DUNDERS['default'])
 DUNDERS['modules']['salt'] = {
     'grains.filter_by': sgrains.filter_by,
+    'mc_ntp.settings': mmc_ntp.settings,
     'mc_locations.settings': mmc_locations.settings,
     'mc_dumper.sanitize_kw': mmc_dumper.sanitize_kw,
     'mc_dumper.yencode': mmc_dumper.yencode,
