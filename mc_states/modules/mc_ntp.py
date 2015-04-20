@@ -125,7 +125,3 @@ def settings():
                     data['default_flags'] += ' no{0}'.format(item)
         return data
     return _settings()
-
-
-
-#
