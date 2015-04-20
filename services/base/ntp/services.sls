@@ -29,8 +29,8 @@ ntpd:
     {%- endif %}
 {%- endif %}
 
-ntpd-sync:
 {% if data['activated'] %}
+ntpd-sync:
   cmd.run:
     - name: /sbin/ntp-sync.sh
     - stateful: true
