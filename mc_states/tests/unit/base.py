@@ -17,6 +17,7 @@ from mc_states.modules import mc_dumper as mmc_dumper
 from mc_states.modules import mc_locations as mmc_locations
 from mc_states.modules import mc_macros as mmc_macros
 from mc_states.modules import mc_ntp as mmc_ntp
+from mc_states.modules import mc_remote as mmc_remote
 import mc_states.tests.utils
 
 J = os.path.join
@@ -34,6 +35,14 @@ DUNDERS = {
         'context': {}}}
 DUNDERS['modules'] = copy.deepcopy(DUNDERS['default'])
 DUNDERS['modules']['salt'] = {
+    'mc_remote.unparse_ret': mmc_remote.unparse_ret,
+    'mc_remote.sls': mmc_remote.sls_,
+    'mc_remote.highstate': mmc_remote.highstate,
+    'mc_remote.salt_call': mmc_remote.salt_call,
+    'mc_remote.mastersalt_call': mmc_remote.mastersalt_call,
+    'mc_remote.ssh': mmc_remote.ssh,
+    'mc_remote.ssh_transfer_file': mmc_remote.ssh_transfer_file,
+    'mc_remote.ssh_transfer_dir': mmc_remote.ssh_transfer_dir,
     'grains.filter_by': sgrains.filter_by,
     'mc_ntp.settings': mmc_ntp.settings,
     'mc_locations.settings': mmc_locations.settings,
