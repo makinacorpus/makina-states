@@ -1438,7 +1438,7 @@ def _consolidate_failure(ret):
     return ret
 
 
-def setup_grains(fun):
+def _setup_grains(fun):
     def _call(*args, **kw):
         if not __opts__.get('grains'):
             __opts__['grains'] = __grains__
@@ -1461,7 +1461,7 @@ def setup_grains(fun):
     return _call
 
 
-@setup_grains
+@_setup_grains
 def _transform_ret_first_pass(ret):
     import yaml
     renderers = salt.loader.render(__opts__, __salt__)
@@ -1483,7 +1483,7 @@ def _transform_ret_first_pass(ret):
     return ret
 
 
-@setup_grains
+@_setup_grains
 def _transform_ret_second_pass(ret):
     import yaml
     renderers = salt.loader.render(__opts__, __salt__)
