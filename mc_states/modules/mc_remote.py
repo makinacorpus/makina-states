@@ -82,6 +82,21 @@ _SSHTransferFailed = mc_states.saltapi._SSHTransferFailed
 _SaltCallFailure = mc_states.saltapi._SaltCallFailure
 
 
+class ResultProcessError(salt.exceptions.SaltException):
+    def __init__(self, msg, original=None, ret=None, *args, **kwargs):
+        super(ResultProcessError, self).__init__(msg, *args, **kwargs)
+        self.original = original
+        self.ret = ret
+
+
+class RenderError(ResultProcessError):
+    '''.'''
+
+
+class TransformError(ResultProcessError):
+    '''.'''
+
+
 # pylint: disable=R0903
 class _EvalFalse(object):
     def __nonzero__(self):
@@ -103,6 +118,7 @@ _SSH_PASSWORD_PROMP_RE = re.compile('(([Pp]assword(: ?for.*)?:))',
                                     re.M | re.U)
 
 RESULT_SEP = '----- SALTCALL RESULT {0}'
+SIMPLE_RESULT_SEP = RESULT_SEP.format('')
 _SKIP_LINE_RE = re.compile(r"\+  *(touch|cp|cat|rm|exit|['][\]]) ",
                            re.U | re.X)
 _SSH_IDENT_RE = re.compile(
@@ -452,6 +468,10 @@ exit ${{ret}}
 
 log = logging.getLogger(__name__)
 _default = object()
+
+
+def get_localhost():
+    return None, __grains__['id'], '127.0.0.1', 'localhost'
 
 
 def ssh_kwargs(first_argument_kwargs=None, **kw):
@@ -1384,87 +1404,127 @@ def yamldump_arg(arg, default_flow_style=True, line_break='\n', strip=True):
     return arg
 
 
-def unparse_ret(ret, transformer, minion_id):
-    restore_grains = False
-    remove_grains = False
-    old_grains = {}
-    if ('grains' in __opts__) and not __opts__.get('__grains__'):
-        restore_grains = True
-        old_grains = __opts__.pop('__grains__')
-    if 'grains' not in __opts__:
-        remove_grains = True
-    try:
-        if not __opts__.get('grains'):
-            __opts__['grains'] = __grains__
-        renderers = salt.loader.render(__opts__, __salt__)
-        outputters = salt.loader.outputters(__opts__)
-        rtype = ret['result_type']
-        log_trace = None
-        if transformer is None:
-            transformer = rtype
-        transformer = {'yaml': 'lyaml',
-                       'lyaml': 'lyaml',
-                       'highstate': 'highstate',
-                       'nested': 'nested',
-                       'json': 'json'}.get(transformer, 'noop')
-        unparser = {'yaml': 'lyaml',
-                    'lyaml': 'lyaml',
-                    'json': 'json'}.get(rtype, 'noop')
-        ret['transformer'] = transformer
-        ret['unparser'] = unparser
-        if (unparser != 'noop') and ret.get('result', False):
-            try:
-                ret['result'] = renderers[unparser](ret['result'])
-            except Exception:
-                try:
-                    # try to remove debugs from shell running with set -e
-                    cret = '\n'.join(
-                        [a for a in ret['result'].splitlines() if not
-                         a.startswith('+ ')])
-                    ret['result'] = renderers[unparser](cret)
-                except Exception:
-                    if ret['raw_result'].startswith(
-                        'NO RETURN FROM'
-                    ):
-                        ret['result'] = _EXECUTION_FAILED
-                        log_trace = traceback.format_exc()
-                    else:
-                        raise
-        if (
-            transformer != 'noop'
-            and transformer != unparser
-            and ret.get('result', _EXECUTION_FAILED) is not _EXECUTION_FAILED
-        ):
-            if transformer in renderers:
-                try:
-                    ret['result'] = renderers[transformer](ret['result'])
-                except salt.exceptions.SaltRenderError:
-                    log_trace = traceback.format_exc()
-            elif transformer in outputters:
-                try:
-                    ret['result'] = outputters[transformer](ret['result'])
-                except Exception:
-                    if ret['raw_result'].startswith(
-                        'NO RETURN FROM'
-                    ):
-                        ret['result'] = _EXECUTION_FAILED
-                        log_trace = traceback.format_exc()
-                    else:
-                        raise
-        if 'result' not in ret and ret.get('retcode'):
-            ret['result'] = _EXECUTION_FAILED
+def _consolidate_transformer_and_outputter(ret):
+    ret['outputter'] = {'yaml': 'lyaml',
+                        'lyaml': 'lyaml',
+                        'json': 'json'}.get(ret.get('outputter', 'noop'),
+                                            'noop')
+    if ret.get('transformer', None) is None:
+        ret['transformer'] = ret['outputter']
+    ret['transformer'] = {'yaml': 'lyaml',
+                          'lyaml': 'lyaml',
+                          'highstate': 'highstate',
+                          'nested': 'nested',
+                          'json': 'json'}.get(
+                              ret['transformer'], 'noop')
+    return ret
+
+
+def _consolidate_failure(ret):
+    minion_id = ret.get('miinion_id', 'local')
+    ret.setdefault('retcode', 0)
+    ret.setdefault('result', None)
+    if isinstance(ret, dict):
         if isinstance(ret['result'], dict):
             if [a for a in ret['result']] == [minion_id]:
                 ret['result'] = ret['result'][minion_id]
-    finally:
-        if remove_grains:
-            __opts__.pop('grains', False)
-        if restore_grains:
-            __opts__['grains'] = old_grains
-    return ret, log_trace
+        if ret.get('retcode'):
+            ret.setdefault('raw_result', ret.pop('result', None))
+            ret['result'] = _EXECUTION_FAILED
+        elif ret['result'] is _EXECUTION_FAILED:
+            ret['retcode'] = 1
+        if not ret['retcode']:
+            ret['retcode'] = 0
+    return ret
 
 
-def low_salt_call(host,
+def setup_grains(fun):
+    def _call(*args, **kw):
+        if not __opts__.get('grains'):
+            __opts__['grains'] = __grains__
+        restore_grains = False
+        remove_grains = False
+        old_grains = {}
+        if ('grains' in __opts__) and not __opts__.get('grains'):
+            restore_grains = True
+            old_grains = __opts__.pop('grains', None)
+        if 'grains' not in __opts__:
+            remove_grains = True
+        try:
+            ret = fun(*args, **kw)
+        finally:
+            if remove_grains:
+                __opts__.pop('grains', False)
+            if restore_grains:
+                __opts__['grains'] = old_grains
+        return ret
+    return _call
+
+
+@setup_grains
+def _transform_ret_first_pass(ret):
+    import yaml
+    renderers = salt.loader.render(__opts__, __salt__)
+    if (ret['outputter'] != 'noop') and ret.get('result', None):
+        try:
+            ret['result'] = renderers[ret['outputter']](ret['result'])
+        except (ValueError, TypeError, yaml.YAMLError):
+            try:
+                # try to remove debugs from shell running with set -e
+                cret = '\n'.join([a for a in ret['result'].splitlines()
+                                  if not a.startswith('+ ')])
+                ret['result'] = renderers[ret['outputter']](cret)
+            except (ValueError, TypeError, yaml.YAMLError) as exc:
+                ret['log_trace'] = traceback.format_exc()
+                if ret['raw_result'].startswith('NO RETURN FROM'):
+                    ret['result'] = _EXECUTION_FAILED
+                else:
+                    raise RenderError(ret['log_trace'], ret=ret, original=exc)
+    return ret
+
+
+@setup_grains
+def _transform_ret_second_pass(ret):
+    import yaml
+    renderers = salt.loader.render(__opts__, __salt__)
+    outputters = salt.loader.outputters(__opts__)
+    if (
+        ret['transformer'] != 'noop'
+        and ret['transformer'] != ret['outputter']
+        and ret.get('result', _EXECUTION_FAILED) is not _EXECUTION_FAILED
+        and not ret['retcode']
+    ):
+        if ret['transformer'] in renderers:
+            try:
+                ret['result'] = renderers[ret['transformer']](ret['result'])
+            except salt.exceptions.SaltRenderError:
+                ret['log_trace'] = traceback.format_exc()
+        elif ret['transformer'] in outputters:
+            try:
+                outputters = salt.loader.outputters(__opts__)
+                ret['result'] = outputters[ret['transformer']](ret['result'])
+            except (
+                salt.exceptions.SaltRenderError,
+                ValueError, TypeError, yaml.YAMLError
+            ) as exc:
+                ret['log_trace'] = traceback.format_exc()
+                if ret['raw_result'].startswith('NO RETURN FROM'):
+                    ret['result'] = _EXECUTION_FAILED
+                else:
+                    raise TransformError(
+                        ret['log_trace'], ret=ret, original=exc)
+    return ret
+
+
+def _unparse_ret(ret):
+    ret = _consolidate_transformer_and_outputter(ret)
+    # we can three layers of returns serilazations ...
+    ret = _transform_ret_first_pass(ret)
+    ret = _transform_ret_second_pass(ret)
+    return ret
+
+
+def run_salt_call(host,
                   use_vt,
                   remote,
                   fun,
@@ -1477,6 +1537,7 @@ def low_salt_call(host,
                   loglevel,
                   masterless,
                   new_shell,
+                  minion_id,
                   ttl=0):
     if isinstance(kwargs, dict):
         kwargs = copy.deepcopy(kwargs)
@@ -1496,7 +1557,8 @@ def low_salt_call(host,
             salt_call_script,
             loglevel,
             masterless,
-            new_shell):
+            new_shell,
+            minion_id):
         kw = ssh_kwargs(kwargs)
         sh_wrapper_debug = kw.get('sh_wrapper_debug', '')
         level = kw.setdefault('vt_loglevel', loglevel)
@@ -1560,11 +1622,10 @@ def low_salt_call(host,
             if new_shell:
                 try:
                     script = salt_call_script.format(**skwargs)
-                    ret = __salt__['cmd.run_all'](
-                        script,
-                        python_shell=True,
-                        runas=kw['ssh_user'],
-                        use_vt=use_vt)
+                    ret = __salt__['cmd.run_all'](script,
+                                                  python_shell=True,
+                                                  runas=kw['ssh_user'],
+                                                  use_vt=use_vt)
                 finally:
                     if os.path.exists(skwargs['quoted_outfile']):
                         os.remove(skwargs['quoted_outfile'])
@@ -1573,18 +1634,22 @@ def low_salt_call(host,
                 fun = skwargs['fun']
                 args = skwargs['arg']
                 kwargs = skwargs['kwarg']
-                func = __salt__[fun]
-                if args is not None and kwargs is not None:
-                    ret = func(*args, **kwargs)
-                elif args is not None and (kwargs is None):
-                    ret = func(*args)
-                elif (args is None) and kwargs is not None:
-                    ret = func(**kwargs)
-                else:
-                    ret = func()
-                ret = {'raw_result': ret,
-                       'result_sep': result_sep,
-                       'result': ret}
+                try:
+                    func = __salt__[fun]
+                    if args is not None and kwargs is not None:
+                        ret = func(*args, **kwargs)
+                    elif args is not None and (kwargs is None):
+                        ret = func(*args)
+                    elif (args is None) and kwargs is not None:
+                        ret = func(**kwargs)
+                    else:
+                        ret = func()
+                    ret = {'raw_result': ret,
+                           'result_sep': result_sep,
+                           'result': ret}
+                except Exception:
+                    trace = traceback.format_exc()
+                    ret = {'raw_result': trace, 'result': trace, 'retcode': 1}
         else:
             try:
                 if level in ['trace', 'garbage']:
@@ -1603,7 +1668,11 @@ def low_salt_call(host,
                     host, skwargs['quoted_outfile'], level=level, **kw)
         ret['sh_wrapper_debug'] = sh_wrapper_debug
         ret['result_sep'] = result_sep
-        ret['result_type'] = outputter
+        ret['outputter'] = outputter
+        ret['minion_id'] = minion_id
+        ret['log_trace'] = None
+        for i in ('stdout', 'stderr'):
+            ret.setdefault(i, '')
         ret['raw_result'] = (
             'NO RETURN inside temporary file: {0}'
             ''.format(outfile))
@@ -1621,14 +1690,72 @@ def low_salt_call(host,
                    salt_call_script,
                    loglevel,
                    masterless,
-                   new_shell],
+                   new_shell,
+                   minion_id],
         ttl=ttl,
-        prefix='mc_remote.low_salt_call')
+        prefix='mc_remote.run_salt_call')
     return ret
 
 
-def get_localhost():
-    return None, __grains__['id'], '127.0.0.1', 'localhost'
+def get_saltcall_result(text,
+                        result_sep=SIMPLE_RESULT_SEP,
+                        sh_wrapper_debug=False):
+    collect, result = False, ''
+    for line in text.splitlines():
+        skip_collect = False
+        if collect:
+            if sh_wrapper_debug:
+                skip_collect = _SKIP_LINE_RE.search(line)
+            if not skip_collect:
+                result += line
+                result += "\n"
+        if line.startswith(result_sep):
+            collect = True
+    return result
+
+
+def _mark_failed(ret):
+    ret['result'] = None
+    msg = "Salt call failed"
+    try:
+        msg = "Salt call failed:\n{0}".format(
+            __salt__['mc_utils.magicstring'](pformat(ret)))
+    except (UnicodeDecodeError, UnicodeEncodeError):
+        try:
+            msg = "Salt call failed:\n{0}".format(
+                __salt__['mc_utils.magicstring'](repr(ret)))
+        except Exception:
+            msg = "Salt call failed"
+    if ret['log_trace'] and isinstance(ret['log_trace'], six.string_types):
+        log.error(ret['log_trace'])
+    return ret, msg
+
+
+def _process_ret(ret, unparse=True, strip_out=False, hard_failure=False):
+    _consolidate_failure(ret)
+    ret.setdefault('log_trace', '')
+    if unparse:
+        try:
+            ret['result'] = get_saltcall_result(
+                ret.get('stdout', ''),
+                result_sep=ret['result_sep'],
+                sh_wrapper_debug=ret['sh_wrapper_debug'])
+            ret['raw_result'] = copy.deepcopy(ret['result'])
+            ret = _unparse_ret(ret)
+        except (ResultProcessError,) as exc:
+            ret = exc.ret
+            if ret['retcode']:
+                raise exc
+    if strip_out and not ret['retcode']:
+        ret['stdout'] = ret['stderr'] = ''
+    _consolidate_failure(ret)
+    # consistent failure in all properties
+    # prepare also for hard failure in case
+    if ret.get('result', _EXECUTION_FAILED) is _EXECUTION_FAILED:
+        ret, msg = _mark_failed(ret)
+        if hard_failure:
+            raise _SaltCallFailure(msg, exec_ret=ret)
+    return ret
 
 
 def salt_call(host,
@@ -1646,7 +1773,7 @@ def salt_call(host,
               strip_out=None,
               hard_failure=False,
               remote=None,
-              use_vt=True,
+              use_vt=None,
               new_shell=None,
               ttl=0,
               *args,
@@ -1670,6 +1797,7 @@ def salt_call(host,
         outputter for the saltcall return
     transformer
         outputter used to unparse the value returned from the call
+        (the "2nd pass")
     unparse
         unserialise the return and tries to
         split out the local result from
@@ -1800,6 +1928,11 @@ def salt_call(host,
         new_shell = True
     if remote is None:
         remote = True
+    if use_vt is None:
+        if remote:
+            use_vt = True
+        else:
+            use_vt = False
     if masterless is None:
         if 'mastersalt' in salt_call_bin:
             fun_ = 'mc_controllers.local_mastersalt_mode'
@@ -1809,7 +1942,9 @@ def salt_call(host,
     else:
         masterless = bool(masterless)
     # uglyness for caching a bit based on calling args
-    ret = low_salt_call(host,
+    if not remote and not new_shell:
+        unparse = False
+    ret = run_salt_call(host,
                         use_vt,
                         remote,
                         fun,
@@ -1822,77 +1957,9 @@ def salt_call(host,
                         loglevel,
                         masterless,
                         new_shell,
+                        minion_id,
                         ttl=ttl)
-    if not remote:
-        if not new_shell:
-            unparse = False
-    log_trace = None
-    if ret.get('stdout'):
-        collect, result = False, ''
-        for line in ret['stdout'].splitlines():
-            skip_collect = False
-            if collect:
-                if ret['sh_wrapper_debug']:
-                    skip_collect = _SKIP_LINE_RE.search(line)
-                if not skip_collect:
-                    result += line
-                    result += "\n"
-            if line.startswith(ret['result_sep']):
-                collect = True
-        ret['raw_result'] = ret['result'] = result
-    if ret.get('retcode', 0):
-        try:
-            if int(ret['retcode']) >= 0:
-                if unparse:
-                    try:
-                        ret, log_trace = unparse_ret(ret,
-                                                     transformer,
-                                                     minion_id)
-                    except Exception:
-                        pass
-                ret['raw_result'] = ret.pop('result', None)
-                ret['result'] = _EXECUTION_FAILED
-        except (ValueError, TypeError,) as exc:
-            pass
-    ret['transformer'] = None
-    ret['unparser'] = None
-    if unparse:
-        ret, log_trace = unparse_ret(ret,
-                                     transformer,
-                                     minion_id)
-    if strip_out and (ret['retcode'] in [0]):
-        ret['stdout'] = ret['stderr'] = ''
-    if not isinstance(ret, dict):
-        ret = _get_ret().update({
-            'stdout': '',
-            'retcode': 2,
-            'raw_result': ret,
-            'result': _EXECUTION_FAILED})
-    # consistent failure in all properties
-    # prepare also for hard failure in case
-    msg = "Salt call failed"
-    if ret.get('result', _EXECUTION_FAILED) is _EXECUTION_FAILED:
-        ret['result'] = None
-        try:
-            msg = "Salt call failed:\n{0}".format(pformat(ret))
-        except UnicodeEncodeError:
-            try:
-                msg = "Salt call failed:\n{0}".format(
-                    pformat(ret).encode('utf-8'))
-            except Exception:
-                msg = "Salt call failed"
-        except Exception:
-            try:
-                msg = "Salt call failed:\n{0}".format(ret)
-            except Exception:
-                msg = "Salt call failed"
-        if log_trace and isinstance(log_trace, six.string_types):
-            log.error(log_trace)
-    else:
-        ret['retcode'] = 0
-    if hard_failure:
-        raise _SaltCallFailure(msg, exec_ret=ret)
-    return ret
+    return _process_ret(ret, unparse, strip_out, hard_failure)
 
 
 def mastersalt_call(*a, **kw):
