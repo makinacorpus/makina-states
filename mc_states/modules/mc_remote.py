@@ -1431,7 +1431,7 @@ def _consolidate_failure(ret):
         if ret.get('retcode'):
             ret.setdefault('raw_result', ret.pop('result', None))
             ret['result'] = _EXECUTION_FAILED
-        elif ret['result'] is _EXECUTION_FAILED:
+        if ret['result'] is _EXECUTION_FAILED:
             ret['retcode'] = 1
         if not ret['retcode']:
             ret['retcode'] = 0
@@ -1738,8 +1738,8 @@ def _process_ret(ret, unparse=True, strip_out=False, hard_failure=False):
         try:
             ret['result'] = get_saltcall_result(
                 ret.get('stdout', ''),
-                result_sep=ret['result_sep'],
-                sh_wrapper_debug=ret['sh_wrapper_debug'])
+                result_sep=ret.get('result_sep', SIMPLE_RESULT_SEP),
+                sh_wrapper_debug=ret.get('sh_wrapper_debug', False))
             ret['raw_result'] = copy.deepcopy(ret['result'])
             ret = _unparse_ret(ret)
         except (ResultProcessError,) as exc:
@@ -1748,7 +1748,7 @@ def _process_ret(ret, unparse=True, strip_out=False, hard_failure=False):
                 raise exc
     if strip_out and not ret['retcode']:
         ret['stdout'] = ret['stderr'] = ''
-    _consolidate_failure(ret)
+    ret = _consolidate_failure(ret)
     # consistent failure in all properties
     # prepare also for hard failure in case
     if ret.get('result', _EXECUTION_FAILED) is _EXECUTION_FAILED:

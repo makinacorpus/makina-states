@@ -168,6 +168,26 @@ class TestCase(base.ModuleCase):
 
     def test_process_ret(self):
         with patch.dict(self._grains, {'id': 'foo'}):
+            self.assertRaises(mc_remote._SaltCallFailure,
+                              mc_remote._process_ret,
+                              {'result': 'foo',
+                               'raw_result': 'foo',
+                               'retcode': 1},
+                              hard_failure=True)
+            self.assertEqual(
+                mc_remote._process_ret(
+                    {'result': 'foo',
+                     'raw_result': 'foo',
+                     'stdout': 'e', 'stderr': 'f',
+                     'retcode': 0},
+                    unparse=False,
+                    strip_out=False,
+                    hard_failure=False),
+                {'log_trace': '',
+                 'result': 'foo',
+                 'raw_result': 'foo',
+                 'stdout': 'e', 'stderr': 'f',
+                 'retcode': 0})
             self.assertEqual(
                 mc_remote._process_ret(
                     {'log_trace': 'foo'},
@@ -199,6 +219,20 @@ class TestCase(base.ModuleCase):
                  'result': None,
                  'raw_result': 'foo',
                  'retcode': 1})
+            self.assertEqual(
+                mc_remote._process_ret(
+                    {'result': 'foo',
+                     'raw_result': 'foo',
+                     'stdout': 'e', 'stderr': 'f',
+                     'retcode': 0},
+                    unparse=False,
+                    strip_out=True,
+                    hard_failure=False),
+                {'log_trace': '',
+                 'result': 'foo',
+                 'raw_result': 'foo',
+                 'stdout': '', 'stderr': '',
+                 'retcode': 0})
 
     def test_consolidate_transformer_and_outputter(self):
         self.assertEqual(
