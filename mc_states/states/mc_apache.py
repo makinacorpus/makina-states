@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
+
+.. _state_mc_apache:
+
 mc_apache / apache states
 ============================================
 
@@ -33,6 +36,8 @@ Or using the "names:" directive, you can put several names for the same IP.
         - names:
           - server1
           - florida
+
+
 '''
 
 # Import python libs

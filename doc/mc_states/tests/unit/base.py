@@ -16,6 +16,11 @@ from mc_states.modules import mc_utils as mmc_utils
 from mc_states.modules import mc_dumper as mmc_dumper
 from mc_states.modules import mc_locations as mmc_locations
 from mc_states.modules import mc_macros as mmc_macros
+from mc_states.modules import mc_ntp as mmc_ntp
+from mc_states.modules import mc_remote as mmc_remote
+
+from mc_states.renderers import lyaml as mmc_lyaml
+
 import mc_states.tests.utils
 
 J = os.path.join
@@ -26,6 +31,8 @@ DUNDERS = {
     'default': {
         'opts': {
             'config_dir': '/etc/mastersalt',
+            'extension_modules': '/var/cache/salt/salt-minion/extmods',
+            'renderer': 'yaml_jinja',
         },
         'salt': {},
         'pillar': {},
@@ -33,7 +40,16 @@ DUNDERS = {
         'context': {}}}
 DUNDERS['modules'] = copy.deepcopy(DUNDERS['default'])
 DUNDERS['modules']['salt'] = {
+    'lyaml.render': mmc_lyaml.render,
+    'mc_remote.sls': mmc_remote.sls_,
+    'mc_remote.highstate': mmc_remote.highstate,
+    'mc_remote.salt_call': mmc_remote.salt_call,
+    'mc_remote.mastersalt_call': mmc_remote.mastersalt_call,
+    'mc_remote.ssh': mmc_remote.ssh,
+    'mc_remote.ssh_transfer_file': mmc_remote.ssh_transfer_file,
+    'mc_remote.ssh_transfer_dir': mmc_remote.ssh_transfer_dir,
     'grains.filter_by': sgrains.filter_by,
+    'mc_ntp.settings': mmc_ntp.settings,
     'mc_locations.settings': mmc_locations.settings,
     'mc_dumper.sanitize_kw': mmc_dumper.sanitize_kw,
     'mc_dumper.yencode': mmc_dumper.yencode,
@@ -81,6 +97,7 @@ DUNDERS['modules']['salt'] = {
     'mc_utils.local_minion_id': mmc_utils.local_minion_id,
     'mc_utils.format_resolve': mmc_utils.format_resolve,
     'mc_utils.defaults': mmc_utils.defaults,
+    'mc_utils.magicstring': mmc_utils.magicstring,
     'mc_utils.get': mmc_utils.get,
     'mc_utils.dictupdate': mmc_utils.dictupdate,
     'mc_utils.uniquify': mmc_utils.uniquify,

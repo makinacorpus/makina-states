@@ -279,25 +279,23 @@ burp_configurations:
 
 
 class TestCase(base.ModuleCase):
-    _mods = (mc_pillar, mc_macros, mc_utils)
 
     def test_get_whitel(self):
         def _load():
             return yaml.load(TEST_NET)
-        with patch.dict(self._salt, {
+        with patch.dict(self.salt, {
             'mc_pillar.loaddb_do': _load,
         }):
-            res1 = mc_pillar.whitelisted('a')
+            res1 = self._('mc_pillar.whitelisted')('a')
             self.assertEqual(res1, ['1.2.3.5', '1.2.3.6'])
 
     def test_get_burp_conf(self):
         def _load():
             return yaml.load(TEST_NET)
-        with patch.dict(self._salt, {
+        with patch.dict(self.salt, {
             'mc_pillar.loaddb_do': _load,
-
         }):
-            res1 = mc_pillar.query(
+            res1 = self._('mc_pillar.query')(
                 'burp_configurations')['foo.makina-corpus.net']
             self.assertEqual(res1,
                              {'bar.makina-corpus.net': {
@@ -308,11 +306,13 @@ class TestCase(base.ModuleCase):
     def test_get_shorewallsettings(self):
         def _load():
             return yaml.load(TEST_NET)
-        with patch.dict(self._salt, {
+        with patch.dict(self.salt, {
             'mc_pillar.loaddb_do': _load
         }):
-            res1 = mc_pillar.get_shorewall_settings('foo.makina-corpus.net')
-            res2 = mc_pillar.get_shorewall_settings('bar.makina-corpus.net')
+            res1 = self._('mc_pillar.get_shorewall_settings')(
+                'foo.makina-corpus.net')
+            res2 = self._('mc_pillar.get_shorewall_settings')(
+                'bar.makina-corpus.net')
             self.assertEqual(
                 res1['makina-states.services.firewall.shorewall'], True)
             self.assertEqual(
@@ -325,9 +325,9 @@ class TestCase(base.ModuleCase):
                      'shorewall.params.RESTRICTED_FTP'], 'foo')
             k = ('makina-states.services.firewall.'
                  'shorewall.params.RESTRICTED_SSH')
-            res1 = mc_pillar.get_shorewall_settings(
+            res1 = self._('mc_pillar.get_shorewall_settings')(
                 'preprod-dd.makina-corpus.net')
-            res2 = mc_pillar.get_shorewall_settings(
+            res2 = self._('mc_pillar.get_shorewall_settings')(
                 'preprod-d.makina-corpus.net')
             self.assertEqual('all', res1[k])
             self.assertNotEqual('all', res2[k])
@@ -335,10 +335,10 @@ class TestCase(base.ModuleCase):
     def test_get_arr(self):
         def _load():
             return yaml.load(TEST_NET)
-        with patch.dict(self._salt, {
+        with patch.dict(self.salt, {
             'mc_pillar.loaddb_do': _load,
         }):
-            res = mc_pillar.rrs_a_for('makina-corpus.net')
+            res = self._('mc_pillar.rrs_a_for')('makina-corpus.net')
             self.assertEqual(
                 res.splitlines(),
                 '       a.ifo-online-1.makina-corp'
@@ -391,28 +391,28 @@ class TestCase(base.ModuleCase):
     def test_get_mx_rr(self):
         def _load():
             return yaml.load(TEST_NET)
-        with patch.dict(self._salt, {
+        with patch.dict(self.salt, {
             'mc_pillar.loaddb_do': _load,
         }):
-            res = mc_pillar.rrs_mx_for('makina-corpus.com')
+            res = self._('mc_pillar.rrs_mx_for')('makina-corpus.com')
             self.assertEqual(res, '       @ IN MX 50 c.makina-corpus.net.')
 
     def test_get_raw_rr(self):
         def _load():
             return yaml.load(TEST_NET)
-        with patch.dict(self._salt, {
+        with patch.dict(self.salt, {
             'mc_pillar.loaddb_do': _load,
         }):
-            res = mc_pillar.rrs_raw_for('makina-corpus.com')
+            res = self._('mc_pillar.rrs_raw_for')('makina-corpus.com')
             self.assertEqual(res, '       @ SPF "v=spf1 +mx -all"')
 
     def test_get_cnames_for(self):
         def _load():
             return yaml.load(TEST_NET)
-        with patch.dict(self._salt, {
+        with patch.dict(self.salt, {
             'mc_pillar.loaddb_do': _load,
         }):
-            res = mc_pillar.rrs_cnames_for('makina-corpus.net')
+            res = self._('mc_pillar.rrs_cnames_for')('makina-corpus.net')
             self.assertEqual(res,
                              '       boo.moo.makina-corpus.net.'
                              '  CNAME www.foo.fr.\n'
@@ -422,22 +422,23 @@ class TestCase(base.ModuleCase):
                              '  CNAME testa.makina-corpus.net.\n'
                              '       testc.makina-corpus.net.'
                              '  CNAME testb.makina-corpus.net.')
-            self.assertEqual(mc_pillar.ip_for('testc.makina-corpus.net'),
-                             '1.2.3.10')
+            self.assertEqual(
+                self._('mc_pillar.ip_for')('testc.makina-corpus.net'),
+                '1.2.3.10')
 
     def test_get_ns_rr(self):
         def _load():
             return yaml.load(TEST_NET)
-        with patch.dict(self._salt, {
+        with patch.dict(self.salt, {
             'mc_pillar.loaddb_do': _load,
         }):
-            res = mc_pillar.rrs_ns_for('makina-corpus.net')
+            res = self._('mc_pillar.rrs_ns_for')('makina-corpus.net')
             self.assertEqual(res, '       @ IN NS ns1.makina-corpus.net.')
-            res = mc_pillar.rrs_ns_for('makina-corpus.com')
+            res = self._('mc_pillar.rrs_ns_for')('makina-corpus.com')
             self.assertEqual(res, '       @ IN NS ns1.makina-corpus.com.')
-            ip1 = mc_pillar.ip_for('ns1.makina-corpus.net')
-            ip3 = mc_pillar.ip_for('ns1.makina-corpus.fr')
-            ip2 = mc_pillar.ip_for('ns2.makina-corpus.fr')
+            ip1 = self._('mc_pillar.ip_for')('ns1.makina-corpus.net')
+            ip3 = self._('mc_pillar.ip_for')('ns1.makina-corpus.fr')
+            ip2 = self._('mc_pillar.ip_for')('ns2.makina-corpus.fr')
             self.assertEqual(ip1, '1.2.3.6')
             self.assertEqual(ip2, '1.2.3.6')
             self.assertEqual(ip3, '1.2.3.5')
@@ -445,10 +446,10 @@ class TestCase(base.ModuleCase):
     def test_get_txts_rr(self):
         def _load():
             return yaml.load(TEST_NET)
-        with patch.dict(self._salt, {
+        with patch.dict(self.salt, {
             'mc_pillar.loaddb_do': _load
         }):
-            res = mc_pillar.rrs_txt_for('makina-corpus.net')
+            res = self._('mc_pillar.rrs_txt_for')('makina-corpus.net')
             self.assertEqual(res,
                              '''\
    \
@@ -460,10 +461,10 @@ class TestCase(base.ModuleCase):
     def test_get_nss(self):
         def _load():
             return yaml.load(TEST_NET)
-        with patch.dict(self._salt, {
+        with patch.dict(self.salt, {
             'mc_pillar.loaddb_do': _load,
         }):
-            res1 = mc_pillar.get_slaves_for('a.makina-corpus.net')
+            res1 = self._('mc_pillar.get_slaves_for')('a.makina-corpus.net')
             self.assertEqual(res1,
                              {'all': ['b.makina-corpus.net',
                                       'c.makina-corpus.net',
@@ -480,14 +481,14 @@ class TestCase(base.ModuleCase):
                                                  ['b.makina-corpus.net',
                                                   'd.makina-corpus.net',
                                                   'h.makina-corpus.net'])])})
-            res1 = mc_pillar.get_slaves_zones_for('b.makina-corpus.net')
+            res1 = self._('mc_pillar.get_slaves_zones_for')('b.makina-corpus.net')
             self.assertEqual(res1,
                              {'makina-corpus.fr': 'a.makina-corpus.net',
                               'makina-corpus.net': 'a.makina-corpus.net',
                               'makina-corpus.org': 'a.makina-corpus.net',
                               'makina-corpus.com': 'a.makina-corpus.net'})
-            res1 = mc_pillar.get_nss_for_zone('makina-corpus.com')
-            res2 = mc_pillar.get_nss_for_zone('makina-corpus.net')
+            res1 = self._('mc_pillar.get_nss_for_zone')('makina-corpus.com')
+            res2 = self._('mc_pillar.get_nss_for_zone')('makina-corpus.net')
             self.assertEqual(
                 res1,
                 {'master': 'a.makina-corpus.net',
@@ -498,7 +499,7 @@ class TestCase(base.ModuleCase):
                 {'master': 'a.makina-corpus.net',
                  'slaves': OrderedDict([('ns1.makina-corpus.net',
                                          'h.makina-corpus.net')])})
-            res = mc_pillar.get_nss()
+            res = self._('mc_pillar.get_nss')()
             self.assertEqual(
                 res,
                 {'all': ['a.makina-corpus.net',
@@ -520,14 +521,13 @@ class TestCase(base.ModuleCase):
                                         ('d.makina-corpus.net',
                                          ['a.makina-corpus.net'])])})
 
-
     def atest_load_networkinfra(self):
         def _load():
             return yaml.load(TEST_NET)
-        with patch.dict(self._salt, {
+        with patch.dict(self.salt, {
             'mc_pillar.loaddb_do': _load,
         }):
-            res = mc_pillar.load_network_infrastructure()
+            res = self._('mc_pillar.load_network_infrastructure')()
         self.assertEqual(
             res['ips'], {
                 'ips': {
@@ -569,7 +569,7 @@ class TestCase(base.ModuleCase):
                   'foo.bar',
                   'foo.bar.org',
                   'foo.bar.org.']:
-            tests.append(mc_pillar.get_fqdn_domains(i))
+            tests.append(self._('mc_pillar.get_fqdn_domains')(i))
         self.assertEqual(tests,
                          [[], ['bar'], ['org', 'bar.org'], ['org', 'bar.org']])
 
@@ -608,11 +608,11 @@ class TestCase(base.ModuleCase):
                     'sysadmin+foo.makina-corpus.net@makina-corpus.net')},
                 {'/.*@.local/': (
                     'sysadmin+foo.makina-corpus.net@makina-corpus.net')}]}
-        with patch.dict(self._salt, {
-            'mc_pillar.query': Mock(side_effect=_query)}
+        with patch.dict(
+            self.salt, {'mc_pillar.query': Mock(side_effect=_query)}
         ):
-            res1 = mc_pillar.get_mail_conf('foo.makina-corpus.net')
-            res2 = mc_pillar.get_mail_conf('bar.makina-corpus.net')
+            res1 = self._('mc_pillar.get_mail_conf')('foo.makina-corpus.net')
+            res2 = self._('mc_pillar.get_mail_conf')('bar.makina-corpus.net')
             self.assertEqual(res1, ret1)
             p = 'makina-states.services.mail.postfix.transport'
             self.assertEqual(res2[p],
@@ -627,11 +627,13 @@ class TestCase(base.ModuleCase):
                      'sysadmins_keys_map',
                      'sudoers_map']:
                 return yaml.load(TESTS[t])[t]
-        with patch.dict(self._salt, {
-            'mc_pillar.query': Mock(side_effect=_query)}
-        ):
-            res1 = mc_pillar.get_configuration('foo.makina-corpus.net')
-            res2 = mc_pillar.get_configuration('bar.makina-corpus.net')
+        with patch.dict(self.salt, {
+            'mc_pillar.query': Mock(side_effect=_query)
+        }):
+            res1 = self._('mc_pillar.get_configuration')(
+                'foo.makina-corpus.net')
+            res2 = self._('mc_pillar.get_configuration')(
+                'bar.makina-corpus.net')
             self.assertEqual(res1,
                              {'backup_mode': 'burp',
                               'cloud_images': {
@@ -687,13 +689,16 @@ class TestCase(base.ModuleCase):
 
     def test_get_passwords(self):
         data = {}
+
         def _update_local_reg(name, *args, **kw):
             lreg = data.setdefault(name, {})
             lreg.update(args[0])
             return lreg
+
         def _local_reg(name, *args, **kw):
             lreg = data.setdefault(name, {})
             return lreg
+
         def _query(t, *a, **kw):
             if t in ['ssh_groups',
                      'passwords_map',
@@ -701,14 +706,13 @@ class TestCase(base.ModuleCase):
                      'sysadmins_keys_map',
                      'sudoers_map']:
                 return yaml.load(TESTS[t])[t]
-        with patch.dict(self._salt, {
+        with patch.dict(self.salt, {
             'mc_pillar.query': Mock(side_effect=_query),
             'mc_macros.update_local_registry': Mock(
                 side_effect=_update_local_reg),
-            'mc_macros.get_local_registry': Mock(
-                side_effect=_local_reg)}
-        ):
-            res1 = mc_pillar.get_passwords('a.makina-corpus.net')
+            'mc_macros.get_local_registry': Mock(side_effect=_local_reg)
+        }):
+            res1 = self._('mc_pillar.get_passwords')('a.makina-corpus.net')
             self.assertEqual(
                 res1,
                 {'clear': {'root': 'uuu', 'sysadmin': 'yyy', 'zope': 'zzz'},
@@ -725,7 +729,7 @@ class TestCase(base.ModuleCase):
                              'fQdsFoKUhC66sXhEE3jpo6u9BlD81oo/Tx4QnbSu'
                              '0bVD09FWHrSUH91/z1'}})
 
-            res2 = mc_pillar.get_passwords('b.makina-corpus.net')
+            res2 = self._('mc_pillar.get_passwords')('b.makina-corpus.net')
             self.assertEqual(
                 res2,
                 {'clear': {'root': 'ttt', 'sysadmin': 'ttt'},
@@ -738,21 +742,21 @@ class TestCase(base.ModuleCase):
                              'jwVBdrIAn/bCCQgiaLOVmzrV9zDVamEX'
                              'Ii1vYQb8MjtqgSzHAwaLAVQ/KCOZQ6b1'}})
             self.assertFalse('c.makina-corpus.net' in data['passwords_map'])
-            mc_pillar.get_passwords('c.makina-corpus.net')
+            self._('mc_pillar.get_passwords')('c.makina-corpus.net')
             self.assertTrue('c.makina-corpus.net' in data['passwords_map'])
 
     def test_get_sysadmins_keys(self):
         def _query(t, *a, **kw):
-            if t in ['ssh_groups',
-                     'keys_map',
-                     'sysadmins_keys_map',
-                     'sudoers_map']:
+            if t in [
+                'ssh_groups', 'keys_map',
+                'sysadmins_keys_map', 'sudoers_map'
+            ]:
                 return yaml.load(TESTS[t])[t]
-        with patch.dict(self._salt, {
-            'mc_pillar.query': Mock(side_effect=_query)}
-        ):
-            res1 = mc_pillar.get_sudoers('foo.makina-corpus.net')
-            res2 = mc_pillar.get_sudoers('bar.makina-corpus.net')
+        with patch.dict(self.salt, {
+            'mc_pillar.query': Mock(side_effect=_query)
+        }):
+            res1 = self._('mc_pillar.get_sudoers')('foo.makina-corpus.net')
+            res2 = self._('mc_pillar.get_sudoers')('bar.makina-corpus.net')
             self.assertEqual(res1, ['sss', 'ttt', 'uuu'])
             self.assertEqual(res2, ['uuu'])
 
@@ -763,23 +767,26 @@ class TestCase(base.ModuleCase):
                      'sysadmins_keys_map',
                      'sudoers_map']:
                 return yaml.load(TESTS[t])[t]
-        with patch.dict(self._salt, {
-            'mc_pillar.query': Mock(side_effect=_query)}
-        ):
-            res1 = mc_pillar.get_sysadmins_keys('foo.makina-corpus.net')
-            res2 = mc_pillar.get_sysadmins_keys('bar.makina-corpus.net')
+        with patch.dict(self.salt, {
+            'mc_pillar.query': Mock(side_effect=_query)
+        }):
+            res1 = self._('mc_pillar.get_sysadmins_keys')(
+                'foo.makina-corpus.net')
+            res2 = self._('mc_pillar.get_sysadmins_keys')(
+                'bar.makina-corpus.net')
             self.assertEqual(res1, ['supervision.pub', 'ttt.pub'])
             self.assertEqual(res2, ['supervision.pub', 'sss.pub'])
 
     def test_get_ssh_groups(self):
+
         def _query(t, *a, **kw):
             if t == 'ssh_groups':
                 return yaml.load(TESTS[t])[t]
-        with patch.dict(self._salt, {
-            'mc_pillar.query': Mock(side_effect=_query)}
-        ):
-            res1 = mc_pillar.get_ssh_groups('foo.makina-corpus.net')
-            res2 = mc_pillar.get_ssh_groups('bar.makina-corpus.net')
+        with patch.dict(self.salt, {
+            'mc_pillar.query': Mock(side_effect=_query)
+        }):
+            res1 = self._('mc_pillar.get_ssh_groups')('foo.makina-corpus.net')
+            res2 = self._('mc_pillar.get_ssh_groups')('bar.makina-corpus.net')
             self.assertEqual(res1,
                              ['ubuntu', 'git-ro', 'git-lab',
                               'admin', 'root', 'sshusers', 'sudo',
@@ -787,6 +794,7 @@ class TestCase(base.ModuleCase):
             self.assertEqual(res2,
                              ['admin', 'root', 'sshusers',
                               'sudo', 'sysadmin', 'wheel'])
+
 
 if __name__ == '__main__':
     unittest.main()
