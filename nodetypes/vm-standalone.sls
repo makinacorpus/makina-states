@@ -9,5 +9,13 @@
 include:
   - makina-states.nodetypes.server
 {% endif %}
+
+makinastates-snapshot.sh:
+  file.managed:
+    - name: /sbin/makinastates-snapshot.sh
+    - source: salt://makina-states/files/sbin/makinastates-snapshot.sh
+    - user: root
+    - group: root
+    - mode: 0755
 {% endmacro %}
 {{do(full=False)}}

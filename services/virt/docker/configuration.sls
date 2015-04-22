@@ -1,28 +1,28 @@
 {%- set vmdata = salt['mc_cloud_vm.settings']() %}
-{%- set data = vmdata.vts.lxc %}
-{% set extra_confs = {} %}
+{%- set data = vmdata.vts.docker %}
+{% set extra_confs = {} %} 
 include:
-  - makina-states.services.virt.lxc.hooks
-  - makina-states.services.virt.lxc.services
+  - makina-states.services.virt.docker.hooks
+  - makina-states.services.virt.docker.services
 
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {% if grains['os'] in ['Ubuntu'] -%}
-{% set extra_confs = {'/etc/init/lxc-net-makina.conf': {}} %}
+{% set extra_confs = {'/etc/init/docker-net-makina.conf': {}} %}
 
 {% elif grains['os'] in ['Debian'] -%}
-{% set extra_confs = {'/etc/init.d/lxc-net-makina': {}} %}
-
+{% set extra_confs = {'/etc/init.d/docker-net-makina': {}} %}
 # assume systemd
 {% else %}
-{% set extra_confs = {'/etc/systemd/system/lxc-net-makina': {}} %}
+{% set extra_confs = {'/etc/systemd/system/docker-net-makina.service': {}} %}
 {% endif%}
 
 {% set extra_confs = salt['mc_utils.copy_dictupdate'](
-  data['host_confs'], extra_confs) %}
+        data['host_confs'],
+        extra_confs) %}
 
 {% for f, fdata in extra_confs.items() %}
 {% set template = fdata.get('template', 'jinja') %}
-lxc-conf-{{f}}:
+docker-conf-{{f}}:
   file.managed:
     - name: "{{fdata.get('target', f)}}"
     - source: "{{fdata.get('source', 'salt://makina-states/files'+f)}}"
@@ -36,8 +36,18 @@ lxc-conf-{{f}}:
     - template: "{{template}}"
     {%endif%}
     - watch:
-      - mc_proxy: lxc-pre-conf
+      - mc_proxy: docker-pre-conf
     - watch_in:
-      - mc_proxy: lxc-post-conf
+      - mc_proxy: docker-post-conf
 {% endfor %}
-{% endif %}
+
+{%- set locs = salt['mc_locations.settings']() %}
+docker-conf:
+  file.managed:
+    - name: {{ locs.upstart_dir }}/docker.conf
+    - source: salt://makina-states/files/etc/init/docker.conf
+    - watch:
+      - mc_proxy: docker-pre-conf
+    - watch_in:
+      - mc_proxy: docker-post-conf
+{%endif %}

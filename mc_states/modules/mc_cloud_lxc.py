@@ -60,13 +60,14 @@ def is_lxc():
         '3:cpu:/',
         '2:cpuset:/']
     """
-
     try:
         cgroups = open('/proc/1/cgroup').read().splitlines()
         lxc = not '/' == [a.split(':')[-1]
                           for a in cgroups if ':cpu:' in a][-1]
     except Exception:
         lxc = False
+    if not lxc:
+        lxc = bool(__grains__.get('makina.lxc'))
     return lxc
 
 
