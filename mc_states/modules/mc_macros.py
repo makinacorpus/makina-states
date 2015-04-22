@@ -26,6 +26,9 @@ from mc_states.api import _SUB_REGISTRIES
 import mc_states.api
 import mc_states.saltapi
 
+# retrocompat
+from mc_states.saltapi import NoRegistryLoaderFound
+
 # cache variable
 _REGISTRY = {}
 _default_activation_status = object()
@@ -46,9 +49,6 @@ _default = object()
 def get_registry_formats():
     return copy.deepcopy(REGISTRY_FORMATS)
 
-
-class NoRegistryLoaderFound(SaltException):
-    """."""
 
 
 # normally not more used
@@ -101,7 +101,7 @@ def load_kind_registries(kind):
                 'mc_{0}.{1}'.format(kind, registry)]()
         except KeyError:
             trace = traceback.format_exc()
-            raise NoRegistryLoaderFound(
+            raise mc_states.saltapi.NoRegistryLoaderFound(
                 'mc_{0}.{1} is unavailable\n{2}'.format(kind, registry, trace))
     return _REGISTRY[kind]
 
@@ -709,7 +709,23 @@ def filecache_fun(func,
     return value
 
 
-def dump():
-    return _REGISTRY
+def glob_dump():
+    try:
+        return copy.deepcopy(_GLOBAL_KINDS)
+    except (TypeError, ValueError):
+        return _GLOBAL_KINDS
 
+
+def sub_dump():
+    try:
+        return copy.deepcopy(_SUB_REGISTRIES)
+    except (TypeError, ValueError):
+        return _SUB_REGISTRIES
+
+
+def dump():
+    try:
+        return copy.deepcopy(_REGISTRY)
+    except (TypeError, ValueError):
+        return _REGISTRY
 # vim:set ai:

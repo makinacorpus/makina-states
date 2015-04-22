@@ -1,4 +1,8 @@
 {
+  "proxy_dirs": [
+      "{salt_root}/_proxy",
+      "{salt_root}/makina-states/mc_states/proxy",
+      "{salt_root}/makina-states/salt_fork/proxy"],
   "wrapper_dirs": [
       "{salt_root}/_wrapper",
       "{salt_root}/makina-states/mc_states/wrapper",

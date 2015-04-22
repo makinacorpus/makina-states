@@ -3,24 +3,18 @@
 from __future__ import absolute_import, division, print_function
 import unittest
 from .. import base
-from mc_states.modules import mc_utils
 from mock import patch, Mock
-
-__docformat__ = 'restructuredtext en'
 
 
 class TestCase(base.ModuleCase):
-    _mods = (mc_utils,)
-
     def test_defaults(self):
-        with patch.dict(mc_utils.__salt__,
-                        {'mc_utils.get': Mock(
-                            side_effect={
-                                'prefix.1': "e",
-                                'prefix.2': "{1}",
-                            }.get)}):
+        with patch.dict(self.salt, {
+            'mc_utils.get': Mock(
+                side_effect={'prefix.1': "e",
+                             'prefix.2': "{1}"}.get)
+        }):
             self.assertEquals(
-                mc_utils.defaults('prefix', {
+                self._('mc_utils.defaults')('prefix', {
                     "1": 'a',
                     "2": '{3}',
                     "3": 'b',
@@ -38,34 +32,29 @@ class TestCase(base.ModuleCase):
         # and not copied over
         data = {'1': 'foo',
                 '2': {'aa': 2}}
-        with patch.dict(
-            mc_utils.__salt__,
-            {'mc_utils.dictupdate': mc_utils.dictupdate,
-             'mc_utils.get': Mock(
-                 side_effect={
-                     'prefix.2.aa': 'foo',
-                 }.get)}):
-            mc_utils.defaults('prefix', data)
+        with patch.dict(self.salt, {
+            'mc_utils.get': Mock(side_effect={'prefix.2.aa': 'foo'}.get)
+        }):
+            self._('mc_utils.defaults')('prefix', data)
             data['1'] = 'bar'
             self.assertEquals(data, {'1': 'bar', '2': {'aa': 'foo'}})
 
     def test_defaults_rec(self):
-        with patch.dict(
-            mc_utils.__salt__,
-            {'mc_utils.dictupdate': mc_utils.dictupdate,
-             'mc_utils.get': Mock(
-                 side_effect={
-                     'prefix.2.aa': 'foo',
-                     'prefix.2.dd': {1: 2},
-                     'prefix.2.cc.ff.gg': 'ee',
-                     'prefix.2.kk.ll.mmm.nn': 1,
-                     'prefix.2.kk.ll.mmu.nn.oou.pp.qqu.rr.ssu': 1,
-                     'prefix.2.cc.ff': {'o': 'p'},
-                     'prefix.4': 3,
-                     'prefix.5': {1: 2},
-                 }.get)}):
+        with patch.dict(self.salt, {
+            'mc_utils.get': Mock(
+                side_effect={
+                    'prefix.2.aa': 'foo',
+                    'prefix.2.dd': {1: 2},
+                    'prefix.2.cc.ff.gg': 'ee',
+                    'prefix.2.kk.ll.mmm.nn': 1,
+                    'prefix.2.kk.ll.mmu.nn.oou.pp.qqu.rr.ssu': 1,
+                    'prefix.2.cc.ff': {'o': 'p'},
+                    'prefix.4': 3,
+                    'prefix.5': {1: 2},
+                }.get)
+        }):
             self.assertEquals(
-                mc_utils.defaults('prefix', {
+                self._('mc_utils.defaults')('prefix', {
                     '1': 'a',
                     '2': {
                         'aa': 'bb',
@@ -114,26 +103,25 @@ class TestCase(base.ModuleCase):
             )
 
     def test_defaults_rec_over(self):
-        with patch.dict(
-            mc_utils.__salt__,
-            {'mc_utils.dictupdate': mc_utils.dictupdate,
-             'mc_utils.get': Mock(
-                 side_effect={
-                     'prefix.11': ['foo'],
-                     'prefix.22-overrides': ['foo'],
-                     'prefix.2.aa': 'foo',
-                     'prefix.2.dd': {1: 2},
-                     'prefix.2.cc.ff.gg': 'ee',
-                     'prefix.2.cc.ff-overrides': {'o': 'p'},
-                     'prefix.2.kk.ll.mmm.nn.oo.pp': {1: 2},
-                     'prefix.2.kk.ll.mmu.nn.oou.pp-overrides': {1: 2},
-                     'prefix.6.a.bb-overrides': {1: 2},
-                     'prefix.6.b.bb': {1: 2},
-                     'prefix.4': 3,
-                     'prefix.5': {1: 2},
-                 }.get)}):
+        with patch.dict(self.salt, {
+            'mc_utils.get': Mock(
+                side_effect={
+                    'prefix.11': ['foo'],
+                    'prefix.22-overrides': ['foo'],
+                    'prefix.2.aa': 'foo',
+                    'prefix.2.dd': {1: 2},
+                    'prefix.2.cc.ff.gg': 'ee',
+                    'prefix.2.cc.ff-overrides': {'o': 'p'},
+                    'prefix.2.kk.ll.mmm.nn.oo.pp': {1: 2},
+                    'prefix.2.kk.ll.mmu.nn.oou.pp-overrides': {1: 2},
+                    'prefix.6.a.bb-overrides': {1: 2},
+                    'prefix.6.b.bb': {1: 2},
+                    'prefix.4': 3,
+                    'prefix.5': {1: 2},
+                }.get)
+        }):
             self.assertEquals(
-                mc_utils.defaults('prefix', {
+                self._('mc_utils.defaults')('prefix', {
                     '11': ['a', 'b', 'c'],
                     '22': ['a', 'b', 'c'],
                     '1': 'a',
@@ -249,9 +237,11 @@ class TestCase(base.ModuleCase):
         ]
         for test, args, res in tests:
             if args:
-                self.assertEquals(mc_utils.format_resolve(test, args), res)
+                self.assertEquals(self._(
+                    'mc_utils.format_resolve')(test, args), res)
             else:
-                self.assertEquals(mc_utils.format_resolve(test), res)
+                self.assertEquals(self._(
+                    'mc_utils.format_resolve')(test), res)
 
 
 if __name__ == '__main__':
