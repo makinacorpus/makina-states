@@ -164,50 +164,75 @@ class MessageError(salt.exceptions.SaltException):
     pass
 
 
-class _SSHExecError(salt.utils.vt.TerminalException):
+class SSHExecError(salt.utils.vt.TerminalException):
     """."""
 
     def __init__(self, message, exec_ret=_marker):
-        super(_SSHExecError, self).__init__(message)
+        super(SSHExecError, self).__init__(message)
         if exec_ret is _marker:
             exec_ret = _get_ssh_ret()
         self.exec_ret = exec_ret
 
 
-class _SSHLoginError(_SSHExecError):
+SSHExecError = SSHExecError  # retrocompat
+
+
+class SSHLoginError(SSHExecError):
     """."""
 
 
-class _SSHTimeoutError(_SSHLoginError):
+class SSHTimeoutError(SSHLoginError):
     '''.'''
 
 
-class _SSHVtError(_SSHExecError):
+class SSHVtError(SSHExecError):
     """."""
 
 
-class _SSHInterruptError(_SSHExecError):
+class SSHInterruptError(SSHExecError):
     """."""
 
 
-class _SSHCommandFinished(_SSHExecError):
+class SSHCommandFinished(SSHExecError):
     """."""
 
 
-class _SSHCommandFailed(_SSHCommandFinished):
+class SSHCommandFailed(SSHCommandFinished):
     """."""
 
 
-class _SSHCommandTimeout(_SSHCommandFailed):
+class SSHCommandTimeout(SSHCommandFailed):
     """."""
 
 
-class _SSHTransferFailed(_SSHCommandFailed):
+class SSHTransferFailed(SSHCommandFailed):
     """."""
 
 
-class _SaltCallFailure(_SSHExecError):
+class SaltCallFailure(SSHExecError):
     """."""
+
+
+_SaltCallFailure = SaltCallFailure  # retrocompat
+
+
+class NoRegistryLoaderFound(salt.exceptions.SaltException):
+    """."""
+
+
+class RemoteResultProcessError(salt.exceptions.SaltException):
+    def __init__(self, msg, original=None, ret=None, *args, **kwargs):
+        super(RemoteResultProcessError, self).__init__(msg, *args, **kwargs)
+        self.original = original
+        self.ret = ret
+
+
+class RenderError(RemoteResultProcessError):
+    '''.'''
+
+
+class TransformError(RemoteResultProcessError):
+    '''.'''
 
 
 def result(**kwargs):

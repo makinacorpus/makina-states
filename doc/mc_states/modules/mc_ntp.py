@@ -67,9 +67,6 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
-        locations = __salt__['mc_locations.settings']()
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.base.ntp', {
                 'servers': [
@@ -86,6 +83,7 @@ def settings():
                 'restrict': [
                 ],
                 'default_all': True,
+                'activated': None,
                 'block_ext': False,
                 'ignore': False,
                 'kod': True,
@@ -97,9 +95,38 @@ def settings():
                 'trust': True,
                 'modify': False,
                 'query': False,
+                'defaults': {
+                    'NTPSERVERS': '"ntp.ubuntu.com"',
+                    'NTPDATE_USE_NTP_CONF': '"yes"',
+                    'NTPOPTIONS': '""',
+                },
+                'upstream': 'ntp.org',
                 'default_flags': None,
+                'configs': {
+                    '/etc/cron.d/ntpsync': {
+                        'mode': '700',
+                    },
+                    '/etc/default/ntpdate': {
+                    },
+                    '/etc/ntp.conf': {
+                    },
+                    '/sbin/ntp-kill.sh': {
+                        'mode': '755',
+                    },
+                    '/sbin/ntp-sync.sh': {
+                        'mode': '755',
+                    }
+                }
             }
         )
+        for g in ['makina.lxc', 'makina.docker']:
+            if __grains__.get(g, False):
+                data['activated'] = False
+        if data['activated'] is None:
+            data['activated'] = True
+        data['defaults']['NTPSYNC'] = '"yes"'
+        if not data['activated']:
+            data['defaults']['NTPSYNC'] = '"no"'
         if data['default_flags'] is None:
             data['default_flags'] = ''
             for item in ['kod', 'limited', 'lowpriotrap']:
@@ -110,7 +137,3 @@ def settings():
                     data['default_flags'] += ' no{0}'.format(item)
         return data
     return _settings()
-
-
-
-#

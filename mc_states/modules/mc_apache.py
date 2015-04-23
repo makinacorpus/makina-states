@@ -22,6 +22,7 @@ Do not forget to sync salt cache::
 
   salt-call state.sls makina-states.controllers.salt
 
+
 '''
 
 import copy

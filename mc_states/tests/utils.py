@@ -24,6 +24,7 @@ def test_setup():
     api._CACHE_PREFIX['testkey'] = api._CACHE_PREFIX['key']
     api._CACHE_PREFIX['key'] = 'test'
     mc_locations.default_locs['root_dir'] = '{0}/'.format(TMPDIR)
+    return TMPDIR
 
 
 def test_teardown():

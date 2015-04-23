@@ -94,9 +94,11 @@ disable=W0142,
   W0212,
   R0914,
   W0703,
+  E1305,
   E8731
 
 # TO REACTIVATE ONE AFTER ONE
+# [E1305(too-many-format-args)
 # [W0703(broad-except),
 # [R0912(too-many-branches)
 # [R0915(too-many-statements)

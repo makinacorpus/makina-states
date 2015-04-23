@@ -3426,7 +3426,7 @@ def remote_deploy(host, project, *args, **kw):
                     failed = True
                     scret = repr_ret(cret)
         except (
-            mc_states.saltapi._SSHExecError,
+            mc_states.saltapi.SSHExecError,
             salt.exceptions.CommandExecutionError,
             projects_api.ProjectNotCleanError
         ) as exc:

@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
+
+.. _state_mc_php:
+
 mc_php / PHP tools
 ==================
 
@@ -15,6 +18,8 @@ Like installing composer
         - name: /usr/local/bin/composer
         - installer: https://getcomposer.org/installer
         - update: False
+
+
 '''
 
 # Import python libs
@@ -22,9 +27,11 @@ import logging
 import os
 
 # Import salt libs
-import salt.utils
 
 log = logging.getLogger(__name__)
+__func_alias__ = {
+    'composer_': 'composer',
+}
 
 
 def _error(ret, err_msg):
@@ -32,12 +39,11 @@ def _error(ret, err_msg):
     ret['comment'] = err_msg
     return ret
 
-def composer(name,
-           installer=None,
-           update=False):
+
+def composer_(name, installer=None, update=False):
     '''
     Download composer.phar from the given url and install it on the given name.
-    A check is done on the given name, if it's already available nothing is 
+    A check is done on the given name, if it's already available nothing is
     done, except if update is set to True
 
     name
@@ -59,24 +65,26 @@ def composer(name,
 
     if not os.path.isabs(name):
         return _error(ret,
-                 'Specified file {0} is not an absolute path'.format(name))
+                      'Specified file {0} is'
+                      ' not an absolute path'.format(name))
     if os.path.exists(name) and not update:
         ret['message'] = '{0}: already installed. nothing to do'.format(name)
         return ret
 
     modres = __salt__['mc_php.composer'](name,
-                                       installer,
-                                       dry_run=__opts__['test'])
+                                         installer,
+                                         dry_run=__opts__['test'])
 
     ret['result'] = modres['status']
     ret['comment'] = modres['msg']
 
     return ret
 
+
 def composercommand(name,
-           cwd=None,
-           args=None,
-           composer=None):
+                    cwd=None,
+                    args=None,
+                    composer=None):
     '''
     Run a composer command.
 
@@ -105,13 +113,10 @@ def composercommand(name,
         ret['result'] = False
         ret['comment'] = 'Test mode is not supported by this state.'
         return ret
-
     modres = __salt__['mc_php.composer_command'](name,
-                                       cwd=cwd,
-                                       args=args,
-                                       composer=composer)
-
+                                                 cwd=cwd,
+                                                 args=args,
+                                                 composer=composer)
     ret['result'] = modres['status']
     ret['comment'] = modres['msg']
-
     return ret

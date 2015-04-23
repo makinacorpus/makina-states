@@ -202,7 +202,7 @@ def copy_dictupdate(dict1, dict2):
 def format_resolve(value,
                    original_dict=None,
                    global_tries=50,
-                   this_call=0, topdb=False):
+                   this_call=0, topdb=False, **kwargs):
     '''Resolve a dict of formatted strings, mappings & list to a valued dict
     Please also read the associated test::
 
@@ -226,6 +226,8 @@ def format_resolve(value,
         original_dict = OrderedDict()
     if this_call == 0 and not original_dict and isinstance(value, dict):
         original_dict = value
+    if isinstance(kwargs, dict):
+        original_dict.update(kwargs)
     left = False
     cycle = True
 
