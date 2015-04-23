@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -x
 set -e
-lxc="prod-odoo.makina-corpus.net"
+lxc="${1}"
+if [ "x${lxc}" = "x" ];then
+    echo no lxc
+    exit 1
+fi
 cd /var/lib/lxc
 test -e "${lxc}"
 rsync -aAv "${lxc}"/ "${lxc}".snap/ \
