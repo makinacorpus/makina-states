@@ -9,6 +9,7 @@ fi
 cd /var/lib/lxc
 test -e "${lxc}"
 rsync -aAv "${lxc}"/ "${lxc}".snap/ \
+    --exclude="${lxc}.tbz2" \
     --exclude=data/snapshots --exclude="rootfs/tmp/*" \
     --exclude=data/snapshots --exclude="var/log/*/*gz" \
     --delete-excluded --exclude="var/log/*gz" --exclude=etc/ssl/cloud/ --exclude=etc/ssl/nginx
