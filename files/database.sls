@@ -135,7 +135,7 @@ configurations:
     #        application_key: "axxx"
     #        application_secret: "xxx
     #        consumer_key: "xxx"
-  msr-lxc-ref-precise.foo.net:
+{% macro nopillar() %}
     manage_backups: true
     manage_packages: true
     manage_shorewall: true
@@ -167,6 +167,9 @@ configurations:
     manage_ssl: false
     manage_sudoers: false
     mastersalt_master: false
+{% endmacro %}
+  msr-lxc-ref-precise.foo.net:
+    {{nopillar()}}
 
 #  provider3-99.mydomain.tld:
 #    manage_network: false
