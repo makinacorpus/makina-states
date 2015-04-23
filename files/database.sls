@@ -74,7 +74,6 @@ format: 1
 #   - default_env: prod
 #   - domain: mydomain.tld
 #   - ldap_client: does this host needs to wire it's PAM & NSS to a ldap server
-#   - mail_mode: mail mode to use, only avalaible for now is 'relay', see mail_configurations
 #   - manage_autoupgrades: switch to activate postupgrade
 #   - manage_backup_server: switch to activate configuration for selected backup servers
 #   - manage_backups: switch to enable backups on that box
@@ -112,10 +111,9 @@ format: 1
 #   - cloud_master: signals that this host is a mastersalt master (singleton)
 #    manage_exposed_glocal_conf: expose global conf flags via pillar
 configurations:
-  default:
+  default: {}
     # you may use here a DNS targetting a failover ip (default to real master name)
     #mastersaltdn: mastersalt.makina-corpus.net
-    mail_mode: relay
   mymaster.foo.net:
     mastersalt_master: true
     cloud_master: true
