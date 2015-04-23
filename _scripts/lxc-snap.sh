@@ -9,10 +9,15 @@ fi
 cd /var/lib/lxc
 test -e "${lxc}"
 rsync -aAv "${lxc}"/ "${lxc}".snap/ \
+    --delete-excluded \
+    --delete-excluded \
     --exclude="${lxc}.tbz2" \
-    --exclude=data/snapshots --exclude="rootfs/tmp/*" \
-    --exclude=data/snapshots --exclude="var/log/*/*gz" \
-    --delete-excluded --exclude="var/log/*gz" --exclude=etc/ssl/cloud/ --exclude=etc/ssl/nginx
+    --exclude=rootfs/srv/projects/*/data/snapshots \
+    --exclude="rootfs/tmp/*" \
+    --exclude="rootfs/var/log/*/*gz" \
+    --exclude="rootfs/var/log/*gz" \
+    --exclude=rootfs/etc/ssl/cloud/ \
+    --exclude=rootfs/etc/ssl/nginx
 chroot "${lxc}.snap/rootfs" /sbin/makinastates-snapshot.sh
 chroot "${lxc}.snap/rootfs" getfacl -R / >${lxc}.snap/rootfs/acls.txt
 cd "${lxc}".snap/
