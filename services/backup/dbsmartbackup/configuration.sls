@@ -20,7 +20,12 @@ run_dbsmartbackups:
     - hour: {{data.cron_hour}}
     - minute: {{data.cron_minute}}
 
+
 run_dbsmartbackups-cron:
+{% if not data.cron_activated %}
+  file.absent:
+    - name: /etc/cron.d/run_dbsmartbackups
+{% else %}
   file.managed:
     - name: /etc/cron.d/run_dbsmartbackups
     - source: ''
@@ -30,6 +35,7 @@ run_dbsmartbackups-cron:
     - template: jinja
     - contents: |
                 {{data.cron_minute}} {{data.cron_hour}} * * * root {{locs.apps_dir}}/db_smart_backup/run_dbsmartbackups.sh --quiet --no-colors
+{% endif %}
 
 dbsmartbackup_pg_conf:
   file.managed:

@@ -6,8 +6,8 @@
 # This script consolidates and extends the existing lxc ubuntu scripts
 #
 
-# Copyright © 2011 Serge Hallyn <serge.hallyn@canonical.com>
-# Copyright © 2010 Wilhelm Meier
+# Copyright Â© 2011 Serge Hallyn <serge.hallyn@canonical.com>
+# Copyright Â© 2010 Wilhelm Meier
 # Author: Wilhelm Meier <wilhelm.meier@fh-kl.de>
 #
 #  This library is free software; you can redistribute it and/or
@@ -24,17 +24,70 @@
 #  License along with this library; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
+# Detect use under userns (unsupported)
+for arg in "$@"; do
+    [ "$arg" = "--" ] && break
+    if [ "$arg" = "--mapped-uid" -o "$arg" = "--mapped-gid" ]; then
+        echo "This template can't be used for unprivileged containers." 1>&2
+        echo "You may want to try the \"download\" template instead." 1>&2
+        exit 1
+    fi
+done
+
+# Make sure the usual locations are in PATH
+export PATH=$PATH:/usr/sbin:/usr/bin:/sbin:/bin
+
 set -e
+
+LOCALSTATEDIR="/var"
+LXC_TEMPLATE_CONFIG="/usr/share/lxc/config"
 
 if [ -r /etc/default/lxc ]; then
     . /etc/default/lxc
 fi
+
+# Check if given path is in a btrfs partition
+is_btrfs()
+{
+    [ -e $1 -a $(stat -f -c '%T' $1) = "btrfs" ]
+}
+
+# Check if given path is the root of a btrfs subvolume
+is_btrfs_subvolume()
+{
+    [ -d $1 -a $(stat -f -c '%T' $1) = "btrfs" -a $(stat -c '%i' $1) -eq 256 ]
+}
+
+try_mksubvolume()
+{
+    path=$1
+    [ -d $path ] && return 0
+    mkdir -p $(dirname $path)
+    if which btrfs >/dev/null 2>&1 && is_btrfs $(dirname $path); then
+        btrfs subvolume create $path
+    else
+        mkdir -p $path
+    fi
+}
+
+try_rmsubvolume()
+{
+    path=$1
+    [ -d $path ] || return 0
+    if which btrfs >/dev/null 2>&1 && is_btrfs_subvolume $path; then
+        btrfs subvolume delete $path
+    else
+        rm -rf $path
+    fi
+}
 
 configure_ubuntu()
 {
     rootfs=$1
     hostname=$2
     release=$3
+    user=$4
+    password=$5
 
     # configure the network using the dhcp
     cat <<EOF > $rootfs/etc/network/interfaces
@@ -76,17 +129,17 @@ EOF
     fi
 
     if [ -z "$bindhome" ]; then
-        chroot $rootfs useradd --create-home -s /bin/bash ubuntu
-        echo "ubuntu:ubuntu" | chroot $rootfs chpasswd
+        chroot $rootfs useradd --create-home -s /bin/bash $user
+        echo "$user:$password" | chroot $rootfs chpasswd
     fi
 
     # make sure we have the current locale defined in the container
     if [ -z "$LANG" ] || echo $LANG | grep -E -q "^C(\..+)*$"; then
-        chroot $rootfs locale-gen en_US.UTF-8
-        chroot $rootfs update-locale LANG=en_US.UTF-8
+        chroot $rootfs locale-gen en_US.UTF-8 || true
+        chroot $rootfs update-locale LANG=en_US.UTF-8 || true
     else
-        chroot $rootfs locale-gen $LANG
-        chroot $rootfs update-locale LANG=$LANG
+        chroot $rootfs locale-gen $LANG || true
+        chroot $rootfs update-locale LANG=$LANG || true
     fi
 
     # generate new SSH keys
@@ -101,6 +154,8 @@ EOF
         mv $rootfs/etc/init/ssh.conf $rootfs/etc/init/ssh.conf.disabled
         DPKG_MAINTSCRIPT_PACKAGE=openssh DPKG_MAINTSCRIPT_NAME=postinst chroot $rootfs /var/lib/dpkg/info/openssh-server.postinst configure
         mv $rootfs/etc/init/ssh.conf.disabled $rootfs/etc/init/ssh.conf
+
+        sed -i "s/root@$(hostname)/root@$hostname/g" $rootfs/etc/ssh/ssh_host_*.pub
 
         rm -f $rootfs/usr/sbin/policy-rc.d
     fi
@@ -140,6 +195,33 @@ finalize_user()
     return 0
 }
 
+# A function to try and autodetect squid-deb-proxy servers on the local network
+# if either the squid-deb-proxy-client package is installed on the host or
+# a parent container set the 50squid-deb-proxy-client file.
+squid_deb_proxy_autodetect()
+{
+    local apt_discover=/usr/share/squid-deb-proxy-client/apt-avahi-discover
+    local proxy_file=/etc/apt/apt.conf.d/50squid-deb-proxy-client
+    squid_proxy_line=  # That's a global :/
+
+    # Maybe the host is aware of a squid-deb-proxy?
+    if [ -f $apt_discover ]; then
+        echo -n "Discovering squid-deb-proxy..."
+        squid_proxy_line=$($apt_discover)
+        if [ -n "$squid_proxy_line" ]; then
+            echo "found squid-deb-proxy: $squid_proxy_line"
+        else
+            echo "no squid-deb-proxy found"
+        fi
+    fi
+
+    # Are we in a nested container, and the parent already knows of a proxy?
+    if [ -f $proxy_file ]; then
+        # Extract the squid URL from the file (whatever is between "")
+        squid_proxy_line=`cat $proxy_file | sed "s/.*\"\(.*\)\".*/\1/"`
+    fi
+}
+
 #
 # Choose proxies for container
 # http_proxy will be used by debootstrap on the host.
@@ -155,7 +237,13 @@ choose_container_proxy()
     fi
     case "$HTTP_PROXY" in
     none)
-        APT_PROXY=
+        squid_deb_proxy_autodetect
+        if [ -n "$squid_proxy_line" ]; then
+            APT_PROXY=$squid_proxy_line
+            export http_proxy=$squid_proxy_line
+        else
+            APT_PROXY=
+        fi
         ;;
     apt)
         RES=`apt-config shell APT_PROXY Acquire::http::Proxy`
@@ -171,13 +259,13 @@ choose_container_proxy()
 
 write_sourceslist()
 {
-    # $1 => path to the rootfs
+    # $1 => path to the partial cache or the rootfs
     # $2 => architecture we want to add
     # $3 => whether to use the multi-arch syntax or not
 
     if [ -n "$APT_PROXY" ]; then
-        mkdir -p $rootfs/etc/apt/apt.conf.d
-        cat > $rootfs/etc/apt/apt.conf.d/70proxy << EOF
+        mkdir -p $1/etc/apt/apt.conf.d
+        cat > $1/etc/apt/apt.conf.d/70proxy << EOF
 Acquire::http::Proxy "$APT_PROXY" ;
 EOF
     fi
@@ -207,16 +295,32 @@ EOF
     fi
 }
 
+install_packages()
+{
+    local rootfs="$1"
+    shift
+    local packages="$*"
+    if [ -z $update ]
+    then
+        chroot $rootfs apt-get update
+        update=true
+    fi
+    if [ -n "${packages}" ]
+    then
+        chroot $rootfs apt-get install --force-yes -y --no-install-recommends ${packages}
+    fi
+}
+
 cleanup()
 {
-    rm -rf $cache/partial-$arch
-    rm -rf $cache/rootfs-$arch
+    try_rmsubvolume $cache/partial-$arch
+    try_rmsubvolume $cache/rootfs-$arch
 }
 
 suggest_flush()
 {
     echo "Container upgrade failed.  The container cache may be out of date,"
-    echo "in which case flushing the case (see -F in the hep output) may help."
+    echo "in which case flushing the cache (see -F in the help output) may help."
 }
 
 download_ubuntu()
@@ -225,7 +329,7 @@ download_ubuntu()
     arch=$2
     release=$3
 
-    packages=vim,ssh
+    packages_template=${packages_template:-"ssh,vim"}
 
     # Try to guess a list of langpacks to install
     langpacks="language-pack-en"
@@ -235,14 +339,14 @@ download_ubuntu()
                     dpkg -l | grep -E "^ii  language-pack-[a-z]* " |
                         cut -d ' ' -f3) | sort -u`
     fi
-    packages="$packages,$(echo $langpacks | sed 's/ /,/g')"
+    packages_template="${packages_template},$(echo $langpacks | sed 's/ /,/g')"
 
 
-    echo "installing packages: $packages"
+    echo "Installing packages in template: ${packages_template}"
 
     trap cleanup EXIT SIGHUP SIGINT SIGTERM
     # check the mini ubuntu was not already downloaded
-    mkdir -p "$cache/partial-$arch"
+    try_mksubvolume "$cache/partial-$arch"
     if [ $? -ne 0 ]; then
         echo "Failed to create '$cache/partial-$arch' directory"
         return 1
@@ -252,9 +356,9 @@ download_ubuntu()
     # download a mini ubuntu into a cache
     echo "Downloading ubuntu $release minimal ..."
     if [ -n "$(which qemu-debootstrap)" ]; then
-        qemu-debootstrap --verbose --components=main,universe --arch=$arch --include=$packages $release $cache/partial-$arch $MIRROR
+        qemu-debootstrap --verbose --components=main,universe --arch=$arch --include=${packages_template} $release $cache/partial-$arch $MIRROR
     else
-        debootstrap --verbose --components=main,universe --arch=$arch --include=$packages $release $cache/partial-$arch $MIRROR
+        debootstrap --verbose --components=main,universe --arch=$arch --include=${packages_template} $release $cache/partial-$arch $MIRROR
     fi
 
     if [ $? -ne 0 ]; then
@@ -301,8 +405,16 @@ copy_ubuntu()
 
     # make a local copy of the miniubuntu
     echo "Copying rootfs to $rootfs ..."
-    mkdir -p $rootfs
-    rsync -Ha $cache/rootfs-$arch/ $rootfs/ || return 1
+    try_mksubvolume $rootfs
+    if which btrfs >/dev/null 2>&1 && is_btrfs_subvolume $cache/rootfs-$arch && is_btrfs_subvolume $rootfs; then
+      realrootfs=$(dirname $config)/rootfs
+      [ "$rootfs" = "$realrootfs" ] || umount $rootfs || return 1
+      btrfs subvolume delete $realrootfs || return 1
+      btrfs subvolume snapshot $cache/rootfs-$arch $realrootfs || return 1
+      [ "$rootfs" = "$realrootfs" ] || mount --bind $realrootfs $rootfs || return 1
+    else
+      rsync -Ha $cache/rootfs-$arch/ $rootfs/ || return 1
+    fi
     return 0
 }
 
@@ -311,11 +423,11 @@ install_ubuntu()
     rootfs=$1
     release=$2
     flushcache=$3
-    cache="/var/cache/lxc/$release"
-    mkdir -p /var/lock/subsys/
+    cache="$LOCALSTATEDIR/cache/lxc/$release"
+    mkdir -p $LOCALSTATEDIR/lock/subsys/
 
     (
-        flock -x 200
+        flock -x 9
         if [ $? -ne 0 ]; then
             echo "Cache repository is busy."
             return 1
@@ -324,8 +436,8 @@ install_ubuntu()
 
         if [ $flushcache -eq 1 ]; then
             echo "Flushing cache..."
-            rm -rf "$cache/partial-$arch"
-            rm -rf "$cache/rootfs-$arch"
+            try_rmsubvolume $cache/partial-$arch
+            try_rmsubvolume $cache/rootfs-$arch
         fi
 
         echo "Checking cache download in $cache/rootfs-$arch ... "
@@ -346,7 +458,7 @@ install_ubuntu()
 
         return 0
 
-    ) 200>/var/lock/subsys/lxc-ubuntu
+    ) 9>$LOCALSTATEDIR/lock/subsys/lxc-ubuntu$release
 
     return $?
 }
@@ -363,11 +475,6 @@ copy_configuration()
         arch="i686"
     fi
 
-    ttydir=""
-    if [ -f $rootfs/etc/init/container-detect.conf ]; then
-        ttydir=" lxc"
-    fi
-
     # if there is exactly one veth network entry, make sure it has an
     # associated hwaddr.
     nics=`grep -e '^lxc\.network\.type[ \t]*=[ \t]*veth' $path/config | wc -l`
@@ -375,63 +482,38 @@ copy_configuration()
         grep -q "^lxc.network.hwaddr" $path/config || sed -i -e "/^lxc\.network\.type[ \t]*=[ \t]*veth/a lxc.network.hwaddr = 00:16:3e:$(openssl rand -hex 3| sed 's/\(..\)/\1:/g; s/.$//')" $path/config
     fi
 
+    # Generate the configuration file
+    ## Relocate all the network config entries
+    sed -i -e "/lxc.network/{w ${path}/config-network" -e "d}" $path/config
+
+    ## Relocate any other config entries
+    sed -i -e "/lxc./{w ${path}/config-auto" -e "d}" $path/config
+
+    ## Add all the includes
+    echo "" >> $path/config
+    echo "# Common configuration" >> $path/config
+    if [ -e "${LXC_TEMPLATE_CONFIG}/ubuntu.common.conf" ]; then
+        echo "lxc.include = ${LXC_TEMPLATE_CONFIG}/ubuntu.common.conf" >> $path/config
+    fi
+    if [ -e "${LXC_TEMPLATE_CONFIG}/ubuntu.${release}.conf" ]; then
+        echo "lxc.include = ${LXC_TEMPLATE_CONFIG}/ubuntu.${release}.conf" >> $path/config
+    fi
+
+    ## Add the container-specific config
+    echo "" >> $path/config
+    echo "# Container specific configuration" >> $path/config
+    [ -e "$path/config-auto" ] && cat $path/config-auto >> $path/config && rm $path/config-auto
     grep -q "^lxc.rootfs" $path/config 2>/dev/null || echo "lxc.rootfs = $rootfs" >> $path/config
     cat <<EOF >> $path/config
-lxc.mount = $path/fstab
-lxc.pivotdir = lxc_putold
-
-lxc.devttydir =$ttydir
-lxc.tty = 4
-lxc.pts = 1024
-
 lxc.utsname = $name
 lxc.arch = $arch
-lxc.cap.drop = sys_module mac_admin mac_override sys_time
-
-# When using LXC with apparmor, uncomment the next line to run unconfined:
-#lxc.aa_profile = unconfined
-
-# To support container nesting on an Ubuntu host, uncomment next two lines:
-#lxc.aa_profile = lxc-container-default-with-nesting
-#lxc.hook.mount = /usr/share/lxc/hooks/mountcgroups
-
-lxc.cgroup.devices.deny = a
-# Allow any mknod (but not using the node)
-lxc.cgroup.devices.allow = c *:* m
-lxc.cgroup.devices.allow = b *:* m
-# /dev/null and zero
-lxc.cgroup.devices.allow = c 1:3 rwm
-lxc.cgroup.devices.allow = c 1:5 rwm
-# consoles
-lxc.cgroup.devices.allow = c 5:1 rwm
-lxc.cgroup.devices.allow = c 5:0 rwm
-# /dev/{,u}random
-lxc.cgroup.devices.allow = c 1:9 rwm
-lxc.cgroup.devices.allow = c 1:8 rwm
-lxc.cgroup.devices.allow = c 136:* rwm
-lxc.cgroup.devices.allow = c 5:2 rwm
-# rtc
-lxc.cgroup.devices.allow = c 254:0 rm
-# fuse
-lxc.cgroup.devices.allow = c 10:229 rwm
-# tun
-lxc.cgroup.devices.allow = c 10:200 rwm
-# full
-lxc.cgroup.devices.allow = c 1:7 rwm
-# hpet
-lxc.cgroup.devices.allow = c 10:228 rwm
-# kvm
-lxc.cgroup.devices.allow = c 10:232 rwm
 EOF
 
-    cat <<EOF > $path/fstab
-proc            proc         proc    nodev,noexec,nosuid 0 0
-sysfs           sys          sysfs defaults  0 0
-/sys/fs/fuse/connections sys/fs/fuse/connections none bind 0 0
-/sys/kernel/debug sys/kernel/debug none bind 0 0
-/sys/kernel/security sys/kernel/security none bind 0 0
-/sys/fs/pstore sys/fs/pstore none bind,optional 0 0
-EOF
+    ## Re-add the previously removed network config
+    echo "" >> $path/config
+    echo "# Network configuration" >> $path/config
+    cat $path/config-network >> $path/config
+    rm $path/config-network
 
     if [ $? -ne 0 ]; then
         echo "Failed to add configuration"
@@ -441,119 +523,18 @@ EOF
     return 0
 }
 
-trim()
-{
-    rootfs=$1
-    release=$2
-
-    # provide the lxc service
-    cat <<EOF > $rootfs/etc/init/lxc.conf
-# fake some events needed for correct startup other services
-
-description     "Container Upstart"
-
-start on startup
-
-script
-        rm -rf /var/run/*.pid
-        rm -rf /var/run/network/*
-        /sbin/initctl emit stopped JOB=udevtrigger --no-wait
-        /sbin/initctl emit started JOB=udev --no-wait
-end script
-EOF
-
-    # fix buggus runlevel with sshd
-    cat <<EOF > $rootfs/etc/init/ssh.conf
-# ssh - OpenBSD Secure Shell server
-#
-# The OpenSSH server provides secure shell access to the system.
-
-description	"OpenSSH server"
-
-start on filesystem
-stop on runlevel [!2345]
-
-expect fork
-respawn
-respawn limit 10 5
-umask 022
-# replaces SSHD_OOM_ADJUST in /etc/default/ssh
-oom never
-
-pre-start script
-    test -x /usr/sbin/sshd || { stop; exit 0; }
-    test -e /etc/ssh/sshd_not_to_be_run && { stop; exit 0; }
-    test -c /dev/null || { stop; exit 0; }
-
-    mkdir -p -m0755 /var/run/sshd
-end script
-
-# if you used to set SSHD_OPTS in /etc/default/ssh, you can change the
-# 'exec' line here instead
-exec /usr/sbin/sshd
-EOF
-
-    cat <<EOF > $rootfs/etc/init/console.conf
-# console - getty
-#
-# This service maintains a console on tty1 from the point the system is
-# started until it is shut down again.
-
-start on stopped rc RUNLEVEL=[2345]
-stop on runlevel [!2345]
-
-respawn
-exec /sbin/getty -8 38400 /dev/console
-EOF
-
-    cat <<EOF > $rootfs/lib/init/fstab
-# /lib/init/fstab: cleared out for bare-bones lxc
-EOF
-
-    # remove pointless services in a container
-    chroot $rootfs /usr/sbin/update-rc.d -f ondemand remove
-
-    chroot $rootfs /bin/bash -c 'cd /etc/init; for f in $(ls u*.conf); do mv $f $f.orig; done'
-    chroot $rootfs /bin/bash -c 'cd /etc/init; for f in $(ls tty[2-9].conf); do mv $f $f.orig; done'
-    chroot $rootfs /bin/bash -c 'cd /etc/init; for f in $(ls plymouth*.conf); do mv $f $f.orig; done'
-    chroot $rootfs /bin/bash -c 'cd /etc/init; for f in $(ls hwclock*.conf); do mv $f $f.orig; done'
-    chroot $rootfs /bin/bash -c 'cd /etc/init; for f in $(ls module*.conf); do mv $f $f.orig; done'
-
-    # if this isn't lucid, then we need to twiddle the network upstart bits :(
-    if [ $release != "lucid" ]; then
-        sed -i 's/^.*emission handled.*$/echo Emitting lo/' $rootfs/etc/network/if-up.d/upstart
-    fi
-}
-
 post_process()
 {
     rootfs=$1
     release=$2
-    trim_container=$3
+    packages=$3
 
-    if [ $trim_container -eq 1 ]; then
-        trim $rootfs $release
-    elif [ ! -f $rootfs/etc/init/container-detect.conf ]; then
-        # Make sure we have a working resolv.conf
-        cresolvonf="${rootfs}/etc/resolv.conf"
-        mv $cresolvonf ${cresolvonf}.lxcbak
-        cat /etc/resolv.conf > ${cresolvonf}
-
-        # for lucid, if not trimming, then add the ubuntu-virt
-        # ppa and install lxcguest
-        if [ $release = "lucid" ]; then
-            chroot $rootfs apt-get update
-            chroot $rootfs apt-get install --force-yes -y python-software-properties
-            chroot $rootfs add-apt-repository ppa:ubuntu-virt/ppa
-        fi
-
-        chroot $rootfs apt-get update
-        chroot $rootfs apt-get install --force-yes -y lxcguest
-
-        # Restore old resolv.conf
-        rm -f ${cresolvonf}
-        mv ${cresolvonf}.lxcbak ${cresolvonf}
-    fi
+    # Disable service startup
+    cat > $rootfs/usr/sbin/policy-rc.d << EOF
+#!/bin/sh
+exit 101
+EOF
+    chmod +x $rootfs/usr/sbin/policy-rc.d
 
     # If the container isn't running a native architecture, setup multiarch
     if [ -x "$(ls -1 ${rootfs}/usr/bin/qemu-*-static 2>/dev/null)" ]; then
@@ -585,17 +566,41 @@ post_process()
         else
             HOST_PACKAGES="$HOST_PACKAGES iproute:${hostarch}"
         fi
-        chroot $rootfs apt-get install --force-yes -y --no-install-recommends $HOST_PACKAGES
+        install_packages $rootfs $HOST_PACKAGES
+    fi
+
+    # Install Packages in container
+    if [ -n "$packages" ]
+    then
+        local packages="`echo $packages | sed 's/,/ /g'`"
+        echo "Installing packages: ${packages}"
+        install_packages $rootfs $packages
+    fi
+
+    # Set initial timezone as on host
+    if [ -f /etc/timezone ]; then
+        cat /etc/timezone > $rootfs/etc/timezone
+        chroot $rootfs dpkg-reconfigure -f noninteractive tzdata
+    elif [ -f /etc/sysconfig/clock ]; then
+        . /etc/sysconfig/clock
+        echo $ZONE > $rootfs/etc/timezone
+        chroot $rootfs dpkg-reconfigure -f noninteractive tzdata
+    else
+        echo "Timezone in container is not configured. Adjust it manually."
     fi
 
     # rmdir /dev/shm for containers that have /run/shm
     # I'm afraid of doing rm -rf $rootfs/dev/shm, in case it did
     # get bind mounted to the host's /run/shm.  So try to rmdir
     # it, and in case that fails move it out of the way.
-    if [ ! -L $rootfs/dev/shm ] && [ -d $rootfs/run/shm ] && [ -e $rootfs/dev/shm ]; then
-        mv $rootfs/dev/shm $rootfs/dev/shm.bak
+    # NOTE: This can only be removed once 12.04 goes out of support
+    if [ ! -L $rootfs/dev/shm ] && [ -e $rootfs/dev/shm ]; then
+        rmdir $rootfs/dev/shm 2>/dev/null || mv $rootfs/dev/shm $rootfs/dev/shm.bak
         ln -s /run/shm $rootfs/dev/shm
     fi
+
+    # Re-enable service startup
+    rm $rootfs/usr/sbin/policy-rc.d
 }
 
 do_bindhome()
@@ -613,7 +618,7 @@ do_bindhome()
         echo "shell $shell for user $user was not found in the container."
         pkg=`dpkg -S $(readlink -m $shell) | cut -d ':' -f1`
         echo "Installing $pkg"
-        chroot $rootfs apt-get --force-yes -y install $pkg
+        install_packages $rootfs $pkg
     fi
 
     shad=`getent shadow $user`
@@ -628,7 +633,7 @@ do_bindhome()
     while [ ${h2:0:1} = "/" ]; do
         h2=${h2#/}
     done
-    echo "$h $h2 none bind 0 0" >> $path/fstab
+    echo "lxc.mount.entry = $h $h2 none bind 0 0" >> $path/config
 
     # Make sure the group exists in container
     grp=`echo $pwd | cut -d: -f 4`  # group number for $user
@@ -639,21 +644,23 @@ do_bindhome()
 usage()
 {
     cat <<EOF
-$1 -h|--help [-a|--arch] [-b|--bindhome <user>] [--trim] [-d|--debug]
+$1 -h|--help [-a|--arch] [-b|--bindhome <user>] [-d|--debug]
    [-F | --flush-cache] [-r|--release <release>] [ -S | --auth-key <keyfile>]
-   [--rootfs <rootfs>]
+   [--rootfs <rootfs>] [--packages <packages>] [-u|--user <user>] [--password <password>]
+   [--mirror <url>] [--security-mirror <url>]
 release: the ubuntu release (e.g. precise): defaults to host release on ubuntu, otherwise uses latest LTS
-trim: make a minimal (faster, but not upgrade-safe) container
 bindhome: bind <user>'s home into the container
           The ubuntu user will not be created, and <user> will have
           sudo access.
 arch: the container architecture (e.g. amd64): defaults to host arch
 auth-key: SSH Public key file to inject into container
+packages: list of packages to add comma separated
+mirror,security-mirror: mirror for download and /etc/apt/sources.list
 EOF
     return 0
 }
 
-options=$(getopt -o a:b:hp:r:xn:FS:d -l arch:,bindhome:,help,path:,release:,trim,name:,flush-cache,auth-key:,debug,rootfs: -- "$@")
+options=$(getopt -o a:b:hp:r:n:FS:du: -l arch:,bindhome:,help,path:,release:,name:,flush-cache,auth-key:,debug,rootfs:,packages:,user:,password:,mirror:,security-mirror: -- "$@")
 if [ $? -ne 0 ]; then
     usage $(basename $0)
     exit 1
@@ -683,13 +690,19 @@ else
         arch="amd64"
     elif [ "$arch" = "armv7l" ]; then
         arch="armhf"
+    elif [ "$arch" = "aarch64" ]; then
+        arch="arm64"
+    elif [ "$arch" = "ppc64le" ]; then
+        arch="ppc64el"
     fi
 fi
 
 debug=0
-trim_container=0
 hostarch=$arch
 flushcache=0
+packages=""
+user="ubuntu"
+password="ubuntu"
 while true
 do
     case "$1" in
@@ -697,13 +710,17 @@ do
     --rootfs)       rootfs=$2; shift 2;;
     -p|--path)      path=$2; shift 2;;
     -n|--name)      name=$2; shift 2;;
+    -u|--user)      user=$2; shift 2;;
+    --password)     password=$2; shift 2;;
     -F|--flush-cache) flushcache=1; shift 1;;
     -r|--release)   release=$2; shift 2;;
+    --packages)     packages=$2; shift 2;;
     -b|--bindhome)  bindhome=$2; shift 2;;
     -a|--arch)      arch=$2; shift 2;;
-    -x|--trim)      trim_container=1; shift 1;;
     -S|--auth-key)  auth_key=$2; shift 2;;
     -d|--debug)     debug=1; shift 1;;
+    --mirror)       MIRROR=$2; shift 2;;
+    --security-mirror) SECURITY_MIRROR=$2; shift 2;;
     --)             shift 1; break ;;
         *)              break ;;
     esac
@@ -722,7 +739,7 @@ if [ -n "$bindhome" ]; then
 fi
 
 
-if [ "$arch" == "i686" ]; then
+if [ "$arch" = "i686" ]; then
     arch=i386
 fi
 
@@ -731,8 +748,13 @@ if [ $hostarch = "i386" -a $arch = "amd64" ]; then
     exit 1
 fi
 
-if [ $hostarch = "armhf" -o $hostarch = "armel" ] && \
-   [ $arch != "armhf" -a $arch != "armel" ]; then
+if [ $hostarch = "armhf" -o $hostarch = "armel" -o $hostarch = "arm64" ] && \
+   [ $arch != "armhf" -a $arch != "armel" -a $arch != "arm64" ]; then
+    echo "can't create $arch container on $hostarch"
+    exit 1
+fi
+
+if [ $arch = "arm64" ] && [ $hostarch != "arm64" ]; then
     echo "can't create $arch container on $hostarch"
     exit 1
 fi
@@ -759,7 +781,7 @@ config="$path/config"
 # if $rootfs exists here, it was passed in with --rootfs
 if [ -z "$rootfs" ]; then
     if grep -q '^lxc.rootfs' $config 2>/dev/null ; then
-        rootfs=`grep 'lxc.rootfs =' $config | awk -F= '{ print $2 }'`
+        rootfs=$(awk -F= '/^lxc.rootfs =/{ print $2 }' $config)
     else
         rootfs=$path/rootfs
     fi
@@ -771,7 +793,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-configure_ubuntu $rootfs $name $release
+configure_ubuntu $rootfs $name $release $user $password
 if [ $? -ne 0 ]; then
     echo "failed to configure ubuntu $release for a container"
     exit 1
@@ -783,13 +805,13 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-post_process $rootfs $release $trim_container
+post_process $rootfs $release $trim_container $packages
 
 if [ -n "$bindhome" ]; then
     do_bindhome $rootfs $bindhome
     finalize_user $bindhome
 else
-    finalize_user ubuntu
+    finalize_user $user
 fi
 
 echo ""
@@ -797,7 +819,7 @@ echo "##"
 if [ -n "$bindhome" ]; then
     echo "# Log in as user $bindhome"
 else
-    echo "# The default user is 'ubuntu' with password 'ubuntu'!"
+    echo "# The default user is '$user' with password '$password'!"
     echo "# Use the 'sudo' command to run tasks as root in the container."
 fi
 echo "##"

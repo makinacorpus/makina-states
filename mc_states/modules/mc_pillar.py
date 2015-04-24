@@ -3183,7 +3183,7 @@ def get_ldap_client_conf(id_, ttl=ONE_DAY):
 def get_mail_conf(id_, ttl=ONE_DAY):
     def _do(id_):
         gconf = get_configuration(id_)
-        if not gconf.get('manage_mails', False):
+        if not gconf.get('manage_mails', True):
             return {}
         data = {}
         mail_settings = __salt__[__name + '.query'](
