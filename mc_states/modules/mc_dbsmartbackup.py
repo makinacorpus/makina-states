@@ -15,6 +15,8 @@ def settings():
     '''
     Configuration registry for dbsmartbackup (https://github.com/kiorky/db_smart_backup)
 
+    cron_activated
+        toggle on/off the nightly cron
     cron_hour
         which hour of the day do we run the script
 
@@ -99,8 +101,13 @@ def settings():
         mysqlSettings = __salt__['mc_mysql.settings']()
         pillar = __pillar__
         locs = __salt__['mc_locations.settings']()
+        env = __salt__['mc_env.settings']()['env']
+        cron_activated = True
+        if env not in ['prod', 'staging']:
+            cron_activated = False
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.backup.db_smart_backup', {
+                'cron_activated': cron_activated,
                 'cron_minute': '1',
                 'types': ['mongod', 'slapd', 'mysql', 'postgresql', 'elasticsearch'],
                 'backup_path_prefix': locs['srv_dir'] + '/backups',
