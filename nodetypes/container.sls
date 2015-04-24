@@ -25,6 +25,30 @@ etc-init-lxc-setup:
     - watch_in:
       - mc_proxy: makina-lxc-proxy-cfg
 
+{% set extra_confs = {'/usr/bin/ms-lxc-setup.sh': {}, 
+                      '/usr/bin/ms-lxc-stop.sh': {}} %}
+{% for f, fdata in extra_confs.items() %}
+{% set template = fdata.get('template', 'jinja') %}
+lxc-conf-{{f}}:
+  file.managed:
+    - name: "{{fdata.get('target', f)}}"
+    - source: "{{fdata.get('source', 'salt://makina-states/files'+f)}}"
+    - mode: "{{fdata.get('mode', 750)}}"
+    - user: "{{fdata.get('user', 'root')}}"
+    - group:  "{{fdata.get('group', 'root')}}"
+    {% if data.get('makedirs', True) %}
+    - makedirs: true
+    {% endif %}
+    {% if template %}
+    - template: "{{template}}"
+    {%endif%}
+    - watch:
+      - mc_proxy: lxc-pre-conf
+    - watch_in:
+      - mc_proxy: lxc-post-conf
+{% endfor %}
+{% endif %} 
+
 lxc-cleanup:
   file.managed:
     - name: /sbin/lxc-cleanup.sh

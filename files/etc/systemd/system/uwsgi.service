@@ -1,0 +1,11 @@
+# MANAGED VIA SALT -- DO NOT EDIT
+#{% set data = salt['mc_uwsgi.settings']() %}
+[Unit]
+Description=uswsgi
+After=syslog.target network.target
+
+[Service]
+ExecStart=/bin/sh -ec "/usr/bin/uwsgi.sh"
+
+[Install]
+WantedBy=multi-user.target

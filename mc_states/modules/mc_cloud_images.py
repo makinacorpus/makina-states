@@ -54,6 +54,8 @@ def _imgerror(msg, cret=None):
 def complete_images(data):
     root = data['root']
     images = data['lxc'].setdefault('images', OrderedDict())
+    images.setdefault('makina-states-precise', {})
+    images.setdefault('makina-states-vivid', {})
     images.setdefault('makina-states-trusty', {})
     for img in [i for i in images]:
         defaults = OrderedDict()
@@ -479,7 +481,7 @@ def sf_release(images=None, flavors=None, sync=True):
 
     For now this includes:
 
-        - lxc container based on Ubuntu LTS (trusty)
+        - lxc container based on Ubuntu LTS
         - current ubuntu LTS based tarball containing the minimum vital
           to bring back to like makina-states without rebuilding it
           totally from scratch. This contains a slimed version of

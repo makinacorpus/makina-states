@@ -19,6 +19,7 @@ import yaml
 import logging
 
 from mc_states.saltapi import six
+import mc_states.saltapi
 from salt.utils.odict import OrderedDict
 
 __name = 'cloud'
@@ -552,9 +553,12 @@ def is_(typ, ttl=120):
     def do(typ):
         def _fdo(typ, ttl):
             gr = 'makina-states.cloud.is.{0}'.format(typ)
-            return __salt__[
-                'mc_remote.local_mastersalt_call'
-            ]('mc_utils.get', gr, ttl=ttl)
+            try:
+                return __salt__[
+                    'mc_remote.local_mastersalt_call'
+                ]('mc_utils.get', gr, ttl=ttl)
+            except mc_states.saltapi.MastersaltNotInstalled:
+                return {'result': False}
         days15 = 15*24*60*60
         # if we are a 'kind', (result: True), cache it way longer
         ret = _fdo(typ, days15)['result']

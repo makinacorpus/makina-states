@@ -25,9 +25,27 @@ supervisord-conf:
       - mc_proxy: supervisor-pre-conf
     - watch_in:
       - mc_proxy: supervisor-post-conf
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](defaults)}}
+
+{% set extra_confs = {
+  '/usr/bin/ms_supervisor.sh': {"mode": "755"},
+  '/etc/systemd/system/ms_supervisor.service': {"mode": "644"}
+}%}
+
+{% for i, cdata in extra_confs.items() %}
+supervisor-{{i}}:
+  file.managed:
+    - name: {{i}}
+    - source: salt://makina-states/files{{i}}
+    - mode: {{cdata.mode}}
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - watch:
+      - mc_proxy: supervisor-pre-conf
+    - watch_in:
+      - mc_proxy: supervisor-post-conf
+{% endfor %}
 
 {% if grains['os'] in ['Ubuntu'] %}
 supervisor-init-conf:
@@ -43,9 +61,7 @@ supervisor-init-conf:
       - mc_proxy: supervisor-pre-conf
     - watch_in:
       - mc_proxy: supervisor-post-conf
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](defaults)}}
+
 {% else %}
 supervisor-init-conf:
   file.managed:
@@ -60,9 +76,6 @@ supervisor-init-conf:
       - mc_proxy: supervisor-pre-conf
     - watch_in:
       - mc_proxy: supervisor-post-conf
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](defaults)}}
 {% endif %}
 
 supervisor-setup-conf-directories:
@@ -88,9 +101,6 @@ supervisor-logrotate:
       - mc_proxy: supervisor-pre-conf
     - watch_in:
       - mc_proxy: supervisor-pre-restart
-    - defaults:
-        data: |
-              {{salt['mc_utils.json_dump'](defaults)}}
 
 supervisor-ms_supervisorctl:
   file.managed:

@@ -1,7 +1,8 @@
 #
 # Managed via salt, do not edit
 #
-{% set pkg_data = salt['mc_utils.json_load'](pkg_data) %}
+{% set pkgs = salt['mc_pkgs.settings']() %}
+{% set pkg_data = pkgs.pkg_data %}
 {%- for data in pkg_data.get('mirrors', []) %}
 {%- set mirror = data.get('mirror')%}
 {%- for distdata in data.get('dists') %}

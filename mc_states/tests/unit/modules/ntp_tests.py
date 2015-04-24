@@ -6,6 +6,7 @@ import mc_states.api
 
 
 class TestCase(base.ModuleCase):
+
     def test_ntp(self):
         data = self.__('mc_ntp.settings')
         self.assertTrue(isinstance(data, dict))

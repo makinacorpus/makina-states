@@ -13,7 +13,7 @@ include:
 {% set extra_confs = {'/etc/init.d/docker-net-makina': {}} %}
 # assume systemd
 {% else %}
-{% set extra_confs = {'/etc/systemd/system/docker-net-makina.service': {}} %}
+{% set extra_confs = {'/etc/systemd/system/docker-net-makina.service': {"mode": "644"}} %}
 {% endif%}
 
 {% set extra_confs = salt['mc_utils.copy_dictupdate'](

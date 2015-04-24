@@ -9,6 +9,8 @@
 include:
   - makina-states.localsettings.pkgs.hooks
 
+{% set pkgs = salt['mc_pkgs.settings']() %}
+
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}
 before-ubuntu-pkg-install-proxy:
   mc_proxy.hook:
@@ -49,7 +51,9 @@ ubuntu-pkgs:
       - ca-certificates
       - ubuntu-cloudimage-keyring
       - ubuntu-cloud-keyring
+      {% if grains ['osrelease'] < '15.04' %}
       - ubuntu-extras-keyring
+      {% endif %}
       - ubuntu-keyring
       - ubuntu-minimal
       - ubuntu-standard

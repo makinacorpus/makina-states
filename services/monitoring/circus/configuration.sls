@@ -14,9 +14,31 @@ include:
 
 {#- Run #}
 {% if grains['os'] in ['Ubuntu'] %}
+
+
+{% set extra_confs = {
+  '/usr/bin/circus.sh': {"mode": "755"},
+  '/etc/systemd/system/circusd.service': {"mode": "644"}
+}%}
+{% for i, cdata in extra_confs.items() %}
+circus-{{i}}:
+  file.managed:
+    - name: {{i}}
+    - source: salt://makina-states/files{{i}}
+    - mode: {{cdata.mode}}
+    - template: jinja
+    - user: root
+    - makedirs: true
+    - group: root
+    - watch:
+      - mc_proxy: circus-pre-conf
+    - watch_in:
+      - mc_proxy: circus-post-conf
+{% endfor %}
+
 circus-upstart-conf:
   file.managed:
-    - name: {{ locs['conf_dir'] }}/init/circusd.conf
+    - name: /etc/init/circusd.conf
     - source: salt://makina-states/files/etc/init/circusd.conf
     - template: jinja
     - user: root
@@ -27,9 +49,7 @@ circus-upstart-conf:
       - mc_proxy: circus-pre-conf
     - watch_in:
       - mc_proxy: circus-post-conf
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](defaults)}}
+
 {% else %}
 circus-init-conf:
   file.managed:
@@ -44,9 +64,6 @@ circus-init-conf:
       - mc_proxy: circus-pre-conf
     - watch_in:
       - mc_proxy: circus-post-conf
-    - defaults:
-      data: |
-            {{salt['mc_utils.json_dump'](defaults)}}
 {% endif %}
 
 circus-initdef-conf:
@@ -62,9 +79,6 @@ circus-initdef-conf:
       - mc_proxy: circus-pre-conf
     - watch_in:
       - mc_proxy: circus-post-conf
-    - defaults:
-        data: |
-              {{salt['mc_utils.json_dump'](defaults)}}
 
 circus-setup-conf-directories:
   file.directory:
@@ -89,9 +103,6 @@ circus-logrotate:
       - mc_proxy: circus-pre-conf
     - watch_in:
       - mc_proxy: circus-pre-restart
-    - defaults:
-        data: |
-              {{salt['mc_utils.json_dump'](defaults)}}
 
 {#- Configuration #}
 circus-setup-conf:
@@ -103,10 +114,10 @@ circus-setup-conf:
     - user: root
     - group: root
     - mode: 755
+    - watch:
+      - mc_proxy: circus-pre-conf
     - watch_in:
       - mc_proxy: circus-post-conf
-    - defaults:
-        conf_dir: {{ locs['conf_dir'] }}
 
 circus-ms_circusctl:
   file.managed:
@@ -126,9 +137,6 @@ circus-ms_circusctl:
                 . {{defaults.venv}}/bin/activate
                 {{defaults.venv}}/bin/circusctl \
                 "$@"
-    - defaults:
-        data: |
-              {{salt['mc_utils.json_dump'](defaults)}}
 
 {% for i in ['circusd', 'circusctl', 'ms_circusctl'] %}
 file-symlink-{{i}}:
@@ -140,7 +148,6 @@ file-symlink-{{i}}:
     - watch_in:
       - mc_proxy: circus-pre-restart
 {% endfor %}
-
 
 circus-globalconf:
   file.managed:
@@ -155,9 +162,6 @@ circus-globalconf:
       - mc_proxy: circus-pre-conf
     - watch_in:
       - mc_proxy: circus-post-conf
-    - defaults:
-        data: |
-              {{salt['mc_utils.json_dump'](defaults)}}
 
 {%- import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
 {#

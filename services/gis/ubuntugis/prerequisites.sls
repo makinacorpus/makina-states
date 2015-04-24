@@ -17,7 +17,7 @@ include:
 {% else %}
 {%  set ppa ='ppa'%}
 {% endif %}
-{% if dist in ['trusty'] %}
+{% if dist in ['trusty', 'vivid'] %}
 {%  set ppa = 'ubuntugis-unstable' %}
 {% endif %}
 

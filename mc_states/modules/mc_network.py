@@ -298,7 +298,7 @@ def settings():
         for ifc, data in netdata['interfaces'].items():
             data.setdefault('ifname', ifc)
         # get the order configuration
-        # on ubuntu trusty and some distros, copy where biosdevname is true
+        # on ubuntu 14.04+ and some distros, copy where biosdevname is true
         # from eth0 to the real network iface
         if noeth:
             for i in range(10):

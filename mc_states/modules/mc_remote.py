@@ -1904,7 +1904,7 @@ def salt_call(host,
             else:
                 new_shell = True
                 if not __salt__['mc_controllers.has_mastersalt']():
-                    raise ValueError('Mastersalt is not installed')
+                    raise mc_states.saltapi.MastersaltNotInstalled('Mastersalt is not installed')
                 if not __salt__['mc_controllers.has_mastersalt_running']():
                     log.error(
                         'MastersaltMinion deamon is not running,'

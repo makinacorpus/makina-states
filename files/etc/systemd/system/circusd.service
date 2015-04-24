@@ -1,0 +1,12 @@
+# MANAGED VIA SALT -- DO NOT EDIT
+[Unit]
+Description=circusd
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/circus.sh start
+ExecStopPost=/usr/bin/circus.sh stop
+ExecStopPre=/usr/bin/circus.sh stop
+
+[Install]
+WantedBy=multi-user.target

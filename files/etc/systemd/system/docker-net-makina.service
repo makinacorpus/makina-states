@@ -3,8 +3,8 @@ Description=docker-net-makina
 
 [Service]
 Type=oneshot
-ExecStart=/etc/docker-net-makina.sh start
-ExecStop=/etc/docker-net-makina.sh stop
+ExecStart=/usr/bin/docker-net-makina.sh start
+ExecStop=/usr/bin/docker-net-makina.sh stop
 RemainAfterExit=yes
 
 [Install]

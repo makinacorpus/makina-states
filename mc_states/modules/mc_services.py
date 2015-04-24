@@ -21,8 +21,7 @@ def _bindEn(__salt__):
     nodetypes_registry = __salt__['mc_nodetypes.registry']()
     return not (
         ('dockercontainer' in nodetypes_registry['actives'])
-        or ('lxccontainer' in nodetypes_registry['actives'])
-    )
+        or ('lxccontainer' in nodetypes_registry['actives']))
 
 
 def _rsyslogEn(__grains__):
@@ -33,16 +32,14 @@ def _ulogdEn(__salt__):
     nodetypes_registry = __salt__['mc_nodetypes.registry']()
     return (
         ('dockercontainer' in nodetypes_registry['actives'])
-        or ('lxccontainer' in nodetypes_registry['actives'])
-    )
+        or ('lxccontainer' in nodetypes_registry['actives']))
 
 
 def _ntpEn(__salt__):
     nodetypes_registry = __salt__['mc_nodetypes.registry']()
     return not (
         ('dockercontainer' in nodetypes_registry['actives'])
-        or ('lxccontainer' in nodetypes_registry['actives'])
-    )
+        or ('lxccontainer' in nodetypes_registry['actives']))
 
 
 def metadata():
@@ -59,8 +56,6 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        pillar = __pillar__
-        grains = __grains__
         data = {}
         return data
     return _settings()
@@ -133,11 +128,6 @@ def registry():
             'mastersalt': {'active': False},
             'salt_minion': {'active': False},
             'salt_master': {'active': False},
-            'salt': {'active': False},
-        })
+            'salt': {'active': False}})
         return data
     return _registry()
-
-
-
-#
