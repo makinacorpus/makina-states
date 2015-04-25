@@ -1,4 +1,4 @@
-{% include "makina-states/localsettings/dns/macros.sls" with context as dns %}
+{% import "makina-states/localsettings/dns/macros.sls" as dns with context %}
 {% set settings = salt['mc_bind.settings']() %}
 {% if salt['mc_controllers.mastersalt_mode']() %}
 include:
@@ -41,6 +41,7 @@ bind-deactivate-dnsmask:
       - service: bind-service-reload
       - service: bind-service-restart
 {% endif %}
+
 bind-service-restart:
   service.running:
     - name: {{settings.service_name}}

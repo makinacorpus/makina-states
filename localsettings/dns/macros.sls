@@ -1,4 +1,4 @@
-{% set settings = salt['mc_dns.settings'] %}
+{% set settings = salt['mc_dns.settings']() %}
 {% macro switch_dns(suf='localsettings',
                     require=None,
                     require_in=None,
@@ -10,7 +10,7 @@
 ms-dns-pre-{{suf}}:
   mc_proxy.hook:
     - watch_in:
-      - mc_proxy: ms-dns-post
+      - mc_proxy: ms-dns-post-{{suf}}
 
 ms-dns-post-{{suf}}:
   mc_proxy.hook: []
@@ -98,7 +98,6 @@ bind-set-defaultdns-{{suf}}-2:
       {% for w in require %}
       - {{w}}
       {% endfor %}
-    {% if watch_in %}
     - watch:
       - mc_proxy: ms-dns-pre-{{suf}}
       {% if watch %}
@@ -114,5 +113,6 @@ bind-set-defaultdns-{{suf}}-2:
       {% endfor %}
       {% endif %}
 {% endif %}
+
 {% endif %}
 {% endmacro %}
