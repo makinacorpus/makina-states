@@ -644,6 +644,7 @@ set_vars() {
     ROOT="${ROOT:-"/"}"
     CONF_ROOT="${CONF_ROOT:-"${ROOT}etc"}"
     ETC_INIT="${ETC_INIT:-"${CONF_ROOT}/init"}"
+    ETC_SYSTEMD="${ETC_SYSTEMD:-"${CONF_ROOT}/systemd/service"}"
     CHRONO="$(get_chrono)"
     TRAVIS_DEBUG="${TRAVIS_DEBUG:-}"
     VENV_REBOOTSTRAP="${VENV_REBOOTSTRAP:-}"
@@ -750,6 +751,7 @@ set_vars() {
         IS_MASTERSALT_MINION="y"
     fi
     if [ -e "${ETC_INIT}/salt-master.conf" ]\
+        || [ -e "${ETC_SYSTEMD}/salt-master.service" ]\
         || [ -e "${ETC_INIT}.d/salt-master" ]\
         || [ "x${IS_SALT_MASTER}" != "x" ];then
         IS_SALT="y"
@@ -757,6 +759,7 @@ set_vars() {
         IS_SALT_MINION="y"
     fi
     if [ -e "${ETC_INIT}/salt-minion.conf" ]\
+        || [ -e "${ETC_SYSTEMD}/salt-minion.service" ]\
         || [ -e "${ETC_INIT}.d/salt-minion" ]\
         || [ "x${IS_SALT_MINION}" != "x" ];then
         IS_SALT="y"
@@ -780,12 +783,14 @@ set_vars() {
     if [ "x${SALT_REATTACH}" = "x" ];then
         if [ -e "${ETC_INIT}.d/mastersalt-master" ]\
             || [ -e "${ETC_INIT}/mastersalt-master.conf" ]\
+            || [ -e "${ETC_SYSTEMD}/mastersalt-master.service" ]\
             || [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
             MASTERSALT_INIT_MASTER_PRESENT="y"
             MASTERSALT_INIT_PRESENT="y"
         fi
         if [ -e "${ETC_INIT}.d/mastersalt-minion" ]\
             || [ -e "${ETC_INIT}/mastersalt-minion.conf" ]\
+            || [ -e "${ETC_SYSTEMD}/mastersalt-minion.service" ]\
             || [ "x${IS_MASTERSALT_MINION}" != "x" ];then
             MASTERSALT_INIT_MINION_PRESENT="y"
             MASTERSALT_INIT_PRESENT="y"
@@ -1033,7 +1038,7 @@ set_vars() {
     export SALT_PILLAR MASTERSALT_PILLAR
     export MASTERSALT_MS SALT_MS
     #
-    export ROOT PREFIX ETC_INIT
+    export ROOT PREFIX ETC_INIT ETC_SYSTEMD
     export VENV_PATH CONF_ROOT
     export MASTERSALT_VENV_PATH SALT_VENV_PATH PIP_CACHE
     export MCONF_PREFIX CONF_PREFIX
@@ -1894,7 +1899,8 @@ setup_and_maybe_update_code() {
 service_activated() {
     local activated=""
     local s="${1}"
-    if [ "x$(grep -q manual /etc/init/${s}.override 2>/dev/null)" != "x0" ];then
+    hassysd="$(systemctl list-unit-files --type=service 2>/dev/null| egrep -q "^${s}.service.*enabled">/dev/null;echo ${?})"
+    if [ "x$(grep -q manual /etc/init/${s}.override 2>/dev/null)" != "x0" ] || [ "x${hassysd}" = "x0" ];then
         activated="y"
     fi
     echo "${activated}"
@@ -1903,7 +1909,8 @@ service_activated() {
 service_exists() {
     local sexists=""
     local s="${1}"
-    if [ -e "/etc/init/${s}.conf" ] || [ -e "/etc/init.d/${s}" ];then
+    hassysd="$(systemctl list-unit-files --type=service 2>/dev/null| egrep -q ^${s}.service >/dev/null;echo ${?})"
+    if [ -e "/etc/init/${s}.conf" ] || [ -e "/etc/init.d/${s}" ] || [ "x${hassysd}" = "x0" ];then
         sexists="y"
     fi
     echo "${sexists}"
@@ -3028,12 +3035,14 @@ install_salt_daemons() {
     fi
     if [ "x${IS_SALT_MASTER}" != "x" ];then
         if [ ! -e "${ETC_INIT}/salt-master.conf" ]\
+            && [ ! -e "${ETC_SYSTEMD}.d/salt-master.service" ]\
             && [ ! -e "${ETC_INIT}.d/salt-master" ];then
             RUN_SALT_BOOTSTRAP="1"
         fi
     fi
     if [ "x${IS_SALT_MINION}" != "x" ];then
         if [ ! -e "${ETC_INIT}/salt-minion.conf" ]\
+            && [ ! -e "${ETC_SYSTEMD}.d/salt-minion.service" ]\
             && [ ! -e "${ETC_INIT}.d/salt-minion" ];then
             RUN_SALT_BOOTSTRAP="1"
         fi
@@ -3665,12 +3674,14 @@ install_mastersalt_daemons() {
     fi
     if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
         if [ ! -e "${ETC_INIT}.d/mastersalt-master" ]\
+            &&  [ ! -e "${ETC_SYSTEMD}/mastersalt-master.service" ]\
             &&  [ ! -e "${ETC_INIT}/mastersalt-master.conf" ];then
             RUN_MASTERSALT_BOOTSTRAP="1"
         fi
     fi
     if  [ "x${IS_MASTERSALT_MINION}" != "x" ];then
         if [ ! -e "${ETC_INIT}.d/mastersalt-minion" ]\
+            &&  [ ! -e "${ETC_SYSTEMD}/mastersalt-minion.service" ]\
             && [ ! -e "${ETC_INIT}/mastersalt-minion.conf" ];then
             RUN_MASTERSALT_BOOTSTRAP="1"
         fi
@@ -4607,6 +4618,9 @@ disable_service() {
     elif [  -e /etc/init.d/${i} ] && [ "x$(which update-rc.d 2>/dev/null)" != "x" ];then
         update-rc.d -f "${i}" remove
     fi
+    if which systemctl 2>/dev/null 1>/dev/null;then
+        systemctl disable "${1}".service
+    fi
 }
 
 enable_service() {
@@ -4615,6 +4629,9 @@ enable_service() {
         rm -f "/etc/init/${i}.override"
     elif [  -e /etc/init.d/${i} ] && [ "x$(which update-rc.d 2>/dev/null)" != "x" ];then
         update-rc.d -f "${i}" defaults 99
+    fi
+    if which systemctl 2>/dev/null 1>/dev/null;then
+        systemctl enable "${1}".service
     fi
 }
 
