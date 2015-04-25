@@ -14,21 +14,27 @@ class TestCase(base.ModuleCase):
             data['default_flags'],
             ' kod notrap nomodify nopeer noquery')
         with self.patch(
-            grains={'makina.lxc': False, 'makina.docker': False}
+            grains={'makina.lxc': False, 'makina.docker': False},
+            filtered=['mc.*'],
+            kinds=['modules']
         ):
             mc_states.api.invalidate_memoize_cache('localreg_ntp_settings')
             data = self.__('mc_ntp.settings')
             self.assertTrue(data['activated'])
             self.assertTrue(data['defaults']['NTPSYNC'] != '"no"')
         with self.patch(
-            grains={'makina.lxc': True, 'makina.docker': False}
+            grains={'makina.lxc': True, 'makina.docker': False},
+            filtered=['mc.*'],
+            kinds=['modules']
         ):
             mc_states.api.invalidate_memoize_cache('localreg_ntp_settings')
             data = self.__('mc_ntp.settings')
             self.assertFalse(data['activated'])
             self.assertTrue(data['defaults']['NTPSYNC'] == '"no"')
         with self.patch(
-            grains={'makina.lxc': True, 'makina.docker': True}
+            grains={'makina.lxc': True, 'makina.docker': True},
+            filtered=['mc.*'],
+            kinds=['modules']
         ):
             mc_states.api.invalidate_memoize_cache('localreg_ntp_settings')
             data = self.__('mc_ntp.settings')

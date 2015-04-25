@@ -233,7 +233,7 @@ class _ModuleCase(unittest.TestCase):
         self.reset()
         mc_states.tests.utils.test_teardown()
 
-    def patch(self, force_load=True, **kwargs):
+    def patch(self, force_load=True, kinds=None, **kwargs):
         '''
         opts
             overriden opts
@@ -284,7 +284,9 @@ class _ModuleCase(unittest.TestCase):
         for opt in self.contextual:
             overriden = kwargs.get(opt, {})
             tpatchs[opt] = patch.dict(getattr(self, opt+'_'), overriden)
-        for kind in self.dunders_:
+        if not kinds:
+            kinds = [a for a in self.dunders_]
+        for kind in kinds:
             mods = self.dunders_[kind]
             # force lazyloader to load all
             if force_load:
