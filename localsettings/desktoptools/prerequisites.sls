@@ -15,24 +15,30 @@ chrome-base:
       - mc_proxy: ms-desktoptools-pkgm-pre
     - watch_in:
       - mc_proxy: ms-desktoptools-pkgm-post
+
 desktop-pkgs:
   pkg.latest:
     - pkgs:
+      # office
       - gimp
       - firefox
       - thunderbird
       - libreoffice
       - vlc
       - smplayer
-      - aircrack-ng
       - google-chrome-unstable
+      - pinentry
+      - enigmail
+      - burp
+      - mumble
+      - skype
+      - skype-bin
+      # dev/net
       - corkscrew
       - proxytunnel
       - kcachegrind
       - golang
-      - enigmail
-      - pinentry
-      - burp
+      - aircrack-ng
     - watch:
       - mc_proxy: ms-desktoptools-pkg-pre
     - watch_in:
