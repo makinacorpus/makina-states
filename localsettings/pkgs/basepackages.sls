@@ -97,6 +97,9 @@ sys-pkgs:
       - lsof
       - mlocate
       - psmisc
+      - debootstrap
+      - mailutils
+      - gnupg
       - pwgen
       - virt-what
       - python
@@ -116,7 +119,7 @@ sys-pkgs:
       - debconf-utils
       - dstat
       {%- endif %}
-# too much consuming     
+# too much consuming
 #      - atop
 #      - vnstat
 
@@ -150,6 +153,7 @@ net-pkgs:
     - pkgs:
       - wget
       - curl
+      - irssi
       - dnsutils
       - net-tools
       - rsync

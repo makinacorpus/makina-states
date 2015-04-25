@@ -64,6 +64,7 @@ def registry():
             'travis': {'active': False},
             'vagrantvm': {'active': False},
             'lxccontainer': {'active': False},
+            'laptop': {'active': False},
             'dockercontainer': {'active': False}}
         reg_nt[DEFAULT_NT] = {'active': True}
         for nt in [a for a in reg_nt]:
