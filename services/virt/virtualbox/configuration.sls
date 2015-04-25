@@ -19,7 +19,7 @@ virtualbox-conf-{{f}}:
     - template: "{{template}}"
     {%endif%}
     - watch:
-      - mc_proxy: virtualbox-pre-conf
+      - mc_proxy: virtualbox-pre-install
     - watch_in:
-      - mc_proxy: virtualbox-post-conf
+      - mc_proxy: virtualbox-post-install
 {% endfor %}
