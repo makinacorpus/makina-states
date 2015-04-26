@@ -12,10 +12,9 @@ mc_cloud_docker / docker registry for compute nodes
 
 # Import python libs
 import logging
-import mc_states.api
+import os
 
 from mc_states import saltapi
-from salt.utils.odict import OrderedDict
 
 _errmsg = saltapi._errmsg
 __name = 'mc_cloud_docker'
@@ -37,7 +36,13 @@ def is_docker():
     except (IOError, OSError):
         docker = False
     if not docker:
-        docker = bool(__grains__.get('makina.docker'))
+        if os.path.exists('.dockerinit'):
+            docker = True
+    if not docker:
+        try:
+            docker = bool(__grains__.get('makina.docker'))
+        except (ValueError, NameError, IndexError):
+            pass
     return docker
 
 

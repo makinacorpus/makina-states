@@ -42,7 +42,6 @@ after-ubuntu-pkg-install-proxy:
 ubuntu-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
-      - apport
       - debian-archive-keyring
       - debian-keyring
       - language-pack-en
@@ -55,8 +54,82 @@ ubuntu-pkgs:
       - ubuntu-extras-keyring
       {% endif %}
       - ubuntu-keyring
+      # light version of ubuntu-minimal
+      {% if not salt['mc_nodetypes.is_container']() %}
       - ubuntu-minimal
+      - apport
+      {% else %}
+      # those are harmful packages in a generic container context
+      # - whiptail
+      # - udev
+      # - makedev
+      # - initramfs-tools
+      # - kbd
+      # - kmod
+      # - ureadahead
+      - adduser
+      - apt
+      - apt-utils
+      - console-setup
+      - debconf
+      - debconf-i18n
+      - ifupdown
+      - iproute2
+      - iputils-ping
+      - locales
+      - lsb-release
+      - mawk
+      - net-tools
+      - netbase
+      - netcat-openbsd
+      - ntpdate
+      - passwd
+      - procps
+      - python3
+      - resolvconf
+      - rsyslog
+      - sudo
+      - tzdata
+      - vim-tiny
+      {% endif %}
+      # light version of ubuntu-standard
+      {% if not salt['mc_nodetypes.is_container']() %}
       - ubuntu-standard
+      {% else %}
+      # those are harmful packages in a generic container context
+      #- command-not-found
+      #- friendly-recovery
+      #- dmidecode
+      #- pciutils
+      #- usbutils
+      #- apparmor
+      #- irqbalance
+      #- plymouth
+      #- plymouth-theme-ubuntu-text
+      - dmidecode
+      - busybox-static
+      - cpio
+      - dosfstools
+      - ed
+      - file
+      - ftp
+      - iptables
+      - language-selector-common
+      - logrotate
+      - mime-support
+      - systemd-sysv
+      - time
+      - apt-transport-https
+      - iputils-tracepath
+      - mtr-tiny
+      - ntfs-3g
+      - ppp
+      - pppconfig
+      - pppoeconf
+      - ufw
+      - update-manager-core
+      - uuid-runtime
+      {% endif %}
 {%- endif %}
 
 sys-pkgs:
@@ -68,6 +141,7 @@ sys-pkgs:
       - lvm2
       - smartmontools
       - zerofree
+      - strace
       - ncdu
       - xfsprogs
       - mc
@@ -112,6 +186,7 @@ sys-pkgs:
       - tzdata
       - tree
       - unzip
+      - nano
       - vim
       - zip
       {% if grains['os_family'] == 'Debian' -%}
@@ -163,6 +238,7 @@ net-pkgs:
       - whois
       {% if salt['mc_controllers.mastersalt_mode']() %}
       - openssh-server
+      - openssh-client
       - ethtool
       - ifenslave-2.6
       - iftop

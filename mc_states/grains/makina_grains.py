@@ -17,7 +17,10 @@ makina.devhost_num
 import os
 import subprocess
 
-from mc_states.modules.mc_lxc import (
+
+from mc_states.modules.mc_cloud_docker import (
+    is_docker)
+from mc_states.modules.mc_cloud_lxc import (
     is_lxc)
 
 
@@ -46,11 +49,8 @@ def get_makina_grains():
         'makina.default_route': {},
         'makina.routes': [],
     }
-    if os.path.exists('.dockerinit'):
-        grains['makina.docker'] = True
     grains['makina.lxc'] = is_lxc()
-    if os.path.exists('/.dockerinit'):
-        grains['makina.docker'] = True
+    grains['makina.docker'] = is_docker()
     if os.path.exists('/var/log/upstart'):
         grains['makina.upstart'] = True
     num = _devhost_num()

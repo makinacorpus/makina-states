@@ -1167,7 +1167,9 @@ recap_(){
     fi
     bs_log "DATE: ${CHRONO}"
     bs_log "LOCAL_SALT_MODE: $(get_local_salt_mode)"
-    bs_log "LOCAL_MASTERSALT_MODE: $(get_local_mastersalt_mode)"
+    if [ "x${IS_MASTERSALT}" != "x" ];then
+        bs_log "LOCAL_MASTERSALT_MODE: $(get_local_mastersalt_mode)"
+    fi
     bs_log "SALT_NODETYPE: $(get_salt_nodetype)"
     if [ "x${SALT_REATTACH}" != "x" ];then
         bs_log "-> SaltCloud mode"

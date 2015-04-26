@@ -25,8 +25,10 @@ etc-init-lxc-setup:
     - watch_in:
       - mc_proxy: makina-lxc-proxy-cfg
 
-{% set extra_confs = {'/usr/bin/ms-lxc-setup.sh': {}, 
-                      '/usr/bin/ms-lxc-stop.sh': {}} %}
+{% set extra_confs = {'/usr/bin/ms-lxc-setup.sh': {"mode": "755"}, 
+                      '/etc/systemd/service/lxc-stop.service': {"mode": "644"},
+                      '/etc/systemd/service/lxc-setup.service': {"mode": "644"},
+                      '/usr/bin/ms-lxc-stop.sh': {"mode": "755"}} %}
 {% for f, fdata in extra_confs.items() %}
 {% set template = fdata.get('template', 'jinja') %}
 lxc-conf-{{f}}:
@@ -36,18 +38,17 @@ lxc-conf-{{f}}:
     - mode: "{{fdata.get('mode', 750)}}"
     - user: "{{fdata.get('user', 'root')}}"
     - group:  "{{fdata.get('group', 'root')}}"
-    {% if data.get('makedirs', True) %}
+    {% if fdata.get('makedirs', True) %}
     - makedirs: true
     {% endif %}
     {% if template %}
     - template: "{{template}}"
     {%endif%}
     - watch:
-      - mc_proxy: lxc-pre-conf
+      - mc_proxy: makina-lxc-proxy-cfg
     - watch_in:
-      - mc_proxy: lxc-post-conf
+      - mc_proxy: makina-lxc-proxy-dep
 {% endfor %}
-{% endif %} 
 
 lxc-cleanup:
   file.managed:

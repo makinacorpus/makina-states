@@ -1,0 +1,11 @@
+# MANAGED VIA SALT -- DO NOT EDIT
+[Unit]
+Description=lxc-stop
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ms-lxc-stop.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target 

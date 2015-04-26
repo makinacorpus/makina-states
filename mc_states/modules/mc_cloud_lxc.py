@@ -33,6 +33,9 @@ def vt():
 
 def is_lxc():
     """
+    Return true if we find a system or grain flag
+    that explicitly shows us we are in a LXC context
+
     in case of a container, we have the container name in cgroups
     else, it is equal to /
 
@@ -63,11 +66,16 @@ def is_lxc():
     try:
         cgroups = open('/proc/1/cgroup').read().splitlines()
         lxc = not '/' == [a.split(':')[-1]
-                          for a in cgroups if ':cpu:' in a][-1]
+                          for a in cgroups
+                          if ':cpu:' in a or
+                          ':cpuset:' in a][-1]
     except Exception:
         lxc = False
     if not lxc:
-        lxc = bool(__grains__.get('makina.lxc'))
+        try:
+            lxc = bool(__grains__.get('makina.lxc'))
+        except (ValueError, NameError, IndexError):
+            pass
     return lxc
 
 
