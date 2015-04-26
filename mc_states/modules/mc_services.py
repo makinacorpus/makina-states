@@ -70,6 +70,9 @@ def registry():
         binden = _bindEn(__salt__)
         rsyslogen = _rsyslogEn(__grains__)
         ulogden = _ulogdEn(__salt__)
+        ntp_u = False
+        if __salt__['mc_nodetypes.is_container']():
+            ntp_u = True
         data = {'backup.bacula-fd': {'active': False},
                 'backup.burp.server': {'active': False},
                 'backup.burp.client': {'active': False},
@@ -77,6 +80,7 @@ def registry():
                 'log.rsyslog': {'force': True, 'active': rsyslogen},
                 'log.ulogd': {'force': True, 'active': ulogden},
                 'base.ntp': {'force': True, 'active': ntpen},
+                'base.ntp.uninstall': {'active': ntp_u},
                 'base.ssh': {'force': True, 'active': sshen},
                 'dns.dhcpd': {'active': False},
                 'dns.bind': {'force': True, 'active': binden},
