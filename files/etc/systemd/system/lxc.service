@@ -1,7 +1,7 @@
 [Unit]
 Description=LXC Container Initialization and Autoboot Code
 After=syslog.target network.target
-Wants=lxc-net.service,lxc-net-makina.service
+Wants=lxc-net.service lxc-net-makina.service
 
 [Service]
 Type=oneshot

@@ -132,6 +132,7 @@ def registry():
             data.update({
                 'backup.burp.client': {'active': True},
                 'virt.virtualbox': {'active': True},
+                'virt.docker': {'active': True},
                 'virt.lxc': {'active': True},
                 'virt.kvm': {'active': True}})
         data = __salt__[

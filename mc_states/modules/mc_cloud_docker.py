@@ -57,11 +57,17 @@ def vt_default_settings(cloudSettings, imgSettings):
         _s['mc_cloud_vm.vt_default_settings'](cloudSettings, imgSettings), {
             'vt': VT,
             'host_confs': {
+                '/etc/systemd/system/docker.socket': {
+                    "mode": "644"},
+                '/etc/systemd/system/docker.service': {
+                    "mode": "644"},
+                '/etc/systemd/system/docker-net-makina.service': {
+                    "mode": "644"},
                 '/etc/default/docker-net-makina': {},
                 '/etc/dnsmasq.d/docker0': {},
                 '/etc/dnsmasq.d/docker1': {},
                 '/etc/reset-net-bridges': {},
-                '/etc/docker-net-makina.sh': {}},
+                '/usr/bin/docker-net-makina.sh': {}},
             'defaults': {'gateway': '10.7.0.1',
                          'network': '10.7.0.0',
                          'bridge': 'docker1',

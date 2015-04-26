@@ -1,6 +1,6 @@
 {%- set vmdata = salt['mc_cloud_vm.settings']() %}
 {%- set data = vmdata.vts.docker %}
-{% set extra_confs = {} %} 
+{% set extra_confs = {} %}
 include:
   - makina-states.services.virt.docker.hooks
   - makina-states.services.virt.docker.services
@@ -8,17 +8,33 @@ include:
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {% if grains['os'] in ['Ubuntu'] -%}
 {% set extra_confs = {'/etc/init/docker-net-makina.conf': {}} %}
-
 {% elif grains['os'] in ['Debian'] -%}
 {% set extra_confs = {'/etc/init.d/docker-net-makina': {}} %}
-# assume systemd
-{% else %}
-{% set extra_confs = {'/etc/systemd/system/docker-net-makina.service': {"mode": "644"}} %}
 {% endif%}
 
 {% set extra_confs = salt['mc_utils.copy_dictupdate'](
         data['host_confs'],
         extra_confs) %}
+
+{# recently on ubuntu systemd units are disabled for
+   docker, wtf ... #}
+
+docker-remove-symlinks2:
+  file.absent:
+    - name: /etc/systemd/system/docker.service
+    - onlyif: test -h /etc/systemd/system/docker.service
+    - watch:
+      - mc_proxy: docker-pre-conf
+    - watch_in:
+      - mc_proxy: docker-post-conf
+docker-remove-symlinks1:
+  file.absent:
+    - name: /etc/systemd/system/docker.socket
+    - onlyif: test -h /etc/systemd/system/docker.socket
+    - watch:
+      - mc_proxy: docker-pre-conf
+    - watch_in:
+      - mc_proxy: docker-post-conf
 
 {% for f, fdata in extra_confs.items() %}
 {% set template = fdata.get('template', 'jinja') %}
@@ -36,6 +52,8 @@ docker-conf-{{f}}:
     - template: "{{template}}"
     {%endif%}
     - watch:
+      - file: docker-remove-symlinks1
+      - file: docker-remove-symlinks2
       - mc_proxy: docker-pre-conf
     - watch_in:
       - mc_proxy: docker-post-conf

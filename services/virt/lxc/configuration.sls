@@ -18,8 +18,8 @@ include:
 {% do extra_confs.update({
   '/usr/bin/ms-lxc-setup.sh': {},
   '/usr/bin/ms-lxc-stop.sh': {},
-  '/etc/systemd/system/lxc.service': {mode: "644"},
-  '/etc/systemd/system/lxc-net-makina.service': {mode: "644"}}) %}
+  '/etc/systemd/system/lxc.service': {'mode': "644"},
+  '/etc/systemd/system/lxc-net-makina.service': {'mode': "644"}}) %}
 
 {% set extra_confs = salt['mc_utils.copy_dictupdate'](
   data['host_confs'], extra_confs) %}

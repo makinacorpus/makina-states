@@ -15,7 +15,6 @@ lxc-other-svc:
 
 lxc-services-enabling:
   service.running:
-    - reload: true
     - enable: true
     - names:
       - lxc
