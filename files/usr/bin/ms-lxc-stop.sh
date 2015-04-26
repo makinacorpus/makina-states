@@ -15,4 +15,5 @@ if [ -f /sbin/lxc-cleanup.sh ];then
     chmod +x /sbin/lxc-cleanup.sh || /bin/true
     /sbin/lxc-cleanup.sh || /bin/true
 fi
+echo hura>/test
 # vim:set et sts=4 ts=4 tw=80:

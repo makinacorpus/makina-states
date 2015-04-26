@@ -1,6 +1,10 @@
 # MANAGED VIA SALT -- DO NOT EDIT
 [Unit]
 Description=lxc-setup
+After=sysinit.target
+DefaultDependencies=no
+Before=base.target
+
 
 [Service]
 Type=oneshot
@@ -8,4 +12,4 @@ ExecStart=/usr/bin/ms-lxc-setup.sh
 RemainAfterExit=yes
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=base.target

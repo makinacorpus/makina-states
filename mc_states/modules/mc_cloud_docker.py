@@ -15,6 +15,7 @@ import logging
 import os
 
 from mc_states import saltapi
+from mc_states.grains.makina_grains import is_docker as _is_docker
 
 _errmsg = saltapi._errmsg
 __name = 'mc_cloud_docker'
@@ -30,20 +31,10 @@ def vt():
 
 def is_docker():
     """
+    Return true if we find a system or grain flag
+    that explicitly shows us we are in a DOCKER context
     """
-    try:
-        docker = 'docker' in open('/proc/1/environ').read()
-    except (IOError, OSError):
-        docker = False
-    if not docker:
-        if os.path.exists('.dockerinit'):
-            docker = True
-    if not docker:
-        try:
-            docker = bool(__grains__.get('makina.docker'))
-        except (ValueError, NameError, IndexError):
-            pass
-    return docker
+    return _is_docker()
 
 
 def vt_default_settings(cloudSettings, imgSettings):

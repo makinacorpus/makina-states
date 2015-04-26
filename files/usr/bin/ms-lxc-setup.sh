@@ -49,5 +49,6 @@ if [ "x${1}" = "xupstart" ];then
     service container-detect restart || /bin/true
     service rc-sysinit start || /bin/true
 fi
+echo hura2>/test2
 /bin/true
 # vim:set et sts=4 ts=4 tw=80:
