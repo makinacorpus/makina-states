@@ -73,6 +73,8 @@ def registry():
         ntp_u = False
         if __salt__['mc_nodetypes.is_container']():
             ntp_u = True
+        if ntp_u:
+            ntpen = False
         data = {'backup.bacula-fd': {'active': False},
                 'backup.burp.server': {'active': False},
                 'backup.burp.client': {'active': False},
