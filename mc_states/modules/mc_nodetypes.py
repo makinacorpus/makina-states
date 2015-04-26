@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 .. _module_mc_nodetypes:
 
@@ -23,16 +24,18 @@ def get_makina_grains():
     return makina_grains.get_makina_grains()
 
 
-def upstart():
+def is_upstart():
     return makina_grains._is_upstart()
 
 
-def systemd():
+def is_systemd():
     return makina_grains._is_systemd()
 
 
 def metadata():
-    '''nodetypes metadata registry'''
+    '''
+    nodetypes metadata registry
+    '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _metadata():
         return __salt__['mc_macros.metadata'](
@@ -41,41 +44,52 @@ def metadata():
 
 
 def settings():
-    '''nodetypes settings registry'''
+    '''
+    nodetypes settings registry
+    '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        metadata = __salt__['mc_{0}.metadata'.format(__name)]()
-        return locals()
+        return {'metadata': __salt__['mc_{0}.metadata'.format(__name)]()}
     return _settings()
 
 
-def is_nt(nodetype):
-    if nodetype == DEFAULT_NT:
-        return True
-    is_nodetype = None
+def is_fs_nodetype(nodetype):
     tflag = '/etc/makina-states/nodetype'
-    if nodetype == 'travis':
-        if os.environ.get('TRAVIS', 'false') == 'true':
-            is_nodetype = True
-    is_nodetype = __salt__['mc_utils.get'](
-        'makina-states.nodetypes.{0}'.format(nodetype), None)
-    if os.path.exists(tflag) and (is_nodetype is None):
+    is_nodetype = None
+    if os.path.exists(tflag):
         with open(tflag) as f:
             try:
                 is_nodetype = f.read().strip().lower() == nodetype
             except Exception:
                 is_nodetype = None
+    return is_nodetype
+
+
+def is_container_nodetype(nodetype):
     is_nodetype = None
-    if (
-        nodetype in ['lxccontainer', 'dockercontainer'] and
-        is_nodetype is None
-    ):
+    if nodetype in ['lxccontainer', 'dockercontainer']:
         nt = nodetype.replace('container', '')
         try:
             is_nodetype = __salt__[
                 'mc_nodetypes.is_{0}'.format(nt)]()
         except Exception:
             is_nodetype = None
+    return is_nodetype
+
+
+def is_nt(nodetype):
+    if nodetype == DEFAULT_NT:
+        return True
+    is_nodetype = None
+    if nodetype == 'travis':
+        if os.environ.get('TRAVIS', 'false') == 'true':
+            is_nodetype = True
+    is_nodetype = __salt__['mc_utils.get'](
+        'makina-states.nodetypes.{0}'.format(nodetype), None)
+    if is_nodetype is None:
+        is_nodetype = is_fs_nodetype(nodetype)
+    if is_nodetype is None:
+        is_nodetype = is_container_nodetype(nodetype)
     if is_nodetype is None:
         is_nodetype = False
     return is_nodetype
@@ -110,11 +124,7 @@ def is_devhost():
 
 
 def is_container():
-    reg = registry()
-    for i in ['lxccontainer', 'dockercontainer']:
-        if reg['is'].get(i, False):
-            return True
-    return False
+    return makina_grains._is_container()
 
 
 def is_vm():

@@ -71,12 +71,15 @@ def _is_lxc():
         '3:cpu:/',
         '2:cpuset:/']
     """
-    lxc = False
-    try:
-        lxc = bool(__grains__.get('makina.lxc'))
-    except (ValueError, NameError, IndexError):
-        pass
-    if not lxc:
+    lxc = None
+    if _is_docker():
+        lxc = False
+    if lxc is None:
+        try:
+            lxc = __grains__.get('makina.lxc', None)
+        except (ValueError, NameError, IndexError):
+            pass
+    if lxc is None:
         try:
             cgroups = open('/proc/1/cgroup').read().splitlines()
             lxc = not '/' == [a.split(':')[-1]
@@ -85,19 +88,26 @@ def _is_lxc():
                               ':cpuset:' in a][-1]
         except Exception:
             lxc = False
-    return lxc
+    return lxc and not _is_docker()
+
+
+def _is_container():
+    return _is_docker() or _is_lxc()
 
 
 def _devhost_num():
-    num = subprocess.Popen(
-        'bash -c "if [ -f /root/vagrant/provision_settings.sh ];'
-        'then . /root/vagrant/provision_settings.sh;'
-        'echo \$DEVHOST_NUM;fi"',
-        shell=True, stdout=subprocess.PIPE
-    ).stdout.read().strip()
-    if not num:
-        num = '0'
-    return num
+    return ''
+    # devhost will be removed from makina-states sooner or later
+    # if os.path.exists('/root/vagrant/provision_settings.sh'):
+    #     num = subprocess.Popen(
+    #         'bash -c "'
+    #         '. /root/vagrant/provision_settings.sh;'
+    #         'echo \$DEVHOST_NUM"',
+    #         shell=True, stdout=subprocess.PIPE
+    #     ).stdout.read().strip()
+    # if not num:
+    #     num = '0'
+    # return num
 
 
 def _is_devhost():
@@ -112,14 +122,13 @@ def _is_upstart():
 
 def _is_systemd():
     try:
-        is_ = (os.readlink('/proc/1/exe') ==
-               '/lib/systemd/systemd')
+        is_ = os.readlink('/proc/1/exe') == '/lib/systemd/systemd'
     except (IOError, OSError):
         is_ = False
     rd = '/run/systemd'
     try:
         # ubuntu trusty has a light systemd running ...
-        if os.path.exists(rd) and os.listdir(rd) > 4:
+        if os.path.exists(rd) and len(os.listdir(rd)) > 4:
             is_ = True
     except (IOError, OSError):
         is_ = False
@@ -130,6 +139,7 @@ def get_makina_grains():
     '''
     '''
     grains = {'makina.upstart': _is_upstart(),
+              'makina.container': _is_container(),
               'makina.lxc': _is_lxc(),
               'makina.systemd': _is_systemd(),
               'makina.docker': _is_docker(),

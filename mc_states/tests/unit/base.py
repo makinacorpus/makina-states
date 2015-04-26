@@ -55,7 +55,7 @@ class _ModuleCase(unittest.TestCase):
                      'queues',
                      'tops',
                      'roster',
-                     'grains_mods',
+                     'grains',
                      'fileserver',
                      'renderers',
                      'auth',
@@ -109,6 +109,9 @@ class _ModuleCase(unittest.TestCase):
 
     def get_opts(self):
         opts = {'root': self.root,
+                'root_dir': self.root,
+                'makina-states.localsettings.locations.root': self.root,
+                'makina-states.localsettings.locations.root_dir': self.root,
                 'testroot': '{root}',
                 'ms_conf': '{root}/etc/makina-states',
                 'mms_conf': '{root}/etc/salt/makina-states',
@@ -356,6 +359,10 @@ class _ModuleCase(unittest.TestCase):
             raise ValueError('cant find a public function to load '
                              '{0}'.format(private_name))
         return func
+
+
+class GrainsCase(_ModuleCase):
+    kind = 'grains'
 
 
 class ModuleCase(_ModuleCase):
