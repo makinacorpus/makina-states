@@ -3,8 +3,7 @@
 Description=lxc-setup
 After=sysinit.target
 DefaultDependencies=no
-Before=base.target
-
+Before=network-online.target
 
 [Service]
 Type=oneshot
@@ -12,4 +11,4 @@ ExecStart=/usr/bin/ms-lxc-setup.sh
 RemainAfterExit=yes
 
 [Install]
-WantedBy=base.target
+WantedBy=network-online.target

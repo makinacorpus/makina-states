@@ -25,7 +25,7 @@ etc-init-lxc-setup:
     - watch_in:
       - mc_proxy: makina-lxc-proxy-cfg
 
-{% set extra_confs = {'/usr/bin/ms-lxc-setup.sh': {"mode": "755"}, 
+{% set extra_confs = {'/usr/bin/ms-lxc-setup.sh': {"mode": "755"},
                       '/etc/systemd/system/lxc-stop.service': {"mode": "644"},
                       '/etc/systemd/system/lxc-setup.service': {"mode": "644"},
                       '/usr/bin/ms-lxc-stop.sh': {"mode": "755"}} %}
@@ -99,3 +99,14 @@ do-lxc-cleanup:
       - mc_proxy: makina-lxc-proxy-cleanup
     - watch_in:
       - mc_proxy: makina-lxc-proxy-end
+
+{% if salt['mc_nodetypes.is_systemd']() and
+      salt['mc_nodetypes.is_container']() %}
+do-lxc-setup-services:
+  service.enabled:
+    - names: [lxc-setup, lxc-stop]
+    - require:
+      - mc_proxy: makina-lxc-proxy-cleanup
+    - require_in:
+      - mc_proxy: makina-lxc-proxy-end
+{% endif %}

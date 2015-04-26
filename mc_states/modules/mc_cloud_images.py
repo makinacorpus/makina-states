@@ -330,6 +330,8 @@ def archive_standalone(container, *args, **kwargs):
                    ' etc/init.d/mastersalt-*'
                    ' etc/init.d/salt-*'
                    ' etc/init/mastersalt-*'
+                   ' etc/systemd/system/mastersalt-*'
+                   ' etc/systemd/system/salt-*'
                    ' etc/init/salt-*'
                    ' etc/{{mastersalt,salt}}'
                    ' srv/{{mastersalt-pillar,pillar}}'
