@@ -8,7 +8,7 @@ fi
 FROZEN_PACKAGES="udev whoopsie ntp fuse grub-common grub-pc grub-pc-bin grub2-common"
 # specific to docker
 if [ "x${is_docker}" != "x" ];then
-    FROZEN_PACKAGES="$FROZEN_PACKAGES resolvconf"
+    FROZEN_PACKAGES="${FROZEN_PACKAGES} resolvconf"
 fi
 for i in ${FROZEN_PACKAGES};do
     echo ${i} hold | dpkg --set-selections || /bin/true

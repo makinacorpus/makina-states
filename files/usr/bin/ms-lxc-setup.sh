@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# run on lxc intialisation to make room for sanitisations...
+export PATH=${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 FAKED="apport acpid udevtrigger udevmount-all"
 # docker specific
 if [ -f "/.dockerinit" ];then
@@ -18,7 +20,9 @@ iface lo inet loopback
 
 EOF
 fi
-mount -t tmpfs none  /dev/shm || /bin/true
+if [ "x$(mount|awk '{print $3}'|egrep "^/dev/shm"|wc -l|sed -e "s/ //g")" = "x0" ];then
+    mount -t tmpfs none /dev/shm || /bin/true
+fi
 if [ -f /sbin/lxc-cleanup.sh ];then
     chmod +x /sbin/lxc-cleanup.sh || /bin/true
     /sbin/lxc-cleanup.sh &2>/dev/null || /bin/true
@@ -42,8 +46,8 @@ if [ "x${1}" = "xupstart" ];then
     for j in mounting mounted all-swaps filesystem virtual-filesystems net-device-up local-filesystems remote-filesystems;do
         /sbin/initctl emit --no-wait $j || /bin/true
     done
+    service container-detect restart || /bin/true
+    service rc-sysinit start || /bin/true
 fi
-service container-detect restart || /bin/true
-service rc-sysinit start || /bin/true
 /bin/true
 # vim:set et sts=4 ts=4 tw=80:
