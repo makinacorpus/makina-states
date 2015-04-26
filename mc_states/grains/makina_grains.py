@@ -18,7 +18,7 @@ import os
 import subprocess
 
 
-def is_docker():
+def _is_docker():
     """
     Return true if we find a system or grain flag
     that explicitly shows us we are in a DOCKER context
@@ -39,7 +39,7 @@ def is_docker():
     return docker
 
 
-def is_lxc():
+def _is_lxc():
     """
     Return true if we find a system or grain flag
     that explicitly shows us we are in a LXC context
@@ -95,6 +95,8 @@ def _devhost_num():
         'echo \$DEVHOST_NUM;fi"',
         shell=True, stdout=subprocess.PIPE
     ).stdout.read().strip()
+    if not num:
+        num = '0'
     return num
 
 
@@ -102,22 +104,38 @@ def _is_devhost():
     return _devhost_num() != ''
 
 
+def _is_upstart():
+    if os.path.exists('/var/log/upstart'):
+        return True
+    return False
+
+
+def _is_systemd():
+    try:
+        is_ = (os.readlink('/proc/1/exe') ==
+               '/lib/systemd/systemd')
+    except (IOError, OSError):
+        is_ = False
+    rd = '/run/systemd'
+    try:
+        # ubuntu trusty has a light systemd running ...
+        if os.path.exists(rd) and os.listdir(rd) > 4:
+            is_ = True
+    except (IOError, OSError):
+        is_ = False
+    return is_
+
+
 def get_makina_grains():
     '''
     '''
-    grains = {
-        'makina.upstart': False,
-        'makina.lxc': False,
-        'makina.docker': False,
-        'makina.devhost_num': '0',
-        'makina.default_route': {},
-        'makina.routes': [],
-    }
-    grains['makina.lxc'] = is_lxc()
-    grains['makina.docker'] = is_docker()
-    if os.path.exists('/var/log/upstart'):
-        grains['makina.upstart'] = True
-    num = _devhost_num()
+    grains = {'makina.upstart': _is_upstart(),
+              'makina.lxc': _is_lxc(),
+              'makina.systemd': _is_systemd(),
+              'makina.docker': _is_docker(),
+              'makina.devhost_num': _devhost_num(),
+              'makina.default_route': {},
+              'makina.routes': []}
     routes = subprocess.Popen(
         'bash -c "netstat -nr"',
         shell=True, stdout=subprocess.PIPE
@@ -139,7 +157,5 @@ def get_makina_grains():
             grains['makina.routes'].append(droute)
         except Exception:
             continue
-    if num:
-        grains['makina.devhost_num'] = num
     return grains
 # vim:set et sts=4 ts=4 tw=80:

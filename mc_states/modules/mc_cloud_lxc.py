@@ -19,7 +19,7 @@ import mc_states.api
 from mc_states import saltapi
 from salt.utils.odict import OrderedDict
 
-from mc_states.grains.makina_grains import is_lxc as _is_lxc
+from mc_states.grains.makina_grains import _is_lxc
 
 _errmsg = saltapi._errmsg
 __name = 'mc_cloud_lxc'

@@ -9,10 +9,26 @@ mc_nodetypes / nodetypes registry
 
 import os
 import mc_states.api
-from  mc_states.grains import makina_grains
+from mc_states.grains import makina_grains
+
 
 __name = 'nodetypes'
 DEFAULT_NT = 'server'
+
+
+def get_makina_grains():
+    '''
+    Expose real time grains
+    '''
+    return makina_grains.get_makina_grains()
+
+
+def upstart():
+    return makina_grains._is_upstart()
+
+
+def systemd():
+    return makina_grains._is_systemd()
 
 
 def metadata():
@@ -57,13 +73,12 @@ def is_nt(nodetype):
         nt = nodetype.replace('container', '')
         try:
             is_nodetype = __salt__[
-                'mc_cloud_{0}.is_{0}'.format(nt)]()
+                'mc_nodetypes.is_{0}'.format(nt)]()
         except Exception:
             is_nodetype = None
     if is_nodetype is None:
         is_nodetype = False
     return is_nodetype
-
 
 
 def registry():

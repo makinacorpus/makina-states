@@ -15,7 +15,8 @@ import logging
 import os
 
 from mc_states import saltapi
-from mc_states.grains.makina_grains import is_docker as _is_docker
+from mc_states.grains.makina_grains import _is_docker
+
 
 _errmsg = saltapi._errmsg
 __name = 'mc_cloud_docker'
