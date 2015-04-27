@@ -1,4 +1,5 @@
-{% set data = salt['mc_utils.json_load'](data) %}
+# {% set data = salt['mc_ulogd.settings']() %}
+
 /var/log/ulog/*.log /var/log/ulog/*.pcap {
     missingok
     compress

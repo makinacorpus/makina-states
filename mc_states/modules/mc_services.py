@@ -18,10 +18,8 @@ __name = 'services'
 
 
 def _bindEn(__salt__):
-    nodetypes_registry = __salt__['mc_nodetypes.registry']()
-    return not (
-        ('dockercontainer' in nodetypes_registry['actives'])
-        or ('lxccontainer' in nodetypes_registry['actives']))
+    is_container = __salt__['mc_nodetypes.is_container']()
+    return not is_container
 
 
 def _rsyslogEn(__grains__):
@@ -29,17 +27,19 @@ def _rsyslogEn(__grains__):
 
 
 def _ulogdEn(__salt__):
-    nodetypes_registry = __salt__['mc_nodetypes.registry']()
-    return (
-        ('dockercontainer' in nodetypes_registry['actives'])
-        or ('lxccontainer' in nodetypes_registry['actives']))
+    is_container = __salt__['mc_nodetypes.is_container']()
+    ret = False
+    if (
+        __grains__['os'].lower() in ['ubuntu'] and
+        __grains__.get('osrelease') >= '13.10'
+    ):
+        ret = is_container
+    return ret
 
 
 def _ntpEn(__salt__):
-    nodetypes_registry = __salt__['mc_nodetypes.registry']()
-    return not (
-        ('dockercontainer' in nodetypes_registry['actives'])
-        or ('lxccontainer' in nodetypes_registry['actives']))
+    is_container = __salt__['mc_nodetypes.is_container']()
+    return not is_container
 
 
 def metadata():
