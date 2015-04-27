@@ -14,7 +14,7 @@ env:
 # - install the environment for further unit/integration tests
 install: [sudo -E ./_scripts/travis_install.sh]
 script: sudo -E ./_scripts/travis_test.sh
-after_success: [sudo -E /srv/mastersalt/makina-states/_scripts/travis_aftersuccess.sh]
+after_success: [/usr/bin/sudo -E /srv/mastersalt/makina-states/_scripts/travis_aftersuccess.sh]
 #too noisy
 #notifications:
 #  irc:
