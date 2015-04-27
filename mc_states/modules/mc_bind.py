@@ -165,6 +165,7 @@ def settings():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         locs = __salt__['mc_locations.settings']()
+        dns = __salt__['mc_dns.settings']()
         os_defaults = __salt__['grains.filter_by']({
             'Debian': {
                 'pkgs': ['bind9',
@@ -216,7 +217,6 @@ def settings():
             grain='os_family', default='Debian')
         defaults = __salt__['mc_utils.dictupdate'](
             os_defaults, {
-                'default_dnses': [],
                 'log_dir': '/var/log/named',
                 "rndc_conf": "{conf_dir}/rndc.conf".format(**locs),
                 "rndc_key": "{conf_dir}/bind/rndc.key".format(**locs),
@@ -326,6 +326,8 @@ def settings():
                 ]),
                 #
                 'zones': OrderedDict(),
+                # retrocompat
+                'default_dnses': dns['default_dnses'],
             }
         )
         defaults['extra_dirs'] = [
@@ -344,10 +346,7 @@ def settings():
             if a not in data['views']:
                 data['views'].append(a)
         for k in data:
-            if (
-                k.startswith('zones.')
-                or k.startswith('views.')
-            ):
+            if k.startswith('zones.') or k.startswith('views.'):
                 del data[k]
         for k in [a for a in data['servers']]:
             adata = data['servers'][k]
@@ -362,10 +361,6 @@ def settings():
             if 'secret' not in kdata:
                 raise ValueError(
                     'no secret for {0}'.format(k))
-        for i in ['127.0.0.1', '8.8.8.8', '4.4.4.4']:
-            if i not in data['default_dnses']:
-                data['default_dnses'].append(i)
-        data['default_dnses'] = __salt__['mc_utils.uniquify'](data['default_dnses'])
         return data
     return _settings()
 
@@ -519,8 +514,8 @@ def get_zone(zone):
                 views.append(v)
     zdata.setdefault('template', True)
     if (
-        zdata['server_type'] == 'master'
-        and zdata['notify'] is None
+        zdata['server_type'] == 'master' and
+        zdata['notify'] is None
     ):
         zdata['notify'] = True
         if zdata['slaves']:
@@ -528,8 +523,8 @@ def get_zone(zone):
                 if slv not in zdata["allow_transfer"]:
                     zdata["allow_transfer"].append(slv)
     if (
-        zdata['server_type'] == 'slave'
-        and zdata['notify'] is None
+        zdata['server_type'] == 'slave' and
+        zdata['notify'] is None
     ):
         zdata['notify'] = False
     if not zdata['rrs']:
@@ -538,9 +533,9 @@ def get_zone(zone):
         if zdata['source'] is None:
             zdata['source'] = defaults['zone_template']
     if (
-        zdata['server_type'] == 'slave'
-        and zdata['template']
-        and 'masters' not in zdata
+        zdata['server_type'] == 'slave' and
+        zdata['template'] and
+        'masters' not in zdata
     ):
         raise ValueError('no masters for {0}'.format(zone))
     zdata.setdefault('fpath',

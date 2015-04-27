@@ -27,8 +27,8 @@ SCRIPTNAME={{salt_data['init_d']}}/$NAME
 # Read configuration variable file if it is present
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
-. /lib/init/vars.sh
-. /lib/lsb/init-functions
+[ -f /lib/init/vars.sh ] && . /lib/init/vars.sh
+[ -f /lib/lsb/init-functions ] && . /lib/lsb/init-functions
 
 do_start() {
     pid=$(pidofproc -p $PIDFILE $DAEMON)

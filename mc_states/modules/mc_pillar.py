@@ -125,8 +125,8 @@ def get_db():
 def has_db():
     db = get_db()
     if (
-        (os.path.splitext(db)[1][1:] in SUPPORTED_DB_FORMATS)
-        and db.startswith('/srv')
+        (os.path.splitext(db)[1][1:] in SUPPORTED_DB_FORMATS) and
+        db.startswith('/srv')
     ):
         return os.path.exists(db)
     else:
@@ -222,7 +222,8 @@ def get_db_infrastructure_maps(ttl=FIVE_MINUTES):
         lbms = __salt__[__name + '.query']('baremetal_hosts', {})
         bms = OrderedDict()
         vms = OrderedDict()
-        non_managed_hosts = __salt__[__name + '.query']('non_managed_hosts', {})
+        non_managed_hosts = __salt__[
+            __name + '.query']('non_managed_hosts', {})
         cloud_compute_nodes = []
         cloud_vms = []
         for lbm in lbms:
@@ -230,8 +231,8 @@ def get_db_infrastructure_maps(ttl=FIVE_MINUTES):
         for vt, targets in __salt__[__name + '.query']('vms', {}).items():
             for target, lvms in targets.items():
                 if (
-                    target not in non_managed_hosts
-                    and target not in cloud_compute_nodes
+                    target not in non_managed_hosts and
+                    target not in cloud_compute_nodes
                 ):
                     cloud_compute_nodes.append(target)
                 vts = bms.setdefault(target, [])
@@ -249,18 +250,18 @@ def get_db_infrastructure_maps(ttl=FIVE_MINUTES):
         standalone_hosts = {}
         for i in bms:
             if (
-                i not in cloud_compute_nodes
-                and i not in non_managed_hosts
+                i not in cloud_compute_nodes and
+                i not in non_managed_hosts
             ):
                 standalone_hosts.setdefault(i, {})
         data = {'bms': bms,
                 'hosts': sorted(
                     __salt__['mc_utils.uniquify'](
-                        [a for a in bms]
-                        + [a for a in vms]
-                        + [a for a in non_managed_hosts]
-                        + [a for a in cloud_compute_nodes]
-                        + [a for a in standalone_hosts]
+                        [a for a in bms] +
+                        [a for a in vms] +
+                        [a for a in non_managed_hosts] +
+                        [a for a in cloud_compute_nodes] +
+                        [a for a in standalone_hosts]
                     )),
                 'standalone_hosts': standalone_hosts,
                 'cloud_compute_nodes': cloud_compute_nodes,
@@ -422,9 +423,9 @@ def ips_for(fqdn,
             resips = ips_for(fqdn, recurse=recurse, fail_over=True)
         # for upper tld , check the @ RECORD
         if (
-            (not resips)
-            and ((not fqdn.startswith('@'))
-                 and (fqdn.count('.') == 1))
+            (not resips) and
+            ((not fqdn.startswith('@')) and
+             (fqdn.count('.') == 1))
         ):
             resips = ips_for("@" + fqdn, recurse=recurse, fail_over=True)
         if not resips:
@@ -437,9 +438,9 @@ def ips_for(fqdn,
         if fqdn in ignore:
             ignore.pop(ignore.index(fqdn))
     if (
-        data['raw_db_loaded']
-        and (not data['extra_info_loaded'])
-        and (data['extra_info_loading'] is None)
+        data['raw_db_loaded'] and
+        (not data['extra_info_loaded']) and
+        (data['extra_info_loading'] is None)
     ):
         data = load_network_infrastructure()
         resips = ips_for(fqdn,
@@ -504,9 +505,9 @@ def load_raw_network_infrastructure(ttl=FIVE_MINUTES):
                 # is not a vm if this is an host without an entry in
                 # the ip and the vms maps
                 if (
-                    (host not in baremetal_hosts
-                     and host not in cvalues)
-                    and host not in ips
+                    (host not in baremetal_hosts and
+                     host not in cvalues) and
+                    host not in ips
                 ):
                     ahosts.append(host)
             for ahost in ahosts:
@@ -748,7 +749,8 @@ def rr_a(fqdn, fail_over=None, ttl=FIVE_MINUTES):
         ips = ips_for(fqdn, fail_over=fail_over)
         return rr_entry(fqdn, ips)
     cache_key = __name + '.rrs_a_{0}_{1}_{2}'.format(fqdn, fqdn, fail_over)
-    return __salt__['mc_utils.memoize_cache'](_do, [fqdn, fail_over], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [fqdn, fail_over], {}, cache_key, ttl)
 
 
 def whitelisted(dn, ttl=FIVE_MINUTES):
@@ -763,7 +765,8 @@ def whitelisted(dn, ttl=FIVE_MINUTES):
                 w.append(ip)
         return w
     cache_key = __name + '.whitelisted_{0}'.format(dn)
-    return __salt__['mc_utils.memoize_cache'](_do_whitel, [dn], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do_whitel, [dn], {}, cache_key, ttl)
 
 
 def filter_rr_str(all_rrs):
@@ -809,7 +812,8 @@ def rrs_txt_for(domain, ttl=FIVE_MINUTES):
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_txt_for_{0}'.format(domain)
-    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [domain], {}, cache_key, ttl)
 
 
 def rrs_srv_for(domain, ttl=FIVE_MINUTES):
@@ -841,7 +845,8 @@ def rrs_srv_for(domain, ttl=FIVE_MINUTES):
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_srv_for_{0}'.format(domain)
-    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [domain], {}, cache_key, ttl)
 
 
 def get_nss(ttl=FIVE_MINUTES):
@@ -997,7 +1002,8 @@ def get_servername_for(id_or_ip, ttl=TEN_MINUTES):
             if name:
                 return name
     cache_key = __name + '.get_servername_for{0}'.format(id_or_ip)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_or_ip], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [id_or_ip], {}, cache_key, ttl)
 
 
 def get_raw_ns_slaves(id_, dns_servers=None, default=None, ttl=ONE_DAY):
@@ -1021,7 +1027,8 @@ def get_raw_ns_slaves(id_, dns_servers=None, default=None, ttl=ONE_DAY):
             online-dc3-3.makina-corpus.net
     '''
     def _do(id_, dns_servers=None, default=None):
-        managed_dns_zones = __salt__[__name + '.query']('managed_dns_zones', {})
+        managed_dns_zones = __salt__[
+            __name + '.query']('managed_dns_zones', {})
         if id_ not in managed_dns_zones:
             raise ValueError('{0} is not managed'.format(id_))
         if not dns_servers:
@@ -1100,7 +1107,8 @@ def get_nss_for_zone(id_, ttl=ONE_DAY):
         data = {'master': master, 'slaves': slaves}
         return data
     cache_key = __name + '.get_nss_for_zone_{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do_getnssforzone, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do_getnssforzone, [id_], {}, cache_key, ttl)
 
 
 def resolve_ips(name, fail_over=True, dns_query=True, ttl=FIVE_MINUTES):
@@ -1188,7 +1196,8 @@ def get_ns(domain, ttl=FIVE_MINUTES):
     def _do(domain):
         return get_nss_for_zone(domain)[0]
     cache_key = __name + '.get_ns_{0}'.format(domain)
-    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [domain], {}, cache_key, ttl)
 
 
 def get_slaves_zones_for(fqdn, ttl=FIVE_MINUTES):
@@ -1236,7 +1245,8 @@ def rrs_mx_for(domain, ttl=FIVE_MINUTES):
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_mx_for_{0}'.format(domain)
-    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [domain], {}, cache_key, ttl)
 
 
 def rrs_ns_for(domain, ttl=FIVE_MINUTES):
@@ -1271,7 +1281,8 @@ def rrs_ns_for(domain, ttl=FIVE_MINUTES):
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_ns_for_{0}'.format(domain)
-    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [domain], {}, cache_key, ttl)
 
 
 def rrs_a_for(domain, ttl=FIVE_MINUTES):
@@ -1309,9 +1320,8 @@ def rrs_raw_for(domain, ttl=FIVE_MINUTES):
     '''
     def _do(domain):
         # add all A from simple ips
-        db = load_network_infrastructure()
+        load_network_infrastructure()
         rrs_raw = __salt__[__name + '.query']('rrs_raw', {})
-        ips = db['ips']
         all_rrs = OrderedDict()
         domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
                                re.M | re.U | re.S | re.I)
@@ -1324,7 +1334,8 @@ def rrs_raw_for(domain, ttl=FIVE_MINUTES):
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_raw_for_{0}'.format(domain)
-    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [domain], {}, cache_key, ttl)
 
 
 def rrs_cnames_for(domain, ttl=FIVE_MINUTES):
@@ -1333,7 +1344,8 @@ def rrs_cnames_for(domain, ttl=FIVE_MINUTES):
     '''
     def _do(domain):
         db = load_network_infrastructure()
-        managed_dns_zones = __salt__[__name + '.query']('managed_dns_zones', {})
+        managed_dns_zones = __salt__[
+            __name + '.query']('managed_dns_zones', {})
         rrs_ttls = __salt__[__name + '.query']('rrs_ttls', {})
         ipsfo = db['ipsfo']
         ipsfo_map = db['ipsfo_map']
@@ -1364,12 +1376,10 @@ def rrs_cnames_for(domain, ttl=FIVE_MINUTES):
                 if trr.endswith(domain):
                     checks.append(trr)
                     if (
-                        tcname.endswith(domain)
-                        and (
-                            tcname in ips_map
-                            or tcname in ipsfo_map
-                            or tcname in ipsfo
-                        )
+                        tcname.endswith(domain) and (
+                            tcname in ips_map or
+                            tcname in ipsfo_map or
+                            tcname in ipsfo)
                     ):
                         checks.append(tcname)
                 for atest in checks:
@@ -1388,10 +1398,7 @@ def rrs_cnames_for(domain, ttl=FIVE_MINUTES):
                             raise
                 rrs = all_rrs.setdefault(cname, [])
                 dcname = cname
-                if (
-                    (not cname.endswith('.'))
-                    and cname.endswith(domain)
-                ):
+                if cname.endswith(domain) and not cname.endswith('.'):
                     dcname = '{0}.'.format(dcname)
                 ttl = rrs_ttls.get(cname, '')
                 entry = '{0} {1} CNAME {2}'.format(
@@ -1401,7 +1408,8 @@ def rrs_cnames_for(domain, ttl=FIVE_MINUTES):
         rr = filter_rr_str(all_rrs)
         return rr
     cache_key = __name + '.rrs_cnames_for_{0}'.format(domain)
-    return __salt__['mc_utils.memoize_cache'](_do, [domain], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [domain], {}, cache_key, ttl)
 
 
 def serial_for(domain,
@@ -1507,10 +1515,7 @@ def serial_for(domain,
                             failure['date'][:-7], '%Y-%m-%dT%H:%M:%S')
                     except Exception:
                         odate = now
-                    if (
-                        failure['skip']
-                        and (now - odate < t10)
-                    ):
+                    if failure['skip'] and (now - odate < t10):
                         do_skip = True
                         log.error(
                             'nameserver {0}/{1} is skipped 10minutes, too much'
@@ -1666,7 +1671,8 @@ def get_slapd_conf(id_, ttl=ONE_DAY):
         is_slave = is_ldap_slave(id_)
         if is_master and is_slave:
             raise ValueError(
-                'Cant be at the same time master and ldap slave: {0}'.format(id_))
+                'Cant be at the same time'
+                ' master and ldap slave: {0}'.format(id_))
         conf = get_ldap()
         data = OrderedDict()
         if is_master:
@@ -1689,10 +1695,7 @@ def get_slapd_conf(id_, ttl=ONE_DAY):
 
 def is_ldap_slave(id_, ttl=ONE_DAY):
     def _do(id_):
-        if (
-            is_managed(id_)
-            and id_ in get_ldap()['slaves']
-        ):
+        if is_managed(id_) and id_ in get_ldap()['slaves']:
             return True
         return False
     cache_key = __name + '.is_ldap_slave_{0}'.format(id_)
@@ -1701,10 +1704,7 @@ def is_ldap_slave(id_, ttl=ONE_DAY):
 
 def is_ldap_master(id_, ttl=ONE_DAY):
     def _do(id_):
-        if (
-            is_managed(id_)
-            and id_ in get_ldap()['masters']
-        ):
+        if is_managed(id_) and id_ in get_ldap()['masters']:
             return True
         return False
     cache_key = __name + '.is_ldap_master_{0}'.format(id_)
@@ -1909,9 +1909,9 @@ def get_password(id_, user='root', ttl=ONE_DAY, regenerate=False, length=12,
         # the password is not coming from the central database
         # but may be present only in the localdb
         if (
-            (pw is None)
-            or (regenerate and (user not in db_id))
-            or force
+            (pw is None) or
+            (regenerate and (user not in db_id)) or
+            force
         ):
             pw = generate_password(length)
             store = True
@@ -1949,7 +1949,7 @@ def get_passwords(id_, ttl=ONE_DAY):
         pw_reg = __salt__['mc_macros.get_local_registry'](
             'passwords_map', registry_format='pack')
         db_reg = __salt__[__name + '.query']('passwords_map', {})
-        users, crypted, store = [], {}, False
+        users, crypted = [], {}
         pw_id = pw_reg.setdefault(id_, {})
         db_id = db_reg.setdefault(id_, {})
         for users_list in [pw_id, db_id, defaults_users]:
@@ -1984,7 +1984,7 @@ def regenerate_passwords(ids_=None, users=None):
             print pw_id, u
             if users and u not in users:
                 continue
-            pw = get_password(pw_id, u, force=True)
+            get_password(pw_id, u, force=True)
 
 
 def get_ssh_groups(id_=None, ttl=ONE_DAY):
@@ -2061,12 +2061,15 @@ def backup_configuration_for(id_, ttl=ONE_DAY):
         conf_id = _s[__name + '.backup_configuration_type_for'](id_)
         data = OrderedDict()
         if (
-            id_ not in _s[__name + '.query']('non_managed_hosts')
-            and not default_conf_id
+            id_ not in _s[__name + '.query']('non_managed_hosts') and
+            not default_conf_id
         ):
             raise ValueError(
                 'No backup info for {0}'.format(id_))
-        if id_ in _s[__name + '.query']('non_managed_hosts', {}) and not conf_id:
+        if (
+            id_ in _s[__name + '.query']('non_managed_hosts', {}) and
+            not conf_id
+        ):
             conf_id = _s[__name + '.backup_configuration_type_for'](
                 'default')
             # raise ValueError(
@@ -2154,18 +2157,18 @@ def backup_server_settings_for(id_, ttl=TEN_MINUTES):
             [a for a in _s[__name + '.query']('non_managed_hosts', {})
              if a not in manual_hosts])
         bms = [a for a in db['bms']
-               if a not in backup_excluded
-               and get_configuration(a).get('manage_backups', True)]
+               if a not in backup_excluded and
+               get_configuration(a).get('manage_backups', True)]
         vms = [a for a in db['vms']
-               if a not in backup_excluded
-               and get_configuration(a).get('manage_backups', True)]
+               if a not in backup_excluded and
+               get_configuration(a).get('manage_backups', True)]
         cmap = _s[__name + '.query']('backup_configuration_map', {})
         manual_hosts = _s['mc_utils.uniquify']([
             a for a in ([a for a in cmap] + manual_hosts)
-            if a not in backup_excluded
-            and _s[__name + '.ip_for'](a)  # ip is resolvable via our pillar
-            and a not in bms
-            and a not in vms])
+            if a not in backup_excluded and
+            _s[__name + '.ip_for'](a) and  # ip is resolvable via our pillar
+            a not in bms and
+            a not in vms])
         # filter all baremetals and vms if they are tied to this backup
         # server
         server_conf = data.setdefault('server_conf',
@@ -2481,9 +2484,9 @@ def get_supervision_objects_defs(id_):
                              vm, {}).get('additional_ips', [])
                          if a.get('ip', None)]
             if (
-                tipaddr in other_ips
-                and tipaddr != host_ip
-                and vt in ['lxc', 'docker']
+                tipaddr in other_ips and
+                tipaddr != host_ip and
+                vt in ['lxc', 'docker']
             ):
                 # specific ip on lxc, monitor eth1
                 nic_cards.append('eth1')
@@ -3419,7 +3422,7 @@ def get_dns_resolvers(id_, ttl=600):
             conf = []
         for i in conf:
             resolvers.add(i)
-        p = 'makina-states.services.dns.bind.'
+        p = 'makina-states.localsettings.dns.'
         if resolvers:
             rdata[p + 'default_dnses'] = [a for a in resolvers]
         return rdata
@@ -3610,7 +3613,7 @@ def get_cloud_conf(ttl=TEN_MINUTES):
         dvms = rdata.setdefault('vms', OrderedDict())
         dcns = rdata.setdefault('cns', OrderedDict())
         _s = __salt__
-        _settings = _s['mc_cloud.extpillar_settings']()
+        _s['mc_cloud.extpillar_settings']()
         cloud_cn_attrs = _s[__name + '.query']('cloud_cn_attrs', {})
         cloud_vm_attrs = _s[__name + '.query']('cloud_vm_attrs', {})
         supported_vts = _s['mc_cloud_compute_node.get_vts']()
@@ -3762,8 +3765,8 @@ def loaded():
         ret = __pillar__.get(__name + '.loaded', False)
         if ret and (
             True in [(
-                ('extpillar' in a)
-                or ('ext_pillar' in a)
+                ('extpillar' in a) or
+                ('ext_pillar' in a)
             ) for a in fun_names]
         ):
             ret = False

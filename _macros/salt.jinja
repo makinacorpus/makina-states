@@ -687,6 +687,26 @@ salt-{{ data.daemon_name }}-conf:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
       - mc_proxy: dummy-pre-{{ data.daemon_name }}-service-restart
 
+salt-{{ data.daemon_name }}-unit:
+  file.managed:
+    - name: /etc/systemd/system/{{ data.daemon_name }}.service
+    - template: jinja
+    - source:  salt://makina-states/files/etc/systemd/system/salt-{{ data.service_name }}.service
+    - mode: "644"
+    - makedirs: true
+    - saltname: {{ data.name }}
+    - saltconfig: {{ confPrefix }}
+    - context:
+        root: {{ data.msr }}
+        salt_mode: {{data.name}}
+        service_name: {{data.service_name}}
+    - require:
+      - mc_proxy: dummy-{{data.name}}-layout
+    - require_in:
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+
+      - mc_proxy: dummy-pre-{{ data.daemon_name }}-service-restart
+
 {% if grains['os'] == 'Debian' -%}
 salt-{{ data.daemon_name }}-job:
   file.managed:
@@ -694,11 +714,11 @@ salt-{{ data.daemon_name }}-job:
     - template: jinja
     - source:  salt://makina-states/files/etc/init.d/salt-{{ data.service_name }}
     - mode: 755
-    - root: {{ data.msr }}
     - saltname: {{ data.name }}
     - saltconfig: {{ confPrefix }}
     - context:
         salt_mode: {{data.name}}
+        root: {{ data.msr }}
         service_name: {{data.service_name}}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
@@ -714,11 +734,11 @@ salt-{{ data.daemon_name }}-job:
     - name: {{ data.upstart_dir }}/{{ data.daemon_name }}.conf
     - template: jinja
     - source:  salt://makina-states/files/etc/init/salt-{{ data.service_name }}.conf
-    - root: {{ data.msr }}
     - saltconfig: {{ confPrefix }}
     - saltname: {{ data.name }}
     - context:
         salt_mode: {{data.name}}
+        root: {{ data.msr }}
         service_name: {{data.service_name}}
     - require:
       - mc_proxy: dummy-{{data.name}}-layout

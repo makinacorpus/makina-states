@@ -6,47 +6,67 @@ import contextlib
 from mock import patch, Mock
 
 from mc_states import saltapi
+import mc_states.api
 
 
 class TestCase(base.ModuleCase):
 
     def test_get_regitry_paths(self):
-        locs = self._('mc_locations.settings')()
-        with self.patch(opts={'config_dir': 'salt'}):
+        with self.patch(
+            opts={'config_dir': 'salt'},
+            filtered=['mc.*'],
+            kinds=['modules']
+        ):
+            mc_states.api.invalidate_memoize_cache(
+                'localreg_locations_settings')
+            locs = self._('mc_locations.settings')()
             ret = self._('mc_macros.get_registry_paths')('myreg')
             self.assertEqual(
-                ret,
-                {'context':
-                 '{root_dir}etc/salt/makina-states/myreg.pack'.format(**locs),
-                 'global':
-                 '{root_dir}etc/makina-states/myreg.pack'.format(**locs),
-                 'mastersalt':
-                 '{root_dir}etc/mastersalt/'
-                 'makina-states/myreg.pack'.format(**locs),
-                 'salt':
-                 '{root_dir}etc/salt/'
-                 'makina-states/myreg.pack'.format(**locs)})
-        with self.patch(opts={'config_dir': 'mastersalt'}):
+                ret['context'],
+                'salt/makina-states/myreg.pack'.format(**locs)
+            )
+            self.assertEqual(
+                ret['global'],
+                '{root_dir}etc/makina-states/myreg.pack'.format(**locs)
+            )
+            self.assertEqual(
+                ret['mastersalt'],
+                '{root_dir}etc/mastersalt/'
+                'makina-states/myreg.pack'.format(**locs))
+            self.assertEqual(
+                ret['salt'],
+                '{root_dir}etc/salt/'
+                'makina-states/myreg.pack'.format(**locs))
+        with self.patch(
+            opts={'config_dir': 'mastersalt'},
+            filtered=['mc.*'],
+            kinds=['modules']
+        ):
             ret = self._('mc_macros.get_registry_paths')('myreg')
-            self.assertEqual(ret,
-                             {'context':
-                              '{root_dir}etc/mastersalt/'
-                              'makina-states/myreg.pack'.format(**locs),
-                              'global':
-                              '{root_dir}etc/makina-states/'
-                              'myreg.pack'.format(**locs),
-                              'mastersalt':
-                              '{root_dir}etc/mastersalt/'
-                              'makina-states/myreg.pack'.format(**locs),
-                              'salt':
-                              '{root_dir}etc/salt/makina-states/'
-                              'myreg.pack'.format(**locs)})
+            self.assertEqual(
+                ret['context'],
+                'mastersalt'
+                '/makina-states/myreg.pack'.format(**locs)
+            )
+            self.assertEqual(
+                ret['global'],
+                '{root_dir}etc/makina-states/myreg.pack'.format(**locs)
+            )
+            self.assertEqual(
+                ret['mastersalt'],
+                '{root_dir}etc/mastersalt/'
+                'makina-states/myreg.pack'.format(**locs))
+            self.assertEqual(
+                ret['salt'],
+                '{root_dir}etc/salt/'
+                'makina-states/myreg.pack'.format(**locs))
 
     def test_load_registries(self):
         self.assertEquals(self._('mc_macros.dump')(), {})
         with self.patch(
-            filtered=['mc_macros.*'],
-            globs={'_GLOBAL_KINDS': ['foo']}
+            globs={'_GLOBAL_KINDS': ['foo']},
+            filtered=['mc.*'],
+            kinds=['modules']
         ):
             self.assertRaisesRegexp(
                 saltapi.NoRegistryLoaderFound,
@@ -54,8 +74,9 @@ class TestCase(base.ModuleCase):
                 self._('mc_macros.load_registries'))
             with contextlib.nested(
                 self.patch(
-                    filtered=['mc_macros.*'],
-                    globs={'_GLOBAL_KINDS': ['foo']}),
+                    globs={'_GLOBAL_KINDS': ['foo']},
+                    filtered=['mc.*'],
+                    kinds=['modules']),
                 patch.dict(self.salt, {
                     'mc_foo.settings': Mock(side_effect=lambda: {66: 666}),
                     'mc_foo.metadata': Mock(side_effect=lambda: {66: 666}),

@@ -1,17 +1,21 @@
 #!/usr/bin/env bash
 # managed via salt, do not edit
 # freeze hostile packages
+is_docker=""
+if [ -f /.dockerinit ];then
+    is_docker="1"
+fi
 FROZEN_PACKAGES="udev whoopsie ntp fuse grub-common grub-pc grub-pc-bin grub2-common"
 # specific to docker
-if [ -f /.dockerinit ];then
-    FROZEN_PACKAGES="$FROZEN_PACKAGES resolvconf"
+if [ "x${is_docker}" != "x" ];then
+    FROZEN_PACKAGES="${FROZEN_PACKAGES} resolvconf"
 fi
-for i in $FROZEN_PACKAGES;do
-    echo $i hold | dpkg --set-selections || /bin/true
+for i in ${FROZEN_PACKAGES};do
+    echo ${i} hold | dpkg --set-selections || /bin/true
 done
 # disabling fstab
 for i in /lib/init/fstab /etc/fstab;do
-    echo > $i || /bin/true
+    echo > ${i} || /bin/true
 done
 #pruning old logs & pids
 rm -rf /var/run/network/* || /bin/true
@@ -20,16 +24,16 @@ if [ -f /etc/network/if-up.d/ntpdate ];then
     sed -re "s/^(([^#].*)|)$/#\\1/g" -i /etc/network/if-up.d/ntpdate
 fi
 for i in /var/run/*.pid /var/run/dbus/pid /etc/nologin;do
-    if [ -e $i ];then
-        rm -f $i || /bin/true
+    if [ -e "${i}" ];then
+        rm -f "${i}" || /bin/true
     fi
 done
 # some services needs to be out
-for i in atop vnstat ondemand  umountfs umountroot smartmontools;do
-    update-rc.d -f $i remove || /bin/true
-done
 # no apparmor in container
-update-rc.d -f apparmor remove || /bin/true
+for i in atop vnstat ondemand umountfs umountroot smartmontools apparmor;do
+    update-rc.d -f ${i} remove || /bin/true
+    systemctl disable ${i} disable || /bin/true
+done
 # disabling useless and harmfull services
 #    $(find /etc/init -name dbus.conf)\
 # instead of delete the proccps service, reset it to do nothing by default
@@ -79,9 +83,9 @@ for f in\
     $(find /etc/init -name plymouth*.conf)\
     $(find /etc/init -name hwclock*.conf)\
     $(find /etc/init -name module*.conf)\
-    ;do SERVICES_DISABLED="$SERVICES_DISABLED $f";done
+    ;do SERVICES_DISABLED="${SERVICES_DISABLED} ${f}";done
 # services only harmfull in a docker
-if [ -f /.dockerinit ];then
+if [ "x${is_docker}" != "x" ];then
     for f in\
         $(find /etc/init -name resolvconf.conf)\
         $(find /etc/init -name cloud-init-container.conf)\
@@ -96,11 +100,11 @@ if [ -f /.dockerinit ];then
         $(find /etc/init -name tty[1-9].conf)\
         $(find /etc/init -name upstart*.conf)\
         $(find /etc/init -name upstart-dbus-bridge.conf)\
-    ;do SERVICES_DISABLED="$SERVICES_DISABLED $f";done
+    ;do SERVICES_DISABLED="${SERVICES_DISABLED} ${f}";done
 fi
-for f in $SERVICES_DISABLED;do
+for f in ${SERVICES_DISABLED};do
     echo manual>"/etc/init/$(basename $f .conf).override"
-    mv -f "$f" "$f.orig"
+    mv -f "${f}" "${f}.orig"
 done
 # disabling useless and harmfull sysctls
 for i in \
@@ -110,24 +114,25 @@ for i in \
     kernel.yama.ptrace_scope\
     kernel.kptr_restrict\
     kernel.printk;do
-    sed -re "s/^($i)/#\1/g" -i \
+    sed -re "s/^(${i})/#\1/g" -i \
     /etc/sysctl*/* /etc/sysctl.conf || /bin/true
 done
 # uid accouting is broken in lxc, breaking in turn pam_ssh login
 sed -re "s/^(session.*\spam_loginuid\.so.*)/#\\1/g" -i /etc/pam.d/* || /bin/true
 # specific to docker
-if [ -f /.dockerinit ];then
+if [ "x${is_docker}" != "x" ];then
     # redirecting console to docker log
     for i in console tty0 tty1 tty2 tty3 tty4 tty5 tty6 tty7;do
-        rm -f /dev/$i || /bin/true
-        ln -s /dev/tty /dev/$i || /bin/true
+        rm -f /dev/${i} || /bin/true
+        ln -s /dev/tty /dev/${i} || /bin/true
     done
+    # disable resolvconf
     en="/etc/network"
-    if [ -f $en/if-up.d/000resolvconf ];then
-        mv -f $en/if-up.d/000resolvconf $en/if-up.d_000resolvconf.bak || /bin/true
+    if [ -f ${en}/if-up.d/000resolvconf ];then
+        mv -f ${en}/if-up.d/000resolvconf ${en}/if-up.d_000resolvconf.bak || /bin/true
     fi
-    if [ -f $en/if-down.d/resolvconf ];then
-        mv -f $en/if-down.d/resolvconf $en/if-down.d_resolvconf.bak || /bin/true
+    if [ -f ${en}/if-down.d/resolvconf ];then
+        mv -f ${en}/if-down.d/resolvconf ${en}/if-down.d_resolvconf.bak || /bin/true
     fi
 fi
 if [ -f /etc/lsb-release ];then
@@ -135,7 +140,7 @@ if [ -f /etc/lsb-release ];then
 fi
 # if this isn't lucid, then we need to twiddle the network upstart bits :(
 if [ -f /etc/network/if-up.d/upstart ] &&\
-   [ $DISTRIB_CODENAME != "lucid" ];then
+   [ ${DISTRIB_CODENAME} != "lucid" ];then
         sed -i 's/^.*emission handled.*$/echo Emitting lo/' /etc/network/if-up.d/upstart
 fi
 exit 0

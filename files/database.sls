@@ -211,6 +211,7 @@ configurations:
 #      - dev-superapp8.mydomain.tld
 #      - msr-lxc-ref.mydomain.tld
 #      - msr-lxc-ref-trusty.mydomain.tld
+#      - msr-lxc-ref-vivid.mydomain.tld
 
 #
 # cloud global settings

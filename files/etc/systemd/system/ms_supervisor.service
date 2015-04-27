@@ -1,0 +1,10 @@
+# MANAGED VIA SALT -- DO NOT EDIT
+# {% set data = salt['mc_utils.json_load'](data) %}
+[Unit]
+Description=ms_supervisor
+After=syslog.target network.target
+
+[Service]
+ExecStart=/bin/sh -ec "/usr/bin/ms_supervisor.sh"
+[Install]
+WantedBy=multi-user.target

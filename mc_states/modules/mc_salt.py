@@ -124,7 +124,7 @@ def settings():
         init_debug = False
         if 'TRAVIS' in os.environ:
             init_debug = True
-        if saltmods['mc_lxc.is_lxc']():
+        if saltmods['mc_cloud_lxc.is_lxc']():
             has_filelimit = False
         crons = True
         env = saltmods['mc_env.settings']()['env']

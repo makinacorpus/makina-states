@@ -12,7 +12,7 @@
 
 # Author: Roman Imankulov <roman.imankulov@gmail.com>
 
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_circus.settings']() %}
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="circus daemon"
 NAME=circusd

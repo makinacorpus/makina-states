@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-__docformat__ = 'restructuredtext en'
 import unittest
 from .. import base
 
@@ -25,7 +24,11 @@ class TestCase(base.ModuleCase):
 
     def test_settings(self):
         locs = self._('mc_locations.settings')()
-        with self.patch(grains={'os': 'Ubuntu', 'os_family': 'Debian'}):
+        with self.patch(
+            grains={'os': 'Ubuntu', 'os_family': 'Debian'},
+            filtered=['mc.*'],
+            kinds=['modules']
+        ):
             data = self._('mc_bind.settings')()
             self.assertTrue(isinstance(data, dict))
             self.assertEqual(

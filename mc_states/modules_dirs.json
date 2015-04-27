@@ -87,6 +87,10 @@
       "{salt_root}/_grains",
       "{salt_root}/makina-states/mc_states/grains",
       "{salt_root}/makina-states/salt_fork/grains"],
+  "grains_dirs": [
+      "{salt_root}/_grains",
+      "{salt_root}/makina-states/mc_states/grains",
+      "{salt_root}/makina-states/salt_fork/grains"],
   "states_dirs": [
       "{salt_root}/_states",
       "{salt_root}/makina-states/mc_states/states",

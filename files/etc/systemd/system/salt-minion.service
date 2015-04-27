@@ -1,0 +1,19 @@
+# MANAGED VIA SALT -- DO NOT EDIT
+# {% set salt_data = salt['mc_salt.settings']().data_mappings[service_name][salt_mode] %}
+[Unit]
+Description={{salt_data['daemon_name']}}""
+After=syslog.target network.target
+
+[Service]
+{% if salt_data['has_filelimit'] %}
+LimitNOFILE=100000
+{% else %}
+#LimitNOFILE=100000
+{% endif %}
+ExecStartPre=/bin/sh -ec "rm -f {{salt_data['sock_dir']}}/minion_event*ipc"
+ExecStart=/bin/sh -ec "{{salt_data['bin_dir']}}/{{salt_data['daemon_name']}} {% if salt_data['init_debug'] %} -lall {% endif %}"
+ExecStopPost=/bin/sh -ec "rm -f {{salt_data['sock_dir']}}/minion_event*ipc"
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

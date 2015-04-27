@@ -17,8 +17,10 @@ class TestCase(base.ModuleCase):
             return {'retcode': 0, 'result': {'foo': {'changes': {}}}}
 
         with self.patch(funcs={
-            'modules': {'mc_remote.salt_call': Mock(side_effect=_do)}
-        }):
+            'modules': {'mc_remote.salt_call': Mock(side_effect=_do)}},
+            filtered=['mc.*'],
+            kinds=['modules']
+        ):
             ret1 = self._('mc_remote.sls')('foo', 'a', strip_out=True)
             self.assertEqual(ret1, {'foo': {'changes': {}}})
             ret2 = self._('mc_remote.sls')('foo', 'a', strip_out=False)
@@ -30,8 +32,10 @@ class TestCase(base.ModuleCase):
             return {'retcode': 0, 'result': {'foo': {'changes': {}}}}
 
         with self.patch(funcs={
-            'modules': {'mc_remote.salt_call': Mock(side_effect=_do)}
-        }):
+            'modules': {'mc_remote.salt_call': Mock(side_effect=_do)}},
+            filtered=['mc.*'],
+            kinds=['modules']
+        ):
             ret1 = self._('mc_remote.highstate')('foo', strip_out=True)
             self.assertEqual(ret1, {'foo': {'changes': {}}})
             ret2 = self._('mc_remote.highstate')('foo', strip_out=False)
@@ -94,13 +98,21 @@ class TestCase(base.ModuleCase):
                           yvalid_ret, iyvalid_ret]:
             valid_ret['result'] = valid_ret['raw_result'] = (
                 self._('mc_remote.get_saltcall_result')(valid_ret['stdout']))
-        with self.patch(grains={}):
+        with self.patch(
+            grains={},
+            filtered=['mc.*'],
+            kinds=['modules']
+        ):
             ret1 = fun_(jvalid_ret)
             self.assertEqual(ret1['result'], {u'2': u'3'})
             self.assertRaises(saltapi.RemoteResultProcessError,
                               fun_, ijvalid_ret)
 
-        with self.patch(grains={}):
+        with self.patch(
+            grains={},
+            filtered=['mc.*'],
+            kinds=['modules']
+        ):
             ret2 = fun_(yvalid_ret)
             self.assertEqual(ret2['result'],
                              OrderedDict([('a', 1), ('b', 2)]))

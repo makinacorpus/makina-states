@@ -1,10 +1,12 @@
+# MANAGED VIA SALT -- DO NOT EDIT
+#
 [Unit]
 Description=lxc-net-makina
 
 [Service]
 Type=oneshot
-ExecStart=/etc/lxc-net-makina.sh start
-ExecStop=/etc/lxc-net-makina.sh stop
+ExecStart=/usr/bin/lxc-net-makina.sh start
+ExecStop=/usr/bin/lxc-net-makina.sh stop
 RemainAfterExit=yes
 
 [Install]

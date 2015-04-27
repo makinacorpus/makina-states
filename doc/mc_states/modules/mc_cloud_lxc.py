@@ -146,7 +146,7 @@ def vt_default_settings(cloudSettings, imgSettings):
                 '/etc/default/lxc-net-makina': {},
                 '/etc/dnsmasq.d/lxc': {},
                 '/etc/reset-net-bridges': {},
-                '/etc/lxc-net-makina.sh': {},
+                '/usr/bin/lxc-net-makina.sh': {},
                 '/usr/share/lxc/templates/lxc-ubuntu': {'template': None},
             },
             'lxc_cloud_profiles': {

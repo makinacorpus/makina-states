@@ -201,7 +201,7 @@ def vm_fix_dns(vm, ret=None, output=True, force=False):
     # if we found some default dnses, set them as soon as we can
     # to avoid state orchestration problems and DNS issues that
     # would break the minion network
-    dnses = cli('mc_bind.settings', salt_target=vm)['default_dnses']
+    dnses = cli('mc_dns.settings', salt_target=vm)['default_dnses']
     if dnses:
         cmd = 'echo > /etc/resolv.conf;echo >> /etc/resolv.conf;'
         for i in dnses:

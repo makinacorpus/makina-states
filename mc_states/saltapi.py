@@ -116,6 +116,10 @@ __CACHED_FUNS = {
     'mc_localsettings.settings': 600}
 
 
+class MastersaltNotInstalled(salt.exceptions.SaltException, ValueError):
+    pass
+
+
 class SaltExit(salt.exceptions.SaltException):
     pass
 

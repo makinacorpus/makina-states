@@ -26,6 +26,7 @@ kvm-pkgs:
       - lvm2
       - libguestfs-tools
       - kpartx
+      - ovmf
       - ubuntu-vm-builder
       - bridge-utils
     - watch_in:

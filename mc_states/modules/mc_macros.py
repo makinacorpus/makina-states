@@ -137,17 +137,14 @@ def is_active(registry, name):
 def get_registry_paths(name, registry_format='pack'):
     locs = __salt__['mc_locations.settings']()
     etc = locs['conf_dir']
-    ctx_pref = 'salt'
-    if 'mastersalt' in __opts__['config_dir']:
-        ctx_pref = 'mastersalt'
     confs = {'mastersalt': '{0}/{1}/makina-states/{2}.{3}'.format(
         etc, 'mastersalt',  name, registry_format),
         'salt': '{0}/{1}/makina-states/{2}.{3}'.format(
             etc, 'salt',  name, registry_format),
         'global': '{0}/{1}/{2}.{3}'.format(
             etc, 'makina-states',  name, registry_format),
-        'context': '{0}/{1}/makina-states/{2}.{3}'.format(
-            etc, ctx_pref,  name, registry_format)}
+        'context': '{0}/makina-states/{1}.{2}'.format(
+            __opts__['config_dir'],  name, registry_format)}
     return confs
 
 
@@ -464,8 +461,7 @@ def construct_registry_configuration(name, defaults=None):
     return __salt__['mc_macros.get_registry']({
         'kind': metadata_reg['kind'],
         'bases': metadata_reg['bases'],
-        'defaults': defaults,
-    })
+        'defaults': defaults})
 
 
 def unregister(kind, slss, data=None, suf=''):

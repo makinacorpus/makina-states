@@ -1,0 +1,14 @@
+# MANAGED VIA SALT -- DO NOT EDIT
+[Unit]
+Description=lxc-setup
+After=sysinit.target
+DefaultDependencies=no
+Before=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ms-lxc-setup.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=network-online.target
