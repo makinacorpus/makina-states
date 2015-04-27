@@ -45,6 +45,7 @@ cat /etc/sudoers
 echo "travis ALL=NOPASSWD: ALL">>/etc/sudoers
 for i in mastersalt salt;do
     cd /srv/${i}/makina-states
+    bin/pip install -r requirements/requirements.txt
     bin/pip install -r requirements/dev.txt
 done
 exit ${?}
