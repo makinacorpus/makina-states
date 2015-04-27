@@ -107,49 +107,6 @@ def upgrade_vt(target, ret=None, output=True):
     __salt__['mc_api.time_log']('start', fname, target)
     if not ret:
         ret = result()
-    ret['comment'] += yellow('Upgrading docker on {0}\n'.format(target))
-    version = cli('cmd.run', 'docker-info --version', python_shell=True,
-                  salt_target=target)
-    # run the install SLS which should take care of upgrading
-    for step in [configure_install_vt]:
-        try:
-            step(target, ret=ret, output=False)
-        except FailedStepError:
-            ret['result'] = False
-            ret['comment'] += red('Failed to upgrade docker\n')
-            return ret
-    # after upgrading
-    nversion = cli('cmd.run', 'docker-info --version', python_shell=True,
-                   salt_target=target)
-    if nversion != version:
-        containers = cli('docker.list', salt_target=target)
-        reg = cli('mc_macros.update_local_registry', 'docker_to_restart',
-                  {'todo': containers.get('running', [])},
-                  salt_target=target)
-        ret['comment'] += red('Upgraded docker\n')
-    else:
-        ret['comment'] += red('docker was already at the last version\n')
-    reg = cli('mc_macros.get_local_registry',
-              'docker_to_restart', salt_target=target)
-    todo = reg.get('todo', [])
-    done = []
-    for docker in todo:
-        try:
-            stopret = cli('docker.stop', docker, salt_target=target)
-            if not stopret['result']:
-                raise ValueError('wont stop')
-            startret = cli('docker.start', docker, salt_target=target)
-            if not startret['result']:
-                raise ValueError('wont start')
-            ret['comment'] += yellow('Rebooted {0}\n'.format(docker))
-            done.append(docker)
-        except Exception, ex:
-            ret['result'] = False
-            ret['comment'] += yellow(
-                'docker {0} failed to'
-                ' reboot: {1}\n'.format(docker, ex))
-    cli('mc_macros.update_local_registry', 'docker_to_restart',
-        {'todo': [a for a in todo if a not in done]}, salt_target=target)
     __salt__['mc_api.out'](ret, __opts__, output=output)
     __salt__['mc_api.time_log']('end', fname)
     return ret
@@ -161,16 +118,16 @@ def sync_images(target, output=True, ret=None):
     __salt__['mc_api.time_log']('start', fname, target)
     if ret is None:
         ret = result()
-    iret = __salt__['mc_docker.sync_images'](only=[target])
-    if iret['result']:
-        ret['comment'] += yellow(
-            'DOCKER: images synchronnised on {0}\n'.format(target))
-    else:
-        merge_results(ret, iret)
-        ret['comment'] += yellow(
-            'DOCKER: images failed to synchronnise on {0}\n'.format(target))
-    __salt__['mc_api.out'](ret, __opts__, output=output)
-    __salt__['mc_api.time_log']('end', fname)
+    # iret = __salt__['mc_docker.sync_images'](only=[target])
+    # if iret['result']:
+    #     ret['comment'] += yellow(
+    #         'DOCKER: images synchronnised on {0}\n'.format(target))
+    # else:
+    #     merge_results(ret, iret)
+    #     ret['comment'] += yellow(
+    #         'DOCKER: images failed to synchronnise on {0}\n'.format(target))
+    # __salt__['mc_api.out'](ret, __opts__, output=output)
+    # __salt__['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -348,69 +305,69 @@ def vm_reconfigure(vm, ret=None, output=True, force=False):
     _s['mc_api.time_log']('start', fname, vm)
     if not ret:
         ret = result()
-    data = _s['mc_api.get_vm'](vm)
-    cs = _s['mc_api.get_cloud_settings'](vm)
-    cn = data['target']
-    reg = cli('mc_macros.get_local_registry', 'mc_cloud_docker_containers')
-    provisioned_containers = reg.setdefault('provisioned_containers',
-                                            OrderedDict())
-    containers = provisioned_containers.setdefault(cn, [])
-    pdt = _load_profile(data)
-    marker = "{cs[prefix]}/pki/master/minions/{vm}".format(cs=cs, vm=vm)
-    lret = cli('cmd.run_all', 'test -e {0}'.format(marker), python_shell=True)
-    lret['retcode'] = 1
-    try:
-        raise
-        ping = False
-        if vm in containers:
-            ping = cli('test.ping', salt_timeout=10, salt_target=vm)
-    except Exception:
-        ping = False
-    if force or (lret['retcode'] and not ping):
-        try:
-            kw = OrderedDict()
-            # XXX: using the docker runner which is now faster and nicer.
-            args = cli(
-                'docker.cloud_init_interface',
-                vm, pdt, salt_target=cn)
-            for i in [
-                'cpu',
-                'cpuset',
-                'cpushare',
-                'memory',
-                'profile',
-                'network_profile',
-                'nic_opts',
-                'bridge',
-                'gateway',
-                'autostart'
-            ]:
-                if i == 'memory' and not i:
-                    continue
-                if i in args:
-                    kw[i] = args[i]
-            _s['mc_api.time_log']('start', 'docker_vm_init',  vm, cn)
-            kw['salt_target'] = cn
-            cret = cli('docker.reconfigure', vm, **kw)
-            _s['mc_api.time_log']('end', 'docker_vm_end',  vm=vm)
-            if not cret['result']:
-                ret['trace'] += 'FAILURE ON DOCKER {0}:\n{1}\n'.format(
-                    vm, pformat(dict(cret)))
-                merge_results(ret, cret)
-                ret['result'] = False
-            else:
-                ret['comment'] += '{0} reconfigured\n'.format(vm)
-        except Exception, ex:
-            ret['trace'] += '{0}\n'.format(traceback.format_exc())
-            ret['result'] = False
-            ret['comment'] += red("{0}".format(ex))
-    if ret['result']:
-        containers.append(vm)
-        reg = cli('mc_macros.update_local_registry',
-                  'mc_cloud_docker_containers', reg)
-    if not ret['result'] and not ret['comment']:
-        ret['comment'] = ('Failed to reconfigure docker {0},'
-                          ' see {1} mastersalt-minion log').format(vm, cn)
+    # data = _s['mc_api.get_vm'](vm)
+    # cs = _s['mc_api.get_cloud_settings'](vm)
+    # cn = data['target']
+    # reg = cli('mc_macros.get_local_registry', 'mc_cloud_docker_containers')
+    # provisioned_containers = reg.setdefault('provisioned_containers',
+    #                                         OrderedDict())
+    # containers = provisioned_containers.setdefault(cn, [])
+    # pdt = _load_profile(data)
+    # marker = "{cs[prefix]}/pki/master/minions/{vm}".format(cs=cs, vm=vm)
+    # lret = cli('cmd.run_all', 'test -e {0}'.format(marker), python_shell=True)
+    # lret['retcode'] = 1
+    # try:
+    #     raise
+    #     ping = False
+    #     if vm in containers:
+    #         ping = cli('test.ping', salt_timeout=10, salt_target=vm)
+    # except Exception:
+    #     ping = False
+    # if force or (lret['retcode'] and not ping):
+    #     try:
+    #         kw = OrderedDict()
+    #         # XXX: using the docker runner which is now faster and nicer.
+    #         args = cli(
+    #             'docker.cloud_init_interface',
+    #             vm, pdt, salt_target=cn)
+    #         for i in [
+    #             'cpu',
+    #             'cpuset',
+    #             'cpushare',
+    #             'memory',
+    #             'profile',
+    #             'network_profile',
+    #             'nic_opts',
+    #             'bridge',
+    #             'gateway',
+    #             'autostart'
+    #         ]:
+    #             if i == 'memory' and not i:
+    #                 continue
+    #             if i in args:
+    #                 kw[i] = args[i]
+    #         _s['mc_api.time_log']('start', 'docker_vm_init',  vm, cn)
+    #         kw['salt_target'] = cn
+    #         cret = cli('docker.reconfigure', vm, **kw)
+    #         _s['mc_api.time_log']('end', 'docker_vm_end',  vm=vm)
+    #         if not cret['result']:
+    #             ret['trace'] += 'FAILURE ON DOCKER {0}:\n{1}\n'.format(
+    #                 vm, pformat(dict(cret)))
+    #             merge_results(ret, cret)
+    #             ret['result'] = False
+    #         else:
+    #             ret['comment'] += '{0} reconfigured\n'.format(vm)
+    #     except Exception, ex:
+    #         ret['trace'] += '{0}\n'.format(traceback.format_exc())
+    #         ret['result'] = False
+    #         ret['comment'] += red("{0}".format(ex))
+    # if ret['result']:
+    #     containers.append(vm)
+    #     reg = cli('mc_macros.update_local_registry',
+    #               'mc_cloud_docker_containers', reg)
+    # if not ret['result'] and not ret['comment']:
+    #     ret['comment'] = ('Failed to reconfigure docker {0},'
+    #                       ' see {1} mastersalt-minion log').format(vm, cn)
     _s['mc_api.out'](ret, __opts__, output=output)
     _s['mc_api.time_log']('end', fname)
     return ret
@@ -422,44 +379,6 @@ def vm_volumes(vm, ret=None, output=True, force=False):
     _s['mc_api.time_log']('start', fname, vm)
     if not ret:
         ret = result()
-    vm_data = _s['mc_api.get_vm'](vm)
-    cn = vm_data['target']
-    content = "# generated by salt do not edit\n"
-    fstab = vm_data['fstab']
-    rmark = '/var/lib/docker/{0}/restart_marker'.format(vm)
-    if fstab:
-        for i in fstab:
-            content += i + '\n'
-        cret = cli('mc_utils.manage_file',
-                   name='/var/lib/docker/{0}/fstab'.format(vm),
-                   contents=content, mode='750', salt_target=cn)
-        if not cret['result']:
-            ret['result'] = False
-            merge_results(ret, cret)
-            ret['comment'] += red('fstab update error for {0}\n'.format(vm))
-        elif cret['changes']:
-            cret = cli('file.touch', rmark, salt_target=cn)
-            ret['comment'] += yellow('fstab updated for {0}\n'.format(vm))
-    cmd = ("docker-stop -t 10 -n \"{0}\";docker-start -d -n \"{0}\""
-           "&& rm -f \"{1}\"").format(vm, rmark)
-    if ret['result'] and not cli(
-        "cmd.retcode",
-        "test -e \"{1}\" &&"
-        "test \"x$(docker-ls --fancy|grep RUNNING|"
-        "awk '{{print $1}}'|egrep '^{0}$')\" = 'x{0}'".format(
-            vm, rmark), python_shell=True, salt_target=cn
-    ):
-        # if container is running, restart it
-        cret = cli('cmd.run_all', cmd, python_shell=True, salt_target=cn)
-        if cret['retcode']:
-            ret['result'] = False
-            merge_results(ret, cret)
-            ret['comment'] += red(
-                'Container {0} error while rebooting\n'.format(vm))
-        else:
-            ret['comment'] += yellow('Container {0} rebooted\n'.format(vm))
-    _s['mc_api.out'](ret, __opts__, output=output)
-    _s['mc_api.time_log']('end', fname)
     return ret
 
 
@@ -500,35 +419,35 @@ def vm_preprovision(vm, ret=None, output=True):
     return vm_configure('preprovision', vm, ret=ret, output=output)
 
 
-def remove(vm, destroy=False, only_stop=False, **kwargs):
-    '''
-    Remove a container
-    '''
-    _s = __salt__
-    vm_data = _s['mc_api.get_vm'](vm)
-    tgt = vm_data['target']
-    ret = None
-    if destroy:
-        if cli('test.ping', salt_target=tgt):
-            if not cli('docker.exists', vm, salt_target=tgt):
-                return True
-            if 'running' == cli('docker.state', vm, salt_target=tgt):
-                ret = cli('docker.stop', vm, salt_target=tgt)
-                if ret:
-                    log.info('{0}/{1} stopped'.format(tgt, vm))
-            ret = cli('docker.reconfigure', vm,
-                      autostart=False, salt_target=tgt)
-            if not only_stop:
-                ret = cli('docker.destroy', vm, salt_target=tgt)['result']
-                if ret:
-                    log.info('{0}/{1} destroyed'.format(tgt, vm))
-    return ret
-
-
-def destroy(vm, **kwargs):
-    '''
-    Alias to remove
-    '''
-    return remove(vm, **kwargs)
+# def remove(vm, destroy=False, only_stop=False, **kwargs):
+#     '''
+#     Remove a container
+#     '''
+#     _s = __salt__
+#     vm_data = _s['mc_api.get_vm'](vm)
+#     tgt = vm_data['target']
+#     ret = None
+#     if destroy:
+#         if cli('test.ping', salt_target=tgt):
+#             if not cli('docker.exists', vm, salt_target=tgt):
+#                 return True
+#             if 'running' == cli('docker.state', vm, salt_target=tgt):
+#                 ret = cli('docker.stop', vm, salt_target=tgt)
+#                 if ret:
+#                     log.info('{0}/{1} stopped'.format(tgt, vm))
+#             ret = cli('docker.reconfigure', vm,
+#                       autostart=False, salt_target=tgt)
+#             if not only_stop:
+#                 ret = cli('docker.destroy', vm, salt_target=tgt)['result']
+#                 if ret:
+#                     log.info('{0}/{1} destroyed'.format(tgt, vm))
+#     return ret
+# 
+# 
+# def destroy(vm, **kwargs):
+#     '''
+#     Alias to remove
+#     '''
+#     return remove(vm, **kwargs)
 
 # vim:set et sts=4 ts=4 tw=80:
