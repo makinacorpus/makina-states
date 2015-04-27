@@ -19,6 +19,7 @@ import mc_states.api
 from mc_states import saltapi
 from salt.utils.odict import OrderedDict
 
+# early in mcpillar, we dont have __salt__
 from mc_states.grains.makina_grains import _is_lxc
 
 _errmsg = saltapi._errmsg

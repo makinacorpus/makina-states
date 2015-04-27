@@ -15,6 +15,7 @@ import logging
 import os
 
 from mc_states import saltapi
+# early in mcpillar, we dont have __salt__
 from mc_states.grains.makina_grains import _is_docker
 
 

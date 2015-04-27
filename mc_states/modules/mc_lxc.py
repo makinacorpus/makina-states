@@ -16,6 +16,8 @@ import mc_states.api
 import random
 
 from mc_states import saltapi
+# early in mcpillar, we dont have __salt__
+from mc_states.grains.makina_grains import _is_lxc
 
 _errmsg = saltapi._errmsg
 __name = 'lxc'
@@ -64,7 +66,7 @@ def is_lxc():
         '3:cpu:/',
         '2:cpuset:/']
     """
-    return __salt__['mc_cloud_lxc.is_lxc']()
+    return _is_lxc()
 
 
 def is_this_lxc():

@@ -791,16 +791,17 @@ def feed_sw_reverse_proxies_for_target(target_data):
         snmp_port = _s['mc_cloud_compute_node.get_snmp_port'](vm, target=t)
         ssh_port = _s['mc_cloud_compute_node.get_ssh_port'](vm, target=t)
         vt = data['vt']
+        zvt = {'docker': 'dck'}.get(vt, vt)
         sw_proxies.append({'comment': 'snmp for {0}'.format(vm)})
         sw_proxies.append({'action': 'DNAT',
                            'source': 'all',
-                           'dest': '{1}:{0}:161'.format(data['ip'], vt),
+                           'dest': '{1}:{0}:161'.format(data['ip'], zvt),
                            'proto': 'udp', 'dport': snmp_port})
         sw_proxies.append({'comment': 'ssh {0}'.format(vm)})
         for i in ['tcp', 'udp']:
             sw_proxies.append({'action': 'DNAT',
                                'source': 'all',
-                               'dest': '{1}:{0}:22'.format(data['ip'], vt),
+                               'dest': '{1}:{0}:22'.format(data['ip'], zvt),
                                'proto': i, 'dport': ssh_port})
     target_data['reverse_proxies']['sw_proxies'] = sw_proxies
     return target_data

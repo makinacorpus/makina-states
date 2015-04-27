@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, print_function
+# pylint: disable=W0105
 '''
 .. _module_mc_cloud_images:
 
@@ -17,8 +18,6 @@ import traceback
 import logging
 import os
 import copy
-import yaml
-import mc_states.api
 import salt.exceptions
 from mc_states import saltapi
 
@@ -72,9 +71,11 @@ def complete_images(data):
                                      '{0}-{1}_version.txt'
                                      '').format(img, flavor))
             if (
-                not os.path.exists(ver_file)
-                and not os.path.exists(md5_file)
+                not os.path.exists(ver_file) and
+                not os.path.exists(md5_file)
             ):
+                log.info('lxc/{0} is not released yet, disabling')
+                images.pop(img, None)
                 continue
             with open(ver_file) as fic:
                 ver = images[img][
@@ -144,7 +145,7 @@ def extpillar_settings(id_=None, limited=False, ttl=30):
         cloud_settings = _s['mc_cloud.extpillar_settings']()
         is_devhost = _s['mc_nodetypes.is_devhost']()
         cron_sync = True
-        if (is_lxc() or is_devhost):
+        if is_lxc() or is_devhost:
             cron_sync = False
         data = _s['mc_utils.dictupdate'](
             _s['mc_utils.dictupdate'](
@@ -182,6 +183,7 @@ def ext_pillar(id_, prefixed=True, *args, **kw):
     return data
 
 
+# pylint: disable=W0105
 '''
 To execute on node after pillar is loaded
 '''
@@ -198,10 +200,10 @@ def settings(ttl=60):
         nt_registry = __salt__['mc_nodetypes.registry']()
         cron_sync = None
         if (
-                nt_registry['is']['devhost']
-                or nt_registry['is']['lxccontainer']
-                or __salt__['mc_utils.get'](
-                    'makina-states.cloud.is.vm', False)
+            nt_registry['is']['devhost'] or
+            nt_registry['is']['lxccontainer'] or
+            __salt__['mc_utils.get'](
+                'makina-states.cloud.is.vm', False)
         ):
             cron_sync = False
         data = __salt__['mc_utils.defaults'](PREFIX, default_settings())
@@ -238,7 +240,9 @@ def get_vars(container='makina-states-trusty', flavor='standalone'):
     data = _s['mc_utils.format_resolve'](data)
     try:
         cur_ver = int(open(data['ver_file']).read().strip())
-    except:
+    except (IOError, OSError,
+            ValueError, TypeError, KeyError,
+            UnicodeEncodeError, UnicodeDecodeError):
         cur_ver = 0
     next_ver = cur_ver + 1
     data['cur_ver'] = cur_ver
@@ -416,7 +420,7 @@ def upload(container, flavor, *args, **kwargs):
         failed = True
     if failed:
         # bindly try to remove the files
-        for sufsuf in ['', '.tmp']:
+        for i in ['', '.tmp']:
             gvars['sufsuf'] = i
             cmd = ('echo "rm {dest}{sufsuf}" '
                    '| sftp {user}@{sftp_url}').format(**gvars)

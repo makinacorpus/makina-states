@@ -64,7 +64,7 @@ def settings():
             or os.path.exists('/etc/haproxy')
         ):
             haproxy = True
-        if __salt__['mc_lxc.is_lxc']():
+        if __salt__['mc_clou_lxc.is_lxc']():
             kernel_log = False
             xconsole = False
         user = group = 'syslog'

@@ -9,6 +9,10 @@ import copy
 import hashlib
 # Import python libs
 import dns
+import dns.query
+import dns.resolver
+import dns.message
+import dns.rdatatype
 import socket
 import logging
 import time
