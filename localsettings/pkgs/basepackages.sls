@@ -74,7 +74,9 @@ ubuntu-pkgs:
       - debconf
       - debconf-i18n
       - ifupdown
+      {% if grains.get('osrelease', '') >= '13.10' %}
       - iproute2
+      {% endif %}
       - iputils-ping
       - locales
       - lsb-release
@@ -133,7 +135,12 @@ ubuntu-pkgs:
       - uuid-runtime
       {% endif %}
 {%- endif %}
-
+{% if grains.get('osrelease', '') != '5.0.10' and (not grains.get('lsb_distrib_codename') in ['wheezy', 'sarge'])%}
+{% set nojq = True%}
+{% endif %}
+{% if (grains.get('osrelease', '') <= '13.10' and grains['os'] in ['ubuntu']) %}
+{% set nojq = True%}
+{%endif%}
 sys-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
@@ -167,7 +174,7 @@ sys-pkgs:
       - manpages
       - manpages-fr
       - manpages-de
-      {% if grains.get('osrelease', '') != '5.0.10' and (not grains.get('lsb_distrib_codename') in ['wheezy', 'sarge'])%}
+      {% if not nojq %}
       - jq
       {% endif %}
       - lsof
