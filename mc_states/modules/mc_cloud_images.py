@@ -54,8 +54,7 @@ def complete_images(data):
     root = data['root']
     images = data['lxc'].setdefault('images', OrderedDict())
     images.setdefault('makina-states-precise', {})
-    # disable vivid until valid published
-    # images.setdefault('makina-states-vivid', {})
+    images.setdefault('makina-states-vivid', {})
     images.setdefault('makina-states-trusty', {})
     for img in [i for i in images]:
         defaults = OrderedDict()
@@ -75,6 +74,8 @@ def complete_images(data):
                 not os.path.exists(ver_file) and
                 not os.path.exists(md5_file)
             ):
+                log.info('lxc/{0} is not released yet, disabling')
+                images.pop(img, None)
                 continue
             with open(ver_file) as fic:
                 ver = images[img][
