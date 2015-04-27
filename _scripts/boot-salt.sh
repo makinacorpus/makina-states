@@ -1330,6 +1330,7 @@ setup_backports() {
         bs_log "Activating backport from ${DISTRIB_BACKPORT} to ${DISTRIB_CODENAME}"
         cp  ${CONF_ROOT}/apt/sources.list "${CONF_ROOT}/apt/sources.list.${CHRONO}.sav"
         "${SED}" -i -e "s/${DISTRIB_CODENAME}/${DISTRIB_BACKPORT}/g" "${CONF_ROOT}/apt/sources.list"
+        "${SED}" -i -re "s/(([a-z]{2}\.)?(archives?.ubuntu.com|security.ubuntu.com))(.*)/old-releases.ubuntu.com\4 # \1/g" /etc/apt/sources.list
     fi
     if [ "x${IS_DEBIAN}" != "x" ];then
         bs_log "Activating backport from ${DISTRIB_BACKPORT} to ${DISTRIB_CODENAME}"
@@ -1349,6 +1350,7 @@ teardown_backports() {
     if [ "x${BEFORE_SAUCY}" != "x" ] && [ "x${IS_UBUNTU}" != "x" ];then
         bs_log "Removing backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
         "${SED}" -i -e "s/${DISTRIB_BACKPORT}/${DISTRIB_CODENAME}/g" "${CONF_ROOT}/apt/sources.list"
+        "${SED}" -i -e "s/(old-releases.ubuntu.com)(.*)(# )(.*) *$/\4\2/g" "${CONF_ROOT}/apt/sources.list"
     fi
     # leave the backport in placs on debian
 }
