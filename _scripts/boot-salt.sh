@@ -1031,7 +1031,7 @@ set_vars() {
     export FORCE_SALT_BOOT_SKIP_CHECKOUTS
     export ONLY_BUILDOUT_REBOOTSTRAP SALT_LIGHT_INSTALL
     export EGGS_GIT_DIRS
-    export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS
+    export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS TRAVIS
     export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE SALT_BOOT_INITIAL_HIGHSTATE
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
     export MS_BRANCH="$(get_ms_branch)"
@@ -1325,12 +1325,20 @@ lazy_apt_get_install() {
 }
 
 setup_backports() {
-    # on ubuntu enable backports release repos, & on debian just backport
+    # on ubuntu enable backports (saucy) release repos, & on debian just backport
+    # saucy is now on archives !
     if [ "x${BEFORE_SAUCY}" != "x" ] && [ "x${IS_UBUNTU}" != "x" ];then
         bs_log "Activating backport from ${DISTRIB_BACKPORT} to ${DISTRIB_CODENAME}"
+        if [ "x${TRAVIS}" != "x" ];then
+            bs_log "pre apt/sources.list"
+            cat /etc/apt/sources.list
+        fi
         cp  ${CONF_ROOT}/apt/sources.list "${CONF_ROOT}/apt/sources.list.${CHRONO}.sav"
-        "${SED}" -i -e "s/${DISTRIB_CODENAME}/${DISTRIB_BACKPORT}/g" "${CONF_ROOT}/apt/sources.list"
-        "${SED}" -i -re "s/(([a-z]{2}\.)?(archives?.ubuntu.com|security.ubuntu.com))(.*)/old-releases.ubuntu.com\4 # \1/g" /etc/apt/sources.list
+        "${SED}" -i -re "s/(([a-z]{2}\.)?(archives?.ubuntu.com))(.*)(${DISTRIB_CODENAME})(.*)/old-releases.ubuntu.com\4${DISTRIB_BACKPORT}\6 # \1/g" /etc/apt/sources.list
+        if [ "x${TRAVIS}" != "x" ];then
+            bs_log "pre apt/sources.list"
+            cat /etc/apt/sources.list
+        fi
     fi
     if [ "x${IS_DEBIAN}" != "x" ];then
         bs_log "Activating backport from ${DISTRIB_BACKPORT} to ${DISTRIB_CODENAME}"
@@ -1346,11 +1354,18 @@ setup_backports() {
 
 teardown_backports() {
     # on ubuntu disable backports release repos, & on debian just backport
-
+    # saucy is now on archives !
     if [ "x${BEFORE_SAUCY}" != "x" ] && [ "x${IS_UBUNTU}" != "x" ];then
         bs_log "Removing backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
-        "${SED}" -i -e "s/${DISTRIB_BACKPORT}/${DISTRIB_CODENAME}/g" "${CONF_ROOT}/apt/sources.list"
-        "${SED}" -i -e "s/(old-releases.ubuntu.com)(.*)(# )(.*) *$/\4\2/g" "${CONF_ROOT}/apt/sources.list"
+        if [ "x${TRAVIS}" != "x" ];then
+            bs_log "TEARDOWN: pre apt/sources.list"
+            cat /etc/apt/sources.list
+        fi
+        "${SED}" -i -re "s/(old-releases.ubuntu.com)(.*)(${DISTRIB_BACKPORT})(.*)( # )(.*) *$/\6\2${DISTRIB_CODENAME}\4/g" "${CONF_ROOT}/apt/sources.list"
+        if [ "x${TRAVIS}" != "x" ];then
+            bs_log "TEARDOWN: pre apt/sources.list"
+            cat /etc/apt/sources.list
+        fi
     fi
     # leave the backport in placs on debian
 }
