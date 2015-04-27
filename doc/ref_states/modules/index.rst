@@ -20,7 +20,7 @@ RemoteExecution/PaaS/ProjectManagement modules
    mc_project.rst
    mc_project_2.rst
    mc_remote.rst
-   mc_dns.rst
+   mc_dnshelpers.rst
 
 
 Subregistries
@@ -28,6 +28,7 @@ Subregistries
 .. toctree::
    :maxdepth: 2
 
+   mc_dns.rst
    mc_apache.rst
    mc_autoupgrade.rst
    mc_bind.rst

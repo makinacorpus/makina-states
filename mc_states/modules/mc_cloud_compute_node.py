@@ -32,7 +32,7 @@ __name = 'mc_cloud_compute_node'
 
 log = logging.getLogger(__name__)
 
-VIRT_TYPES = {'docker': {'supported': False},
+VIRT_TYPES = {'docker': {'supported': True},
               'xen': {'supported': False},
               'openvz': {'supported': False},
               'lxc': {'supported': True},

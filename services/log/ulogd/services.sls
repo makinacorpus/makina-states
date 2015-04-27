@@ -7,7 +7,7 @@ makina-ulogd-service:
   service.running:
     - name: {{data.service_name}}
     - enable: true
-    - reload: true
+    #- reload: true
     - watch:
       - mc_proxy: ulogd-pre-restart-hook
     - watch_in:

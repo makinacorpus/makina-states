@@ -37,7 +37,7 @@ def _ldapEn(__salt__):
     return __salt__['mc_ldap.ldapEn'](__salt__)
 
 
-def settings():
+def settings(ttl=15*60):
     '''settings registry for localsettings
 
     **OBSOLETE, PLEASE USE LOCAL REGISTRIES**
@@ -101,15 +101,12 @@ def settings():
     return _reg
 
 
-def registry():
+def registry(ttl=15*60):
     '''registry registry for localsettings'''
-    @mc_states.api.lazy_subregistry_get(__salt__, __name)
-    def _registry():
+    def _do():
         has_nodejs = __salt__['mc_utils.get'](
             'makina-states.localsettings.nodejs', False)
-        reg = __salt__[
-            'mc_macros.construct_registry_configuration'
-        ](__name, defaults={
+        reg = {
             'autoupgrade': {'active': True},
             'updatedb': {'active': True},
             'nscd': {'active': _ldapEn(__salt__)},
@@ -121,6 +118,7 @@ def registry():
             'etckeeper': {'active': True},
             'locales': {'active': True},
             'localrc': {'active': True},
+            'desktoptools': {'active': False},
             'timezone': {'active': True},
             'network': {'active': True},
             'nodejs': {'active': False},
@@ -139,10 +137,20 @@ def registry():
             'users': {'active': True},
             'screen': {'active': True},
             'vim': {'active': True},
-            'rvm': {'active': False},
-        })
+            'rvm': {'active': False}}
+        nodetypes_registry = __salt__['mc_nodetypes.registry']()
+        if 'laptop' in nodetypes_registry['actives']:
+            reg.update({'desktoptools': {'active': True},
+                        'npm': {'active': True},
+                        'nodejs': {'active': True},
+                        'jdk': {'active': True},
+                        'rvm': {'active': True}})
+        reg = __salt__[
+            'mc_macros.construct_registry_configuration'
+        ](__name, defaults=reg)
         return reg
-    return _registry()
+    cache_key = 'mc_localsettings.registry'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def get_pillar_fqdn(sls, template):

@@ -55,7 +55,7 @@ class _ModuleCase(unittest.TestCase):
                      'queues',
                      'tops',
                      'roster',
-                     'grains_mods',
+                     'grains',
                      'fileserver',
                      'renderers',
                      'auth',
@@ -109,6 +109,9 @@ class _ModuleCase(unittest.TestCase):
 
     def get_opts(self):
         opts = {'root': self.root,
+                'root_dir': self.root,
+                'makina-states.localsettings.locations.root': self.root,
+                'makina-states.localsettings.locations.root_dir': self.root,
                 'testroot': '{root}',
                 'ms_conf': '{root}/etc/makina-states',
                 'mms_conf': '{root}/etc/salt/makina-states',
@@ -233,7 +236,7 @@ class _ModuleCase(unittest.TestCase):
         self.reset()
         mc_states.tests.utils.test_teardown()
 
-    def patch(self, force_load=True, **kwargs):
+    def patch(self, force_load=True, kinds=None, **kwargs):
         '''
         opts
             overriden opts
@@ -284,7 +287,9 @@ class _ModuleCase(unittest.TestCase):
         for opt in self.contextual:
             overriden = kwargs.get(opt, {})
             tpatchs[opt] = patch.dict(getattr(self, opt+'_'), overriden)
-        for kind in self.dunders_:
+        if not kinds:
+            kinds = [a for a in self.dunders_]
+        for kind in kinds:
             mods = self.dunders_[kind]
             # force lazyloader to load all
             if force_load:
@@ -354,6 +359,10 @@ class _ModuleCase(unittest.TestCase):
             raise ValueError('cant find a public function to load '
                              '{0}'.format(private_name))
         return func
+
+
+class GrainsCase(_ModuleCase):
+    kind = 'grains'
 
 
 class ModuleCase(_ModuleCase):

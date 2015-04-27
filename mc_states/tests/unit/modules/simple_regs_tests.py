@@ -9,12 +9,20 @@ import mc_states.api
 
 class TestCase(base.ModuleCase):
     def test_autoupgrade(self):
-        with self.patch(grains={'os': 'Ubuntu'}):
+        with self.patch(
+            grains={'os': 'Ubuntu'},
+            filtered=['mc.*'],
+            kinds=['modules']
+        ):
             ret = self.__('mc_autoupgrade.settings')
             self.assertTrue(
                 'Debian' not in ret['unattended']['origins'][0])
         mc_states.api.invalidate_memoize_cache('localreg_autoupgrade_settings')
-        with self.patch(grains={'os': 'Debian'}):
+        with self.patch(
+            grains={'os': 'Debian'},
+            filtered=['mc.*'],
+            kinds=['modules']
+        ):
             ret = self.__('mc_autoupgrade.settings')
             self.assertTrue(
                 'Debian' in ret['unattended']['origins'][0])

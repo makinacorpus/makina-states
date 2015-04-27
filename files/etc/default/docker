@@ -1,0 +1,5 @@
+# /etc/default/docker
+
+DOCKER_AUTO="true"
+DOCKER_DIRECTORY="/var/lib/docker"
+USE_DOCKER_BRIDGE="true"

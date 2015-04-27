@@ -19,6 +19,8 @@ import mc_states.api
 from mc_states import saltapi
 from salt.utils.odict import OrderedDict
 
+from mc_states.grains.makina_grains import _is_lxc
+
 _errmsg = saltapi._errmsg
 __name = 'mc_cloud_lxc'
 
@@ -33,41 +35,10 @@ def vt():
 
 def is_lxc():
     """
-    in case of a container, we have the container name in cgroups
-    else, it is equal to /
-
-    in lxc:
-        ['11:name=systemd:/user/1000.user/1.session',
-        '10:hugetlb:/thisname',
-        '9:perf_event:/thisname',
-        '8:blkio:/thisname',
-        '7:freezer:/thisname',
-        '6:devices:/thisname',
-        '5:memory:/thisname',
-        '4:cpuacct:/thisname',
-        '3:cpu:/thisname',
-        '2:cpuset:/thisname']
-
-    in host:
-        ['11:name=systemd:/',
-        '10:hugetlb:/',
-        '9:perf_event:/',
-        '8:blkio:/',
-        '7:freezer:/',
-        '6:devices:/',
-        '5:memory:/',
-        '4:cpuacct:/',
-        '3:cpu:/',
-        '2:cpuset:/']
+    Return true if we find a system or grain flag
+    that explicitly shows us we are in a LXC context
     """
-
-    try:
-        cgroups = open('/proc/1/cgroup').read().splitlines()
-        lxc = not '/' == [a.split(':')[-1]
-                          for a in cgroups if ':cpu:' in a][-1]
-    except Exception:
-        lxc = False
-    return lxc
+    return _is_lxc()
 
 
 def vt_default_settings(cloudSettings, imgSettings):
@@ -146,7 +117,7 @@ def vt_default_settings(cloudSettings, imgSettings):
                 '/etc/default/lxc-net-makina': {},
                 '/etc/dnsmasq.d/lxc': {},
                 '/etc/reset-net-bridges': {},
-                '/etc/lxc-net-makina.sh': {},
+                '/usr/bin/lxc-net-makina.sh': {},
                 '/usr/share/lxc/templates/lxc-ubuntu': {'template': None},
             },
             'lxc_cloud_profiles': {

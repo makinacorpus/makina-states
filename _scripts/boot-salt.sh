@@ -109,6 +109,17 @@ debug_msg() {
     fi
 }
 
+get_do_mastersalt() {
+    ret="no"
+    if [ "x${DO_MASTERSALT}" != "xno" ];then
+        ret="y"
+        if [ "x$(get_bootsalt_mode)" != "xmastersalt" ];then
+            ret="no"
+        fi
+    fi
+    echo "${ret}"
+}
+
 # 1: connection failure
 # 0: connection success
 check_connectivity() {
@@ -644,6 +655,7 @@ set_vars() {
     ROOT="${ROOT:-"/"}"
     CONF_ROOT="${CONF_ROOT:-"${ROOT}etc"}"
     ETC_INIT="${ETC_INIT:-"${CONF_ROOT}/init"}"
+    ETC_SYSTEMD="${ETC_SYSTEMD:-"${CONF_ROOT}/systemd/service"}"
     CHRONO="$(get_chrono)"
     TRAVIS_DEBUG="${TRAVIS_DEBUG:-}"
     VENV_REBOOTSTRAP="${VENV_REBOOTSTRAP:-}"
@@ -655,11 +667,11 @@ set_vars() {
     BASE_PACKAGES="$BASE_PACKAGES groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
     DO_SALT="${DO_SALT:-"y"}"
     DO_MASTERSALT="${DO_MASTERSALT:-"y"}"
-    if [ "x${DO_MASTERSALT}" = "xno" ];then
-        DO_MASTERSALT=""
+    if [ "x$(get_do_mastersalt)" != "xy" ];then
+        DO_MASTERSALT="no"
     fi
-    if [ "x${DO_SALT}" = "xno" ];then
-        DO_SALT=""
+    if [ "x${DO_SALT}" != "xy" ];then
+        DO_SALT="no"
     fi
     if [ "x${DISTRIB_CODENAME}" != "xlenny" ];then
         BASE_PACKAGES="${BASE_PACKAGES} libyaml-dev python2.7 python2.7-dev"
@@ -750,6 +762,7 @@ set_vars() {
         IS_MASTERSALT_MINION="y"
     fi
     if [ -e "${ETC_INIT}/salt-master.conf" ]\
+        || [ -e "${ETC_SYSTEMD}/salt-master.service" ]\
         || [ -e "${ETC_INIT}.d/salt-master" ]\
         || [ "x${IS_SALT_MASTER}" != "x" ];then
         IS_SALT="y"
@@ -757,6 +770,7 @@ set_vars() {
         IS_SALT_MINION="y"
     fi
     if [ -e "${ETC_INIT}/salt-minion.conf" ]\
+        || [ -e "${ETC_SYSTEMD}/salt-minion.service" ]\
         || [ -e "${ETC_INIT}.d/salt-minion" ]\
         || [ "x${IS_SALT_MINION}" != "x" ];then
         IS_SALT="y"
@@ -780,12 +794,14 @@ set_vars() {
     if [ "x${SALT_REATTACH}" = "x" ];then
         if [ -e "${ETC_INIT}.d/mastersalt-master" ]\
             || [ -e "${ETC_INIT}/mastersalt-master.conf" ]\
+            || [ -e "${ETC_SYSTEMD}/mastersalt-master.service" ]\
             || [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
             MASTERSALT_INIT_MASTER_PRESENT="y"
             MASTERSALT_INIT_PRESENT="y"
         fi
         if [ -e "${ETC_INIT}.d/mastersalt-minion" ]\
             || [ -e "${ETC_INIT}/mastersalt-minion.conf" ]\
+            || [ -e "${ETC_SYSTEMD}/mastersalt-minion.service" ]\
             || [ "x${IS_MASTERSALT_MINION}" != "x" ];then
             MASTERSALT_INIT_MINION_PRESENT="y"
             MASTERSALT_INIT_PRESENT="y"
@@ -888,6 +904,11 @@ set_vars() {
     MASTERSALT_MINION_CONTROLLER_INPUTED="${MASTERSALT_MINION_CONTROLLER}"
     MASTERSALT_MINION_CONTROLLER="${MASTERSALT_MINION_CONTROLLER:-${MASTERSALT_MINION_CONTROLLER_DEFAULT}}"
     # mastersalt variables
+    if [ "x${IS_MASTERSALT}" != "x" ];then
+        store_conf bootsalt_mode mastersalt
+    else
+        store_conf bootsalt_mode salt
+    fi
     if [ "x${IS_MASTERSALT}" != "x" ];then
         if [ "x${SALT_REATTACH}" != "x" ] && [ -e "${SALT_REATTACH_DIR}/minion" ];then
              MASTERSALT_MASTER_DNS="$(get_mastersalt)"
@@ -1000,11 +1021,6 @@ set_vars() {
     else
         QUIET_GIT="-q"
     fi
-    if [ "x${IS_MASTERSALT}" != "x" ];then
-        store_conf bootsalt_mode mastersalt
-    else
-        store_conf bootsalt_mode salt
-    fi
 
     if [ "x$(get_local_salt_mode)" = "xmasterless" ] && [ "x${IS_MASTERSALT}" = "x" ];then
         SALT_LIGHT_INSTALL="y"
@@ -1015,7 +1031,7 @@ set_vars() {
     export FORCE_SALT_BOOT_SKIP_CHECKOUTS
     export ONLY_BUILDOUT_REBOOTSTRAP SALT_LIGHT_INSTALL
     export EGGS_GIT_DIRS
-    export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS
+    export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS TRAVIS
     export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE SALT_BOOT_INITIAL_HIGHSTATE
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
     export MS_BRANCH="$(get_ms_branch)"
@@ -1033,7 +1049,7 @@ set_vars() {
     export SALT_PILLAR MASTERSALT_PILLAR
     export MASTERSALT_MS SALT_MS
     #
-    export ROOT PREFIX ETC_INIT
+    export ROOT PREFIX ETC_INIT ETC_SYSTEMD
     export VENV_PATH CONF_ROOT
     export MASTERSALT_VENV_PATH SALT_VENV_PATH PIP_CACHE
     export MCONF_PREFIX CONF_PREFIX
@@ -1147,10 +1163,10 @@ recap_(){
     bs_yellow_log " Those informations have been written to:"
     bs_yellow_log "   - ${TMPDIR}/boot_salt_top"
     bs_yellow_log "----------------------------------------------------------"
-    if [ "x${DO_MASTERSALT}" = "x" ];then
+    if [ "x$(get_do_mastersalt)" = "xno" ];then
         bs_yellow_log "mastersalt skipped"
     fi
-    if [ "x${DO_SALT}" = "x" ];then
+    if [ "x${DO_SALT}" = "xno" ];then
         bs_yellow_log "salt skipped"
     fi
     bs_yellow_log "HOST variables:"
@@ -1162,7 +1178,9 @@ recap_(){
     fi
     bs_log "DATE: ${CHRONO}"
     bs_log "LOCAL_SALT_MODE: $(get_local_salt_mode)"
-    bs_log "LOCAL_MASTERSALT_MODE: $(get_local_mastersalt_mode)"
+    if [ "x${IS_MASTERSALT}" != "x" ];then
+        bs_log "LOCAL_MASTERSALT_MODE: $(get_local_mastersalt_mode)"
+    fi
     bs_log "SALT_NODETYPE: $(get_salt_nodetype)"
     if [ "x${SALT_REATTACH}" != "x" ];then
         bs_log "-> SaltCloud mode"
@@ -1307,11 +1325,20 @@ lazy_apt_get_install() {
 }
 
 setup_backports() {
-    # on ubuntu enable backports release repos, & on debian just backport
+    # on ubuntu enable backports (saucy) release repos, & on debian just backport
+    # saucy is now on archives !
     if [ "x${BEFORE_SAUCY}" != "x" ] && [ "x${IS_UBUNTU}" != "x" ];then
         bs_log "Activating backport from ${DISTRIB_BACKPORT} to ${DISTRIB_CODENAME}"
+        if [ "x${TRAVIS}" != "x" ];then
+            bs_log "pre apt/sources.list"
+            cat /etc/apt/sources.list
+        fi
         cp  ${CONF_ROOT}/apt/sources.list "${CONF_ROOT}/apt/sources.list.${CHRONO}.sav"
-        "${SED}" -i -e "s/${DISTRIB_CODENAME}/${DISTRIB_BACKPORT}/g" "${CONF_ROOT}/apt/sources.list"
+        "${SED}" -i -re "s/(([a-z]{2}\.)?(archives?.ubuntu.com))(.*)(${DISTRIB_CODENAME})(.*)/old-releases.ubuntu.com\4${DISTRIB_BACKPORT}\6 # \1/g" /etc/apt/sources.list
+        if [ "x${TRAVIS}" != "x" ];then
+            bs_log "pre apt/sources.list"
+            cat /etc/apt/sources.list
+        fi
     fi
     if [ "x${IS_DEBIAN}" != "x" ];then
         bs_log "Activating backport from ${DISTRIB_BACKPORT} to ${DISTRIB_CODENAME}"
@@ -1327,10 +1354,18 @@ setup_backports() {
 
 teardown_backports() {
     # on ubuntu disable backports release repos, & on debian just backport
-
+    # saucy is now on archives !
     if [ "x${BEFORE_SAUCY}" != "x" ] && [ "x${IS_UBUNTU}" != "x" ];then
         bs_log "Removing backport from $DISTRIB_BACKPORT to $DISTRIB_CODENAME"
-        "${SED}" -i -e "s/${DISTRIB_BACKPORT}/${DISTRIB_CODENAME}/g" "${CONF_ROOT}/apt/sources.list"
+        if [ "x${TRAVIS}" != "x" ];then
+            bs_log "TEARDOWN: pre apt/sources.list"
+            cat /etc/apt/sources.list
+        fi
+        "${SED}" -i -re "s/(old-releases.ubuntu.com)(.*)(${DISTRIB_BACKPORT})(.*)( # )(.*) *$/\6\2${DISTRIB_CODENAME}\4/g" "${CONF_ROOT}/apt/sources.list"
+        if [ "x${TRAVIS}" != "x" ];then
+            bs_log "TEARDOWN: pre apt/sources.list"
+            cat /etc/apt/sources.list
+        fi
     fi
     # leave the backport in placs on debian
 }
@@ -1608,10 +1643,10 @@ get_git_branch() {
 
 get_salt_mss() {
     SALT_MSS=""
-    if [ "x${DO_SALT}" != "x" ] && [ "x${IS_SALT}" != "x" ];then
+    if [ "x${DO_SALT}" != "xno" ] && [ "x${IS_SALT}" != "x" ];then
         SALT_MSS="${SALT_MSS} ${SALT_MS}"
     fi
-    if  [ "x${DO_MASTERSALT}" != "x" ] && [ "x${IS_MASTERSALT}" != "x" ];then
+    if  [ "x$(get_do_mastersalt)" != "xno" ] && [ "x${IS_MASTERSALT}" != "x" ];then
         SALT_MSS="${SALT_MSS} ${MASTERSALT_MS}"
     fi
     echo ${SALT_MSS}
@@ -1894,7 +1929,8 @@ setup_and_maybe_update_code() {
 service_activated() {
     local activated=""
     local s="${1}"
-    if [ "x$(grep -q manual /etc/init/${s}.override 2>/dev/null)" != "x0" ];then
+    hassysd="$(systemctl list-unit-files --type=service 2>/dev/null| egrep -q "^${s}.service.*enabled">/dev/null;echo ${?})"
+    if [ "x$(grep -q manual /etc/init/${s}.override 2>/dev/null)" != "x0" ] || [ "x${hassysd}" = "x0" ];then
         activated="y"
     fi
     echo "${activated}"
@@ -1903,7 +1939,8 @@ service_activated() {
 service_exists() {
     local sexists=""
     local s="${1}"
-    if [ -e "/etc/init/${s}.conf" ] || [ -e "/etc/init.d/${s}" ];then
+    hassysd="$(systemctl list-unit-files --type=service 2>/dev/null| egrep -q ^${s}.service >/dev/null;echo ${?})"
+    if [ -e "/etc/init/${s}.conf" ] || [ -e "/etc/init.d/${s}" ] || [ "x${hassysd}" = "x0" ];then
         sexists="y"
     fi
     echo "${sexists}"
@@ -1963,10 +2000,10 @@ local/lib/python*
 }
 
 setup_virtualenvs() {
-    if [ "x${DO_SALT}" != "x" ];then
+    if [ "x${DO_SALT}" != "xno" ];then
         setup_virtualenv "${SALT_VENV_PATH}"
     fi
-    if [ "x${DO_MASTERSALT}" != "x" ] && [ "x${IS_MASTERSALT}" != "x" ];then
+    if [ "x$(get_do_mastersalt)" != "xno" ] && [ "x${IS_MASTERSALT}" != "x" ];then
         setup_virtualenv "${MASTERSALT_VENV_PATH}"
     fi
 }
@@ -2253,7 +2290,7 @@ edit_yaml_file() {
 }
 
 reconfigure_mastersalt_master() {
-    if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     branch_id="$(sanitize_changeset $(get_ms_branch))"
     master="${1:-${MASTERSALT_MASTER_DNS}}"
     master_ip="${2:-${MASTERSALT_MASTER_IP}}"
@@ -2315,7 +2352,7 @@ reconfigure_mastersalt_master() {
 }
 
 reconfigure_salt_master() {
-    if [ "x${DO_SALT}" = "x" ];then return;fi
+    if [ "x${DO_SALT}" = "xno" ];then return;fi
     branch_id="$(sanitize_changeset $(get_ms_branch))"
     master="${1:-${SALT_MASTER_DNS}}"
     master_ip="${2:-${SALT_MASTER_IP}}"
@@ -2380,7 +2417,7 @@ reconfigure_salt_master() {
 }
 
 reconfigure_mastersalt_minion() {
-    if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     branch_id="$(sanitize_changeset $(get_ms_branch))"
     setted_id="${1:-$(get_minion_id)}"
     master="${1:-${MASTERSALT_MASTER_DNS}}"
@@ -2469,7 +2506,7 @@ reconfigure_mastersalt_minion() {
 }
 
 reconfigure_salt_minion() {
-    if [ "x${DO_SALT}" = "x" ];then return;fi
+    if [ "x${DO_SALT}" = "xno" ];then return;fi
     branch_id="$(sanitize_changeset $(get_ms_branch))"
     setted_id="${1:-$(get_minion_id)}"
     master="${1:-${SALT_MASTER_DNS}}"
@@ -2909,7 +2946,7 @@ minion_processes() {
 }
 
 lazy_start_salt_daemons() {
-    if [ "x${DO_SALT}" = "x" ];then return;fi
+    if [ "x${DO_SALT}" = "xno" ];then return;fi
     if [ "x${IS_SALT_MASTER}" != "x" ];then
         if [ "x$(master_processes)" = "x0" ] || [ "x${salt_master_changed}" = "x1" ] ;then
             restart_local_masters
@@ -2938,7 +2975,7 @@ lazy_start_salt_daemons() {
 }
 
 gen_mastersalt_keys() {
-    if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
         if [ ! -e "${MCONF_PREFIX}/pki/master/master.pub" ];then
             bs_log "Generating mastersalt master key"
@@ -2964,7 +3001,7 @@ gen_mastersalt_keys() {
 }
 
 gen_salt_keys() {
-    if [ "x${DO_SALT}" = "x" ];then return;fi
+    if [ "x${DO_SALT}" = "xno" ];then return;fi
     if [ "x${IS_SALT_MASTER}" != "x" ];then
         if [ ! -e "${CONF_PREFIX}/pki/master/master.pub" ];then
             bs_log "Generating salt minion key"
@@ -2994,7 +3031,7 @@ gen_salt_keys() {
 
 
 install_salt_daemons() {
-    if [ "x${DO_SALT}" = "x" ];then return;fi
+    if [ "x${DO_SALT}" = "xno" ];then return;fi
     # --------- check if we need to run salt setup's
     RUN_SALT_BOOTSTRAP="${SALT_REBOOTSTRAP}"
     if [ "x${SALT_MASTER_DNS}" = "xlocalhost" ];then
@@ -3028,12 +3065,14 @@ install_salt_daemons() {
     fi
     if [ "x${IS_SALT_MASTER}" != "x" ];then
         if [ ! -e "${ETC_INIT}/salt-master.conf" ]\
+            && [ ! -e "${ETC_SYSTEMD}.d/salt-master.service" ]\
             && [ ! -e "${ETC_INIT}.d/salt-master" ];then
             RUN_SALT_BOOTSTRAP="1"
         fi
     fi
     if [ "x${IS_SALT_MINION}" != "x" ];then
         if [ ! -e "${ETC_INIT}/salt-minion.conf" ]\
+            && [ ! -e "${ETC_SYSTEMD}.d/salt-minion.service" ]\
             && [ ! -e "${ETC_INIT}.d/salt-minion" ];then
             RUN_SALT_BOOTSTRAP="1"
         fi
@@ -3100,35 +3139,35 @@ kill_pids() {
 }
 
 killall_local_mastersalt_masters() {
-    if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     if [ ! -e "${ALIVE_MARKER}" ];then
         kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v bootstrap.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
     fi
 }
 
 killall_local_mastersalt_minions() {
-    if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     if [ ! -e "${ALIVE_MARKER}" ];then
         kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v bootstrap.sh|grep -v boot-salt|grep mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
     fi
 }
 
 killall_local_masters() {
-    if [ "x${DO_SALT}" = "x" ];then return;fi
+    if [ "x${DO_SALT}" = "xno" ];then return;fi
     if [ ! -e "${ALIVE_MARKER}" ];then
         kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(master|syndic)"|grep -v deploy.sh|grep -v bootstrap.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
     fi
 }
 
 killall_local_minions() {
-    if [ "x${DO_SALT}" = "x" ];then return;fi
+    if [ "x${DO_SALT}" = "xo" ];then return;fi
     if [ ! -e "${ALIVE_MARKER}" ];then
         kill_pids $(filter_host_pids $(${PS} aux|egrep "salt-(minion)"|grep -v deploy.sh|grep -v bootstrap.sh|grep -v boot-salt|grep -v mastersalt|awk '{print $2}')) 1>/dev/null 2>/dev/null
     fi
 }
 
 restart_local_mastersalt_masters() {
-    if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     upgrade_from_buildout
     if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
         stop_and_disable_service mastersalt-master
@@ -3145,7 +3184,7 @@ restart_local_mastersalt_masters() {
 }
 
 restart_local_mastersalt_minions() {
-    if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     upgrade_from_buildout
     if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
         killall_local_mastersalt_minions
@@ -3162,7 +3201,7 @@ restart_local_mastersalt_minions() {
 }
 
 restart_local_masters() {
-    if [ "x${DO_SALT}" = "x" ];then return;fi
+    if [ "x${DO_SALT}" = "xno" ];then return;fi
     upgrade_from_buildout
     if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
         stop_and_disable_service salt-master
@@ -3178,7 +3217,7 @@ restart_local_masters() {
 }
 
 restart_local_minions() {
-    if [ "x${DO_SALT}" = "x" ];then return;fi
+    if [ "x${DO_SALT}" = "xno" ];then return;fi
     upgrade_from_buildout
     if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
         stop_and_disable_service salt-minion
@@ -3194,7 +3233,7 @@ restart_local_minions() {
 }
 
 salt_ping_test() {
-    if [ "x${DO_SALT}" = "x" ];then return;fi
+    if [ "x${DO_SALT}" = "xno" ];then return;fi
     # test in a subshell as this can be bloquant
     # salt cloud would then fail badly on this
     if [ x"${local_salt_mode}" = "xmasterless" ];then return;fi
@@ -3226,7 +3265,7 @@ salt_ping_test() {
 }
 
 mastersalt_ping_test() {
-    if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     if [ x"${local_mastersalt_mode}" = "xmasterless" ];then return;fi
     # test in a subshell as this can be bloquant
     # salt cloud would then fail badly on this
@@ -3255,7 +3294,7 @@ mastersalt_ping_test() {
 }
 
 minion_challenge() {
-    if [ "x${DO_SALT}" = "x" ];then return;fi
+    if [ "x${DO_SALT}" = "xno" ];then return;fi
     if [ "x${IS_SALT_MINION}" = "x" ];then return;fi
     if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
         challenged_me="y"
@@ -3296,7 +3335,7 @@ minion_challenge() {
 }
 
 mastersalt_minion_challenge() {
-    if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     if [ "x${IS_MASTERSALT_MINION}" = "x" ];then return;fi
     if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
         challenged_me="y"
@@ -3337,7 +3376,7 @@ mastersalt_minion_challenge() {
 }
 
 salt_master_connectivity_check() {
-    if [ "x${DO_SALT}" = "x" ];then return;fi
+    if [ "x${DO_SALT}" = "xno" ];then return;fi
     if [ "x$(get_local_salt_mode)" != "xmasterless" ];then
         if [ "x$(check_connectivity ${SALT_MASTER_IP} ${SALT_MASTER_PORT} 30)" != "x0" ];then
             die "SaltMaster is unreachable (${SALT_MASTER_IP}/${SALT_MASTER_PORT})"
@@ -3346,7 +3385,7 @@ salt_master_connectivity_check() {
 }
 
 mastersalt_master_connectivity_check() {
-    if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then return;fi
     if [ "x$(check_connectivity $(get_mastersalt) ${MASTERSALT_MASTER_PORT} 30)" != "x0" ];then
         die "MastersaltMaster is unreachable ($(get_mastersalt)/${MASTERSALT_MASTER_PORT})"
@@ -3372,7 +3411,7 @@ get_delay_time() {
 }
 
 make_association() {
-    if [ "x${DO_SALT}" = "x" ];then return;fi
+    if [ "x${DO_SALT}" = "xno" ];then return;fi
     if [ "x${IS_SALT_MINION}" = "x" ];then return;fi
     if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
         registered="1"
@@ -3493,7 +3532,7 @@ salt_echo() {
 }
 
 make_mastersalt_association() {
-    if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     if [ "x${IS_MASTERSALT_MINION}" = "x" ];then return;fi
     if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then return;fi
     minion_id="$(cat "${CONF_PREFIX}/minion_id" 1>/dev/null 2>/dev/null)"
@@ -3583,7 +3622,7 @@ make_mastersalt_association() {
 }
 
 lazy_start_mastersalt_daemons() {
-    if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then return;fi
     if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
         if [ "x$(mastersalt_master_processes)" = "x0" ] || [ "x${mastersalt_master_changed}" = "x1" ];then
@@ -3628,7 +3667,7 @@ run_mastersalt_bootstrap() {
 
 
 install_mastersalt_daemons() {
-    if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     # --------- check if we need to run mastersalt setup's
     RUN_MASTERSALT_BOOTSTRAP="${SALT_REBOOTSTRAP}"
     # regenerate keys if missings
@@ -3665,12 +3704,14 @@ install_mastersalt_daemons() {
     fi
     if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
         if [ ! -e "${ETC_INIT}.d/mastersalt-master" ]\
+            &&  [ ! -e "${ETC_SYSTEMD}/mastersalt-master.service" ]\
             &&  [ ! -e "${ETC_INIT}/mastersalt-master.conf" ];then
             RUN_MASTERSALT_BOOTSTRAP="1"
         fi
     fi
     if  [ "x${IS_MASTERSALT_MINION}" != "x" ];then
         if [ ! -e "${ETC_INIT}.d/mastersalt-minion" ]\
+            &&  [ ! -e "${ETC_SYSTEMD}/mastersalt-minion.service" ]\
             && [ ! -e "${ETC_INIT}/mastersalt-minion.conf" ];then
             RUN_MASTERSALT_BOOTSTRAP="1"
         fi
@@ -3771,7 +3812,7 @@ install_salt_env() {
 # --------- HIGH-STATES
 
 highstate_in_mastersalt_env() {
-    if [ "x${DO_MASTERSALT}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     # IMPORTANT: MASTERSALT BEFORE SALT !!!
     if [ "x${SALT_BOOT_SKIP_HIGHSTATES}" = "x" ]\
         && [ "x${MASTERSALT_BOOT_SKIP_HIGHSTATE}" = "x" ];then
@@ -3796,7 +3837,7 @@ highstate_in_mastersalt_env() {
 }
 
 highstate_in_salt_env() {
-    if [ "x${DO_SALT}" = "x" ];then return;fi
+    if [ "x${DO_SALT}" = "xno" ];then return;fi
     if [ "x${SALT_BOOT_SKIP_HIGHSTATES}" = "x" ]\
         && [ "x${SALT_BOOT_SKIP_HIGHSTATE}" = "x" ];then
         bs_log "Running makina-states highstate"
@@ -4165,6 +4206,7 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--no-salt" ];then
             FORCE_IS_SALT="no"
+            DO_SALT="no"
             FORCE_IS_SALT_MINION="no"
             FORCE_IS_SALT_MASTER="no"
             IS_SALT=""
@@ -4183,6 +4225,7 @@ parse_cli_opts() {
             argmatch="1"
         fi
         if [ "x${1}" = "x--no-mastersalt" ];then
+            DO_MASTERSALT="no"
             FORCE_IS_MASTERSALT="no"
             IS_MASTERSALT=""
             FORCE_IS_MASTERSALT_MASTER="no"
@@ -4464,7 +4507,7 @@ synchronize_code() {
         bs_log "Code updated"
     fi
     if [ "x${1}" != "xno_refresh" ];then
-        if [ "x${DO_SALT}" != "x" ] &&\
+        if [ "x${DO_SALT}" != "xno" ] &&\
             [ "x${IS_SALT_MINION}" != "x" ] &&\
             [ "x$(get_local_salt_mode)" = "xremote" ];then
             salt_call_wrapper saltutil.sync_all
@@ -4483,7 +4526,7 @@ synchronize_code() {
         # The only place would be if we stored modules in _modules
         # on mastersalt, but here a manual call to sync is sufficient
         # For now, refreshing the code (git pull) is totally sufficient
-        #if [ "x${DO_MASTERSALT}" != "x" ] \
+        #if [ "x$(get_do_mastersalt)" != "x" ] \
         #    && [ "x${IS_MASTERSALT}" != "x" ] \
         #    && [ "x$(get_local_mastersalt_mode)" = "xremote" ];then
         #    mastersalt_call_wrapper saltutil.clear_cache
@@ -4607,6 +4650,9 @@ disable_service() {
     elif [  -e /etc/init.d/${i} ] && [ "x$(which update-rc.d 2>/dev/null)" != "x" ];then
         update-rc.d -f "${i}" remove
     fi
+    if which systemctl 2>/dev/null 1>/dev/null;then
+        systemctl disable "${1}".service
+    fi
 }
 
 enable_service() {
@@ -4615,6 +4661,9 @@ enable_service() {
         rm -f "/etc/init/${i}.override"
     elif [  -e /etc/init.d/${i} ] && [ "x$(which update-rc.d 2>/dev/null)" != "x" ];then
         update-rc.d -f "${i}" defaults 99
+    fi
+    if which systemctl 2>/dev/null 1>/dev/null;then
+        systemctl enable "${1}".service
     fi
 }
 

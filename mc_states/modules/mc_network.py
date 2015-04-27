@@ -68,10 +68,10 @@ def default_net():
     # the default route for lxc and docker containers
     # later, we will add maybe support for failover ip bridges/ vmac
     nifaces = [a[0] for a in gifaces
-               if 'veth' not in a
-               and 'br' not in a
-               and 'tun' not in a
-               and 'tap' not in a]
+               if 'veth' not in a and
+               'br' not in a and
+               'tun' not in a and
+               'tap' not in a]
     brifs = [a for a in nifaces if 'br' in a]
     if 'eth0' in nifaces:
         default_if = 'eth0'
@@ -92,11 +92,11 @@ def default_net():
                 default_if = br
                 break
     try:
-        default_net = '.'.join(
+        default_net_ = '.'.join(
             [a for a in gifaces
              if a[0] == default_if][
                  0][1][0].split('.')[:3] + ['0'])
-        parts = default_net.split('.')
+        parts = default_net_.split('.')
         parts.reverse()
         default_netmask = 32
         for part in parts:
@@ -105,17 +105,15 @@ def default_net():
             else:
                 break
     except Exception:
-        default_net = None
+        default_net_ = None
         default_netmask = 32
-    return {
-        'default_route': default_route,
-        'default_net': default_net,
-        'default_netmask': default_netmask,
-        'gifaces': gifaces,
-        'nifaces': nifaces,
-        'brifs': brifs,
-        'default_if': default_if,
-    }
+    return {'default_route': default_route,
+            'default_net': default_net_,
+            'default_netmask': default_netmask,
+            'gifaces': gifaces,
+            'nifaces': nifaces,
+            'brifs': brifs,
+            'default_if': default_if}
 
 
 def sort_ifaces(infos):
@@ -213,14 +211,13 @@ def settings():
         pillar = __pillar__
         data = {'interfaces': {}, 'ointerfaces': []}
         grainsPref = 'makina-states.localsettings.'
-        providers = __salt__['mc_provider.settings']()
+        providers_ = __salt__['mc_provider.settings']()
         # Does the network base config file have to be managed via that
         # See makina-states.localsettings.network
         # Compat for the first test!
         data['networkManaged'] = (
-            saltmods['mc_utils.get']('makina-states.network_managed', False)
-            or saltmods['mc_utils.get'](grainsPref + 'network.managed', False))
-
+            saltmods['mc_utils.get']('makina-states.network_managed', False) or
+            saltmods['mc_utils.get'](grainsPref + 'network.managed', False))
         # ip managment
         default_ip = None
         ifaces = grains['ip_interfaces'].items()
@@ -230,10 +227,10 @@ def settings():
         devhost = __salt__['mc_nodetypes.registry']()['is']['devhost']
         real_ifaces = [(a, ip)
                        for a, ip in ifaces
-                       if 'br' not in a
-                          and 'docker' not in a
-                          and 'tun' not in a
-                          and not a.startswith('lo')]
+                       if 'br' not in a and
+                       'docker' not in a and
+                       'tun' not in a and
+                       not a.startswith('lo')]
         noeth = False
         if not 'eth0'in [a for a, ip in ifaces]:
             noeth = True
@@ -243,13 +240,13 @@ def settings():
             rpnem = ems[-1]
         for iface, ips in ifaces:
             # filter out v6 addresses
-            ips = [a for a in ips if not ':' in a]
+            ips = [a for a in ips if ':' not in a]
             if ips:
                 if not default_ip:
                     default_ip = ips[0]
                 if (iface == 'eth1') and devhost:
                     devhost_ip = ips[0]
-                if providers['have_rpn'] and (iface in ['eth1', rpnem]):
+                if providers_['have_rpn'] and (iface in ['eth1', rpnem]):
                     # configure rpn with dhcp
                     forced_ifs[iface] = {}
         if not default_ip:
@@ -274,8 +271,7 @@ def settings():
             localhosts.extend([
                '{main_ip} {hostname}.{domain} {hostname}'.format(**data),
                '127.0.1.1 {hostname}.{domain} {hostname}'.format(**data),
-               '127.0.0.1 {hostname}.{domain} {hostname}'.format(**data),
-            ])
+               '127.0.0.1 {hostname}.{domain} {hostname}'.format(**data)])
         data['hosts_list'] = hosts_list = []
         for k, edata in pillar.items():
             if k.endswith('makina-hosts'):
@@ -298,7 +294,7 @@ def settings():
         for ifc, data in netdata['interfaces'].items():
             data.setdefault('ifname', ifc)
         # get the order configuration
-        # on ubuntu trusty and some distros, copy where biosdevname is true
+        # on ubuntu 14.04+ and some distros, copy where biosdevname is true
         # from eth0 to the real network iface
         if noeth:
             for i in range(10):
@@ -373,11 +369,11 @@ def ns_whois(name, ttl=24*60*60, cache=True, whois_ttl=60*60*24*30):
             cdata.setdefault('data', data)
             query = cdata.setdefault('query', {})
             if (
-                not query
-                or not cache
-                or (
-                    not query.get('expiration_date')
-                    and query['registrar'] not in ['ovh', 'gandi'])
+                not query or
+                not cache or
+                (
+                    not query.get('expiration_date') and
+                    query['registrar'] not in ['ovh', 'gandi'])
             ):
                 for i in range(3):
                     try:
@@ -398,9 +394,9 @@ def ns_whois(name, ttl=24*60*60, cache=True, whois_ttl=60*60*24*30):
                         if isinstance(query[a], datetime.datetime):
                             query[a] = query[a].isoformat()
             if (
-                query
-                and not query.get('expiration_date')
-                and query['registrar'] not in ['ovh', 'gandi']
+                query and
+                not query.get('expiration_date') and
+                query['registrar'] not in ['ovh', 'gandi']
             ):
                 found = False
                 if query['registrar']:
@@ -433,7 +429,7 @@ def ns_whois(name, ttl=24*60*60, cache=True, whois_ttl=60*60*24*30):
             __salt__['mc_macros.update_local_registry'](
                 'ns_whois_data', wreg,
                 registry_format='pack')
-        except:
+        except Exception:
             log.error(traceback.format_exc())
             data = {}
         return data
@@ -503,12 +499,12 @@ def whois_data(ip, ttl=24*60*60, whois_ttl=60*60*24*30):
                                      'handle',
                                      'name']:
                                 if val and i in val.lower():
-                                        data['is_{0}'.format(provider)] = True
-                                        break
+                                    data['is_{0}'.format(provider)] = True
+                                    break
             __salt__['mc_macros.update_local_registry'](
                 'whois_data', wreg,
                 registry_format='pack')
-        except:
+        except Exception:
             log.error(traceback.format_exc())
             data = {}
         return data

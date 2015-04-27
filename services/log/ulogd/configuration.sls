@@ -1,3 +1,7 @@
+#
+# Should be preconfigured on ubuntu precise
+# as the default conf will prevent the daemon to start on a container
+#
 {% set data = salt['mc_ulogd.settings']() %}
 include:
   - makina-states.services.log.ulogd.hooks
@@ -13,27 +17,24 @@ makina-ulogd-configuration-check:
     - watch_in:
       - mc_proxy: ulogd-pre-restart-hook
 
-{% set sdata =salt['mc_utils.json_dump'](data) %}
-{% for f in [
-'/etc/logrotate.d/ulogd2',
-'/etc/ulogd.conf',
-] %}
+{% for f, fdata in data.confs.items() %}
+{% set template = fdata.get('template', 'jinja') %}
 makina-ulogd-{{f}}:
   file.managed:
-    - name: {{f}}
+    - name: "{{fdata.get('target', f)}}"
+    - source: "{{fdata.get('source', 'salt://makina-states/files'+f)}}"
+    - mode: "{{fdata.get('mode', 750)}}"
+    - user: "{{fdata.get('user', 'root')}}"
+    - group:  "{{fdata.get('group', 'root')}}"
+    {% if fdata.get('makedirs', True) %}
     - makedirs: true
-    - source: salt://makina-states/files{{f}}
-    - user: root
-    - group: root
-    - mode: 755
-    - template: jinja
-    - defaults:
-      data: |
-            {{sdata}}
+    {% endif %}
+    {% if template %}
+    - template: "{{template}}"
+    {%endif%}
     - watch:
       - mc_proxy: ulogd-pre-conf-hook
     - watch_in:
       - mc_proxy: ulogd-post-conf-hook
-{% endfor %}
-
+{%endfor %}
 {%endif %}

@@ -7,7 +7,6 @@
 
 {% set locs = salt['mc_locations.settings']() %}
 {% set data = salt['mc_uwsgi.settings']() %}
-{% set sdata = salt['mc_utils.json_dump'](data) %}
 
 include:
   - makina-states.services.proxy.uwsgi.hooks
@@ -29,10 +28,6 @@ uwsgi-init-upstart-conf:
       - mc_proxy: uwsgi-pre-conf
     - watch_in:
       - mc_proxy: uwsgi-post-conf
-    - defaults:
-      data: |
-            {{sdata}}
-
 {% endif %}
 
 uwsgi-init-default-conf:
@@ -48,10 +43,28 @@ uwsgi-init-default-conf:
       - mc_proxy: uwsgi-pre-conf
     - watch_in:
       - mc_proxy: uwsgi-post-conf
-    - defaults:
-      data: |
-            {{sdata}}
 
+
+{% set extra_confs = {
+  '/usr/bin/uwsgi.sh': {"mode": "755"},
+  '/etc/systemd/system/uwsgi.conf': {"mode": "644"}
+}%}
+
+{% for i, cdata in extra_confs.items() %}
+uwsgi-{{i}}:
+  file.managed:
+    - name: {{i}}
+    - source: salt://makina-states/files{{i}}
+    - mode: {{cdata.mode}}
+    - template: jinja
+    - makedirs: true
+    - user: root
+    - group: root
+    - watch:
+      - mc_proxy: uwsgi-pre-conf
+    - watch_in:
+      - mc_proxy: uwsgi-post-conf
+{% endfor %}
 {%- import "makina-states/services/proxy/uwsgi/macros.jinja" as uwsgi with context %}
 {#
 {{uwsgi.uwsgiAddWatcher('foo', '/bin/echo', args=[1]) }}

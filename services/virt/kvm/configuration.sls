@@ -20,4 +20,3 @@ include:
 {% if grains['os'] in ['Ubuntu'] -%}
 {% endif %}
 {% endif %}
-

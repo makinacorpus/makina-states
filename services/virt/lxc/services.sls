@@ -1,7 +1,7 @@
 include:
   - makina-states.services.virt.lxc.hooks
+  - makina-states.services.virt.cgroups
 {% if salt['mc_controllers.mastersalt_mode']() %}
-
 lxc-other-svc:
   service.running:
     - names:
@@ -15,11 +15,11 @@ lxc-other-svc:
 
 lxc-services-enabling:
   service.running:
-    - reload: true
     - enable: true
     - names:
       - lxc
       - lxc-net
+      - lxc-net-makina
     - watch:
       - mc_proxy: lxc-pre-restart
     - watch_in:

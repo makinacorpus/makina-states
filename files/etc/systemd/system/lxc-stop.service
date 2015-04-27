@@ -1,0 +1,13 @@
+# MANAGED VIA SALT -- DO NOT EDIT
+[Unit]
+Description=lxc-stop
+Before=shutdown.target reboot.target halt.target
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+ExecStop=/usr/bin/ms-lxc-stop.sh
+
+[Install]
+WantedBy=shutdown.target
