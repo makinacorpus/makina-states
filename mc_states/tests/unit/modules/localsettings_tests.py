@@ -35,6 +35,20 @@ class TestCase(base.ModuleCase):
             self.assertFalse(ret2['is']['npm'])
             self.assertFalse(ret2['is']['nodejs'])
 
+    def test_apparmor(self):
+        with self.patch(
+            grains={'os': 'foo'},
+            filtered=['mc.*'],
+            kinds=['modules']
+        ):
+            self.assertFalse(self._('mc_localsettings.apparmor_en')())
+        with self.patch(
+            grains={'os': 'Ubuntu'},
+            filtered=['mc.*'],
+            kinds=['modules']
+        ):
+            self.assertTrue(self._('mc_localsettings.apparmor_en')())
+
 
 if __name__ == '__main__':
     unittest.main()
