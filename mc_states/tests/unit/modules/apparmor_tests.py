@@ -36,7 +36,8 @@ class TestCase(base.ModuleCase):
             kinds=['modules']
         ):
             ret1 = self._('mc_apparmor.settings')()
-            self.assertTrue(len(ret1['confs']) > 10)
+            # we disabled for now backport on ubuntu trusty
+            self.assertFalse(len(ret1['confs']) > 10)
         mc_states.api.invalidate_memoize_cache('localreg_apparmor_settings')
 
 
