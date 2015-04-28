@@ -3,3 +3,4 @@
 LXC_AUTO="true"
 LXC_DIRECTORY="/var/lib/lxc"
 USE_LXC_BRIDGE="true"
+if [ -f /etc/default/lxc-net ];then . /etc/default/lxc-net;fi
