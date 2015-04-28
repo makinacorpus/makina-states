@@ -103,7 +103,7 @@ def settings(ttl=15*60):
 
 def apparmor_en():
     ret = False
-    if __grains__['os'] in ['Ubuntua']:
+    if __grains__['os'] in ['Ubuntu']:
         ret = True
     return ret
 

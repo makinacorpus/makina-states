@@ -25,7 +25,7 @@ def settings():
         _g = __grains__
         enabled = (
             __salt__['mc_localsettings.apparmor_en']() and
-            __salt__['mc_nodetypes.is_container']())
+            not __salt__['mc_nodetypes.is_container']())
         if _g['os'] in ['Ubuntu'] and _g['osrelease'] < '15.04':
             confs.update({
                 # in fact this does not play nice with apparmor 2.8
