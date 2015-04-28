@@ -13,7 +13,7 @@ LimitNOFILE=100000
 ExecStartPre=/bin/sh -ec "rm -f {{salt_data['sock_dir']}}/minion_event*ipc"
 ExecStart=/bin/sh -ec "{{salt_data['bin_dir']}}/{{salt_data['daemon_name']}} {% if salt_data['init_debug'] %} -lall {% endif %}"
 ExecStopPost=/bin/sh -ec "rm -f {{salt_data['sock_dir']}}/minion_event*ipc"
-KillMode=process
+#KillMode=process
 
 [Install]
 WantedBy=multi-user.target

@@ -93,6 +93,24 @@ def vt_default_settings(cloudSettings, imgSettings):
     backing = 'dir'
     if _s['mc_nodetypes.is_devhost']():
         backing = dptype = 'overlayfs'
+        confs = {'/etc/apparmor.d/lxc/lxc-default': {'mode': 644},
+                 '/etc/default/lxc': {},
+                 '/etc/default/lxc-net-makina': {},
+                 '/etc/dnsmasq.d/lxc': {},
+                 '/etc/reset-net-bridges': {},
+                 '/usr/bin/lxc-net-makina.sh': {},
+                 '/usr/share/lxc/templates/lxc-ubuntu': {'template': None}}
+    try:
+        if (
+            __grains__['os'] in ['Ubuntu'] and
+            __grains__['osrelease'] < '15.04'
+        ):
+            confs.update({
+                '/usr/bin/create_container_systemd_cgroup': {'mode': '755'},
+                '/usr/bin/remove_container_systemd_cgroup': {'mode': '755'},
+                '/usr/share/lxc/config/ubuntu.common.conf': {'mode': '644'}})
+    except NameError:
+        pass
     vmSettings = _s['mc_utils.dictupdate'](
         _s['mc_cloud_vm.vt_default_settings'](cloudSettings, imgSettings), {
             'vt': VT,
@@ -112,15 +130,7 @@ def vt_default_settings(cloudSettings, imgSettings):
                          'fstab': None,
                          'lxc_conf': [],
                          'lxc_conf_unset': []},
-            'host_confs': {
-                '/etc/apparmor.d/lxc/lxc-default': {'mode': 644},
-                '/etc/default/lxc': {},
-                '/etc/default/lxc-net-makina': {},
-                '/etc/dnsmasq.d/lxc': {},
-                '/etc/reset-net-bridges': {},
-                '/usr/bin/lxc-net-makina.sh': {},
-                '/usr/share/lxc/templates/lxc-ubuntu': {'template': None},
-            },
+            'host_confs': confs,
             'lxc_cloud_profiles': {
                 'xxxtrem': {'size': '2000g'},
                 'xxtrem': {'size': '1000g'},

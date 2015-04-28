@@ -1,0 +1,2 @@
+#!/bin/bash
+[ -n "$LXC_NAME" ] && find "/sys/fs/cgroup/systemd/lxc/$LXC_NAME" -type d | tac | xargs rmdir

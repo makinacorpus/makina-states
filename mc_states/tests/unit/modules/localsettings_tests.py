@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#a!/usr/bin/env python
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import absolute_import
@@ -34,6 +34,24 @@ class TestCase(base.ModuleCase):
             self.assertFalse(ret2['is']['jdk'])
             self.assertFalse(ret2['is']['npm'])
             self.assertFalse(ret2['is']['nodejs'])
+
+    def test_apparmor(self):
+        mc_states.api.invalidate_memoize_cache('localreg_nodetypes_registry')
+        mc_states.api.invalidate_memoize_cache('mc_localsettings.registry')
+        with self.patch(
+            grains={'os': 'foo'},
+            filtered=['mc.*'],
+            kinds=['modules']
+        ):
+            self.assertFalse(self._('mc_localsettings.apparmor_en')())
+        mc_states.api.invalidate_memoize_cache('localreg_nodetypes_registry')
+        mc_states.api.invalidate_memoize_cache('mc_localsettings.registry')
+        with self.patch(
+            grains={'os': 'Ubuntu'},
+            filtered=['mc.*'],
+            kinds=['modules']
+        ):
+            self.assertTrue(self._('mc_localsettings.apparmor_en')())
 
 
 if __name__ == '__main__':
