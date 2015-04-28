@@ -101,6 +101,13 @@ def settings(ttl=15*60):
     return _reg
 
 
+def apparmor_en():
+    ret = False
+    if __grains__['os'] in ['Ubuntua']:
+        ret = True
+    return ret
+
+
 def registry(ttl=15*60):
     '''registry registry for localsettings'''
     def _do():
@@ -108,6 +115,7 @@ def registry(ttl=15*60):
             'makina-states.localsettings.nodejs', False)
         reg = {
             'autoupgrade': {'active': True},
+            'apparmor': {'active': apparmor_en()},
             'updatedb': {'active': True},
             'nscd': {'active': _ldapEn(__salt__)},
             'ldap': {'active': _ldapEn(__salt__)},
