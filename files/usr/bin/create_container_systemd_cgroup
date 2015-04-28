@@ -1,0 +1,6 @@
+#!/bin/bash
+mkdir -p "/sys/fs/cgroup/systemd/lxc/$LXC_NAME"
+mount -t sysfs sysfs "$LXC_ROOTFS_MOUNT/sys"
+mount -t tmpfs none "$LXC_ROOTFS_MOUNT/sys/fs/cgroup"
+mkdir "$LXC_ROOTFS_MOUNT/sys/fs/cgroup/systemd"
+mount --bind "/sys/fs/cgroup/systemd/lxc/$LXC_NAME" "$LXC_ROOTFS_MOUNT/sys/fs/cgroup/systemd"
