@@ -23,6 +23,12 @@ include:
 
 {% set extra_confs = salt['mc_utils.copy_dictupdate'](
   data['host_confs'], extra_confs) %}
+{% if grains['os'] in ['Ubuntu'] and grains['osrelease'] < '15.04' %}
+{% do extra_confs.update({
+     '/usr/bin/create_container_systemd_cgroup': {'mode': '755'},
+     '/usr/bin/remove_container_systemd_cgroup': {'mode': '755'},
+     '/usr/share/lxc/config/ubuntu.common.conf': {'mode': '644'}}) %}
+{%  endif %}
 
 {% for f, fdata in extra_confs.items() %}
 {% set template = fdata.get('template', 'jinja') %}
