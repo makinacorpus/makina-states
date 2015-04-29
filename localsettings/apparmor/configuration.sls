@@ -29,7 +29,7 @@ ms-apparmor-restart{{suf}}:
   service.running:
     - enable: true
 {%else %}
-  service.running:
+  service.dead:
     - enable: false
 {%endif %}
     - name: apparmor
