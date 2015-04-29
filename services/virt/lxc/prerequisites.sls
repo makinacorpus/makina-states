@@ -34,6 +34,10 @@ lxc-pkgs:
       - lxc-templates
       - lxc
       - lxctl
+      - python3-lxc
+      - liblxc1
+      - lxcfs
+      - cgmanager
       - dnsmasq
     - watch_in:
       - mc_proxy: lxc-post-pkg

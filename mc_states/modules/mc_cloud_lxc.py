@@ -118,8 +118,9 @@ def vt_default_settings(cloudSettings, imgSettings):
                 '/etc/default/lxc-net-makina': {},
                 '/etc/dnsmasq.d/lxc': {},
                 '/etc/reset-net-bridges': {},
-                '/usr/bin/lxc-net-makina.sh': {},
-                '/usr/share/lxc/templates/lxc-ubuntu': {'template': None}},
+                # '/usr/bin/lxc-net-makina.sh': {},
+                # '/usr/share/lxc/templates/lxc-ubuntu': {'template': None}
+            },
             'lxc_cloud_profiles': {
                 'xxxtrem': {'size': '2000g'},
                 'xxtrem': {'size': '1000g'},
