@@ -594,7 +594,9 @@ validate_nodetype() {
         fi
         if [ ! -e "${saltms}/nodetypes/${n}.sls" ];then
             # invalid nodetype, use default
-            n=""
+            if ! echo "${n}" | egrep -q "devhost|dockercontainer|kvm|laptop|lxccontainer|server|travis|vagrantvm|vm";then
+               n=""
+            fi
         fi
     fi
     echo "${n}"
