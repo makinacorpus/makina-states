@@ -1,9 +1,3 @@
-{#-
-# RVM integration
-# see:
-#   - makina-states/doc/ref/formulaes/localsettings/etckeeper.rst
-#}
-
 {% set locs=salt['mc_locations.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'etckeeper') }}
 {% if salt['mc_controllers.mastersalt_mode']() %}
@@ -17,9 +11,9 @@ etckeeper-pkgs:
       - git
       - etckeeper
     - watch_in:
-      - name: etckeeper-initial
-      - mc_proxy: etckeeper-run-hook
-      - file: etckeeper-/etc/etckeeper/etckeeper.conf
+      - mc_proxy: etckeeper-inst-pre
+    - watch_in:
+      - mc_proxy: etckeeper-inst-post
 
 
 {%- for config, cdata in defaults.configs.items() %}
@@ -33,19 +27,22 @@ etckeeper-{{config}}:
     - user: root
     - group: root
     - mode: 750
+    - watch:
+      - mc_proxy: etckeeper-conf-pre
     - watch_in:
-      - mc_proxy: etckeeper-run-hook
+      - mc_proxy: etckeeper-conf-post
 {% endfor %}
 
 etckeeper-initial:
   cmd.run:
-    - name: >
-           /usr/bin/etckeeper init;
-           /usr/bin/etckeeper commit "Initial commit";
-    - require:
-       - pkg: etckeeper-pkgs
-       - file: etckeeper-/etc/etckeeper/etckeeper.conf
+    - name: |
+            /usr/bin/etckeeper init
+            /usr/bin/etckeeper commit "Initial commit"
     - unless: test -d {{locs.conf_dir}}/.git
+    - watch:
+      - mc_proxy: etckeeper-run-pre
+    - watch_in:
+      - mc_proxy: etckeeper-run-hook
 
 etckeeper-perms:
   file.managed:
@@ -55,18 +52,12 @@ etckeeper-perms:
     - group: root
     - mode: 750
     - watch:
-      - mc_proxy: etckeeper-run-hook
       - cmd: etckeeper-initial
     - watch_in:
       - mc_proxy: etckeeper-post-run-hook
-    - contents: >
-                #!/bin/sh
-
-                exec {{locs.resetperms }}
-                --dmode 0700 --fmode 0700
-                --user "root" --group "root"
-                --paths {{locs.conf_dir}}/.git
-
+    - contents: |
+                #!/usr/bin/env bash
+                exec {{locs.resetperms }} --dmode 0700 --fmode 0700 --user "root" --group "root" --paths {{locs.conf_dir}}/.git
 {# deactivated as soon or later it will be autocommited from
    makina-states.commin.autocommit
 etckeeper-run:
@@ -80,4 +71,3 @@ etckeeper-run:
       - mc_proxy: etckeeper-post-run-hook
 #}
 {% endif %}
-
