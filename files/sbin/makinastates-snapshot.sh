@@ -13,6 +13,10 @@ REMOVE="
 /root/.cache
 /etc/makina-states/nodetype
 /home/*/.cache
+/etc/systemd/system/multi-user.target.wants/mastersalt-minion.service
+/etc/systemd/system/multi-user.target.wants/mastersalt-master.service
+/etc/systemd/system/multi-user.target.wants/salt-minion.service
+/etc/systemd/system/multi-user.target.wants/salt-master.service
 "
 
 WIPE="
