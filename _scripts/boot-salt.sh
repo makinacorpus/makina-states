@@ -604,7 +604,7 @@ get_default_nodetype() {
     saved_nt="$(validate_nodetype $(get_conf nodetype))"
     fallback_nt="server"
     DEFAULT_NT="${saved_nt}"
-    if [ "${saved_nt}" = "x" ] || [ "x${saved_nt}" = "x${fallback_nt}" ];then
+    if [ "x${saved_nt}" = "x" ] || [ "x${saved_nt}" = "x${fallback_nt}" ];then
         DEFAULT_NT=""
     fi
     if [ "x${DEFAULT_NT}" = "x" ];then
