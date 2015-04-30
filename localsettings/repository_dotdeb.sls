@@ -18,9 +18,9 @@ dotdeb-repo:
     - keyid: E9C74FEEA2098A6E
     - keyserver: {{pkgssettings.keyserver }}
     - watch:
-      - mc_proxy: after-base-pkgmgr-config-proxy
+      - mc_proxy: before-pkgmgr-config-proxy
     - watch_in:
-      - mc_proxy: after-pkgmgr-config-proxy
+      - mc_proxy: after-base-pkgmgr-config-proxy
 
 makina-dotdeb-pin-php:
   file.managed:

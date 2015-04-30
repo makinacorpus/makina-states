@@ -15,9 +15,9 @@ include:
 before-ubuntu-pkg-install-proxy:
   mc_proxy.hook:
     - watch:
-        - mc_proxy: before-pkg-install-proxy
-        - mc_proxy: after-base-pkgmgr-config-proxy
+      - mc_proxy: before-pkg-install-proxy
     - watch_in:
+      - mc_proxy: after-pkg-install-proxy
       {% if grains['os'] == 'Ubuntu' %}
       - pkg: ubuntu-pkgs
       {% endif %}
@@ -28,9 +28,9 @@ before-ubuntu-pkg-install-proxy:
 
 after-ubuntu-pkg-install-proxy:
   mc_proxy.hook:
-    - watch_in:
-        - mc_proxy: after-pkg-install-proxy
     - watch:
+      - mc_proxy: before-pkg-install-proxy
+      - mc_proxy: before-ubuntu-pkg-install-proxy
       {% if grains['os'] == 'Ubuntu' %}
       - pkg: ubuntu-pkgs
       {% endif %}
@@ -38,6 +38,9 @@ after-ubuntu-pkg-install-proxy:
       - pkg: dev-pkgs
       - pkg: net-pkgs
       - pkg: salt-pkgs
+    - watch_in:
+      - mc_proxy: after-pkg-install-proxy
+
 {% if grains['os'] == 'Ubuntu' -%}
 ubuntu-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:

@@ -13,8 +13,10 @@ include:
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}
 apt-sources-list:
   file.managed:
-    - watch_in:
+    - watch:
       - mc_proxy: before-pkgmgr-config-proxy
+    - watch_in:
+      - mc_proxy: after-base-pkgmgr-config-proxy
     - name: {{ locs.conf_dir }}/apt/sources.list
     - source: salt://makina-states/files/etc/apt/sources.list
     - mode: 755
@@ -24,8 +26,10 @@ apt-sources-list:
 {% if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] > '5' %}
 apt-sources-pref-sid:
   file.managed:
+    - watch:
+      - mc_proxy: before-pkgmgr-config-proxy
     - watch_in:
-      - service: apt-update-after
+      - mc_proxy: after-base-pkgmgr-config-proxy
     - name: /etc/apt/preferences.d/sid.pref
     - source: salt://makina-states/files/etc/apt/preferences.d/sid.pref
     - mode: 755
@@ -34,8 +38,10 @@ apt-sources-pref-sid:
 
 apt-sources-list-sid:
   file.managed:
+    - watch:
+      - mc_proxy: before-pkgmgr-config-proxy
     - watch_in:
-      - service: apt-update-after
+      - mc_proxy: after-base-pkgmgr-config-proxy
     - name: {{ locs.conf_dir }}/apt/sources.list.d/sid.list
     - mode: 755
     - template: jinja
@@ -47,8 +53,10 @@ apt-sources-list-sid:
 apt-update-after:
   cmd.watch:
     - name: apt-get update
-    - watch_in:
+    - watch:
       - mc_proxy: after-base-pkgmgr-config-proxy
+    - watch_in:
+      - mc_proxy: after-pkgmgr-config-proxy
 {% endif %}
 {% endif %}
 # vim:set nofoldenable:
