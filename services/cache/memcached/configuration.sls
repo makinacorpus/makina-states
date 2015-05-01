@@ -1,5 +1,4 @@
 {% set settings = salt['mc_memcached.settings']() %}
-{% set yameld_data = salt['mc_utils.json_dump'](settings) %}
 {% if salt['mc_controllers.mastersalt_mode']() %}
 include:
   - makina-states.services.cache.memcached.hooks
@@ -14,9 +13,6 @@ memcached_config_{{tp}}:
     - mode: 750
     - user: root
     - group: root
-    - defaults:
-      data: |
-            {{yameld_data}}
     - watch:
       - mc_proxy: memcached-pre-conf
     - watch_in:
