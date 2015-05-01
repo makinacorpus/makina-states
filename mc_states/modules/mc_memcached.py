@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+# pylint: disable=W0105
 '''
 
 .. _module_mc_memcached:
@@ -19,12 +23,6 @@ Documentation of this module is available with::
 # Import python libs
 import logging
 import mc_states.api
-from salt.utils.pycrypto import secure_password
-import base64
-import getpass
-import hashlib
-from base64 import urlsafe_b64encode as encode
-import os
 __name = 'memcached'
 
 
@@ -38,18 +36,18 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
-        locations = __salt__['mc_locations.settings']()
-        local_conf = __salt__['mc_macros.get_local_registry'](
-            'memcached', registry_format='pack')
-        cn_pass = local_conf.setdefault('cn_pass', secure_password(32))
         memcachedData = __salt__['mc_utils.defaults'](
             'makina-states.services.dns.memcached', {
                 'memcached_directory': "/etc/memcached",
                 'templates': {
-                  '/etc/default/memcached': 'salt://makina-states/files/etc/default/memcached',
-                  '/etc/memcached.conf': 'salt://makina-states/files/etc/memcached.conf',
+                    '/etc/default/memcached': (
+                        'salt://makina-states/'
+                        'files/etc/default/memcached'
+                    ),
+                    '/etc/memcached.conf': (
+                        'salt://makina-states/'
+                        'files/etc/memcached.conf'
+                    ),
                 },
                 'extra_dirs': [
                 ],
@@ -62,14 +60,10 @@ def settings():
                     'cap': '128',
                     'port': '11211',
                     'listen': '127.0.0.1',
-
+                    'unitcachesize': '10M'
                 },
                 'pkgs': ['memcached', 'libmemcached-dev'],
                 'service_name': 'memcached',
             })
         return memcachedData
     return _settings()
-
-
-
-#
