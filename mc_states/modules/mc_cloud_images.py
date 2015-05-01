@@ -76,7 +76,6 @@ def complete_images(data):
                 not os.path.exists(md5_file)
             ):
                 log.info('lxc/{0} is not released yet, disabling'.format(img))
-                images.pop(img, None)
                 continue
             with open(ver_file) as fic:
                 ver = images[img][

@@ -3,6 +3,7 @@
 {% set cloudSettings = salt['mc_cloud.settings']() %}
 {% set sprefix = cloudSettings.prefix %}
 {% for name, imgdata in imgSettings['lxc']['images'].items() %}
+{% if imgdata.get('lxc_tarball_ver', '') %}
 {% set cwd = '/var/lib/lxc/{0}'.format(name) %}
 {% set arc = '{0}/{1}'.format(name, imgdata['lxc_tarball_name']) %}
 {% set tversion  = imgdata['lxc_tarball_ver'] %}
@@ -73,6 +74,7 @@ restore-specialfiles-{{name}}:
     - name: {{sprefix}}/pki/master/minions/{{name}}
     - watch:
       - cmd: {{name}}-makinastates-snapshot
+{% endif %}
 {% endfor %}
 maybe-only-one-gen-lxc-images:
   mc_proxy.hook : []

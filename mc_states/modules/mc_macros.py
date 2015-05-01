@@ -275,7 +275,8 @@ def _get_local_registry(name,
     force_run = not cached
     return __salt__['mc_utils.memoize_cache'](
         _do, [name, to_load, registry_format], {},
-        cache_key, cachetime, force_run=force_run)
+        cache_key, cachetime, use_memcache=False,
+        force_run=force_run)
 
 
 def _unprefix(registry, name):
