@@ -936,11 +936,29 @@ def memoize_cache(*args, **kw):
     return api.memoize_cache(*args, **cache_kwargs(*args, **kw))
 
 
+def test_cache(ttl=120):
+    '''.'''
+    def _do():
+        return "a"
+    cache_key = 'mc_utils.test_cache'
+    __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+    ret = list_cache_keys()
+    remove_cache_entry(ret[0], debug=True)
+    return ret
+
+
 def remove_entry(*args, **kw):
     '''
     Wrapper for :meth:`~mc_states.api.remove_cache_entry` to set __opts__
     '''
     return mc_states.api.remove_entry(*args, **cache_kwargs(*args, **kw))
+
+
+def list_cache_keys(*args, **kw):
+    '''
+    Wrapper for :meth:`~mc_states.api.list_cache_keys` to set __opts__
+    '''
+    return mc_states.api.list_cache_keys(*args, **cache_kwargs(*args, **kw))
 
 
 def remove_cache_entry(*args, **kw):
@@ -962,13 +980,6 @@ def get_local_cache(*args):
     Wrapper for :meth:`~mc_states.api.get_local_cache`
     '''
     return mc_states.api.get_local_cache(*args)
-
-
-def register_memoize_first(pattern):
-    '''
-    Wrapper for :meth:`~mc_states.api.invalidate_memoize_cache` to set __opts__
-    '''
-    return mc_states.api.register_memoize_first(pattern)
 
 
 def register_memcache_first(pattern):

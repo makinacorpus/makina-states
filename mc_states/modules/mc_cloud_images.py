@@ -25,6 +25,7 @@ from mc_states.runners import mc_lxc
 from mc_states.modules.mc_lxc import (
     is_lxc)
 from salt.utils.odict import OrderedDict
+from mc_states.modules.mc_pillar import PILLAR_TTL
 __name = 'mc_cloud_images'
 
 log = logging.getLogger(__name__)
@@ -74,7 +75,7 @@ def complete_images(data):
                 not os.path.exists(ver_file) and
                 not os.path.exists(md5_file)
             ):
-                log.info('lxc/{0} is not released yet, disabling')
+                log.info('lxc/{0} is not released yet, disabling'.format(img))
                 images.pop(img, None)
                 continue
             with open(ver_file) as fic:
@@ -134,7 +135,7 @@ def default_settings():
     return data
 
 
-def extpillar_settings(id_=None, limited=False, ttl=30):
+def extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
     def _do(id_=None, limited=False):
         cid = __opts__['id']
         _s = __salt__
@@ -166,21 +167,26 @@ def extpillar_settings(id_=None, limited=False, ttl=30):
         _do, [id_, limited], {}, cache_key, ttl)
 
 
-def ext_pillar(id_, prefixed=True, *args, **kw):
+def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
     '''
     Images extpillar
     '''
-    _s = __salt__
-    limited = kw.get('limited', False)
-    expose = False
-    if _s['mc_cloud.is_a_cloud_member'](id_):
-        expose = True
-    data = {}
-    if expose:
-        data = extpillar_settings(id_, limited=limited)
-    if prefixed:
-        data = {PREFIX: data}
-    return data
+    def _do(id_, prefixed, args, kw):
+        _s = __salt__
+        limited = kw.get('limited', False)
+        expose = False
+        if _s['mc_cloud.is_a_cloud_member'](id_):
+            expose = True
+        data = {}
+        if expose:
+            data = extpillar_settings(id_, limited=limited)
+        if prefixed:
+            data = {PREFIX: data}
+        return data
+    cache_key = '{0}.{1}.{2}{3}'.format(
+        __name, 'ext_pillar', id_, prefixed)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [id_, prefixed, args, kw], {}, cache_key, ttl)
 
 
 # pylint: disable=W0105

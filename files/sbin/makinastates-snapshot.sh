@@ -147,3 +147,8 @@ fi
 if which getfacl 1>/dev/null 2>/dev/null;then
     getfacl -R / > /acls.txt || /bin/true
 fi
+# deactivate some crons (leave only refresh one)
+sed -i -re "/boot-salt\.sh.*--check-alive/ d" /etc/cron.d/*salt* || /bin/true
+sed -i -re "/boot-salt\.sh.*--cleanup/ d" /etc/cron.d/*salt* || /bin/true
+sed -i -re "/boot-salt\.sh.*--restart-masters/ d" /etc/cron.d/*salt* || /bin/true
+sed -i -re "/boot-salt\.sh.*--restart-minions/ d" /etc/cron.d/*salt* || /bin/true
