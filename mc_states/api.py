@@ -434,7 +434,6 @@ def get_cache_key(key, __opts__=None, *args, **kw):
 def get_cache_servers(cache=None,
                       memcache=None,
                       key=None,
-                      try_memcache=True,
                       use_memcache=None,
                       debug=None):
     caches = []
@@ -444,14 +443,18 @@ def get_cache_servers(cache=None,
     explicit_local_cache = isinstance(cache, (six.string_types, dict))
     if explicit_local_cache or (cache is None):
         caches.append(get_local_cache(cache))
-    if try_memcache and HAS_PYLIBMC:
+    if (
+        HAS_PYLIBMC and
+        key and
+        (use_memcache is not False) and
+        not explicit_local_cache
+    ):
         if isinstance(memcache, pylibmc.Client):
             mc_server = memcache
         else:
             mc_server = get_mc_server(memcache)
         if mc_server and mc_server not in caches:
             caches.append(mc_server)
-    if key and (use_memcache is not False) and not explicit_local_cache:
         ckey = get_cache_key(key)
         fun_args = _CACHE_KEYS.get(ckey, ('', None))[1]
         for spattern, repattern in six.iteritems(_USE_MEMCACHE_FIRST):
@@ -461,8 +464,8 @@ def get_cache_servers(cache=None,
             if repattern.search(fun_args):
                 use_memcache = True
                 break
-    if use_memcache:
-        caches.reverse()
+        if use_memcache:
+            caches.reverse()
     return caches
 
 
@@ -502,6 +505,7 @@ def memoize_cache(func,
                   seconds=60,
                   cache=None,
                   memcache=None,
+                  use_memcache=None,
                   __salt__=None,
                   __opts__=None,
                   force_run=False,
@@ -570,7 +574,8 @@ def memoize_cache(func,
         key, __opts__=__opts__, fun=func, arg=args, kwarg=kwargs)
 
     # first try to find a non expired cache entry
-    caches = get_cache_servers(cache, memcache, key=key)
+    caches = get_cache_servers(
+        cache, memcache, use_memcache=use_memcache, key=key)
     ret = _default
     put_in_cache = True
     for cache in caches:
