@@ -19,6 +19,7 @@ import yaml
 import logging
 
 from mc_states.saltapi import six
+from mc_states.modules.mc_pillar import PILLAR_TTL
 import mc_states.saltapi
 from salt.utils.odict import OrderedDict
 
@@ -139,7 +140,7 @@ def default_settings():
     return data
 
 
-def extpillar_settings(id_=None, ttl=30, *args, **kw):
+def extpillar_settings(id_=None, ttl=PILLAR_TTL, *args, **kw):
     '''
     return the cloud global configuation
     opts['id'] should resolve to mastersalt
@@ -182,7 +183,7 @@ def extpillar_settings(id_=None, ttl=30, *args, **kw):
     return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
 
 
-def is_a_vm(id_=None, ttl=30):
+def is_a_vm(id_=None, ttl=PILLAR_TTL):
     def _do(id_=None):
         if id_ is None:
             id_ = __grains__['id']
@@ -194,7 +195,7 @@ def is_a_vm(id_=None, ttl=30):
     cache_key = 'mc_cloud.is_a_vm{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
-def is_a_compute_node(id_=None, ttl=30):
+def is_a_compute_node(id_=None, ttl=PILLAR_TTL):
     def _do(id_=None):
         if id_ is None:
             id_ = __grains__['id']
@@ -207,7 +208,7 @@ def is_a_compute_node(id_=None, ttl=30):
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
-def is_a_controller(id_=None, ttl=30):
+def is_a_controller(id_=None, ttl=PILLAR_TTL):
     def _do(id_):
         if id_ is None:
             id_ = __grains__['id']
@@ -276,7 +277,7 @@ def filter_exposed_data(target, data, mode='full'):
     return data
 
 
-def gather_expositions(ttl=60):
+def gather_expositions(ttl=PILLAR_TTL):
     '''
     Merge expositions amongst CN & VM settings
     as a vm can also be a compute node itself
@@ -373,7 +374,7 @@ def gather_expositions(ttl=60):
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
-def gather_exposed_data(target, ttl=60):
+def gather_exposed_data(target, ttl=PILLAR_TTL):
     def _do(target):
         _s = __salt__
         exposed_to_me = copy.deepcopy(
@@ -424,7 +425,7 @@ def gather_exposed_data(target, ttl=60):
     return __salt__['mc_utils.memoize_cache'](_do, [target], {}, cache_key, ttl)
 
 
-def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
+def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
     '''
     Makina-states cloud extpillar
 
@@ -674,4 +675,3 @@ def get_cloud_settings():
     else:
         cloudSettings = _s['mc_cloud.settings']()
     return cloudSettings
-#

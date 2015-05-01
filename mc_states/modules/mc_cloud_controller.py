@@ -24,6 +24,7 @@ import mc_states.api
 from salt.modules import tls as tlsm
 import M2Crypto
 
+from mc_states.modules.mc_pillar import PILLAR_TTL
 from mc_states.modules.mc_ssl import (
     CertificateNotFoundError,
     CertificateCreationError,
@@ -56,7 +57,7 @@ def default_settings():
     return data
 
 
-def extpillar_settings(id_=None, limited=False, ttl=30):
+def extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
     def _do(id_=None, limited=False):
         _s = __salt__
         gconf = _s['mc_pillar.get_configuration'](
@@ -72,7 +73,7 @@ def extpillar_settings(id_=None, limited=False, ttl=30):
     return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
 
 
-def ext_pillar(id_=None, prefixed=True, limited=False, ttl=30):
+def ext_pillar(id_=None, prefixed=True, limited=False, ttl=PILLAR_TTL):
     def _do(id_=None, prefixed=True, limited=False):
         if not id_:
             id_ = __grains__['id']
@@ -130,6 +131,3 @@ def settings(ttl=60):
         return data
     cache_key = '{0}.{1}'.format(__name, 'settings')
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
-
-
-#

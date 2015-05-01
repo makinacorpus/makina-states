@@ -27,6 +27,7 @@ except ImportError:
     HAS_NETADDR = False
 
 from mc_states import api
+from mc_states.modules.mc_pillar import PILLAR_TTL
 
 __name = 'mc_cloud_compute_node'
 
@@ -129,7 +130,7 @@ def default_settings():
         - everything else that's local to the compute node
 
     The computes nodes are often created implicitly by registration of vms
-    on specific drivers like LXC but you can register some manually.
+    on specific drivers like LXC but you can get_cloud_confr some manually.
 
     makina-states.cloud.compute_node.settings.targets.devhost11.local: {}
 
@@ -155,7 +156,7 @@ def default_settings():
     return data
 
 
-def get_targets(vt=None, ttl=30):
+def get_targets(vt=None, ttl=PILLAR_TTL):
     '''
     Return all vms indexed by targets
     '''
@@ -182,7 +183,7 @@ def get_targets(vt=None, ttl=30):
     return copy.deepcopy(__salt__['mc_utils.memoize_cache'](_do, [vt], {}, cache_key, ttl))
 
 
-def get_vms(vt=None, vm=None, ttl=30):
+def get_vms(vt=None, vm=None, ttl=PILLAR_TTL):
     '''
     Returns vms indexed by name
     '''
@@ -200,7 +201,7 @@ def get_vms(vt=None, vm=None, ttl=30):
     return __salt__['mc_utils.memoize_cache'](_do, [vt, vm], {}, cache_key, ttl)
 
 
-def get_vm(vm, ttl=30):
+def get_vm(vm, ttl=PILLAR_TTL):
     def _do(vm):
         try:
             return get_vms(vm=vm)
@@ -210,7 +211,7 @@ def get_vm(vm, ttl=30):
     return __salt__['mc_utils.memoize_cache'](_do, [vm], {}, cache_key, ttl)
 
 
-def target_for_vm(vm, target=None, ttl=30):
+def target_for_vm(vm, target=None, ttl=PILLAR_TTL):
     '''
     Get target for a vm
     '''
@@ -807,7 +808,7 @@ def feed_sw_reverse_proxies_for_target(target_data):
     return target_data
 
 
-def cn_extpillar_settings(id_=None, limited=False, ttl=30):
+def cn_extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
     def _do(id_=None, limited=False):
         _s = __salt__
         if id_ is None:
@@ -826,7 +827,7 @@ def cn_extpillar_settings(id_=None, limited=False, ttl=30):
         _do, [id_, limited], {}, cache_key, ttl))
 
 
-def extpillar_settings(id_=None, limited=False, ttl=30):
+def extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
     def _do(id_=None, limited=False):
         _s = __salt__
         data = cn_extpillar_settings(id_=id_)
@@ -847,7 +848,7 @@ def extpillar_settings(id_=None, limited=False, ttl=30):
     return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
 
 
-def ext_pillar(id_, prefixed=True, ttl=120, *args, **kw):
+def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
     '''
     compute node extpillar
     '''
@@ -982,7 +983,7 @@ After the pillar has loaded, on the compute node itself
 '''
 
 
-def settings(ttl=60):
+def settings(ttl=120):
     '''
     compute node related settings
     '''

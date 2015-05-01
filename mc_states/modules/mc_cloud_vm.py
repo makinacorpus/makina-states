@@ -19,6 +19,7 @@ import copy
 
 
 from mc_states import saltapi
+from mc_states.modules.mc_pillar import PILLAR_TTL
 from salt.utils.odict import OrderedDict
 
 __name = 'mc_cloud_vm'
@@ -257,7 +258,7 @@ def vm_registry(prefixed=True):
     return data
 
 
-def vt_extpillar_settings(vt, ttl=60):
+def vt_extpillar_settings(vt, ttl=PILLAR_TTL):
     def _do(vt):
         _s = __salt__
         fun = 'mc_cloud_{0}.vt_default_settings'.format(vt)
@@ -271,7 +272,7 @@ def vt_extpillar_settings(vt, ttl=60):
     return __salt__['mc_utils.memoize_cache'](_do, [vt], {}, cache_key, ttl)
 
 
-def vm_extpillar_settings(vm, limited=False, ttl=30):
+def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
     _s = __salt__
 
     def _sort_domains(dom):
@@ -330,7 +331,7 @@ def vm_extpillar_settings(vm, limited=False, ttl=30):
     return __salt__['mc_utils.memoize_cache'](_do, [vm, limited], {}, cache_key, ttl)
 
 
-def vt_extpillar(target, vt, limited=False, ttl=60):
+def vt_extpillar(target, vt, limited=False, ttl=PILLAR_TTL):
     def _do(target, vt, limited):
         _s = __salt__
         extdata = _s['mc_pillar.get_cloud_conf_for_cn'](target).get(vt, {})
