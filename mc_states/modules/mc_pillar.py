@@ -306,8 +306,6 @@ def ips_for(fqdn,
     '''
     debug = kw.get('debug', None)
     resips = []
-    if fqdn == 'ifo-online-1.makina-corpus.net':
-        debug = True
     data = load_network(debug=debug)
     if data['raw_db_loading'] is None:
         data = load_raw_network_infrastructure()

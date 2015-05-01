@@ -755,7 +755,7 @@ def purge_memoize_cache(*args, **kwargs):
 
 def magicstring(thestr):
     """
-    Convert any string to UTF-8 ENCODED on
+    Convert any string to UTF-8 ENCODED one
     """
     if not HAS_CHARDET:
         log.error('No chardet support !')
