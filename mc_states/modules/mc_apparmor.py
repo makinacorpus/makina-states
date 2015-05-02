@@ -26,7 +26,9 @@ def settings():
         enabled = (
             __salt__['mc_localsettings.apparmor_en']() and
             not __salt__['mc_nodetypes.is_container']())
-        if _g['os'] in ['Ubuntu'] and _g['osrelease'] < '15.04':
+        if _g['os'] in ['Ubuntu']:
+            # if _g['osrelease'] < '15.04':
+            #     pass
             confs.update({
                 '/etc/apparmor.d/abstractions/lxc/powercontainer-base': {},
                 '/etc/apparmor.d/abstractions/dockercontainer': {},
