@@ -3,6 +3,7 @@
 {% set extra_confs = {} %}
 include:
   - makina-states.services.virt.lxc.hooks
+  - makina-states.localsettings.apparmor
   - makina-states.services.virt.lxc.services
 
 {% if salt['mc_controllers.mastersalt_mode']() %}

@@ -3,6 +3,7 @@
 {% set extra_confs = {} %}
 include:
   - makina-states.services.virt.docker.hooks
+  - makina-states.localsettings.apparmor
   - makina-states.services.virt.docker.services
 
 {% if salt['mc_controllers.mastersalt_mode']() %}
