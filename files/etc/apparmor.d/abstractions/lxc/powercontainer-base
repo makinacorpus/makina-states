@@ -1,0 +1,22 @@
+# the container may never be allowed to mount devpts.  If it does, it
+# will remount the host's devpts.  We could allow it to do it with
+# the newinstance option (but, right now, we don't).
+deny mount fstype=devpts,
+
+# systemd in a container
+mount options=(ro, nosuid, nodev, noexec, remount, strictatime) -> /sys/fs/cgroup/,
+mount fstype=cgroup -> /sys/fs/cgroup/**,
+mount options=(none,name=systemd) fstype=cgroup -> /sys/fs/cgroup/systemd/,
+
+mount options=(rw, bind),
+
+# (lxc|docker)container-in-lxc
+mount fstype=proc -> /var/cache/lxc/**,
+mount fstype=sysfs -> /var/cache/lxc/**,
+mount options=(rw,bind) /var/cache/lxc/**/dev/shm/ -> /var/cache/lxc/**/run/shm/,
+
+# (lxc|docker)container-in-docker
+mount fstype=proc -> /var/lib/docker/**,
+mount fstype=sysfs -> /var/lib/docker/**,
+mount options=(rw,bind) /var/lib/docker/**/dev/shm/ -> /var/lib/docker/**/run/shm/,  
+#include <abstractions/lxc/container-base>

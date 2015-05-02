@@ -1,5 +1,9 @@
+include:
+  - makina-states.localsettings.apparmor.hooks
 lxc-pre-pkg:
   mc_proxy.hook:
+    - watch:
+      - mc_proxy: ms-apparmor-post
     - watch_in:
       - mc_proxy: lxc-pre-conf
       - mc_proxy: lxc-post-conf

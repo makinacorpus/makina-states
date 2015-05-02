@@ -1,6 +1,10 @@
 {# docker orchestration hooks #}
+include:
+  - makina-states.localsettings.apparmor.hooks
 docker-pre-install:
   mc_proxy.hook:
+    - watch:
+      - mc_proxy: ms-apparmor-post
     - watch_in:
       - mc_proxy: docker-post-install
       - mc_proxy: docker-pre-conf

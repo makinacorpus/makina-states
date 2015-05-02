@@ -28,6 +28,8 @@ def settings():
             not __salt__['mc_nodetypes.is_container']())
         if _g['os'] in ['Ubuntu'] and _g['osrelease'] < '15.04':
             confs.update({
+                '/etc/apparmor.d/abstractions/lxc/powercontainer-base': {},
+                '/etc/apparmor.d/abstractions/dockercontainer': {},
                 # in fact this does not play nice with apparmor 2.8
                 # which is the one we have on trusty(14.04)
                 # '/etc/apparmor.d/abstractions/dbus': {},

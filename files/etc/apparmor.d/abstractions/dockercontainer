@@ -1,0 +1,5 @@
+# systemd on a docker
+# apparmor="DENIED" operation="mount" info="failed flags match" error=-13 profile="docker-default" name="/sys/fs/pstore/" pid=25153 comm="systemd" fstype="pstore" srcname="pstore" flags="rw, nosuid, nodev, noexec"
+#mount fstype=pstore options=(rw, nosuid, nodev, noexe) pstore -> /sys/fs/pstore/,
+mount fstype=pstore,
+#include <abstractions/lxc/powercontainer-base>
