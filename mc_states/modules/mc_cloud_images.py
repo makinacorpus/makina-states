@@ -28,6 +28,7 @@ from salt.utils.odict import OrderedDict
 from mc_states.modules.mc_pillar import PILLAR_TTL
 __name = 'mc_cloud_images'
 
+six = saltapi.six
 log = logging.getLogger(__name__)
 _errmsg = saltapi._errmsg
 PROJECT_PATH = 'project/makinacorpus/makina-states'
@@ -37,6 +38,22 @@ PREFIX = 'makina-states.cloud.images'
 IMG_URL = ('https://downloads.sourceforge.net/makinacorpus'
            '/makina-states/'
            '{img}-{flavor}-{ver}.tar.xz')
+IMAGES = OrderedDict([
+    ('lxc', OrderedDict([
+        ('ubuntu-vivid', {
+            'create': '-t ubuntu -- -r vivid --mirror {mirror}'
+        }),
+        ('makina-states-vivid', {
+            'clone': 'ubuntu-vivid',
+            'bootsalt': True}),
+    ])),
+    ('docker', OrderedDict([
+        ('makina-states/ubuntu-vivid-raw', {
+            'from_lxc': 'makina-states-vivid'}),
+        ('ubuntu-vivid-systemd-debug', {
+            'from': 'makina-states:ubuntu-vivid'})
+    ]))
+])
 
 
 class ImgError(salt.exceptions.SaltException):
@@ -563,4 +580,50 @@ def sf_release(images=None, flavors=None, sync=True):
                 subrets['trace'] += '{1}/{2}\n{0}\n'.format(
                     __salt__['mc_utils.magicstring'](trace), flavor, step)
     return gret
+
+
+def build_from_lxc(img, data):
+    if 'create' in data:
+        create_ar
+        pass
+    elif 'clone' in data:
+        pass
+    else:
+        raise saltapi.ImgErro(
+            '{0}: choose between create or clone args for your'
+            ' container'.format(img))
+
+
+def build_from_docker(img, data):
+    raise saltapi.ImgError('Not implemented')
+
+
+def build(typs=None, images=None):
+    if isinstance(typs, six.string_types):
+        typs = typs.split(',')
+    if isinstance(images, six.string_types):
+        images = images.split(',')
+    if not typs:
+        typs = [a for a in IMAGES]
+    typs = [t for t in typs if t in IMAGES]
+    if not images:
+        images = []
+        for s in typs:
+            for img in IMAGES[s]:
+                images.append(img)
+    rets = {'errors': {}, 'returns': {}, 'result': True}
+    for typ in typs:
+        for img, data in IMAGES[typ].items():
+            if img not in images:
+                continue
+            fun_ = 'mc_images_helpersbuild_from_{0}'.format(typ)
+            try:
+                rets['returns'][img] = fun_(img, data)
+            except (
+                saltapi.ImgError,
+            ) as exc:
+                rets['result'] = False
+                trace = traceback.format_exc()
+                rets['errors'][img] = {'exc': '{0}'.format(exc),
+                                       'trace': trace}
 # vim:set et sts=4 ts=4 tw=80:

@@ -116,6 +116,10 @@ __CACHED_FUNS = {
     'mc_localsettings.settings': 600}
 
 
+class ImgError(salt.exceptions.SaltException):
+    pass
+
+
 class MastersaltNotInstalled(salt.exceptions.SaltException, ValueError):
     pass
 
