@@ -32,7 +32,6 @@ desktop-pkgs:
       - burp
       - mumble
       - skype
-      - skype-bin
       # dev/net
       - corkscrew
       - proxytunnel
