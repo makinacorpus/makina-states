@@ -27,10 +27,11 @@ default lxc-net configuration and create the following configuration file
 
 First, create **as root** this upstart job ``/etc/init/lxc-net-makina.conf`` & helpers::
 
-    for i in /etc/init/lxc-net-makina /usr/bin/lxc-net-makina.sh /etc/reset-net-bridges;do
+    for i in /etc/init/lxc-net-makina /usr/bin/magicbridge.sh /etc/reset-net-bridges;do
         curl --silent "https://raw.githubusercontent.com/makinacorpus/makina-states/stable/files${i}" > "${i}"
     done
-    chmod 644 /etc/init/lxc-net-makina;chmod 755 /usr/bin/lxc-net-makina.sh /etc/reset-net-bridges
+    chmod 644 /etc/init/lxc-net-makina;chmod 755 /usr/bin/magicbridge.sh /etc/reset-net-bridges
+    cp /usr/bin/magicbridge.sh /usr/bin/lxc-net-makina.sh
 
 Don't forget that you can read the upstart job but basically, it creates the bridge and then masquerade the outband traffic.
 

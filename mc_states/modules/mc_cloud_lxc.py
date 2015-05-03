@@ -115,10 +115,21 @@ def vt_default_settings(cloudSettings, imgSettings):
             'host_confs': {
                 '/etc/apparmor.d/lxc/lxc-default': {'mode': 644},
                 '/etc/default/lxc': {},
-                '/etc/default/lxc-net-makina': {},
-                '/etc/dnsmasq.d/lxc': {},
+                '/etc/default/magicbridge_lxcbr1': {},
+                # retrocompatible generation alias
+                '/etc/default/lxc-net-makina': {
+                    'source':
+                    'salt://makina-states/files/etc/default/magicbridge_lxcbr1'},
+                '/etc/dnsmasq.d/lxcbr1': {},
+                '/etc/dnsmasq.d/lxcbr0': {},
                 '/etc/reset-net-bridges': {},
-                # '/usr/bin/lxc-net-makina.sh': {},
+                '/usr/bin/lxc-net-makina.sh': {
+                    "mode": "755",
+                    "template": False,
+                    'source': (
+                        'salt://makina-states/files/usr/bin/magicbridge.sh'
+                    )
+                },
                 # '/usr/share/lxc/templates/lxc-ubuntu': {'template': None}
             },
             'lxc_cloud_profiles': {

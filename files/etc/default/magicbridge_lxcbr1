@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# MANAGED VIA SALT
+# {%- set vmdata = salt['mc_cloud_vm.settings']() %}
+# {%- set data = vmdata.vts.lxc.defaults %}
+export ACTIVATED="{{data.use_bridge}}"
+export BRIDGE="{{data.bridge}}"
+export ADDR="{{data.gateway}}"
+# export NETWORK="{{data.network}}/{{data.netmask}}"
+# export NETMASK="{{data.netmask_full}}"
+# vim:set ft=sh et sts=4 ts=4 tw=80:

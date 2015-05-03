@@ -18,5 +18,5 @@ mount options=(rw,bind) /var/cache/lxc/**/dev/shm/ -> /var/cache/lxc/**/run/shm/
 # (lxc|docker)container-in-docker
 mount fstype=proc -> /var/lib/docker/**,
 mount fstype=sysfs -> /var/lib/docker/**,
-mount options=(rw,bind) /var/lib/docker/**/dev/shm/ -> /var/lib/docker/**/run/shm/,  
+mount options=(rw,bind) /var/lib/docker/**/dev/shm/ -> /var/lib/docker/**/run/shm/,
 #include <abstractions/lxc/container-base>

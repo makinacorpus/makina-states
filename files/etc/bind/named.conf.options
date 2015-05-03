@@ -7,8 +7,8 @@ options {
         statistics-file "{{data.cache_directory}}/named.stats";
         dump-file "{{data.cache_directory}}/named.db";
         auth-nxdomain no;  # conform to RFC1035
-        listen-on-v6 { {{data.ipv6}}; };
-        listen-on { {{data.ipv4}}; };
+        listen-on-v6 { {{data.ipv6}} };
+        listen-on { {{data.ipv4}} };
         transfers-out {{data.transfers_out }};
         transfers-in {{data.transfers_out }};
         allow-transfer {"none";};

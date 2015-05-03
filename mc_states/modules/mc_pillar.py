@@ -1836,7 +1836,7 @@ def get_removed_keys(id_=None, ttl=PILLAR_TTL):
         keys_map = __salt__[__name + '.query']('keys_map', {})
         skeys = []
         removed = removed_keys_map.get(
-            id_, removed_keys_map['default'])
+            id_, removed_keys_map.get('default', []))
         for k in removed:
             keys = keys_map.get(k, [])
             for key in keys:
@@ -1856,7 +1856,7 @@ def get_sysadmins_keys(id_=None, ttl=PILLAR_TTL):
         keys_map = __salt__[__name + '.query']('keys_map', {})
         skeys = []
         sysadmins = sysadmins_keys_map.get(
-            id_, sysadmins_keys_map['default'])
+            id_, sysadmins_keys_map.get('default', []))
         if 'infra' not in sysadmins:
             sysadmins.append('infra')
         for k in sysadmins:

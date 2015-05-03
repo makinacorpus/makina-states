@@ -25,6 +25,7 @@ from salt.utils.odict import OrderedDict
 
 __name = 'bind'
 
+six = mc_states.api.six
 log = logging.getLogger(__name__)
 
 
@@ -166,6 +167,33 @@ def settings():
     def _settings():
         locs = __salt__['mc_locations.settings']()
         dns = __salt__['mc_dns.settings']()
+        net = __salt__['mc_network.settings']()
+        # by default: we listen on localhost + ip on real ifs
+        # but not on bridge and etc where it can messes it up
+        # with setups with dnsmasq or such
+        listen_ifs = ["127.0.0.1"]
+        for ifc, ips in six.iteritems(__grains__.get('ip4_interfaces', {})):
+            if True in [
+                ifc.startswith(i)
+                for i in ['veth', 'lxcbr', 'docker',
+                          'mgc', 'lo', 'vibr', 'xenbr']
+            ]:
+                continue
+            for ip in ips:
+                if True in [
+                    ip.startswith(s)
+                    for s in [
+                        '10.',  # makina-states net
+                        '172.',  # docker net
+                        '192.168.122'  # libvirt/kvm
+                    ]
+                ]:
+                    continue
+                if ip not in listen_ifs:
+                    listen_ifs.append(ip)
+        listen_ifs = ";".join(listen_ifs)
+        if not listen_ifs.endswith(';'):
+            listen_ifs += ";"
         os_defaults = __salt__['grains.filter_by']({
             'Debian': {
                 'pkgs': ['bind9',
@@ -235,8 +263,8 @@ def settings():
                         'additional_from_cache': 'no',
                     }),
                 ]),
-                'ipv4': 'any',
-                'ipv6': 'any',
+                'ipv4': listen_ifs,
+                'ipv6': 'any;',
                 'loglevel': {
                     'default': 'error',
                     'general': 'error',

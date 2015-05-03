@@ -188,7 +188,7 @@ def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
         supported_vts = _s['mc_cloud_compute_node.get_vts']()
         done_hosts = []
         ivars = _s['mc_pillar.get_db_infrastructure_maps']()
-        nmh = _s['mc_pillar.query']('non_managed_hosts')
+        nmh = _s['mc_pillar.query']('non_managed_hosts', {})
         for vt, targets in _s['mc_pillar.query']('vms').items():
             if vt not in supported_vts:
                 continue

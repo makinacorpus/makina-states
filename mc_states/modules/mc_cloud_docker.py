@@ -54,6 +54,7 @@ def vt_default_settings(cloudSettings, imgSettings):
     vmSettings = _s['mc_utils.dictupdate'](
         _s['mc_cloud_vm.vt_default_settings'](cloudSettings, imgSettings), {
             'vt': VT,
+            'bridge': "docker1",
             'host_confs': {
                 '/etc/systemd/system/docker.socket': {
                     "mode": "644"},
@@ -62,17 +63,27 @@ def vt_default_settings(cloudSettings, imgSettings):
                 '/etc/systemd/system/docker-net-makina.service': {
                     "mode": "644"},
                 '/etc/default/docker': {},
-                '/etc/default/docker-net-makina': {},
+                '/etc/default/magicbridge_docker1': {},
+                # retrocompatible generation alias
+                '/etc/default/docker-net-makina': {
+                    'source':
+                    'salt://makina-states/files/etc/default/magicbridge_docker1'},
                 '/etc/dnsmasq.d/docker0': {},
                 '/etc/dnsmasq.d/docker1': {},
                 '/etc/reset-net-bridges': {},
-                '/usr/bin/docker-net-makina.sh': {},
+                '/usr/bin/docker-net-makina.sh': {
+                    "mode": "755",
+                    "template": False,
+                    'source': (
+                        'salt://makina-states/files/usr/bin/magicbridge.sh'
+                    )
+                },
                 '/usr/bin/docker-service.sh': {}},
             'cli': '/usr/bin/docker',
-            'cli_opts': '-d',
+            'cli_opts': '-d -b {bridge}',
             'defaults': {'gateway': '10.7.0.1',
                          'network': '10.7.0.0',
-                         'bridge': 'docker1',
+                         'bridge': '{bridge}',
                          'base_image': 'makinacorpus/makina-states:latest',
                          'backing': 'aufs'}})
     return vmSettings
