@@ -59,8 +59,22 @@ fi
 THIS="$(get_abspath ${THIS})"
 export PATH
 
-is_lxc() {
-    echo  "$(cat -e /proc/1/environ |grep container=lxc|wc -l|sed -e "s/ //g")"
+is_container() {
+    echo  "$(cat -e /proc/1/environ |grep container=|wc -l|sed -e "s/ //g")"
+}
+
+filter_host_pids() {
+    pids=""
+    if [ "x$(is_container)" != "x0" ];then
+        pids="${pids} $(echo "${@}")"
+    else
+        for pid in ${@};do
+            if [ "x$(grep -q lxc /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
+                pids="${pids} $(echo "${pid}")"
+            fi
+         done
+    fi
+    echo "${pids}" | sed -e "s/\(^ \+\)\|\( \+$\)//g"
 }
 
 set_progs() {
@@ -612,11 +626,11 @@ get_default_nodetype() {
     if [ "x${DEFAULT_NT}" = "x" ];then
         if [ "x${TRAVIS}" != "x" ];then
             DEFAULT_NT="travis"
-        elif [ "x$(is_lxc)" != "x0" ];then
+        elif [ "x$(is_container)" != "x0" ];then
             DEFAULT_NT="lxccontainer"
         fi
     fi
-    if [ "x${DEFAULT_NT}" = "xlxccontainer" ] && [ "x$(is_lxc)" = "x0" ] ;then
+    if [ "x${DEFAULT_NT}" = "xlxccontainer" ] && [ "x$(is_container)" = "x0" ] ;then
         DEFAULT_NT="${fallback_nt}"
     fi
     DEFAULT_NT="$(validate_nodetype ${DEFAULT_NT})"
@@ -2915,20 +2929,6 @@ create_salt_skeleton() {
 }
 
 # ------------ SALT INSTALLATION PROCESS
-
-filter_host_pids() {
-    pids=""
-    if [ "x$(is_lxc)" != "x0" ];then
-        pids="${pids} $(echo "${@}")"
-    else
-        for pid in ${@};do
-            if [ "x$(grep -q lxc /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
-                pids="${pids} $(echo "${pid}")"
-             fi
-         done
-    fi
-    echo "${pids}" | sed -e "s/\(^ \+\)\|\( \+$\)//g"
-}
 
 mastersalt_master_processes() {
     filter_host_pids $(${PS} aux|grep salt-master|grep -v deploy.sh|grep -v boot-salt|grep -v bootstrap.sh|grep mastersalt|grep -v grep|awk '{print $2}')|wc -w|${SED} -e "s/ //g"
