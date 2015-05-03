@@ -56,12 +56,9 @@ IMAGES = OrderedDict([
 ])
 
 
-class ImgError(salt.exceptions.SaltException):
-    '''.'''
-
-
-class ImgStepError(ImgError):
-    '''.'''
+# shortcuts
+ImgError = saltapi.ImgError
+ImgStepError = saltapi.ImgStepError
 
 
 def _imgerror(msg, cret=None):

@@ -120,6 +120,10 @@ class ImgError(salt.exceptions.SaltException):
     pass
 
 
+class ImgStepError(ImgError):
+    '''.'''
+
+
 class MastersaltNotInstalled(salt.exceptions.SaltException, ValueError):
     pass
 
