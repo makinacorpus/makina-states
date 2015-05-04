@@ -7,9 +7,9 @@ if [ -f /.dockerinit ];then
 fi
 FROZEN_PACKAGES="udev whoopsie ntp fuse grub-common grub-pc grub-pc-bin grub2-common"
 # specific to docker
-if [ "x${is_docker}" != "x" ];then
-    FROZEN_PACKAGES="${FROZEN_PACKAGES} resolvconf"
-fi
+# if [ "x${is_docker}" != "x" ];then
+#     FROZEN_PACKAGES="${FROZEN_PACKAGES} resolvconf"
+# fi
 for i in ${FROZEN_PACKAGES};do
     echo ${i} hold | dpkg --set-selections || /bin/true
 done
@@ -86,8 +86,8 @@ for f in\
     ;do SERVICES_DISABLED="${SERVICES_DISABLED} ${f}";done
 # services only harmfull in a docker
 if [ "x${is_docker}" != "x" ];then
+#        $(find /etc/init -name resolvconf.conf)\
     for f in\
-        $(find /etc/init -name resolvconf.conf)\
         $(find /etc/init -name cloud-init-container.conf)\
         $(find /etc/init -name cloud-init.conf)\
         $(find /etc/init -name cloud-init-local.conf)\
@@ -127,13 +127,13 @@ if [ "x${is_docker}" != "x" ];then
         ln -s /dev/tty /dev/${i} || /bin/true
     done
     # disable resolvconf
-    en="/etc/network"
-    if [ -f ${en}/if-up.d/000resolvconf ];then
-        mv -f ${en}/if-up.d/000resolvconf ${en}/if-up.d_000resolvconf.bak || /bin/true
-    fi
-    if [ -f ${en}/if-down.d/resolvconf ];then
-        mv -f ${en}/if-down.d/resolvconf ${en}/if-down.d_resolvconf.bak || /bin/true
-    fi
+    # en="/etc/network"
+    # if [ -f ${en}/if-up.d/000resolvconf ];then
+    #     mv -f ${en}/if-up.d/000resolvconf ${en}/if-up.d_000resolvconf.bak || /bin/true
+    # fi
+    # if [ -f ${en}/if-down.d/resolvconf ];then
+    #     mv -f ${en}/if-down.d/resolvconf ${en}/if-down.d_resolvconf.bak || /bin/true
+    # fi
 fi
 if [ -f /etc/lsb-release ];then
     . /etc/lsb-release
