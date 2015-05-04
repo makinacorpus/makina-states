@@ -3430,17 +3430,28 @@ def get_dns_resolvers(id_, ttl=PILLAR_TTL):
         rdata = {}
         db = get_db_infrastructure_maps()
         resolvers = set()
+        search = set()
         if id_ in db['vms']:
             resolvers.add(ip_for(db['vms'][id_]['target']))
         conf = __salt__[__name + '.query']('dns_resolvers', {})
+        sconf = __salt__[__name + '.query']('dns_search', {})
         conf = conf.get(id_, conf.get('default', []))
+        sconf = sconf.get(id_, sconf.get('default', []))
         if not isinstance(conf, list):
             conf = []
+        if not isinstance(sconf, list):
+            sconf = []
         for i in conf:
             resolvers.add(i)
+        for i in sconf:
+            search.add(i)
         p = 'makina-states.localsettings.dns.'
+        rdata[p[:-1]] = True
+        if search:
+            rdata[p + 'search'] = [a.strip() for a in search if a.strip()]
         if resolvers:
-            rdata[p + 'default_dnses'] = [a for a in resolvers]
+            rdata[p + 'default_dnses'] = [a.strip()
+                                          for a in resolvers if a.strip()]
         return rdata
     cache_key = __name + '.get_dns_resolvers{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)

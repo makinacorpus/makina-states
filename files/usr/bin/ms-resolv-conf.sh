@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 if [ "x${DEBUG}" != "x" ];then set -x;fi
 DNS_SERVERS="${DNS_SERVERS:-${1:-127.0.0.1 8.8.8.8 4.4.4.4 1.2.3.4}}"
-DNS_SEARCH="${DNS_SEARCH:-${2:-$(domainname)}}"
+DNS_SEARCH="${DNS_SEARCH:-${2:-$(hostname -f|sed -re "s/[^.]+\.(.*)/\1/g")}}"
 export DEBIAN_FRONTEND=noninteractive
 gen_resolvconf() {
     echo '# dnsservers setted by makina-states'
@@ -60,6 +60,12 @@ else
     resolvconf=/etc/resolv.conf
 fi
 resolvconfs="${resolvconfs} ${resolvconf}"
+
+for i in ${resolvconfs};do
+    if [ -e "${i}" ];then
+        sed -i -re "/search \(none\)/d" "${i}"
+    fi
+done
 if [ ! -d "$(dirname ${resolvconf})"  ];then
     mkdir -pv "$(dirname ${resolvconf})"
 fi

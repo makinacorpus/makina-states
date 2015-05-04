@@ -3,9 +3,7 @@
                     require=None,
                     require_in=None,
                     watch=None,
-                    watch_in=None,
-                    dnsservers=None,
-                    search=None) %}
+                    watch_in=None) %}
 
 {# hooks for dns orchestration #}
 ms-dns-pre-{{suf}}:
@@ -29,14 +27,18 @@ ms-dns-post-{{suf}}:
 {% if not watch_in %}
 {% set watch_in = [] %}
 {% endif %}
-{% if not search %}
 {% set search = settings.search %}
-{% endif %}
-{% if not dnsservers %}
 {% set dnsservers = settings.default_dnses %}
-{% endif %}
+{% if search %}
 {% set search = ' '.join(salt['mc_utils.uniquify'](search)) %}
+{% else %}
+{% set search = '' %}
+{% endif %}
+{% if dnsservers %}
 {% set dnsservers = ' '.join(salt['mc_utils.uniquify'](dnsservers)) %}
+{% else %}
+{% set dnsservers = '' %}
+{%endif %}
 bind-set-defaultdns-{{suf}}-1:
   file.managed:
     - name: /usr/bin/ms-resolv-conf.sh
