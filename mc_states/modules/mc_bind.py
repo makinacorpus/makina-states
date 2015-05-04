@@ -54,6 +54,25 @@ def tsig_for(id_, length=128):
     return local_conf[id_]
 
 
+def get_local_clients():
+    _s = __salt__
+    defaults = ['127.0.0.0/8',
+                '127.0.0.1',
+                '127.0.1.1',
+                '::1',
+                "172.16.0.0/12",
+                "192.168.0.0/16",
+                "10.0.0.0/8"]
+    if 'lxc.ls' in _s:
+        for i in _s['lxc.ls']():
+            infos = _s['lxc.info'](i)
+            for nicdata in infos.get('nics', []):
+                ipv4 = nicdata.get('ipv4', '').split('/')[0]
+                if ipv4 and ipv4 not in defaults:
+                    defaults.append(ipv4)
+    return defaults
+
+
 def settings():
     '''
     Named settings
@@ -348,8 +367,7 @@ def settings():
                 #
                 'acls': OrderedDict([
                     ('local', {
-                        'clients': ['127.0.0.1', '::1',
-                                    "192.168.0.0/16", "10.0.0.0/8"],
+                        'clients': get_local_clients,
                         }),
                 ]),
                 #
