@@ -28,6 +28,7 @@ def settings(ttl=15*60):
         settings = __salt__['mc_utils.defaults'](
             'makina-states.localsettings.dns', {
                 'no_default_dnses': False,
+                'search': [],
                 'default_dnses': []})
         if not settings['no_default_dnses']:
             for i in [

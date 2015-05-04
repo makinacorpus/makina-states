@@ -1,4 +1,2 @@
-{% include "makina-states/localsettings/dns/macros.sls" with context as dns %}
-include:
-  - makina-states.localsettings.dns.hooks
+{% import "makina-states/localsettings/dns/macros.sls" as dns with context%}
 {{ dns.switch_dns() }}

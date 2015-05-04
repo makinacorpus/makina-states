@@ -915,7 +915,7 @@ def get_ns_master(id_, dns_servers=None, default=None, ttl=PILLAR_TTL):
         if not dns_servers:
             dns_servers = __salt__[__name + '.query']('dns_servers', {})
         if not default:
-            default = dns_servers['default']
+            default = dns_servers.get('default', {})
         master = dns_servers.get(id_, OrderedDict()).get('master', None)
         if not master:
             master = default.get('master', None)
@@ -1041,7 +1041,7 @@ def get_raw_ns_slaves(id_, dns_servers=None, default=None, ttl=PILLAR_TTL):
         if not dns_servers:
             dns_servers = __salt__[__name + '.query']('dns_servers', {})
         if not default:
-            default = dns_servers['default']
+            default = dns_servers.get('default', {})
         rlslaves = dns_servers.get(
             id_, OrderedDict()).get('slaves', OrderedDict())
         if not rlslaves:
