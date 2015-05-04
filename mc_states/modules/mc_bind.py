@@ -367,7 +367,7 @@ def settings():
                 #
                 'acls': OrderedDict([
                     ('local', {
-                        'clients': get_local_clients,
+                        'clients': get_local_clients(),
                         }),
                 ]),
                 #
