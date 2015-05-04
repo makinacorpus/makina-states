@@ -15,6 +15,11 @@ view "{{v}}" {
   recursion             {{vdata.recursion}};
   additional-from-auth  {{vdata.additional_from_auth}};
   additional-from-cache {{vdata.additional_from_cache}};
+
+{% set allow_query = [] %}
+{% set allow_update = [] %}
+{% set allow_transfer = [] %}
+
 {% for zone, zdata in vdata.zones.items() %}
 {% set zdata = salt['mc_bind.get_zone'](zdata.zoneid) %}
 {% set file = zdata.fpath %}
@@ -32,21 +37,27 @@ zone "{{ zdata.fqdn }}" {
   file "{{file}}";
 {%- if zdata.allow_query %}
   allow-query {
-    {%-for m in zdata.allow_query %}
+    {%-for m in zdata.allow_query %}{% if m not in allow_query%}{% do allow_query.append(m) %}{%endif%}
     {{m}};
     {%-endfor%}
   };
+// not supported everywhere yet
+//  allow-query-cache {
+//    {%-for m in zdata.allow_query %}
+//    {{m}};
+//    {%-endfor%}
+//  };
 {% endif %}
 {%- if zdata.allow_update %}
   allow-update {
-    {%-for m in zdata.allow_update %}
+    {%-for m in zdata.allow_update %}{% if m not in allow_update%}{% do allow_update.append(m) %}{%endif%} 
     {{m}};
     {%-endfor%}
   };
 {%- endif %}
 {% if zdata.allow_transfer %}
   allow-transfer {
-    {%for m in zdata.allow_transfer %}
+    {%for m in zdata.allow_transfer %}{% if m not in allow_transfer%}{% do allow_transfer.append(m) %}{%endif%} 
     {{m}};
     {%-endfor%}
   };
@@ -60,6 +71,36 @@ zone "{{ zdata.fqdn }}" {
 {%  endif %}
 };
 {%endfor %}
+
+{%- if allow_query %}
+  allow-query {
+    {%-for m in allow_query %}
+    {{m}};
+    {%-endfor%}
+  };
+// not supported everywhere yet
+//  allow-query-cache {
+//    {%-for m in allow_query %}
+//    {{m}};
+//    {%-endfor%}
+//  };
+{% endif %}
+{%- if allow_update %}
+  allow-update {
+    {%-for m in allow_update %}
+    {{m}};
+    {%-endfor%}
+  };
+{%- endif %}
+{% if allow_transfer %}
+  allow-transfer {
+    {%for m in allow_transfer %}
+    {{m}};
+    {%-endfor%}
+  };
+{% endif %}
+
+
 };
 {% endif %}
 {% endfor %}
