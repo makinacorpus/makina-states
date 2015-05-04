@@ -22,7 +22,6 @@ six = api.six
 log = logging.getLogger(__name__)
 
 
-
 def _sort_ns(google_first=False):
     def __sort_ns(ns):
         pref = "a"
