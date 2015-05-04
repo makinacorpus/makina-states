@@ -29,8 +29,16 @@ ms-dns-post-{{suf}}:
 {% endif %}
 {% set search = settings.search %}
 {% set dnsservers = settings.default_dnses %}
+{% if search %}
 {% set search = ' '.join(salt['mc_utils.uniquify'](search)) %}
+{% else %}
+{% set search = '' %}
+{% endif %}
+{% if dnsservers %}
 {% set dnsservers = ' '.join(salt['mc_utils.uniquify'](dnsservers)) %}
+{% else %}
+{% set dnsservers = '' %}
+{%endif %}
 bind-set-defaultdns-{{suf}}-1:
   file.managed:
     - name: /usr/bin/ms-resolv-conf.sh

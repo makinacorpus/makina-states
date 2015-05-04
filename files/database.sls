@@ -62,7 +62,7 @@ format: 1
 #     a.foo.net: {}
 #     b.foo.net: {}
 #     c.foo.net: {}
-
+#
 # Configuration of hosts based on toggle switches to activate or not
 # an mc_pillar function
 # Activating an extpillar does not mean that it will totally enable a feature
@@ -435,6 +435,16 @@ ssh_groups:
 # cnames:
 #   AABBCC.www.mydomain.com: AABBCC.comodoca.com.
 
+
+# nameservers in /etc/resolv.conf (default: 127.0.0.1 8.8.8.8 4.4.4.4
+# dns_resolvers:
+#   default.bar.net: ["8.8.8.8"] (opt, can be unset)
+#   foo.bar.net: ["4.4.4.4"]
+
+# search domains in /etc/resolv.conf
+# dns_search:
+#   default: ["autoconfig.loc"] (opt, can be unset)
+#   foo.bar.net: ["autoconfig.loc"]
 
 # SPECIFIC A RECORD ALIAS INSTEAD OF CNAMES
 # Please use CNAMES only under torture, ips_map is your savior here.

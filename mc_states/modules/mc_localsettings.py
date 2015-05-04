@@ -121,7 +121,7 @@ def registry(ttl=15*60):
             'ldap': {'active': _ldapEn(__salt__)},
             'grub': {'active': False},
             'git': {'active': True},
-            'dns': {'active': True},
+            'dns': {'active': False},
             'hosts': {'active': True},
             'jdk': {'active': False},
             'etckeeper': {'active': True},
