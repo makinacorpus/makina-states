@@ -93,7 +93,7 @@ def prefered_ips(bclients):
                 log.error(
                     'target for shorewall is neither pinguable '
                     'or resolvable: {0}'.format(client))
-    return clients
+    return [a.strip() for a in clients if a.strip()]
 
 
 def settings():

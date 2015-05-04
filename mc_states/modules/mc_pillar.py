@@ -1802,6 +1802,9 @@ def get_shorewall_settings(id_=None, ttl=PILLAR_TTL):
                     'ping':  'net:'+','.join(allowed_to_ping),
                     'snmp': 'net:'+','.join(allowed_to_snmp),
                     'ntp': 'net:'+','.join(allowed_to_ntp)}
+        for i in [a for a in restrict]:
+            if restrict[i] == 'net:':
+                restrict[i] = 'fw:127.0.0.1'
         restrict_ssh = gconf.get('manage_ssh_ip_restrictions', False)
         if not restrict_ssh:
             restrict['ssh'] = 'all'
