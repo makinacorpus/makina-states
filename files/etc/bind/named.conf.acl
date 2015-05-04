@@ -8,9 +8,7 @@
 //
 {% for a, adata in data.acls.items() %}
 acl "{{a}}" {
-  {% for m in adata.get('clients') -%}
-  {{m}};
-  {%- endfor %}
+  {% for m in adata.get('clients') %}{{m}};{% endfor %}
 };
 {% endfor %}
 // vim: set ft=named:
