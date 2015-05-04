@@ -11,6 +11,7 @@ For the documentation on usage, please look :ref:`bind_documentation`.
 '''
 
 # Import python libs
+import traceback
 import logging
 import mc_states.api
 from copy import deepcopy
@@ -63,13 +64,16 @@ def get_local_clients():
                 "172.16.0.0/12",
                 "192.168.0.0/16",
                 "10.0.0.0/8"]
-    if 'lxc.ls' in _s:
-        for i in _s['lxc.ls']():
-            infos = _s['lxc.info'](i)
-            for nicdata in infos.get('nics', []):
-                ipv4 = nicdata.get('ipv4', '').split('/')[0]
-                if ipv4 and ipv4 not in defaults:
-                    defaults.append(ipv4)
+    try:
+        if 'lxc.ls' in _s:
+            for i in _s['lxc.ls']():
+                infos = _s['lxc.info'](i)
+                for nicdata in infos.get('nics', []):
+                    ipv4 = nicdata.get('ipv4', '').split('/')[0]
+                    if ipv4 and ipv4 not in defaults:
+                        defaults.append(ipv4)
+    except Exception:
+        log.error(traceback.format_exc())
     return defaults
 
 
