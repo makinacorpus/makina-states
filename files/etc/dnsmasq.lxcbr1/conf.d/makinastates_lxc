@@ -1,0 +1,13 @@
+{% set vms = salt['mc_cloud_compute_node.settings']().get('vms', {}) %}
+{% for v, vdata in vms.items() -%}
+{% if vdata.vt in ['lxc'] -%}
+# {{vdata.name}}
+dhcp-host={{vdata.mac}},{{vdata.ip}},{{vdata.name}},300
+address=/{{vdata.name}}/{{vdata.ip}}
+{% for domain in vdata.domains -%}
+{% if domain != vdata.name -%}
+address=/{{domain}}/{{vdata.ip}}
+{% endif %}
+{%- endfor %}
+{% endif %}
+{%- endfor %}
