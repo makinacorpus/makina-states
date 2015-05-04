@@ -69,7 +69,7 @@ filter_host_pids() {
         pids="${pids} $(echo "${@}")"
     else
         for pid in ${@};do
-            if [ "x$(grep -q lxc /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
+            if [ "x$(grep -q /lxc/ /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
                 pids="${pids} $(echo "${pid}")"
             fi
          done
