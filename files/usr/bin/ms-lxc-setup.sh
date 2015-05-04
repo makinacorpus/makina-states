@@ -5,7 +5,7 @@ FAKED="apport acpid udevtrigger udevmount-all"
 # docker specific
 if [ -f "/.dockerinit" ];then
     #FAKED="$FAKED resolvconf networking hostname tty{1,2,3,4,5,6,7,8,9}"
-    FAKED="${FAKED} networking hostname tty{1,2,3,4,5,6,7,8,9}"
+    FAKED="${FAKED} hostname tty{1,2,3,4,5,6,7,8,9}"
     # configuring network is done by lxc / docker
     cat > /etc/network/interfaces << EOF
 # This file describes the network interfaces available on your system

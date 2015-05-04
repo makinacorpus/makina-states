@@ -87,6 +87,8 @@ for f in\
 # services only harmfull in a docker
 if [ "x${is_docker}" != "x" ];then
 #        $(find /etc/init -name resolvconf.conf)\
+#        $(find /etc/init -name networking.conf)\
+#        $(find /etc/init -name network-interface-security.conf)\
     for f in\
         $(find /etc/init -name cloud-init-container.conf)\
         $(find /etc/init -name cloud-init.conf)\
@@ -95,8 +97,6 @@ if [ "x${is_docker}" != "x" ];then
         $(find /etc/init -name console.conf)\
         $(find /etc/init -name console-setup.conf)\
         $(find /etc/init -name hostname.conf)\
-        $(find /etc/init -name networking.conf)\
-        $(find /etc/init -name network-interface-security.conf)\
         $(find /etc/init -name tty[1-9].conf)\
         $(find /etc/init -name upstart*.conf)\
         $(find /etc/init -name upstart-dbus-bridge.conf)\

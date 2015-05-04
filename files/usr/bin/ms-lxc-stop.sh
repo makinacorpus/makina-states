@@ -6,7 +6,7 @@ if [ "x${1}" = "xupstart" ];then
     /sbin/initctl emit --no-wait net-device-added INTERFACE=lo || /bin/true
     /sbin/initctl emit --no-wait container CONTAINER=lxc || /bin/true
     #for j in apport resolvconf acpid udevtrigger udev networking mount-all hostname tty{1,2,3,4,5,6,7,8,9};do
-    for j in apport acpid udevtrigger udev networking mount-all hostname tty{1,2,3,4,5,6,7,8,9};do
+    for j in apport acpid udevtrigger udev mount-all hostname tty{1,2,3,4,5,6,7,8,9};do
         for l in pre-stop stopping killed post-stop;do
             /sbin/initctl emit --no-wait $l JOB=$j || /bin/true
         done
