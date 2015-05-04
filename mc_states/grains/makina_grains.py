@@ -114,6 +114,14 @@ def _is_devhost():
     return _devhost_num() != ''
 
 
+def _nodetype():
+    f = '/etc/makina-states/nodetype'
+    if os.path.exists(f):
+        with open(f) as fic:
+            return fic.read()
+    return 'unknown'
+
+
 def _is_upstart():
     if os.path.exists('/var/log/upstart'):
         return True
@@ -141,6 +149,7 @@ def get_makina_grains():
     grains = {'makina.upstart': _is_upstart(),
               'makina.container': _is_container(),
               'makina.lxc': _is_lxc(),
+              'makina.nodetype': _nodetype(),
               'makina.systemd': _is_systemd(),
               'makina.docker': _is_docker(),
               'makina.devhost_num': _devhost_num(),
