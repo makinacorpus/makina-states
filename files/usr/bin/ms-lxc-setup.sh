@@ -16,8 +16,8 @@ auto lo
 iface lo inet loopback
 
 # The primary network interface
-# auto eth0
-# iface eth0 inet dhcp
+auto eth0
+iface eth0 inet dhcp
 
 EOF
 fi
