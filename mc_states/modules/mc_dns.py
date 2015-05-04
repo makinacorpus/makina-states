@@ -53,6 +53,13 @@ def settings(ttl=15*60):
                 'google_first': False,
                 'search': [],
                 'default_dnses': []})
+        if settings['default_dnses']:
+            # if we have an explicit ns, dont check localhost as we
+            # are certainly in a container without a local ns, just
+            # skip it. If we have only one ns, we will hit it anyway
+            # in case of google failure at it will be the third
+            # and the last NS.
+            settings['google_first'] = True
         if not settings['no_default_dnses']:
             for i in [
                 '127.0.0.1',
