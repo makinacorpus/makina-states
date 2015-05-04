@@ -354,8 +354,6 @@ def settings():
                 ]),
                 #
                 'zones': OrderedDict(),
-                # retrocompat
-                'default_dnses': dns['default_dnses'],
             }
         )
         defaults['extra_dirs'] = [
@@ -366,6 +364,9 @@ def settings():
         ]
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.dns.bind', defaults)
+        # retrocompat: dns
+        data['default_dnses'] = dns['default_dnses']
+        data['search'] = dns['search']
         # lighten the data dict for memory purpose
         data['zones'] = [a for a in data['zones']]
         views = [a for a in data['views']]
