@@ -6,6 +6,7 @@ VENV="/srv/apps/circus/venv"
 ACTIVATE="/srv/apps/circus/venv/bin/activate"
 DAEMON="${VENV}/bin/circusd"
 CONF="/etc/circus/circusd.ini"
+arg=${1}
 
 . /etc/profile || /bin/true
 if [ -f /etc/default/circusd ];then
@@ -29,9 +30,9 @@ filter_host_pids() {
          done
     fi
 }
-if [ "x${a}" = "xstart" ];then
+if [ "x${arg}" = "xstart" ];then
     exec su -c "${VENV}/bin/circusd ${CONF}"
-elif [ "x${a}" = "xstop" ];then
+elif [ "x${arg}" = "xstop" ];then
     pids=$(filter_host_pids $(ps aux|grep "from circus import stats"|awk '{print $2}'))
     if [ "x${pids}" != "x" ];then
       for pid in ${pids};do kill -9 "${pid}" || /bin/true;done
