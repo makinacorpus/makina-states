@@ -1,11 +1,15 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import division
 import copy
+import textwrap
+import subprocess
 import sys
 import os
 import unittest
+import StringIO
 import mc_states.api
 from .. import base
 import contextlib
@@ -13,8 +17,23 @@ import contextlib
 
 from mock import MagicMock, patch, mock_open
 
+rt1 = textwrap.dedent('''
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags   MSS Window  irtt Iface
+0.0.0.0         125.124.124.1   0.0.0.0         UG        0 0          0 br0
+10.0.3.0        0.0.0.0         255.255.255.0   U         0 0          0 lxcbr0
+10.5.0.0        0.0.0.0         255.255.0.0     U         0 0          0 lxcbr1
+10.90.0.0       10.90.48.65     255.254.0.0     UG        0 0          0 eth1
+10.90.48.64     0.0.0.0         255.255.255.192 U         0 0          0 eth1
+192.168.122.0   0.0.0.0         255.255.255.0   U         0 0          0 virbr0
+125.124.124.0   0.0.0.0         255.255.255.0   U         0 0          0 br0
+''')
+
 
 class TestCase(base.GrainsCase):
+
+    def docker(self):
+        return self.get_private('makina_grains._is_docker')()
 
     @property
     def grains(self):
@@ -86,26 +105,26 @@ class TestCase(base.GrainsCase):
         ):
             with patch('__builtin__.open',  noopen):
                 with patch("os.path.exists", return_value=False):
-                    ret4 = copy.deepcopy(self.grains)
+                    ret4 = copy.deepcopy(self.docker())
                 with patch(
                     "os.path.exists", return_value=True
                 ):
-                    ret5 = copy.deepcopy(self.grains)
+                    ret5 = copy.deepcopy(self.docker())
             with patch('__builtin__.open', gopen):
-                ret3 = copy.deepcopy(self.grains)
+                ret3 = copy.deepcopy(self.docker())
             with patch('__builtin__.open', wopen):
-                ret6 = copy.deepcopy(self.grains)
+                ret6 = copy.deepcopy(self.docker())
         with self.patch(
             grains={'makina.docker': True},
             filtered=['mc.*'],
             kinds=['grains', 'modules']
         ):
-            ret1 = copy.deepcopy(self.grains)
-        self.assertFalse(ret4['makina.docker'])
-        self.assertTrue(ret5['makina.docker'])
-        self.assertFalse(ret6['makina.docker'])
-        self.assertTrue(ret3['makina.docker'])
-        self.assertTrue(ret1['makina.docker'])
+            ret1 = copy.deepcopy(self.docker())
+        self.assertFalse(ret4)
+        self.assertTrue(ret5)
+        self.assertFalse(ret6)
+        self.assertTrue(ret3)
+        self.assertTrue(ret1)
 
     def test_is_container(self):
         fun = self.get_private('makina_grains._is_container')
@@ -146,6 +165,72 @@ class TestCase(base.GrainsCase):
             )
         ):
             self.assertFalse(fun())
+
+    def test_routes(self):
+        class obj:
+            stdout = StringIO.StringIO(rt1)
+        with patch.object(subprocess, 'Popen', return_value=obj):
+            fun = self.get_private('makina_grains._routes')
+            ret = fun()
+            self.assertEqual(
+                ret,
+                ([{'flags': 'UG',
+                   'gateway': '125.124.124.1',
+                   'genmask': '0.0.0.0',
+                   'iface': 'br0',
+                   'irtt': '0',
+                   'mss': '0',
+                   'window': '0'},
+                  {'flags': 'U',
+                   'gateway': '0.0.0.0',
+                   'genmask': '255.255.255.0',
+                   'iface': 'lxcbr0',
+                   'irtt': '0',
+                   'mss': '0',
+                   'window': '0'},
+                  {'flags': 'U',
+                   'gateway': '0.0.0.0',
+                   'genmask': '255.255.0.0',
+                   'iface': 'lxcbr1',
+                   'irtt': '0',
+                   'mss': '0',
+                   'window': '0'},
+                  {'flags': 'UG',
+                   'gateway': '10.90.48.65',
+                   'genmask': '255.254.0.0',
+                   'iface': 'eth1',
+                   'irtt': '0',
+                   'mss': '0',
+                   'window': '0'},
+                  {'flags': 'U',
+                   'gateway': '0.0.0.0',
+                   'genmask': '255.255.255.192',
+                   'iface': 'eth1',
+                   'irtt': '0',
+                   'mss': '0',
+                   'window': '0'},
+                  {'flags': 'U',
+                   'gateway': '0.0.0.0',
+                   'genmask': '255.255.255.0',
+                   'iface': 'virbr0',
+                   'irtt': '0',
+                   'mss': '0',
+                   'window': '0'},
+                  {'flags': 'U',
+                   'gateway': '0.0.0.0',
+                   'genmask': '255.255.255.0',
+                   'iface': 'br0',
+                   'irtt': '0',
+                   'mss': '0',
+                   'window': '0'}],
+                 {'flags': 'UG',
+                  'gateway': '125.124.124.1',
+                  'genmask': '0.0.0.0',
+                  'iface': 'br0',
+                  'irtt': '0',
+                  'mss': '0',
+                  'window': '0'},
+                 '125.124.124.1'))
 
     def test_is_lxc(self):
 

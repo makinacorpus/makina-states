@@ -3432,6 +3432,9 @@ def get_dns_resolvers(id_, ttl=PILLAR_TTL):
         resolvers = set()
         search = set()
         if id_ in db['vms']:
+            vm_ = db['vms'][id_]
+            if vm_.get('vt', '') in ['lxc']:
+                resolvers.add('10.5.0.1')
             resolvers.add(ip_for(db['vms'][id_]['target']))
         conf = __salt__[__name + '.query']('dns_resolvers', {})
         sconf = __salt__[__name + '.query']('dns_search', {})
