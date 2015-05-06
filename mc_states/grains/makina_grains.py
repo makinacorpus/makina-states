@@ -190,7 +190,6 @@ def get_makina_grains():
               'makina.docker': _is_docker(),
               'makina.devhost_num': _devhost_num(),
               'makina.default_route': default_route,
-              'makina.default_route': default_route,
               'makina.default_gw': gw,
               'makina.routes': routes}
 
