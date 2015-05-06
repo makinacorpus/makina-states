@@ -61,9 +61,11 @@ def get_ver(origin):
 
 
 def test_same_versions(origin, destination, force=False):
+    if force:
+        return False
     old_ver = get_ver(origin)
     dold_ver = get_ver(destination)
-    return force or (dold_ver == old_ver)
+    return dold_ver == old_ver
 
 
 def get__salt__(__salt__from_exec=None):
