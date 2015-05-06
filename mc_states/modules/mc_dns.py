@@ -16,10 +16,30 @@ As soon as you install a dns service on the behalf of makina-states
 
 import logging
 from mc_states import api
+from mc_states.grains import makina_grains
+import dns
+import dns.query
+import dns.message
+import dns.rdatatype
 six = api.six
 
 
 log = logging.getLogger(__name__)
+
+
+def gateway_ns():
+    # try to default nameserver to the default gateway addr
+    ns = None
+    routes, route, gw = makina_grains._routes()
+    if gw:
+        try:
+            request = dns.message.make_query('fr', dns.rdatatype.NS)
+            res = dns.query.tcp(request, gw, timeout=5)
+            if res.rcode() == 0:
+                ns = gw
+        except (Exception,):
+            pass
+    return ns
 
 
 def _sort_ns(google_first=False):
@@ -60,11 +80,11 @@ def settings(ttl=15*60):
             # and the last NS.
             settings['google_first'] = True
         if not settings['no_default_dnses']:
-            for i in [
-                '127.0.0.1',
-                '127.0.1.1',
-                '8.8.8.8',
-            ]:
+            nss = [a
+                   for a in ([gateway_ns()] +
+                             ['127.0.0.1', '127.0.1.1', '8.8.8.8'])
+                   if a]
+            for i in nss:
                 if i not in settings['default_dnses']:
                     settings['default_dnses'].append(i)
         settings['default_dnses'] = __salt__['mc_utils.uniquify'](
