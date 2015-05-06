@@ -28,10 +28,9 @@ class TestCase(base.ModuleCase):
             kinds=['modules']
         ):
             ret1 = self._('mc_dns.settings')()
-            self.assertEqual(ret1['default_dnses'], ['127.0.0.1',
-                                                     '127.0.1.1',
-                                                     '8.8.8.8',
-                                                     '4.4.4.4'])
+            self.assertEqual(
+                ret1['default_dnses'],
+                ['127.0.0.1', '8.8.8.8', '127.0.1.1'])
 
 
 if __name__ == '__main__':

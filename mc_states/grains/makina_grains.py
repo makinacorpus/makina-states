@@ -15,6 +15,7 @@ makina.devhost_num
 '''
 
 import os
+import copy
 import subprocess
 
 
@@ -110,6 +111,39 @@ def _devhost_num():
     # return num
 
 
+def _routes():
+    routes, default_route = [], {}
+    troutes = subprocess.Popen(
+        'bash -c "netstat -nr"',
+        shell=True, stdout=subprocess.PIPE
+    ).stdout.read().strip()
+    for route in troutes.splitlines()[1:]:
+        try:
+            parts = route.split()
+            if 'dest' in parts[0].lower():
+                continue
+            droute = {'iface': parts[-1],
+                      'gateway': parts[1],
+                      'genmask': parts[2],
+                      'flags': parts[3],
+                      'mss': parts[4],
+                      'window': parts[5],
+                      'irtt': parts[6]}
+            if parts[0] == '0.0.0.0':
+                default_route = copy.deepcopy(droute)
+            routes.append(droute)
+        except Exception:
+            continue
+    return routes, default_route, default_route.get('gateway', None)
+
+
+def _is_vm():
+    ret = False
+    if _is_container():
+        ret = True
+    return ret
+
+
 def _is_devhost():
     return _devhost_num() != ''
 
@@ -146,35 +180,19 @@ def _is_systemd():
 def get_makina_grains():
     '''
     '''
+    routes, default_route, gw = _routes()
     grains = {'makina.upstart': _is_upstart(),
               'makina.container': _is_container(),
+              'makina.vm': _is_vm(),
               'makina.lxc': _is_lxc(),
               'makina.nodetype': _nodetype(),
               'makina.systemd': _is_systemd(),
               'makina.docker': _is_docker(),
               'makina.devhost_num': _devhost_num(),
-              'makina.default_route': {},
-              'makina.routes': []}
-    routes = subprocess.Popen(
-        'bash -c "netstat -nr"',
-        shell=True, stdout=subprocess.PIPE
-    ).stdout.read().strip()
-    for route in routes.splitlines()[1:]:
-        try:
-            parts = route.split()
-            if 'dest' in parts[0].lower():
-                continue
-            droute = {'iface': parts[-1],
-                      'gateway': parts[1],
-                      'genmask': parts[2],
-                      'flags': parts[3],
-                      'mss': parts[4],
-                      'window': parts[5],
-                      'irtt': parts[6]}
-            if parts[0] == '0.0.0.0':
-                grains.update({'makina.default_route': droute})
-            grains['makina.routes'].append(droute)
-        except Exception:
-            continue
+              'makina.default_route': default_route,
+              'makina.default_route': default_route,
+              'makina.default_gw': gw,
+              'makina.routes': routes}
+
     return grains
 # vim:set et sts=4 ts=4 tw=80:
