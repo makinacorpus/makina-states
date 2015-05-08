@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 '''
 
-.. _module_mc_shorewall:
+.. _module_mc_firewalld:
 
-mc_shorewall / shorewall functions
+mc_firewalld / firewalld functions
 ============================================
 
 
@@ -19,41 +19,11 @@ import mc_states.api
 import ipaddr
 from salt.utils.odict import OrderedDict
 
-__name = 'shorewall'
+
+__name = 'firewalld'
 
 log = logging.getLogger(__name__)
 prefered_ips = mc_states.api.prefered_ips
-
-
-def guess_shorewall_ver():
-    ver = __salt__['cmd.run']('shorewall version', python_shell=True)
-    for i in ['3' '4', '5']:
-        if i in ver:
-            return ver
-    if __grains__['os'] in ['Debian']:
-        if __grains__['osrelease'][0] < '6':
-            osver = 'old_deb'
-        else:
-            osver = 'deb'
-    else:
-        osver = 'ubuntu'
-    if __grains__.get('lsb_distrib_codename') in ['precise']:
-        osver = 'precise'
-    ver = {
-        'old_deb': '4.0.15',
-        'deb': '4.5.0',
-        'precise': '4.4.26',
-        'ubuntu': '4.5.17',
-    }.get(osver, '4.5.17')
-    return ver
-
-
-def get_macro(name, action, immediate=True):
-    if guess_shorewall_ver() < '4.5.10':
-        fmt = '{name}/{action}'
-    else:
-        fmt = '{name}({action})'
-    return fmt.format(name=name, action=action)
 
 
 def append_rules_for_zones(default_rules, rules, zones=None):
@@ -71,18 +41,19 @@ def append_rules_for_zones(default_rules, rules, zones=None):
                 default_rules.append(crule)
 
 
+
 def settings():
     '''
-    shorewall settings
+    firewalld settings
 
-    makina-states.services.shorewall.enabled: activate shorewall
+    makina-states.services.firewalld.enabled: activate firewalld
 
     It will also assemble pillar slugs to make powerfull firewalls
-    by parsing all **\*-makina-shorewall** pillar entries to load the special shorewall structure:
+    by parsing all **\*-makina-firewalld** pillar entries to load the special firewalld structure:
 
     All entries are merged in the lexicograpĥical order
 
-    makina-states.services.firewall.shorewall:
+    makina-states.services.firewall.firewalld:
         interfaces
             TBD
         rules
@@ -124,14 +95,14 @@ def settings():
         if nodetypes_registry['is']['lxccontainer']:
             ulogd = True
 
-        sw_ver = guess_shorewall_ver()
+        firewalld_ver = guess_firewalld_ver()
         shwIfformat = '?FORMAT 2'
-        if LooseVersion('4.5.10') >= LooseVersion(sw_ver):
+        if LooseVersion('4.5.10') >= LooseVersion(firewalld_ver):
             shwIfformat = '?FORMAT 2'
-        if LooseVersion('4.5.10') > LooseVersion(sw_ver) > LooseVersion('4.1'):
+        if LooseVersion('4.5.10') > LooseVersion(firewalld_ver) > LooseVersion('4.1'):
             # shwIfformat = 'FORMAT 2'
             shwIfformat = ''
-        elif LooseVersion(sw_ver) <= LooseVersion('4.1'):
+        elif LooseVersion(firewalld_ver) <= LooseVersion('4.1'):
             shwIfformat = '#?{0}'.format(shwIfformat)
         permissive_mode = False
         if nodetypes_registry['is']['lxccontainer']:
@@ -146,27 +117,36 @@ def settings():
             if rif == 'eth0':
                 permissive_mode = True
         data = _s['mc_utils.defaults'](
-            'makina-states.services.firewall.shorewall', {
+            'makina-states.services.firewall.firewalld', {
                 # mapping of list of mappings
-                'interfaces': OrderedDict(),
-                'params': OrderedDict(),
-                'rules': [],
+                'packages': ['ipset', 'ebtables', 'firewalld'],
+                'masquerade': ['public', 'home', 'external'],
+                'zones': OrderedDict([
+                    ('block',  {}),
+                    ('dmz', {
+                        'interfaces':  ['lxcbr0', 'lxbbr1',
+                                        'docker0', 'docker1',
+                                        'virbr0', 'vibr0',
+                                        'virbr1', 'vibr1',
+                                        'xenbr0', 'xenbr1']
+                    }),
+                    ('drop',  {}),
+                    ('external',  {}),
+                    ('home',  {}),
+                    ('internal',  {
+                        'interfaces',  ['eth1']
+                    }),
+                    ('public',  {
+                        'interfaces',  ['br0', 'eth0']
+                    }),
+                    ('trusted',  {}),
+                    ('work',  {}),
+                ]),
                 'nat': [],
                 'proxyarp': [],
                 'policies': [],
-                'zones': OrderedDict(),
-                'masqs': [],
-                'sw_ver': sw_ver,
-                'default_params': OrderedDict(),
-                'default_masqs': [],
-                'default_interfaces': OrderedDict(),
-                'default_policies': [],
-                'default_rules': [],
                 'banned_networks': [],
                 'trusted_networks': [],
-                'internal_zones': [],
-                'default_zones': {'net': OrderedDict(),
-                                  'fw': {'type': 'firewall'}},
                 'no_default_masqs': False,
                 'no_default_params': False,
                 'no_default_interfaces': False,
@@ -174,8 +154,6 @@ def settings():
                 'no_default_rules': False,
                 'no_default_zones': False,
                 # list of mappings
-                # dict of section/rule mappings parsed from rules
-                '_rules': OrderedDict(),
                 'no_default_net_bridge': False,
                 'no_invalid': True,
                 'no_snmp': False,
@@ -184,11 +162,7 @@ def settings():
                 'no_salt': False,
                 'no_mastersalt': False,
                 'no_postgresql': False,
-                'have_docker': None,
-                'have_vpn': None,
                 # backward compat
-                'have_rpn': have_rpn,
-                'have_lxc': None,
                 'no_dns': False,
                 'no_ping': False,
                 'no_smtp': False,
@@ -203,56 +177,20 @@ def settings():
                 'no_mumble': False,
                 'no_syslog': False,
                 'no_computenode': False,
+                'have_rpn': have_rpn,
+                'have_docker': None,
+                'have_vpn': None,
+                'have_lxc': None,
                 'defaultstate': 'new',
                 'permissive_mode': permissive_mode,
                 'ifformat': shwIfformat,
                 'ulogd': ulogd,
-                'configs': {'/etc/shorewall/interfaces': {"mode": "0700"},
-                            '/etc/shorewall/masq': {"mode": "0700"},
-                            '/etc/shorewall/nat': {"mode": "0700"},
-                            '/etc/shorewall/proxyarp': {"mode": "0700"},
-                            '/etc/shorewall/params': {"mode": "0700"},
-                            '/etc/shorewall/policy': {"mode": "0700"},
-                            '/etc/rc.local.d/shorewall.sh': {"makedirs": True,
-                                                             "mode": "0755"},
-                            '/etc/init.d/shorewall': {"makedirs": True,
-                                                      "mode": "0755"},
-                            '/etc/init.d/shorewall6': {"makedirs": True,
-                                                       "mode": "0755"},
-                            '/etc/shorewall/rules': {"mode": "0700"},
-                            '/etc/shorewall/shorewall.conf': {"mode": "0700"},
-                            '/etc/shorewall/zones': {"mode": "0700"}},
+                'extra_confs': {'/etc/default/firewalld': {}},
                 # retro compat
                 'enabled': _s['mc_utils.get'](
-                    'makina-states.services.shorewall.enabled', True),
+                    'makina-states.services.firewalld.enabled', True),
 
             })
-        shareds = ['macro.mongodb']
-        if _g['os'] in ['Debian']:
-            shareds.extend(['macro.PostgreSQL', 'macro.Mail'])
-        for i in shareds:
-            data['configs']['/usr/share/shorewall/' + i] = {'mode': "0700"}
-        info_loglevel = 'info'
-        if data['ulogd']:
-            info_loglevel = 'NFLOG'
-        # alias for retrocompat
-        data['shwInterfaces'] = data['interfaces']
-        data['shwPolicies'] = data['policies']
-        data['shwParams'] = data['params']
-        data['shwZones'] = data['zones']
-        data['shwMasqs'] = data['masqs']
-        data['shwIfformat'] = data['ifformat']
-        data['shwRules'] = data['rules']
-        data['shwDefaultState'] = data['defaultstate']
-        data['shwEnabled'] = data['enabled']
-        data['shw_interfaces'] = data['interfaces']
-        data['shw_policies'] = data['policies']
-        data['shw_params'] = data['params']
-        data['shw_zones'] = data['zones']
-        data['shw_masqs'] = data['masqs']
-        data['shw_rules'] = data['rules']
-        data['shw_defaultState'] = data['defaultstate']
-        data['shw_enabled'] = data['enabled']
         # search & autodetect for well known network interfaces bridges
         # to activate in case default rules for lxc & docker
         if data['have_lxc'] is None:
@@ -264,29 +202,10 @@ def settings():
         if data['have_vpn'] is None:
             if True in [a[0].startswith('tun') for a in gifaces]:
                 data['have_vpn'] = True  # must stay none if not found
-
-        opts_45 = ',sourceroute=0'
-        bridged_opts = 'routeback,bridge,tcpflags,nosmurfs'
-        bridged_net_opts = (
-            'bridge,tcpflags,dhcp,nosmurfs,routefilter')
-        phy_opts = 'tcpflags,dhcp,nosmurfs,routefilter'
-        if sw_ver >= '4.4':
-            phy_opts += opts_45
-            bridged_net_opts += opts_45
-        iface_opts = {
-            'vpn': '',
-            'net': phy_opts,
-            'lan': phy_opts,
-            'rpn': phy_opts,
-            'brnet': bridged_net_opts,
-            'lxc': bridged_opts,
-            'dck': bridged_opts,
-        }
         # service access restrictions
         # enable all by default, but can by overriden easily in config
-        # this will act at shorewall parameters in later rules
+        # this will act at firewalld parameters in later rules
         burpsettings = _s['mc_burp.settings']()
-
         if not data['no_default_params']:
             for p in ['SYSLOG', 'SSH', 'SNMP', 'PING', 'LDAP', 'SALT',
                       'NTP', 'MUMBLE', 'DNS', 'WEB', 'MONGODB', 'RABBITMQ',
@@ -304,7 +223,7 @@ def settings():
             for r, rdata in data['default_params'].items():
                 data['params'].setdefault(r, rdata)
 
-        # if we have no enough information, but shorewall is activated,
+        # if we have no enough information, but firewalld is activated,
         # construct a simple firewall allowing ssh icmp, and web traffic
         if not data['no_default_zones']:
             if data['have_vpn']:
@@ -347,7 +266,7 @@ def settings():
                 continue
             if 'lo' in iface:
                 continue
-            z = 'net'
+            z = 'external'
             # TODO: XXX: find better to mach than em1
             if iface.startswith('tun'):
                 z = 'vpn'
@@ -375,25 +294,15 @@ def settings():
             if 'lxc' in iface:
                 if data['have_lxc']:
                     z = 'lxc'
-            zz = {'brnet': 'net'}.get(z, z)
+            zz = {'brnet': 'external'}.get(z, z)
             data['default_interfaces'].setdefault(zz, [])
-            data['default_interfaces'][zz].append({
-                'interface': iface, 'options': iface_opts[z]})
+            data['default_interfaces'][zz].append({'interface': iface})
         for z, ifaces in data['default_interfaces'].items():
             for iface in ifaces:
                 data['interfaces'].setdefault(z, [])
                 if iface not in data['interfaces'][z]:
                     data['interfaces'][z].append(iface)
         default_lxc_docker_mode = 'masq'
-        if default_lxc_docker_mode == 'masq':
-            for z, ifaces in data['interfaces'].items():
-                if 'lxc' in z or 'dck' in z:
-                    for iface in ifaces:
-                        mask = {'interface': default_if,
-                                'source': iface['interface']}
-                        if mask not in data['default_masqs']:
-                            data['default_masqs'].append(mask)
-
         if not data['no_default_masqs']:
             # fw -> net: auth
             for m in data['default_masqs']:
@@ -407,7 +316,7 @@ def settings():
                     'source': '$FW', 'dest': z, 'policy': 'ACCEPT'})
 
             for z in ['fw'] + [a for a in data['zones']]:
-                if z not in data['internal_zones'] and z not in ['net']:
+                if z not in data['internal_zones'] and z not in ['external']:
                     data['internal_zones'].append(z)
 
             # dck -> net: auth
@@ -425,7 +334,7 @@ def settings():
                     'source': 'all', 'dest': 'vpn', 'policy': 'ACCEPT'})
             if data['have_docker']:
                 data['default_policies'].append({
-                    'source': 'dck', 'dest': 'net', 'policy': 'ACCEPT'})
+                    'source': 'dck', 'dest': 'external', 'policy': 'ACCEPT'})
                 data['default_policies'].append({
                     'source': 'dck', 'dest': 'dck', 'policy': 'ACCEPT'})
             if data['have_docker'] and data['have_lxc']:
@@ -438,7 +347,7 @@ def settings():
             # lxc -> net: auth
             if data['have_lxc']:
                 data['default_policies'].append({
-                    'source': 'lxc', 'dest': 'net', 'policy': 'ACCEPT'})
+                    'source': 'lxc', 'dest': 'external', 'policy': 'ACCEPT'})
                 data['default_policies'].append({
                     'source': '$FW', 'dest': 'lxc', 'policy': 'ACCEPT'})
 
@@ -458,13 +367,13 @@ def settings():
                     'source': 'all', 'dest': 'all',
                     'policy': 'REJECT', 'loglevel': info_loglevel})
                 end_policies.append({
-                    'source': 'net', 'dest': 'all',
+                    'source': 'external', 'dest': 'all',
                     'policy': 'DROP', 'loglevel': info_loglevel})
             else:
                 end_policies.append({
                     'source': 'all', 'dest': 'all', 'policy': 'ACCEPT'})
                 end_policies.append({
-                    'source': 'net', 'dest': 'all', 'policy': 'ACCEPT'})
+                    'source': 'external', 'dest': 'all', 'policy': 'ACCEPT'})
 
         # ATTENTION WE MERGE, so reverse order to append at begin
         data['default_policies'].reverse()
@@ -513,7 +422,7 @@ def settings():
                 data['default_rules'].insert(
                     0, {'action': 'ACCEPT!', 'source': network, 'dest': 'fw'})
             data['default_rules'].insert(0, {'comment': 'inter lxc traffic'})
-            if sw_ver >= '4.5':
+            if firewalld_ver >= '4.5':
                 data['default_rules'].append({'comment': 'invalid traffic'})
                 if data['no_invalid']:
                     action = 'DROP'
@@ -521,7 +430,7 @@ def settings():
                     action = 'ACCEPT'
                 append_rules_for_zones(data['default_rules'], {
                     'action': get_macro('Invalid', action),
-                    'source': 'net', 'dest': 'all'},
+                    'source': 'external', 'dest': 'all'},
                     zones=data['internal_zones'])
 
         if not data['no_default_rules'] and not data['permissive_mode']:
@@ -604,7 +513,7 @@ def settings():
                     try:
                         cloud_reg = _s['mc_cloud_compute_node.settings']()
                         cloud_rules = cloud_reg.get(
-                            'reverse_proxies', {}).get('sw_proxies', [])
+                            'reverse_proxies', {}).get('firewalld_proxies', [])
                     except Exception:
                         cloud_rules = []
                     if not cloud_rules:
@@ -614,7 +523,7 @@ def settings():
                             'cnSettings', {}).get(
                                 'rp', {}).get(
                                     'reverse_proxies', {}).get(
-                                        'sw_proxies', [])
+                                        'firewalld_proxies', [])
                     for r in cloud_rules:
                         rules = []
                         # replace all DNAT rules to use each external ip
@@ -735,7 +644,7 @@ def settings():
             # for ping, we drop and only accept from restricted (default: all)
             # append_rules_for_zones(data['default_rules'], {
             #     'action': 'Ping(DROP)'.format(action),
-            #     'source': 'net', 'dest': '$FW'})
+            #     'source': 'external', 'dest': '$FW'})
             # if data['no_ping']:
             #     action = 'DROP'
             # else:
@@ -746,16 +655,16 @@ def settings():
             # limiting ping
             # for ping, we drop and only accept from restricted (default: all)
             rate = 's:10/min:10'
-            if sw_ver < '4.4':
+            if firewalld_ver < '4.4':
                 rate = '-'
             append_rules_for_zones(
                 data['default_rules'],
                 {'action': get_macro('Ping', 'ACCEPT'),
-                 'source': 'net',
+                 'source': 'external',
                  'dest': '$FW'},
                 zones=data['internal_zones'])
 
-            for z in [a for a in data['zones'] if a not in ['net']]:
+            for z in [a for a in data['zones'] if a not in ['external']]:
                 append_rules_for_zones(
                     data['default_rules'],
                     {'action': get_macro('Ping', 'ACCEPT'),

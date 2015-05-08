@@ -22,6 +22,7 @@ import traceback
 import salt.output
 from salt.utils.odict import OrderedDict
 import salt.loader
+from mc_states improt ping
 
 try:
     import chardet
@@ -813,4 +814,28 @@ def magicstring(thestr):
         thestr = thestr.encode('utf-8')
     thestr = thestr.decode('utf-8').encode('utf-8')
     return thestr
+
+
+def prefered_ips(bclients):
+    clients = []
+    for client in bclients:
+        try:
+            clients.append(socket.gethostbyname(client))
+        except Exception:
+            # try to ping
+            ret = None
+            for i in range(4):
+                try:
+                    ret = ping.do_one(client, 4)
+                except:
+                    ret = None
+                if ret is not None:
+                    break
+            if ret is not None:
+                clients.append(client)
+            else:
+                log.error(
+                    'target for shorewall is neither pinguable '
+                    'or resolvable: {0}'.format(client))
+    return [a.strip() for a in clients if a.strip()]
 # vim:set et sts=4 ts=4 tw=80:
