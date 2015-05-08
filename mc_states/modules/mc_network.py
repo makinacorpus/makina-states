@@ -554,4 +554,34 @@ def ext_ip():
                 socket.timeout):
             continue
     return ''
+
+
+def have_lxc_if():
+    _s = __salt__
+    ret = None
+    data_net = _s['mc_network.default_net']()
+    gifaces = data_net['gifaces']
+    if True in ['lxc' in a[0] for a in gifaces]:
+        ret = False
+    return ret
+
+
+def have_vpn_if():
+    _s = __salt__
+    ret = None
+    data_net = _s['mc_network.default_net']()
+    gifaces = data_net['gifaces']
+    if True in [a[0].startswith('tun') for a in gifaces]:
+        ret = True
+    return ret
+
+
+def have_docker_if():
+    _s = __salt__
+    ret = None
+    data_net = _s['mc_network.default_net']()
+    gifaces = data_net['gifaces']
+    if True in ['docker' in a[0] for a in gifaces]:
+        ret = True
+    return ret
 # vim:set et sts=4 ts=4 tw=80:

@@ -835,7 +835,7 @@ def prefered_ips(bclients):
                 clients.append(client)
             else:
                 log.error(
-                    'target for shorewall is neither pinguable '
+                    'target for dnsaddr is neither pinguable '
                     'or resolvable: {0}'.format(client))
     return [a.strip() for a in clients if a.strip()]
 # vim:set et sts=4 ts=4 tw=80:

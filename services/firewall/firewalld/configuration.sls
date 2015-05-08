@@ -15,10 +15,10 @@ include:
     - watch_in:
       - mc_proxy: firewalld-post-conf
 {% endmacro %}
-{{ h.deliver_config_files(data.get('extra_confs', {}), 
-                          after_macro=rmacro, 
+{{ h.deliver_config_files(data.get('extra_confs', {}),
+                          after_macro=rmacro,
                           prefix='firewalld-') }}
- 
+
 firewalld-test-goodcfg:
   cmd.run:
     - name: firewalld check && echo "changed=false"

@@ -92,6 +92,7 @@ def registry():
                 'db.postgresql': {'active': False},
                 'firewall.fail2ban': {'active': False},
                 'firewall.shorewall': {'active': False},
+                'firewall.firewalld': {'active': False},
                 'firewall.psad': {'active': False},
                 'ftp.pureftpd': {'active': False},
                 'gis.postgis': {'active': False},
