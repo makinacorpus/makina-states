@@ -52,7 +52,7 @@ class TestCase(base.ModuleCase):
                 ['address="1.2.3.4"'], [], 'foo', 'bar', 'drop'),
             ['foo destination address="1.2.3.4" bar drop'])
 
-    def test_1arich_rules(self):
+    def test_rich_rules(self):
         rules = self._('mc_firewalld.rich_rules')(
                 port=2222,
                 services=['http', 'dns'],
@@ -60,12 +60,12 @@ class TestCase(base.ModuleCase):
                 action='drop')
         self.assertEqual(
             rules,
-            ['rule family=ipv4 port port="2222" protocol="udp"'
+            ['rule family="ipv4" port port="2222" protocol="udp"'
              ' destination address="1.2.3.5" drop',
-             'rule family=ipv4 port port="2222" protocol="tcp"'
+             'rule family="ipv4" port port="2222" protocol="tcp"'
              ' destination address="1.2.3.5" drop',
-             'rule family=ipv4 to service name="http" drop',
-             'rule family=ipv4 to service name="dns" drop']
+             'rule family="ipv4" to service name="http" drop',
+             'rule family="ipv4" to service name="dns" drop']
         )
         rules = self._('mc_firewalld.rich_rule')(
                 port=2222,
@@ -74,7 +74,7 @@ class TestCase(base.ModuleCase):
                 action='drop')
         self.assertEqual(
             rules,
-            'rule family=ipv4 port port="2222" protocol="udp"'
+            'rule family="ipv4" port port="2222" protocol="udp"'
             ' destination address="1.2.3.5" drop'
         )
         self.assertEqual(
@@ -82,28 +82,47 @@ class TestCase(base.ModuleCase):
                 port=2222,
                 destination='address="1.2.3.5"',
                 action='drop'),
-            ['rule family=ipv4 port port="2222" protocol="udp"'
+            ['rule family="ipv4" port port="2222" protocol="udp"'
              ' destination address="1.2.3.5" drop',
-             'rule family=ipv4 port port="2222" protocol="tcp"'
+             'rule family="ipv4" port port="2222" protocol="tcp"'
              ' destination address="1.2.3.5" drop']
         )
         self.assertEqual(
             self._('mc_firewalld.rich_rules')(
                 service='http',
-                forward_port={'port': 22, 'addr': '1.2.3.4'}),
-            []
+                forward_port={'port': 22, 'to_addr': '1.2.3.4'}),
+            ['rule family="ipv4" forward-port port="22"'
+             ' protocol="udp" to-addr="1.2.3.4"',
+             'rule family="ipv4" forward-port port="22"'
+             ' protocol="tcp" to-addr="1.2.3.4"',
+             'rule family="ipv4" to service name="http" accept']
         )
-        self.assertEqual(
-            self._('mc_firewalld.rich_rules')(
-                port=2222,
+        data = self._('mc_firewalld.rich_rules')(
+                ports=[43, 44],
                 destination='address="1.2.3.5"',
-                forward_port={'port': 22, 'addr': '1.2.3.4'}),
-            ['rule family=ipv4 forward-port port="2222" '
-             'protocol="udp" to-port="22" to-addr="1.2.3.4" '
-             'destination address="1.2.3.5" accept',
-             'rule family=ipv4 forward-port port="2222" protocol="tcp"'
-             ' to-port="22" to-addr="1.2.3.4" destination '
-             'address="1.2.3.5" accept']
+                forward_ports=[
+                    {'port': 22, 'to_addr': '1.2.3.4'},
+                    {'port': 43, 'to_port': 44, 'to_addr': '1.2.3.4'},
+                    {'port': 45, 'to_port': 46}
+                ])
+        self.assertEqual(
+            data,
+            ['rule family="ipv4" port port="44" protocol="udp"'
+             ' destination address="1.2.3.5" accept',
+             'rule family="ipv4" port port="44" protocol="tcp"'
+             ' destination address="1.2.3.5" accept',
+             'rule family="ipv4" forward-port port="45"'
+             ' protocol="udp" to-port="46"',
+             'rule family="ipv4" forward-port port="45"'
+             ' protocol="tcp" to-port="46"',
+             'rule family="ipv4" forward-port port="43"'
+             ' protocol="udp" to-port="44" to-addr="1.2.3.4"',
+             'rule family="ipv4" forward-port port="43"'
+             ' protocol="tcp" to-port="44" to-addr="1.2.3.4"',
+             'rule family="ipv4" forward-port port="22"'
+             ' protocol="udp" to-addr="1.2.3.4"',
+             'rule family="ipv4" forward-port port="22"'
+             ' protocol="tcp" to-addr="1.2.3.4"']
         )
 
     def test_add_real_interfaces(self):
@@ -322,6 +341,9 @@ class TestCase(base.ModuleCase):
              'banned_networks': [],
              'trust_internal': True,
              'trusted_networks': [],
+             'public_services': [],
+             'services': {},
+             'restricted_services': [],
              'internal_zones': ['internal', 'dmz', 'home',
                                 'docker', 'lxc', 'virt'],
              'permissive_mode': True,
@@ -340,6 +362,9 @@ class TestCase(base.ModuleCase):
              'permissive_mode': True,
              'trust_internal': True,
              'trusted_networks': [],
+             'public_services': [],
+             'services': {},
+             'restricted_services': [],
              'internal_zones': ['internal', 'dmz', 'home',
                                 'docker', 'lxc', 'virt'],
              'zones': {'bar': {'interfaces': ['eth1', 'eth0']},
@@ -371,12 +396,12 @@ class TestCase(base.ModuleCase):
                        'foo': {'interfaces': ['eth0']}}})
         self.assertEqual(
             data['zones']['bar']['rules'],
-            ['rule family=ipv4 source address="1.2.4.2" drop',
-             'rule family=ipv4 source address="1.2.4.3" accept'])
+            ['rule family="ipv4" source address="1.2.4.2" drop',
+             'rule family="ipv4" source address="1.2.4.3" accept'])
         self.assertEqual(
             data['zones']['foo']['rules'],
-            ['rule family=ipv4 source address="1.2.4.2" drop',
-             'rule family=ipv4 source address="1.2.4.3" accept'])
+            ['rule family="ipv4" source address="1.2.4.2" drop',
+             'rule family="ipv4" source address="1.2.4.3" accept'])
         data = self._('mc_firewalld.add_zones_policies')(
             {'aliased_interfaces': [],
              'public_zones': ['foo'],
@@ -438,6 +463,88 @@ class TestCase(base.ModuleCase):
         self.assertEqual(data['zones']['foo']['target'], 'REJECT')
         self.assertEqual(data['zones']['bar']['target'], 'ACCEPT')
 
+    def test_1aservice_policies(self):
+        def _do():
+            return {'clients': ['localhost']}
+        with self.patch(
+            funcs={
+                'modules': {
+                    'mc_burp.settings': mock.MagicMock(
+                        side_effect=_do),
+                }
+            },
+            filtered=['mc.*'],
+            kinds=['modules']
+        ):
+            data = self._('mc_firewalld.add_services_policies')(
+                {'aliased_interfaces': [],
+                 'public_services': ['a'],
+                 'restricted_services': ['b'],
+                 'services': {'c': {}},
+                 'public_zones': ['foo'],
+                 'permissive_mode': False,
+                 'internal_zones': ['bar'],
+                 'trusted_networks': [],
+                 'banned_networks': [],
+                 'trust_internal': True,
+                 'zones': {'bar': {'interfaces': ['eth1']},
+                           'mar': {'interfaces': ['eth2'],
+                                   'public_services': ['f'],
+                                   'restricted_services': ['e'],
+                                   'services': {'d': {}}},
+                           'foo': {'interfaces': ['eth0']}}})
+
+            self.assertEqual(
+                 data['services'],
+                 {'a': {}, 'b': {}, 'c': {}, 'd': {}, 'e': {}, 'f': {}})
+            self.assertEqual(
+                 data['zones']['bar']['services'],
+                 {'a': {}, 'b': {}, 'c': {}, 'd': {}, 'e': {}, 'f': {}})
+            self.assertEqual(
+                 data['zones']['mar']['services'],
+                 {'a': {}, 'b': {}, 'c': {}, 'd': {}, 'e': {}, 'f': {}})
+            self.assertEqual(
+                 data['zones']['foo']['services'],
+                 {'a': {}, 'b': {}, 'c': {}, 'd': {}, 'e': {}, 'f': {}})
+            self.assertEqual(
+                data['zones']['bar']['public_services'],
+                ['a'])
+            self.assertEqual(
+                data['zones']['foo']['public_services'],
+                ['a'])
+            self.assertEqual(
+                data['zones']['mar']['public_services'],
+                ['f'])
+            self.assertEqual(
+                data['zones']['bar']['restricted_services'],
+                ['b'])
+            self.assertEqual(
+                data['zones']['foo']['restricted_services'],
+                ['b'])
+            self.assertEqual(
+                data['zones']['mar']['restricted_services'],
+                ['e'])
+            self.assertEqual(
+                data['public_services'],
+                ['a'])
+            self.assertEqual(
+                data['restricted_services'],
+                ['b'])
+            self.assertEqual(
+                data['zones']['foo']['rules'],
+                ['rule family="ipv4" to service name="b" DROP',
+                 'rule family="ipv4" to service name="a" ACCEPT']
+            )
+            self.assertEqual(
+                data['zones']['bar']['rules'],
+                ['rule family="ipv4" to service name="b" DROP',
+                 'rule family="ipv4" to service name="a" ACCEPT']
+            )
+            self.assertEqual(
+                data['zones']['mar']['rules'],
+                ['rule family="ipv4" to service name="e" DROP',
+                 'rule family="ipv4" to service name="f" ACCEPT']
+            )
 
 if __name__ == '__main__':
     unittest.main()
