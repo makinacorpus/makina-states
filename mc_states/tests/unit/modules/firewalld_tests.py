@@ -52,40 +52,40 @@ class TestCase(base.ModuleCase):
                 ['address="1.2.3.4"'], [], 'foo', 'bar', 'drop'),
             ['foo destination address="1.2.3.4" bar drop'])
 
-    def test_rich_rules(self):
+    def test_1arich_rules(self):
         rules = self._('mc_firewalld.rich_rules')(
                 port=2222,
                 services=['http', 'dns'],
-                destination='adress="1.2.3.5"',
+                destination='address="1.2.3.5"',
                 action='drop')
         self.assertEqual(
             rules,
             ['rule family=ipv4 port port="2222" protocol="udp"'
-             ' destination adress="1.2.3.5" drop',
+             ' destination address="1.2.3.5" drop',
              'rule family=ipv4 port port="2222" protocol="tcp"'
-             ' destination adress="1.2.3.5" drop',
+             ' destination address="1.2.3.5" drop',
              'rule family=ipv4 to service name="http" drop',
              'rule family=ipv4 to service name="dns" drop']
         )
         rules = self._('mc_firewalld.rich_rule')(
                 port=2222,
                 services=['http', 'dns'],
-                destination='adress="1.2.3.5"',
+                destination='address="1.2.3.5"',
                 action='drop')
         self.assertEqual(
             rules,
             'rule family=ipv4 port port="2222" protocol="udp"'
-            ' destination adress="1.2.3.5" drop'
+            ' destination address="1.2.3.5" drop'
         )
         self.assertEqual(
             self._('mc_firewalld.rich_rules')(
                 port=2222,
-                destination='adress="1.2.3.5"',
+                destination='address="1.2.3.5"',
                 action='drop'),
             ['rule family=ipv4 port port="2222" protocol="udp"'
-             ' destination adress="1.2.3.5" drop',
+             ' destination address="1.2.3.5" drop',
              'rule family=ipv4 port port="2222" protocol="tcp"'
-             ' destination adress="1.2.3.5" drop']
+             ' destination address="1.2.3.5" drop']
         )
         self.assertEqual(
             self._('mc_firewalld.rich_rules')(
@@ -96,14 +96,14 @@ class TestCase(base.ModuleCase):
         self.assertEqual(
             self._('mc_firewalld.rich_rules')(
                 port=2222,
-                destination='adress="1.2.3.5"',
+                destination='address="1.2.3.5"',
                 forward_port={'port': 22, 'addr': '1.2.3.4'}),
             ['rule family=ipv4 forward-port port="2222" '
              'protocol="udp" to-port="22" to-addr="1.2.3.4" '
-             'destination adress="1.2.3.5" accept',
+             'destination address="1.2.3.5" accept',
              'rule family=ipv4 forward-port port="2222" protocol="tcp"'
              ' to-port="22" to-addr="1.2.3.4" destination '
-             'adress="1.2.3.5" accept']
+             'address="1.2.3.5" accept']
         )
 
     def test_add_real_interfaces(self):
@@ -319,6 +319,13 @@ class TestCase(base.ModuleCase):
                  'zones': {'bar': {'interfaces': ['eth1']}}}),
             {'aliased_interfaces': ['eth1'],
              'public_zones': ['foo', 'bar'],
+             'banned_networks': [],
+             'trust_internal': True,
+             'trusted_networks': [],
+             'internal_zones': ['internal', 'dmz', 'home',
+                                'docker', 'lxc', 'virt'],
+             'permissive_mode': True,
+
              'zones': {'bar': {'interfaces': ['eth1']},
                        'foo': {'interfaces': []}}}
         )
@@ -329,6 +336,12 @@ class TestCase(base.ModuleCase):
                  'zones': {'bar': {'interfaces': ['eth1']}}}),
             {'aliased_interfaces': ['eth0', 'eth1'],
              'public_zones': ['foo', 'bar'],
+             'banned_networks': [],
+             'permissive_mode': True,
+             'trust_internal': True,
+             'trusted_networks': [],
+             'internal_zones': ['internal', 'dmz', 'home',
+                                'docker', 'lxc', 'virt'],
              'zones': {'bar': {'interfaces': ['eth1', 'eth0']},
                        'foo': {'interfaces': ['eth0']}}}
         )
@@ -345,39 +358,68 @@ class TestCase(base.ModuleCase):
         self.assertEqual(data['zones']['bar']['interfaces'][-3:],
                          ['eth1:97', 'eth1:98', 'eth1:99'])
 
-    def ntp(self):
-        data = self.__('mc_ntp.settings')
-        self.assertTrue(isinstance(data, dict))
-        self.assertEqual(
-            data['default_flags'],
-            ' kod notrap nomodify nopeer noquery')
-        with self.patch(
-            grains={'makina.lxc': False, 'makina.docker': False},
-            filtered=['mc.*'],
-            kinds=['modules']
-        ):
-            mc_states.api.invalidate_memoize_cache('localreg_ntp_settings')
-            data = self.__('mc_ntp.settings')
-            self.assertTrue(data['activated'])
-            self.assertTrue(data['defaults']['NTPSYNC'] != '"no"')
-        with self.patch(
-            grains={'makina.lxc': True, 'makina.docker': False},
-            filtered=['mc.*'],
-            kinds=['modules']
-        ):
-            mc_states.api.invalidate_memoize_cache('localreg_ntp_settings')
-            data = self.__('mc_ntp.settings')
-            self.assertFalse(data['activated'])
-            self.assertTrue(data['defaults']['NTPSYNC'] == '"no"')
-        with self.patch(
-            grains={'makina.lxc': True, 'makina.docker': True},
-            filtered=['mc.*'],
-            kinds=['modules']
-        ):
-            mc_states.api.invalidate_memoize_cache('localreg_ntp_settings')
-            data = self.__('mc_ntp.settings')
-            self.assertFalse(data['activated'])
-            self.assertTrue(data['defaults']['NTPSYNC'] == '"no"')
+    def test_add_zone_policices(self):
+        data = self._('mc_firewalld.add_zones_policies')(
+            {'aliased_interfaces': [],
+             'public_zones': ['foo'],
+             'permissive_mode': False,
+             'internal_zones': ['bar'],
+             'trust_internal': True,
+             'zones': {'bar': {'interfaces': ['eth1']},
+                       'foo': {'interfaces': ['eth0']}}})
+        self.assertEqual(data['zones']['bar']['target'], 'ACCEPT')
+        self.assertEqual(data['zones']['foo']['target'], 'REJECT')
+        data = self._('mc_firewalld.add_zones_policies')(
+            {'aliased_interfaces': [],
+             'public_zones': ['foo'],
+             'internal_zones': ['bar'],
+             'permissive_mode': True,
+             'trust_internal': True,
+             'zones': {'bar': {'interfaces': ['eth1']},
+                       'foo': {'interfaces': ['eth0']}}})
+        self.assertEqual(data['zones']['foo']['target'], 'ACCEPT')
+        self.assertEqual(data['zones']['bar']['target'], 'ACCEPT')
+        data = self._('mc_firewalld.add_zones_policies')(
+            {'aliased_interfaces': [],
+             'public_zones': ['foo'],
+             'internal_zones': ['bar'],
+             'permissive_mode': False,
+             'trust_internal': False,
+             'zones': {'bar': {'interfaces': ['eth1']},
+                       'foo': {'interfaces': ['eth0']}}})
+        self.assertEqual(data['zones']['foo']['target'], 'REJECT')
+        self.assertEqual(data['zones']['bar']['target'], 'REJECT')
+        data = self._('mc_firewalld.add_zones_policies')(
+            {'aliased_interfaces': [],
+             'public_zones': ['foo'],
+             'internal_zones': ['bar'],
+             'permissive_mode': True,
+             'trust_internal': False,
+             'zones': {'bar': {'interfaces': ['eth1']},
+                       'foo': {'interfaces': ['eth0']}}})
+        self.assertEqual(data['zones']['foo']['target'], 'ACCEPT')
+        self.assertEqual(data['zones']['bar']['target'], 'REJECT')
+        data = self._('mc_firewalld.add_zones_policies')(
+            {'aliased_interfaces': [],
+             'public_zones': ['foo'],
+             'internal_zones': ['bar'],
+             'permissive_mode': True,
+             'trust_internal': None,
+             'zones': {'bar': {'interfaces': ['eth1']},
+                       'foo': {'interfaces': ['eth0']}}})
+        self.assertEqual(data['zones']['foo']['target'], 'ACCEPT')
+        self.assertEqual(data['zones']['bar']['target'], 'ACCEPT')
+        data = self._('mc_firewalld.add_zones_policies')(
+            {'aliased_interfaces': [],
+             'public_zones': ['foo'],
+             'internal_zones': ['bar'],
+             'permissive_mode': False,
+             'trust_internal': None,
+             'zones': {'bar': {'interfaces': ['eth1']},
+                       'foo': {'interfaces': ['eth0']}}})
+        self.assertEqual(data['zones']['foo']['target'], 'REJECT')
+        self.assertEqual(data['zones']['bar']['target'], 'ACCEPT')
+
 
 if __name__ == '__main__':
     unittest.main()

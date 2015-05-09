@@ -57,6 +57,43 @@ def get_endrule(audit=None,
     return endrule
 
 
+def is_permissive():
+    _s = __salt__
+    data_net = _s['mc_network.default_net']()
+    default_route = data_net['default_route']
+    permissive_mode = False
+    if __salt__['mc_nodetypes.is_container']():
+        # be permissive on the firewall side only if we are
+        # routing via the host only network and going
+        # outside througth NAT
+        # IOW
+        # if we have multiple interfaces and the default route is not on
+        # eth0, we certainly have a directly internet addressable lxc
+        # BE NOT permissive
+        rif = default_route.get('iface', 'eth0')
+        if rif == 'eth0':
+            permissive_mode = True
+    return permissive_mode
+
+
+def fix_data(data=None):
+    if data is None:
+        data = {}
+    data.setdefault('aliased_interfaces', [])
+    data.setdefault('banned_networks', [])
+    data.setdefault('internal_zones', INTERNAL_ZONES[:])
+    data.setdefault('permissive_mode', is_permissive())
+    data.setdefault('public_zones', PUBLIC_ZONES[:])
+    data.setdefault('trusted_networks', [])
+    data.setdefault('trust_internal', True)
+    data.setdefault('zones', OrderedDict())
+    if data['permissive_mode'] is None:
+        data['permissive_mode'] = is_permissive()
+    if data['trust_internal'] is None:
+        data['trust_internal'] = True
+    return data
+
+
 def add_dest_rules(destinations, rules, rule, endrule, action=None):
     if action:
         endrule += ' {0}'.format(action)
@@ -73,6 +110,16 @@ def add_dest_rules(destinations, rules, rule, endrule, action=None):
             if crule not in rules:
                 rules.append(crule)
     return rules
+
+
+def complete_address(address):
+    if (
+        isinstance(address, six.string_types) and
+        address and
+        'address=' not in address
+    ):
+        address = 'address="{0}"'.format(address)
+    return address
 
 
 def rich_rules(families=None,
@@ -115,13 +162,9 @@ def rich_rules(families=None,
     destinations = destinations[:]
     if destination and destination not in destinations:
         destinations.append(destination)
+    destinations = [complete_address(d) for d in destinations if d]
     if not protocols:
         protocols = ['udp', 'tcp']
-    if not sources:
-        sources = []
-    sources = sources[:]
-    if source and source not in sources:
-        sources.append(source)
     if not forward_ports:
         forward_ports = []
     forward_ports = forward_ports[:]
@@ -159,10 +202,16 @@ def rich_rules(families=None,
     families = families[:]
     if family and family not in families:
         families.append(family)
+    if not sources:
+        sources = []
+    sources = sources[:]
+    if source and source not in sources:
+        sources.append(source)
     if destinations and not sources:
         sources = ['0.0.0.0']
     if (ports or services or forward_ports) and not sources:
         sources = [None]
+    sources = [complete_address(d) for d in sources if d]
     for fml in families:
         for src in sources:
             for portid, fromport in six.iteritems(ports):
@@ -200,7 +249,7 @@ def rich_rules(families=None,
                         rule = 'rule'
                         if family:
                             rule += ' family={0}'.format(fml)
-                        if source:
+                        if src and src not in ['address="0.0.0.0"']:
                             rule += ' source {0}'.format(src)
                         rule += ' port port="{0}" protocol="{1}"'.format(
                             fromp, protocol)
@@ -219,7 +268,7 @@ def rich_rules(families=None,
                     rule = 'rule'
                     if family:
                         rule += ' family={0}'.format(fml)
-                    if source:
+                    if src and src not in ['address="0.0.0.0"']:
                         rule += ' source {0}'.format(src)
                     if svc:
                         rule += ' to service name="{0}"'.format(svc)
@@ -239,25 +288,6 @@ def rich_rules(families=None,
 
 def rich_rule(**kwargs):
     return rich_rules(**kwargs)[0]
-
-
-def is_permissive():
-    _s = __salt__
-    data_net = _s['mc_network.default_net']()
-    default_route = data_net['default_route']
-    permissive_mode = False
-    if __salt__['mc_nodetypes.is_container']():
-        # be permissive on the firewall side only if we are
-        # routing via the host only network and going
-        # outside througth NAT
-        # IOW
-        # if we have multiple interfaces and the default route is not on
-        # eth0, we certainly have a directly internet addressable lxc
-        # BE NOT permissive
-        rif = default_route.get('iface', 'eth0')
-        if rif == 'eth0':
-            permissive_mode = True
-    return permissive_mode
 
 
 def add_real_interfaces(data=None):
@@ -314,12 +344,8 @@ def search_aliased_interfaces(data=None):
     Add public interfaces as candidates for aliased zones
     to support common IP Failover scenarii
     '''
-    if data is None:
-        data = {}
+    data = fix_data(data)
     public_ifs = []
-    data.setdefault('public_zones', PUBLIC_ZONES[:])
-    data.setdefault('zones', OrderedDict())
-    data.setdefault('aliased_interfaces', [])
     for z in data['public_zones']:
         zone = data['zones'].setdefault(z, {})
         zone.setdefault('interfaces', [])
@@ -374,13 +400,22 @@ def add_aliased_interfaces(data=None):
     return data
 
 
-def add_zones_policies(data):
+def add_zones_policies(data=None):
+    data = fix_data(data)
     for z in data['public_zones']:
         if data['permissive_mode']:
             t = 'ACCEPT'
         else:
             t = 'REJECT'
-        data['zones'][z].setdefault('target', t)
+        zone = data['zones'].setdefault(z, {})
+        zone.setdefault('target', t)
+    for z in data['internal_zones']:
+        if data['trust_internal']:
+            t = 'ACCEPT'
+        else:
+            t = 'REJECT'
+        zone = data['zones'].setdefault(z, {})
+        zone.setdefault('target', t)
     for network in data['banned_networks']:
         add_rule(data, source=network, action='drop')
     for network in data['trusted_networks']:
@@ -415,7 +450,7 @@ def add_services_policies(data):
             policy = 'accept'
         if not (sources or policy):
             continue
-        add_rule(data, zones=zones, source=sources, service=s, action=policy)
+        add_rule(data, zones=zones, sources=sources, service=s, action=policy)
     return data
 
 
@@ -445,7 +480,7 @@ def complete_rules(data):
 
 def default_settings():
     _s = __salt__
-    defaults = {
+    DEFAULTS = {
         'is_container': __salt__['mc_nodetypes.is_container'](),
         'aliased_interfaces': [],
         'default_zone': None,
@@ -501,11 +536,14 @@ def default_settings():
         'have_lxc': _s['mc_network.have_lxc_if'](),
         #
         'permissive_mode': is_permissive(),
+        'trust_internal': None,
         'extra_confs': {'/etc/default/firewalld': {}},
         # retro compat
         'enabled': _s['mc_utils.get'](
             'makina-states.services.firewalld.enabled', True)}
-    data = _s['mc_utils.defaults'](PREFIX, defaults)
+    data = _s['mc_utils.defaults'](PREFIX, DEFAULTS)
+    if data['trust_internal'] is None:
+        data['trust_internal'] = True
     if data['default_zone'] is None:
         if data['public_zones']:
             data['default_zone'] = data['public_zones'][0]
@@ -540,16 +578,19 @@ def settings():
     '''
     firewalld settings
 
-    makina-states.services.firewalld.enabled: activate firewalld
+    makina-states.services.firewalld.enabled
+        set to true to activate firewalld
 
     DESIGN
         all services & forwardport & ports & etc are setted
-        via rich rules to allow selection of source and destination
-        variations.
+        via rich rules to allow fine-graines selections of source
+        and destination variations.
 
     Add some rich rules in pillar to a zone, all
     ``makina-states.services.firewall.firewalld.zones.public.rules<id>``
-    are merged::
+    are merged ::
+
+    .. code-block:: yaml
 
         makina-states.services.firewall.firewalld.zones.public.rules-foo:
           {% for i in salt['mc_firewalld.rich_rules'](
@@ -560,15 +601,32 @@ def settings():
           )- {{i}} {% endfor %}
         makina-states.services.firewall.firewalld.zones.public.rules-bar:
           - "rule service name="ftp" log limit value="1/m" audit accept"
+          {% for i in salt['mc_firewalld.rich_rules'](
+            port=22, destinations=['127.0.0.1'],  action='drop'
+          )- {{i}} {% endfor %}
+          {% for i in salt['mc_firewalld.rich_rules'](
+              port=22, destinations=['not address="127.0.0.2"'],  action='drop'
+          )- {{i}} {% endfor %}
 
-    Whitelist some services::
+    Whitelist some services
+
+    .. code-block:: yaml
 
         makina-states.services.firewall.firewalld.public_services-append:
             - smtp
 
-    Change whitelisted services::
+    Change whitelisted services
 
-        makina-states.services.firewall.firewalld.public_services: [http, https]
+    .. code-block:: yaml
+
+        makina-states.services.firewall.firewalld.public_services: [http]
+
+    Define a new service
+
+    .. code-block:: yaml
+
+        makina-states.services.firewall.firewalld.services.foo:
+            port: [{protocol: tcp, port: 2222}]
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
