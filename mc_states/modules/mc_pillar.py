@@ -2055,7 +2055,8 @@ def backup_configuration_type_for(id_, ttl=PILLAR_TTL):
         # for trivial joins (on id_, do it automatically)
         if not confs.get(id_, None) and id_ in qconfs:
             confs[id_] = id_
-        return confs.get(id_, None)
+        conf = confs.get(id_, None)
+        return conf
     cache_key = __name + '.backup_configuration_type_for{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
@@ -2071,13 +2072,18 @@ def backup_configuration_for(id_, ttl=PILLAR_TTL):
         conf_id = _s[__name + '.backup_configuration_type_for'](id_)
         data = OrderedDict()
         if (
-            id_ not in _s[__name + '.query']('non_managed_hosts') and
+            id_ not in _s[__name + '.query']('non_managed_hosts', []) and
             not default_conf_id
         ):
-            raise ValueError(
-                'No backup info for {0}'.format(id_))
+            if id_ in get_cloud_conf_by_vms():
+                t = 'vm'
+            else:
+                t = 'baremetal'
+            conf = confs.get(t, None)
+            if not conf:
+                raise ValueError('No backup info for {0}'.format(id_))
         if (
-            id_ in _s[__name + '.query']('non_managed_hosts', {}) and
+            id_ in _s[__name + '.query']('non_managed_hosts', []) and
             not conf_id
         ):
             conf_id = _s[__name + '.backup_configuration_type_for'](
@@ -2118,7 +2124,14 @@ def backup_configuration_for(id_, ttl=PILLAR_TTL):
 def backup_server_for(id_, ttl=PILLAR_TTL):
     def _do(id_):
         confs = __salt__[__name + '.query']('backup_server_map', {})
-        return confs.get(id_, confs['default'])
+        sconfs = __salt__[__name + '.query']('backup_servers', {})
+        default = confs.get('default')
+        if not default:
+            if sconfs:
+                default = [a for a in sconfs][0]
+            else:
+                raise ValueError('No default backup serveur')
+        return confs.get(id_, default)
     cache_key = __name + '.backup_server_for{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
@@ -2152,7 +2165,7 @@ def backup_server_settings_for(id_, ttl=PILLAR_TTL):
         # hosts and current backup server
         # db['non_managed_hosts'] + [id_]
         try:
-            backup_excluded = query('backup_excluded', {})
+            backup_excluded = query('backup_excluded', [])
             if not isinstance(backup_excluded, list):
                 raise ValueError('{0} is not a list for'
                                  ' backup_excluded'.format(backup_excluded))
@@ -2161,10 +2174,10 @@ def backup_server_settings_for(id_, ttl=PILLAR_TTL):
             log.error(trace)
             backup_excluded = []
         backup_excluded.extend(['default', 'default-vm', id_])
-        manual_hosts = _s[__name + '.query']('backup_manual_hosts', {})
-        non_managed_hosts = _s[__name + '.query']('non_managed_hosts', {})
+        manual_hosts = _s[__name + '.query']('backup_manual_hosts', [])
+        non_managed_hosts = _s[__name + '.query']('non_managed_hosts', [])
         backup_excluded.extend(
-            [a for a in _s[__name + '.query']('non_managed_hosts', {})
+            [a for a in _s[__name + '.query']('non_managed_hosts', [])
              if a not in manual_hosts])
         bms = [a for a in db['bms']
                if a not in backup_excluded and

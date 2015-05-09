@@ -634,7 +634,7 @@ def add_cloud_proxies(data):
         cloud_reg = _s['mc_cloud_compute_node.settings']()
         cloud_rules = cloud_reg.get(
             'reverse_proxies', {}).get('network_mappings', [])
-        for portdata in cloud_rules:
+        for port, portdata in six.iteritems(cloud_rules):
             add_rule(data,
                      zones=data['public_zones'],
                      forward_port={'port': portdata['hostPort'],
