@@ -67,31 +67,19 @@ __func_alias__ = {
 _get_ret = mc_states.saltapi._get_ssh_ret
 asbool = mc_states.saltapi.asbool
 _marker = mc_states.saltapi._marker
-_SSHExecError = mc_states.saltapi._SSHExecError
-_SSHLoginError = mc_states.saltapi._SSHLoginError
-_SSHTimeoutError = mc_states.saltapi._SSHTimeoutError
-_SSHVtError = mc_states.saltapi._SSHVtError
-_SSHInterruptError = mc_states.saltapi._SSHInterruptError
-_SSHCommandFinished = mc_states.saltapi._SSHCommandFinished
-_SSHCommandFailed = mc_states.saltapi._SSHCommandFailed
-_SSHCommandTimeout = mc_states.saltapi._SSHCommandTimeout
-_SSHTransferFailed = mc_states.saltapi._SSHTransferFailed
-_SaltCallFailure = mc_states.saltapi._SaltCallFailure
-
-
-class ResultProcessError(salt.exceptions.SaltException):
-    def __init__(self, msg, original=None, ret=None, *args, **kwargs):
-        super(ResultProcessError, self).__init__(msg, *args, **kwargs)
-        self.original = original
-        self.ret = ret
-
-
-class RenderError(ResultProcessError):
-    '''.'''
-
-
-class TransformError(ResultProcessError):
-    '''.'''
+_SSHExecError = mc_states.saltapi.SSHExecError
+_SSHLoginError = mc_states.saltapi.SSHLoginError
+_SSHTimeoutError = mc_states.saltapi.SSHTimeoutError
+_SSHVtError = mc_states.saltapi.SSHVtError
+_SSHInterruptError = mc_states.saltapi.SSHInterruptError
+_SSHCommandFinished = mc_states.saltapi.SSHCommandFinished
+_SSHCommandFailed = mc_states.saltapi.SSHCommandFailed
+_SSHCommandTimeout = mc_states.saltapi.SSHCommandTimeout
+_SSHTransferFailed = mc_states.saltapi.SSHTransferFailed
+_SaltCallFailure = mc_states.saltapi.SaltCallFailure
+_RemoteResultProcessError = mc_states.saltapi.RemoteResultProcessError
+_TransformError = mc_states.saltapi.TransformError
+_RenderError = mc_states.saltapi.RenderError
 
 
 # pylint: disable=R0903
@@ -1435,7 +1423,7 @@ def _consolidate_failure(ret):
     return ret
 
 
-def setup_grains(fun):
+def _setup_grains(fun):
     def _call(*args, **kw):
         if not __opts__.get('grains'):
             __opts__['grains'] = __grains__
@@ -1458,7 +1446,7 @@ def setup_grains(fun):
     return _call
 
 
-@setup_grains
+@_setup_grains
 def _transform_ret_first_pass(ret):
     import yaml
     renderers = salt.loader.render(__opts__, __salt__)
@@ -1476,11 +1464,11 @@ def _transform_ret_first_pass(ret):
                 if ret['raw_result'].startswith('NO RETURN FROM'):
                     ret['result'] = _EXECUTION_FAILED
                 else:
-                    raise RenderError(ret['log_trace'], ret=ret, original=exc)
+                    raise _RenderError(ret['log_trace'], ret=ret, original=exc)
     return ret
 
 
-@setup_grains
+@_setup_grains
 def _transform_ret_second_pass(ret):
     import yaml
     renderers = salt.loader.render(__opts__, __salt__)
@@ -1508,7 +1496,7 @@ def _transform_ret_second_pass(ret):
                 if ret['raw_result'].startswith('NO RETURN FROM'):
                     ret['result'] = _EXECUTION_FAILED
                 else:
-                    raise TransformError(
+                    raise _TransformError(
                         ret['log_trace'], ret=ret, original=exc)
     return ret
 
@@ -1739,7 +1727,7 @@ def _process_ret(ret, unparse=True, strip_out=False, hard_failure=False):
                 sh_wrapper_debug=ret.get('sh_wrapper_debug', False))
             ret['raw_result'] = copy.deepcopy(ret['result'])
             ret = _unparse_ret(ret)
-        except (ResultProcessError,) as exc:
+        except (_RemoteResultProcessError,) as exc:
             ret = exc.ret
             if ret['retcode']:
                 raise exc
@@ -1913,7 +1901,7 @@ def salt_call(host,
             else:
                 new_shell = True
                 if not __salt__['mc_controllers.has_mastersalt']():
-                    raise ValueError('Mastersalt is not installed')
+                    raise mc_states.saltapi.MastersaltNotInstalled('Mastersalt is not installed')
                 if not __salt__['mc_controllers.has_mastersalt_running']():
                     log.error(
                         'MastersaltMinion deamon is not running,'

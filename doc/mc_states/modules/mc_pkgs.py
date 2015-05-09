@@ -77,10 +77,22 @@ def settings():
         debian_stable = "wheezy"
         ddist = debian_stable
         ubuntu_lts = "trusty"
-        ubuntu_last = "saucy"
+        ubuntu_last = "vivid"
         lts_dist = debian_stable
+        mirrors = {
+            'ovh': 'http://mirror.ovh.net/ftp.ubuntu.com/',
+            # 'online': 'http://mirror.ovh.net/ubuntu',
+            'online': 'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu/',
+            'dist': 'http://fr.archive.ubuntu.com/ubuntu/',
+        }
+
+        # so you start
+        mirrors['sys'] = mirrors['ovh']
+        umirror = mirrors['ovh']
         if grains['os'] in ['Ubuntu']:
             lts_dist = ubuntu_lts
+            if grains['osrelease'] >= '15.04':
+                umirror = mirrors['dist']
         if grains['os'] in ['Debian']:
             ddist = saltmods['mc_utils.get']('lsb_distrib_codename', debian_stable)
             if not ddist:
@@ -94,14 +106,6 @@ def settings():
             else:
                 ddist = saltmods['mc_utils.get'](
                     'lsb_distrib_codename', debian_stable)
-        mirrors = {
-            'ovh': 'http://mirror.ovh.net/ftp.ubuntu.com/',
-            #'online': 'http://mirror.ovh.net/ubuntu',
-            'online': 'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu',
-        }
-        # so you start
-        mirrors['sys'] = mirrors['ovh']
-        umirror = mirrors['ovh']
         for provider in [a for a in mirrors]:
             for test in ['id', 'fqdn', 'domain', 'host', 'nodename']:
                 val = saltmods['mc_utils.get'](test, '')
@@ -109,32 +113,39 @@ def settings():
                     if provider in val.lower():
                         umirror = mirrors.get(provider, umirror)
 
-        udist = saltmods['mc_utils.get']('lsb_distrib_codename', ubuntu_lts)
+        ldist = saltmods['mc_utils.get']('lsb_distrib_codename', ubuntu_lts)
+        udist = ldist
         if grains['os'] not in ['Ubuntu']:
             udist = ubuntu_lts
         data = saltmods['mc_utils.defaults'](
             'makina-states.localsettings.pkgs', {
                 'installmode': default_install_mode,
                 'keyserver': 'pgp.mit.edu',
-                'dist': saltmods['mc_utils.get']('lsb_distrib_codename', ''),
+                'dist': ldist,
                 'lts_dist': lts_dist,
                 'apt': {
                     'ubuntu': {
                         'mirror': umirror,
                         'dist': udist,
                         'comps': (
-                            'main restricted universe multiverse'),
+                             'main restricted universe multiverse'),
+                        'use_backports': True,
                         'last': ubuntu_last,
                         'lts': ubuntu_lts,
                     },
                     'debian': {
                         'stable': debian_stable,
+                        'use_backports': True,
                         'dist': ddist,
                         'comps': 'main contrib non-free',
                         'mirror': deb_mirror,
                     },
                 }})
-        if grains['os'] in ['Debian']:
+        data['use_backports'] = data['apt'].get(
+            grains['os'].lower(), {}).get('use_backports', True)
+        if grains['os'] in ['Ubuntu']:
+            data['use_backports'] = data['apt']['ubuntu']['use_backports']
+        elif grains['os'] in ['Debian']:
             if grains['osrelease'][0] == '4':
                 data['apt']['debian']['mirror'] = 'http://archive.debian.org/debian/'
             elif grains['osrelease'][0] == '5':
@@ -149,13 +160,71 @@ def settings():
         data['ubuntu_lts'] = data['apt']['ubuntu']['lts']
         data['ubuntu_mirror'] = data['apt']['ubuntu']['mirror']
         data['ucomps'] = data['apt']['ubuntu']['comps']
+        data['ubp'] = data['apt']['ubuntu']['use_backports']
+        data['dbp'] = data['apt']['debian']['use_backports']
         data['udist'] = data['apt']['ubuntu']['dist']
+        # SEEMS NOT USED ANYMORE
+        # {% if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] <='5' %}
+        # {% set upt = 'volatile' %}
+        # {% else %}
+        # {% set upt = 'updates' %}
+        # {% endif %}
+        udist = data['udist']
+        ddist = data['ddist']
+        # more easy managable structure to be use in SLSes and templates
+        extra_udist = udist
+        pkg_data = __salt__['grains.filter_by']({
+            'default': {'mirrors': []},
+            'Debian': {'use-backports': True, 'mirrors': [
+                {'mirror': data['debian_mirror'],
+                 'dists': [
+                     {'name': ddist, 'comps': data['dcomps']},
+                     {'name': ddist+'-updates', 'comps': data['dcomps']}]},
+                {'mirror': 'http://security.debian.org/',
+                 'dists': [
+                     {'name': ddist+'/updates', 'comps': data['dcomps']}]},
+            ]},
+            'Ubuntu': {'mirrors': [
+                {'mirror': data['ubuntu_mirror'],
+                 'dists': [
+                     {'name': udist, 'comps': data['ucomps'],},
+                     {'name': udist+'-updates', 'comps': data['ucomps'],},
+                     {'name': udist+'-security', 'comps': data['ucomps'],}]},
+                {'mirror': 'http://archive.canonical.com/ubuntu',
+                 'dists': [{'name': udist, 'comps': 'partner'}]},
+            ]}}, grain='os')
+        # https://bugs.launchpad.net/ubuntu/+source/apt-setup/+bug/1409555
+        # extras repo doest exist anymore
+        if grains['os'] in ['Ubuntu'] and grains['osrelease'] < '15.04':
+            pkg_data['mirrors'].append({
+                'mirror': 'http://extras.ubuntu.com/ubuntu',
+                'dists': [{'name': udist, 'comps': 'main'}]})
+        if data['use_backports']:
+            pkg_data['mirrors'].extend(
+                __salt__['grains.filter_by']({
+                    'Debian': [
+                        {'mirror': data['debian_mirror'],
+                         'dists': [{'name': ddist+'-backports', 'comps': data['dcomps']}]}],
+                    'Ubuntu': [
+                        {'mirror':  data['ubuntu_mirror'],
+                         'dists': [{'name': udist+'-backports', 'comps': data['ucomps']}]}
+                    ]}, grain='os'))
+        if grains['os'] in ['Debian']:
+            if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] <='5':
+                pkg_data['mirrors'][0]['dists'].pop(1)
+                pkg_data['mirrors'].pop(1)
+                pkg_data['mirrors'].pop(1)
+                pkg_data['mirrors'].extend(
+                    __salt__['grains.filter_by']({
+                        'Debian': [
+                            {'mirror': 'http://archive.debian.org/debian-security',
+                             'dists': [{'name': ddist+'/updates', 'comps': data['dcomps']}]},
+                            {'mirror': 'http://archive.debian.org/debian-volatile',
+                             'dists': [{'name': ddist+'/volatile', 'comps': data['dcomps']}]},
+                            {'mirror': 'http://archive.debian.org/backports.org',
+                             'dists': [{'name': ddist+'-backports', 'comps': data['dcomps']}]}
+                        ]}), grain='os')
+        data['pkg_data'] = pkg_data
         return data
     return _settings()
-
-
-
-#
-# -*- coding: utf-8 -*-
-
 # vim:set et sts=4 ts=4 tw=80:

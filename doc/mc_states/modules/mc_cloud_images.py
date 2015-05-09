@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# pylint: disable=W0105
 '''
 .. _module_mc_cloud_images:
 
@@ -16,8 +17,6 @@ import traceback
 import logging
 import os
 import copy
-import yaml
-import mc_states.api
 import salt.exceptions
 from mc_states import saltapi
 
@@ -25,8 +24,10 @@ from mc_states.runners import mc_lxc
 from mc_states.modules.mc_lxc import (
     is_lxc)
 from salt.utils.odict import OrderedDict
+from mc_states.modules.mc_pillar import PILLAR_TTL
 __name = 'mc_cloud_images'
 
+six = saltapi.six
 log = logging.getLogger(__name__)
 _errmsg = saltapi._errmsg
 PROJECT_PATH = 'project/makinacorpus/makina-states'
@@ -36,14 +37,27 @@ PREFIX = 'makina-states.cloud.images'
 IMG_URL = ('https://downloads.sourceforge.net/makinacorpus'
            '/makina-states/'
            '{img}-{flavor}-{ver}.tar.xz')
+IMAGES = OrderedDict([
+    ('lxc', OrderedDict([
+        ('ubuntu-vivid', {
+            'create': '-t ubuntu -- -r vivid --mirror {mirror}'
+        }),
+        ('makina-states-vivid', {
+            'clone': 'ubuntu-vivid',
+            'bootsalt': True}),
+    ])),
+    ('docker', OrderedDict([
+        ('makina-states/ubuntu-vivid-raw', {
+            'from_lxc': 'makina-states-vivid'}),
+        ('ubuntu-vivid-systemd-debug', {
+            'from': 'makina-states:ubuntu-vivid'})
+    ]))
+])
 
 
-class ImgError(salt.exceptions.SaltException):
-    '''.'''
-
-
-class ImgStepError(ImgError):
-    '''.'''
+# shortcuts
+ImgError = saltapi.ImgError
+ImgStepError = saltapi.ImgStepError
 
 
 def _imgerror(msg, cret=None):
@@ -53,6 +67,8 @@ def _imgerror(msg, cret=None):
 def complete_images(data):
     root = data['root']
     images = data['lxc'].setdefault('images', OrderedDict())
+    images.setdefault('makina-states-precise', {})
+    images.setdefault('makina-states-vivid', {})
     images.setdefault('makina-states-trusty', {})
     for img in [i for i in images]:
         defaults = OrderedDict()
@@ -69,9 +85,10 @@ def complete_images(data):
                                      '{0}-{1}_version.txt'
                                      '').format(img, flavor))
             if (
-                not os.path.exists(ver_file)
-                and not os.path.exists(md5_file)
+                not os.path.exists(ver_file) and
+                not os.path.exists(md5_file)
             ):
+                log.info('lxc/{0} is not released yet, disabling'.format(img))
                 continue
             with open(ver_file) as fic:
                 ver = images[img][
@@ -130,7 +147,7 @@ def default_settings():
     return data
 
 
-def extpillar_settings(id_=None, limited=False, ttl=30):
+def extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
     def _do(id_=None, limited=False):
         cid = __opts__['id']
         _s = __salt__
@@ -141,7 +158,7 @@ def extpillar_settings(id_=None, limited=False, ttl=30):
         cloud_settings = _s['mc_cloud.extpillar_settings']()
         is_devhost = _s['mc_nodetypes.is_devhost']()
         cron_sync = True
-        if (is_lxc() or is_devhost):
+        if is_lxc() or is_devhost:
             cron_sync = False
         data = _s['mc_utils.dictupdate'](
             _s['mc_utils.dictupdate'](
@@ -162,23 +179,29 @@ def extpillar_settings(id_=None, limited=False, ttl=30):
         _do, [id_, limited], {}, cache_key, ttl)
 
 
-def ext_pillar(id_, prefixed=True, *args, **kw):
+def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
     '''
     Images extpillar
     '''
-    _s = __salt__
-    limited = kw.get('limited', False)
-    expose = False
-    if _s['mc_cloud.is_a_cloud_member'](id_):
-        expose = True
-    data = {}
-    if expose:
-        data = extpillar_settings(id_, limited=limited)
-    if prefixed:
-        data = {PREFIX: data}
-    return data
+    def _do(id_, prefixed, args, kw):
+        _s = __salt__
+        limited = kw.get('limited', False)
+        expose = False
+        if _s['mc_cloud.is_a_cloud_member'](id_):
+            expose = True
+        data = {}
+        if expose:
+            data = extpillar_settings(id_, limited=limited)
+        if prefixed:
+            data = {PREFIX: data}
+        return data
+    cache_key = '{0}.{1}.{2}{3}'.format(
+        __name, 'ext_pillar', id_, prefixed)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [id_, prefixed, args, kw], {}, cache_key, ttl)
 
 
+# pylint: disable=W0105
 '''
 To execute on node after pillar is loaded
 '''
@@ -195,10 +218,10 @@ def settings(ttl=60):
         nt_registry = __salt__['mc_nodetypes.registry']()
         cron_sync = None
         if (
-                nt_registry['is']['devhost']
-                or nt_registry['is']['lxccontainer']
-                or __salt__['mc_utils.get'](
-                    'makina-states.cloud.is.vm', False)
+            nt_registry['is']['devhost'] or
+            nt_registry['is']['lxccontainer'] or
+            __salt__['mc_utils.get'](
+                'makina-states.cloud.is.vm', False)
         ):
             cron_sync = False
         data = __salt__['mc_utils.defaults'](PREFIX, default_settings())
@@ -235,7 +258,9 @@ def get_vars(container='makina-states-trusty', flavor='standalone'):
     data = _s['mc_utils.format_resolve'](data)
     try:
         cur_ver = int(open(data['ver_file']).read().strip())
-    except:
+    except (IOError, OSError,
+            ValueError, TypeError, KeyError,
+            UnicodeEncodeError, UnicodeDecodeError):
         cur_ver = 0
     next_ver = cur_ver + 1
     data['cur_ver'] = cur_ver
@@ -327,6 +352,8 @@ def archive_standalone(container, *args, **kwargs):
                    ' etc/init.d/mastersalt-*'
                    ' etc/init.d/salt-*'
                    ' etc/init/mastersalt-*'
+                   ' etc/systemd/system/mastersalt-*'
+                   ' etc/systemd/system/salt-*'
                    ' etc/init/salt-*'
                    ' etc/{{mastersalt,salt}}'
                    ' srv/{{mastersalt-pillar,pillar}}'
@@ -411,7 +438,7 @@ def upload(container, flavor, *args, **kwargs):
         failed = True
     if failed:
         # bindly try to remove the files
-        for sufsuf in ['', '.tmp']:
+        for i in ['', '.tmp']:
             gvars['sufsuf'] = i
             cmd = ('echo "rm {dest}{sufsuf}" '
                    '| sftp {user}@{sftp_url}').format(**gvars)
@@ -478,7 +505,7 @@ def sf_release(images=None, flavors=None, sync=True):
 
     For now this includes:
 
-        - lxc container based on Ubuntu LTS (trusty)
+        - lxc container based on Ubuntu LTS
         - current ubuntu LTS based tarball containing the minimum vital
           to bring back to like makina-states without rebuilding it
           totally from scratch. This contains a slimed version of
@@ -549,4 +576,50 @@ def sf_release(images=None, flavors=None, sync=True):
                 subrets['trace'] += '{1}/{2}\n{0}\n'.format(
                     __salt__['mc_utils.magicstring'](trace), flavor, step)
     return gret
+
+
+def build_from_lxc(img, data):
+    if 'create' in data:
+        create_ar
+        pass
+    elif 'clone' in data:
+        pass
+    else:
+        raise saltapi.ImgErro(
+            '{0}: choose between create or clone args for your'
+            ' container'.format(img))
+
+
+def build_from_docker(img, data):
+    raise saltapi.ImgError('Not implemented')
+
+
+def build(typs=None, images=None):
+    if isinstance(typs, six.string_types):
+        typs = typs.split(',')
+    if isinstance(images, six.string_types):
+        images = images.split(',')
+    if not typs:
+        typs = [a for a in IMAGES]
+    typs = [t for t in typs if t in IMAGES]
+    if not images:
+        images = []
+        for s in typs:
+            for img in IMAGES[s]:
+                images.append(img)
+    rets = {'errors': {}, 'returns': {}, 'result': True}
+    for typ in typs:
+        for img, data in IMAGES[typ].items():
+            if img not in images:
+                continue
+            fun_ = 'mc_images_helpersbuild_from_{0}'.format(typ)
+            try:
+                rets['returns'][img] = fun_(img, data)
+            except (
+                saltapi.ImgError,
+            ) as exc:
+                rets['result'] = False
+                trace = traceback.format_exc()
+                rets['errors'][img] = {'exc': '{0}'.format(exc),
+                                       'trace': trace}
 # vim:set et sts=4 ts=4 tw=80:

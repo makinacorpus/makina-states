@@ -9,7 +9,6 @@ from mc_states.modules import (
     mc_locations,
     mc_macros
 )
-from mock import patch, Mock
 
 
 class TestCase(base.ModuleCase):
@@ -20,64 +19,64 @@ class TestCase(base.ModuleCase):
 
     def test_msgpack(self):
         value = 'test'
-        ret = mc_dumper.msgpack_dump(value)
-        ret2 = mc_dumper.msgpack_load(ret)
+        ret = self._('mc_dumper.msgpack_dump')(value)
+        ret2 = self._('mc_dumper.msgpack_load')(ret)
         self.assertEqual(value, ret2)
 
     def test_json(self):
         value = 'test'
-        ret = mc_dumper.json_dump(value)
-        ret2 = mc_dumper.json_load(ret)
+        ret = self._('mc_dumper.json_dump')(value)
+        ret2 = self._('mc_dumper.json_load')(ret)
         self.assertEqual(value, ret2)
         self.assertEqual(ret, '"test"')
         self.assertEqual(ret2, value)
 
     def test_yaml(self):
         self.assertEqual(
-            mc_dumper.yaml_dump({2: 1}),
+            self._('mc_dumper.yaml_dump')({2: 1}),
             '2: 1\n')
         self.assertEqual(
-            mc_dumper.yaml_dump({2: "1\nh"}),
+            self._('mc_dumper.yaml_dump')({2: "1\nh"}),
             "2: '1\n\n  h'\n")
         self.assertEqual(
-            mc_dumper.yaml_dump({2: "1\nh"}, flow=True),
+            self._('mc_dumper.yaml_dump')({2: "1\nh"}, flow=True),
             "{2: '1\n\n    h'}\n")
         self.assertEqual(
-            mc_dumper.yaml_dump({2: "1\nh"}, nonewline=True),
+            self._('mc_dumper.yaml_dump')({2: "1\nh"}, nonewline=True),
             "2: '1    h' ")
         self.assertEqual(
-            mc_dumper.old_yaml_dump({2: "1\nh"}, flow=True),
+            self._('mc_dumper.old_yaml_dump')({2: "1\nh"}, flow=True),
             "{2: '1      h'} ")
         self.assertEqual(
-            mc_dumper.iyaml_dump({2: "1\nh"}),
+            self._('mc_dumper.iyaml_dump')({2: "1\nh"}),
             "{2: '1\n\n    h'}\n")
         self.assertEqual(
-            mc_dumper.cyaml_load("{2: '1\n\n    h'}\n"),
+            self._('mc_dumper.cyaml_load')("{2: '1\n\n    h'}\n"),
             {2: "1\nh"})
         self.assertEqual(
-            mc_dumper.yaml_load("{2: '1\n\n    h'}\n"),
+            self._('mc_dumper.yaml_load')("{2: '1\n\n    h'}\n"),
             {2: "1\nh"})
 
     def test_sanitize_kw(self):
         self.assertEqual(
-            mc_dumper.sanitize_kw({'is_file': 1, 1: 1}), {1: 1})
+            self._('mc_dumper.sanitize_kw')({'is_file': 1, 1: 1}), {1: 1})
         self.assertEqual(
-            mc_dumper.sanitize_kw({'__pub__foo': 1, 1: 1}), {1: 1})
+            self._('mc_dumper.sanitize_kw')({'__pub__foo': 1, 1: 1}), {1: 1})
         self.assertEqual(
-            mc_dumper.sanitize_kw({'e__pub__foo': 1, 1: 1}),
+            self._('mc_dumper.sanitize_kw')({'e__pub__foo': 1, 1: 1}),
             {'e__pub__foo': 1, 1: 1})
 
     def test_first_arg_is_file(self):
         self.assertTrue(
-            mc_dumper.first_arg_is_file(**{'is_file': True}))
+            self._('mc_dumper.first_arg_is_file')(**{'is_file': True}))
         self.assertTrue(
-            not mc_dumper.first_arg_is_file(**{'is_file': False}))
+            not self._('mc_dumper.first_arg_is_file')(**{'is_file': False}))
         t = tempfile.mkstemp()[1]
         self.assertFalse(
-            mc_dumper.first_arg_is_file(t, **{'is_file': False}))
-        self.assertTrue(mc_dumper.first_arg_is_file(t))
+            self._('mc_dumper.first_arg_is_file')(t, **{'is_file': False}))
+        self.assertTrue(self._('mc_dumper.first_arg_is_file')(t))
         os.remove(t)
-        self.assertFalse(mc_dumper.first_arg_is_file(t))
+        self.assertFalse(self._('mc_dumper.first_arg_is_file')(t))
 
 if __name__ == '__main__':
     unittest.main()

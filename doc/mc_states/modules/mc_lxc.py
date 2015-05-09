@@ -13,14 +13,11 @@ This module contains settings for lxc and helper functions
 # Import python libs
 import logging
 import mc_states.api
-from pprint import pformat
-import os
 import random
-import socket
-import copy
 
 from mc_states import saltapi
-from salt.utils.odict import OrderedDict
+# early in mcpillar, we dont have __salt__
+from mc_states.grains.makina_grains import _is_lxc
 
 _errmsg = saltapi._errmsg
 __name = 'lxc'
@@ -38,6 +35,7 @@ def gen_mac():
                                                random.randint(0x00, 0x7F),
                                                random.randint(0x00, 0xFF),
                                                random.randint(0x00, 0xFF)]))
+
 
 def is_lxc():
     """
@@ -68,14 +66,7 @@ def is_lxc():
         '3:cpu:/',
         '2:cpuset:/']
     """
-
-    try:
-        cgroups = open('/proc/1/cgroup').read().splitlines()
-        lxc = not '/' == [a.split(':')[-1]
-                          for a in cgroups if ':cpu:' in a][-1]
-    except Exception:
-        lxc = False
-    return lxc
+    return _is_lxc()
 
 
 def is_this_lxc():
@@ -101,8 +92,6 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
         lxcSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.virt.lxc', {
                 'is_lxc': is_lxc(),

@@ -22,6 +22,7 @@ import traceback
 import salt.output
 from salt.utils.odict import OrderedDict
 import salt.loader
+from mc_states import ping
 
 try:
     import chardet
@@ -86,6 +87,7 @@ _USE_MEMCACHE_FIRST = OrderedDict()
 _USE_MEMOIZE_FIRST = OrderedDict()
 log = logging.getLogger('mc_states.api')
 
+
 def get_local_cache(key=None):
     if not key:
         key = 'local'
@@ -129,12 +131,12 @@ def get_mc_server(key=None,
         try:
             _MC_SERVERS['cache'][key] = pylibmc.Client(
                 addrs, binary=binary, behaviors=behaviors)
-        except (pylibmc.WriteError,) as exc:
+        except (pylibmc.WriteError,):
             error = True
-        except (Exception,) as exc:
+        except (Exception,):
             error = True
             trace = traceback.format_exc()
-            log.error('mc_statesMemcached error:\n{0}'.format(trace))
+            log.error('Memcached error:\n{0}'.format(trace))
         if error:
             _MC_SERVERS['error'][error_key] = time.time()
     if error_key in _MC_SERVERS['error']:
@@ -144,12 +146,12 @@ def get_mc_server(key=None,
     if HAS_PYLIBMC and ping_test:
         try:
             _MC_SERVERS['cache'][key].set('mc_states_ping', 'ping')
-        except (pylibmc.WriteError,) as exc:
+        except (pylibmc.WriteError,):
             error = True
-        except (Exception,) as exc:
+        except (Exception,):
             error = True
             trace = traceback.format_exc()
-            log.error('mc_statesMemcached error:\n{0}'.format(trace))
+            log.error('Memcached error:\n{0}'.format(trace))
         if error:
             _MC_SERVERS['error'][error_key] = time.time()
     if error_key in _MC_SERVERS['error']:
@@ -191,8 +193,7 @@ def asstring(val):
 def uniquify(seq):
     '''uniquify a list'''
     seen = set()
-    return [x
-            for x in seq
+    return [x for x in seq
             if x not in seen and not seen.add(x)]
 
 
@@ -392,7 +393,7 @@ def get_cache_key(key, __opts__=None, *args, **kw):
                 arg = list(arg)
             # someshow deep copy before inserting func for repr
             arg = [a for a in arg]
-            if func is not None:
+            if func is not None and key is not _DEFAULT_KEY:
                 arg.insert(0, func)
             if format_args or kwarg:
                 key = key.format(*format_args, **kwarg)
@@ -431,103 +432,41 @@ def get_cache_key(key, __opts__=None, *args, **kw):
     return ckey
 
 
-def cache_order(key=None, memcache_first=None, memoize_first=None):
-    '''
-    Try to determine the priority of cache servers based on the cache
-    key.
-        - mc_pillar.* use memcache first
-        - everything else use memoize cache first
-
-    If you want something to use memcache first, arrange for
-    doging this before calling this function:
-    ::
-
-        >>> from mc_states.api import register_memcache_first
-        >>> register_memcache_first(
-        ...     'function call pattern (re pattern str or str)')
-
-    '''
-    def sort_cache_key(cache,
-                       key=key,
-                       memoize_first=memoize_first,
-                       memcache_first=memcache_first):
-        memoize_found = False
-        memcache_found = False
-        if key:
-            ckey = get_cache_key(key)
-            fun_args = _CACHE_KEYS.get(ckey, ('', None))[1]
-            for spattern, repattern in six.iteritems(_USE_MEMOIZE_FIRST):
-                if spattern in fun_args:
-                    memoize_found = True
-                    break
-                if repattern.search(fun_args):
-                    memoize_found = True
-                    break
-            for spattern, repattern in six.iteritems(_USE_MEMCACHE_FIRST):
-                if spattern in fun_args:
-                    memcache_found = True
-                    break
-                if repattern.search(fun_args):
-                    memcache_found = True
-                    break
-        if memoize_found and memoize_first is None:
-            memoize_first = True
-        if memcache_found and memcache_first is None:
-            memcache_first = True
-        if memcache_first is None:
-            memcache_first = False
-        if memoize_first is None:
-            memoize_first = False
-        # memcache wins, but explitly tell that the opposite
-        # cache action is first or seccond
-        if memcache_first:
-            memoize_first = False
-        else:
-            memoize_first = True
-        if memoize_first:
-            memcache_first = False
-        else:
-            memcache_first = True
-        value = 0
-        FORCE_LAST = 10000
-        DEFAULT_FIRST = 300
-        DEFAULT_SECOND = 500
-        if is_memcache(cache):
-            if memoize_first:
-                value += DEFAULT_SECOND
-            elif memcache_first:
-                value += DEFAULT_FIRST
-            else:
-                value += FORCE_LAST
-        else:
-            if memoize_first:
-                value += DEFAULT_FIRST
-            else:
-                value += DEFAULT_SECOND
-        # if we gave a special cache= kwarg, take at at the most
-        # priority
-        if not is_memcache(cache):
-            if cache is not get_local_cache():
-                value = 0
-        return "{0}".format(value)
-    return sort_cache_key
-
-
 def get_cache_servers(cache=None,
                       memcache=None,
                       key=None,
-                      try_memcache=True,
-                      memoize_first=None,
-                      memcache_first=None):
-    cache = get_local_cache(cache)
-    caches = [cache]
-    if try_memcache:
-        mc_server = get_mc_server(memcache)
+                      use_memcache=None,
+                      debug=None):
+    caches = []
+    if is_memcache(cache):
+        memcache = cache
+        cache = None
+    explicit_local_cache = isinstance(cache, (six.string_types, dict))
+    if explicit_local_cache or (cache is None):
+        caches.append(get_local_cache(cache))
+    if (
+        HAS_PYLIBMC and
+        key and
+        (use_memcache is not False) and
+        not explicit_local_cache
+    ):
+        if isinstance(memcache, pylibmc.Client):
+            mc_server = memcache
+        else:
+            mc_server = get_mc_server(memcache)
         if mc_server and mc_server not in caches:
             caches.append(mc_server)
-    caches.sort(key=cache_order(key,
-                                memoize_first=memoize_first,
-                                memcache_first=memcache_first))
+        ckey = get_cache_key(key)
+        fun_args = _CACHE_KEYS.get(ckey, ('', None))[1]
+        for spattern, repattern in six.iteritems(_USE_MEMCACHE_FIRST):
+            if spattern in fun_args:
+                use_memcache = True
+                break
+            if repattern.search(fun_args):
+                use_memcache = True
+                break
+        if use_memcache:
+            caches.reverse()
     return caches
 
 
@@ -542,13 +481,7 @@ def cache_check(key,
     Invalidate record in cache  if expired
     '''
     key = get_cache_key(key, __opts__=__opts__, **kwargs)
-    for cache in get_cache_servers(
-        cache,
-        memcache,
-        memoize_first=kwargs.get('memoize_first'),
-        memcache_first=kwargs.get('memcache_first'),
-        key=key
-    ):
+    for cache in get_cache_servers(cache, memcache, key=key):
         try:
             entry = cache[key]
         except (IndexError, KeyError):
@@ -572,13 +505,12 @@ def memoize_cache(func,
                   key=_DEFAULT_KEY,
                   seconds=60,
                   cache=None,
-                  memoize_first=None,
-                  memcache_first=None,
                   memcache=None,
+                  use_memcache=None,
                   __salt__=None,
                   __opts__=None,
                   force_run=False,
-                  pdb=None):
+                  debug=None):
     '''
     Memoize the func in the cache in the key 'key'
     and store the cached time in 'cache_key'
@@ -625,10 +557,7 @@ def memoize_cache(func,
             func = __salt__[func]
         else:
             raise ValueError('{0} is not resolvable to a salt'
-                            ' func'.format(func))
-    key = get_cache_key(
-        key, __opts__=__opts__, fun=func, arg=args, kwarg=kwargs)
-
+                             ' func'.format(func))
     cached, trace = False, ''
     # try to cache the result, but do not hardfail
     # while setting cache,
@@ -640,12 +569,14 @@ def memoize_cache(func,
     # By default, we try first on a local memcached server
     # then fallback on python module memoizing.
 
+    # get the sha'ed key only after having ordered the cache
+    # servers depending on the clear cache key
+    key = get_cache_key(
+        key, __opts__=__opts__, fun=func, arg=args, kwarg=kwargs)
+
     # first try to find a non expired cache entry
-    caches = get_cache_servers(cache,
-                               memcache,
-                               memcache_first=memcache_first,
-                               memoize_first=memoize_first,
-                               key=key)
+    caches = get_cache_servers(
+        cache, memcache, use_memcache=use_memcache, key=key)
     ret = _default
     put_in_cache = True
     for cache in caches:
@@ -656,20 +587,12 @@ def memoize_cache(func,
         # global cleanup each 2 minutes
         if last_access > (now + (2 * 60)):
             for k in [a for a in cache if a not in ['last_access']]:
-                cache_check(k,
-                            cache=cache,
-                            memoize_first=memoize_first,
-                            memcache_first=memcache_first,
-                            __opts__=__opts__)
+                cache_check(k, cache=cache, __opts__=__opts__)
         cache['last_access'] = now
         # if the cache value is expired, this call will cleanup
         # the cache from the expired value, and thus invalidating
         # the cache result
-        cache_check(key,
-                    cache=cache,
-                    memoize_first=memoize_first,
-                    memcache_first=memcache_first,
-                    __opts__=__opts__)
+        cache_check(key, cache=cache, __opts__=__opts__)
         try:
             # memcached has not get(k, default)
             entry = cache[key]
@@ -687,29 +610,30 @@ def memoize_cache(func,
     # if either we force the run or the cached value is expired
     # run the function
     if force_run or (ret is _default):
-        try:
-            logger = log.garbage
-        except AttributeError:
-            logger = log.debug
-        try:
-            logger(
-                "memoizecache: Calling {0}".format(
-                    _CACHE_KEYS[key][1]))
-        except Exception:
-            try:
-                logger(
-                    "memoizecache: Calling {0}({3}): "
-                    "args: {1} kwargs: {2}".format(func, args, kwargs))
-            except Exception:
-                try:
-                    logger(
-                        "memoizecache: Calling {0} args: {1}".format(
-                            func, args))
-                except Exception:
-                    try:
-                        logger("memoizecache: Calling {0}".format(func))
-                    except Exception:
-                        pass
+        # remove logging, impact too much perfs
+        # try:
+        #     logger = log.garbage
+        # except AttributeError:
+        #     logger = log.debug
+        # try:
+        #     logger(
+        #         "memoizecache: Calling {0}".format(
+        #             _CACHE_KEYS[key][1]))
+        # except Exception:
+        #     try:
+        #         logger(
+        #             "memoizecache: Calling {0}({3}): "
+        #             "args: {1} kwargs: {2}".format(func, args, kwargs))
+        #     except Exception:
+        #         try:
+        #             logger(
+        #                 "memoizecache: Calling {0} args: {1}".format(
+        #                     func, args))
+        #         except Exception:
+        #             try:
+        #                 logger("memoizecache: Calling {0}".format(func))
+        #             except Exception:
+        #                 pass
         ret = func(*args, **kwargs)
 
     # after the run, try to cache on any cache server
@@ -736,6 +660,29 @@ def memoize_cache(func,
     return ret
 
 
+def list_cache_keys(*args, **kwargs):
+    keys = []
+    for k in _LOCAL_CACHES:
+        for l in _LOCAL_CACHES[k]:
+            if l not in keys:
+                keys.append(l)
+    return keys
+
+
+def _lazy_delete_error(cache, ctry, tries, exc):
+    if ctry >= (tries - 1):
+        raise exc
+    else:
+        for i in [a for a in _MC_SERVERS['cache']]:
+            mcache = _MC_SERVERS['cache'][i]
+            if cache.addresses == mcache.addresses:
+                _MC_SERVERS['cache'].pop(i, None)
+                cache = get_mc_server(
+                    i, addrs=cache.addresses, binary=cache.binary)
+        time.sleep(0.0001)
+    return cache
+
+
 def remove_cache_entry(key=_DEFAULT_KEY,
                        cache=None,
                        memcache=None,
@@ -744,21 +691,18 @@ def remove_cache_entry(key=_DEFAULT_KEY,
                        *args,
                        **kwargs):
     key = get_cache_key(key, __opts__=__opts__, **kwargs)
-    if cache is not None:
-        caches = [cache]
-    else:
-        caches = get_cache_servers(
-            cache=cache,
-            memcache=memcache,
-            key=key,
-            memoize_first=kwargs.get('memoize_first'),
-            memcache_first=kwargs.get('memcache_first'))
+    caches = get_cache_servers(cache=cache, memcache=memcache, key=key)
     for cache in caches:
         # do not garbage collector now, so not del !
         try:
             if is_memcache(cache):
-                if key in cache:
-                    cache.delete(key)
+                tries = 200
+                for i in range(tries):
+                    try:
+                        cache.delete(key)
+                        break
+                    except (pylibmc.Error, pylibmc.NoServers) as exc:
+                        cache = _lazy_delete_error(cache, i, tries, exc)
             else:
                 cache.pop(key, None)
         except KeyError:
@@ -777,6 +721,7 @@ def remove_entry(cache, key, *args, **kw):
 
 def invalidate_memoize_cache(key=_DEFAULT_KEY,
                              cache=None,
+                             caches=None,
                              memcache=None,
                              __salt__=None,
                              __opts__=None,
@@ -787,31 +732,22 @@ def invalidate_memoize_cache(key=_DEFAULT_KEY,
     kw.setdefault('memcache', memcache)
     kw['__opts__'] = __opts__
     kw['__salt__'] = __salt__
-    if key.lower() in ['all', 'purge', 'purge_all', 'all_entries']:
+    if not caches:
         caches = []
-        if cache is not None:
-            caches.append(cache)
-        if is_memcache(cache):
-            caches.append(memcache)
-        if isinstance(memcache, six.string_types):
-            caches.append(get_mc_server(memcache))
-        if not caches:
-            caches = get_cache_servers(cache=cache, memcache=memcache)
+    if key.lower() in ['all', 'purge', 'purge_all', 'all_entries']:
+        caches.extend([
+            a for a in get_cache_servers(
+                cache=cache, memcache=memcache, key=key)
+            if a not in caches])
         for c in caches:
             if is_memcache(c):
-                for i in range(5):
+                tries = 200
+                for i in range(tries):
                     try:
                         c.flush_all()
                         break
-                    except pylibmc.NoServers:
-                        pass
-                    except (Exception,) as exc:
-                        trace = traceback.format_exc()
-                        if i == 9:
-                            log.error(exc.__class__)
-                            log.error(exc.__module__)
-                            log.error(trace)
-                            time.sleep(0.0001)
+                    except (pylibmc.Error, pylibmc.NoServers) as exc:
+                        c = _lazy_delete_error(c, i, tries, exc)
             else:
                 for i in [a for a in c]:
                     remove_cache_entry(i, **kw)
@@ -825,8 +761,8 @@ def purge_memoize_cache(*args, **kwargs):
 
 def magicstring(thestr):
     """
-    Convert any string to UTF-8 ENCODED on
-    e"""
+    Convert any string to UTF-8 ENCODED one
+    """
     if not HAS_CHARDET:
         log.error('No chardet support !')
         return thestr
@@ -878,4 +814,28 @@ def magicstring(thestr):
         thestr = thestr.encode('utf-8')
     thestr = thestr.decode('utf-8').encode('utf-8')
     return thestr
+
+
+def prefered_ips(bclients):
+    clients = []
+    for client in bclients:
+        try:
+            clients.append(socket.gethostbyname(client))
+        except Exception:
+            # try to ping
+            ret = None
+            for i in range(4):
+                try:
+                    ret = ping.do_one(client, 4)
+                except:
+                    ret = None
+                if ret is not None:
+                    break
+            if ret is not None:
+                clients.append(client)
+            else:
+                log.error(
+                    'target for dnsaddr is neither pinguable '
+                    'or resolvable: {0}'.format(client))
+    return [a.strip() for a in clients if a.strip()]
 # vim:set et sts=4 ts=4 tw=80:
