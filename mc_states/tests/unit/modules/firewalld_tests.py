@@ -364,6 +364,24 @@ class TestCase(base.ModuleCase):
              'public_zones': ['foo'],
              'permissive_mode': False,
              'internal_zones': ['bar'],
+             'trusted_networks': ['1.2.4.3'],
+             'banned_networks': ['1.2.4.2'],
+             'trust_internal': True,
+             'zones': {'bar': {'interfaces': ['eth1']},
+                       'foo': {'interfaces': ['eth0']}}})
+        self.assertEqual(
+            data['zones']['bar']['rules'],
+            ['rule family=ipv4 source address="1.2.4.2" drop',
+             'rule family=ipv4 source address="1.2.4.3" accept'])
+        self.assertEqual(
+            data['zones']['foo']['rules'],
+            ['rule family=ipv4 source address="1.2.4.2" drop',
+             'rule family=ipv4 source address="1.2.4.3" accept'])
+        data = self._('mc_firewalld.add_zones_policies')(
+            {'aliased_interfaces': [],
+             'public_zones': ['foo'],
+             'permissive_mode': False,
+             'internal_zones': ['bar'],
              'trust_internal': True,
              'zones': {'bar': {'interfaces': ['eth1']},
                        'foo': {'interfaces': ['eth0']}}})
