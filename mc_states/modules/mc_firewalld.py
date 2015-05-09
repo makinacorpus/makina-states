@@ -505,13 +505,15 @@ def add_services_policies(data=None):
             else:
                 policy = None
             if s == 'burp':
-                sources = burpsettings['clients'][:]
+                sources = [a for a in burpsettings['clients']]
                 if not sources:
                     sources = ['127.0.0.1']
             if not sources:
                 sources = []
             sources = _s['mc_utils.uniquify'](prefered_ips(sources))
             if policy and data['permissive_mode'] and policy != 'accept':
+                policy = 'accept'
+            if s and sources and not policy:
                 policy = 'accept'
             if policy:
                 policy = policy.upper()
