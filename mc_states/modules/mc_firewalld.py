@@ -350,38 +350,41 @@ def add_rule(data, zones=None, **kwargs):
     return data
 
 
-def add_zones_policies(data):
-    for z in data['public_zones']:
-        if data['permissive_mode']:
-            t = 'ACCEPT'
-        else:
-            t = 'REJECT'
-        data['zopes'][z].setdefault('target', t)
-    for network in data['banned_networks']:
-        add_rule(data, source=network, action='drop')
-    for network in data['trusted_networks']:
-        add_rule(data, source=network, action='accept')
-    return data
-
-
-def add_aliased_interfaces(data):
+def add_aliased_interfaces(data=None):
     '''
     Mark aliases of interfaces to belong to the same interface
     of the attached interface, by default
     '''
+    if data is None:
+        data = {}
     zonesn = [z for z in data['zones']]
     data = search_aliased_interfaces(data)
     cfgs = get_configured_ifs(data)
+    count = data.setdefault('aliases', 100)
     for i in data['aliased_interfaces']:
         # add eth0:x to the same zone for the 100th
-        for i in range(100):
-            j = '{0}:i'.format(i)
+        for c in range(count):
+            j = '{0}:{1}'.format(i, c)
             if j in cfgs:
                 continue
             for z in zonesn:
                 ifs = data['zones'][z].get('interfaces', [])
                 if i in ifs and j not in ifs:
                     ifs.append(j)
+    return data
+
+
+def add_zones_policies(data):
+    for z in data['public_zones']:
+        if data['permissive_mode']:
+            t = 'ACCEPT'
+        else:
+            t = 'REJECT'
+        data['zones'][z].setdefault('target', t)
+    for network in data['banned_networks']:
+        add_rule(data, source=network, action='drop')
+    for network in data['trusted_networks']:
+        add_rule(data, source=network, action='accept')
     return data
 
 
@@ -412,11 +415,7 @@ def add_services_policies(data):
             policy = 'accept'
         if not (sources or policy):
             continue
-        for r in rich_rules(source=sources, service=s, action=policy):
-            for z in zones:
-                rules = data['zones'][z].setdefault('rules', [])
-                if r not in rules:
-                    rules.append(r)
+        add_rule(data, zones=zones, source=sources, service=s, action=policy)
     return data
 
 
@@ -450,6 +449,7 @@ def default_settings():
         'is_container': __salt__['mc_nodetypes.is_container'](),
         'aliased_interfaces': [],
         'default_zone': None,
+        'aliases': 100,
         'banned_networks': [],
         'trusted_networks': [],
         # list of mappings

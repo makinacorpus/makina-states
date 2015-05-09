@@ -819,7 +819,7 @@ def feed_network_mappings_for_target(target_data, kinds=None):
     vms_infos = target_data.get('vms', {})
     CPORT = {'name': None,
              'hostPort': None,
-             'protocol': None
+             'protocol': None,
              'count': None,
              'to_addr': None,
              'port': None}

@@ -333,6 +333,18 @@ class TestCase(base.ModuleCase):
                        'foo': {'interfaces': ['eth0']}}}
         )
 
+    def test_add_aliased_interfaces(self):
+        data = self._('mc_firewalld.add_aliased_interfaces')(
+            {'aliased_interfaces': ['eth0', 'eth1'],
+             'public_zones': ['foo', 'bar'],
+             'zones': {'bar': {'interfaces': ['eth1', 'eth0']},
+                       'foo': {'interfaces': ['eth0']}}})
+        self.assertEqual(len(data['zones']['foo']['interfaces']), 101)
+        self.assertEqual(data['zones']['foo']['interfaces'][:3],
+                         ['eth0', 'eth0:0', 'eth0:1'])
+        self.assertEqual(data['zones']['bar']['interfaces'][-3:],
+                         ['eth1:97', 'eth1:98', 'eth1:99'])
+
     def ntp(self):
         data = self.__('mc_ntp.settings')
         self.assertTrue(isinstance(data, dict))
