@@ -27,11 +27,13 @@ except ImportError:
     HAS_NETADDR = False
 
 from mc_states import api
+from mc_states import saltapi
 from mc_states.modules.mc_pillar import PILLAR_TTL
 
 __name = 'mc_cloud_compute_node'
 
 log = logging.getLogger(__name__)
+six = api.six
 
 VIRT_TYPES = {'docker': {'supported': True},
               'xen': {'supported': False},
@@ -43,6 +45,12 @@ _SW_RP = 'shorewall_reverse_proxies'
 _CUR_API = 2
 _default = object()
 PREFIX = 'makina-states.cloud.compute_node'
+CPORT = {'name': None,
+         'hostPort': None,
+         'protocol': None,
+         'count': None,
+         'to_addr': None,
+         'port': None}
 
 
 def get_all_vts(supported=None):
@@ -557,7 +565,7 @@ def _get_next_available_port(ports, start, stop):
                      '{0}:{1}'.format(start, stop))
 
 
-def get_kind_port(vm, target=None, kind='ssh'):
+def get_kind_port(vm, target=None, kind='ssh', reset=False):
     _s = __salt__
     if target is None:
         target = __salt__['mc_cloud_compute_node.target_for_vm'](vm)
@@ -579,11 +587,13 @@ def get_kind_port(vm, target=None, kind='ssh'):
             if port not in allocated:
                 allocated.append(port)
     port = ports_map.get(port_key, kind_map.get(vm, None))
+    if reset:
+        port = None
     # if port is not already found, allocate a new now.
     if port is None:
         port = _get_next_available_port(allocated, start, end)
         _s['mc_cloud_compute_node.set_kind_port'.format(kind)](
-            vm, port, target=target, kind='reverse_ports')
+            port_key, port, target=target, kind='reverse_ports')
     return port
 
 
@@ -795,6 +805,27 @@ def feed_http_reverse_proxy_for_target(target_data):
     return target_data
 
 
+def get_port_info(vmdata, portdata, reset=False):
+    _s = __salt__
+    kind = portdata['name']
+    vm = vmdata['name']
+    port = _s['mc_cloud_compute_node.get_kind_port'](vm,
+                                                     target=vmdata['target'],
+                                                     kind=kind,
+                                                     reset=reset)
+    cport = copy.deepcopy(CPORT)
+    cport['port'] = portdata['port']
+    cport['to_addr'] = vmdata['ip']
+    cport['hostPort'] = port
+    cport['protocol'] = portdata['protocol']
+    cport['count'] = portdata.get('count', None)
+    cport['id'] = '{hostPort}/{protocol}'.format(**cport)
+    cport['name'] = '{0}/{1}/{2}'.format(vm,
+                                         cport['id'],
+                                         portdata['port'])
+    return cport
+
+
 def feed_network_mappings_for_target(target_data, kinds=None):
     '''
     Network mappings are in the form:
@@ -813,31 +844,31 @@ def feed_network_mappings_for_target(target_data, kinds=None):
         ]
     '''
     _s = __salt__
-    t = target_data['target']
-    if not kinds:
-        kinds = ['ssh', 'snmp']
     vms_infos = target_data.get('vms', {})
-    CPORT = {'name': None,
-             'hostPort': None,
-             'protocol': None,
-             'count': None,
-             'to_addr': None,
-             'port': None}
     network_mappings = target_data['reverse_proxies']['network_mappings']
-    for vm, data in vms_infos.items():
-        for portdata in data['ports']:
-            kind = portdata['name']
-            port = _s['mc_cloud_compute_node.get_kind_port'](vm,
-                                                             target=t,
-                                                             kind=kind)
-            cport = copy.deepcopy(CPORT)
-            cport['port'] = port
-            cport['to_addr'] = data['ip']
-            cport['hostPort'] = portdata['port']
-            cport['protocol'] = portdata['protocol']
-            cport['count'] = portdata.get('count', None)
-            cport['name'] = '{vm}/{port}/{protocol}'.format(**cport)
-            network_mappings[cport['name']] = cport
+    for vm, vmdata in vms_infos.items():
+        for portdata in vmdata['ports']:
+            retries = 10
+            reset = False
+            while retries:
+                try:
+                    if reset:
+                        import pdb;pdb.set_trace()  ## Breakpoint ##
+
+                    cport = get_port_info(vmdata, portdata, reset=reset)
+                    if cport['id'] in network_mappings:
+                        raise saltapi.PortConflictError(
+                            'Port conflict: {0} / {1}'.format(
+                                cport, network_mappings[cport['id']]))
+                    network_mappings[cport['id']] = cport
+                    retries = 0
+                except saltapi.PortConflictError:
+                    retries -= 1
+                    reset = True
+                    if not retries:
+                        raise saltapi.PortConflictError(
+                            'Conflicting ports definitions:\n{0}\n{1}'.format(
+                                cport, network_mappings[cport['id']]))
     return target_data
 
 

@@ -133,6 +133,11 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 'name': _g['id'],
                 'domains': [_g['id']],
                 'ssl_certs': [],
+                'ports': [
+                    {'name': 'ssh', 'port': 22, 'protocol': 'tcp'},
+                    {'name': 'ssh', 'port': 22, 'protocol': 'udp'},
+                    {'name': 'snmp', 'port': 161, 'protocol': 'udp'},
+                ],
                 #
                 'ssh_gateway': cloudSettings['ssh_gateway'],
                 'ssh_username': 'ubuntu',
@@ -304,8 +309,8 @@ def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
             data['domains'].insert(0, vm)
         data['domains'].sort(key=_sort_domains)
         if (
-            ('-b' not in data['script_args'])
-            and ('--branch' not in data['script_args'])
+            ('-b' not in data['script_args']) and
+            ('--branch' not in data['script_args'])
         ):
             data['script_args'] += ' -b {0}'.format(
                 data['bootsalt_branch'])

@@ -139,11 +139,6 @@ def default_settings():
             'sftp_url': SFTP_URL,
             'sftp_user': _s['mc_utils.get']('makina-states.sf_user',
                                             'kiorky'),
-            'ports': [
-                {'name': 'ssh', 'port': 22, 'protocol': 'tcp'},
-                {'name': 'ssh', 'port': 22, 'protocol': 'udp'},
-                {'name': 'snmp', 'port': 161, 'protocol': 'udp'},
-            ],
             'lxc': {'images_root': '/var/lib/lxc',
                     'cron_sync': False,
                     'images': OrderedDict(),
