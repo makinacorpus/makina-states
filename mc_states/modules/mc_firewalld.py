@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 prefered_ips = mc_states.api.prefered_ips
 PUBLIC_ZONES = ['public', 'external']
 INTERNAL_ZONES = ['internal', 'dmz', 'home', 'docker', 'lxc', 'virt']
-PUBLIC_SERVICES = ['http', 'https', 'smtp', 'dns']
+PUBLIC_SERVICES = ['http', 'https', 'smtp', 'dns', 'ssh']
 
 
 def get_configured_ifs(data):
