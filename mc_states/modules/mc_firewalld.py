@@ -404,9 +404,9 @@ def add_services_policies(data):
             zones = [a for a in data['zones'] if a != 'trusted']
         if s == 'burp':
             sources = []
-            for s in prefered_ips(burpsettings['clients']):
+            for a in prefered_ips(burpsettings['clients']):
                 if a not in sources:
-                    sources.append(s)
+                    sources.append(a)
             if not sources:
                 sources.append('127.0.0.1')
         if sources and not policy:
