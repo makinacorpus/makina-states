@@ -7,14 +7,18 @@ import os
 import json
 import argparse
 import six
+import logging
 
 import firewall.client
 from firewall.client import FirewallClient
 from firewall.client import FirewallClientZoneSettings
+from firewall.client import FirewallClientServiceSettings
 
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument("--config", default='/etc/firewalld.json')
 _cache = {}
+
+log = logging.getLogger('makina-states.firewall')
 
 
 def get_firewall():
@@ -33,32 +37,101 @@ def lazy_reload():
         _cache['reload'] = False
 
 
-def define_zone(z, zdata):
+def define_zone(z, zdata, masquerade=None):
+    if 'target' in zdata:
+        msg = 'Configure zone: {0}/{1[target]}'
+    else:
+        msg = 'Configure zone: {0}'
+    log.info(msg.format(z, zdata))
     fw = get_firewall()
     if z not in fw.getZones():
-        zsettings = fw.config().addZone(
+        zn = fw.config().addZone(
             z, FirewallClientZoneSettings())
-        zsettings.setShort(z)
-        zsettings.setDescription(z)
+        zn.setShort(z)
+        zn.setDescription(z)
+        log.info(' - Zone created')
         mark_reload()
-
-
-def edit_zone(z, zdata):
-    edit = False
+    else:
+        zn = fw.config().getZoneByName(z)
+    if masquerade is not None:
+        cmask = bool(zn.getMasquerade())
+        if cmask is not masquerade:
+            zn.setMasquerade(masquerade)
+            log.info(' - Masquerade: {0}'.format(masquerade))
     target = zdata.get('target', None)
     if target:
-        edit = True
-    if edit:
-        fw = get_firewall()
-        cfg = fw.config()
-        zn = cfg.getZoneByName(z)
         ztarget = "{0}".format(zn.getTarget())
-        if target and ztarget != target:
-            zn.setTarget(ztarget)
+        if target:
+            target = {
+                'reject': '%%REJECT%%'
+            }.get(target.lower(), target.upper())
+            if ztarget != target:
+                log.info(' - Zone edited')
+                zn.setTarget(target)
+                mark_reload()
+
+
+def get_services():
+    fw = get_firewall()
+    ss = [fw.config().getService(a) for a in fw.config().listServices()]
+    services = {}
+    for i in ss:
+        services[i.get_properties()['name']] = i
+    return services
+
+
+def service_ports(zsettings):
+    return [tuple("{0}".format(b) for b in a)
+            for a in zsettings.getPorts()]
+
+
+def define_service(z, zdata):
+    if zdata:
+        msg = 'configure service: {0} {1}'
+    else:
+        msg = 'configure service: {0}'
+    log.info(msg.format(z, zdata))
+    fw = get_firewall()
+    aservices = get_services()
+    if z not in aservices:
+        log.info(' - Service created')
+        zsettings = fw.config().addService(
+            z, FirewallClientServiceSettings())
+    else:
+        zsettings = aservices[z]
+    if 'port' in zdata:
+        ports = []
+        for port in zdata['port']:
+            protocols = port.get('protocols', ['udp', 'tcp'])
+            for p in protocols:
+                pp = (str(port['port']), p)
+                if pp not in ports:
+                    ports.append(pp)
+        diff = False
+        sports = service_ports(zsettings)
+        if len(sports) != len(ports):
+            diff = True
+        if not diff:
+            for p in ports:
+                if p not in sports:
+                    diff = True
+        if diff:
+            log.info(' - Service edited')
+            zsettings.setPorts(ports)
             mark_reload()
+    zsettings.setShort(z)
+    zsettings.setDescription(z)
+
+
+def configure_rules(z, zdata):
+    return
 
 
 def main():
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)-15s %(name)-5s %(levelname)-6s %(message)s')
+    log.info('start conf')
     opts = parser.parse_args()
     vopts = vars(opts)
     config = vopts['config']
@@ -67,10 +140,18 @@ def main():
         os.exit(1)
     with open(config) as f:
         jconfig = json.loads(f.read())
+        if [a for a in jconfig] == ['local']:
+            # salt-call cache !?
+            jconfig = jconfig['local']
     for z, zdata in six.iteritems(jconfig['zones']):
-        define_zone(z, zdata)
-        edit_zone(z, zdata)
+        masq = z in jconfig['public_zones']
+        if not masq:
+            masq = None
+        define_zone(z, zdata, masquerade=masq)
+    for z, zdata in six.iteritems(jconfig['services']):
+        define_service(z, zdata)
     lazy_reload()
+    log.info('end conf')
 
 
 if __name__ == '__main__':
