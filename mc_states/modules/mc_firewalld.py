@@ -32,6 +32,38 @@ def get_configured_ifs(data):
     return configured_ifs
 
 
+def get_endrule(audit, limit, log, log_level, log_prefix):
+    endrule = ' '
+    if log:
+        endrule += ' log'
+        if log_level:
+            endrule += ' level="{0}"'.format(log_level)
+        if log_prefix:
+            endrule += ' prefix="{0}"'.format(log_prefix)
+    elif audit:
+        endrule += ' audit'
+        if isinstance(audit, basestring):
+            endrule += ' {0}'.format(audit)
+    if limit and (log or audit):
+        endrule += ' limit value="{0}"'.format(limit)
+    return endrule
+
+
+def add_dest_rules(destinations, rules, rule, endrule, action=None):
+    if action:
+        endrule += ' {0}'.format(action)
+    if not destinations:
+        rule = rule + endrule
+        if rule not in rules:
+            rules.append(rule)
+    else:
+        for d in destinations:
+            crule = '{0} destination {1} {2}'.format(rule, d, endrule)
+            if crule not in rules:
+                rules.append(crule)
+    return rules
+
+
 def rich_rules(families=None,
                family='ipv4',
                sources=None,
@@ -44,10 +76,21 @@ def rich_rules(families=None,
                port=None,
                audit=None,
                log=None,
+               log_prefix=None,
+               log_level=None,
                forward_ports=None,
                forward_port=None,
                limit=None,
                action='accept'):
+    '''
+
+    >>> rich_rules(forward_port='1222', to_addr='1.2.3.4', to_port='22')
+    >>> rich_rules(source='address="1.2.3.4"', port='22', action='drop')
+    >>> rich_rules(
+    ...  destination='address="1.2.3.4"', port='22', audit=True, action='drop')
+    >>> rich_rules(
+    ...  destination='address="1.2.3.4"', port='22', audit=True, action='drop')
+    '''
     rules = []
     if not destinations:
         destinations = []
@@ -83,8 +126,10 @@ def rich_rules(families=None,
         families.append(family)
     if destinations and not sources:
         sources = ['0.0.0.0']
-    for src in sources:
-        for fml in families:
+    if (ports or services or forward_ports) and not sources:
+        sources = [None]
+    for fml in families:
+        for src in sources:
             for port in forward_ports:
                 fromp = port['port']
                 protocols = port.get('protocols', ['tcp', 'udp'])
@@ -102,28 +147,10 @@ def rich_rules(families=None,
                         rule += ' to-port="{0}"'.format(to_port)
                     if to_addr:
                         rule += ' to-addr="{0}"'.format(to_addr)
-                    endrule = ' '
-                    if log:
-                        endrule += ' log'
-                        if isinstance(log, basestring):
-                            endrule += ' {0}'.format(log)
-                    elif audit:
-                        endrule += ' audit'
-                        if isinstance(audit, basestring):
-                            endrule += ' {0}'.format(audit)
-                    if limit and (log or audit):
-                        endrule += ' limit value="{0}"'.format(limit)
-                    endrule += ' {0}'.format(action)
-                    if not destinations:
-                        rule = rule + endrule
-                        if rule not in rules:
-                            rules.append(rule)
-                        else:
-                            for d in destinations:
-                                rule = '{0} destination {1} {2}'.format(
-                                    rule, d, endrule)
-                                if rule not in rules:
-                                    rules.append(rule)
+                    endrule = get_endrule(
+                        audit, limit, log, log_level, log_prefix)
+                    add_dest_rules(destinations, rules, rule, endrule,
+                                   action=action)
             for port in ports:
                 fromp = port['port']
                 protocols = port.get('protocols', ['tcp', 'udp'])
@@ -135,27 +162,10 @@ def rich_rules(families=None,
                         rule += ' source {0}'.format(src)
                     rule += ' port port="{0}" protocol="{1}"'.format(
                         fromp, protocol)
-                    if log:
-                        endrule += ' log'
-                        if isinstance(log, basestring):
-                            endrule += ' {0}'.format(log)
-                    elif audit:
-                        endrule += ' audit'
-                        if isinstance(audit, basestring):
-                            endrule += ' {0}'.format(audit)
-                    if limit and (log or audit):
-                        endrule += ' limit value="{0}"'.format(limit)
-                    endrule += ' {0}'.format(action)
-                    if not destinations:
-                        rule = rule + endrule
-                        if rule not in rules:
-                            rules.append(rule)
-                        else:
-                            for d in destinations:
-                                rule = '{0} destination {1} {2}'.format(
-                                    rule, d, endrule)
-                                if rule not in rules:
-                                    rules.append(rule)
+                    endrule = get_endrule(
+                        audit, limit, log, log_level, log_prefix)
+                    add_dest_rules(destinations, rules, rule, endrule,
+                                   action=action)
             for svc in services:
                 rule = 'rule '
                 if family:
@@ -164,27 +174,10 @@ def rich_rules(families=None,
                     rule += ' source {0}'.format(src)
                 if svc:
                     rule += ' to service name="{0}"'.format(svc)
-                if log:
-                    endrule += ' log'
-                    if isinstance(log, basestring):
-                        endrule += ' {0}'.format(log)
-                elif audit:
-                    endrule += ' audit'
-                    if isinstance(audit, basestring):
-                        endrule += ' {0}'.format(audit)
-                if limit and (log or audit):
-                    endrule += ' limit value="{0}"'.format(limit)
-                endrule += ' {0}'.format(action)
-                if not destinations:
-                    rule = rule + endrule
-                    if rule not in rules:
-                        rules.append(rule)
-                    else:
-                        for d in destinations:
-                            rule = '{0} destination {1} {2}'.format(
-                                rule, d, endrule)
-                            if rule not in rules:
-                                rules.append(rule)
+                endrule = get_endrule(
+                    audit, limit, log, log_level, log_prefix,
+                    action=action)
+                add_dest_rules(destinations, rules, rule, endrule)
     return rules
 
 
@@ -198,7 +191,7 @@ def is_permissive():
     default_route = data_net['default_route']
     nodetypes_registry = _s['mc_nodetypes.registry']()
     permissive_mode = False
-    if nodetypes_registry['is']['lxccontainer']:
+    if __salt__['mc_nodetypes.is_container']():
         # be permissive on the firewall side only if we are
         # routing via the host only network and going
         # outside througth NAT
@@ -270,12 +263,12 @@ def search_aliased_interfaces(data):
 
 
 def add_rule(data, zones=None, **kwargs):
-    rules = rich_rules(**kwargs)
+    rrules = rich_rules(**kwargs)
     if not zones:
         zones = [z for z in data['zones']]
     for z in zones:
         rules = data['zones'][z].setdefault('rules', [])
-        for rule in rules:
+        for rule in rrules:
             if rule not in rules:
                 rules.append(rule)
     return data
@@ -283,11 +276,11 @@ def add_rule(data, zones=None, **kwargs):
 
 def add_zones_policies(data):
     for z in data['public_zones']:
-        if data['is_container']:
+        if data['permissive_mode']:
             t = 'ACCEPT'
         else:
             t = 'REJECT'
-        data['zopes'][z]['target'] = t
+        data['zopes'][z].setdefault('target', t)
     for network in data['banned_networks']:
         add_rule(data, source=network, action='drop')
     for network in data['trusted_networks']:
@@ -317,34 +310,37 @@ def add_aliased_interfaces(data):
 
 
 def add_services_policies(data):
+    _s = __salt__
     burpsettings = _s['mc_burp.settings']()
-    bclients = prefered_ips(burpsettings['clients'])
     for s in [a for a in data['services']]:
-        sources = []
+        sources = None
         if s in data['public_services']:
-            z = data['public_zones'][:] + data['internal_zones'][:]
-            sources = ['0.0.0.0']
+            policy = 'accept'
+            zones = data['public_zones'][:]
+        elif s in data['restricted_services']:
+            policy = 'drop'
+            zones = data['public_zones'][:]
         else:
-            z = data['internal_zones'][:]
-            sources = ['0.0.0.0']
-        if p == 'burp':
-            bclients = prefered_ips(burpsettings['clients'])
-            if bclients:
-                sources.extend(bclients)
-        data['services'][s].setdefault('accept', z)
-        data['services'][s].setdefault('drop', [])
-        for p in data['services']:
-            if p in data['public_services']:
-                sources = ['0.0.0.0']
-            else:
-                sources = ['127.0.0.1']
-        rule = rich_rule(source=source, service=o)
-        for r, rdata in data['default_params'].items():
-            data['params'].setdefault(r, rdata)
-    return data
-
-
-def add_zones_with_services(data):
+            policy = None
+            zones = [a for a in data['zones'] if a != 'trusted']
+        if s == 'burp':
+            sources = []
+            for s in prefered_ips(burpsettings['clients']):
+                if a not in sources:
+                    sources.append(s)
+            if not sources:
+                sources.append('127.0.0.1')
+        if sources and not policy:
+            policy = 'accept'
+        if policy and data['permissive_mode'] and policy != 'accept':
+            policy = 'accept'
+        if not (sources or policy):
+            continue
+        for r in rich_rules(source=sources, service=s, action=policy):
+            for z in zones:
+                rules = data['zones'][z].setdefault('rules', [])
+                if r not in rules:
+                    rules.append(r)
     return data
 
 
@@ -357,10 +353,6 @@ def default_settings():
         'banned_networks': [],
         'trusted_networks': [],
         # list of mappings
-        'no_default_interfaces': False,
-        'no_default_policies': False,
-        'no_default_services': False,
-        'no_default_rules': False,
         'no_cloud_rules': False,
         'no_default_alias': False,
         'packages': ['ipset', 'ebtables', 'firewalld'],
@@ -386,60 +378,23 @@ def default_settings():
             'internal', 'dmz', 'home', 'docker', 'lxc', 'virt'],
         'public_zones': ['external', 'public', 'home'],
         'public_services': ['http', 'https', 'smtp', 'dns'],
+        'restricted_services': ['snmp'],
         'services': {
-            'burp': {
-                'service': {'port': [{'port': '4971-4974'}]}
-            },
-            'dhcp': {
-                'service': {'port': [{'port': '67-68'}]},
-            },
-            'dns': {},
-            'ftp': {},
-            'ldap': {},
-            'ldaps': {},
-            'mastersalt': {
-                'service': {'port': [{'port': '4605-4606'}]}
-            },
-            'mongodb': {
-                'service': {'port': [{'port': '27017'}]}
-            },
-            'mumble': {
-                'service': {'port': [{'port': '64738'}]}
-            },
-            'mysql': {
-                'service': {'port': [{'port': '3306'}]}
-            },
-            'ntp': {},
-            'postgresql': {
-                'service': {'port': [{'port': '5432'}]}
-            },
-            'rabbitmq': {
-                'service': {'port': [{'port': '15672'},
-                                     {'port': '25672'}]}
-            },
-            'redis': {
-                'service': {'port': [{'port': '6379'}]}
-            },
-            'salt': {
-                'service': {'port': [{'port': '4505-4506'}]}
-            },
-            'smtp': {},
-            'smtps': {
-                'service': {'port': [{'port': '465'}]}
-            },
-            'imap': {
-                'service': {'port': [{'port': '143'}]}
-            },
-            'imaps': {
-                'service': {'port': [{'port': '993'}]}
-            },
-            'snmp': {},
-            'ssh': {},
-            'syslog': {},
-            'syslog-tls': {},
-            'https': {},
-            'http': {},
-            },
+            'burp': {'port': [{'port': '4971-4974'}]},
+            'dhcp': {'port': [{'port': '67-68'}]},
+            'mastersalt': {'port': [{'port': '4605-4606'}]},
+            'mongodb': {'port': [{'port': '27017'}]},
+            'mumble': {'port': [{'port': '64738'}]},
+            'mysql': {'port': [{'port': '3306'}]},
+            'postgresql': {'port': [{'port': '5432'}]},
+            'rabbitmq': {'port': [{'port': '15672'},
+                                  {'port': '25672'}]},
+            'redis': {'port': [{'port': '6379'}]},
+            'salt': {'port': [{'port': '4505-4506'}]},
+            'smtps': {'port': [{'port': '465'}]},
+            'imap': {'port': [{'port': '143'}]},
+            'imaps': {'port': [{'port': '993'}]}
+        },
         #
         'have_rpn': _s['mc_provider.have_rpn'](),
         'have_docker': _s['mc_network.have_docker_if'](),
@@ -457,50 +412,20 @@ def default_settings():
 
 def add_cloud_proxies(data):
     _s = __salt__
-    _g = __grains__
-    # service access restrictions
-    # enable all by default, but can by overriden easily in config
-    # this will act at firewalld parameters in later rules
-    if not data['no_cloud_rules']:
-        # enable compute node redirection port ange if any
-        # XXX: this is far from perfect, now we open a port range which
-        # will be avalaible for connection and the controller will use that
-        is_compute_node = _s['mc_cloud.is_compute_node']()
-        if is_compute_node and not data['no_computenode']:
-            try:
-                cloud_rules = []
-                try:
-                    cloud_reg = _s['mc_cloud_compute_node.settings']()
-                    cloud_rules = cloud_reg.get(
-                        'reverse_proxies', {}).get('firewalld_proxies', [])
-                except Exception:
-                    cloud_rules = []
-                if not cloud_rules:
-                    # before refactor transition
-                    lcloud_reg = _s['mc_cloud_compute_node.cn_settings']()
-                    cloud_rules = lcloud_reg.get(
-                        'cnSettings', {}).get(
-                            'rp', {}).get(
-                                'reverse_proxies', {}).get(
-                                    'firewalld_proxies', [])
-                for r in cloud_rules:
-                    rules = []
-                    # replace all DNAT rules to use each external ip
-                    if ':' in r.get('dest', ''):
-                        z = r['dest'].split(':')[0]
-                        rr = r.copy()
-                        rr['odest'] = sip
-                        for i in data['zones']:
-                            if i not in [z, 'fw']:
-                                target_r = rr.copy()
-                                target_r['source'] = i
-                                rules.append(target_r)
-                    else:
-                        rules.append(r)
-                    data['default_rules'].extend(rules)
-            except:
-                log.error("ERROR IN CLOUD SHOREWALL RULES")
-                log.error(traceback.format_exc())
+    # handle makinastates / compute node redirection ports
+    if _s['mc_cloud.is_compute_node']():
+        cloud_reg = _s['mc_cloud_compute_node.settings']()
+        cloud_rules = cloud_reg.get(
+            'reverse_proxies', {}).get('network_mappings', [])
+        for portdata in cloud_rules:
+            rules = []
+            for r in rich_rules(
+                forward_port=portdata['hostPort'],
+                to_addr='address={ip}'.format(**portdata),
+                to_port=portdata['port']
+            ):
+                if r not in rules:
+                    rules.append(r)
     return data
 
 
@@ -515,14 +440,31 @@ def settings():
         via rich rules to allow selection of source and destination
         variations.
 
+    Add some rich rules in pillar to a zone::
 
+        makina-states.services.firewalld.zones.public.rules-append:
+          {% for i in salt['mc_firewalld.rich_rules'](
+            port=22, action='drop'
+          )- {{i}} {% endfor %}
+          {% for i in salt['mc_firewalld.rich_rules'](
+              forward_port=1122, to_addr='1.2.3.4', 'to_port'=22
+          )- {{i}} {% endfor %}
+          - "rule service name="ftp" log limit value="1/m" audit accept"
+
+    Whitelist some services::
+
+        makina-states.services.firewalld.public_services-append:
+            - smtp
+
+    Change whitelisted services::
+
+        makina-states.services.firewalld.public_services: [http, https]
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         data = default_settings()
         data = add_real_interfaces(data)
         data = add_aliased_interfaces(data)
-        data = add_zones_with_services(data)
         data = add_zones_policies(data)
         data = add_services_policies(data)
         data = add_cloud_proxies(data)

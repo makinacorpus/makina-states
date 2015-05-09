@@ -114,14 +114,14 @@ def default_settings():
         firewall
             global firewall toggle
 
-    ssh_port_range_start
+    port_range_start
         from where we start to enable ssh NAT ports.
         Default to 40000.
 
-    ssh_port_range_end
+    port_range_end
 
         from where we end to enable ssh NAT ports.
-        Default to 50000.
+        Default to 60000.
 
     Basically the compute node needs to:
 
@@ -149,10 +149,9 @@ def default_settings():
             'http_port': 80,
             'https_port': 443,
             'reverse_proxies': default_reverse_proxy(target),
-            'ssh_port_range_start': 40000,
-            'ssh_port_range_end': 50000,
-            'snmp_port_range_start': 30000,
-            'snmp_port_range_end': 39999}
+            'excluded_ports': [],
+            'port_range_start': 40000,
+            'port_range_end': 60000}
     return data
 
 
@@ -542,6 +541,7 @@ def gen_mac():
 def default_reverse_proxy(target):
     data = OrderedDict([('target', target),
                         ('sw_proxies', []),
+                        ('network_mappings', OrderedDict()),
                         ('http_proxy', OrderedDict()),
                         ('http_backends', OrderedDict()),
                         ('https_proxy', OrderedDict()),
@@ -562,16 +562,28 @@ def get_kind_port(vm, target=None, kind='ssh'):
     if target is None:
         target = __salt__['mc_cloud_compute_node.target_for_vm'](vm)
     _settings = _s['mc_cloud_compute_node.cn_extpillar_settings'](target)
-    start = int(_settings[kind + '_port_range_start'])
-    end = int(_settings[kind + '_port_range_end'])
+    rangek = 'port_range_start', 'port_range_end'
+    start = int(_settings[rangek[0]])
+    end = int(_settings[rangek[1]])
+    ports_map = get_conf_for_target(target, 'reverse_ports_map', {})
     kind_map = get_conf_for_target(target, kind + '_map', {})
-    for a in [a for a in kind_map]:
-        kind_map[a] = int(kind_map[a])
-    port = kind_map.get(vm, None)
+    port_key = '{0}/{1}'.format(vm, kind)
+    for a in [a for a in ports_map]:
+        ports_map[a] = int(ports_map[a])
+    allocated = ports_map.values()
+    # retrocompat: add snmp and ssh to values
+    for k in ['ssh', 'snmp']:
+        kkind_map = get_conf_for_target(target, k + '_map', {})
+        for a, port in six.iteritems(kkind_map):
+            port = int(port)
+            if port not in allocated:
+                allocated.append(port)
+    port = ports_map.get(port_key, kind_map.get(vm, None))
+    # if port is not already found, allocate a new now.
     if port is None:
-        port = _get_next_available_port(kind_map.values(), start, end)
+        port = _get_next_available_port(allocated, start, end)
         _s['mc_cloud_compute_node.set_kind_port'.format(kind)](
-            vm, port, target=target, kind=kind)
+            vm, port, target=target, kind='reverse_ports')
     return port
 
 
@@ -783,6 +795,52 @@ def feed_http_reverse_proxy_for_target(target_data):
     return target_data
 
 
+def feed_network_mappings_for_target(target_data, kinds=None):
+    '''
+    Network mappings are in the form:
+
+    This is the form of the APPCONTAINER SPEC mixin ACI/ACE::
+
+        [
+            {
+                'name': 'default',
+                'hostPort': <int>,
+                'to_addr': <Local IPV4 Address of vm>,
+                'port': <int>,
+                'count': <int> (opt),
+                'protocol': 'tcp' / 'udp'
+            }
+        ]
+    '''
+    _s = __salt__
+    t = target_data['target']
+    if not kinds:
+        kinds = ['ssh', 'snmp']
+    vms_infos = target_data.get('vms', {})
+    CPORT = {'name': None,
+             'hostPort': None,
+             'protocol': None
+             'count': None,
+             'to_addr': None,
+             'port': None}
+    network_mappings = target_data['reverse_proxies']['network_mappings']
+    for vm, data in vms_infos.items():
+        for portdata in data['ports']:
+            kind = portdata['name']
+            port = _s['mc_cloud_compute_node.get_kind_port'](vm,
+                                                             target=t,
+                                                             kind=kind)
+            cport = copy.deepcopy(CPORT)
+            cport['port'] = port
+            cport['to_addr'] = data['ip']
+            cport['hostPort'] = portdata['port']
+            cport['protocol'] = portdata['protocol']
+            cport['count'] = portdata.get('count', None)
+            cport['name'] = '{vm}/{port}/{protocol}'.format(**cport)
+            network_mappings[cport['name']] = cport
+    return target_data
+
+
 def feed_sw_reverse_proxies_for_target(target_data):
     _s = __salt__
     t = target_data['target']
@@ -873,6 +931,7 @@ def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
                 proxy['raw_opts_{0}'.format(suf)] = opts
         data = feed_http_reverse_proxy_for_target(data)
         data = feed_sw_reverse_proxies_for_target(data)
+        data = feed_network_mappings_for_target(data)
         haproxy_opts = OrderedDict()
         http_proxy = data['reverse_proxies']['http_proxy']
         https_proxy = data['reverse_proxies']['https_proxy']

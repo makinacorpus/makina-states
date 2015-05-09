@@ -22,7 +22,7 @@ import traceback
 import salt.output
 from salt.utils.odict import OrderedDict
 import salt.loader
-from mc_states improt ping
+from mc_states import ping
 
 try:
     import chardet
