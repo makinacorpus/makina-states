@@ -13,7 +13,6 @@ mc_firewalld / firewalld functions
 # Import python libs
 import logging
 import copy
-import traceback
 import mc_states.api
 from salt.utils.odict import OrderedDict
 
@@ -21,7 +20,7 @@ from salt.utils.odict import OrderedDict
 __name = 'firewalld'
 six = mc_states.api.six
 PREFIX = 'makina-states.services.firewall.{0}'.format(__name)
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 prefered_ips = mc_states.api.prefered_ips
 PUBLIC_ZONES = ['public', 'external']
 INTERNAL_ZONES = ['internal', 'dmz', 'home', 'docker', 'lxc', 'virt']
@@ -486,14 +485,17 @@ def add_services_policies(data=None):
             services[s] = copy.deepcopy(data['services'][s])
         to_add = [a for a in services]
 
-        def order_policies(a):
-            pref = 'z'
-            if a in pservices:
-                pref = 'm'
-            elif a in rservices:
-                pref = 'a'
-            return '{0}_{1}'.format(pref, a)
-        to_add.sort(key=order_policies)
+        def order_policies(apservices, arservices):
+            def do(a):
+                pref = 'z'
+                if a in apservices:
+                    pref = 'm'
+                elif a in arservices:
+                    pref = 'a'
+                return '{0}_{1}'.format(pref, a)
+            return do
+
+        to_add.sort(key=order_policies(pservices, rservices))
         for s in to_add:
             if s not in data['services']:
                 data['services'][s] = copy.deepcopy(services[s])
@@ -531,7 +533,7 @@ def complete_rules(data):
             data['zones'].pop(z, None)
     for z in [a for a in data['zones']]:
         zdata = data['zones'][z]
-        rules = zdata.setdefault('rules',  [])
+        rules = zdata.setdefault('rules', [])
         for i in [
             a for a in zdata
             if (
@@ -562,23 +564,23 @@ def default_settings():
         'no_default_alias': False,
         'packages': ['ipset', 'ebtables', 'firewalld'],
         'zones': OrderedDict([
-            ('block',  {}),
-            ('drop',  {}),
-            ('trusted',  {'interfaces': ['lo']}),
+            ('block', {}),
+            ('drop', {}),
+            ('trusted', {'interfaces': ['lo']}),
             ('dmz', {'target': 'ACCEPT'}),
             ('rpn', {'target': 'ACCEPT'}),
             ('virt', {'target': 'ACCEPT',
-                      'interfaces':  ['virbr0', 'vibr0',
-                                      'virbr1', 'vibr1']}),
+                      'interfaces': ['virbr0', 'vibr0',
+                                     'virbr1', 'vibr1']}),
             ('lxc', {'target': 'ACCEPT',
-                     'interfaces':  ['lxcbr0', 'lxcbr1']}),
+                     'interfaces': ['lxcbr0', 'lxcbr1']}),
             ('docker', {'target': 'ACCEPT',
-                        'interfaces':  ['docker0', 'docker1']}),
-            ('internal',  {'interfaces':  ['eth1', 'em1']}),
-            ('public',  {'interfaces':  ['br0', 'eth0', 'em0']}),
-            ('external',  {}),
-            ('home',  {}),
-            ('work',  {})]),
+                        'interfaces': ['docker0', 'docker1']}),
+            ('internal', {'interfaces': ['eth1', 'em1']}),
+            ('public', {'interfaces': ['br0', 'eth0', 'em0']}),
+            ('external', {}),
+            ('home', {}),
+            ('work', {})]),
         'internal_zones': INTERNAL_ZONES[:],
         'public_zones': PUBLIC_ZONES[:],
         'public_services': PUBLIC_SERVICES[:],
