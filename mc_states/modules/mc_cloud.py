@@ -504,7 +504,7 @@ def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
                 extdata['is']['{0}_host'.format(i)] = True
                 data['makina-states.services.virt.' + i] = True
             data['makina-states.services.is.proxy.haproxy'] = True
-            data['makina-states.services.is.firewall.shorewall'] = True
+            data['makina-states.services.is.firewall.firewall'] = True
         if not limited:
             data[
                 'makina-states.cloud.expositions'

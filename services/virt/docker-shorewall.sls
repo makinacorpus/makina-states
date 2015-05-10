@@ -3,5 +3,5 @@
 #}
 include:
   - makina-states.services.virt.docker
-  - makina-states.services.firewall.shorewall
+  - makina-states.services.firewall.firewall
 {{ salt['mc_macros.register']('services', 'virt.docker-shorewall') }}

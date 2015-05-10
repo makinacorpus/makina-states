@@ -371,6 +371,8 @@ def main(errors=None):
         code = 3
     elif 'rule/rule' in errortypes:
         code = 4
+    elif len(errors):
+        code = 255
     else:
         code = 0
     return code

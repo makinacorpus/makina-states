@@ -388,11 +388,11 @@ def get_registry(registry_configuration):
     Will activate the 'makina-states.controllers.salt_master' and
     deactivate all other states to be automaticly run
 
-    EG, for automatic activation of shorewall,
+    EG, for automatic activation of firewalld,
     lookup in Configs for this key (pillar, grains, reg)::
 
-        makina-states.services.is.firewall.shorewall: true
-        makina-states.services.firewall.shorewall: true
+        makina-states.services.is.firewall.firewalld: true
+        makina-states.services.firewall.firewalld: true
 
 
     Idea why for the dict containing 'active', i did not choosed

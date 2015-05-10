@@ -1,2 +1,2 @@
 include:
-  - makina-states.services.firewall.shorewall
+  - makina-states.services.firewall.firewall

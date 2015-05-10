@@ -149,7 +149,7 @@ def settings():
                 'default_jail_opts': {
                     'port': 'ssh',
                     'logpath': '/var/log/syslog',
-                    'banaction': 'shorewall',
+                    'banaction': banaction,
                     'maxretry': 5,
                     'findtime': 600,
                     'bantime': 600,
