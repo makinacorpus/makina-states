@@ -416,10 +416,13 @@ def main():
             jconfig = jconfig['local']
     errors = []
     code = _main(vopts, jconfig, errors=errors)
+    old_errors = errors
+    errors = []
     if code:
         # on the first run, we can fail the first time
         # specially when switching fw (like with shorewall)
         code = _main(vopts, jconfig, errors=errors)
+    old_errors.extend(errors)
     displayed = []
     if errors:
         log.error('ERRORS WHILE CONFIGURATION OF FIREWALL')
@@ -440,7 +443,7 @@ def main():
                 if vopts['debug']:
                     try:
                         log.error('TRACE:\n{0}'.format(error['trace']))
-                    except (Exception,) as ex:
+                    except (Exception,):
                         log.error('TRACE:')
                         log.error(error['trace'])
             except Exception:
