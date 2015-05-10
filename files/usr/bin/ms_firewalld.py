@@ -331,24 +331,9 @@ def configure_rules(z, zdata, errors=None):
                            'exception': ex})
 
 
-def main(errors=None):
+def _main(vopts, jconfig, errors=None):
     if errors is None:
         errors = []
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)-15s %(name)-5s %(levelname)-6s %(message)s')
-    log.info('start conf')
-    opts = parser.parse_args()
-    vopts = vars(opts)
-    config = vopts['config']
-    if not os.path.exists(config):
-        raise OSError('No config: {0}'.format(config))
-        os.exit(1)
-    with open(config) as f:
-        jconfig = json.loads(f.read())
-        if [a for a in jconfig] == ['local']:
-            # salt-call cache !?
-            jconfig = jconfig['local']
     for z, zdata in six.iteritems(jconfig['zones']):
         try:
             masq = z in jconfig['public_zones']
@@ -392,27 +377,6 @@ def main(errors=None):
                            'id': z,
                            'exception': ex})
     lazy_reload()
-    if errors:
-        log.error('ERRORS WHILE CONFIGURATION OF FIREWALL')
-        for error in errors:
-            try:
-                msg = 'TYPE: {0}'.format(error['type'])
-                if error.get('id'):
-                    msg += ' / id: {0}'.format(error['id'])
-                log.error(msg)
-                try:
-                    log.error('EXCEPTION: {0}'.format(error['exception']))
-                except (Exception,) as ex:
-                    log.error('EXCEPTION:')
-                    log.error(error['exception'])
-                if vopts['debug']:
-                    try:
-                        log.error('TRACE:\n{0}'.format(error['trace']))
-                    except (Exception,) as ex:
-                        log.error('TRACE:')
-                        log.error(error['trace'])
-            except Exception:
-                continue
     log.info('end conf')
     errortypes = [a['type'] for a in errors]
     if 'zone' in errortypes:
@@ -431,6 +395,56 @@ def main(errors=None):
         code = 255
     else:
         code = 0
+    return code
+
+
+def main():
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)-15s %(name)-5s %(levelname)-6s %(message)s')
+    log.info('start conf')
+    opts = parser.parse_args()
+    vopts = vars(opts)
+    config = vopts['config']
+    if not os.path.exists(config):
+        raise OSError('No config: {0}'.format(config))
+        os.exit(1)
+    with open(config) as f:
+        jconfig = json.loads(f.read())
+        if [a for a in jconfig] == ['local']:
+            # salt-call cache !?
+            jconfig = jconfig['local']
+    errors = []
+    code = _main(vopts, jconfig, errors=errors)
+    if code:
+        # on the first run, we can fail the first time
+        # specially when switching fw (like with shorewall)
+        code = _main(vopts, jconfig, errors=errors)
+    displayed = []
+    if errors:
+        log.error('ERRORS WHILE CONFIGURATION OF FIREWALL')
+        for error in errors:
+            if error in displayed:
+                continue
+            displayed.append(error)
+            try:
+                msg = 'TYPE: {0}'.format(error['type'])
+                if error.get('id'):
+                    msg += ' / id: {0}'.format(error['id'])
+                log.error(msg)
+                try:
+                    log.error('EXCEPTION: {0}'.format(error['exception']))
+                except (Exception,) as ex:
+                    log.error('EXCEPTION:')
+                    log.error(error['exception'])
+                if vopts['debug']:
+                    try:
+                        log.error('TRACE:\n{0}'.format(error['trace']))
+                    except (Exception,) as ex:
+                        log.error('TRACE:')
+                        log.error(error['trace'])
+            except Exception:
+                continue
     return code
 
 
