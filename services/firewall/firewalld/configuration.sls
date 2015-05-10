@@ -13,4 +13,10 @@ include:
 {% endmacro %}
 {{ h.deliver_config_files(
      data.get('extra_confs', {}), after_macro=rmacro, prefix='fwld-')}}
+
+firewalld-forward:
+  sysctl.present:
+    - name: net.ipv4.ip_forward
+    - value: 1
+    {{rmacro()}}
 {% endif %}

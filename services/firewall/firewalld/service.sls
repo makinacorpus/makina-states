@@ -22,4 +22,13 @@ firewalld:
       - mc_proxy: firewalld-prerestart
     - watch_in:
       - mc_proxy: firewalld-postrestart
+
+firewalld-reapply:
+  cmd.run:
+    - name: /usr/bin/ms_firewalld.py
+    - watch:
+      - service: firewalld
+      - mc_proxy: firewalld-prerestart
+    - watch_in:
+      - mc_proxy: firewalld-postrestart
 {%endif %}
