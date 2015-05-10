@@ -181,8 +181,22 @@ def define_zone(z, zdata, masquerade=None, errors=None):
         msg = 'Configure zone {0}'
     log.info(msg.format(z, zdata))
     if z not in get_zones():
-        zn = fw().config().addZone(
-            z, FirewallClientZoneSettings())
+        try:
+            zn = fw().config().addZone(
+                z, FirewallClientZoneSettings())
+        except (Exception,) as ex:
+            import pdb;pdb.set_trace()  ## Breakpoint ##
+            if 'NAME_CONFLICT' in "{0}".format(ex):
+                mark_reload()
+                lazy_reload()
+                if z not in get_zones():
+                    zn = fw().config().addZone(
+                        z, FirewallClientZoneSettings())
+                else:
+                    zn = fw().config().getZoneByName(z)
+            else:
+                raise ex
+
         zn.setShort(z)
         zn.setDescription(z)
         log.info(' - Zone created')
