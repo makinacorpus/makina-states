@@ -185,7 +185,6 @@ def define_zone(z, zdata, masquerade=None, errors=None):
             zn = fw().config().addZone(
                 z, FirewallClientZoneSettings())
         except (Exception,) as ex:
-            import pdb;pdb.set_trace()  ## Breakpoint ##
             if 'NAME_CONFLICT' in "{0}".format(ex):
                 mark_reload()
                 lazy_reload()
