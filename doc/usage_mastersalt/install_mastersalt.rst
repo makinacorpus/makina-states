@@ -28,13 +28,13 @@ This covers those parts:
     - LDAP (openldap)
     - Baremetal and VM network configuration (this include setuping ip faiover
       aliases on baremetal servers)
-    - Firewall configuration (shorewall)
+    - Firewall configuration (firewalld)
     - repositories managment (APT)
     - locales managment
     - Cloud Controller orchestration
 
         - Manage dns entries
-        - Reverse proxies (haproxy & shorewall (http(s)/ssh/snmp)
+        - Reverse proxies (haproxy & firewalld (http(s)/ssh/snmp)
         - Spawning VMS (kvm, lxc) and managing their lifecycle
 
     - Kernel sysctl managment

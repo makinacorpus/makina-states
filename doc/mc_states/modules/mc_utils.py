@@ -202,7 +202,7 @@ def copy_dictupdate(dict1, dict2):
 def format_resolve(value,
                    original_dict=None,
                    global_tries=50,
-                   this_call=0, topdb=False):
+                   this_call=0, topdb=False, **kwargs):
     '''Resolve a dict of formatted strings, mappings & list to a valued dict
     Please also read the associated test::
 
@@ -226,6 +226,8 @@ def format_resolve(value,
         original_dict = OrderedDict()
     if this_call == 0 and not original_dict and isinstance(value, dict):
         original_dict = value
+    if isinstance(kwargs, dict):
+        original_dict.update(kwargs)
     left = False
     cycle = True
 
@@ -541,17 +543,18 @@ def defaults(prefix,
     Magic defaults settings configuration getter
 
     - Get the "prefix" value from the configuration (pillar/grain)
-    - Then overrides it with  "datadict" mapping recursively
-        - If
-            - the datadict contains a key "{prefix}-overrides
-            - AND value is a dict or  a list:
+    - Then overrides or append to it with the corresponding
+      key in the given "datadict" if value is a dict or a list.
 
-                Take that as a value for the the value /subtree
+      - If we get from pillar/grains/local from the curent key in the form:
+        "{prefix}-overrides: it overrides totally the original value.
+      - if the datadict contains a key "{prefix}-append and
+        the value is a list, it appends to the original value
 
-        - If the datadict contains a key "{prefix}":
-            - If a list: append to the list the default list in conf
-            - Elif a dict: update the default dictionnary with the one in conf
-            - Else take that as a value if the value is not a mapping or a list
+    - If the datadict contains a key "{prefix}":
+        - If a list: override to the list the default list in conf
+        - Elif a dict: update the default dictionnary with the one in conf
+        - Else take that as a value if the value is not a mapping or a list
     '''
     if not ignored_keys:
         ignored_keys = []
@@ -596,12 +599,16 @@ def defaults(prefix,
             k = '{0}.{1}'.format(magicstring(prefix), magicstring(a))
             if to_unicode:
                 k = k.decode('utf-8')
-            pkeys[a] = (k , datadict[a])
+            pkeys[a] = (k, datadict[a])
     for key, value_data in pkeys.items():
         value_key, default_value = value_data
         # special key to completly overrides the dictionnary
+        avalue = _default_marker
         value = __salt__['mc_utils.get'](
             value_key + "-overrides", _default_marker)
+        if isinstance(default_value, list):
+            avalue = __salt__['mc_utils.get'](
+                value_key + "-append", _default_marker)
         if value is not _default_marker:
             overridden[prefix][key] = value
         else:
@@ -614,14 +621,16 @@ def defaults(prefix,
             else:
                 nvalue = default_value[:]
                 if (
-                    value
-                    and (value != nvalue)
-                    and (value is not _default_marker)
+                    value and
+                    (value != nvalue) and
+                    (value is not _default_marker)
                 ):
                     if nvalue is None:
                         nvalue = []
                     nvalue.extend(value)
                 value = nvalue
+            if isinstance(avalue, list):
+                value.extend(avalue)
         elif isinstance(value, dict):
             # recurvive and conservative dictupdate
             ndefaults = defaults(value_key,
@@ -638,7 +647,6 @@ def defaults(prefix,
             for k, subvalue in get_uniq_keys_for(value_key).items():
                 ndefaults[k.split('{0}.'.format(value_key))[1]] = subvalue
             value = __salt__['mc_utils.dictupdate'](default_value, ndefaults)
-
         datadict[key] = value
         for k, value in overridden[prefix].items():
             datadict[k] = value
@@ -934,11 +942,29 @@ def memoize_cache(*args, **kw):
     return api.memoize_cache(*args, **cache_kwargs(*args, **kw))
 
 
+def test_cache(ttl=120):
+    '''.'''
+    def _do():
+        return "a"
+    cache_key = 'mc_utils.test_cache'
+    __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+    ret = list_cache_keys()
+    remove_cache_entry(ret[0], debug=True)
+    return ret
+
+
 def remove_entry(*args, **kw):
     '''
     Wrapper for :meth:`~mc_states.api.remove_cache_entry` to set __opts__
     '''
     return mc_states.api.remove_entry(*args, **cache_kwargs(*args, **kw))
+
+
+def list_cache_keys(*args, **kw):
+    '''
+    Wrapper for :meth:`~mc_states.api.list_cache_keys` to set __opts__
+    '''
+    return mc_states.api.list_cache_keys(*args, **cache_kwargs(*args, **kw))
 
 
 def remove_cache_entry(*args, **kw):
@@ -960,13 +986,6 @@ def get_local_cache(*args):
     Wrapper for :meth:`~mc_states.api.get_local_cache`
     '''
     return mc_states.api.get_local_cache(*args)
-
-
-def register_memoize_first(pattern):
-    '''
-    Wrapper for :meth:`~mc_states.api.invalidate_memoize_cache` to set __opts__
-    '''
-    return mc_states.api.register_memoize_first(pattern)
 
 
 def register_memcache_first(pattern):

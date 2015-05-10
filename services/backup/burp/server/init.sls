@@ -10,4 +10,7 @@ include:
 {% if salt['mc_services.registry']()['is']['firewall.shorewall'] %}
   - makina-states.services.firewall.shorewall
 {% endif %}
+{% if salt['mc_services.registry']()['is']['firewall.firewalld'] %}
+  - makina-states.services.firewall.firewalld
+{% endif %}
 {% endif %}

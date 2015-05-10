@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 cd "$(dirname "${0}")"
 rsync -azv ../mc_states/ mc_states/
+rm -rf mc_states/tests
 find mc_states -type f|while read f
 do
     grep -v 'from __future' "${f}" > "${f}.tmp"

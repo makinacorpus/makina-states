@@ -38,7 +38,7 @@ makina-states.cloud.generic do all the generic cloud related stuff:
     - On the compute node:
 
         - run pre configured drivers specific hooks
-        - shorewall as the firewall
+        - firewalld as the firewall
         - synchronnize/pull any neccessary image or VM templates
         - configure haproxy to load balance http; httpŝ and ssh traffic
 

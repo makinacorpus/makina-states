@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 '''
 .. _module_mc_cloud_compute_node:
 
@@ -15,11 +16,9 @@ import copy
 import random
 import os
 import msgpack
-import mc_states.api
 from salt.utils.odict import OrderedDict
 import msgpack.exceptions
 from salt.utils.pycrypto import secure_password
-import msgpack.exceptions
 try:
     import netaddr
     HAS_NETADDR = True
@@ -27,11 +26,13 @@ except ImportError:
     HAS_NETADDR = False
 
 from mc_states import api
+from mc_states import saltapi
 from mc_states.modules.mc_pillar import PILLAR_TTL
 
 __name = 'mc_cloud_compute_node'
 
 log = logging.getLogger(__name__)
+six = api.six
 
 VIRT_TYPES = {'docker': {'supported': True},
               'xen': {'supported': False},
@@ -43,6 +44,12 @@ _SW_RP = 'shorewall_reverse_proxies'
 _CUR_API = 2
 _default = object()
 PREFIX = 'makina-states.cloud.compute_node'
+CPORT = {'name': None,
+         'hostPort': None,
+         'protocol': None,
+         'count': None,
+         'to_addr': None,
+         'port': None}
 
 
 def get_all_vts(supported=None):
@@ -114,14 +121,14 @@ def default_settings():
         firewall
             global firewall toggle
 
-    ssh_port_range_start
+    port_range_start
         from where we start to enable ssh NAT ports.
         Default to 40000.
 
-    ssh_port_range_end
+    port_range_end
 
         from where we end to enable ssh NAT ports.
-        Default to 50000.
+        Default to 60000.
 
     Basically the compute node needs to:
 
@@ -149,10 +156,9 @@ def default_settings():
             'http_port': 80,
             'https_port': 443,
             'reverse_proxies': default_reverse_proxy(target),
-            'ssh_port_range_start': 40000,
-            'ssh_port_range_end': 50000,
-            'snmp_port_range_start': 30000,
-            'snmp_port_range_end': 39999}
+            'excluded_ports': [],
+            'port_range_start': 40000,
+            'port_range_end': 60000}
     return data
 
 
@@ -275,7 +281,7 @@ def _fencode(filep, value):
         fic.write(_encode(value))
     try:
         os.chmod(filep, 0700)
-    except:
+    except (IOError, OSError):
         pass
 
 
@@ -533,6 +539,9 @@ def domains_for(target, domains=None):
 
 
 def gen_mac():
+    # pylint: disable=E1321
+    # pylint: disable=w0110
+    # pylint: disable=w0141
     return ':'.join(map(lambda x: "%02x" % x, [0x00, 0x16, 0x3E,
                                                random.randint(0x00, 0x7F),
                                                random.randint(0x00, 0xFF),
@@ -542,6 +551,7 @@ def gen_mac():
 def default_reverse_proxy(target):
     data = OrderedDict([('target', target),
                         ('sw_proxies', []),
+                        ('network_mappings', OrderedDict()),
                         ('http_proxy', OrderedDict()),
                         ('http_backends', OrderedDict()),
                         ('https_proxy', OrderedDict()),
@@ -557,21 +567,35 @@ def _get_next_available_port(ports, start, stop):
                      '{0}:{1}'.format(start, stop))
 
 
-def get_kind_port(vm, target=None, kind='ssh'):
+def get_kind_port(vm, target=None, kind='ssh', reset=False):
     _s = __salt__
     if target is None:
         target = __salt__['mc_cloud_compute_node.target_for_vm'](vm)
     _settings = _s['mc_cloud_compute_node.cn_extpillar_settings'](target)
-    start = int(_settings[kind + '_port_range_start'])
-    end = int(_settings[kind + '_port_range_end'])
+    rangek = 'port_range_start', 'port_range_end'
+    start = int(_settings[rangek[0]])
+    end = int(_settings[rangek[1]])
+    ports_map = get_conf_for_target(target, 'reverse_ports_map', {})
     kind_map = get_conf_for_target(target, kind + '_map', {})
-    for a in [a for a in kind_map]:
-        kind_map[a] = int(kind_map[a])
-    port = kind_map.get(vm, None)
+    port_key = '{0}/{1}'.format(vm, kind)
+    for a in [a for a in ports_map]:
+        ports_map[a] = int(ports_map[a])
+    allocated = ports_map.values()
+    # retrocompat: add snmp and ssh to values
+    for k in ['ssh', 'snmp']:
+        kkind_map = get_conf_for_target(target, k + '_map', {})
+        for a, port in six.iteritems(kkind_map):
+            port = int(port)
+            if port not in allocated:
+                allocated.append(port)
+    port = ports_map.get(port_key, kind_map.get(vm, None))
+    if reset:
+        port = None
+    # if port is not already found, allocate a new now.
     if port is None:
-        port = _get_next_available_port(kind_map.values(), start, end)
+        port = _get_next_available_port(allocated, start, end)
         _s['mc_cloud_compute_node.set_kind_port'.format(kind)](
-            vm, port, target=target, kind=kind)
+            port_key, port, target=target, kind='reverse_ports')
     return port
 
 
@@ -619,7 +643,7 @@ def _add_server_to_backends(reversep, frontend, backend_name, domain, ip):
     bck = _backends.setdefault(backend_name, OrderedDict())
     default_raw_opts = [
         'balance roundrobin',
-        #'source 0.0.0.0 usesrc clientip'
+        #  'source 0.0.0.0 usesrc clientip'
     ]
     # for now rely on settings xforwardedfor header
     if reversep['{0}_proxy'.format(kind)].get(
@@ -644,8 +668,9 @@ def _add_server_to_backends(reversep, frontend, backend_name, domain, ip):
     if kind == 'https':
         servs[-1]['opts'] += ' backup'
         servs.append(ssl_srv)
-    [bck['raw_opts'].append(a)
-     for a in default_raw_opts if a not in bck['raw_opts']]
+    # pylint: disable=w0106
+    noecho = [bck['raw_opts'].append(a)
+              for a in default_raw_opts if a not in bck['raw_opts']]
     bck['raw_opts'].sort(key=lambda x: x)
     for srv in servs:
         if srv['bind'] not in [a.get('bind') for a in bck['servers']]:
@@ -783,6 +808,70 @@ def feed_http_reverse_proxy_for_target(target_data):
     return target_data
 
 
+def get_port_info(vmdata, portdata, reset=False):
+    _s = __salt__
+    kind = portdata['name']
+    vm = vmdata['name']
+    port = _s['mc_cloud_compute_node.get_kind_port'](vm,
+                                                     target=vmdata['target'],
+                                                     kind=kind,
+                                                     reset=reset)
+    cport = copy.deepcopy(CPORT)
+    cport['port'] = portdata['port']
+    cport['to_addr'] = vmdata['ip']
+    cport['hostPort'] = port
+    cport['protocol'] = portdata['protocol']
+    cport['count'] = portdata.get('count', None)
+    cport['id'] = '{hostPort}/{protocol}'.format(**cport)
+    cport['name'] = '{0}/{1}/{2}'.format(vm,
+                                         cport['id'],
+                                         portdata['port'])
+    return cport
+
+
+def feed_network_mappings_for_target(target_data, kinds=None):
+    '''
+    Network mappings are in the form:
+
+    This is the form of the APPCONTAINER SPEC mixin ACI/ACE::
+
+        [
+            {
+                'name': 'default',
+                'hostPort': <int>,
+                'to_addr': <Local IPV4 Address of vm>,
+                'port': <int>,
+                'count': <int> (opt),
+                'protocol': 'tcp' / 'udp'
+            }
+        ]
+    '''
+    _s = __salt__
+    vms_infos = target_data.get('vms', {})
+    network_mappings = target_data['reverse_proxies']['network_mappings']
+    for vm, vmdata in vms_infos.items():
+        for portdata in vmdata['ports']:
+            retries = 10
+            reset = False
+            while retries:
+                try:
+                    cport = get_port_info(vmdata, portdata, reset=reset)
+                    if cport['id'] in network_mappings:
+                        raise saltapi.PortConflictError(
+                            'Port conflict: {0} / {1}'.format(
+                                cport, network_mappings[cport['id']]))
+                    network_mappings[cport['id']] = cport
+                    retries = 0
+                except saltapi.PortConflictError:
+                    retries -= 1
+                    reset = True
+                    if not retries:
+                        raise saltapi.PortConflictError(
+                            'Conflicting ports definitions:\n{0}\n{1}'.format(
+                                cport, network_mappings[cport['id']]))
+    return target_data
+
+
 def feed_sw_reverse_proxies_for_target(target_data):
     _s = __salt__
     t = target_data['target']
@@ -873,6 +962,7 @@ def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
                 proxy['raw_opts_{0}'.format(suf)] = opts
         data = feed_http_reverse_proxy_for_target(data)
         data = feed_sw_reverse_proxies_for_target(data)
+        data = feed_network_mappings_for_target(data)
         haproxy_opts = OrderedDict()
         http_proxy = data['reverse_proxies']['http_proxy']
         https_proxy = data['reverse_proxies']['https_proxy']
@@ -893,9 +983,10 @@ def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
     cache_key = 'mc_cloud_compute_node.ext_pillar{0}{1}{2}'.format(
         id_, prefixed, limited)
     return __salt__['mc_utils.memoize_cache'](_do, [id_, prefixed, limited],
-                         {}, cache_key, ttl)
+                                              {}, cache_key, ttl)
 
 
+# pylint: disable=w0105
 '''
 Helper methods usable only after a full extpillar loading
 on the controller node
@@ -977,6 +1068,7 @@ def get_ssh_mapping_for_target(target):
     return get_ports_mapping_for_target(target, kind='ssh')
 
 
+# pylint: disable=w0105
 '''
 Methods usable
 After the pillar has loaded, on the compute node itself

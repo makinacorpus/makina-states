@@ -18,6 +18,7 @@ import mc_states.api
 from pprint import pformat
 from salt.utils.odict import OrderedDict
 from mc_states import saltapi
+from mc_states.modules.mc_pillar import PILLAR_TTL
 
 __name = 'cloud_saltify'
 VT = 'saltify'
@@ -113,7 +114,7 @@ def default_settings(cloudSettings):
     return copy.deepcopy(data)
 
 
-def target_extpillar(name, c_data=None, ttl=60):
+def target_extpillar(name, c_data=None, ttl=PILLAR_TTL):
     '''
     Settings for bootstrapping a target using saltcloud saltify
     driver (something accessible via ssh)
@@ -180,14 +181,14 @@ def _add_host(_s, done_hosts, rdata, host):
     rdata[host] = target_extpillar(host)
 
 
-def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
+def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
     def _do(id_, prefixed):
         _s = __salt__
         rdata = {}
         supported_vts = _s['mc_cloud_compute_node.get_vts']()
         done_hosts = []
         ivars = _s['mc_pillar.get_db_infrastructure_maps']()
-        nmh = _s['mc_pillar.query']('non_managed_hosts')
+        nmh = _s['mc_pillar.query']('non_managed_hosts', {})
         for vt, targets in _s['mc_pillar.query']('vms').items():
             if vt not in supported_vts:
                 continue
