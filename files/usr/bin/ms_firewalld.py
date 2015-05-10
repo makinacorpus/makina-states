@@ -285,7 +285,6 @@ def main(errors=None):
     for z, zdata in six.iteritems(jconfig['zones']):
         try:
             configure_rules(z, zdata, errors=errors)
-            raise
         except (Exception,) as ex:
             trace = traceback.format_exc()
             errors.append({'trace': trace,
