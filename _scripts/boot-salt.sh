@@ -1931,7 +1931,7 @@ setup_and_maybe_update_code() {
                         if [ "x${i}" = "x${ms}" ];then
                             store_conf branch "${pref}${co_branch}"
                             find "${SALT_PILLAR}" "${MASTERSALT_PILLAR}" -type f | while read i;do
-                                sed -i -re "s/makina-states.rev: .*/makina-states.rev: ${co_branch}/g" "${f}"
+                                sed -i -re "s/makina-states.rev: .*/makina-states.rev: ${co_branch}/g" "${i}"
                             done
                         fi
                     fi
