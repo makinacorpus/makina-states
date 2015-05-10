@@ -315,7 +315,10 @@ def configure_rules(z, zdata, errors=None):
     log.info('Activating filtering rules for zone: {0}'.format(z))
     for rule in zdata.get('rules', []):
         try:
-            rules = get_rules(z)
+            # XXX: cache seems dangerous for now
+            # inconsistent results :(
+            # rules = get_rules(z)
+            rules = get_rules(z, cache=False)
             if rule not in rules:
                 rules = get_rules(z, cache=False)
             if rule not in rules:
@@ -367,6 +370,8 @@ def _main(vopts, jconfig, errors=None):
                            'id': z,
                            'exception': ex})
 
+    lazy_reload()
+
     for z, zdata in six.iteritems(jconfig['zones']):
         try:
             configure_rules(z, zdata, errors=errors)
@@ -376,7 +381,6 @@ def _main(vopts, jconfig, errors=None):
                            'type': 'rules',
                            'id': z,
                            'exception': ex})
-    lazy_reload()
     log.info('end conf')
     errortypes = [a['type'] for a in errors]
     if 'zone' in errortypes:
