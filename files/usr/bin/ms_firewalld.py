@@ -2,11 +2,103 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+import sys
+
+
+'''
+CONFIGURE FIREWALLD
+with a saltstack/makina-states.services.firewall.firewalld:settings
+compatible file.
+Only the following sections are used::
+
+    - zones
+    - services
+
+We use only rich rules to fine grain the restrictions and ease the
+managment of rules.
+
+The JSON structure looks like::
+
+.. code-block:: json
+
+   {
+     "zones": {
+         "public": {
+             "interfaces": [
+                 "br0", "eth0", "em0", "br0:0",
+             ],
+             "rules": [
+                 "rule family=\"ipv4\" to service name=\"snmp\" DROP",
+                 "rule family=\"ipv4\" to service name=\"dns\" ACCEPT",
+                 "rule family=\"ipv4\" to service name=\"http\" ACCEPT",
+                 "rule family=\"ipv4\" to service name=\"https\" ACCEPT",
+                 "rule family=\"ipv4\" to service name=\"smtp\" ACCEPT",
+                 "rule family=\"ipv4\" forward-port port=\"40063\" \
+                  protocol=\"tcp\" to-port=\"161\" to-addr=\"10.7.0.25\"",
+                 "rule family=\"ipv4\" forward-port port=\"40004\" \
+                  protocol=\"udp\" to-port=\"22\" to-addr=\"10.5.0.4\"",
+             ],
+             "target": "REJECT",
+             "services": {
+                 "http": {},
+                 "https": {},
+                 "snmp": {},
+                 "smtp": {},
+                 "rabbitmq": { "port": [ { "port": "15672" },
+                         { "port": "25672" }
+                     ] }, "mysql": { "port": [ { "port": "3306" } ] },
+                 "mumble": { "port": [ { "port": "64738" } ] },
+             },
+             "public_services": [ "http", "https", "smtp", "dns", "ssh" ],
+             "restricted_services": [ "snmp" ]
+         },
+      },
+      "no_cloud_rules": false,
+      "no_default_alias": false,
+      "banned_networks": [],
+      "aliases": 100,
+      "is_container": false,
+      "have_rpn": null,
+      "internal_zones": ["internal", "dmz", "home", "docker", "lxc", "virt"],
+      "public_zones": [ "public", ],
+      "default_zone": "public",
+      "aliased_interfaces": [ "br0", "eth0", "em0" ],
+      "trusted_networks": [],
+      "have_docker": true,
+      "services": {
+          "mongodb": { "port": [ { "port": "27017" } ] },
+          "burp": { "port": [ { "port": "4971-4974" } ] },
+          "mysql": { "port": [ { "port": "3306" } ] },
+          "ssh": {},
+          "snmp": {}
+      },
+      "packages": [ "ipset", "ebtables", "firewalld" ],
+      "trust_internal": true,
+      "have_vpn": null,
+      "permissive_mode": false,
+      "enabled": true,
+      "have_lxc": false,
+      "restricted_services": [ "snmp" ],
+      "public_services": [ "http", "https", "smtp", "dns", "ssh" ]
+   }
+
+
+The script:
+
+    - create zones
+    - create user defined services
+    - activate rich rules onto those rules
+
+Errors are collected but we try not to fail hard and to activate the
+maximum of appliable rules.
+
+'''
 
 import os
 import json
 import argparse
 import six
+import traceback
 import logging
 
 import firewall.client
@@ -16,6 +108,7 @@ from firewall.client import FirewallClientServiceSettings
 
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument("--config", default='/etc/firewalld.json')
+parser.add_argument("--debug", default=False, action='store_true')
 _cache = {}
 
 log = logging.getLogger('makina-states.firewall')
@@ -37,11 +130,13 @@ def lazy_reload():
         _cache['reload'] = False
 
 
-def define_zone(z, zdata, masquerade=None):
+def define_zone(z, zdata, masquerade=None, errors=None):
+    if errors is None:
+        errors = []
     if 'target' in zdata:
-        msg = 'Configure zone: {0}/{1[target]}'
+        msg = 'Configure zone {0}: {1[target]}'
     else:
-        msg = 'Configure zone: {0}'
+        msg = 'Configure zone {0}'
     log.info(msg.format(z, zdata))
     fw = get_firewall()
     if z not in fw.getZones():
@@ -85,11 +180,20 @@ def service_ports(zsettings):
             for a in zsettings.getPorts()]
 
 
-def define_service(z, zdata):
+def define_service(z, zdata, errors=None):
+    if errors is None:
+        errors = []
+    msg = 'configure service {0}'
     if zdata:
-        msg = 'configure service: {0} {1}'
-    else:
-        msg = 'configure service: {0}'
+        if zdata.get('port'):
+            msg += ':'
+        for port in zdata.get('port'):
+            portinfo = "{0}".format(port['port'])
+            port['protocol'] = 'tcp'
+            if 'protocol' in port:
+                portinfo = '{0}/{1}'.format(portinfo, port['protocol'])
+            if portinfo:
+                msg = '{0} {1}'.format(msg, portinfo)
     log.info(msg.format(z, zdata))
     fw = get_firewall()
     aservices = get_services()
@@ -97,6 +201,8 @@ def define_service(z, zdata):
         log.info(' - Service created')
         zsettings = fw.config().addService(
             z, FirewallClientServiceSettings())
+        zsettings.setShort(z)
+        zsettings.setDescription(z)
     else:
         zsettings = aservices[z]
     if 'port' in zdata:
@@ -119,15 +225,26 @@ def define_service(z, zdata):
             log.info(' - Service edited')
             zsettings.setPorts(ports)
             mark_reload()
-    zsettings.setShort(z)
-    zsettings.setDescription(z)
 
 
-def configure_rules(z, zdata):
-    return
+def configure_rules(z, zdata, errors=None):
+    if errors is None:
+        errors = []
+    log.info('Activating filtering rules for zone: {0}'.format(z))
+    for rule in zdata.get('rules', []):
+        try:
+            pass
+        except (Exception)as ex:
+            trace = traceback.format_exc()
+            errors.append({'trace': trace,
+                           'type': 'rules/rule',
+                           'id': z,
+                           'exception': ex})
 
 
-def main():
+def main(errors=None):
+    if errors is None:
+        errors = []
     logging.basicConfig(
         level=logging.DEBUG,
         format='%(asctime)-15s %(name)-5s %(levelname)-6s %(message)s')
@@ -144,17 +261,75 @@ def main():
             # salt-call cache !?
             jconfig = jconfig['local']
     for z, zdata in six.iteritems(jconfig['zones']):
-        masq = z in jconfig['public_zones']
-        if not masq:
-            masq = None
-        define_zone(z, zdata, masquerade=masq)
+        try:
+            masq = z in jconfig['public_zones']
+            if not masq:
+                masq = None
+            define_zone(z, zdata, masquerade=masq, errors=errors)
+        except (Exception,) as ex:
+            trace = traceback.format_exc()
+            errors.append({'trace': trace,
+                           'type': 'zone',
+                           'id': z,
+                           'exception': ex})
     for z, zdata in six.iteritems(jconfig['services']):
-        define_service(z, zdata)
+        try:
+            define_service(z, zdata, errors=errors)
+        except (Exception,) as ex:
+            trace = traceback.format_exc()
+            errors.append({'trace': trace,
+                           'type': 'service',
+                           'id': z,
+                           'exception': ex})
+            log.error(trace)
+    for z, zdata in six.iteritems(jconfig['zones']):
+        try:
+            configure_rules(z, zdata, errors=errors)
+            raise
+        except (Exception,) as ex:
+            trace = traceback.format_exc()
+            errors.append({'trace': trace,
+                           'type': 'rules',
+                           'id': z,
+                           'exception': ex})
     lazy_reload()
+    if errors:
+        log.error('ERRORS WHILE CONFIGURATION OF FIREWALL')
+        for error in errors:
+            try:
+                msg = 'TYPE: {0}'.format(error['type'])
+                if error.get('id'):
+                    msg += ' / id: {0}'.format(error['id'])
+                log.error(msg)
+                try:
+                    log.error('EXCEPTION: {0}'.format(error['exception']))
+                except (Exception,) as ex:
+                    log.error('EXCEPTION:')
+                    log.error(error['exception'])
+                if vopts['debug']:
+                    try:
+                        log.error('TRACE:\n{0}'.format(error['trace']))
+                    except (Exception,) as ex:
+                        log.error('TRACE:')
+                        log.error(error['trace'])
+            except Exception:
+                continue
     log.info('end conf')
+    errortypes = [a['type'] for a in errors]
+    if 'zone' in errortypes:
+        code = 1
+    elif 'service' in errortypes:
+        code = 2
+    elif 'rules' in errortypes:
+        code = 3
+    elif 'rule/rule' in errortypes:
+        code = 4
+    else:
+        code = 0
+    return code
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
 
 # vim:set et sts=4 ts=4 tw=80:
