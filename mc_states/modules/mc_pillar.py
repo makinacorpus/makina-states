@@ -1804,7 +1804,7 @@ def get_firewalld_conf(id_, ttl=PILLAR_TTL):
             buf[prefix + param] = value
         rdata = __salt__['mc_utils.dictupdate'](rdata, buf)
         return rdata
-    cache_key = __name + '.get_firewalld_conf3{0}'.format(id_)
+    cache_key = __name + '.get_firewalld_conf5{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
@@ -1868,7 +1868,7 @@ def get_shorewall_settings(id_=None, ttl=PILLAR_TTL):
             param = 'makina-states.services.firewall.shorewall.' + param
             shw_params[param] = value
         return shw_params
-    cache_key = __name + '.get_shorewall_settings2_{0}'.format(id_)
+    cache_key = __name + '.get_shorewall_settings3_{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
@@ -3150,7 +3150,7 @@ def get_shorewall_conf(id_, ttl=PILLAR_TTL):
             return {}
         rdata.update(__salt__[__name + '.get_shorewall_settings'](id_))
         return rdata
-    cache_key = __name + '.get_shorewall_conf{0}'.format(id_)
+    cache_key = __name + '.get_shorewall_conf1{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
