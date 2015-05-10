@@ -8,13 +8,17 @@ shorewall-disable-stop-shorewall:
     - mode: 750
     - user: root
     - group: root
+    - watch:
+      - mc_proxy: shorewall-predisable
+    - watch_in:
+      - mc_proxy: shorewall-postdisable
   cmd.run:
     - name: /usr/bin/disable-shorewall.sh
     - watch:
       - file: shorewall-disable-stop-shorewall
-      - mc_proxy: shorewall-postconf
+      - mc_proxy: shorewall-predisable
     - watch_in:
-      - mc_proxy: shorewall-prerestart
+      - mc_proxy: shorewall-postdisable
 
 shorewall-disable-makinastates-shorewall:
   file.absent:
@@ -22,9 +26,9 @@ shorewall-disable-makinastates-shorewall:
       - /etc/rc.local.d/shorewall.sh
     - watch:
       - cmd: shorewall-disable-stop-shorewall
-      - mc_proxy: shorewall-postconf
+      - mc_proxy: shorewall-predisable
     - watch_in:
-      - mc_proxy: shorewall-prerestart
+      - mc_proxy: shorewall-postdisable
 
 shorewall-uninstall-shorewall:
   pkg.removed:
@@ -32,6 +36,7 @@ shorewall-uninstall-shorewall:
     - watch:
       - file: shorewall-disable-makinastates-shorewall
       - mc_proxy: shorewall-postconf
+      - mc_proxy: shorewall-predisable
     - watch_in:
-      - mc_proxy: shorewall-prerestart
+      - mc_proxy: shorewall-postdisable
 {%endif %}

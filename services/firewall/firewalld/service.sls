@@ -7,14 +7,14 @@ firewalld-conflicting-services:
   service.dead:
     - names: [iptables, ebtables,
               shorewall, shorewall6]
-    - enabled: false
+    - enable: false
     - watch:
       - mc_proxy: firewalld-prerestart
     - watch_in:
       - mc_proxy: firewalld-postrestart
 firewalld:
   service.running:
-    - enabled: true
+    - enable: true
     - names:
       - firewalld
     - require:
