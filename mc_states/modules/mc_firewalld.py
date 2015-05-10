@@ -401,8 +401,15 @@ def search_aliased_interfaces(data=None):
     return data
 
 
-def add_rule(data, zones=None, **kwargs):
+def add_rule(data, zones=None, rule=None, rules=None, **kwargs):
     rrules = rich_rules(**kwargs)
+    if rules is None:
+        rules = []
+    if isinstance(rule, six.string_types) and rule not in rules:
+        rules.append(rule)
+    for i in rules:
+        if i not in rrules:
+            rrules.append(rule)
     if not zones:
         zones = [z for z in data['zones']]
     for z in zones:
@@ -453,6 +460,9 @@ def add_zones_policies(data=None):
             t = 'reject'
         zone = data['zones'].setdefault(z, {})
         zone.setdefault('target', t)
+    if not data.get('no_ping', False):
+        rule = 'rule family="ipv4" protocol value="icmp" accept'
+        add_rule(data, rule=rule)
     for network in data['banned_networks']:
         add_rule(data, source=network, action='drop')
     for network in data['trusted_networks']:
@@ -570,6 +580,7 @@ def default_settings():
         # list of mappings
         'no_cloud_rules': False,
         'no_salt': False,
+        'no_ping': False,
         'no_default_alias': False,
         'packages': ['ipset', 'ebtables', 'firewalld'],
         'zones': OrderedDict([
