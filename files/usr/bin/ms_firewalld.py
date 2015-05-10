@@ -100,6 +100,7 @@ import argparse
 import six
 import traceback
 import logging
+import time
 
 import firewall.client
 from firewall.client import FirewallClient
@@ -112,11 +113,20 @@ parser.add_argument("--debug", default=False, action='store_true')
 _cache = {}
 
 log = logging.getLogger('makina-states.firewall')
+TIMEOUT = 60
 
 
 def get_firewall():
     if _cache.get('f') is None:
-        _cache['f'] = FirewallClient()
+        ttl = time.time() + TIMEOUT
+        while (_cache.get('f') is None) and (time.time() < ttl):
+            _cache['f'] = FirewallClient()
+            if _cache['f'] is not None:
+                break
+            else:
+                time.sleep(0.01)
+    if _cache.get('f') is None:
+        raise IOError('Cant contact firewalld daemon interface')
     return _cache['f']
 
 
