@@ -377,28 +377,11 @@ ssh_groups:
 # Configuration overrides for makina-states's firewalld integration
 # We install firewalld everywhere by default.
 # firewalld_overrides:
-#   provider1-dc1-2.mydomain.tld:
-#     no_ftp: False
-#     no_postgresql: False
-#     params.RESTRICTED_FTP: "all"
-#     params.RESTRICTED_POSTGRESQL: "net:all"
-#   provider1-dc1-1.mydomain.tld:
-#     params.superapp8: 128.5.128.1
-#     rules:
-#       - {comment: 'ssh temporary access'}
-#       - {action: DNAT, source: net, dest: 'lxc:${SALT_superapp8}:22', proto: tcp, dport: 2232}
-#   provider3-99.mydomain.tld:
-#     rules:
-#       - {comment: 'app'}
-#       - {action: ACCEPT, source: net, dest: '$FW', proto: tcp, dport: 1020}
-#       - {comment: 'ftp range'}
-#       - {action: ACCEPT, source: net, dest: '$FW', proto: tcp, dport: '20547:32645'}
-#       - {comment: 'trac'}
-#       - {action: ACCEPT, source: net, dest: '$FW', proto: tcp, dport: '888'}
-#     params.RESTRICTED_SSH: all
-#     no_dns: false
-#     no_smtp: false
-#     no_ftp: false
+#   a.foo.net:
+#     zones.public.services-append: [dns]
+#     zones.public.interfaces-append: [xm1]
+#     zones.public.add-rules:
+#       - "rule family="ipv4" forward-port port="476" protocol="tcp" to-port="22" to-addr="10.7.0.29"
 
 # Mapping of FQDN -> ip failover
 # - This will add an A record whith FQDN as owner and IP as target

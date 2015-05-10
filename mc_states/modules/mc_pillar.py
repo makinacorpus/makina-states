@@ -48,6 +48,7 @@ ONE_DAY = mc_states.api.ONE_DAY
 HALF_DAY = mc_states.api.HALF_DAY
 ONE_MONTH = mc_states.api.ONE_MONTH
 ONE_YEAR = ONE_MONTH * 12
+FIREWALLD_MANAGED = False
 
 # pillar cache is never expired, only if we detect a change on the database file
 PILLAR_TTL = ONE_YEAR
@@ -1772,10 +1773,48 @@ def get_snmpd_settings(id_=None, ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
+def get_firewalld_conf(id_, ttl=PILLAR_TTL):
+    def _do(id_):
+        _s = __salt__
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_firewalld', FIREWALLD_MANAGED):
+            return {}
+        p = 'makina-states.services.firewall.firewalld'
+        prefix = p + '.'
+        qry = _s[__name + '.query']
+        allowed_ips = _s[__name + '.whitelisted'](id_)
+        firewalld_overrides = qry('firewalld_overrides', {})
+        rdata = OrderedDict([
+           (p, True),
+           (prefix + 'trusted_networks', allowed_ips)
+        ])
+        pservices = rdata.setdefault('public_services-append', [])
+        is_ldap = is_ldap_master(id_) or is_ldap_slave(id_)
+        is_dns = is_dns_master(id_) or is_dns_slave(id_)
+        if is_ldap:
+            for i in ['ldap', 'ldaps']:
+                if i not in pservices:
+                    pservices.append(i)
+        if is_dns:
+            for i in ['dns']:
+                if i not in pservices:
+                    pservices.append(i)
+        buf = OrderedDict()
+        for param, value in firewalld_overrides.get(id_, {}).items():
+            buf[prefix + param] = value
+        rdata = __salt__['mc_utils.dictupdate'](rdata, buf)
+        return rdata
+    cache_key = __name + '.get_firewalld_conf2{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+
+
 def get_shorewall_settings(id_=None, ttl=PILLAR_TTL):
     def _do(id_, sysadmins=None):
         gconf = get_configuration(id_)
-        if not gconf.get('manage_shorewall', True):
+        managed = gconf.get('manage_shorewall', True)
+        if gconf.get('manage_firewalld', FIREWALLD_MANAGED):
+            managed = False
+        if not managed:
             return {}
         qry = __salt__[__name + '.query']
         allowed_ips = __salt__[__name + '.whitelisted'](id_)
@@ -1829,7 +1868,7 @@ def get_shorewall_settings(id_=None, ttl=PILLAR_TTL):
             param = 'makina-states.services.firewall.shorewall.' + param
             shw_params[param] = value
         return shw_params
-    cache_key = __name + '.get_shorewall_settings_{0}'.format(id_)
+    cache_key = __name + '.get_shorewall_settings2_{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
@@ -3559,6 +3598,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         __name + '.get_mail_conf': {'only_managed': False},
         __name + '.get_packages_conf': {'only_managed': False},
         __name + '.get_pkgmgr_conf': {'only_managed': False},
+        __name + '.get_firewalld_conf': {'only_managed': False},
         __name + '.get_shorewall_conf': {'only_managed': False},
         __name + '.get_snmpd_conf': {'only_known': False},
         __name + '.get_burp_server_conf': {},

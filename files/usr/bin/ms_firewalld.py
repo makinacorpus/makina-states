@@ -227,6 +227,35 @@ def define_service(z, zdata, errors=None):
             mark_reload()
 
 
+def link_interfaces(z, zdata, errors=None):
+    if errors is None:
+        errors = []
+    log.info('Linking interfaces for zone: {0}'.format(z))
+    fw = get_firewall()
+    zones = fw.getZones()
+    if z not in zones:
+        errors.append({'trace': '',
+                       'type': 'interface/nozone',
+                       'id': z,
+                       'exception': ValueError('no {0}'.format(z))})
+    for ifc in zdata.get('interfaces', []):
+        try:
+            zn = z.lower()
+            zone = fw.getZoneOfInterface(ifc)
+            if not isinstance(zone, basestring):
+                zone = ''
+            zone = zone.lower()
+            if zone != zn:
+                zone = fw.changeZoneOfInterface(z, ifc)
+                log.info('Moved {0} to zone {1}'.format(ifc, zone))
+        except (Exception,) as ex:
+            trace = traceback.format_exc()
+            errors.append({'trace': trace,
+                           'type': 'interface',
+                           'id': "{0}/{1}".format(z, ifc),
+                           'exception': ex})
+
+
 def configure_rules(z, zdata, errors=None):
     if errors is None:
         errors = []
@@ -246,7 +275,7 @@ def configure_rules(z, zdata, errors=None):
             trace = traceback.format_exc()
             errors.append({'trace': trace,
                            'type': 'rules/rule',
-                           'id': z,
+                           'id': "{0}/{1}".format(z, rule),
                            'exception': ex})
 
 
@@ -290,6 +319,17 @@ def main(errors=None):
                            'id': z,
                            'exception': ex})
             log.error(trace)
+
+    for z, zdata in six.iteritems(jconfig['zones']):
+        try:
+            link_interfaces(z, zdata, errors=errors)
+        except (Exception,) as ex:
+            trace = traceback.format_exc()
+            errors.append({'trace': trace,
+                           'type': 'interfaces',
+                           'id': z,
+                           'exception': ex})
+
     for z, zdata in six.iteritems(jconfig['zones']):
         try:
             configure_rules(z, zdata, errors=errors)
