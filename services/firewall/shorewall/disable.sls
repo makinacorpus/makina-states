@@ -35,7 +35,6 @@ shorewall-uninstall-shorewall:
     - pkgs: [shorewall, shorewall6]
     - watch:
       - file: shorewall-disable-makinastates-shorewall
-      - mc_proxy: shorewall-postconf
       - mc_proxy: shorewall-predisable
     - watch_in:
       - mc_proxy: shorewall-postdisable
