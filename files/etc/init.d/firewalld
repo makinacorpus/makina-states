@@ -36,11 +36,6 @@ SCRIPTNAME=/etc/init.d/$NAME
 do_makina_rules() {
     if [ -x /usr/bin/ms_firewalld.py ];then
         /usr/bin/ms_firewalld.py
-        # on the first run, we can fail the first time
-        # specially when switching from another fw (shorewall)
-        if [ "${?}" != "x0" ];then
-            /usr/bin/ms_firewalld.py
-        fi
     fi
 }
 
