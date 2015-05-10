@@ -20,7 +20,7 @@ firewalld:
     - require:
       - service: firewalld-conflicting-services
       - mc_proxy: firewalld-prerestart
-    - require:
+    - require_in:
       - mc_proxy: firewalld-postrestart
 
 firewalld-reapply:
