@@ -116,7 +116,22 @@ log = logging.getLogger('makina-states.firewall')
 TIMEOUT = 60
 
 
-def get_firewall():
+def fw():
+    '''
+    Do no cache calls, and get a client, everytime
+    to catch dbus hickups on restart
+    '''
+    if _cache.get('f') is not None:
+        try:
+            assert (
+                _cache['f'].getRichRules('public') is not None
+            )
+            time.sleep(0.01)
+            assert _cache['f'].getZones() is not None
+        except (Exception,):
+            cl = _cache.pop('f', None)
+            if cl is not None:
+                del cl
     if _cache.get('f') is None:
         ttl = time.time() + TIMEOUT
         while (_cache.get('f') is None) and (time.time() < ttl):
@@ -136,8 +151,25 @@ def mark_reload():
 
 def lazy_reload():
     if _cache.get('reload'):
-        get_firewall().reload()
+        fw().reload()
         _cache['reload'] = False
+
+
+def get_zones():
+    '''
+    Early stage wrapper to avoid dbus hicups
+    '''
+    zones = None
+    ttl = time.time() + TIMEOUT
+    while (zones is None) and (time.time() < ttl):
+        try:
+            zones = fw().getZones()
+            break
+        except (Exception):
+            time.sleep(0.01)
+    if zones is None:
+        raise IOError('Cant get firewall zones')
+    return zones
 
 
 def define_zone(z, zdata, masquerade=None, errors=None):
@@ -148,16 +180,15 @@ def define_zone(z, zdata, masquerade=None, errors=None):
     else:
         msg = 'Configure zone {0}'
     log.info(msg.format(z, zdata))
-    fw = get_firewall()
-    if z not in fw.getZones():
-        zn = fw.config().addZone(
+    if z not in get_zones():
+        zn = fw().config().addZone(
             z, FirewallClientZoneSettings())
         zn.setShort(z)
         zn.setDescription(z)
         log.info(' - Zone created')
         mark_reload()
     else:
-        zn = fw.config().getZoneByName(z)
+        zn = fw().config().getZoneByName(z)
     if masquerade is not None:
         cmask = bool(zn.getMasquerade())
         if cmask is not masquerade:
@@ -176,12 +207,15 @@ def define_zone(z, zdata, masquerade=None, errors=None):
                 mark_reload()
 
 
-def get_services():
-    fw = get_firewall()
-    ss = [fw.config().getService(a) for a in fw.config().listServices()]
-    services = {}
-    for i in ss:
-        services[i.get_properties()['name']] = i
+def get_services(cache=True):
+    services = _cache.get('s', {})
+    if not services or not cache:
+        ss = [fw().config().getService(a)
+              for a in fw().config().listServices()]
+        services = {}
+        for i in ss:
+            services[i.get_properties()['name']] = i
+        _cache['s'] = services
     return services
 
 
@@ -205,11 +239,12 @@ def define_service(z, zdata, errors=None):
             if portinfo:
                 msg = '{0} {1}'.format(msg, portinfo)
     log.info(msg.format(z, zdata))
-    fw = get_firewall()
     aservices = get_services()
     if z not in aservices:
+        aservices = get_services(cache=False)
+    if z not in aservices:
         log.info(' - Service created')
-        zsettings = fw.config().addService(
+        zsettings = fw().config().addService(
             z, FirewallClientServiceSettings())
         zsettings.setShort(z)
         zsettings.setDescription(z)
@@ -232,17 +267,16 @@ def define_service(z, zdata, errors=None):
                 if p not in sports:
                     diff = True
         if diff:
-            log.info(' - Service edited')
             zsettings.setPorts(ports)
             mark_reload()
+            log.info(' - Service edited')
 
 
 def link_interfaces(z, zdata, errors=None):
     if errors is None:
         errors = []
     log.info('Linking interfaces for zone: {0}'.format(z))
-    fw = get_firewall()
-    zones = fw.getZones()
+    zones = get_zones()
     if z not in zones:
         errors.append({'trace': '',
                        'type': 'interface/nozone',
@@ -251,12 +285,12 @@ def link_interfaces(z, zdata, errors=None):
     for ifc in zdata.get('interfaces', []):
         try:
             zn = z.lower()
-            zone = fw.getZoneOfInterface(ifc)
+            zone = fw().getZoneOfInterface(ifc)
             if not isinstance(zone, basestring):
                 zone = ''
             zone = zone.lower()
             if zone != zn:
-                zone = fw.changeZoneOfInterface(z, ifc)
+                zone = fw().changeZoneOfInterface(z, ifc)
                 log.info('Moved {0} to zone {1}'.format(ifc, zone))
         except (Exception,) as ex:
             trace = traceback.format_exc()
@@ -266,19 +300,27 @@ def link_interfaces(z, zdata, errors=None):
                            'exception': ex})
 
 
+def get_rules(z, cache=True):
+    k = 'rules_{0}'.format(z)
+    rules = _cache.get(k, [])
+    if not rules or not cache:
+        rules = fw().getRichRules(z)
+        _cache[k] = rules
+    return rules
+
+
 def configure_rules(z, zdata, errors=None):
     if errors is None:
         errors = []
     log.info('Activating filtering rules for zone: {0}'.format(z))
-    fw = get_firewall()
     for rule in zdata.get('rules', []):
         try:
-            rules = fw.getRichRules(z)
-            if 'http' in rule:
-                rule = rule.replace('accept', 'drop')
+            rules = get_rules(z)
+            if rule not in rules:
+                rules = get_rules(z, cache=False)
             if rule not in rules:
                 log.info(' - Add {0}'.format(rule))
-                fw.addRichRule(z, rule)
+                fw().addRichRule(z, rule)
             else:
                 log.info(' - Already activated: {0}'.format(rule))
         except (Exception)as ex:
@@ -381,6 +423,10 @@ def main(errors=None):
         code = 3
     elif 'rule/rule' in errortypes:
         code = 4
+    elif 'interface' in errortypes:
+        code = 5
+    elif 'interfaces' in errortypes:
+        code = 6
     elif len(errors):
         code = 255
     else:

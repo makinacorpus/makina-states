@@ -1788,7 +1788,7 @@ def get_firewalld_conf(id_, ttl=PILLAR_TTL):
            (p, True),
            (prefix + 'trusted_networks', allowed_ips)
         ])
-        pservices = rdata.setdefault('public_services-append', [])
+        pservices = rdata.setdefault(prefix+'public_services-append', [])
         is_ldap = is_ldap_master(id_) or is_ldap_slave(id_)
         is_dns = is_dns_master(id_) or is_dns_slave(id_)
         if is_ldap:
@@ -1804,7 +1804,7 @@ def get_firewalld_conf(id_, ttl=PILLAR_TTL):
             buf[prefix + param] = value
         rdata = __salt__['mc_utils.dictupdate'](rdata, buf)
         return rdata
-    cache_key = __name + '.get_firewalld_conf2{0}'.format(id_)
+    cache_key = __name + '.get_firewalld_conf3{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
