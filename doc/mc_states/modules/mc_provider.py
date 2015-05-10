@@ -177,4 +177,11 @@ def ovh_client(**kw):
         ckw[i] = kw.setdefault(i, get_ovh_opt(i, domain=domain))
     client = ovh.Client(**ckw)
     return client
+
+
+def have_rpn():
+    _s = __salt__
+    providers = _s['mc_provider.settings']()
+    have_rpn = providers['have_rpn']
+    return have_rpn
 # vim:set et sts=4 ts=4 tw=80:

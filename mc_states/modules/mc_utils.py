@@ -543,17 +543,18 @@ def defaults(prefix,
     Magic defaults settings configuration getter
 
     - Get the "prefix" value from the configuration (pillar/grain)
-    - Then overrides it with  "datadict" mapping recursively
-        - If
-            - the datadict contains a key "{prefix}-overrides
-            - AND value is a dict or  a list:
+    - Then overrides or append to it with the corresponding
+      key in the given "datadict" if value is a dict or a list.
 
-                Take that as a value for the the value /subtree
+      - If we get from pillar/grains/local from the curent key in the form:
+        "{prefix}-overrides: it overrides totally the original value.
+      - if the datadict contains a key "{prefix}-append and
+        the value is a list, it appends to the original value
 
-        - If the datadict contains a key "{prefix}":
-            - If a list: append to the list the default list in conf
-            - Elif a dict: update the default dictionnary with the one in conf
-            - Else take that as a value if the value is not a mapping or a list
+    - If the datadict contains a key "{prefix}":
+        - If a list: override to the list the default list in conf
+        - Elif a dict: update the default dictionnary with the one in conf
+        - Else take that as a value if the value is not a mapping or a list
     '''
     if not ignored_keys:
         ignored_keys = []
@@ -598,12 +599,16 @@ def defaults(prefix,
             k = '{0}.{1}'.format(magicstring(prefix), magicstring(a))
             if to_unicode:
                 k = k.decode('utf-8')
-            pkeys[a] = (k , datadict[a])
+            pkeys[a] = (k, datadict[a])
     for key, value_data in pkeys.items():
         value_key, default_value = value_data
         # special key to completly overrides the dictionnary
+        avalue = _default_marker
         value = __salt__['mc_utils.get'](
             value_key + "-overrides", _default_marker)
+        if isinstance(default_value, list):
+            avalue = __salt__['mc_utils.get'](
+                value_key + "-append", _default_marker)
         if value is not _default_marker:
             overridden[prefix][key] = value
         else:
@@ -616,14 +621,16 @@ def defaults(prefix,
             else:
                 nvalue = default_value[:]
                 if (
-                    value
-                    and (value != nvalue)
-                    and (value is not _default_marker)
+                    value and
+                    (value != nvalue) and
+                    (value is not _default_marker)
                 ):
                     if nvalue is None:
                         nvalue = []
                     nvalue.extend(value)
                 value = nvalue
+            if isinstance(avalue, list):
+                value.extend(avalue)
         elif isinstance(value, dict):
             # recurvive and conservative dictupdate
             ndefaults = defaults(value_key,
@@ -640,7 +647,6 @@ def defaults(prefix,
             for k, subvalue in get_uniq_keys_for(value_key).items():
                 ndefaults[k.split('{0}.'.format(value_key))[1]] = subvalue
             value = __salt__['mc_utils.dictupdate'](default_value, ndefaults)
-
         datadict[key] = value
         for k, value in overridden[prefix].items():
             datadict[k] = value

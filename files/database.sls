@@ -90,6 +90,7 @@ format: 1
 #   - manage_packages: switch to configure the package manager
 #   - manage_passwords: switch to configure passwords for root,
 #   - manage_shorewall: switch to activate and configure shorewall
+#   - manage_firewalld: switch to activate and configure firewalld
 #   - manage_slapd: switch to activate slapd servers configuration
 #   - manage_snmpd: switch to configure snmpd (v3), see snmpd_settings
 #   - manage_ssh_groups: switch to configure ssh allowed groups
@@ -144,6 +145,7 @@ configurations:
     cloud_master: false
     manage_exposed_glocal_conf: false
     ldap_client: false
+    manage_firewalld: false
     manage_backup_server: false
     manage_check_raid: false
     manage_custompillar: false
@@ -371,31 +373,15 @@ ssh_groups:
 #     - hosts: a.foo.com
 #     - hosts: b.foo.com
 
-# Configuration overrides for makina-states's shorewall integration
-# We install shorewall everywhere by default.
-# shorewall_overrides:
-#   provider1-dc1-2.mydomain.tld:
-#     no_ftp: False
-#     no_postgresql: False
-#     params.RESTRICTED_FTP: "all"
-#     params.RESTRICTED_POSTGRESQL: "net:all"
-#   provider1-dc1-1.mydomain.tld:
-#     params.superapp8: 128.5.128.1
-#     rules:
-#       - {comment: 'ssh temporary access'}
-#       - {action: DNAT, source: net, dest: 'lxc:${SALT_superapp8}:22', proto: tcp, dport: 2232}
-#   provider3-99.mydomain.tld:
-#     rules:
-#       - {comment: 'app'}
-#       - {action: ACCEPT, source: net, dest: '$FW', proto: tcp, dport: 1020}
-#       - {comment: 'ftp range'}
-#       - {action: ACCEPT, source: net, dest: '$FW', proto: tcp, dport: '20547:32645'}
-#       - {comment: 'trac'}
-#       - {action: ACCEPT, source: net, dest: '$FW', proto: tcp, dport: '888'}
-#     params.RESTRICTED_SSH: all
-#     no_dns: false
-#     no_smtp: false
-#     no_ftp: false
+
+# Configuration overrides for makina-states's firewalld integration
+# We install firewalld everywhere by default.
+# firewalld_overrides:
+#   a.foo.net:
+#     zones.public.services-append: [dns]
+#     zones.public.interfaces-append: [xm1]
+#     zones.public.add-rules:
+#       - "rule family="ipv4" forward-port port="476" protocol="tcp" to-port="22" to-addr="10.7.0.29"
 
 # Mapping of FQDN -> ip failover
 # - This will add an A record whith FQDN as owner and IP as target
@@ -884,4 +870,33 @@ backup_configurations:
 #     apt.ubuntu.mirror: http://ubuntu-archive.mirrors.proxad.net/ubuntu/
 #   default:
 #     apt.ubuntu.mirror: http://mirror.ovh.net/ftp.ubuntu.com/
+
+# Configuration overrides for makina-states's shorewall integration
+# We install shorewall everywhere by default.
+# WARNING SHOREWALL IS OBSOLETE, FOR NOW MAKINASTATES HAS SWITCHED TO FIREWALLD
+# shorewall_overrides:
+#   provider1-dc1-2.mydomain.tld:
+#     no_ftp: False
+#     no_postgresql: False
+#     params.RESTRICTED_FTP: "all"
+#     params.RESTRICTED_POSTGRESQL: "net:all"
+#   provider1-dc1-1.mydomain.tld:
+#     params.superapp8: 128.5.128.1
+#     rules:
+#       - {comment: 'ssh temporary access'}
+#       - {action: DNAT, source: net, dest: 'lxc:${SALT_superapp8}:22', proto: tcp, dport: 2232}
+#   provider3-99.mydomain.tld:
+#     rules:
+#       - {comment: 'app'}
+#       - {action: ACCEPT, source: net, dest: '$FW', proto: tcp, dport: 1020}
+#       - {comment: 'ftp range'}
+#       - {action: ACCEPT, source: net, dest: '$FW', proto: tcp, dport: '20547:32645'}
+#       - {comment: 'trac'}
+#       - {action: ACCEPT, source: net, dest: '$FW', proto: tcp, dport: '888'}
+#     params.RESTRICTED_SSH: all
+#     no_dns: false
+#     no_smtp: false
+#     no_ftp: false
+ 
+
 # vim: set ft=yaml sts=2 ts=2 ai et:

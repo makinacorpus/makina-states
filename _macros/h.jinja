@@ -1,0 +1,26 @@
+{% macro deliver_config_files(confs,
+                              prefix='config-',
+                              after_macro=None,
+                              user='root',
+                              group='root',
+                              mode=750,
+                              makedirs=True,
+                              template='jinja') %}
+{% for f, fdata in confs.items() %}
+{% set templated = fdata.get('template', template) %}
+{{prefix}}{{f}}:
+  file.managed:
+    - name: "{{fdata.get('target', f)}}"
+    - source: "{{fdata.get('source', 'salt://makina-states/files'+f)}}"
+    - mode: "{{fdata.get('mode', mode)}}"
+    - user: "{{fdata.get('user', user)}}"
+    - group:  "{{fdata.get('group', group)}}"
+    {% if fdata.get('makedirs', makedirs) %}
+    - makedirs: true
+    {% endif %}
+    {% if template %}
+    - template: "{{template}}"
+    {%endif%}
+{% if after_macro %}{{ after_macro() }}{% endif %}
+{% endfor %}
+{% endmacro %}

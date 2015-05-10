@@ -8,7 +8,6 @@ mc_ulogd / ulogd functions
 
 # Import python libs
 import logging
-import os
 import mc_states.api
 
 __name = 'ulogd'
@@ -19,31 +18,28 @@ log = logging.getLogger(__name__)
 def settings():
     '''
     ulogd settings
-
-
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         grains = __grains__
-        pillar = __pillar__
-        nt_reg = __salt__['mc_nodetypes.registry']()
-        locs = __salt__['mc_locations.settings']()
-        service = 'ulogd'
+        utemplate = (
+            'salt://makina-states/files/etc/ulogd.conf')
+        service = 'ulogd2'
         if (
-            grains['os'] in ['Ubuntu'] 
-            and (grains.get('oscodename', '') not in ['precise'])
+            grains['os'] in ['Ubuntu'] and
+            (grains.get('oscodename', '') in ['precise'])
         ):
-            service = 'ulogd2'
+            utemplate = (
+                'salt://makina-states/files/etc/ulogd1.conf')
+            service = 'ulogd'
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.log.ulogd', {
                 'ulog_emu': True,
                 'nflog_emu': True,
                 'service_name': service,
-            }
-        )
+                'confs': {'/etc/logrotate.d/ulogd2': {"mode": "644"},
+                          "/etc/ulogd.conf": {
+                              "source": utemplate,
+                              "mode": "644"}}})
         return data
     return _settings()
-
-
-
-#
