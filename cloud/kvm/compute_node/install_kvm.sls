@@ -1,7 +1,7 @@
 {% set data = salt['mc_cloud_compute_node.settings']() %}
 {% set vmdata = salt['mc_cloud_vm.settings']() %}
 include:
-  - makina-states.services.firewall.shorewall
+  - makina-states.services.firewall.firewall
   - makina-states.services.virt.kvm
 
 {% if grains['os'] not in ['Ubuntu'] %}

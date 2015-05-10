@@ -7,10 +7,5 @@ include:
   - makina-states.services.backup.burp.server.configuration
   - makina-states.services.backup.burp.server.cron
   - makina-states.services.backup.burp.server.services
-{% if salt['mc_services.registry']()['is']['firewall.shorewall'] %}
-  - makina-states.services.firewall.shorewall
-{% endif %}
-{% if salt['mc_services.registry']()['is']['firewall.firewalld'] %}
-  - makina-states.services.firewall.firewalld
-{% endif %}
+  - makina-states.services.firewall.firewall
 {% endif %}

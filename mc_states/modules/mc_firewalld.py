@@ -283,7 +283,7 @@ def rich_rules(families=None,
                         log_level=log_level,
                         log_prefix=log_prefix,
                         limit=limit)
-                    add_dest_rules([], rules, rule, endrule)
+                    add_dest_rules(destinations, rules, rule, endrule)
             for svc in services:
                 rule = 'rule'
                 if family:
@@ -464,9 +464,17 @@ def add_services_policies(data=None):
     data = fix_data(data)
     _s = __salt__
     burpsettings = _s['mc_burp.settings']()
+    controllers_registry = _s['mc_controllers.registry']()
     for i in ['public_services', 'restricted_services']:
         for s in data[i]:
             data['services'].setdefault(s, {})
+    if not data.get('no_salt', False):
+        if controllers_registry['is']['salt_master']:
+            if 'salt' not in data['public_services']:
+                data['public_services'].append('salt')
+        if controllers_registry['is']['mastersalt_master']:
+            if 'mastersalt' not in data['public_services']:
+                data['public_services'].append('mastersalt')
     for z in [a for a in data['zones'] if a != 'trusted']:
         zdata = data['zones'][z]
         services = zdata.setdefault('services', {})
@@ -561,6 +569,7 @@ def default_settings():
         'trusted_networks': [],
         # list of mappings
         'no_cloud_rules': False,
+        'no_salt': False,
         'no_default_alias': False,
         'packages': ['ipset', 'ebtables', 'firewalld'],
         'zones': OrderedDict([
