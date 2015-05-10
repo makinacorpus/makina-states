@@ -17,10 +17,10 @@ firewalld:
     - enabled: true
     - names:
       - firewalld
-    - watch:
+    - require:
       - service: firewalld-conflicting-services
       - mc_proxy: firewalld-prerestart
-    - watch_in:
+    - require_in:
       - mc_proxy: firewalld-postrestart
 
 firewalld-reapply:
