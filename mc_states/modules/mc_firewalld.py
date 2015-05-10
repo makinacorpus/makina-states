@@ -291,7 +291,7 @@ def rich_rules(families=None,
                 if src and src not in ['address="0.0.0.0"']:
                     rule += ' source {0}'.format(src)
                 if svc:
-                    rule += ' to service name="{0}"'.format(svc)
+                    rule += ' service name="{0}"'.format(svc)
                 endrule = get_endrule(
                     audit=audit,
                     log=log,
@@ -441,16 +441,16 @@ def add_zones_policies(data=None):
     data = fix_data(data)
     for z in data['public_zones']:
         if data['permissive_mode']:
-            t = 'ACCEPT'
+            t = 'accept'
         else:
-            t = 'REJECT'
+            t = 'reject'
         zone = data['zones'].setdefault(z, {})
         zone.setdefault('target', t)
     for z in data['internal_zones']:
         if data['trust_internal']:
-            t = 'ACCEPT'
+            t = 'accept'
         else:
-            t = 'REJECT'
+            t = 'reject'
         zone = data['zones'].setdefault(z, {})
         zone.setdefault('target', t)
     for network in data['banned_networks']:
@@ -518,7 +518,7 @@ def add_services_policies(data=None):
             if s and sources and not policy:
                 policy = 'accept'
             if policy:
-                policy = policy.upper()
+                policy = policy.lower()
             if not (sources or policy):
                 continue
             add_rule(
@@ -567,14 +567,14 @@ def default_settings():
             ('block', {}),
             ('drop', {}),
             ('trusted', {'interfaces': ['lo']}),
-            ('dmz', {'target': 'ACCEPT'}),
-            ('rpn', {'target': 'ACCEPT'}),
-            ('virt', {'target': 'ACCEPT',
+            ('dmz', {'target': 'accept'}),
+            ('rpn', {'target': 'accept'}),
+            ('virt', {'target': 'accept',
                       'interfaces': ['virbr0', 'vibr0',
                                      'virbr1', 'vibr1']}),
-            ('lxc', {'target': 'ACCEPT',
+            ('lxc', {'target': 'accept',
                      'interfaces': ['lxcbr0', 'lxcbr1']}),
-            ('docker', {'target': 'ACCEPT',
+            ('docker', {'target': 'accept',
                         'interfaces': ['docker0', 'docker1']}),
             ('internal', {'interfaces': ['eth1', 'em1']}),
             ('public', {'interfaces': ['br0', 'eth0', 'em0']}),
@@ -609,10 +609,13 @@ def default_settings():
         #
         'permissive_mode': is_permissive(),
         'trust_internal': None,
-        'extra_confs': {'/etc/default/firewalld': {}},
-        # retro compat
-        'enabled': _s['mc_utils.get'](
-            'makina-states.services.firewalld.enabled', True)}
+        'extra_confs': {
+            '/etc/default/firewalld': {},
+            '/etc/firewalld.json': {'mode': '644'},
+            '/etc/init.d/firewalld': {'mode': '755'},
+            '/etc/systemd/system/firewalld.service': {'mode': '644'},
+            '/usr/bin/ms_firewalld.py': {'mode': '755'}
+        }}
     data = _s['mc_utils.defaults'](PREFIX, DEFAULTS)
     if data['trust_internal'] is None:
         data['trust_internal'] = True
@@ -666,7 +669,7 @@ def settings():
             port=22, action='drop'
           )- {{i}} {% endfor %}
           {% for i in salt['mc_firewalld.rich_rules'](
-            forward_port={'port': 1122, 'addr': '1.2.3.4'}, 'port'=22
+            forward_port={'port': 1122, 'to_addr': '1.2.3.4', 'to_port'=22}
           )- {{i}} {% endfor %}
         makina-states.services.firewall.firewalld.zones.public.rules-bar:
           - "rule service name="ftp" log limit value="1/m" audit accept"

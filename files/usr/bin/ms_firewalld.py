@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -159,7 +159,7 @@ def define_zone(z, zdata, masquerade=None, errors=None):
         if target:
             target = {
                 'reject': '%%REJECT%%'
-            }.get(target.lower(), target.upper())
+            }.get(target.lower(), target.upper()).upper()
             if ztarget != target:
                 log.info(' - Zone edited')
                 zn.setTarget(target)
@@ -231,9 +231,17 @@ def configure_rules(z, zdata, errors=None):
     if errors is None:
         errors = []
     log.info('Activating filtering rules for zone: {0}'.format(z))
+    fw = get_firewall()
     for rule in zdata.get('rules', []):
         try:
-            pass
+            rules = fw.getRichRules(z)
+            if 'http' in rule:
+                rule = rule.replace('accept', 'drop')
+            if rule not in rules:
+                log.info(' - Add {0}'.format(rule))
+                fw.addRichRule(z, rule)
+            else:
+                log.info(' - Already activated: {0}'.format(rule))
         except (Exception)as ex:
             trace = traceback.format_exc()
             errors.append({'trace': trace,

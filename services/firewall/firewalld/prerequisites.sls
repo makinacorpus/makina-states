@@ -1,4 +1,6 @@
-{% set settings = salt['mc_firewalld.settings']() %}
+{% set data = salt['mc_firewalld.settings']() %}
+{% set pkgs = salt['mc_pkgs.settings']() %}
+{% set dist = pkgs.dist %}
 include:
   - makina-states.services.firewall.firewalld.hooks
 {% if salt['mc_controllers.mastersalt_mode']() %}
@@ -11,11 +13,7 @@ firewalld-repo:
     - keyid: 207A7A4E
     - keyserver: keyserver.ubuntu.com
     - watch:
-      - mc_proxy: firewalld-pre-install-hook 
-  pkgrepo.managed:
-    - pkgs: {{data.packages}}
-    - require_in:
-      - mc_proxy: firewalld-postinstall 
+      - mc_proxy: firewalld-preinstall
 firewalld-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs: {{data.packages}}

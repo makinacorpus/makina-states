@@ -1,15 +1,23 @@
+{% set firewalld = salt['mc_services.registry']()['is'].get('firewall.firewalld') %}
+{% if not firewalld %}
 {{ salt['mc_macros.register']('services', 'firewall.shorewall') }}
-
+{% else %}
+{{ salt['mc_macros.unregister']('services', 'firewall.shorewall') }}
+{% endif %}
 include:
   - makina-states.services.virt.lxc.hooks
   - makina-states.services.virt.docker.hooks
   - makina-states.services.firewall.shorewall.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+  {% if salt['mc_controllers.mastersalt_mode']() %}
+  {% if firewalld %}
+  - makina-states.services.firewall.shorewall.disable
+  {% else %}                                        
   - makina-states.localsettings.localrc
   - makina-states.services.firewall.shorewall.prerequisites
   - makina-states.services.firewall.shorewall.configuration
   - makina-states.services.firewall.shorewall.service
-{% endif %}
+  {% endif %}
+  {% endif %}
 shorewall-orchestrate:
   mc_proxy.hook:
     - watch:

@@ -64,8 +64,8 @@ class TestCase(base.ModuleCase):
              ' destination address="1.2.3.5" drop',
              'rule family="ipv4" port port="2222" protocol="tcp"'
              ' destination address="1.2.3.5" drop',
-             'rule family="ipv4" to service name="http" drop',
-             'rule family="ipv4" to service name="dns" drop']
+             'rule family="ipv4" service name="http" drop',
+             'rule family="ipv4" service name="dns" drop']
         )
         rules = self._('mc_firewalld.rich_rule')(
                 port=2222,
@@ -95,7 +95,7 @@ class TestCase(base.ModuleCase):
              ' protocol="udp" to-addr="1.2.3.4"',
              'rule family="ipv4" forward-port port="22"'
              ' protocol="tcp" to-addr="1.2.3.4"',
-             'rule family="ipv4" to service name="http" accept']
+             'rule family="ipv4" service name="http" accept']
         )
         data = self._('mc_firewalld.rich_rules')(
                 ports=[43, 44],
@@ -410,8 +410,8 @@ class TestCase(base.ModuleCase):
              'trust_internal': True,
              'zones': {'bar': {'interfaces': ['eth1']},
                        'foo': {'interfaces': ['eth0']}}})
-        self.assertEqual(data['zones']['bar']['target'], 'ACCEPT')
-        self.assertEqual(data['zones']['foo']['target'], 'REJECT')
+        self.assertEqual(data['zones']['bar']['target'], 'accept')
+        self.assertEqual(data['zones']['foo']['target'], 'reject')
         data = self._('mc_firewalld.add_zones_policies')(
             {'aliased_interfaces': [],
              'public_zones': ['foo'],
@@ -420,8 +420,8 @@ class TestCase(base.ModuleCase):
              'trust_internal': True,
              'zones': {'bar': {'interfaces': ['eth1']},
                        'foo': {'interfaces': ['eth0']}}})
-        self.assertEqual(data['zones']['foo']['target'], 'ACCEPT')
-        self.assertEqual(data['zones']['bar']['target'], 'ACCEPT')
+        self.assertEqual(data['zones']['foo']['target'], 'accept')
+        self.assertEqual(data['zones']['bar']['target'], 'accept')
         data = self._('mc_firewalld.add_zones_policies')(
             {'aliased_interfaces': [],
              'public_zones': ['foo'],
@@ -430,8 +430,8 @@ class TestCase(base.ModuleCase):
              'trust_internal': False,
              'zones': {'bar': {'interfaces': ['eth1']},
                        'foo': {'interfaces': ['eth0']}}})
-        self.assertEqual(data['zones']['foo']['target'], 'REJECT')
-        self.assertEqual(data['zones']['bar']['target'], 'REJECT')
+        self.assertEqual(data['zones']['foo']['target'], 'reject')
+        self.assertEqual(data['zones']['bar']['target'], 'reject')
         data = self._('mc_firewalld.add_zones_policies')(
             {'aliased_interfaces': [],
              'public_zones': ['foo'],
@@ -440,8 +440,8 @@ class TestCase(base.ModuleCase):
              'trust_internal': False,
              'zones': {'bar': {'interfaces': ['eth1']},
                        'foo': {'interfaces': ['eth0']}}})
-        self.assertEqual(data['zones']['foo']['target'], 'ACCEPT')
-        self.assertEqual(data['zones']['bar']['target'], 'REJECT')
+        self.assertEqual(data['zones']['foo']['target'], 'accept')
+        self.assertEqual(data['zones']['bar']['target'], 'reject')
         data = self._('mc_firewalld.add_zones_policies')(
             {'aliased_interfaces': [],
              'public_zones': ['foo'],
@@ -450,8 +450,8 @@ class TestCase(base.ModuleCase):
              'trust_internal': None,
              'zones': {'bar': {'interfaces': ['eth1']},
                        'foo': {'interfaces': ['eth0']}}})
-        self.assertEqual(data['zones']['foo']['target'], 'ACCEPT')
-        self.assertEqual(data['zones']['bar']['target'], 'ACCEPT')
+        self.assertEqual(data['zones']['foo']['target'], 'accept')
+        self.assertEqual(data['zones']['bar']['target'], 'accept')
         data = self._('mc_firewalld.add_zones_policies')(
             {'aliased_interfaces': [],
              'public_zones': ['foo'],
@@ -460,8 +460,8 @@ class TestCase(base.ModuleCase):
              'trust_internal': None,
              'zones': {'bar': {'interfaces': ['eth1']},
                        'foo': {'interfaces': ['eth0']}}})
-        self.assertEqual(data['zones']['foo']['target'], 'REJECT')
-        self.assertEqual(data['zones']['bar']['target'], 'ACCEPT')
+        self.assertEqual(data['zones']['foo']['target'], 'reject')
+        self.assertEqual(data['zones']['bar']['target'], 'accept')
 
     def test_1aservice_policies(self):
         def _do():
@@ -532,18 +532,18 @@ class TestCase(base.ModuleCase):
                 ['b'])
             self.assertEqual(
                 data['zones']['foo']['rules'],
-                ['rule family="ipv4" to service name="b" DROP',
-                 'rule family="ipv4" to service name="a" ACCEPT']
+                ['rule family="ipv4" service name="b" drop',
+                 'rule family="ipv4" service name="a" accept']
             )
             self.assertEqual(
                 data['zones']['bar']['rules'],
-                ['rule family="ipv4" to service name="b" DROP',
-                 'rule family="ipv4" to service name="a" ACCEPT']
+                ['rule family="ipv4" service name="b" drop',
+                 'rule family="ipv4" service name="a" accept']
             )
             self.assertEqual(
                 data['zones']['mar']['rules'],
-                ['rule family="ipv4" to service name="e" DROP',
-                 'rule family="ipv4" to service name="f" ACCEPT']
+                ['rule family="ipv4" service name="e" drop',
+                 'rule family="ipv4" service name="f" accept']
             )
 
 if __name__ == '__main__':

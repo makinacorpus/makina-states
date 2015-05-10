@@ -21,6 +21,6 @@
     {% if template %}
     - template: "{{template}}"
     {%endif%}
-{% if after_macro %}{{ after_macro }}{% endif %}
+{% if after_macro %}{{ after_macro() }}{% endif %}
 {% endfor %}
 {% endmacro %}
