@@ -48,6 +48,7 @@ ONE_DAY = mc_states.api.ONE_DAY
 HALF_DAY = mc_states.api.HALF_DAY
 ONE_MONTH = mc_states.api.ONE_MONTH
 ONE_YEAR = ONE_MONTH * 12
+FIREWALLD_MANAGED = False
 
 # pillar cache is never expired, only if we detect a change on the database file
 PILLAR_TTL = ONE_YEAR
@@ -1772,10 +1773,48 @@ def get_snmpd_settings(id_=None, ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
+def get_firewalld_conf(id_, ttl=PILLAR_TTL):
+    def _do(id_):
+        _s = __salt__
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_firewalld', FIREWALLD_MANAGED):
+            return {}
+        p = 'makina-states.services.firewall.firewalld'
+        prefix = p + '.'
+        qry = _s[__name + '.query']
+        allowed_ips = _s[__name + '.whitelisted'](id_)
+        firewalld_overrides = qry('firewalld_overrides', {})
+        rdata = OrderedDict([
+           (p, True),
+           (prefix + 'trusted_networks', allowed_ips)
+        ])
+        pservices = rdata.setdefault('public_services-append', [])
+        is_ldap = is_ldap_master(id_) or is_ldap_slave(id_)
+        is_dns = is_dns_master(id_) or is_dns_slave(id_)
+        if is_ldap:
+            for i in ['ldap', 'ldaps']:
+                if i not in pservices:
+                    pservices.append(i)
+        if is_dns:
+            for i in ['dns']:
+                if i not in pservices:
+                    pservices.append(i)
+        buf = OrderedDict()
+        for param, value in firewalld_overrides.get(id_, {}).items():
+            buf[prefix + param] = value
+        rdata = __salt__['mc_utils.dictupdate'](rdata, buf)
+        return rdata
+    cache_key = __name + '.get_firewalld_conf2{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+
+
 def get_shorewall_settings(id_=None, ttl=PILLAR_TTL):
     def _do(id_, sysadmins=None):
         gconf = get_configuration(id_)
-        if not gconf.get('manage_shorewall', True):
+        managed = gconf.get('manage_shorewall', True)
+        if gconf.get('manage_firewalld', FIREWALLD_MANAGED):
+            managed = False
+        if not managed:
             return {}
         qry = __salt__[__name + '.query']
         allowed_ips = __salt__[__name + '.whitelisted'](id_)
@@ -1829,7 +1868,7 @@ def get_shorewall_settings(id_=None, ttl=PILLAR_TTL):
             param = 'makina-states.services.firewall.shorewall.' + param
             shw_params[param] = value
         return shw_params
-    cache_key = __name + '.get_shorewall_settings_{0}'.format(id_)
+    cache_key = __name + '.get_shorewall_settings2_{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
@@ -2055,7 +2094,8 @@ def backup_configuration_type_for(id_, ttl=PILLAR_TTL):
         # for trivial joins (on id_, do it automatically)
         if not confs.get(id_, None) and id_ in qconfs:
             confs[id_] = id_
-        return confs.get(id_, None)
+        conf = confs.get(id_, None)
+        return conf
     cache_key = __name + '.backup_configuration_type_for{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
@@ -2071,13 +2111,18 @@ def backup_configuration_for(id_, ttl=PILLAR_TTL):
         conf_id = _s[__name + '.backup_configuration_type_for'](id_)
         data = OrderedDict()
         if (
-            id_ not in _s[__name + '.query']('non_managed_hosts') and
+            id_ not in _s[__name + '.query']('non_managed_hosts', []) and
             not default_conf_id
         ):
-            raise ValueError(
-                'No backup info for {0}'.format(id_))
+            if id_ in get_cloud_conf_by_vms():
+                t = 'vm'
+            else:
+                t = 'baremetal'
+            conf = confs.get(t, None)
+            if not conf:
+                raise ValueError('No backup info for {0}'.format(id_))
         if (
-            id_ in _s[__name + '.query']('non_managed_hosts', {}) and
+            id_ in _s[__name + '.query']('non_managed_hosts', []) and
             not conf_id
         ):
             conf_id = _s[__name + '.backup_configuration_type_for'](
@@ -2118,7 +2163,14 @@ def backup_configuration_for(id_, ttl=PILLAR_TTL):
 def backup_server_for(id_, ttl=PILLAR_TTL):
     def _do(id_):
         confs = __salt__[__name + '.query']('backup_server_map', {})
-        return confs.get(id_, confs['default'])
+        sconfs = __salt__[__name + '.query']('backup_servers', {})
+        default = confs.get('default')
+        if not default:
+            if sconfs:
+                default = [a for a in sconfs][0]
+            else:
+                raise ValueError('No default backup serveur')
+        return confs.get(id_, default)
     cache_key = __name + '.backup_server_for{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
@@ -2152,7 +2204,7 @@ def backup_server_settings_for(id_, ttl=PILLAR_TTL):
         # hosts and current backup server
         # db['non_managed_hosts'] + [id_]
         try:
-            backup_excluded = query('backup_excluded', {})
+            backup_excluded = query('backup_excluded', [])
             if not isinstance(backup_excluded, list):
                 raise ValueError('{0} is not a list for'
                                  ' backup_excluded'.format(backup_excluded))
@@ -2161,10 +2213,10 @@ def backup_server_settings_for(id_, ttl=PILLAR_TTL):
             log.error(trace)
             backup_excluded = []
         backup_excluded.extend(['default', 'default-vm', id_])
-        manual_hosts = _s[__name + '.query']('backup_manual_hosts', {})
-        non_managed_hosts = _s[__name + '.query']('non_managed_hosts', {})
+        manual_hosts = _s[__name + '.query']('backup_manual_hosts', [])
+        non_managed_hosts = _s[__name + '.query']('non_managed_hosts', [])
         backup_excluded.extend(
-            [a for a in _s[__name + '.query']('non_managed_hosts', {})
+            [a for a in _s[__name + '.query']('non_managed_hosts', [])
              if a not in manual_hosts])
         bms = [a for a in db['bms']
                if a not in backup_excluded and
@@ -3546,6 +3598,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         __name + '.get_mail_conf': {'only_managed': False},
         __name + '.get_packages_conf': {'only_managed': False},
         __name + '.get_pkgmgr_conf': {'only_managed': False},
+        __name + '.get_firewalld_conf': {'only_managed': False},
         __name + '.get_shorewall_conf': {'only_managed': False},
         __name + '.get_snmpd_conf': {'only_known': False},
         __name + '.get_burp_server_conf': {},

@@ -1,0 +1,3 @@
+{{salt['mc_dumper.json_dump'](
+    salt['mc_firewalld.settings'](),
+    pretty=True)}}

@@ -11,6 +11,7 @@ For the documentation on usage, please look :ref:`bind_documentation`.
 '''
 
 # Import python libs
+import traceback
 import logging
 import mc_states.api
 from copy import deepcopy
@@ -25,6 +26,7 @@ from salt.utils.odict import OrderedDict
 
 __name = 'bind'
 
+six = mc_states.api.six
 log = logging.getLogger(__name__)
 
 
@@ -51,6 +53,28 @@ def tsig_for(id_, length=128):
             'mc_macros.get_local_registry'](
             'bind_tsig', registry_format='pack')
     return local_conf[id_]
+
+
+def get_local_clients():
+    _s = __salt__
+    defaults = ['127.0.0.0/8',
+                '127.0.0.1',
+                '127.0.1.1',
+                '::1',
+                "172.16.0.0/12",
+                "192.168.0.0/16",
+                "10.0.0.0/8"]
+    try:
+        if 'lxc.ls' in _s:
+            for i in _s['lxc.ls']():
+                infos = _s['lxc.info'](i)
+                for nicdata in infos.get('nics', []):
+                    ipv4 = nicdata.get('ipv4', '').split('/')[0]
+                    if ipv4 and ipv4 not in defaults:
+                        defaults.append(ipv4)
+    except Exception:
+        log.error(traceback.format_exc())
+    return defaults
 
 
 def settings():
@@ -165,6 +189,34 @@ def settings():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         locs = __salt__['mc_locations.settings']()
+        dns = __salt__['mc_dns.settings']()
+        net = __salt__['mc_network.settings']()
+        # by default: we listen on localhost + ip on real ifs
+        # but not on bridge and etc where it can messes it up
+        # with setups with dnsmasq or such
+        listen_ifs = ["127.0.0.1"]
+        for ifc, ips in six.iteritems(__grains__.get('ip4_interfaces', {})):
+            if True in [
+                ifc.startswith(i)
+                for i in ['veth', 'lxcbr', 'docker',
+                          'mgc', 'lo', 'vibr', 'xenbr']
+            ]:
+                continue
+            for ip in ips:
+                if True in [
+                    ip.startswith(s)
+                    for s in [
+                        '10.',  # makina-states net
+                        '172.',  # docker net
+                        '192.168.122'  # libvirt/kvm
+                    ]
+                ]:
+                    continue
+                if ip not in listen_ifs:
+                    listen_ifs.append(ip)
+        listen_ifs = ";".join(listen_ifs)
+        if not listen_ifs.endswith(';'):
+            listen_ifs += ";"
         os_defaults = __salt__['grains.filter_by']({
             'Debian': {
                 'pkgs': ['bind9',
@@ -216,7 +268,6 @@ def settings():
             grain='os_family', default='Debian')
         defaults = __salt__['mc_utils.dictupdate'](
             os_defaults, {
-                'default_dnses': [],
                 'log_dir': '/var/log/named',
                 "rndc_conf": "{conf_dir}/rndc.conf".format(**locs),
                 "rndc_key": "{conf_dir}/bind/rndc.key".format(**locs),
@@ -235,8 +286,8 @@ def settings():
                         'additional_from_cache': 'no',
                     }),
                 ]),
-                'ipv4': 'any',
-                'ipv6': 'any',
+                'ipv4': listen_ifs,
+                'ipv6': 'any;',
                 'loglevel': {
                     'default': 'error',
                     'general': 'error',
@@ -320,8 +371,7 @@ def settings():
                 #
                 'acls': OrderedDict([
                     ('local', {
-                        'clients': ['127.0.0.1', '::1',
-                                    "192.168.0.0/16", "10.0.0.0/8"],
+                        'clients': get_local_clients(),
                         }),
                 ]),
                 #
@@ -336,6 +386,9 @@ def settings():
         ]
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.dns.bind', defaults)
+        # retrocompat: dns
+        data['default_dnses'] = dns['default_dnses']
+        data['search'] = dns['search']
         # lighten the data dict for memory purpose
         data['zones'] = [a for a in data['zones']]
         views = [a for a in data['views']]
@@ -344,10 +397,7 @@ def settings():
             if a not in data['views']:
                 data['views'].append(a)
         for k in data:
-            if (
-                k.startswith('zones.')
-                or k.startswith('views.')
-            ):
+            if k.startswith('zones.') or k.startswith('views.'):
                 del data[k]
         for k in [a for a in data['servers']]:
             adata = data['servers'][k]
@@ -362,10 +412,6 @@ def settings():
             if 'secret' not in kdata:
                 raise ValueError(
                     'no secret for {0}'.format(k))
-        for i in ['127.0.0.1', '8.8.8.8', '4.4.4.4']:
-            if i not in data['default_dnses']:
-                data['default_dnses'].append(i)
-        data['default_dnses'] = __salt__['mc_utils.uniquify'](data['default_dnses'])
         return data
     return _settings()
 
@@ -519,8 +565,8 @@ def get_zone(zone):
                 views.append(v)
     zdata.setdefault('template', True)
     if (
-        zdata['server_type'] == 'master'
-        and zdata['notify'] is None
+        zdata['server_type'] == 'master' and
+        zdata['notify'] is None
     ):
         zdata['notify'] = True
         if zdata['slaves']:
@@ -528,8 +574,8 @@ def get_zone(zone):
                 if slv not in zdata["allow_transfer"]:
                     zdata["allow_transfer"].append(slv)
     if (
-        zdata['server_type'] == 'slave'
-        and zdata['notify'] is None
+        zdata['server_type'] == 'slave' and
+        zdata['notify'] is None
     ):
         zdata['notify'] = False
     if not zdata['rrs']:
@@ -538,9 +584,9 @@ def get_zone(zone):
         if zdata['source'] is None:
             zdata['source'] = defaults['zone_template']
     if (
-        zdata['server_type'] == 'slave'
-        and zdata['template']
-        and 'masters' not in zdata
+        zdata['server_type'] == 'slave' and
+        zdata['template'] and
+        'masters' not in zdata
     ):
         raise ValueError('no masters for {0}'.format(zone))
     zdata.setdefault('fpath',

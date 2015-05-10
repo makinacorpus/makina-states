@@ -29,6 +29,7 @@ Subregistries
    :maxdepth: 2
 
    mc_dns.rst
+   mc_firewalld.rst
    mc_apparmor.rst
    mc_apache.rst
    mc_autoupgrade.rst

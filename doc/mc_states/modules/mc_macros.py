@@ -26,6 +26,9 @@ from mc_states.api import _SUB_REGISTRIES
 import mc_states.api
 import mc_states.saltapi
 
+# retrocompat
+from mc_states.saltapi import NoRegistryLoaderFound
+
 # cache variable
 _REGISTRY = {}
 _default_activation_status = object()
@@ -46,9 +49,6 @@ _default = object()
 def get_registry_formats():
     return copy.deepcopy(REGISTRY_FORMATS)
 
-
-class NoRegistryLoaderFound(SaltException):
-    """."""
 
 
 # normally not more used
@@ -101,7 +101,7 @@ def load_kind_registries(kind):
                 'mc_{0}.{1}'.format(kind, registry)]()
         except KeyError:
             trace = traceback.format_exc()
-            raise NoRegistryLoaderFound(
+            raise mc_states.saltapi.NoRegistryLoaderFound(
                 'mc_{0}.{1} is unavailable\n{2}'.format(kind, registry, trace))
     return _REGISTRY[kind]
 
@@ -137,17 +137,14 @@ def is_active(registry, name):
 def get_registry_paths(name, registry_format='pack'):
     locs = __salt__['mc_locations.settings']()
     etc = locs['conf_dir']
-    ctx_pref = 'salt'
-    if 'mastersalt' in __opts__['config_dir']:
-        ctx_pref = 'mastersalt'
     confs = {'mastersalt': '{0}/{1}/makina-states/{2}.{3}'.format(
         etc, 'mastersalt',  name, registry_format),
         'salt': '{0}/{1}/makina-states/{2}.{3}'.format(
             etc, 'salt',  name, registry_format),
         'global': '{0}/{1}/{2}.{3}'.format(
             etc, 'makina-states',  name, registry_format),
-        'context': '{0}/{1}/makina-states/{2}.{3}'.format(
-            etc, ctx_pref,  name, registry_format)}
+        'context': '{0}/makina-states/{1}.{2}'.format(
+            __opts__['config_dir'],  name, registry_format)}
     return confs
 
 
@@ -278,7 +275,8 @@ def _get_local_registry(name,
     force_run = not cached
     return __salt__['mc_utils.memoize_cache'](
         _do, [name, to_load, registry_format], {},
-        cache_key, cachetime, force_run=force_run)
+        cache_key, cachetime, use_memcache=False,
+        force_run=force_run)
 
 
 def _unprefix(registry, name):
@@ -464,8 +462,7 @@ def construct_registry_configuration(name, defaults=None):
     return __salt__['mc_macros.get_registry']({
         'kind': metadata_reg['kind'],
         'bases': metadata_reg['bases'],
-        'defaults': defaults,
-    })
+        'defaults': defaults})
 
 
 def unregister(kind, slss, data=None, suf=''):
@@ -709,7 +706,23 @@ def filecache_fun(func,
     return value
 
 
-def dump():
-    return _REGISTRY
+def glob_dump():
+    try:
+        return copy.deepcopy(_GLOBAL_KINDS)
+    except (TypeError, ValueError):
+        return _GLOBAL_KINDS
 
+
+def sub_dump():
+    try:
+        return copy.deepcopy(_SUB_REGISTRIES)
+    except (TypeError, ValueError):
+        return _SUB_REGISTRIES
+
+
+def dump():
+    try:
+        return copy.deepcopy(_REGISTRY)
+    except (TypeError, ValueError):
+        return _REGISTRY
 # vim:set ai:

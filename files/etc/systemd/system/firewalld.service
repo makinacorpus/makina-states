@@ -1,0 +1,29 @@
+[Unit]
+Description=firewalld - dynamic firewall daemon
+Before=network.target
+Before=libvirtd.service
+Before=NetworkManager.service
+Before=lxc-net-makina.service
+Before=lxc-net.service
+Before=docker-net-makina.service
+Before=docker-net.service
+Before=docker.service
+Before=openvpn.service
+Conflicts=iptables.service ip6tables.service ebtables.service shorewall.service
+
+[Service]
+EnvironmentFile=-/etc/sysconfig/firewalld
+EnvironmentFile=-/etc/default/firewalld
+ExecStart=/usr/sbin/firewalld --nofork --nopid $FIREWALLD_ARGS
+ExecStartPost=-/usr/bin/ms_firewalld.py
+ExecReload=/bin/kill -HUP $MAINPID
+ExecReload=-/usr/bin/ms_firewalld.py
+# supress to log debug and error output also to /var/log/messages
+# StandardOutput=null
+# StandardError=null
+Type=dbus
+BusName=org.fedoraproject.FirewallD1
+
+[Install]
+WantedBy=basic.target
+Alias=dbus-org.fedoraproject.FirewallD1.service

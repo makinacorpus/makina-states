@@ -1,10 +1,14 @@
 {#- # network configuration #}
 include:
   - makina-states.localsettings.network.hooks
-{% if salt['mc_services.registry']().has['firewall.shorewall'] %}
 # be sure to reconfigure firewall on network
 # reconfiguration
+{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_services.registry']()['is'].get('firewall.firewalld') %}
+  - makina-states.services.firewall.firewalld
+{% elif salt['mc_services.registry']()['is'].get('firewall.shorewall') %}
   - makina-states.services.firewall.shorewall
+{% endif %}
   - makina-states.localsettings.grub
 {% endif %}
 

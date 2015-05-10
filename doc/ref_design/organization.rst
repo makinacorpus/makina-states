@@ -69,7 +69,7 @@ Tree of different configuration flavors inheritance::
         |      |                   |                         |
         |      |                   |                         modphp
         db   mail                  |
-        /\     \                   shorewall
+        /\     \                   firewalld
        /  \     \____ postfix
     pgsql  mysql \
                   \__ dovecot

@@ -30,6 +30,7 @@ PREFIX = 'makina-states.cloud.vms'
 
 
 def vt(vt=VT):
+    # pylint: disable=W0621
     return vt
 
 
@@ -110,7 +111,7 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
         default_snapshot = False
         if _s['mc_nodetypes.is_devhost']():
             default_snapshot = True
-        vt_settings = {
+        vte_settings = {
             'vt': VT,
             'defaults': {
                 'dnsservers': ['8.8.8.8', '4.4.4.4'],
@@ -133,6 +134,11 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 'name': _g['id'],
                 'domains': [_g['id']],
                 'ssl_certs': [],
+                'ports': [
+                    {'name': 'ssh', 'port': 22, 'protocol': 'tcp'},
+                    {'name': 'ssh', 'port': 22, 'protocol': 'udp'},
+                    {'name': 'snmp', 'port': 161, 'protocol': 'udp'},
+                ],
                 #
                 'ssh_gateway': cloudSettings['ssh_gateway'],
                 'ssh_username': 'ubuntu',
@@ -163,12 +169,13 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
             },
             'vms': OrderedDict(),
         }
-        return vt_settings
+        return vte_settings
     cache_key = 'mc_cloud_vm.default_settings'
     return copy.deepcopy(
         __salt__['mc_utils.memoize_cache'](_do, [cloudSettings, imgSettings], {}, cache_key, ttl))
 
 
+# pylint: disable=W0621
 def vm_default_settings(vm,
                         cloudSettings,
                         imgSettings,
@@ -259,7 +266,8 @@ def vm_registry(prefixed=True):
 
 
 def vt_extpillar_settings(vt, ttl=PILLAR_TTL):
-    def _do(vt):
+
+    def _do(vte):
         _s = __salt__
         fun = 'mc_cloud_{0}.vt_default_settings'.format(vt)
         extdata = _s['mc_pillar.get_global_clouf_conf'](vt)
@@ -281,45 +289,45 @@ def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
         else:
             return '1{0}'.format(dom)
 
-    def _do(vm, limited):
+    def _do(vme, limited):
         cloudSettings = _s['mc_cloud.extpillar_settings']()
         imgSettings = _s['mc_cloud_images.extpillar_settings']()
-        data = _s['mc_pillar.get_cloud_conf_for_vm'](vm)
+        data = _s['mc_pillar.get_cloud_conf_for_vm'](vme)
         data = _s['mc_utils.dictupdate'](
             vm_default_settings(
-                vm, cloudSettings, imgSettings, extpillar=True),
+                vme, cloudSettings, imgSettings, extpillar=True),
             data)
         find_ip = 'mc_cloud_compute_node.find_ip_for_vm'
-        data['ip'] = _s[find_ip](vm,
+        data['ip'] = _s[find_ip](vme,
                                  network=data['network'],
                                  netmask=data['netmask'],
                                  default=data.get('ip'))
         data['mac'] = _s['mc_cloud_compute_node.find_mac_for_vm'](
-            vm, default=data.get('mac', None))
+            vme, default=data.get('mac', None))
         data['password'] = _s[
             'mc_cloud_compute_node.find_password_for_vm'
-        ](vm, default=_s['mc_pillar.get_passwords'](vm)['clear']['root'])
+        ](vme, default=_s['mc_pillar.get_passwords'](vme)['clear']['root'])
         data = saltapi.complete_gateway(data, data)
-        if vm not in data['domains']:
-            data['domains'].insert(0, vm)
+        if vme not in data['domains']:
+            data['domains'].insert(0, vme)
         data['domains'].sort(key=_sort_domains)
         if (
-            ('-b' not in data['script_args'])
-            and ('--branch' not in data['script_args'])
+            ('-b' not in data['script_args']) and
+            ('--branch' not in data['script_args'])
         ):
             data['script_args'] += ' -b {0}'.format(
                 data['bootsalt_branch'])
         # at this stage, only get already allocated ips
 
         for ix, ipinfos in enumerate(data['additional_ips']):
-            k = '{0}_{1}_{2}_aip_fo'.format(data['target'], vm, ix)
+            k = '{0}_{1}_{2}_aip_fo'.format(data['target'], vme, ix)
             mac = ipinfos.setdefault('mac', None)
             if not mac:
                 mac = _s['mc_cloud_compute_node.get_conf_for_vm'](
-                    vm, k, default=mac)
+                    vme, k, default=mac)
             if not mac:
                 _s['mc_cloud_compute_node.set_conf_for_vm'](
-                    vm, k, _s['mc_cloud_compute_node.gen_mac']())
+                    vme, k, _s['mc_cloud_compute_node.gen_mac']())
             ipinfos['mac'] = mac
             ipinfos.setdefault('gateway', None)
             if ipinfos['gateway']:
@@ -332,6 +340,7 @@ def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
 
 
 def vt_extpillar(target, vt, limited=False, ttl=PILLAR_TTL):
+
     def _do(target, vt, limited):
         _s = __salt__
         extdata = _s['mc_pillar.get_cloud_conf_for_cn'](target).get(vt, {})
@@ -357,6 +366,7 @@ def domains_for(vm, domains=None):
 
 
 def vm_extpillar(id_, limited=False, ttl=60):
+
     def _do(id_, limited):
         _s = __salt__
         extdata = _s['mc_pillar.get_cloud_conf_for_vm'](id_)
@@ -377,6 +387,7 @@ def vm_extpillar(id_, limited=False, ttl=60):
 
 
 def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
+
     def _do(id_, prefixed, limited):
         _s = __salt__
         all_vms = _s['mc_cloud_compute_node.get_vms']()
@@ -395,8 +406,9 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
             target = id_
             for vm_, vmdata_ in targets[id_]['vms'].items():
                 vms[vm_] = vmdata_
-            [vts.append(i) for i in targets[id_]['vts']
-             if i not in vts]
+            # pylint: disable=W0612
+            noecho = [vts.append(i) for i in targets[id_]['vts']
+                      if i not in vts]
         data = vm_registry(prefixed=prefixed)
         if prefixed:
             vts_pillar = data[PREFIX + '.vts']
@@ -409,14 +421,14 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
                 target, vt, limited=limited)
         for vm, vmdata in vms.items():
             vt = vmdata['vt']
-            vm_settings = _s['mc_cloud_vm.vm_extpillar'](
+            vme_settings = _s['mc_cloud_vm.vm_extpillar'](
                 vm, limited=limited)
-            vm_settings['vt'] = vt
-            vms_pillar[vm] = vm_settings
+            vme_settings['vt'] = vt
+            vms_pillar[vm] = vme_settings
             vgconf = _s['mc_pillar.get_configuration'](vm)
             if vgconf.get('manage_ssl', True):
                 _s['mc_cloud.add_ms_ssl_certs'](
-                    data, vm_settings)
+                    data, vme_settings)
         return data
     limited = kw.get('limited', False)
     cache_key = 'mc_cloud_vm.ext_pillar{0}{1}{2}'.format(
@@ -425,12 +437,15 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
         _do, [id_, prefixed, limited], {}, cache_key, ttl)
 
 
+# pylint: disable=w0105
 '''
 Methods usable
 After the pillar has loaded, on the compute node or on the VM
 '''
 
+
 def raw_settings(ttl=60):
+
     def _do():
         _s = __salt__
         settings = _s['mc_utils.defaults'](PREFIX, vm_registry(prefixed=False))
@@ -440,6 +455,7 @@ def raw_settings(ttl=60):
 
 
 def vts_settings(ttl=60):
+
     def _do():
         data = raw_settings()
         _s = __salt__
@@ -460,8 +476,9 @@ def vts_settings(ttl=60):
 
 
 def vt_settings(vt=VT, ttl=60):
-    def _do(vt):
-        return vts_settings().get(vt, {})
+
+    def _do(vte):
+        return vts_settings().get(vte, {})
     cache_key = '{0}.{1}{2}'.format(__name, 'vt_settings', vt)
     return __salt__['mc_utils.memoize_cache'](_do, [vt], {}, cache_key, ttl)
 
@@ -494,6 +511,7 @@ def vms_settings(ttl=60):
 def vm_host_and_port(ttl=600):
     def do():
         res = __grains__['id'], 22
+
         def fdo():
             ret = __salt__['mc_remote.local_mastersalt_call']('mc_cloud.is_vm')
             if ret['result']:
@@ -508,7 +526,7 @@ def vm_host_and_port(ttl=600):
             return __salt__['mc_macros.filecache_fun'](
                 fdo,
                 prefix='mastersalt_cloud_vm_host_port_{0}'.format(__grains__['id']),
-                ttl = 5 * 24 * 60 * 60)
+                ttl=5 * 24 * 60 * 60)
         except ValueError:
             return res
     cache_key = '{0}.{1}.{2}'.format(__name, 'vm_host_and_port', '')

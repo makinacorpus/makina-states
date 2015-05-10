@@ -116,6 +116,10 @@ __CACHED_FUNS = {
     'mc_localsettings.settings': 600}
 
 
+class PortConflictError(ValueError):
+    '''.'''
+
+
 class ImgError(salt.exceptions.SaltException):
     pass
 
