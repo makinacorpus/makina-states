@@ -202,22 +202,25 @@ def define_zone(z, zdata, masquerade=None, errors=None):
         mark_reload()
     else:
         zn = fw().config().getZoneByName(z)
-    if masquerade is not None:
-        cmask = bool(zn.getMasquerade())
-        if cmask is not masquerade:
-            zn.setMasquerade(masquerade)
-            log.info(' - Masquerade: {0}'.format(masquerade))
+    masquerade = bool(masquerade)
+    cmask = bool(zn.getMasquerade())
+    if cmask is not masquerade:
+        zn.setMasquerade(masquerade)
+        log.info(' - Masquerade: {0}'.format(masquerade))
     target = zdata.get('target', None)
-    if target:
+    if 'target' in zdata:
         ztarget = "{0}".format(zn.getTarget())
+        if not target:
+            target = 'default'
         if target:
             target = {
-                'reject': '%%REJECT%%'
-            }.get(target.lower(), target.upper()).upper()
-            if ztarget != target:
-                log.info(' - Zone edited')
-                zn.setTarget(target)
-                mark_reload()
+                'reject': '%%REJECT%%',
+                'default': 'default'
+            }.get(target.lower(), target.upper())
+        if ztarget != target:
+            log.info(' - Zone edited')
+            zn.setTarget(target)
+            mark_reload()
 
 
 def get_services(cache=True):
@@ -332,9 +335,12 @@ def configure_rules(z, zdata, errors=None):
             # inconsistent results :(
             # rules = get_rules(z)
             rules = get_rules(z, cache=False)
-            if rule not in rules:
+            rules_chunks = [sorted(a.split()) for a in rules]
+            rule_chunk = sorted(rule.split())
+            if rule_chunk not in rules_chunks:
                 rules = get_rules(z, cache=False)
-            if rule not in rules:
+                rules_chunks = [sorted(a.split()) for a in rules]
+            if rule_chunk not in rules_chunks:
                 log.info(' - Add {0}'.format(rule))
                 fw().addRichRule(z, rule)
             else:
