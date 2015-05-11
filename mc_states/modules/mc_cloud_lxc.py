@@ -110,6 +110,14 @@ def vt_default_settings(cloudSettings, imgSettings):
                          #
                          #
                          'fstab': None,
+                         'volumes': [
+                             # non implemented yet in any drivers
+                             # {"name": "w", "kind": "host",
+                             #  "source": "/o/t", "readOnly": True}
+                         ],
+                         'mounts': [
+                             # {"volume": "w", "mountPoint": "/path/backup"}
+                         ],
                          'lxc_conf': [],
                          'lxc_conf_unset': []},
             'host_confs': {
@@ -119,7 +127,8 @@ def vt_default_settings(cloudSettings, imgSettings):
                 # retrocompatible generation alias
                 '/etc/default/lxc-net-makina': {
                     'source':
-                    'salt://makina-states/files/etc/default/magicbridge_lxcbr1'},
+                    'salt://makina-states/files/etc/'
+                    'default/magicbridge_lxcbr1'},
                 '/etc/dnsmasq.lxcbr1/conf.d/makinastates_lxc': {},
                 '/etc/dnsmasq.d/lxcbr1': {},
                 '/etc/dnsmasq.d/lxcbr0': {},
@@ -162,6 +171,14 @@ def vm_extpillar(vm, data, *args, **kw):
     backing = data.setdefault('backing', 'dir')
     if data['from_container'] is not None:
         data.pop('image', None)
+    if not data.get('fstab'):
+        data['fstab'] = []
+    shm = True
+    for i in data['fstab']:
+        if 'dev/shm' in i:
+            shm = False
+    if shm:
+        data['fstab'].append('none dev/shm tmpfs rw,nosuid,nodev,create=dir')
     if ('overlayfs' in backing) or ('dir' in backing):
         for k in ['lvname', 'vgname', 'size']:
             if k in data:

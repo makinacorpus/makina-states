@@ -45,6 +45,9 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
         The settings of lxc containers that are meaningful on the
         cloud controller
 
+    Lately we will focus to tie the implementation to the
+    APPCONTAINER SPEC
+
     cloud defaults (makina-states.services.cloud.lxc)
         defaults settings to provision lxc containers
         Those are all redefinable at each container level
@@ -165,14 +168,23 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 #
                 'size': None,  # via profile
                 'backing': 'lvm',
-                'pools': [{'name': 'vg', 'type': 'lvm'}]
+                'pools': [{'name': 'vg', 'type': 'lvm'}],
+                'volumes': [
+                    # non implemented yet in any drivers
+                    # {"name": "w", "kind": "host",
+                    #  "source": "/o/t", "readOnly": True}
+                ],
+                'mounts': {
+                    # {"volume": "w", "mountPoint": "/path/backup"}
+                }
             },
             'vms': OrderedDict(),
         }
         return vte_settings
     cache_key = 'mc_cloud_vm.default_settings'
     return copy.deepcopy(
-        __salt__['mc_utils.memoize_cache'](_do, [cloudSettings, imgSettings], {}, cache_key, ttl))
+        __salt__['mc_utils.memoize_cache'](
+            _do, [cloudSettings, imgSettings], {}, cache_key, ttl))
 
 
 # pylint: disable=W0621

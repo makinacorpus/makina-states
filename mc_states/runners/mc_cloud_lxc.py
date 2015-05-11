@@ -361,7 +361,6 @@ def vm_reconfigure(vm, ret=None, output=True, force=False):
     lret = cli('cmd.run_all', 'test -e {0}'.format(marker), python_shell=True)
     lret['retcode'] = 1
     try:
-        raise
         ping = False
         if vm in containers:
             ping = cli('test.ping', salt_timeout=10, salt_target=vm)
