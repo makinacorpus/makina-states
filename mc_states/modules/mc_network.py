@@ -19,6 +19,7 @@ Documentation of this module is available with::
 '''
 import yaml
 import requests
+import ipaddr
 # Import python libs
 import os
 import logging
@@ -345,6 +346,18 @@ def settings():
         netdata['interfaces_order'] = [a for a in netdata['interfaces']]
         return netdata
     return _settings()
+
+
+def is_public(ip):
+    try:
+        iaddr = ipaddr.IPAddress(ip)
+        return (
+            not iaddr.is_private and
+            not iaddr.is_reserved and
+            not iaddr.is_link_local and
+            not iaddr.is_loopback)
+    except (Exception,):
+        return True
 
 
 def ns_whois(name, ttl=24*60*60, cache=True, whois_ttl=60*60*24*30):
