@@ -164,7 +164,7 @@ def add_aliased_interfaces(data=None):
     cfgs = get_configured_ifs(data)
     count = data.setdefault('aliases', FAILOVER_COUNT)
     for i in data['aliased_interfaces']:
-        # add eth0:x to the same zone for the 100th
+        # add eth0:x to the same zone for the FAILOVER_COUNTth
         for c in range(count):
             j = '{0}:{1}'.format(i, c)
             if j in cfgs:
@@ -182,7 +182,7 @@ def default_settings():
         'is_container': __salt__['mc_nodetypes.is_container'](),
         'aliased_interfaces': [],
         'default_zone': None,
-        'aliases': 100,
+        'aliases': FAILOVER_COUNT,
         'banned_networks': [],
         'trusted_networks': [],
         # list of mappings
@@ -201,15 +201,12 @@ def default_settings():
             ('block', {}),
             ('drop', {}),
             ('trusted', {'interfaces': ['lo']}),
-            ('dmz', {'target': 'accept'}),
-            ('rpn', {'target': 'accept'}),
-            ('virt', {'target': 'accept',
-                      'interfaces': ['virbr0', 'vibr0',
+            ('dmz', {}),
+            ('rpn', {}),
+            ('virt', {'interfaces': ['virbr0', 'vibr0',
                                      'virbr1', 'vibr1']}),
-            ('lxc', {'target': 'accept',
-                     'interfaces': ['lxcbr0', 'lxcbr1']}),
-            ('docker', {'target': 'accept',
-                        'interfaces': ['docker0', 'docker1']}),
+            ('lxc', {'interfaces': ['lxcbr0', 'lxcbr1']}),
+            ('docker', {'interfaces': ['docker0', 'docker1']}),
             ('internal', {'interfaces': ['eth1', 'em1']}),
             ('public', {'interfaces': ['br0', 'eth0', 'em0']}),
             ('external', {}),
@@ -678,20 +675,21 @@ def add_rule(data, zones=None, rule=None, rules=None, **kwargs):
 
 def add_zones_policies(data=None):
     data = fix_data(data)
+    zones = data.get('zones', {})
     for z in data['public_zones']:
+        zdata = zones.get(z, {})
+        t = zdata.get('target', None)
         if data['permissive_mode']:
             t = 'accept'
-        else:
-            t = 'reject'
         zone = data['zones'].setdefault(z, {})
-        zone.setdefault('target', t)
+        zone['target'] = t
     for z in data['internal_zones']:
+        zdata = zones.get(z, {})
+        t = zdata.get('target', None)
         if data['trust_internal']:
             t = 'accept'
-        else:
-            t = 'reject'
         zone = data['zones'].setdefault(z, {})
-        zone.setdefault('target', t)
+        zone['target'] = t
     if not data.get('no_ping', False):
         rule = 'rule family="ipv4" protocol value="icmp" accept'
         add_rule(data, rule=rule)
@@ -827,7 +825,34 @@ def settings():
         via rich rules to allow fine-graines selections of source
         and destination variations.
 
-    You can configure rules via entries in the zone pillar:
+    GLOBAL SETTINGS
+
+        permissive_mode
+            force all traffic to be accepted
+        public_interfaces
+            internet faced interfaces
+        internal_interfaces
+            interfaces wired to internal network with no much restriction
+        public_services
+            services to allow
+        restricted_services
+            services to block
+
+        services
+            list of services to deine
+        zones
+            mapping of zones definitions
+
+    PER ZONE SETTINGS:
+
+    You can configure zone settings via via entries in the zone pillar:
+        default_policy
+          enforce policy, attention in firewalld world, everything
+          is dropped if no match, so no need to force reject.
+          Its even harmful as it wont cut any further rich rules
+          to have a change to apply !
+        interfaces
+            interfaces to add to the zone
 
         XXX-rules
             rich rules
