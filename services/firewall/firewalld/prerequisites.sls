@@ -15,7 +15,8 @@ firewalld-repo:
     - watch:
       - mc_proxy: firewalld-preinstall
 firewalld-pkgs:
-  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
+  pkg.latest:
+  #pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs: {{data.packages}}
     - require:
       - pkgrepo: firewalld-repo
