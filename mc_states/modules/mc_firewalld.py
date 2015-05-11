@@ -27,6 +27,7 @@ INTERNAL_ZONES = ['internal', 'dmz', 'home', 'docker', 'lxc', 'virt']
 PUBLIC_SERVICES = ['http', 'https', 'smtp', 'dns', 'ssh']
 RULESETS = ['passthrough', 'direct', 'rules']
 FAILOVER_COUNT = 16
+DEFAULT_TARGET = 'drop'
 
 
 def is_permissive():
@@ -678,14 +679,14 @@ def add_zones_policies(data=None):
     zones = data.get('zones', {})
     for z in data['public_zones']:
         zdata = zones.get(z, {})
-        t = zdata.get('target', None)
+        t = zdata.get('target', DEFAULT_TARGET)
         if data['permissive_mode']:
             t = 'accept'
         zone = data['zones'].setdefault(z, {})
         zone['target'] = t
     for z in data['internal_zones']:
         zdata = zones.get(z, {})
-        t = zdata.get('target', None)
+        t = zdata.get('target', DEFAULT_TARGET)
         if data['trust_internal']:
             t = 'accept'
         zone = data['zones'].setdefault(z, {})

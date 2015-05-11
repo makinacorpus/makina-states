@@ -114,6 +114,7 @@ _cache = {}
 
 log = logging.getLogger('makina-states.firewall')
 TIMEOUT = 60
+DEFAULT_TARGET = 'drop'
 
 
 def fw():
@@ -211,7 +212,7 @@ def define_zone(z, zdata, masquerade=None, errors=None):
     if 'target' in zdata:
         ztarget = "{0}".format(zn.getTarget())
         if not target:
-            target = 'default'
+            target = DEFAULT_TARGET
         if target:
             target = {
                 'reject': '%%REJECT%%',
