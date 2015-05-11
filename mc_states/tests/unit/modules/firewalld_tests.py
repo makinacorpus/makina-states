@@ -150,7 +150,7 @@ class TestCase(base.ModuleCase):
                     ('vibr0', ['1.2.3.4']),
                     ('vibr1', ['1.2.3.4']),
                     ('lo', ['1.2.3.4']),
-                    ('veth1', ['1.2.3.4']),
+                    # ('veth1', ['1.2.3.4']),
                     ('tun1', ['1.2.3.4']),
                     ('tap1', ['1.2.3.4'])
                 )
@@ -170,7 +170,7 @@ class TestCase(base.ModuleCase):
                 {'dck': {'interfaces': ['docker0', 'docker1']},
                  'lxc': {'interfaces': ['lxcbr0', 'lxcbr1']},
                  'public': {'interfaces': ['eth0', 'br0']},
-                 'trusted': {'interfaces': ['lo', 'veth1']},
+                 'trusted': {'interfaces': ['lo']},
                  'vpn': {'interfaces': ['tun1']}})
             data = self._('mc_firewalld.add_real_interfaces')(
                 {'have_rpn': True})
@@ -180,7 +180,7 @@ class TestCase(base.ModuleCase):
                  'lxc': {'interfaces': ['lxcbr0', 'lxcbr1']},
                  'rpn': {'interfaces': ['em3', 'eth1']},
                  'public': {'interfaces': ['eth0', 'br0']},
-                 'trusted': {'interfaces': ['lo', 'veth1']},
+                 'trusted': {'interfaces': ['lo']},
                  'vpn': {'interfaces': ['tun1']}})
 
     def test_is_permissive(self):

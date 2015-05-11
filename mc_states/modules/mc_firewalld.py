@@ -346,8 +346,8 @@ def add_real_interfaces(data=None):
             continue
         elif iface == default_if:
             z = dz
-        elif iface.startswith('veth'):
-            z = 'trusted'
+        # elif iface.startswith('veth'):
+        #     z = 'trusted'
         elif 'lo' in iface:
             z = 'trusted'
         elif iface.startswith('tun'):
