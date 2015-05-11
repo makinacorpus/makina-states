@@ -1782,11 +1782,13 @@ def get_firewalld_conf(id_, ttl=PILLAR_TTL):
         p = 'makina-states.services.firewall.firewalld'
         prefix = p + '.'
         qry = _s[__name + '.query']
-        allowed_ips = _s[__name + '.whitelisted'](id_)
+        # allowed_ips = _s[__name + '.whitelisted'](id_)
         firewalld_overrides = qry('firewalld_overrides', {})
         rdata = OrderedDict([
-           (p, True),
-           (prefix + 'trusted_networks', allowed_ips)
+            (p, True),
+            # to smelly, whitelist too much with firewlld,
+            # use specific rules for specific case, no real needs
+            #    (prefix + 'trusted_networks', allowed_ips)
         ])
         pservices = rdata.setdefault(prefix+'public_services-append', [])
         is_ldap = is_ldap_master(id_) or is_ldap_slave(id_)

@@ -355,7 +355,13 @@ def _main(vopts, jconfig, errors=None):
             masq = z in jconfig['public_zones']
             if not masq:
                 masq = None
-            define_zone(z, zdata, masquerade=masq, errors=errors)
+            # NEVER ACTIVATE GLOBAL MASQUERADE OR WE LL FIND YOU
+            # AND WE WILL CUT YOUR FINGERS.
+            # define_zone(z, zdata, masquerade=masq, errors=errors)
+            # instead, use a rich rule to set masquerade via source/dest
+            # matching to restrict correctly the application of the masquerade
+            # perimeter
+            define_zone(z, zdata, errors=errors)
         except (Exception,) as ex:
             trace = traceback.format_exc()
             errors.append({'trace': trace,
