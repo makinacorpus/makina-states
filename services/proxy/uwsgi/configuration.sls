@@ -47,7 +47,7 @@ uwsgi-init-default-conf:
 
 {% set extra_confs = {
   '/usr/bin/uwsgi.sh': {"mode": "755"},
-  '/etc/systemd/system/uwsgi.conf': {"mode": "644"}
+  '/etc/systemd/system/uwsgi.service': {"mode": "644"}
 }%}
 
 {% for i, cdata in extra_confs.items() %}
