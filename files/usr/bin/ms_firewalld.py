@@ -104,8 +104,10 @@ import copy
 import traceback
 import logging
 import time
+import pstats
+import cProfile
+import datetime
 
-import firewall.client
 from firewall.functions import splitArgs
 from firewall.client import FirewallClient
 from firewall.client import FirewallClientZoneSettings
@@ -114,39 +116,94 @@ from firewall.client import FirewallClientServiceSettings
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument("--config", default='/etc/firewalld.json')
 parser.add_argument("--debug", default=False, action='store_true')
+parser.add_argument("--profile", default=False, action='store_true')
 _cache = {}
 
 log = logging.getLogger('makina-states.firewall')
-TIMEOUT = 60
+TIMEOUT = 20
 DEFAULT_TARGET = 'drop'
+RUNNINGS = ['RUNNING']
 
 
-def fw():
+def remove_client():
+    if _cache.get('f'):
+        client = _cache.pop('f', None)
+        if client is not None:
+            del client
+
+
+def fw(retries=6):
     '''
-    Do no cache calls, and get a client, everytime
-    to catch dbus hickups on restart
+    firewalld interface is nice, but due to DBUS, it is
+    a great field for various errors and hickups.
+
+    We then try to get a viable connexion, but also be really
+    smart on establishing one
     '''
+    # after 2 success full calls to the firewall
+    # we assume it is correctly configured
     if _cache.get('f') is not None:
-        try:
-            assert (
-                _cache['f'].getRichRules('public') is not None
-            )
-            time.sleep(0.01)
-            assert _cache['f'].getZones() is not None
-        except (Exception,):
-            cl = _cache.pop('f', None)
-            if cl is not None:
-                del cl
+        if _cache.get('f_call', 0) < 2:
+            try:
+                if _cache['f'].getZones() is None:
+                    time.sleep(0.05)
+                    assert _cache['f'].getZones() is not None
+                _cache.setdefault('f_call', 0)
+                _cache['f_call'] += 1
+            except (Exception,):
+                remove_client()
     if _cache.get('f') is None:
+        state = 'notready'
         ttl = time.time() + TIMEOUT
-        while (_cache.get('f') is None) and (time.time() < ttl):
-            _cache['f'] = FirewallClient()
-            if _cache['f'] is not None:
-                break
-            else:
-                time.sleep(0.01)
+        attempt = 0
+        established = False
+        loggued = False
+        while time.time() < ttl:
+            # if we have an instance, we have to wait until the firewall
+            # is in the running state
+            try:
+                attempt += 1
+                remove_client()
+                _cache['f'] = FirewallClient()
+                state = _cache['f'].get_property('state')
+                # if we have first contacted the firewall without being
+                # in running mode, there is a great chance for the dbus
+                # interface to be bugged.
+                # So there are two cases,
+                # - we assume that the connexion is established only if we
+                #   get directly a running state.
+                # - In other cases, we assume the firewall to be ready for
+                #   commands only on the second successful connection
+                #   on the dbus interface.
+                if state in RUNNINGS:
+                    stop = False
+                    if attempt == 1:
+                        stop = True
+                    elif not established:
+                        established = True
+                    else:
+                        stop = True
+                    if stop:
+                        log.info('firewalld seems now ready')
+                        break
+                    continue
+                else:
+                    established = False
+                time.sleep(0.4)
+            except (Exception,):
+                log.error(traceback.format_exc())
+                state = 'unknown'
+                # DBUS doent like at all retry spam
+                time.sleep(5)
+            if not loggued:
+                log.error('firewalld is not ready yet,'
+                          ' waiting ({0})'.format(state))
+                loggued = True
     if _cache.get('f') is None:
-        raise IOError('Cant contact firewalld daemon interface')
+        if not retries:
+            raise IOError('Cant contact firewalld daemon interface')
+        else:
+            return fw(retries-1)
     return _cache['f']
 
 
@@ -160,24 +217,80 @@ def lazy_reload():
         _cache['reload'] = False
 
 
-def get_zones():
+def get_zones(cache=True):
     '''
     Early stage wrapper to avoid dbus hicups
     '''
-    zones = None
-    ttl = time.time() + TIMEOUT
-    while (zones is None) and (time.time() < ttl):
-        try:
-            zones = fw().getZones()
-            break
-        except (Exception):
-            time.sleep(0.01)
-    if zones is None:
-        raise IOError('Cant get firewall zones')
-    return zones
+    key = 'zones'
+    result = _cache.get(key)
+    if not result or not cache:
+        zones = None
+        ttl = time.time() + TIMEOUT
+        while (zones is None) and (time.time() < ttl):
+            try:
+                zones = fw().getZones()
+                break
+            except (Exception):
+                log.error(traceback.format_exc())
+                time.sleep(0.01)
+        if zones is None:
+            raise IOError('Cant get firewall zones')
+        result = zones
+        _cache[key] = result
+    return result
 
 
-def define_zone(z, zdata, masquerade=None, errors=None, apply_retry=0, **kwargs):
+def get_service(s, cache=True):
+    key = 'service_{0}'.format(s)
+    result = _cache.get(key)
+    if not result or not cache:
+        result = fw().config().getService(s)
+        _cache[key] = result
+    return result
+
+
+def get_services(cache=True):
+    key = 'services'
+    result = _cache.get(key, {})
+    if not result or not cache:
+        ss = [get_service(a, cache=cache)
+              for a in fw().config().listServices()]
+        result = {}
+        for i in ss:
+            result[i.get_property('name')] = i
+        _cache[key] = result
+    return _cache[key]
+
+
+def service_ports(zsettings):
+    return [tuple("{0}".format(b) for b in a)
+            for a in zsettings.getPorts()]
+
+
+def in_zones(z):
+    zones = get_zones()
+    ret = z in zones
+    if not ret:
+        zones = get_zones(cache=False)
+    ret = z in zones
+    return ret
+
+
+def get_zone(z, cache=True):
+    k = 'zone_{0}'.format(z)
+    result = _cache.get(k, None)
+    if not result or not cache:
+        result = fw().config().getZoneByName(z)
+        _cache[k] = result
+    return result
+
+
+def define_zone(z,
+                zdata,
+                masquerade=None,
+                errors=None,
+                apply_retry=0,
+                **kwargs):
     if errors is None:
         errors = []
     if 'target' in zdata:
@@ -185,28 +298,26 @@ def define_zone(z, zdata, masquerade=None, errors=None, apply_retry=0, **kwargs)
     else:
         msg = 'Configure zone {0}'
     log.info(msg.format(z, zdata))
-    if z not in get_zones():
+    if not in_zones(z):
         try:
-            zn = fw().config().addZone(
-                z, FirewallClientZoneSettings())
+            zn = fw().config().addZone(z, FirewallClientZoneSettings())
         except (Exception,) as ex:
             if 'NAME_CONFLICT' in "{0}".format(ex):
                 mark_reload()
                 lazy_reload()
-                if z not in get_zones():
+                if not in_zones(z):
                     zn = fw().config().addZone(
                         z, FirewallClientZoneSettings())
                 else:
-                    zn = fw().config().getZoneByName(z)
+                    zn = get_zone(z)
             else:
                 raise ex
-
         zn.setShort(z)
         zn.setDescription(z)
         log.info(' - Zone created')
         mark_reload()
     else:
-        zn = fw().config().getZoneByName(z)
+        zn = get_zone(z)
     masquerade = bool(masquerade)
     cmask = bool(zn.getMasquerade())
     if cmask is not masquerade:
@@ -226,23 +337,6 @@ def define_zone(z, zdata, masquerade=None, errors=None, apply_retry=0, **kwargs)
             log.info(' - Zone edited')
             zn.setTarget(target)
             mark_reload()
-
-
-def get_services(cache=True):
-    services = _cache.get('s', {})
-    if not services or not cache:
-        ss = [fw().config().getService(a)
-              for a in fw().config().listServices()]
-        services = {}
-        for i in ss:
-            services[i.get_properties()['name']] = i
-        _cache['s'] = services
-    return services
-
-
-def service_ports(zsettings):
-    return [tuple("{0}".format(b) for b in a)
-            for a in zsettings.getPorts()]
 
 
 def define_service(z, zdata, errors=None, apply_retry=0, **kwargs):
@@ -293,17 +387,19 @@ def define_service(z, zdata, errors=None, apply_retry=0, **kwargs):
             log.info(' - Service edited')
 
 
-def link_interfaces(z, zdata, errors=None, apply_retry=0, **kwargs):
+def link_interfaces(z, zdata, interfaces, errors=None, apply_retry=0, **kwargs):
     if errors is None:
         errors = []
     log.info('Linking interfaces for zone: {0}'.format(z))
-    zones = get_zones()
-    if z not in zones:
+    if not in_zones(z):
         errors.append({'trace': '',
                        'type': 'interface/nozone',
                        'id': z,
                        'exception': ValueError('no {0}'.format(z))})
     for ifc in zdata.get('interfaces', []):
+        if z in interfaces.get(ifc, []):
+            log.info('  - {0} already in zone {1}'.format(ifc, z))
+            continue
         try:
             zn = z.lower()
             zone = fw().getZoneOfInterface(ifc)
@@ -396,7 +492,7 @@ def configure_directs(jconfig, errors=None, apply_retry=0, **kwargs):
             # cache can be a source of errors, if we are retrying we
             # skip cache
             if apply_retry > 0:
-                rules = get_directs(ache=False)
+                rules = get_directs(cache=False)
             else:
                 rules = get_directs()
             rules_chunks = get_direct_chunks(rules)
@@ -423,6 +519,8 @@ def configure_directs(jconfig, errors=None, apply_retry=0, **kwargs):
 def _main(vopts, jconfig, errors=None, apply_retry=0, **kwargs):
     if errors is None:
         errors = []
+    # be sure that the firewall client is avalaible and ready
+    fw()
     for z, zdata in six.iteritems(jconfig['zones']):
         try:
             masq = z in jconfig['public_zones']
@@ -454,9 +552,17 @@ def _main(vopts, jconfig, errors=None, apply_retry=0, **kwargs):
                            'exception': ex})
             log.error(trace)
 
+    # for each of our known zones; collect interface mappings
+    # this is an optimization as calling getZoneOfInterface is really slow
+    interfaces = {}
+    for z, izdata in six.iteritems(jconfig.get('zones', {})):
+        for ifc in fw().getInterfaces(z):
+            zns = interfaces.setdefault(ifc, [])
+            zns.append(z)
+
     for z, zdata in six.iteritems(jconfig['zones']):
         try:
-            link_interfaces(z, zdata, errors=errors,
+            link_interfaces(z, zdata, interfaces, errors=errors,
                             apply_retry=apply_retry, **kwargs)
         except (Exception,) as ex:
             trace = traceback.format_exc()
@@ -521,6 +627,9 @@ def main():
     opts = parser.parse_args()
     vopts = vars(opts)
     config = vopts['config']
+    if vopts.get('profile'):
+        pr = cProfile.Profile()
+        pr.enable()
     if not os.path.exists(config):
         raise OSError('No config: {0}'.format(config))
         os.exit(1)
@@ -574,6 +683,21 @@ def main():
         log.error('ERRORS WHILE CONFIGURATION OF FIREWALL')
         log.error('Return code (0 means configured,'
                   ' even if errors): {0}'.format(code))
+
+    if vopts.get('profile'):
+        date = datetime.datetime.now().isoformat()
+        if not os.path.exists('/tmp/stats'):
+            os.makedirs('/tmp/stats')
+        ficp = '/tmp/stats/firewalld.{0}.pstats'.format(date)
+        fico = '/tmp/stats/firewalld.{0}.dot'.format(date)
+        ficn = '/tmp/stats/firewalld.{0}.stats'.format(date)
+        if not os.path.exists(ficp):
+            pr.dump_stats(ficp)
+            with open(ficn, 'w') as fic:
+                pstats.Stats(pr, stream=fic).sort_stats('cumulative')
+        log.info('call:\npyprof2calltree '
+                 '-i "{0}" -o "{1}"'
+                 ''.format(ficp, fico))
     return code
 
 
