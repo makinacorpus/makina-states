@@ -108,7 +108,6 @@ import pstats
 import cProfile
 import datetime
 
-import firewall.client
 from firewall.functions import splitArgs
 from firewall.client import FirewallClient
 from firewall.client import FirewallClientZoneSettings
@@ -121,7 +120,7 @@ parser.add_argument("--profile", default=False, action='store_true')
 _cache = {}
 
 log = logging.getLogger('makina-states.firewall')
-TIMEOUT = 60
+TIMEOUT = 20
 DEFAULT_TARGET = 'drop'
 RUNNINGS = ['RUNNING']
 
@@ -133,10 +132,13 @@ def remove_client():
             del client
 
 
-def fw():
+def fw(retries=6):
     '''
-    Do no cache calls, and get a client, everytime
-    to catch dbus hickups on restart
+    firewalld interface is nice, but due to DBUS, it is
+    a great field for various errors and hickups.
+
+    We then try to get a viable connexion, but also be really
+    smart on establishing one
     '''
     # after 2 success full calls to the firewall
     # we assume it is correctly configured
@@ -152,45 +154,56 @@ def fw():
                 remove_client()
     if _cache.get('f') is None:
         state = 'notready'
-        ttl = time.time() + TIMEOUT * 4
-        need_restablish = False
+        ttl = time.time() + TIMEOUT
+        attempt = 0
+        established = False
         loggued = False
-        while (state not in RUNNINGS) and (time.time() < ttl):
+        while time.time() < ttl:
             # if we have an instance, we have to wait until the firewall
             # is in the running state
-            if need_restablish:
+            try:
+                attempt += 1
                 remove_client()
-            _cache['f'] = FirewallClient()
-            if _cache['f'] is not None:
-                try:
-                    state = _cache['f'].get_property('state')
-                    # if we have first contacted the firewall without being
-                    # in running mode, there is a great chance for the dbus
-                    # interface to be bugged, we assume that the connexion
-                    # is established only if we get directly a running state.
-                    if state in RUNNINGS:
-                        if not need_restablish:
-                            break
-                        else:
-                            need_restablish = False
-                            log.error('firewalld is now ready')
-                            continue
+                _cache['f'] = FirewallClient()
+                state = _cache['f'].get_property('state')
+                # if we have first contacted the firewall without being
+                # in running mode, there is a great chance for the dbus
+                # interface to be bugged.
+                # So there are two cases,
+                # - we assume that the connexion is established only if we
+                #   get directly a running state.
+                # - In other cases, we assume the firewall to be ready for
+                #   commands only on the second successful connection
+                #   on the dbus interface.
+                if state in RUNNINGS:
+                    stop = False
+                    if attempt == 1:
+                        stop = True
+                    elif not established:
+                        established = True
                     else:
-                        need_restablish = True
-                    time.sleep(0.04)
-                except (Exception,):
-                    state = 'unknown'
-                if not loggued:
-                    log.error('firewalld is not ready yet,'
-                              ' waiting ({0})'.format(state))
-                    loggued = True
-            else:
-                remove_client()
-                time.sleep(0.01)
-        if state not in RUNNINGS:
-            remove_client()
+                        stop = True
+                    if stop:
+                        log.info('firewalld seems now ready')
+                        break
+                    continue
+                else:
+                    established = False
+                time.sleep(0.4)
+            except (Exception,):
+                log.error(traceback.format_exc())
+                state = 'unknown'
+                # DBUS doent like at all retry spam
+                time.sleep(5)
+            if not loggued:
+                log.error('firewalld is not ready yet,'
+                          ' waiting ({0})'.format(state))
+                loggued = True
     if _cache.get('f') is None:
-        raise IOError('Cant contact firewalld daemon interface')
+        if not retries:
+            raise IOError('Cant contact firewalld daemon interface')
+        else:
+            return fw(retries-1)
     return _cache['f']
 
 
@@ -506,6 +519,8 @@ def configure_directs(jconfig, errors=None, apply_retry=0, **kwargs):
 def _main(vopts, jconfig, errors=None, apply_retry=0, **kwargs):
     if errors is None:
         errors = []
+    # be sure that the firewall client is avalaible and ready
+    fw()
     for z, zdata in six.iteritems(jconfig['zones']):
         try:
             masq = z in jconfig['public_zones']
