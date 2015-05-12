@@ -151,22 +151,39 @@ def fw():
             except (Exception,):
                 remove_client()
     if _cache.get('f') is None:
-        ttl = time.time() + TIMEOUT * 4
         state = 'notready'
+        ttl = time.time() + TIMEOUT * 4
+        need_restablish = False
+        loggued = False
         while (state not in RUNNINGS) and (time.time() < ttl):
             # if we have an instance, we have to wait until the firewall
             # is in the running state
+            if need_restablish:
+                remove_client()
             _cache['f'] = FirewallClient()
             if _cache['f'] is not None:
                 try:
                     state = _cache['f'].get_property('state')
+                    # if we have first contacted the firewall without being
+                    # in running mode, there is a great chance for the dbus
+                    # interface to be bugged, we assume that the connexion
+                    # is established only if we get directly a running state.
                     if state in RUNNINGS:
-                        break
+                        if not need_restablish:
+                            break
+                        else:
+                            need_restablish = False
+                            log.error('firewalld is now ready')
+                            continue
+                    else:
+                        need_restablish = True
                     time.sleep(0.04)
                 except (Exception,):
                     state = 'unknown'
-                log.error('firewalld is not ready yet,'
-                          ' waiting ({0})'.format(state))
+                if not loggued:
+                    log.error('firewalld is not ready yet,'
+                              ' waiting ({0})'.format(state))
+                    loggued = True
             else:
                 remove_client()
                 time.sleep(0.01)
@@ -201,6 +218,7 @@ def get_zones(cache=True):
                 zones = fw().getZones()
                 break
             except (Exception):
+                log.error(traceback.format_exc())
                 time.sleep(0.01)
         if zones is None:
             raise IOError('Cant get firewall zones')
