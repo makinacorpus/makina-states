@@ -25,7 +25,9 @@ prefered_ips = mc_states.api.prefered_ips
 PUBLIC_ZONES = ['public', 'external']
 INTERNAL_ZONES = ['internal', 'dmz', 'home', 'docker', 'lxc', 'virt']
 PUBLIC_SERVICES = ['http', 'https', 'smtp', 'dns', 'ssh']
-RULESETS = ['passthrough', 'direct', 'rules']
+DIRECT_RULESETS = ['passthrough', 'direct']
+ZONE_RULESETS = ['rules']
+RULESETS = DIRECT_RULESETS[:] + ZONE_RULESETS[:]
 FAILOVER_COUNT = 16
 DEFAULT_TARGET = 'drop'
 
@@ -231,7 +233,8 @@ def default_settings():
             'salt': {'port': [{'port': '4505-4506'}]},
             'smtps': {'port': [{'port': '465'}]},
             'imap': {'port': [{'port': '143'}]},
-            'imaps': {'port': [{'port': '993'}]}
+            'imaps': {'port': [{'port': '993'}]},
+            'https': {'port': [{'port': '443'}]}
         },
         #
         'have_rpn': _s['mc_provider.have_rpn'](),
@@ -294,9 +297,27 @@ def complete_rules(data):
         zdata = data['zones'][z]
         if not isinstance(zdata, dict):
             data['zones'].pop(z, None)
+
+    data.setdefault('rulesets', DIRECT_RULESETS[:])
+    for ruleset in data['rulesets']:
+        rules = data.setdefault(ruleset, [])
+        for i in [
+            a for a in data
+            if (
+                (a.endswith("-"+ruleset) or a.startswith(ruleset+"-")) and
+                a not in [ruleset])
+        ]:
+            val = data[i]
+            if isinstance(val, basestring):
+                val = [val]
+            if isinstance(val, list):
+                for i in val:
+                    if i not in rules:
+                        rules.append(i)
+
     for z in [a for a in data['zones']]:
         zdata = data['zones'][z]
-        zdata.setdefault('rulesets', RULESETS[:])
+        zdata.setdefault('rulesets', ZONE_RULESETS[:])
         for ruleset in zdata['rulesets']:
             rules = zdata.setdefault(ruleset, [])
             for i in [
@@ -838,7 +859,10 @@ def settings():
             services to allow
         restricted_services
             services to block
-
+        <XXX>-direct
+            direct rules
+        <XXX>-passthrough
+            direct/passthrough rules (not implemented yet)
         services
             list of services to deine
         zones
@@ -857,10 +881,6 @@ def settings():
 
         XXX-rules
             rich rules
-        XXX-direct
-            direct rules(not implemented yet)
-        XXX-passthrough
-            direct/passthrough rules (not implemented yet)
 
     For exmeple, to Add some rich rules in pillar to a zone, all
     ``makina-states.services.firewall.firewalld.zones.public.rules<id>``

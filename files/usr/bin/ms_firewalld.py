@@ -2,8 +2,6 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import sys
-
 
 '''
 CONFIGURE FIREWALLD
@@ -22,6 +20,9 @@ The JSON structure looks like::
 .. code-block:: json
 
    {
+     "direct": [
+       "ipv4 filter FORWARD 0 -s 2.1.3.2 -j ACCEPT"
+     ],
      "zones": {
          "public": {
              "interfaces": [
@@ -98,11 +99,14 @@ import os
 import json
 import argparse
 import six
+import sys
+import copy
 import traceback
 import logging
 import time
 
 import firewall.client
+from firewall.functions import splitArgs
 from firewall.client import FirewallClient
 from firewall.client import FirewallClientZoneSettings
 from firewall.client import FirewallClientServiceSettings
@@ -173,7 +177,7 @@ def get_zones():
     return zones
 
 
-def define_zone(z, zdata, masquerade=None, errors=None):
+def define_zone(z, zdata, masquerade=None, errors=None, apply_retry=0, **kwargs):
     if errors is None:
         errors = []
     if 'target' in zdata:
@@ -241,7 +245,7 @@ def service_ports(zsettings):
             for a in zsettings.getPorts()]
 
 
-def define_service(z, zdata, errors=None):
+def define_service(z, zdata, errors=None, apply_retry=0, **kwargs):
     if errors is None:
         errors = []
     msg = 'configure service {0}'
@@ -289,7 +293,7 @@ def define_service(z, zdata, errors=None):
             log.info(' - Service edited')
 
 
-def link_interfaces(z, zdata, errors=None):
+def link_interfaces(z, zdata, errors=None, apply_retry=0, **kwargs):
     if errors is None:
         errors = []
     log.info('Linking interfaces for zone: {0}'.format(z))
@@ -326,16 +330,27 @@ def get_rules(z, cache=True):
     return rules
 
 
-def configure_rules(z, zdata, errors=None):
+def get_directs(cache=True):
+    k = 'direct_rules'
+    rules = _cache.get(k, [])
+    if not rules or not cache:
+        rules = fw().getAllRules()
+        _cache[k] = rules
+    return rules
+
+
+def configure_rules(z, zdata, errors=None, apply_retry=0, **kwargs):
     if errors is None:
         errors = []
     log.info('Activating filtering rules for zone: {0}'.format(z))
     for rule in zdata.get('rules', []):
         try:
-            # XXX: cache seems dangerous for now
-            # inconsistent results :(
-            # rules = get_rules(z)
-            rules = get_rules(z, cache=False)
+            # cache can be a source of errors, if we are retrying we
+            # skip cache
+            if apply_retry > 0:
+                rules = get_rules(z, cache=False)
+            else:
+                rules = get_rules(z)
             rules_chunks = [sorted(a.split()) for a in rules]
             rule_chunk = sorted(rule.split())
             if rule_chunk not in rules_chunks:
@@ -354,7 +369,58 @@ def configure_rules(z, zdata, errors=None):
                            'exception': ex})
 
 
-def _main(vopts, jconfig, errors=None):
+def get_direct_chunks(rules):
+    rules_chunks = []
+    for a in rules[:]:
+        chunk = []
+        for rulepart in copy.deepcopy(a):
+            parts = rulepart
+            if not isinstance(parts, (list, tuple, dict, set)):
+                parts = [a for a in "{0}".format(parts).split()]
+            chunk.extend(sorted([a for a in parts]))
+        rules_chunks.append(chunk)
+    return rules_chunks
+
+
+def configure_directs(jconfig, errors=None, apply_retry=0, **kwargs):
+    if errors is None:
+        errors = []
+    log.info('Activating direct rules')
+    for rule in jconfig.get('direct', []):
+        try:
+            drule = rule.split(None, 4)
+            if len(drule) != 5:
+                raise ValueError(
+                    '{0} is not formatted as a direct rule'.format(rule))
+            rule_chunk = get_direct_chunks([drule])[0]
+            # cache can be a source of errors, if we are retrying we
+            # skip cache
+            if apply_retry > 0:
+                rules = get_directs(ache=False)
+            else:
+                rules = get_directs()
+            rules_chunks = get_direct_chunks(rules)
+            if rule_chunk not in rules_chunks:
+                rules = get_directs()
+                rules_chunks = get_direct_chunks(rules)
+            if rule_chunk not in rules_chunks:
+                log.info(' - Add {0}'.format(rule))
+                fw().addRule(drule[0],
+                             drule[1],
+                             drule[2],
+                             int(drule[3]),
+                             splitArgs(drule[4]))
+            else:
+                log.info(' - Already activated: {0}'.format(rule))
+        except (Exception) as ex:
+            trace = traceback.format_exc()
+            errors.append({'trace': trace,
+                           'type': 'directs/rule',
+                           'id': "directs/rule/{0}".format(rule),
+                           'exception': ex})
+
+
+def _main(vopts, jconfig, errors=None, apply_retry=0, **kwargs):
     if errors is None:
         errors = []
     for z, zdata in six.iteritems(jconfig['zones']):
@@ -368,7 +434,8 @@ def _main(vopts, jconfig, errors=None):
             # instead, use a rich rule to set masquerade via source/dest
             # matching to restrict correctly the application of the masquerade
             # perimeter
-            define_zone(z, zdata, errors=errors)
+            define_zone(z, zdata, errors=errors,
+                        apply_retry=apply_retry, **kwargs)
         except (Exception,) as ex:
             trace = traceback.format_exc()
             errors.append({'trace': trace,
@@ -377,7 +444,8 @@ def _main(vopts, jconfig, errors=None):
                            'exception': ex})
     for z, zdata in six.iteritems(jconfig['services']):
         try:
-            define_service(z, zdata, errors=errors)
+            define_service(z, zdata, errors=errors,
+                           apply_retry=apply_retry, **kwargs)
         except (Exception,) as ex:
             trace = traceback.format_exc()
             errors.append({'trace': trace,
@@ -388,7 +456,8 @@ def _main(vopts, jconfig, errors=None):
 
     for z, zdata in six.iteritems(jconfig['zones']):
         try:
-            link_interfaces(z, zdata, errors=errors)
+            link_interfaces(z, zdata, errors=errors,
+                            apply_retry=apply_retry, **kwargs)
         except (Exception,) as ex:
             trace = traceback.format_exc()
             errors.append({'trace': trace,
@@ -400,13 +469,25 @@ def _main(vopts, jconfig, errors=None):
 
     for z, zdata in six.iteritems(jconfig['zones']):
         try:
-            configure_rules(z, zdata, errors=errors)
+            configure_rules(z, zdata, errors=errors,
+                            apply_retry=apply_retry, **kwargs)
         except (Exception,) as ex:
             trace = traceback.format_exc()
             errors.append({'trace': trace,
                            'type': 'rules',
                            'id': z,
                            'exception': ex})
+
+    try:
+        configure_directs(jconfig, errors=errors,
+                          apply_retry=apply_retry, **kwargs)
+    except (Exception,) as ex:
+        trace = traceback.format_exc()
+        errors.append({'trace': trace,
+                       'type': 'directs',
+                       'id': z,
+                       'exception': ex})
+
     log.info('end conf')
     errortypes = [a['type'] for a in errors]
     if 'zone' in errortypes:
@@ -415,12 +496,16 @@ def _main(vopts, jconfig, errors=None):
         code = 2
     elif 'rules' in errortypes:
         code = 3
-    elif 'rule/rule' in errortypes:
+    elif 'rules/rule' in errortypes:
         code = 4
     elif 'interface' in errortypes:
         code = 5
     elif 'interfaces' in errortypes:
         code = 6
+    elif 'direct/rule' in errortypes:
+        code = 7
+    elif 'directs' in errortypes:
+        code = 8
     elif len(errors):
         code = 255
     else:
@@ -445,17 +530,26 @@ def main():
             # salt-call cache !?
             jconfig = jconfig['local']
     errors = []
-    code = _main(vopts, jconfig, errors=errors)
-    old_errors = errors
-    errors = []
-    if code:
+    apply_retry = 0
+    retries = 3
+    while retries:
+        retries -= 1
+        old_errors = errors
+        errors = []
         # on the first run, we can fail the first time
         # specially when switching fw (like with shorewall)
-        code = _main(vopts, jconfig, errors=errors)
+        code = _main(vopts, jconfig,
+                     errors=errors, apply_retry=apply_retry)
+        for i in reversed(old_errors):
+            if i not in errors:
+                errors.append(i)
+        if code:
+            apply_retry += 1
+        else:
+            break
     old_errors.extend(errors)
     displayed = []
     if errors:
-        log.error('ERRORS WHILE CONFIGURATION OF FIREWALL')
         for error in errors:
             if error in displayed:
                 continue
@@ -467,9 +561,8 @@ def main():
                 log.error(msg)
                 try:
                     log.error('EXCEPTION: {0}'.format(error['exception']))
-                except (Exception,) as ex:
-                    log.error('EXCEPTION:')
-                    log.error(error['exception'])
+                except (Exception,):
+                    pass
                 if vopts['debug']:
                     try:
                         log.error('TRACE:\n{0}'.format(error['trace']))
@@ -478,6 +571,9 @@ def main():
                         log.error(error['trace'])
             except Exception:
                 continue
+        log.error('ERRORS WHILE CONFIGURATION OF FIREWALL')
+        log.error('Return code (0 means configured,'
+                  ' even if errors): {0}'.format(code))
     return code
 
 
