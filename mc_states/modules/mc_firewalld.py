@@ -30,6 +30,26 @@ ZONE_RULESETS = ['rules']
 RULESETS = DIRECT_RULESETS[:] + ZONE_RULESETS[:]
 FAILOVER_COUNT = 16
 DEFAULT_TARGET = 'drop'
+LOCAL_NETS = ['10.0.0.0/8',
+              '192.168.0.0/16',
+              '172.16.0.0/12']
+
+
+def is_allow_local():
+    _s = __salt__
+    data_net = _s['mc_network.default_net']()
+    default_route = data_net['default_route']
+    local_mode = False
+    if __salt__['mc_nodetypes.is_container']():
+        # be local on the firewall side only if we are
+        # routing via the host only network and going
+        # outside througth NAT
+        # IOW
+        # if we have multiple interfaces and the default route is not on
+        # eth0, we certainly have a directly internet addressable lxc
+        # BE NOT local
+        local_mode = True
+    return local_mode
 
 
 def is_permissive():
@@ -37,23 +57,13 @@ def is_permissive():
     data_net = _s['mc_network.default_net']()
     default_route = data_net['default_route']
     permissive_mode = False
-    if __salt__['mc_nodetypes.is_container']():
-        # be permissive on the firewall side only if we are
-        # routing via the host only network and going
-        # outside througth NAT
-        # IOW
-        # if we have multiple interfaces and the default route is not on
-        # eth0, we certainly have a directly internet addressable lxc
-        # BE NOT permissive
-        rif = default_route.get('iface', 'eth0')
-        if rif == 'eth0':
-            permissive_mode = True
     return permissive_mode
 
 
 def fix_data(data=None):
     if data is None:
         data = {}
+    data.setdefault('local_networks', LOCAL_NETS[:])
     data.setdefault('services', {})
     data.setdefault('public_services', [])
     data.setdefault('restricted_services', [])
@@ -61,6 +71,7 @@ def fix_data(data=None):
     data.setdefault('banned_networks', [])
     data.setdefault('internal_zones', INTERNAL_ZONES[:])
     data.setdefault('permissive_mode', is_permissive())
+    data.setdefault('allow_local', is_allow_local())
     data.setdefault('public_zones', PUBLIC_ZONES[:])
     data.setdefault('trusted_networks', [])
     data.setdefault('trust_internal', True)
@@ -81,11 +92,40 @@ def get_configured_ifs(data):
     return configured_ifs
 
 
+def is_eth(ifc):
+    return ifc.startswith('eth') or ifc.startswith('em')
+
+
+def test_container(data=None):
+    if not data:
+        data = {}
+    return data.setdefault('is_container',
+                           __salt__['mc_nodetypes.is_container']())
+
+
+def test_rpn(data, iface, ems=None):
+    if not ems:
+        ems = []
+    realrpn = False
+    if data.get('have_rpn', False) and (
+        not test_container(data)
+    ) and (
+        iface in ['eth1'] or iface in ems
+    ):
+        if iface in ems:
+            if iface == ems[-1]:
+                realrpn = True
+        else:
+            realrpn = True
+    return realrpn
+
+
 def add_real_interfaces(data=None):
     _s = __salt__
     if data is None:
         data = {}
     fzones = data.setdefault('zones', OrderedDict())
+    is_container = test_container(data)
     data_net = _s['mc_network.default_net']()
     gifaces = data_net['gifaces']
     default_if = data_net['default_if']
@@ -98,7 +138,7 @@ def add_real_interfaces(data=None):
         z = None
         if iface in configured_ifs:
             continue
-        elif iface == default_if:
+        if (is_container and is_eth(iface)) or iface == default_if:
             z = dz
         # elif iface.startswith('veth'):
         #     z = 'trusted'
@@ -110,18 +150,12 @@ def add_real_interfaces(data=None):
             z = 'dck'
         elif 'lxc' in iface:
             z = 'lxc'
-        elif iface in ['eth1'] or iface in ems:
-            if data.get('have_rpn', False):
-                realrpn = False
-                if iface in ems:
-                    if iface == ems[-1]:
-                        realrpn = True
-                else:
-                    realrpn = True
-                if realrpn:
-                    z = 'rpn'
+        elif test_rpn(data, iface, ems):
+            z = 'rpn'
         elif iface in ['br0', 'eth0', 'em0']:
             z = dz
+        elif iface.startswith('eth') or iface.startswith('em'):
+            z = 'internal'
         if z:
             zone = fzones.setdefault(z, {})
             ifs = zone.setdefault('interfaces', [])
@@ -182,13 +216,14 @@ def add_aliased_interfaces(data=None):
 def default_settings():
     _s = __salt__
     DEFAULTS = {
-        'is_container': __salt__['mc_nodetypes.is_container'](),
         'aliased_interfaces': [],
         'default_zone': None,
         'aliases': FAILOVER_COUNT,
         'banned_networks': [],
         'trusted_networks': [],
         # list of mappings
+        'allow_local': True,
+        'local_networks': LOCAL_NETS[:],
         'no_cloud_rules': False,
         'no_salt': False,
         'no_ping': False,
@@ -210,7 +245,7 @@ def default_settings():
                                      'virbr1', 'vibr1']}),
             ('lxc', {'interfaces': ['lxcbr0', 'lxcbr1']}),
             ('docker', {'interfaces': ['docker0', 'docker1']}),
-            ('internal', {'interfaces': ['eth1', 'em1']}),
+            ('internal', {'interfaces': []}),
             ('public', {'interfaces': ['br0', 'eth0', 'em0']}),
             ('external', {}),
             ('home', {}),
@@ -244,6 +279,7 @@ def default_settings():
         'have_lxc': _s['mc_network.have_lxc_if'](),
         #
         'permissive_mode': is_permissive(),
+        'allow_local': is_allow_local(),
         'trust_internal': None,
         'extra_confs': {
             '/etc/default/firewalld': {},
@@ -252,6 +288,7 @@ def default_settings():
             '/etc/systemd/system/firewalld.service': {'mode': '644'},
             '/usr/bin/ms_firewalld.py': {'mode': '755'}
         }}
+    test_container(DEFAULTS)
     data = _s['mc_utils.defaults'](PREFIX, DEFAULTS)
     if data['trust_internal'] is None:
         data['trust_internal'] = True
@@ -371,7 +408,7 @@ def destination_allowed(rule):
 
 def complete_rich_rules(rules=None,
                         rule=None,
-                        families=None,
+                        family=None,
                         destinations=None,
                         icmp_block=None,
                         masquerade=None,
@@ -391,7 +428,7 @@ def complete_rich_rules(rules=None,
     Subroutine of the rich rule helper
     '''
     if not (
-        families and (
+        family and (
             masquerade or
             has_action(endrule or '') or
             ports or
@@ -409,7 +446,7 @@ def complete_rich_rules(rules=None,
 
     to_add_rules = [rule]
 
-    if families:
+    if family:
         buffer_rules = []
         for rule in to_add_rules:
             if 'family' in rule:
@@ -417,11 +454,10 @@ def complete_rich_rules(rules=None,
                     buffer_rules.append(rule)
                 continue
             else:
-                for p in families:
-                    prule = rule
-                    prule += ' family="{0}"'.format(p)
-                    if prule not in to_add_rules:
-                        buffer_rules.append(prule)
+                prule = rule
+                prule += ' family="{0}"'.format(family)
+                if prule not in to_add_rules:
+                    buffer_rules.append(prule)
         to_add_rules = buffer_rules
 
     if masquerade:
@@ -483,6 +519,10 @@ def complete_rich_rules(rules=None,
                 continue
             for p in destinations:
                 prule = rule
+                if 'ipv4' in rule  and ':' in p:
+                    continue
+                if 'ipv6' in rule and '.' in p:
+                    continue
                 prule += ' destination {0}'.format(p)
                 if prule not in buffer_rules:
                     buffer_rules.append(prule)
@@ -710,6 +750,9 @@ def get_public_ips(cache=True, data=None, ttl=120):
             if __salt__['mc_network.is_public'](ip):
                 is_public = True
                 break
+        # if containers, we assume that all ips are dealed the same way.
+        if test_container(data):
+            is_public = False
         public_ips = filter(_filter_local(is_public), public_ips)
         return public_ips
     cache_key = __name + 'get_public_ips'
@@ -717,8 +760,7 @@ def get_public_ips(cache=True, data=None, ttl=120):
         _do, [data], {}, cache_key, ttl)
 
 
-def rich_rules(families=None,
-               family='ipv4',
+def rich_rules(family='ipv4',
                sources=None,
                source=None,
                destinations=None,
@@ -805,6 +847,10 @@ def rich_rules(families=None,
     public_ips = [complete_address(d) for d in public_ips if d]
     destinations = [complete_address(d) for d in destinations if d]
 
+    address_protocols = protocols
+    if not address_protocols:
+        address_protocols = []
+
     if not protocols:
         protocols = ['udp', 'tcp']
     if not forward_ports:
@@ -844,11 +890,8 @@ def rich_rules(families=None,
         services.append(service)
     services = [a for a in services if a]
 
-    if not families:
-        families = []
-    families = families[:]
-    if family and family not in families:
-        families.append(family)
+    if not family:
+        family = 'ipv4'
 
     if not sources:
         sources = []
@@ -879,7 +922,7 @@ def rich_rules(families=None,
     sources = [complete_address(d) for d in sources]
     lsources = [a for a in sources if a]
 
-    if not families:
+    if not family:
         raise ValueError(
             'At least one network family must be selected')
 
@@ -887,7 +930,7 @@ def rich_rules(families=None,
     # can be comined in one call
     if masquerade:
         rules = complete_rich_rules(rules,
-                                    families=families,
+                                    family=family,
                                     masquerade=masquerade,
                                     sources=lsources,
                                     destinations=destinations,
@@ -901,7 +944,7 @@ def rich_rules(families=None,
     # can be comined in one call
     if icmp_block:
         rules = complete_rich_rules(rules,
-                                    families=families,
+                                    family=family,
                                     icmp_block=icmp_block,
                                     sources=lsources,
                                     destinations=destinations,
@@ -914,7 +957,7 @@ def rich_rules(families=None,
     # ports based rules
     if ports:
         rules = complete_rich_rules(rules,
-                                    families=families,
+                                    family=family,
                                     sources=sources,
                                     destinations=public_ips,
                                     audit=audit,
@@ -928,7 +971,7 @@ def rich_rules(families=None,
         # forward ports based rules
     if forward_ports:
         rules = complete_rich_rules(rules,
-                                    families=families,
+                                    family=family,
                                     sources=sources,
                                     destinations=public_ips,
                                     audit=audit,
@@ -942,7 +985,7 @@ def rich_rules(families=None,
     # services based rules
     if services:
         rules = complete_rich_rules(rules,
-                                    families=families,
+                                    family=family,
                                     sources=sources,
                                     destinations=public_ips,
                                     audit=audit,
@@ -962,7 +1005,7 @@ def rich_rules(families=None,
              forward_ports)
     ):
         rules = complete_rich_rules(rules,
-                                    families=families,
+                                    family=family,
                                     sources=sources,
                                     destinations=destinations,
                                     audit=audit,
@@ -970,7 +1013,7 @@ def rich_rules(families=None,
                                     log_level=log_level,
                                     log_prefix=log_prefix,
                                     limit=limit,
-                                    protocols=protocols,
+                                    protocols=address_protocols,
                                     action=action)
     return rules
 
@@ -1044,12 +1087,27 @@ def add_natted_networks(data=None):
                 to_nat.add(network)
     if not notinternal:
         notinternal = None
-    for network in to_nat:
-        add_rule(data=data,
-                 zones=notinternal,
-                 masquerade=True,
-                 source='address="{0}"'.format(network),
-                 destination='not address="{0}"'.format(network))
+
+    # do not automatically nat networks on containers
+    # users will have to setup rules manually
+    # but instead, we allow each local network, if ...
+    # it is local to connect, bindly.
+    if data['allow_local']:
+        for network in data['local_networks']:
+            nw = network.split('/')[0]
+            if __salt__['mc_network.is_public'](nw):
+                continue
+            add_rule(data=data,
+                     zones=notinternal,
+                     source='address="{0}"'.format(network),
+                     action='accept')
+    if not test_container(data):
+        for network in to_nat:
+            add_rule(data=data,
+                     zones=notinternal,
+                     masquerade=True,
+                     source='address="{0}"'.format(network),
+                     destination='not address="{0}"'.format(network))
     return data
 
 
@@ -1159,6 +1217,8 @@ def settings():
 
         permissive_mode
             force all traffic to be accepted
+        allow_local
+            force all traffic from rfc1918 to be accepted
         public_interfaces
             internet faced interfaces
         internal_interfaces
