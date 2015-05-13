@@ -87,7 +87,8 @@ def run_tests(flavors=None, use_vt=True):
         flavors = flavors.split(',')
     success = OrderedDict()
     failures = OrderedDict()
-    for step in ['lint', 'unit']:
+    #for step in ['lint', 'unit']:
+    for step in ['unit']:
         try:
             utils.test_setup()
             success[step] = __salt__['mc_test.{0}_tests'.format(step)](use_vt=use_vt)
