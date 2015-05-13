@@ -234,6 +234,7 @@ def default_settings():
             'smtps': {'port': [{'port': '465'}]},
             'imap': {'port': [{'port': '143'}]},
             'imaps': {'port': [{'port': '993'}]},
+            'http': {'port': [{'port': '80'}]},
             'https': {'port': [{'port': '443'}]}
         },
         #
