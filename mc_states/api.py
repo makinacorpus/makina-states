@@ -638,25 +638,26 @@ def memoize_cache(func,
 
     # after the run, try to cache on any cache server
     # and fallback on next server in case of failures
-
     if put_in_cache and (ret is not _default):
         cached = False
-        for cache in caches:
+        for ix, cache in enumerate(caches):
             try:
+                # never cache in the less priority caches more than 1 minute
+                if ix:
+                    try:
+                        if seconds > 60:
+                            seconds = 60
+                    except (ValueError, TypeError):
+                        seconds = 60
                 cache[key] = {'value': ret,
                               'time': time.time(),
                               'ttl': seconds}
                 cached = True
             except Exception:
                 cached = False
-                trace = traceback.format_exc()
+                log.error('error while settings cache {0}'.format(trace))
             if cached:
                 break
-        if caches and not cached:
-            if trace:
-                log.error('error while settings cache {0}'.format(trace))
-            else:
-                log.error('error while settings cache')
     return ret
 
 

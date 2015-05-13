@@ -30,6 +30,7 @@ Subregistries
 
    mc_dns.rst
    mc_firewalld.rst
+   mc_dbus.rst
    mc_apparmor.rst
    mc_apache.rst
    mc_autoupgrade.rst

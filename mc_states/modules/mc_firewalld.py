@@ -293,6 +293,18 @@ def get_endrule(audit=None,
     return endrule
 
 
+def has_action(rule):
+    ret = (
+        ('service' in rule) or
+        (' port ' in rule) or
+        (' protocol ' in rule) or
+        ('icmp-block' in rule) or
+        ('masquerade' in rule) or
+        ('forward-port' in rule)
+    )
+    return ret
+
+
 def complete_rules(data):
     for z in [a for a in data['zones']]:
         zdata = data['zones'][z]
@@ -337,21 +349,296 @@ def complete_rules(data):
     return data
 
 
-def add_dest_rules(destinations, rules, rule, endrule, action=None):
-    if action:
-        endrule += ' {0}'.format(action)
-    sep = ''
-    if endrule and not endrule.startswith(' '):
-        sep = ' '
-    if not destinations:
-        rule = rule + sep + endrule
-        if rule not in rules:
-            rules.append(rule)
+def action_allowed(rule):
+    ret = not (
+        ('masquerade' in rule) or
+        ('forward-port' in rule) or
+        ('icmp-block' in rule)
+    )
+    return ret
+
+
+def source_allowed(rule):
+    return ' source ' not in rule
+
+
+def destination_allowed(rule):
+    return (
+        (' destination' not in rule) and
+        (' masquerade' not in rule)
+    )
+
+
+def complete_rich_rules(rules=None,
+                        rule=None,
+                        families=None,
+                        destinations=None,
+                        icmp_block=None,
+                        masquerade=None,
+                        sources=None,
+                        protocols=None,
+                        ports=None,
+                        forward_ports=None,
+                        services=None,
+                        endrule=None,
+                        audit=None,
+                        log=None,
+                        log_prefix=None,
+                        log_level=None,
+                        limit=None,
+                        action=None):
+    '''
+    Subroutine of the rich rule helper
+    '''
+    if not (
+        families and (
+            masquerade or
+            has_action(endrule or '') or
+            ports or
+            forward_ports or
+            icmp_block or
+            (sources or destinations)
+        )
+    ):
+        raise ValueError('invalid invocation')
     else:
-        for d in destinations:
-            crule = '{0} destination {1}{3}{2}'.format(rule, d, endrule, sep)
-            if crule not in rules:
-                rules.append(crule)
+        if rules is None:
+            rules = []
+        if not rule:
+            rule = 'rule'
+
+    to_add_rules = [rule]
+
+    if families:
+        buffer_rules = []
+        for rule in to_add_rules:
+            if 'family' in rule:
+                if rule not in buffer_rules:
+                    buffer_rules.append(rule)
+                continue
+            else:
+                for p in families:
+                    prule = rule
+                    prule += ' family="{0}"'.format(p)
+                    if prule not in to_add_rules:
+                        buffer_rules.append(prule)
+        to_add_rules = buffer_rules
+
+    if masquerade:
+        buffer_rules = []
+        for rule in to_add_rules:
+            if has_action(rule):
+                if rule not in buffer_rules:
+                    buffer_rules.append(rule)
+                continue
+            else:
+                prule = rule
+                prule += ' masquerade'
+                if prule not in buffer_rules:
+                    buffer_rules.append(prule)
+        to_add_rules = buffer_rules
+
+    if icmp_block:
+        buffer_rules = []
+        if isinstance(icmp_block, six.string_types):
+            icmp_block = [icmp_block]
+        elif not isinstance(icmp_block, list):
+            icmp_block = ['']
+        prules = []
+        for i in icmp_block:
+            rule = 'icmp-block'
+            if i:
+                rule += ' name="{0}"'.format(i)
+            if rule not in prules:
+                prules.append(rule)
+        for rule in to_add_rules:
+            if has_action(rule):
+                continue
+            for prule in prules:
+                prule = '{0} {1}'.format(rule, prule)
+                if prule not in buffer_rules:
+                    buffer_rules.append(prule)
+        to_add_rules = buffer_rules
+
+    if sources:
+        buffer_rules = []
+        for rule in to_add_rules:
+            if not source_allowed(rule):
+                if rule not in buffer_rules:
+                    buffer_rules.append(rule)
+                continue
+            for p in sources:
+                prule = rule
+                prule += ' source {0}'.format(p)
+                if prule not in buffer_rules:
+                    buffer_rules.append(prule)
+        to_add_rules = buffer_rules
+
+    if destinations:
+        buffer_rules = []
+        for rule in to_add_rules:
+            if not destination_allowed(rule):
+                if rule not in buffer_rules:
+                    buffer_rules.append(rule)
+                continue
+            for p in destinations:
+                prule = rule
+                prule += ' destination {0}'.format(p)
+                if prule not in buffer_rules:
+                    buffer_rules.append(prule)
+        to_add_rules = buffer_rules
+
+    if ports:
+        buffer_rules = []
+        pprotocols = protocols
+        if not pprotocols:
+            pprotocols = ['tcp', 'udp']
+        for rule in to_add_rules:
+            if has_action(rule):
+                if rule not in buffer_rules:
+                    buffer_rules.append(rule)
+                continue
+            for portid, fromport in six.iteritems(ports):
+                fromp = fromport['port']
+                protocols = fromport.get('protocols', pprotocols[:])
+                for protocol in protocols:
+                    prule = rule
+                    prule += ' port port="{0}" protocol="{1}"'.format(
+                        fromp, protocol)
+                    if prule not in buffer_rules:
+                        buffer_rules.append(prule)
+        to_add_rules = buffer_rules
+
+    if forward_ports:
+        buffer_rules = []
+        pprotocols = protocols
+        if not pprotocols:
+            pprotocols = ['tcp', 'udp']
+        for rule in to_add_rules:
+            if has_action(rule):
+                if rule not in buffer_rules:
+                    buffer_rules.append(rule)
+                continue
+            for portid, portdata in six.iteritems(forward_ports):
+                fromp = portdata['port']
+                protocols = portdata.get('protocols', pprotocols[:])
+                to_port = portdata.get('to_port')
+                to_addr = portdata.get('to_addr')
+                for protocol in protocols:
+                    prule = rule
+                    prule += (
+                        ' forward-port port="{0}" protocol="{1}"'
+                    ).format(fromp, protocol)
+                    if to_port:
+                        prule += ' to-port="{0}"'.format(to_port)
+                    if to_addr:
+                        prule += ' to-addr="{0}"'.format(to_addr)
+                    if prule not in buffer_rules:
+                        buffer_rules.append(prule)
+        to_add_rules = buffer_rules
+
+    if services:
+        buffer_rules = []
+        for rule in to_add_rules:
+            if has_action(rule):
+                if rule not in buffer_rules:
+                    buffer_rules.append(rule)
+                continue
+            for svc in services:
+                prule = rule
+                prule += ' service name="{0}"'.format(svc)
+                if prule not in buffer_rules:
+                    buffer_rules.append(prule)
+        to_add_rules = buffer_rules
+
+    if protocols:
+        buffer_rules = []
+        for rule in to_add_rules:
+            if not (
+                ('source ' in rule) or
+                ('destination ' in rule)
+            ) or (
+                has_action(rule)
+            ):
+                if rule not in buffer_rules:
+                    buffer_rules.append(rule)
+                continue
+            for protocol in protocols:
+                prule = rule
+                prule += ' protocol value="{0}"'.format(protocol)
+                if prule not in buffer_rules:
+                    buffer_rules.append(prule)
+        to_add_rules = buffer_rules
+
+    if endrule:
+        buffer_rules = []
+        for rule in to_add_rules:
+            if has_action(endrule) and has_action(rule):
+                if rule not in buffer_rules:
+                    buffer_rules.append(rule)
+                continue
+            prule = rule
+            prule += ' {0}'.format(endrule)
+            if prule not in buffer_rules:
+                buffer_rules.append(prule)
+        to_add_rules = buffer_rules
+
+    if log:
+        buffer_rules = []
+        logrule = ' log'
+        if log_level:
+            logrule += ' level="{0}"'.format(log_level)
+        if log_prefix:
+            logrule += ' prefix="{0}"'.format(log_prefix)
+        for rule in to_add_rules:
+            prule = rule
+            prule += ' {0}'.format(logrule)
+            if prule not in buffer_rules:
+                buffer_rules.append(prule)
+        to_add_rules = buffer_rules
+    elif audit:
+        buffer_rules = []
+        logrule += ' audit'
+        if isinstance(audit, basestring):
+            logrule += ' {0}'.format(audit)
+        for rule in to_add_rules:
+            prule = rule
+            prule += ' {0}'.format(logrule)
+            if prule not in buffer_rules:
+                buffer_rules.append(prule)
+        to_add_rules = buffer_rules
+
+    if limit and (log or audit):
+        buffer_rules = []
+        logrule = ' limit value="{0}"'.format(limit)
+        for rule in to_add_rules:
+            prule = rule
+            prule += ' {0}'.format(logrule)
+            if prule not in buffer_rules:
+                buffer_rules.append(prule)
+        to_add_rules = buffer_rules
+
+    if action:
+        buffer_rules = []
+        for rule in to_add_rules:
+            if not action_allowed(rule):
+                if rule not in buffer_rules:
+                    buffer_rules.append(rule)
+                continue
+            prule = rule
+            prule += ' {0}'.format(action)
+            if prule not in buffer_rules:
+                buffer_rules.append(prule)
+        to_add_rules = buffer_rules
+
+    for rule in to_add_rules:
+        if (
+            rule.strip() and
+            rule not in rules and
+            rule not in ['rule']
+        ):
+            rules.append(rule)
+
     return rules
 
 
@@ -365,13 +652,15 @@ def complete_address(address):
     return address
 
 
-def get_public_ips(cache=True, ttl=120):
+def get_public_ips(cache=True, data=None, ttl=120):
     if not cache:
         ttl = 0
 
-    def _do():
+    def _do(data):
+        if not data:
+            data = cached_default_settings()
+        running_net = __salt__['mc_network.default_net']()
         net = __salt__['mc_network.settings']()
-        data = cached_default_settings()
         ifcs = set()
         public_ips = set()
         zones = data.get('zones', {})
@@ -390,6 +679,12 @@ def get_public_ips(cache=True, ttl=120):
 
         # if we are early in privisonning, we get a change to configure
         # the rules via the net settings
+        for iface, ips in running_net.get('gifaces', []):
+            if ifc not in ifcs:
+                continue
+            for addr in ips:
+                if addr:
+                    public_ips.add(addr)
         for interfaces in net.get('ointerfaces', []):
             for ifc, odata in six.iteritems(interfaces):
                 ifc = ifc.replace('_', ':')
@@ -398,18 +693,28 @@ def get_public_ips(cache=True, ttl=120):
                 addr = odata.get('address', '')
                 if addr:
                     public_ips.add(addr)
-        public_ips.add('192.168.0.1')
-        public_ips.add('127.0.0.1')
         public_ips = list(public_ips)
 
-        def _filter_local(ip):
-            return __salt__['mc_network.is_public'](ip)
+        def _filter_local(is_public):
+            def do(ip):
+                if is_public:
+                    return __salt__['mc_network.is_public'](ip)
+                else:
+                    return not __salt__['mc_network.is_loopback'](ip)
+            return do
 
-        public_ips = filter(_filter_local, public_ips)
+        # filter public_ips only if if have at least one public ip*
+        # this enable to work on private only networks
+        for i in public_ips[:]:
+            is_public = False
+            if __salt__['mc_network.is_public'](ip):
+                is_public = True
+                break
+        public_ips = filter(_filter_local(is_public), public_ips)
         return public_ips
     cache_key = __name + 'get_public_ips'
     return __salt__['mc_utils.memoize_cache'](
-        _do, [], {}, cache_key, ttl)
+        _do, [data], {}, cache_key, ttl)
 
 
 def rich_rules(families=None,
@@ -429,11 +734,15 @@ def rich_rules(families=None,
                forward_ports=None,
                forward_port=None,
                limit=None,
+               icmp_block=None,
                masquerade=False,
                action='accept',
                public_ips=None,
                protocols=None):
     '''
+    Helper to generate rich rules compatibles with firewalld
+
+    see firewalld.richlanguage(5) (man)
 
     public_ips
         firewalld does make special forward rules relying on packet
@@ -475,11 +784,13 @@ def rich_rules(families=None,
                    audit=True, action='drop')
     '''
     rules = []
+
     if not destinations:
         destinations = []
     destinations = destinations[:]
     if destination and destination not in destinations:
         destinations.append(destination)
+
     if public_ips is False:
         public_ips = []
     elif not public_ips:
@@ -493,14 +804,12 @@ def rich_rules(families=None,
             public_ips = get_public_ips()
     public_ips = [complete_address(d) for d in public_ips if d]
     destinations = [complete_address(d) for d in destinations if d]
+
     if not protocols:
         protocols = ['udp', 'tcp']
     if not forward_ports:
         forward_ports = []
-    forward_ports = forward_ports[:]
-    if forward_port and forward_port not in forward_ports:
-        forward_ports.append(forward_port)
-    forward_ports = [a for a in forward_ports if isinstance(a, dict)]
+
     if not ports:
         ports = []
     ports = ports[:]
@@ -522,23 +831,30 @@ def rich_rules(families=None,
         else:
             raise ValueError('\'{0}\' is not a dict'.format(port))
     ports = nports
+
+    forward_ports = forward_ports[:]
+    if forward_port and forward_port not in forward_ports:
+        forward_ports.append(forward_port)
+    forward_ports = [a for a in forward_ports if isinstance(a, dict)]
+
     if not services:
         services = []
     services = services[:]
     if service and service not in services:
         services.append(service)
+    services = [a for a in services if a]
+
     if not families:
         families = []
     families = families[:]
     if family and family not in families:
         families.append(family)
+
     if not sources:
         sources = []
     sources = sources[:]
     if source and source not in sources:
         sources.append(source)
-    if destinations and not sources:
-        sources = ['0.0.0.0']
 
     # forwarded ports defs wins over port defs
     nforward_ports = {}
@@ -559,123 +875,103 @@ def rich_rules(families=None,
         if p['port'] in ports:
             ports.pop(p['port'], None)
         nforward_ports[p['port']] = p
-    if (ports or services or forward_ports) and not sources:
-        sources = [None]
+
     sources = [complete_address(d) for d in sources]
     lsources = [a for a in sources if a]
-    for fml in families:
-        if masquerade:
-            mrule = 'rule family="{0}" masquerade'.format(family)
-            if lsources and not destinations:
-                for s in lsources:
-                    smrule = mrule + ' source {0}'.format(s)
-                    if smrule not in rules:
-                        rules.append(smrule)
-            elif lsources and destinations:
-                for s in lsources:
-                    smrule = mrule + ' source {0}'.format(s)
-                    for d in destinations:
-                        dsmrule = smrule + ' destination {0}'.format(d)
-                        if dsmrule not in rules:
-                            rules.append(dsmrule)
-            elif not lsources and destinations:
-                for d in destinations:
-                    dsmrule = mrule + ' destination {0}'.format(d)
-                    if dsmrule not in rules:
-                        rules.append(dsmrule)
-            elif not lsources and not destinations:
-                if mrule not in rules:
-                    rules.append(mrule)
-        for src in sources:
-            for portid, fromport in six.iteritems(ports):
-                fromp = fromport['port']
-                protocols = fromport.get('protocols', protocols[:])
-                for protocol in protocols:
-                    rule = 'rule'
-                    if family:
-                        rule += ' family="{0}"'.format(fml)
-                    if src and src not in ['address="0.0.0.0"']:
-                        rule += ' source {0}'.format(src)
-                    rule += ' port port="{0}" protocol="{1}"'.format(
-                        fromp, protocol)
-                    endrule = get_endrule(
-                        audit=audit,
-                        log=log,
-                        log_level=log_level,
-                        log_prefix=log_prefix,
-                        limit=limit)
-                    add_dest_rules(destinations,
-                                   rules,
-                                   rule,
-                                   endrule,
-                                   action=action)
-            for portid, portdata in six.iteritems(nforward_ports):
-                fromp = portdata['port']
-                protocols = portdata.get('protocols', protocols[:])
-                to_port = portdata.get('to_port')
-                to_addr = portdata.get('to_addr')
-                for protocol in protocols:
-                    rule = 'rule'
-                    if family:
-                        rule += ' family="{0}"'.format(fml)
-                    if source:
-                        rule += ' source {0}'.format(src)
-                    rule += (
-                        ' forward-port port="{0}" protocol="{1}"'
-                    ).format(fromp, protocol)
-                    if to_port:
-                        rule += ' to-port="{0}"'.format(to_port)
-                    if to_addr:
-                        rule += ' to-addr="{0}"'.format(to_addr)
-                    endrule = get_endrule(
-                        audit=audit,
-                        log=log,
-                        log_level=log_level,
-                        log_prefix=log_prefix,
-                        limit=limit)
-                    add_dest_rules(public_ips, rules, rule, endrule)
-            for svc in services:
-                rule = 'rule'
-                if family:
-                    rule += ' family="{0}"'.format(fml)
-                if src and src not in ['address="0.0.0.0"']:
-                    rule += ' source {0}'.format(src)
-                if svc:
-                    rule += ' service name="{0}"'.format(svc)
-                endrule = get_endrule(
-                    audit=audit,
-                    log=log,
-                    log_level=log_level,
-                    log_prefix=log_prefix,
-                    limit=limit)
-                add_dest_rules([],
-                               rules,
-                               rule,
-                               endrule,
-                               action=action)
-            if (
-                (src and protocols) and
-                not (ports or services or forward_ports)
-            ):
-                rule = 'rule'
-                if family:
-                    rule += ' family="{0}"'.format(fml)
-                if src and src not in ['address="0.0.0.0"']:
-                    rule += ' source {0}'.format(src)
-                for protocol in protocols:
-                    prule = rule
-                    prule += ' protocol value="{0}"'.format(protocol)
-                    endrule = get_endrule(
-                        audit=audit,
-                        log=log,
-                        log_level=log_level,
-                        log_prefix=log_prefix,
-                        limit=limit)
-                    add_dest_rules([],
-                                   rules,
-                                   prule,
-                                   endrule,
-                                   action=action)
+
+    if not families:
+        raise ValueError(
+            'At least one network family must be selected')
+
+    # masquerade is a special beast, and only masquerading rules
+    # can be comined in one call
+    if masquerade:
+        rules = complete_rich_rules(rules,
+                                    families=families,
+                                    masquerade=masquerade,
+                                    sources=lsources,
+                                    destinations=destinations,
+                                    log=log,
+                                    log_level=log_level,
+                                    log_prefix=log_prefix,
+                                    limit=limit)
+        return rules
+
+    # icmp_block is a special beast, and only icmp_block rules
+    # can be comined in one call
+    if icmp_block:
+        rules = complete_rich_rules(rules,
+                                    families=families,
+                                    icmp_block=icmp_block,
+                                    sources=lsources,
+                                    destinations=destinations,
+                                    log=log,
+                                    log_level=log_level,
+                                    log_prefix=log_prefix,
+                                    limit=limit)
+        return rules
+
+    # ports based rules
+    if ports:
+        rules = complete_rich_rules(rules,
+                                    families=families,
+                                    sources=sources,
+                                    destinations=public_ips,
+                                    audit=audit,
+                                    ports=ports,
+                                    log=log,
+                                    log_level=log_level,
+                                    log_prefix=log_prefix,
+                                    limit=limit,
+                                    action=action)
+
+        # forward ports based rules
+    if forward_ports:
+        rules = complete_rich_rules(rules,
+                                    families=families,
+                                    sources=sources,
+                                    destinations=public_ips,
+                                    audit=audit,
+                                    forward_ports=nforward_ports,
+                                    log=log,
+                                    log_level=log_level,
+                                    log_prefix=log_prefix,
+                                    limit=limit,
+                                    action=action)
+
+    # services based rules
+    if services:
+        rules = complete_rich_rules(rules,
+                                    families=families,
+                                    sources=sources,
+                                    destinations=public_ips,
+                                    audit=audit,
+                                    services=services,
+                                    log=log,
+                                    log_level=log_level,
+                                    log_prefix=log_prefix,
+                                    limit=limit,
+                                    action=action)
+
+    # source or dest only based rules
+    if (
+        ((sources or destinations) and protocols) and
+        not (masquerade or
+             ports or
+             services or
+             forward_ports)
+    ):
+        rules = complete_rich_rules(rules,
+                                    families=families,
+                                    sources=sources,
+                                    destinations=destinations,
+                                    audit=audit,
+                                    log=log,
+                                    log_level=log_level,
+                                    log_prefix=log_prefix,
+                                    limit=limit,
+                                    protocols=protocols,
+                                    action=action)
     return rules
 
 
@@ -737,15 +1033,20 @@ def add_natted_networks(data=None):
     data = fix_data(data)
     to_nat = set()
     natted = data.get('natted_networks', {})
+    notinternal = []
     for z in data.get('zones', {}):
         if z not in data.get('internal_zones', []):
+            notinternal.append(z)
             continue
         zdata = data['zones'][z]
         for ifc in zdata.get('interfaces', []):
             for network in natted.get(ifc, []):
                 to_nat.add(network)
+    if not notinternal:
+        notinternal = None
     for network in to_nat:
         add_rule(data=data,
+                 zones=notinternal,
                  masquerade=True,
                  source='address="{0}"'.format(network),
                  destination='not address="{0}"'.format(network))

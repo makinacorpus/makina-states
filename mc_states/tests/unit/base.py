@@ -29,6 +29,7 @@ sys.path.append(D(D(mc_states.__file__)))
 
 import mc_states.tests.utils
 import mc_states.saltapi
+import mc_states.api
 
 six = mc_states.saltapi.six
 
@@ -81,6 +82,8 @@ class _ModuleCase(unittest.TestCase):
         return ret
 
     def reset(self):
+        for i in [a for a in mc_states.api._LOCAL_CACHES]:
+            mc_states.api._LOCAL_CACHES.pop(i, {})
         for i in [a for a in self.dunders_]:
             val = self.dunders_.pop(i)
             del val
@@ -282,7 +285,7 @@ class _ModuleCase(unittest.TestCase):
                     module, sfun = fun.split('.')
                     mglobs = mod_globs.setdefault(module, copy.deepcopy(globs))
                     mglobs[sfun] = callback
-                    k = 'patch_fun_{0}'.format(module, fun)
+                    k = 'patch_fun_{0}{1}'.format(module, fun)
                     tpatchs[k] = patch.dict(self.salt, {fun: callback})
         for opt in self.contextual:
             overriden = kwargs.get(opt, {})

@@ -83,6 +83,7 @@ def registry():
                 'log.ulogd': {'force': True, 'active': ulogden},
                 'base.ntp': {'force': True, 'active': ntpen},
                 'base.ntp.uninstall': {'active': ntp_u},
+                'base.dbus': {'force': True, 'active': True},
                 'base.ssh': {'force': True, 'active': sshen},
                 'dns.dhcpd': {'active': False},
                 'dns.bind': {'force': True, 'active': binden},
