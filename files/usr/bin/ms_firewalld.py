@@ -555,10 +555,15 @@ def _main(vopts, jconfig, errors=None, apply_retry=0, **kwargs):
     # for each of our known zones; collect interface mappings
     # this is an optimization as calling getZoneOfInterface is really slow
     interfaces = {}
-    for z, izdata in six.iteritems(jconfig.get('zones', {})):
-        for ifc in fw().getInterfaces(z):
-            zns = interfaces.setdefault(ifc, [])
-            zns.append(z)
+    try:
+        for z, izdata in six.iteritems(jconfig.get('zones', {})):
+            for ifc in fw().getInterfaces(z):
+                zns = interfaces.setdefault(ifc, [])
+                zns.append(z)
+    except (Exception,) as ex:
+        trace = traceback.format_exc()
+        log.error('zone may not exists yet')
+        log.error(trace)
 
     for z, zdata in six.iteritems(jconfig['zones']):
         try:
