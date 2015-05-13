@@ -1,5 +1,5 @@
 include:
-  - makina-states.services.proxy.dbus.hooks
+  - makina-states.services.base.dbus.hooks
 {% if salt['mc_controllers.mastersalt_mode']() %}
 makina-dbus-service:
   service.running:

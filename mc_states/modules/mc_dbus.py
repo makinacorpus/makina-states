@@ -34,12 +34,16 @@ def settings():
             'is_container': __salt__['mc_nodetypes.is_container'](),
             'packages': ['dbus'],
             'extra_confs': {
-                # '/etc/default/dbus': {},
-                # '/etc/dbus.json': {'mode': '644'},
-                # '/etc/init.d/dbus': {'mode': '755'},
-                # '/etc/systemd/system/dbus.service': {'mode': '644'},
-                # '/usr/bin/ms_dbus.py': {'mode': '755'}
             }}
+
+        if (
+            __grains__.get('os') == 'Ubuntu' and
+            __grains__.get('osrelease', '') <= '15.04'
+        ):
+            DEFAULTS['extra_confs'].update(
+                {
+                    '/etc/init/dbus.conf': {'mode': '644'}
+                })
         data = _s['mc_utils.defaults'](PREFIX, DEFAULTS)
         return data
     return _settings()

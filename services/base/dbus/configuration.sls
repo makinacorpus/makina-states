@@ -1,15 +1,15 @@
 {% import "makina-states/_macros/h.jinja" as h with context %}
 {% set data = salt['mc_dbus.settings']() %}
 include:
-  - makina-states.services.proxy.dbus.hooks
+  - makina-states.services.base.dbus.hooks
 {% if salt['mc_controllers.mastersalt_mode']() %}
-  - makina-states.services.proxy.dbus.service
-{{% macro rmacro() %}
+  - makina-states.services.base.dbus.service
+{% macro rmacro() %}
     - watch:
-      - mc_proxy: firewalld-preconf
+      - mc_proxy: dbus-preconf
     - watch_in:
-      - mc_proxy: firewalld-postconf
+      - mc_proxy: dbus-postconf
 {% endmacro %}
 {{ h.deliver_config_files(
-     data.get('extra_confs', {}), after_macro=rmacro, prefix='fwld-')}}
+     data.get('extra_confs', {}), after_macro=rmacro, prefix='dbus-')}}
 {% endif %}
