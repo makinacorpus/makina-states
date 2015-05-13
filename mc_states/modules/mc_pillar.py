@@ -1939,7 +1939,7 @@ def get_password(id_, user='root', ttl=PILLAR_TTL, regenerate=False, length=12,
     Return user/password mappings for a particular host from
     a global pillar passwords map. Create it if not done
     '''
-    def _do_pass(id_, user='root'):
+    def _do(id_, user='root'):
         db_reg = __salt__[__name + '.query']('passwords_map', {})
         db_id = db_reg.setdefault(id_, {})
         pw_reg = __salt__['mc_macros.get_local_registry'](
@@ -1976,15 +1976,15 @@ def get_password(id_, user='root', ttl=PILLAR_TTL, regenerate=False, length=12,
             __salt__['mc_macros.update_local_registry'](
                 'passwords_map', pw_reg, registry_format='pack')
         cpw = __salt__['mc_utils.unix_crypt'](pw)
-        return {'clear': pw,
-                'crypted': cpw}
+        return {'clear': pw, 'crypted': cpw}
     if force or regenerate:
-        return _do_pass(id_, user)
-    cache_key = __name + '.get_passwords_for_{0}_{1}'.format(id_, user)
-    return __salt__['mc_utils.memoize_cache'](_do_pass, [id_, user], {}, cache_key, ttl)
+        return _do(id_, user)
+    cache_key = __name + '.get_passwords_for_{0}_{1}1'.format(id_, user)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [id_, user], {}, cache_key, ttl)
 
 
-def get_passwords(id_, ttl=PILLAR_TTL):
+def get_passwords(id_, force=False, ttl=PILLAR_TTL):
     '''
     Return user/password mappings for a particular host from
     a global pillar passwords map
@@ -1992,10 +1992,7 @@ def get_passwords(id_, ttl=PILLAR_TTL):
     But if does not exists in the db, lookup inside the local one
     If stiff non found, generate it and store in in local
     '''
-    if not id_:
-        id_ = __opts__['id']
-
-    def _do_pass(id_):
+    def _do(id_, force):
         defaults_users = ['root', 'sysadmin']
         pw_reg = __salt__['mc_macros.get_local_registry'](
             'passwords_map', registry_format='pack')
@@ -2008,7 +2005,7 @@ def get_passwords(id_, ttl=PILLAR_TTL):
                 if user not in users:
                     users.append(user)
         for user in users:
-            pws = get_password(id_, user)
+            pws = get_password(id_, user, force=force)
             pw = pws['clear']
             cpw = pws['crypted']
             crypted[user] = cpw
@@ -2016,23 +2013,26 @@ def get_passwords(id_, ttl=PILLAR_TTL):
             db_id[user] = pw
         passwords = {'clear': pw_id, 'crypted': crypted}
         return passwords
-    cache_key = __name + '.get_passwords_{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do_pass, [id_], {}, cache_key, ttl)
+    cache_key = __name + '.get_passwords_2{0}{1}'.format(id_, force)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [id_, force], {}, cache_key, ttl)
 
 
 def regenerate_passwords(ids_=None, users=None):
-    pw_reg = __salt__['mc_macros.get_local_registry'](
-        'passwords_map', registry_format='pack')
+    pw_reg = copy.deepcopy(
+        __salt__['mc_macros.get_local_registry'](
+            'passwords_map', registry_format='pack')
+    )
     if ids_ and not isinstance(ids_, list):
         ids_ = ids_.split(',')
     if users and not isinstance(users, list):
         users = users.split(',')
     for pw_id in [a for a in pw_reg]:
-        data = pw_reg[a]
+        data = pw_reg[pw_id]
         if ids_ and pw_id not in ids_:
             continue
         for u, pw, in copy.deepcopy(data).items():
-            print pw_id, u
+            print(pw_id, u)
             if users and u not in users:
                 continue
             get_password(pw_id, u, force=True)

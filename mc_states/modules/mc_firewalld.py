@@ -652,23 +652,29 @@ def rich_rules(families=None,
                                rule,
                                endrule,
                                action=action)
-            if src and not (ports or services):
+            if (
+                (src and protocols) and
+                not (ports or services or forward_ports)
+            ):
                 rule = 'rule'
                 if family:
                     rule += ' family="{0}"'.format(fml)
                 if src and src not in ['address="0.0.0.0"']:
                     rule += ' source {0}'.format(src)
-                endrule = get_endrule(
-                    audit=audit,
-                    log=log,
-                    log_level=log_level,
-                    log_prefix=log_prefix,
-                    limit=limit)
-                add_dest_rules([],
-                               rules,
-                               rule,
-                               endrule,
-                               action=action)
+                for protocol in protocols:
+                    prule = rule
+                    prule += ' protocol value="{0}"'.format(protocol)
+                    endrule = get_endrule(
+                        audit=audit,
+                        log=log,
+                        log_level=log_level,
+                        log_prefix=log_prefix,
+                        limit=limit)
+                    add_dest_rules([],
+                                   rules,
+                                   prule,
+                                   endrule,
+                                   action=action)
     return rules
 
 
