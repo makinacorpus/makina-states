@@ -444,7 +444,7 @@ class TestCase(base.ModuleCase):
                  'trusted': {'interfaces': ['lo']},
                  'vpn': {'interfaces': ['tun1']}})
 
-    def test_is_permissive(self):
+    def test_is_allow_local(self):
         with self.patch(
             funcs={
                 'modules': {
@@ -474,7 +474,7 @@ class TestCase(base.ModuleCase):
                 filtered=['mc.*'],
                 kinds=['modules']
             ):
-                self.assertFalse(self._('mc_firewalld.is_permissive')())
+                self.assertFalse(self._('mc_firewalld.is_allow_local')())
 
         with self.patch(
             funcs={
@@ -506,9 +506,9 @@ class TestCase(base.ModuleCase):
                 filtered=['mc.*'],
                 kinds=['modules']
             ):
-                self.assertTrue(self._('mc_firewalld.is_permissive')())
+                self.assertTrue(self._('mc_firewalld.is_allow_local')())
 
-    def test_is_permissiveb(self):
+    def test_is_allow_localb(self):
         with self.patch(
             funcs={
                 'modules': {
@@ -538,7 +538,7 @@ class TestCase(base.ModuleCase):
                 filtered=['mc.*'],
                 kinds=['modules']
             ):
-                self.assertFalse(self._('mc_firewalld.is_permissive')())
+                self.assertFalse(self._('mc_firewalld.is_allow_local')())
 
         with self.patch(
             funcs={
@@ -569,7 +569,7 @@ class TestCase(base.ModuleCase):
                 filtered=['mc.*'],
                 kinds=['modules']
             ):
-                self.assertFalse(self._('mc_firewalld.is_permissive')())
+                self.assertFalse(self._('mc_firewalld.is_allow_local')())
 
     def test_default_settings(self):
         p = 'makina-states.services.firewall.firewalld.zones.public.'

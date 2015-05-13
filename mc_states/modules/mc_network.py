@@ -356,6 +356,14 @@ def is_loopback(ip):
         return False
 
 
+def is_link_local(ip):
+    try:
+        iaddr = ipaddr.IPAddress(ip)
+        return iaddr.is_link_local
+    except (Exception,):
+        return False
+
+
 def is_public(ip):
     try:
         iaddr = ipaddr.IPAddress(ip)
