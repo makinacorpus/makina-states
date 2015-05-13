@@ -13,6 +13,7 @@ include:
   - makina-states.services.firewall.firewalld.prerequisites
   - makina-states.services.firewall.firewalld.configuration
   - makina-states.services.firewall.firewalld.service
+  - makina-states.services.base.dbus
 {% endif %}
 firewalld-orchestrate:
   mc_proxy.hook:

@@ -2,11 +2,14 @@ include:
   - makina-states.localsettings.network.hooks
 # retrocompat, wire into shorewall hooks
   - makina-states.services.firewall.shorewall.hooks
+  - makina-states.services.base.dbus.hooks
 firewalld-preinstall:
   mc_proxy.hook:
     - watch:
       - mc_proxy: shorewall-postdisable
       - mc_proxy: network-last-hook
+      - mc_proxy: dbus-postrestart
+      - mc_proxy: dbus-posthardrestart
     - watch_in:
       - mc_proxy: firewalld-postinstall
       - mc_proxy: firewalld-preconf
@@ -34,10 +37,10 @@ firewalld-postconf:
 firewalld-prerestart:
   mc_proxy.hook:
     - watch:
-      - mc_proxy: shorewall-prerestart 
+      - mc_proxy: shorewall-prerestart
     - watch_in:
       - mc_proxy: firewalld-postrestart
 firewalld-postrestart:
   mc_proxy.hook:
     - watch:
-      - mc_proxy: shorewall-postrestart 
+      - mc_proxy: shorewall-postrestart
