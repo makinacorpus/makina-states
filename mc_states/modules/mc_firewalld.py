@@ -259,6 +259,8 @@ def default_settings():
             'dhcp': {'port': [{'port': '67-68'}]},
             'mastersalt': {'port': [{'port': '4605-4606'}]},
             'mongodb': {'port': [{'port': '27017'}]},
+            # ftp on containers wont use conntrack
+            'ftpnc': {'port': [{'port': '21'}]},
             'mumble': {'port': [{'port': '64738'}]},
             'mysql': {'port': [{'port': '3306'}]},
             'postgresql': {'port': [{'port': '5432'}]},
