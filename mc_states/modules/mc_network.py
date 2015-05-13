@@ -348,6 +348,14 @@ def settings():
     return _settings()
 
 
+def is_loopback(ip):
+    try:
+        iaddr = ipaddr.IPAddress(ip)
+        return iaddr.is_loopback
+    except (Exception,):
+        return False
+
+
 def is_public(ip):
     try:
         iaddr = ipaddr.IPAddress(ip)
