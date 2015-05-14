@@ -11,9 +11,15 @@ iptables="iptables -w"
 iptablest="iptables -w -t"
 
 salt=""
-if [ "x${1}" = "xfromsalt" ];then
-    salt=1
-fi
+nohard=""
+for i in $@;do
+    if [ "x${i}" = "xfromsalt" ];then
+        salt=1
+    fi
+    if [ "x${i}" = "xnohard" ];then
+        nohard=1
+    fi
+done
 
 salt_status() {
     if [ "x${salt}" = "x1" ];then
@@ -145,8 +151,10 @@ main() {
     done
     if [ "x${disabled}" = "x" ];then
         echo "Soft disabling failed"
-        hard_disable
-        gret=${?}
+        if [ "x${nohard}" = "x" ];then
+            hard_disable
+            gret=${?}
+        fi
     fi
 }
 main
