@@ -5,7 +5,7 @@ include:
   - makina-states.services.base.dbus.hooks
 firewalld-preinstall:
   mc_proxy.hook:
-    - watch:
+    - require:
       - mc_proxy: shorewall-postdisable
       - mc_proxy: network-last-hook
       - mc_proxy: dbus-postrestart
@@ -23,11 +23,12 @@ firewalld-postinstall:
       - mc_proxy: firewalld-prerestart
 firewalld-preconf:
   mc_proxy.hook:
-    - watch:
+    - require:
       - mc_proxy: shorewall-postconf
     - watch_in:
       - mc_proxy: firewalld-postconf
       - mc_proxy: firewalld-prerestart
+    - require_in:
       - mc_proxy: shorewall-prerestart
 firewalld-postconf:
   mc_proxy.hook:
@@ -36,11 +37,11 @@ firewalld-postconf:
       - mc_proxy: firewalld-postrestart
 firewalld-prerestart:
   mc_proxy.hook:
-    - watch:
+    - require:
       - mc_proxy: shorewall-prerestart
     - watch_in:
       - mc_proxy: firewalld-postrestart
 firewalld-postrestart:
   mc_proxy.hook:
-    - watch:
+    - require:
       - mc_proxy: shorewall-postrestart

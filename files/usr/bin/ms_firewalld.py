@@ -116,6 +116,7 @@ from firewall.client import FirewallClientServiceSettings
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument("--config", default='/etc/firewalld.json')
 parser.add_argument("--debug", default=False, action='store_true')
+parser.add_argument("--fromsalt", default=False, action='store_true')
 parser.add_argument("--profile", default=False, action='store_true')
 _cache = {}
 
@@ -289,10 +290,13 @@ def define_zone(z,
                 zdata,
                 masquerade=None,
                 errors=None,
+                changes=None,
                 apply_retry=0,
                 **kwargs):
     if errors is None:
         errors = []
+    if changes is None:
+        changes = []
     if 'target' in zdata:
         msg = 'Configure zone {0}: {1[target]}'
     else:
@@ -314,7 +318,9 @@ def define_zone(z,
                 raise ex
         zn.setShort(z)
         zn.setDescription(z)
-        log.info(' - Zone created')
+        msg = ' - Zone {0} created'.format(z)
+        log.info(msg)
+        changes.append(msg)
         mark_reload()
     else:
         zn = get_zone(z)
@@ -322,7 +328,9 @@ def define_zone(z,
     cmask = bool(zn.getMasquerade())
     if cmask is not masquerade:
         zn.setMasquerade(masquerade)
-        log.info(' - Masquerade: {0}'.format(masquerade))
+        msg = ' - Masquerade: {0}/{1}'.format(z, masquerade)
+        log.info(msg)
+        changes.append(msg)
     target = zdata.get('target', None)
     if 'target' in zdata:
         ztarget = "{0}".format(zn.getTarget())
@@ -334,14 +342,23 @@ def define_zone(z,
                 'default': 'default'
             }.get(target.lower(), target.upper())
         if ztarget != target:
-            log.info(' - Zone edited')
+            msg = ' - Zone {0} edited'.format(z)
+            log.info(msg)
+            changes.append(msg)
             zn.setTarget(target)
             mark_reload()
 
 
-def define_service(z, zdata, errors=None, apply_retry=0, **kwargs):
+def define_service(z,
+                   zdata,
+                   errors=None,
+                   changes=None,
+                   apply_retry=0,
+                   **kwargs):
     if errors is None:
         errors = []
+    if changes is None:
+        changes = []
     msg = 'configure service {0}'
     if zdata:
         if zdata.get('port'):
@@ -353,12 +370,15 @@ def define_service(z, zdata, errors=None, apply_retry=0, **kwargs):
                 portinfo = '{0}/{1}'.format(portinfo, port['protocol'])
             if portinfo:
                 msg = '{0} {1}'.format(msg, portinfo)
-    log.info(msg.format(z, zdata))
+    msg = msg.format(z, zdata)
+    log.info(msg)
     aservices = get_services()
     if z not in aservices:
         aservices = get_services(cache=False)
     if z not in aservices:
-        log.info(' - Service created')
+        msg = ' - Service created {0}'.format(z)
+        log.info(msg)
+        changes.append(msg)
         zsettings = fw().config().addService(
             z, FirewallClientServiceSettings())
         zsettings.setShort(z)
@@ -384,13 +404,24 @@ def define_service(z, zdata, errors=None, apply_retry=0, **kwargs):
         if diff:
             zsettings.setPorts(ports)
             mark_reload()
-            log.info(' - Service edited')
+            msg = ' - Service edited {0}'.format(z)
+            log.info(msg)
+            changes.append(msg)
 
 
-def link_interfaces(z, zdata, interfaces, errors=None, apply_retry=0, **kwargs):
+def link_interfaces(z,
+                    zdata,
+                    interfaces,
+                    errors=None,
+                    changes=None,
+                    apply_retry=0,
+                    **kwargs):
     if errors is None:
         errors = []
-    log.info('Linking interfaces for zone: {0}'.format(z))
+    if changes is None:
+        changes = []
+    msg = 'Linking interfaces for zone: {0}'.format(z)
+    log.info(msg)
     if not in_zones(z):
         errors.append({'trace': '',
                        'type': 'interface/nozone',
@@ -398,7 +429,8 @@ def link_interfaces(z, zdata, interfaces, errors=None, apply_retry=0, **kwargs):
                        'exception': ValueError('no {0}'.format(z))})
     for ifc in zdata.get('interfaces', []):
         if z in interfaces.get(ifc, []):
-            log.info('  - {0} already in zone {1}'.format(ifc, z))
+            msg = '  - {0} already in zone {1}'.format(ifc, z)
+            log.info(msg)
             continue
         try:
             zn = z.lower()
@@ -408,7 +440,9 @@ def link_interfaces(z, zdata, interfaces, errors=None, apply_retry=0, **kwargs):
             zone = zone.lower()
             if zone != zn:
                 zone = fw().changeZoneOfInterface(z, ifc)
-                log.info('Moved {0} to zone {1}'.format(ifc, zone))
+                msg = 'Moved {0} to zone {1}'.format(ifc, zone)
+                log.info(msg)
+                changes.append(msg)
         except (Exception,) as ex:
             trace = traceback.format_exc()
             errors.append({'trace': trace,
@@ -435,10 +469,18 @@ def get_directs(cache=True):
     return rules
 
 
-def configure_rules(z, zdata, errors=None, apply_retry=0, **kwargs):
+def configure_rules(z,
+                    zdata,
+                    errors=None,
+                    changes=None,
+                    apply_retry=0,
+                    **kwargs):
     if errors is None:
         errors = []
-    log.info('Activating filtering rules for zone: {0}'.format(z))
+    if changes is None:
+        changes = []
+    msg = 'Activating filtering rules for zone: {0}'.format(z)
+    log.info(msg)
     for rule in zdata.get('rules', []):
         try:
             # cache can be a source of errors, if we are retrying we
@@ -453,10 +495,13 @@ def configure_rules(z, zdata, errors=None, apply_retry=0, **kwargs):
                 rules = get_rules(z, cache=False)
                 rules_chunks = [sorted(a.split()) for a in rules]
             if rule_chunk not in rules_chunks:
-                log.info(' - Add {0}'.format(rule))
+                msg = ' - Add {0}/{1}'.format(z, rule)
+                log.info(msg)
+                changes.append(msg)
                 fw().addRichRule(z, rule)
             else:
-                log.info(' - Already activated: {0}'.format(rule))
+                msg = ' - Already activated: {0}/{1}'.format(z, rule)
+                log.info(msg)
         except (Exception)as ex:
             trace = traceback.format_exc()
             errors.append({'trace': trace,
@@ -478,10 +523,17 @@ def get_direct_chunks(rules):
     return rules_chunks
 
 
-def configure_directs(jconfig, errors=None, apply_retry=0, **kwargs):
+def configure_directs(jconfig,
+                      errors=None,
+                      changes=None,
+                      apply_retry=0,
+                      **kwargs):
     if errors is None:
         errors = []
-    log.info('Activating direct rules')
+    if changes is None:
+        changes = []
+    msg = 'Activating direct rules'
+    log.info(msg)
     for rule in jconfig.get('direct', []):
         try:
             drule = rule.split(None, 4)
@@ -500,14 +552,17 @@ def configure_directs(jconfig, errors=None, apply_retry=0, **kwargs):
                 rules = get_directs()
                 rules_chunks = get_direct_chunks(rules)
             if rule_chunk not in rules_chunks:
-                log.info(' - Add {0}'.format(rule))
+                msg = ' - Add direct rule {0}'.format(rule)
+                log.info(msg)
+                changes.append(msg)
                 fw().addRule(drule[0],
                              drule[1],
                              drule[2],
                              int(drule[3]),
                              splitArgs(drule[4]))
             else:
-                log.info(' - Already activated: {0}'.format(rule))
+                msg = ' - Already activated: {0}'.format(rule)
+                log.info(msg)
         except (Exception) as ex:
             trace = traceback.format_exc()
             errors.append({'trace': trace,
@@ -516,9 +571,16 @@ def configure_directs(jconfig, errors=None, apply_retry=0, **kwargs):
                            'exception': ex})
 
 
-def _main(vopts, jconfig, errors=None, apply_retry=0, **kwargs):
+def _main(vopts,
+          jconfig,
+          errors=None,
+          changes=None,
+          apply_retry=0,
+          **kwargs):
     if errors is None:
         errors = []
+    if changes is None:
+        changes = []
     # be sure that the firewall client is avalaible and ready
     fw()
     for z, zdata in six.iteritems(jconfig['zones']):
@@ -532,7 +594,7 @@ def _main(vopts, jconfig, errors=None, apply_retry=0, **kwargs):
             # instead, use a rich rule to set masquerade via source/dest
             # matching to restrict correctly the application of the masquerade
             # perimeter
-            define_zone(z, zdata, errors=errors,
+            define_zone(z, zdata, errors=errors, changes=changes,
                         apply_retry=apply_retry, **kwargs)
         except (Exception,) as ex:
             trace = traceback.format_exc()
@@ -542,7 +604,7 @@ def _main(vopts, jconfig, errors=None, apply_retry=0, **kwargs):
                            'exception': ex})
     for z, zdata in six.iteritems(jconfig['services']):
         try:
-            define_service(z, zdata, errors=errors,
+            define_service(z, zdata, errors=errors, changes=changes,
                            apply_retry=apply_retry, **kwargs)
         except (Exception,) as ex:
             trace = traceback.format_exc()
@@ -568,7 +630,8 @@ def _main(vopts, jconfig, errors=None, apply_retry=0, **kwargs):
     for z, zdata in six.iteritems(jconfig['zones']):
         try:
             link_interfaces(z, zdata, interfaces, errors=errors,
-                            apply_retry=apply_retry, **kwargs)
+                            changes=changes, apply_retry=apply_retry,
+                            **kwargs)
         except (Exception,) as ex:
             trace = traceback.format_exc()
             errors.append({'trace': trace,
@@ -580,7 +643,7 @@ def _main(vopts, jconfig, errors=None, apply_retry=0, **kwargs):
 
     for z, zdata in six.iteritems(jconfig['zones']):
         try:
-            configure_rules(z, zdata, errors=errors,
+            configure_rules(z, zdata, errors=errors, changes=changes,
                             apply_retry=apply_retry, **kwargs)
         except (Exception,) as ex:
             trace = traceback.format_exc()
@@ -590,7 +653,7 @@ def _main(vopts, jconfig, errors=None, apply_retry=0, **kwargs):
                            'exception': ex})
 
     try:
-        configure_directs(jconfig, errors=errors,
+        configure_directs(jconfig, errors=errors, changes=changes,
                           apply_retry=apply_retry, **kwargs)
     except (Exception,) as ex:
         trace = traceback.format_exc()
@@ -632,6 +695,9 @@ def main():
     opts = parser.parse_args()
     vopts = vars(opts)
     config = vopts['config']
+    if vopts.get('fromsalt'):
+        root_logger = logging.getLogger()
+        root_logger.disabled = True
     if vopts.get('profile'):
         pr = cProfile.Profile()
         pr.enable()
@@ -643,6 +709,7 @@ def main():
         if [a for a in jconfig] == ['local']:
             # salt-call cache !?
             jconfig = jconfig['local']
+    changes = []
     errors = []
     apply_retry = 0
     retries = 3
@@ -653,7 +720,9 @@ def main():
         # on the first run, we can fail the first time
         # specially when switching fw (like with shorewall)
         code = _main(vopts, jconfig,
-                     errors=errors, apply_retry=apply_retry)
+                     changes=changes,
+                     errors=errors,
+                     apply_retry=apply_retry)
         for i in reversed(old_errors):
             if i not in errors:
                 errors.append(i)
@@ -703,6 +772,18 @@ def main():
         log.info('call:\npyprof2calltree '
                  '-i "{0}" -o "{1}"'
                  ''.format(ficp, fico))
+    if vopts.get('fromsalt', False):
+        if changes:
+            changes = '\n'.join(
+                [a.replace('"', '').replace("'", '') for a in changes])
+            ret = {'changed': True,
+                   'comment': (
+                       'Firewalld reconfigured --\n'
+                       '{0}\n'
+                       '"').format(changes)}
+        else:
+            ret = {'changed': False, 'comment': 'Firewalld in place'}
+        print(json.dumps(ret))
     return code
 
 

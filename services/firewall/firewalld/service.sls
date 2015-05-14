@@ -58,7 +58,8 @@ firewalld:
       - mc_proxy: firewalld-postrestart
 firewalld-reapply:
   cmd.run:
-    - name: /usr/bin/ms_firewalld.py
+    - name: /usr/bin/ms_firewalld.py --fromsalt
+    - stateful: true
     - watch:
       - service: firewalld
       - mc_proxy: firewalld-prerestart
