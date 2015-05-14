@@ -41,10 +41,19 @@ shorewall-disable-makinastates-shorewall:
       - mc_proxy: shorewall-predisable
     - watch_in:
       - mc_proxy: shorewall-postdisable
+shorewall-purge-shorewall:
+  pkg.purged:
+    - pkgs: [shorewall, shorewall6]
+    - watch:
+      - file: shorewall-disable-makinastates-shorewall
+      - mc_proxy: shorewall-predisable
+    - watch_in:
+      - mc_proxy: shorewall-postdisable
 shorewall-uninstall-shorewall:
   pkg.removed:
     - pkgs: [shorewall, shorewall6]
     - watch:
+      - pkg: shorewall-purge-shorewall
       - file: shorewall-disable-makinastates-shorewall
       - mc_proxy: shorewall-predisable
     - watch_in:
