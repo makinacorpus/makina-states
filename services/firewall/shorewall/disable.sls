@@ -2,6 +2,7 @@
 include:
   - makina-states.services.firewall.shorewall.hooks
   - makina-states.services.firewall.firewall.hooks
+  - makina-states.services.firewall.shorewall.unregister
   - makina-states.services.firewall.firewall.configuration
 shorewall-disable-stop-shorewall:
   file.managed:
