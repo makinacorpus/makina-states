@@ -9,6 +9,28 @@ if [ "x${DEBUG}" != "x" ];then
 fi
 iptables="iptables -w"
 iptablest="iptables -w -t"
+
+salt=""
+if [ "x${1}" = "xfromsalt" ];then
+    salt=1
+fi
+
+salt_status() {
+    if [ "x${salt}" = "x1" ];then
+        line="changed=${1}"
+        shift
+        if [ "x${@}" != "x" ];then
+            line="${line} comment='${@}'"
+        fi
+        echo "${line}"
+    else
+        shift
+        if [ "x${@}" != "x" ];then
+            echo ${@}
+        fi
+    fi
+}
+
 die() {
     if [ ${?} != "x0" ];then
         if [ x"$@" != "x" ];then
@@ -57,6 +79,11 @@ hard_disable() {
     if [ "x${?}" != "x0" ];then ret=${?};fi
     accept_policies
     if [ "x${?}" != "x0" ];then ret=${?};fi
+    if [ "x${?}" = "x0" ];then
+        salt_status yes "Firewall disabled"
+    else
+        salt_status yes "Firewall not disabled"
+    fi
     return ${ret}
 }
 s_witch(){
@@ -64,10 +91,12 @@ s_witch(){
     return ${?}
 }
 soft_disable() {
+    echo "Soft disabling firewall"
     ret=0
     fic=$(mktemp)
     if s_witch iptables-save && s_witch iptables-restore;then
         doit=""
+        if [ -e "${fic}" ];then rm -f "${fic}";fi
         iptables-save > "${fic}"
         if [ -e ${fic} ];then
             if grep -q -- "-j DROP" "${fic}";then doit="x";fi
@@ -75,8 +104,18 @@ soft_disable() {
             sed -i -re "s/-j (DROP|REJECT).*/-j ACCEPT/g" "${fic}"
             sed -i "/-j LOG/ d" "${fic}"
             if [ "x${doit}" != "x" ];then
+                echo "Applying permissive firewall rules"
                 iptables-restore < ${fic}
-                if [ "x${?}" != "x0" ];then ret=${?};fi
+                if [ "x${?}" != "x0" ];then
+                    ret=${?}
+                fi
+                if [ "x${?}" != "x0" ];then
+                    salt_status yes "Firewall not soft disabled"
+                else
+                    salt_status yes "Firewall soft disabled"
+                fi
+            else
+                salt_status no "No restrictive rules were found"
             fi
         else
             ret=1
@@ -87,14 +126,29 @@ soft_disable() {
     if [ -e "${fic}" ];then rm -f "${fic}";fi
     return ${ret}
 }
-ret=0
-permissive_routing
-accept_policies
-if ! soft_disable;then
-    ret=${?}
-    echo "Soft disabling failed"
-    hard_disable
-    ret=${?}
-fi
-exit ${?}
+
+main() {
+    gret=0
+    permissive_routing
+    accept_policies
+    disabled=""
+    for i in $(seq 5);do
+        if ! soft_disable;then
+            echo "Retrying to soft disabling the firewall (${i})"
+            sleep 1
+            gret=1
+        else
+            gret=0
+            disabled="x"
+            break
+        fi
+    done
+    if [ "x${disabled}" = "x" ];then
+        echo "Soft disabling failed"
+        hard_disable
+        gret=${?}
+    fi
+}
+main
+exit ${gret}
 # vim:set et sts=4 ts=4 tw=80:
