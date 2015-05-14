@@ -1774,6 +1774,7 @@ def get_snmpd_settings(id_=None, ttl=PILLAR_TTL):
 
 
 def get_firewalld_conf(id_, ttl=PILLAR_TTL):
+
     def _do(id_):
         _s = __salt__
         gconf = get_configuration(id_)
@@ -2884,8 +2885,10 @@ def manage_bridged_fo_kvm_network(fqdn, host, ipsfo,
             'dnsservers': __salt__[
                 'mc_network.get_dnss'](fqdn, thisip),
             'post-up': [
-                'route add {0} dev {1}'.format(gw, ifc),
-                'route add default gw {0}'.format(gw),
+                # warning: keep ip of the hosting host
+                # as the network ipv4 gw
+                'route add {0} dev {1}'.format(ip_for(host), ifc),
+                'route add default gw {0}'.format(ip_for(host)),
             ]
         }
     }]
