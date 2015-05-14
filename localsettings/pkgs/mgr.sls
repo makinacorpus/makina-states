@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 {#-
 # Base packages
 # see:
@@ -9,6 +10,7 @@ include:
 {{ salt['mc_macros.register']('localsettings', 'pkgs.mgr') }}
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
+{% set data = pkgssettings %}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}
 apt-sources-list:
@@ -21,6 +23,16 @@ apt-sources-list:
     - source: salt://makina-states/files/etc/apt/sources.list
     - mode: 755
     - template: jinja
+
+{% macro rmacro() %}
+    - watch:
+      - mc_proxy: before-pkgmgr-config-proxy
+    - watch_in:
+      - mc_proxy: after-base-pkgmgr-config-proxy
+{% endmacro %}
+{{ h.deliver_config_files(
+     data.get('extra_confs', {}), after_macro=rmacro, prefix='localsettings-pkgmgr-')}}
+ 
 
 {% if grains['os'] in ['Debian'] %}
 {% if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] > '5' %}
