@@ -12,9 +12,10 @@
 {% if incs %}
 {% macro rmacro() %}
     - watch:
-      - mc_proxy: firewalld-preconf
+      - mc_proxy: firewall-preconf
     - watch_in:
-      - mc_proxy: firewalld-postconf
+      - mc_proxy: firewall-postconf
+{% endmacro %}
 include:
   {% for i in incs %}
   - {{ i }}

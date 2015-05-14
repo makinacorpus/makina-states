@@ -38,6 +38,7 @@ firewalld-reapply:
 firewalld-disable:
   cmd.run:
     - name: /usr/bin/ms_disable_firewall.sh
+    - stateful: true
     - watch:
       - mc_proxy: firewall-predisable
     - watch_in:
