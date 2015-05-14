@@ -48,7 +48,7 @@ ONE_DAY = mc_states.api.ONE_DAY
 HALF_DAY = mc_states.api.HALF_DAY
 ONE_MONTH = mc_states.api.ONE_MONTH
 ONE_YEAR = ONE_MONTH * 12
-FIREWALLD_MANAGED = False
+FIREWALLD_MANAGED = True
 
 # pillar cache is never expired, only if we detect a change on the database file
 PILLAR_TTL = ONE_YEAR
