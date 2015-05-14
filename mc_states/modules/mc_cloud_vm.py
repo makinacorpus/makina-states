@@ -273,6 +273,8 @@ def vm_registry(prefixed=True):
     if not prefixed:
         prefix = ''
     data = OrderedDict([('{0}vts'.format(prefix), OrderedDict()),
+                        ('{0}this_host'.format(prefix), ''),
+                        ('{0}this_port'.format(prefix), ''),
                         ('{0}vms'.format(prefix), OrderedDict())])
     return data
 
@@ -330,7 +332,12 @@ def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
             data['script_args'] += ' -b {0}'.format(
                 data['bootsalt_branch'])
         # at this stage, only get already allocated ips
-
+        for ix in range(len(data['ports'])):
+            pdata = data['ports'][ix]
+            if not pdata.get('hostPort', ''):
+                pdata['hostPort'] = __salt__[
+                    'mc_cloud_compute_node.get_kind_port'
+                ](vm, data['target'], pdata['name'])
         for ix, ipinfos in enumerate(data['additional_ips']):
             k = '{0}_{1}_{2}_aip_fo'.format(data['target'], vme, ix)
             mac = ipinfos.setdefault('mac', None)
@@ -406,6 +413,17 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
         targets = _s['mc_cloud_compute_node.get_targets']()
         vms, vts = OrderedDict(), []
         target = None
+        data = vm_registry(prefixed=prefixed)
+        if prefixed:
+            vts_pillar = data[PREFIX + '.vts']
+            vms_pillar = data[PREFIX + '.vms']
+            this_host = PREFIX + '.this_host'
+            this_port = PREFIX + '.this_port'
+        else:
+            vts_pillar = data['vts']
+            vms_pillar = data['vms']
+            this_host = 'this_host'
+            this_port = 'this_port'
         if id_ not in targets and id_ not in all_vms:
             return {}
         if id_ in all_vms:
@@ -421,13 +439,6 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
             # pylint: disable=W0612
             noecho = [vts.append(i) for i in targets[id_]['vts']
                       if i not in vts]
-        data = vm_registry(prefixed=prefixed)
-        if prefixed:
-            vts_pillar = data[PREFIX + '.vts']
-            vms_pillar = data[PREFIX + '.vms']
-        else:
-            vts_pillar = data['vts']
-            vms_pillar = data['vms']
         for vt in vts:
             vts_pillar[vt] = _s['mc_cloud_vm.vt_extpillar'](
                 target, vt, limited=limited)
@@ -435,6 +446,10 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
             vt = vmdata['vt']
             vme_settings = _s['mc_cloud_vm.vm_extpillar'](
                 vm, limited=limited)
+            if id_ == vm:
+                data[this_port] = vme_settings[
+                    'ssh_reverse_proxy_port']
+                data[this_host] = vme_settings['target']
             vme_settings['vt'] = vt
             vms_pillar[vm] = vme_settings
             vgconf = _s['mc_pillar.get_configuration'](vm)

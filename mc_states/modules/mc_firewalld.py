@@ -57,6 +57,17 @@ def is_permissive():
     data_net = _s['mc_network.default_net']()
     default_route = data_net['default_route']
     permissive_mode = False
+    if __salt__['mc_nodetypes.is_container']():
+        # be local on the firewall side only if we are
+        # routing via the host only network and going
+        # outside througth NAT
+        # IOW
+        # if we have multiple interfaces and the default route is not on
+        # eth0, we certainly have a directly internet addressable lxc
+        # BE NOT local
+        rif = default_route.get('iface', 'eth0')
+        if rif == 'eth0':
+            permissive_mode = True
     return permissive_mode
 
 

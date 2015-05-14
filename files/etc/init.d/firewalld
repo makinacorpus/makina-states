@@ -34,6 +34,24 @@ if [  -f "/etc/default/$NAME" ];then . "/etc/default/$NAME";fi
 # Define LSB log_* functions.
 . /lib/lsb/init-functions
 
+is_container() {
+    echo  "$(cat -e /proc/1/environ |grep container=|wc -l|sed -e "s/ //g")"
+}
+
+filter_host_pids() {
+    pids=""
+    if [ "x$(is_container)" != "x0" ];then
+        pids="${pids} $(echo "${@}")"
+    else
+        for pid in ${@};do
+            if [ "x$(grep -q /lxc/ /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
+                pids="${pids} $(echo "${pid}")"
+            fi
+         done
+    fi
+    echo "${pids}" | sed -e "s/\(^ \+\)\|\( \+$\)//g"
+}
+
 do_makina_rules() {
     if [ -x /usr/bin/ms_firewalld.py ];then
         /usr/bin/ms_firewalld.py
@@ -57,6 +75,15 @@ do_stop()
 	#   1 if daemon was already stopped
 	#   other if daemon could not be stopped or a failure occurred
 	start-stop-daemon --stop --quiet --retry 5 --pidfile $PIDFILE --name $NAME
+    pids=$(filter_host_pids $(ps aux|grep firewalld|grep python|awk '{print $2}'))
+    if [ "x${pids}" != "x" ];then
+        sleep 4
+        # let a little more time for a chance to exit
+        pids=$(filter_host_pids $(ps aux|grep firewalld|grep python|awk '{print $2}'))
+    fi
+    for i in ${pids};do
+        kill -9 ${i} || /bin/true
+    done
 }
 
 do_reload()
