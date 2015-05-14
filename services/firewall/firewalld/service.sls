@@ -5,6 +5,7 @@ include:
   - makina-states.services.firewall.firewall.hooks
 {% if salt['mc_controllers.mastersalt_mode']() %}
   - makina-states.localsettings.network
+  - makina-states.services.firewall.firewall.configuration
 firewalld-conflicting-services:
   service.dead:
     - names: [iptables, ebtables,
@@ -22,9 +23,9 @@ firewalld:
       - firewalld
     - require:
       - mc_proxy: firewalld-prerestart
+      - service: firewalld-conflicting-services
     - require_in:
       - mc_proxy: firewalld-postrestart
-
 firewalld-reapply:
   cmd.run:
     - name: /bin/true
@@ -34,15 +35,16 @@ firewalld-reapply:
       - mc_proxy: firewalld-prerestart
     - watch_in:
       - mc_proxy: firewalld-postrestart
-
-firewalld-disable:
+firewalld-disable-firewall:
   cmd.run:
-    - name: /usr/bin/ms_disable_firewall.sh
+    - name: /usr/bin/ms_disable_firewall.sh fromsalt nohard
     - stateful: true
     - watch:
-      - mc_proxy: firewall-predisable
+      - service: firewalld
+      - mc_proxy: firewall-postconf
+      - mc_proxy: firewalld-prerestart
     - watch_in:
-      - mc_proxy: firewall-postdisable
+      - mc_proxy: firewalld-postrestart
 {%else %}
 firewalld:
   service.running:
