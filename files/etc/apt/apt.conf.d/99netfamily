@@ -1,0 +1,6 @@
+#{% set data = salt['mc_pkgs.settings']() %}
+# {% if data.get('force_apt_ipv4', False) %}
+Acquire::ForceIPv4 "true";
+# {% elif data.get('force_apt_ipv6', False) %}
+Acquire::ForceIPv6 "true";
+# {% endif %}
