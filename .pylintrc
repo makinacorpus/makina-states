@@ -95,9 +95,11 @@ disable=W0142,
   R0914,
   W0703,
   E1305,
+  W0141,
   E8731
 
 # TO REACTIVATE ONE AFTER ONE
+# # W0141 filter/map builtins
 # [E1305(too-many-format-args)
 # [W0703(broad-except),
 # [R0912(too-many-branches)
