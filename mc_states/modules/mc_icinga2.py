@@ -995,10 +995,10 @@ def autoconfigure_host(host,
     object_uniquify(rdata['attrs'])
     # services for which a loop is used in the macro
     if (
-        dns_association_hostname
-        or dns_association
-        and 'address' in attrs
-        and 'host_name' in attrs
+        dns_association_hostname or
+        dns_association and 
+        'address' in attrs and
+        'host_name' in attrs
     ):
         if 'host_name' in attrs:
             dns_hostname = attrs['host_name']
