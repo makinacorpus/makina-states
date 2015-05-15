@@ -9,6 +9,7 @@ from mc_states.modules import mc_utils
 from mc_states.modules import mc_macros
 from mock import patch, Mock
 import yaml
+import contextlib
 
 __docformat__ = 'restructuredtext en'
 
@@ -139,6 +140,9 @@ rrs_ttls:
 ips_map:
   c.makina-corpus.net: [a.makina-corpus.net]
   goo.moo.makina-corpus.net: [a.makina-corpus.net]
+  ns1.makina-corpus.net: [b.makina-corpus.net]
+  ns2.makina-corpus.net: [d.makina-corpus.net]
+  ns3.makina-corpus.net: [h.makina-corpus.net]
 
 
 ipsfo_map:
@@ -305,7 +309,10 @@ class TestCase(base.ModuleCase):
 
     def test_get_shorewallsettings(self):
         def _load():
-            return yaml.load(TEST_NET)
+            data = yaml.load(TEST_NET)
+            data['configurations']['default']['manage_firewalld'] = False
+            data['configurations']['default']['manage_shorewall'] = True
+            return data
         with patch.dict(self.salt, {
             'mc_pillar.loaddb_do': _load
         }):
@@ -364,6 +371,8 @@ class TestCase(base.ModuleCase):
                 '       ifo-online-3.testd.makina-corpus.net. A 212.129.4.5\n'
                 '       ifo-online-4.makina-corpus.net. A 212.129.4.6\n'
                 '       ns1.makina-corpus.net. A 1.2.3.6\n'
+                '       ns2.makina-corpus.net. A 1.2.3.8\n'
+                '       ns3.makina-corpus.net. A 1.2.3.6\n'
                 '       preprod-boo.foo.ifo-online-1.makina'
                 '-corpus.net. A 212.129.4.3\n'
                 '       preprod-boo.ifo-online-1.makin'
@@ -428,10 +437,17 @@ class TestCase(base.ModuleCase):
 
     def test_get_ns_rr(self):
         def _load():
-            return yaml.load(TEST_NET)
-        with patch.dict(self.salt, {
-            'mc_pillar.loaddb_do': _load,
-        }):
+            data = yaml.load(TEST_NET)
+            return data
+        with self.patch(
+            filtered=['mc.*'],
+            kinds=['modules'],
+            funcs={
+                'modules': {
+                    'mc_pillar.loaddb_do': _load,
+                }
+            }
+        ):
             res = self._('mc_pillar.rrs_ns_for')('makina-corpus.net')
             self.assertEqual(res, '       @ IN NS ns1.makina-corpus.net.')
             res = self._('mc_pillar.rrs_ns_for')('makina-corpus.com')
@@ -575,6 +591,13 @@ class TestCase(base.ModuleCase):
 
     def test_get_mail_configuration(self):
         def _query(t, *a, **kw):
+            if t in ['baremetal_hosts',
+                     'non_managed_hosts',
+                     'vms']:
+                return {
+                    'baremetal_hosts': ['foo.makina-corpus.net',
+                                        'bar.makina-corpus.net']
+                }.get(t, {})
             if t in ['ssh_groups',
                      'mail_configurations',
                      'configurations',
@@ -608,8 +631,15 @@ class TestCase(base.ModuleCase):
                     'sysadmin+foo.makina-corpus.net@makina-corpus.net')},
                 {'/.*@.local/': (
                     'sysadmin+foo.makina-corpus.net@makina-corpus.net')}]}
-        with patch.dict(
-            self.salt, {'mc_pillar.query': Mock(side_effect=_query)}
+        with self.patch(
+            filtered=['mc.*'],
+            kinds=['modules'],
+            funcs={
+                'modules': {
+                    'mc_pillar.is_salt_managed': Mock(return_value=True),
+                    'mc_pillar.query': Mock(side_effect=_query)
+                }
+            }
         ):
             res1 = self._('mc_pillar.get_mail_conf')('foo.makina-corpus.net')
             res2 = self._('mc_pillar.get_mail_conf')('bar.makina-corpus.net')
@@ -747,14 +777,29 @@ class TestCase(base.ModuleCase):
 
     def test_get_sysadmins_keys(self):
         def _query(t, *a, **kw):
+            if t in ['baremetal_hosts',
+                     'configurations',
+                     'non_managed_hosts',
+                     'vms']:
+                return {
+                    'configurations': {},
+                    'baremetal_hosts': ['foo.makina-corpus.net',
+                                        'bar.makina-corpus.net']}
             if t in [
                 'ssh_groups', 'keys_map',
                 'sysadmins_keys_map', 'sudoers_map'
             ]:
                 return yaml.load(TESTS[t])[t]
-        with patch.dict(self.salt, {
-            'mc_pillar.query': Mock(side_effect=_query)
-        }):
+        with self.patch(
+            filtered=['mc.*'],
+            kinds=['modules'],
+            funcs={
+                'modules': {
+                    'mc_pillar.is_salt_managed': Mock(return_value=True),
+                    'mc_pillar.query': Mock(side_effect=_query)
+                }
+            }
+        ):
             res1 = self._('mc_pillar.get_sudoers')('foo.makina-corpus.net')
             res2 = self._('mc_pillar.get_sudoers')('bar.makina-corpus.net')
             self.assertEqual(res1, ['sss', 'ttt', 'uuu'])
@@ -762,14 +807,29 @@ class TestCase(base.ModuleCase):
 
     def test_get_sudoers_map(self):
         def _query(t, *a, **kw):
+            if t in ['baremetal_hosts',
+                     'non_managed_hosts',
+                     'configurations',
+                     'vms']:
+                return {
+                    'configurations': {},
+                    'baremetal_hosts': ['foo.makina-corpus.net',
+                                        'bar.makina-corpus.net']}
             if t in ['ssh_groups',
                      'keys_map',
                      'sysadmins_keys_map',
                      'sudoers_map']:
                 return yaml.load(TESTS[t])[t]
-        with patch.dict(self.salt, {
-            'mc_pillar.query': Mock(side_effect=_query)
-        }):
+        with self.patch(
+            filtered=['mc.*'],
+            kinds=['modules'],
+            funcs={
+                'modules': {
+                    'mc_pillar.is_salt_managed': Mock(return_value=True),
+                    'mc_pillar.query': Mock(side_effect=_query)
+                }
+            }
+        ):
             res1 = self._('mc_pillar.get_sysadmins_keys')(
                 'foo.makina-corpus.net')
             res2 = self._('mc_pillar.get_sysadmins_keys')(
@@ -782,9 +842,16 @@ class TestCase(base.ModuleCase):
         def _query(t, *a, **kw):
             if t == 'ssh_groups':
                 return yaml.load(TESTS[t])[t]
-        with patch.dict(self.salt, {
-            'mc_pillar.query': Mock(side_effect=_query)
-        }):
+        with self.patch(
+            filtered=['mc.*'],
+            kinds=['modules'],
+            funcs={
+                'modules': {
+                    'mc_pillar.is_salt_managed': Mock(return_value=True),
+                    'mc_pillar.query': Mock(side_effect=_query)
+                }
+            }
+        ):
             res1 = self._('mc_pillar.get_ssh_groups')('foo.makina-corpus.net')
             res2 = self._('mc_pillar.get_ssh_groups')('bar.makina-corpus.net')
             self.assertEqual(res1,
