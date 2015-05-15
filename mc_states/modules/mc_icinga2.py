@@ -43,6 +43,7 @@ import traceback
 import copy
 import mc_states.api
 
+six = mc_states.api.six
 __name = 'icinga2'
 _default = object()
 _activated = object()
@@ -155,7 +156,7 @@ def objects(core=True, ttl=120):
     def _do(core):
         rdata = OrderedDict()
         data = __salt__['mc_icinga2.load_objects'](core=core)
-        settings = __salt__['mc_icinga2.settings']()
+        dsettings = __salt__['mc_icinga2.settings']()
         rdata['raw_objects'] = data['objects']
         rdata['objects'] = OrderedDict()
         rdata['objects_by_file'] = OrderedDict()
@@ -201,7 +202,6 @@ def objects(core=True, ttl=120):
                         'HostGroup': [lambda x: x.startswith('HG_')],
                         'ServiceGroup': [lambda x: x.startswith('GS_'),
                                          lambda x: x.startswith('SG_')],
-                        'HostGroup': [lambda x: x.startswith('HG_')],
                         'CheckCommand': [lambda x: x.startswith('check_'),
                                          lambda x: x.startswith('C_'),
                                          lambda x: x.startswith('EV_'),
@@ -231,7 +231,7 @@ def objects(core=True, ttl=120):
                 # declare constants as var for them to be resolved
                 # by macro calls
                 if obj == 'C_BASE':
-                    for i in settings['constants_conf']:
+                    for i in dsettings['constants_conf']:
                         data['attrs'][
                             'vars.{0}'.format(i)] = '{0} + ""'.format(i)
                 attrs = data.setdefault('attrs', {})
@@ -257,16 +257,16 @@ def objects(core=True, ttl=120):
                 cmd = attrs.get('command', None)
                 arguments = attrs.get('arguments', None)
                 if (
-                    cmd
-                    and not isinstance(cmd, list)
-                    and arguments
+                    cmd and
+                    not isinstance(cmd, list) and
+                    arguments
                 ):
                     attrs['command'] = [cmd]
                 rdata['objects'][obj] = data
                 fdata = rdata['objects_by_file'].setdefault(
                     data['file'], OrderedDict())
                 fdata[obj] = object_uniquify(data)
-            except:
+            except (Exception,):
                 log.error(
                     'Icinga object configuration failed for {0}'.format(obj))
                 raise
@@ -288,6 +288,7 @@ def quotev(v, valtype=''):
     return v
 
 
+# pylint: disable=W0622
 def format(dictionary, quote_keys=False, quote_values=True, init=True):
     '''
     function to transform all values in a dictionary in string
@@ -347,11 +348,11 @@ def format(dictionary, quote_keys=False, quote_values=True, init=True):
                 res[res_key] += ']'
         elif key.startswith('enable_'):
             if (
-                '"1"' == value
-                or '1' == value
-                or 1 == value
-                or 'true' == value
-                or True == value
+                '"1"' == value or
+                '1' == value or
+                1 == value or
+                'true' == value or
+                value is True
             ):
                 res[res_key] = "true"
             else:
@@ -562,8 +563,11 @@ def settings():
             ido2db['package'] = [
                 'icinga2-ido-{0}'.format(
                     ido2db['database']['type'])]
-            data['modules']['ido2db']['psql_uri'] = 'postgres://{user}:{password}@{host}:{port}/{name}'.format(
-                **data['modules']['ido2db']['database'])
+            data['modules']['ido2db']['psql_uri'] = (
+                'postgres://{user}:{password}@'
+                '{host}:{port}/{name}'
+                '').format(
+                    **data['modules']['ido2db']['database'])
         if data['has_pgsql'] and data['has_mysql']:
             raise ValueError('choose only one sgbd')
         if not (data['has_pgsql'] or data['has_mysql']):
@@ -715,7 +719,7 @@ def add_notification(attrs,
             default_import = 'NT_SERVICE'
             default_irc_import = 'NT_SERVICE_IRC'
         #     intv = 'service.vars.n_interval + ""'
-        # XXX: conditionnal notification interval based on underlying
+        # conditionnal notification interval based on underlying
         # service or host does not work that way yet, searching ...
         # for not, sett interval to zero (only one alert per state change and
         # norepeat)
@@ -755,6 +759,7 @@ def add_notification(attrs,
     return attrs
 
 
+# pylint: disable=R0913
 def autoconfigure_host(host,
                        attrs=None,
                        groups=None,
@@ -878,10 +883,11 @@ def autoconfigure_host(host,
     for _default, checks in [(True, non_defaults),
                              (False, defaults)]:
         for check in checks:
-            init_val = eval(check)
+            init_val = eval(check)  # pylint: disable=W0123
             manual = True
             if init_val is None:
                 manual = False
+                # pylint: disable=W0122
                 exec('{0}={1}'.format(check, _default))
             # if manually selected On, be sure to select it for a run
             # even if we activated no_default_checks
@@ -924,8 +930,7 @@ def autoconfigure_host(host,
     icingaSettings = __salt__['mc_icinga2.settings']()
     if 'postgres' not in processes:
         if (
-            'postgresl' in host
-            or 'pgsql' in host
+            'postgresl' in host or 'pgsql' in host
         ):
             processes.append('postgres')
     if 'mysql' not in processes:
@@ -970,7 +975,7 @@ def autoconfigure_host(host,
                   'state_name_salt': replace_chars(filen)})
     services_enabled = rdata.setdefault('services_enabled', OrderedDict())
     services_enabled_types = rdata.setdefault('services_enabled_types', [])
-    imports = attrs.setdefault('import',  imports)
+    imports = attrs.setdefault('import', imports)
     if not imports:
         imports = []
     if not no_default_imports:
@@ -980,14 +985,14 @@ def autoconfigure_host(host,
             if a not in imports
         ]:
             imports.append(i)
-    if isinstance(imports, basestring):
-        imports = imports.split(',')
+    if isinstance(imports, six.string_types):
+        imports = imports.split(',')  # pylint: disable=E1101
     attrs['import'] = imports
     attrs.setdefault('vars.ssh_user', ssh_user)
     attrs.setdefault('vars.ssh_addr', ssh_addr)
     attrs.setdefault('vars.ssh_port', ssh_port)
     attrs.setdefault('vars.ssh_timeout', ssh_timeout)
-    hgroups = attrs.setdefault('groups',  [])
+    hgroups = attrs.setdefault('groups', [])
     for i in groups:
         if i not in hgroups:
             hgroups.append(i)
@@ -996,7 +1001,7 @@ def autoconfigure_host(host,
     # services for which a loop is used in the macro
     if (
         dns_association_hostname or
-        dns_association and 
+        dns_association and
         'address' in attrs and
         'host_name' in attrs
     ):
@@ -1018,7 +1023,7 @@ def autoconfigure_host(host,
             'vars.hostname': dns_hostname,
             'vars.dns_address': dns_address},
         'load_avg': {
-            #'vars.n_interval': 6000,
+            # 'vars.n_interval': 6000,
         },
         'mongodb': {
             'check_command': "CSSH_CHECK_MONGODB_AUTH"},
@@ -1079,9 +1084,10 @@ def autoconfigure_host(host,
         #                                'mysql_tmp_disk_tables'])
     for s in services:
         if (
-            s not in services_enabled_types
-            and (s in services_attrs
-                 or (not no_default_checks and bool(eval(s))))
+            s not in services_enabled_types and
+            (s in services_attrs or
+             (not no_default_checks and
+              bool(eval(s))))  # pylint: disable=W0123
         ):
             services_enabled_types.append(s)
     checks = []
@@ -1092,7 +1098,7 @@ def autoconfigure_host(host,
             default_vals = {'web': {host: {}}, 'tomcat': {host: {}}}
             if svc in ['drbd', 'disk_space', 'processes', 'sar', 'rbl',
                        'fullpath_processes', 'nic_card', 'supervisor']:
-                values = eval(svc)
+                values = eval(svc)  # pylint: disable=W0123
             else:
                 values = services_attrs.get(svc,
                                             default_vals.get(svc, {}))
@@ -1165,15 +1171,15 @@ def autoconfigure_host(host,
                     #   www.domain.com: {}
                     #   www.domain.net: {strings: net}
                     if (
-                        ('vars.http_servername' not in ss)
-                        and ('.' in v)
+                        ('vars.http_servername' not in ss) and
+                        ('.' in v)
                     ):
                         # check that v is DNS resolvable
                         socket.setdefaulttimeout(2)
                         try:
                             socket.gethostbyname(v)
                             ss['vars.http_servername'] = v
-                        except:
+                        except (Exception,):
                             pass
                 if svc in ['drbd']:
                     ss['vars.device'] = v
@@ -1224,7 +1230,3 @@ def add_check(host, services_enabled, svc, skey, default_value, vdata):
     ss['vars.makinastates_service_type'] = svc
     services_enabled[skey] = ss
     return services_enabled
-
-
-
-#
