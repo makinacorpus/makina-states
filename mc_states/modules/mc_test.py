@@ -95,8 +95,8 @@ def _echo(inq, outq):
                 continue
         except Queue.Empty:
             pass
-        if int(time.time()) % 40 == 0:
-            print('STATUS ECHO running...\n')
+        if int(time.time()) % 50 == 0:
+            print('STATUS ECHO running...')
             time.sleep(1)
 
 
