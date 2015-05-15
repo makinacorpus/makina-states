@@ -2434,10 +2434,10 @@ def get_supervision_objects_defs(id_):
             groups = attrs.setdefault('groups', [])
             parents = attrs.setdefault('parents', [])
             tipaddr = attrs.setdefault('address', ip_for(host))
-            attrs.setdefault('vars.SSH_PORT', 22)
-            attrs.setdefault('vars.SNMP_PORT', 161)
-            attrs.setdefault('vars.SSH_HOST', attrs['address'])
-            attrs.setdefault('vars.SNMP_HOST', attrs['address'])
+            attrs.setdefault('vars.ssh_port', 22)
+            attrs.setdefault('vars.snmp_port', 161)
+            attrs.setdefault('vars.ssh_host', attrs['address'])
+            attrs.setdefault('vars.snmp_host', attrs['address'])
             sconf = get_snmpd_conf(id_)
             p = ('makina-states.services.monitoring.'
                  'snmpd.default_')
@@ -2511,9 +2511,9 @@ def get_supervision_objects_defs(id_):
             sattrs = hdata.setdefault('services_attrs', OrderedDict())
             parents = attrs.setdefault('parents', [])
             tipaddr = attrs.setdefault('address', ip_for(vm))
-            ssh_host = snmp_host = attrs.get('vars.SSH_HOST', tipaddr)
-            ssh_port = attrs.get('vars.SSH_PORT', 22)
-            snmp_port = attrs.get('vars.SNMP_PORT', 161)
+            ssh_host = snmp_host = attrs.get('vars.ssh_host', tipaddr)
+            ssh_port = attrs.get('vars.ssh_port', 22)
+            snmp_port = attrs.get('vars.snmp_port', 161)
             sconf = get_snmpd_conf(id_)
             nic_cards = ['eth0']
             if vt in ['kvm', 'xen']:
@@ -2564,10 +2564,10 @@ def get_supervision_objects_defs(id_):
                 no_common_checks = True
             if no_common_checks:
                 hdata.update(disable_common_checks)
-            attrs['vars.SSH_HOST'] = ssh_host
-            attrs['vars.SNMP_HOST'] = snmp_host
-            attrs['vars.SSH_PORT'] = ssh_port
-            attrs['vars.SNMP_PORT'] = snmp_port
+            attrs['vars.ssh_host'] = ssh_host
+            attrs['vars.snmp_host'] = snmp_host
+            attrs['vars.ssh_port'] = ssh_port
+            attrs['vars.snmp_port'] = snmp_port
             hdata.setdefault('nic_card', nic_cards)
 
         try:
@@ -2621,8 +2621,8 @@ def get_supervision_objects_defs(id_):
                 burp_default_server = bsm['default']
                 burp_server = bsm.get(host, burp_default_server)
                 burpattrs = sattrs.setdefault('backup_burp_age', {})
-                burpattrs.setdefault('vars.SSH_HOST', burp_server)
-                burpattrs.setdefault('vars.SSH_PORT', 22)
+                burpattrs.setdefault('vars.ssh_host', burp_server)
+                burpattrs.setdefault('vars.ssh_port', 22)
             # if id_ not in parents and id_ not in maps['vms']:
             #    parents.append(id_)
             if not hdata['attrs'].get('address'):
