@@ -4,10 +4,8 @@ from __future__ import absolute_import, division,  print_function
 
 import threading
 import time
-import multiprocessing
 import Queue
 import os
-import sys
 import traceback
 import salt.exceptions
 import salt.output
