@@ -39,6 +39,87 @@ class TestCase(base.GrainsCase):
     def grains(self):
         return self._('makina_grains.get_makina_grains')()
 
+    def test_pg(self):
+        with contextlib.nested(
+            patch(
+                'os.path.exists', MagicMock(return_value=False)
+            ),
+            patch(
+                'os.listdir', MagicMock(return_value=0)
+            )
+        ):
+            fun = self.get_private('makina_grains._pgsql_vers')
+            ret = fun()
+            self.assertEquals(ret['details'], {})
+            self.assertEquals(ret['global'], {})
+
+        def do_(path):
+            if path in [
+                '/var/lib/postgresql/9.0/main/postmaster.pid'
+            ]:
+                return True
+            return False
+
+        with contextlib.nested(
+            patch(
+                'os.path.exists', MagicMock(side_effect=do_)
+            ),
+            patch(
+                'os.listdir', MagicMock(return_value=0)
+            )
+        ):
+            fun = self.get_private('makina_grains._pgsql_vers')
+            ret = fun()
+            self.assertEquals(ret['global'], {'9.0': True})
+            self.assertEquals(ret['details'],
+                              {'9.0': {'has_data': False, 'running': True}})
+
+        def do_(path):
+            if path in [
+                '/var/lib/postgresql/9.0/main/postmaster.pid',
+                '/var/lib/postgresql/9.0/main/base',
+                '/var/lib/postgresql/9.0/main/globalbase'
+            ]:
+                return True
+            return False
+
+        with contextlib.nested(
+            patch(
+                'os.path.exists', MagicMock(side_effect=do_)
+            ),
+            patch(
+                'os.listdir', MagicMock(return_value=0)
+            )
+        ):
+            fun = self.get_private('makina_grains._pgsql_vers')
+            ret = fun()
+            self.assertEquals(ret['global'], {'9.0': True})
+            self.assertEquals(ret['details'],
+                              {'9.0': {'has_data': False, 'running': True}})
+
+        def do_(path):
+            if path in [
+                '/var/lib/postgresql/9.0/main/postmaster.pid',
+                '/var/lib/postgresql/9.0/main/base',
+                '/var/lib/postgresql/9.0/main/globalbase'
+            ]:
+                return True
+            return False
+
+        with contextlib.nested(
+            patch(
+                'os.path.exists', MagicMock(side_effect=do_)
+            ),
+            patch(
+                'os.listdir', MagicMock(return_value=3)
+            )
+        ):
+            fun = self.get_private('makina_grains._pgsql_vers')
+            ret = fun()
+            self.assertEquals(ret['global'], {'9.0': True})
+            self.assertEquals(ret['details'],
+                              {'9.0': {'has_data': True, 'running': True}})
+
     def test_devhostnum(self):
         fun = self.get_private('makina_grains._devhost_num')
         self.assertEqual(fun(), '')
