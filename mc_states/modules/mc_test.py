@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division,  print_function
+from __future__ import absolute_import, division, print_function
+
+import threading
+import time
+import Queue
 import os
 import traceback
 import salt.exceptions
@@ -80,25 +84,50 @@ def unit_tests(tests=None,
     return success
 
 
-def run_tests(flavors=None, use_vt=True):
+def _echo(inq, outq):
+    stop = False
+    while not stop:
+        try:
+            test = inq.get_nowait() == 'STOP'
+            if test:
+                print('OK baby, finished !')
+                stop = True
+                continue
+        except Queue.Empty:
+            pass
+        if int(time.time()) % 10 == 0:
+            print('\nSTATUS ECHO running...\n')
+            time.sleep(1)
+
+
+def run_tests(flavors=None, use_vt=True, echo=False):
     if not flavors:
         flavors = []
     if isinstance(flavors, basestring):
-        flavors = flavors.split(',')
+        flavors = flavors.split(',')  # pylint: disable=E1101
     success = OrderedDict()
     failures = OrderedDict()
-    #for step in ['lint', 'unit']:
+    # for step in ['lint', 'unit']:
+    if echo:
+        inq = Queue.Queue()
+        outq = Queue.Queue()
+        pr = threading.Thread(target=_echo, args=(inq, outq))
+        pr.start()
     for step in ['unit']:
         try:
             utils.test_setup()
-            success[step] = __salt__['mc_test.{0}_tests'.format(step)](use_vt=use_vt)
+            success[step] = __salt__['mc_test.{0}_tests'.format(
+                step)](use_vt=use_vt)
         except (TestError,) as exc:
             failures[step] = exc
-        except (Exception,):
+        except (Exception, KeyboardInterrupt):
             failures[step] = traceback.format_exc()
             break
         finally:
             utils.test_teardown()
+    if echo:
+        inq.put('STOP')
+        pr.join()
     # for now, lint is not a failure
     acceptables = ['lint']
     for i in acceptables:
@@ -112,6 +141,6 @@ def run_tests(flavors=None, use_vt=True):
     return success
 
 
-def run_travis_tests(use_vt=False):
-    return run_tests('travis', use_vt=use_vt)
+def run_travis_tests(use_vt=False, echo=True):
+    return run_tests('travis', use_vt=use_vt, echo=echo)
 # vim:set et sts=4 ts=4 tw=80:
