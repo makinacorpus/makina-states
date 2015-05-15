@@ -109,9 +109,6 @@ def run_tests(flavors=None, use_vt=True, echo=False):
     failures = OrderedDict()
     # for step in ['lint', 'unit']:
     if echo:
-        # inq = multiprocessing.Queue()
-        # outq = multiprocessing.Queue()
-        # pr = multiprocessing.Process(target=_echo, args=(inq, outq)).start()
         inq = Queue.Queue()
         outq = Queue.Queue()
         pr = threading.Thread(target=_echo, args=(inq, outq))
