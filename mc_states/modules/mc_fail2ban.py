@@ -97,6 +97,7 @@ def settings():
         grains = __grains__
         shorewall = __salt__['mc_shorewall.settings']()
         services_registry = __salt__['mc_services.registry']()
+        firewalld = __salt__['mc_firewalld.settings']()
         banaction = 'iptables'
         if (
             (
@@ -113,16 +114,16 @@ def settings():
         ):
             banaction = 'shorewall'
         if (
-            (
-                services_registry['has']['firewall.firewalld']
-            ) and (
-                os.path.exists('/usr/sbin/firewalld') or
-                os.path.exists('/sbin/firewalld') or
-                os.path.exists('/usr/sbin/firewalld') or
-                os.path.exists('/usr/bin/firewalld') or
-                os.path.exists('/usr/local/sbin/firewalld') or
-                os.path.exists('/usr/local/bin/firewalld')
-            )
+            services_registry['has']['firewall.firewalld']
+        ) and (
+            os.path.exists('/usr/sbin/firewalld') or
+            os.path.exists('/sbin/firewalld') or
+            os.path.exists('/usr/sbin/firewalld') or
+            os.path.exists('/usr/bin/firewalld') or
+            os.path.exists('/usr/local/sbin/firewalld') or
+            os.path.exists('/usr/local/bin/firewalld')
+        ) and (
+            not firewalld.get('permissive_mode')
         ):
             banaction = 'firewallcmd-ipset'
         locs = __salt__['mc_locations.settings']()
