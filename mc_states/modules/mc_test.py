@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, division,  print_function
+from __future__ import absolute_import, division, print_function
 
 import threading
 import time
@@ -104,7 +104,7 @@ def run_tests(flavors=None, use_vt=True, echo=False):
     if not flavors:
         flavors = []
     if isinstance(flavors, basestring):
-        flavors = flavors.split(',')
+        flavors = flavors.split(',')  # pylint: disable=E1101
     success = OrderedDict()
     failures = OrderedDict()
     # for step in ['lint', 'unit']:
