@@ -758,8 +758,8 @@ def get_public_ips(cache=True, data=None, ttl=120):
 
         # filter public_ips only if if have at least one public ip*
         # this enable to work on private only networks
+        is_public = False
         for i in public_ips[:]:
-            is_public = False
             if __salt__['mc_network.is_public'](ip):
                 is_public = True
                 break
