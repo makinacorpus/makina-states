@@ -342,18 +342,14 @@ class TestCase(base.ModuleCase):
             self.assertEqual(
                 data,
                 ['rule family="ipv4" destination address="1.2.3.5"'
-                 ' protocol value="udp" accept',
-                 'rule family="ipv4" destination address="1.2.3.5"'
-                 ' protocol value="tcp" accept']
+                 ' accept']
             )
             data = self._('mc_firewalld.rich_rules')(
                 source='address="1.2.3.5"')
             self.assertEqual(
                 data,
                 ['rule family="ipv4" source address="1.2.3.5"'
-                 ' protocol value="udp" accept',
-                 'rule family="ipv4" source address="1.2.3.5"'
-                 ' protocol value="tcp" accept']
+                 ' accept']
             )
             data = self._('mc_firewalld.rich_rules')(
                 source='address="1.2.3.4"',
@@ -363,11 +359,7 @@ class TestCase(base.ModuleCase):
                 ['rule family="ipv4"'
                  ' source address="1.2.3.4"'
                  ' destination address="1.2.3.5"'
-                 ' protocol value="udp" accept',
-                 'rule family="ipv4"'
-                 ' source address="1.2.3.4"'
-                 ' destination address="1.2.3.5"'
-                 ' protocol value="tcp" accept']
+                 ' accept']
             )
             data = self._('mc_firewalld.rich_rules')(
                 icmp_block=True,
@@ -429,8 +421,9 @@ class TestCase(base.ModuleCase):
             self.assertEqual(
                 dict(data["zones"]),
                 {'dck': {'interfaces': ['docker0', 'docker1']},
+                 'internal': {'interfaces': ['em1', 'em2', 'em3', 'eth1']},
                  'lxc': {'interfaces': ['lxcbr0', 'lxcbr1']},
-                 'public': {'interfaces': ['eth0', 'br0']},
+                 'public': {'interfaces': ['em0', 'eth0', 'br0']},
                  'trusted': {'interfaces': ['lo']},
                  'vpn': {'interfaces': ['tun1']}})
             data = self._('mc_firewalld.add_real_interfaces')(
@@ -439,8 +432,9 @@ class TestCase(base.ModuleCase):
                 dict(data["zones"]),
                 {'dck': {'interfaces': ['docker0', 'docker1']},
                  'lxc': {'interfaces': ['lxcbr0', 'lxcbr1']},
+                 'internal': {'interfaces': ['em1', 'em2']},
                  'rpn': {'interfaces': ['em3', 'eth1']},
-                 'public': {'interfaces': ['eth0', 'br0']},
+                 'public': {'interfaces': ['em0', 'eth0', 'br0']},
                  'trusted': {'interfaces': ['lo']},
                  'vpn': {'interfaces': ['tun1']}})
 
@@ -474,7 +468,8 @@ class TestCase(base.ModuleCase):
                 filtered=['mc.*'],
                 kinds=['modules']
             ):
-                self.assertFalse(self._('mc_firewalld.is_allow_local')())
+                self.assertTrue(self._('mc_firewalld.is_allow_local')())
+                self.assertFalse(self._('mc_firewalld.is_permissive')())
 
         with self.patch(
             funcs={
@@ -507,6 +502,7 @@ class TestCase(base.ModuleCase):
                 kinds=['modules']
             ):
                 self.assertTrue(self._('mc_firewalld.is_allow_local')())
+                self.assertTrue(self._('mc_firewalld.is_permissive')())
 
     def test_is_allow_localb(self):
         with self.patch(
@@ -645,24 +641,16 @@ class TestCase(base.ModuleCase):
                        'foo': {'interfaces': ['eth0']}}})
 
         subset = ['rule family="ipv4" source address="1.2.4.2"'
-                  ' protocol value="udp" drop',
-                  'rule family="ipv4" source address="1.2.4.2"'
-                  ' protocol value="tcp" drop',
+                  ' drop',
                   'rule family="ipv4" source address="1.2.4.3"'
-                  ' protocol value="udp" accept',
-                  'rule family="ipv4" source address="1.2.4.3"'
-                  ' protocol value="tcp" accept']
+                  ' accept']
         self.assertEqual(
             [a for a in data['zones']['bar']['rules'] if 'icmp' not in a],
             subset)
         subset = ['rule family="ipv4" source address="1.2.4.2"'
-                  ' protocol value="udp" drop',
-                  'rule family="ipv4" source address="1.2.4.2"'
-                  ' protocol value="tcp" drop',
+                  ' drop',
                   'rule family="ipv4" source address="1.2.4.3"'
-                  ' protocol value="udp" accept',
-                  'rule family="ipv4" source address="1.2.4.3"'
-                  ' protocol value="tcp" accept']
+                  ' accept']
         self.assertEqual(
             [a for a in data['zones']['foo']['rules'] if 'icmp' not in a],
             subset)
