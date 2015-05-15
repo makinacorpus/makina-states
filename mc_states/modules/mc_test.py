@@ -32,7 +32,7 @@ def mroot():
     return os.path.join(froot(), 'makina-states')
 
 
-def lint_tests(use_vt=True):
+def lint_tests(use_vt=True, logcapture=True):
     try:
         result = __salt__['cmd.run_all'](
             '_scripts/pylint.sh -f colorized mc_states',
@@ -48,8 +48,11 @@ def lint_tests(use_vt=True):
 def unit_tests(tests=None,
                coverage=True,
                doctests=True,
-               use_vt=True):
+               use_vt=True,
+               logcapture=True):
     in_args = '--exe -e mc_test -v -s'
+    if not logcapture:
+        in_args += ' --nologcapture'
     if isinstance(tests, basestring):
         tests = tests.split(',')
     if not tests:
@@ -63,9 +66,10 @@ def unit_tests(tests=None,
     success = OrderedDict()
     for test in tests:
         try:
+            cmd = 'bin/nosetests {0} {1}'.format(
+                in_args, test)
             result = __salt__['cmd.run_all'](
-                'bin/nosetests {0} {1}'.format(
-                    in_args, test),
+                cmd,
                 output_loglevel='debug',
                 use_vt=use_vt, cwd=mroot())
             if result['retcode']:
@@ -100,7 +104,7 @@ def _echo(inq, outq):
             time.sleep(1)
 
 
-def run_tests(flavors=None, use_vt=True, echo=False):
+def run_tests(flavors=None, use_vt=True, echo=False, logcapture=True):
     if not flavors:
         flavors = []
     if isinstance(flavors, basestring):
@@ -117,7 +121,7 @@ def run_tests(flavors=None, use_vt=True, echo=False):
         try:
             utils.test_setup()
             success[step] = __salt__['mc_test.{0}_tests'.format(
-                step)](use_vt=use_vt)
+                step)](use_vt=use_vt, logcapture=logcapture)
         except (TestError,) as exc:
             failures[step] = exc
         except (Exception, KeyboardInterrupt):
@@ -141,6 +145,7 @@ def run_tests(flavors=None, use_vt=True, echo=False):
     return success
 
 
-def run_travis_tests(use_vt=False, echo=True):
-    return run_tests('travis', use_vt=use_vt, echo=echo)
+def run_travis_tests(use_vt=False, echo=True, logcapture=False):
+    return run_tests(
+        'travis', use_vt=use_vt, echo=echo, logcapture=logcapture)
 # vim:set et sts=4 ts=4 tw=80:
