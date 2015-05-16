@@ -38,6 +38,10 @@ PREFIX = 'makina-states.cloud.images'
 IMG_URL = ('https://downloads.sourceforge.net/makinacorpus'
            '/makina-states/'
            '{img}-{flavor}-{ver}.tar.xz')
+LXC_IMAGES = OrderedDict([('makina-states-vivid', {}),
+                          ('makina-states-trusty', {}),
+                          ('makina-states-precise', {})])
+# THIS IS A NON FINISHEP WIP TO REFACTOR IMAGE SETTINGS
 IMAGES = OrderedDict([
     ('lxc', OrderedDict([
         ('ubuntu-vivid', {
@@ -68,9 +72,8 @@ def _imgerror(msg, cret=None):
 def complete_images(data):
     root = data['root']
     images = data['lxc'].setdefault('images', OrderedDict())
-    images.setdefault('makina-states-precise', {})
-    images.setdefault('makina-states-vivid', {})
-    images.setdefault('makina-states-trusty', {})
+    images = __salt__['mc_utils.dictupdate'](
+        images, copy.deepcopy(LXC_IMAGES))
     for img in [i for i in images]:
         defaults = OrderedDict()
         defaults['builder_ref'] = '{0}-lxc-ref.foo.net'.format(img)
@@ -141,6 +144,7 @@ def default_settings():
                                             'kiorky'),
             'lxc': {'images_root': '/var/lib/lxc',
                     'cron_sync': False,
+                    'default': [a for a in LXC_IMAGES][0],
                     'images': OrderedDict(),
                     'cron_hour': '3',
                     'cron_minute': '3'}}
@@ -579,9 +583,11 @@ def sf_release(images=None, flavors=None, sync=True):
     return gret
 
 
+clean_lxc_config = mc_lxc.clean_lxc_config
+
+
 def build_from_lxc(img, data):
     if 'create' in data:
-        create_ar
         pass
     elif 'clone' in data:
         pass

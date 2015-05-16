@@ -88,7 +88,7 @@ def vt_default_settings(cloudSettings, imgSettings):
             The settings are not stored here for obvious performance reasons
     '''
     _s = __salt__
-    from_container = [a for a in imgSettings['lxc']['images']][0]
+    from_container = imgSettings['lxc']['default']
     dptype = 'dir'
     backing = 'dir'
     if _s['mc_nodetypes.is_devhost']():
