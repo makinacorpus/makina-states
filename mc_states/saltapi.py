@@ -514,6 +514,10 @@ def run_and_poll(target,
         if target in cret:
             ret = cret[target]
             break
+        # recent changes
+        elif 'data' in cret and 'outputter' in cret:
+            ret = cret['data']
+            break
         # special case, some answers may be crafted
         # to handle the unresponsivness of a specific command
         # which is also meaningfull, eg a minion not yet provisionned
