@@ -15,7 +15,9 @@ Jobs for lxc managment
 
 # Import python libs
 import os
+import logging
 import traceback
+import difflib
 
 # Import salt libs
 import salt.client
@@ -27,6 +29,10 @@ from salt.utils.odict import OrderedDict
 
 from mc_states import api
 from mc_states import saltapi
+
+
+six = saltapi.six
+log = logging.getLogger(__name__)
 
 
 def _noop(*a, **kw):
@@ -119,6 +125,44 @@ def sync_container(cmd_runner, ret, origin, destination,
     return ret
 
 
+def clean_lxc_config(container, rootfs=None, fstab=None):
+    if not rootfs:
+        rootfs = '/var/lib/lxc/{0}/rootfs'.format(container)
+    if not fstab:
+        fstab = '/var/lib/lxc/{0}/fstab'.format(container)
+    config = os.path.join(os.path.dirname(rootfs), 'config')
+    if os.path.exists(config):
+        lines = []
+        ocontent = []
+        with open(config) as fic:
+            ocontent = fic.readlines()
+            for i in ocontent:
+                if 'lxc.utsname =' in i:
+                    i = 'lxc.utsname = {0}\n'.format(container)
+                if 'lxc.rootfs =' in i:
+                    i = 'lxc.rootfs = {0}\n'.format(rootfs)
+                if 'lxc.fstab =' in i:
+                    i = 'lxc.fstab = {0}\n'.format(fstab)
+                if (
+                    ('lxc.network.hwaddr' in i) or
+                    ('lxc.network.ipv4.gateway' in i) or
+                    ('lxc.network.ipv4' in i) or
+                    ('lxc.network.link' in i)
+                ):
+                    continue
+                if i.strip():
+                    lines.append(i)
+        content = ''.join(lines)
+        if (lines != ocontent) and content:
+            log.info('Patching new cleaned'
+                     ' lxc config: {0}'.format(config))
+            log.info('Changes:')
+            for line in difflib.unified_diff(ocontent, lines):
+                log.info(line.strip())
+            with open(config, 'w') as fic:
+                fic.write(content)
+
+
 def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None,
                                     force=False, __salt__from_exec=None):
     _s = get__salt__(__salt__from_exec)
@@ -128,16 +172,17 @@ def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None,
         def _cmd_runner(cmd):
             return cli('cmd.run_all', cmd, python_shell=True)
 
-    imgSettings['lxc']['images']
     for img in imgSettings['lxc']['images']:
         bref = imgSettings['lxc']['images'][img]['builder_ref']
         # try to find the local img reference building counterpart
         # and sync it back to the reference lxc
+        rootfs = '/var/lib/lxc/{0}/rootfs'.format(img)
         sync_container(_cmd_runner, ret,
                        '/var/lib/lxc/{0}/rootfs'.format(bref),
-                       '/var/lib/lxc/{0}/rootfs'.format(img),
+                       rootfs,
                        __salt__from_exec=__salt__from_exec,
                        force=force)
+        clean_lxc_config(img)
         sync_container(_cmd_runner, ret,
                        '/var/lib/lxc/{0}/rootfs'.format(bref),
                        '/var/lib/lxc/{0}.tmp/rootfs'.format(img),
