@@ -138,19 +138,21 @@ def clean_lxc_config(container, rootfs=None, fstab=None):
             ocontent = fic.readlines()
             for i in ocontent:
                 if 'lxc.utsname =' in i:
-                    i = 'lxc.utsname = {0}'.format(container)
+                    i = 'lxc.utsname = {0}\n'.format(container)
                 if 'lxc.rootfs =' in i:
-                    i = 'lxc.rootfs = {0}'.format(rootfs)
+                    i = 'lxc.rootfs = {0}\n'.format(rootfs)
                 if 'lxc.fstab =' in i:
-                    i = 'lxc.fstab = {0}'.format(fstab)
+                    i = 'lxc.fstab = {0}\n'.format(fstab)
                 if (
                     ('lxc.network.hwaddr' in i) or
                     ('lxc.network.ipv4.gateway' in i) or
-                    ('lxc.network.ipv4' in i)
+                    ('lxc.network.ipv4' in i) or
+                    ('lxc.network.link' in i)
                 ):
                     continue
-                lines.append(i)
-        content = '\n'.join(lines)
+                if i.strip():
+                    lines.append(i)
+        content = ''.join(lines)
         if (lines != ocontent) and content:
             log.info('Patching new cleaned'
                      ' lxc config: {0}'.format(config))
