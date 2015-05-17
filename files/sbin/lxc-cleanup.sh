@@ -30,7 +30,7 @@ for i in /var/run/*.pid /var/run/dbus/pid /etc/nologin;do
 done
 # some services needs to be out
 # no apparmor in container
-for i in atop vnstat ondemand umountfs umountroot smartmontools apparmor;do
+for i in atop vnstat ondemand umountfs umountroot smartmontools apparmor smartd;do
     update-rc.d -f ${i} remove || /bin/true
     systemctl disable ${i} disable || /bin/true
 done
