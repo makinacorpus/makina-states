@@ -1043,6 +1043,9 @@ set_vars() {
     fi
 
     # export variables to support a restart
+
+    export BS_MS_ASSOCIATION_RESTART_MINION BS_MS_ASSOCIATION_RESTART_MASTER
+    export BS_ASSOCIATION_RESTART_MASTER BS_ASSOCIATION_RESTART_MINION
     export DO_PIP DO_MS_PIP DO_MASTERSALT DO_SALT DO_REFRESH_MODULES
     export FORCE_SALT_BOOT_SKIP_CHECKOUTS
     export ONLY_BUILDOUT_REBOOTSTRAP SALT_LIGHT_INSTALL
@@ -1120,7 +1123,7 @@ import ipwhois
 import pyasn1
 from distutils.version import LooseVersion
 OpenSSL_version = LooseVersion(OpenSSL.__dict__.get('__version__', '0.0'))
-if OpenSSL_version > LooseVersion('0.15'):
+if OpenSSL_version <= LooseVersion('0.15'):
     raise ValueError('trigger upgrade pyopenssl')
 EOF
     if [ "x${?}" != "x0" ];then
@@ -2751,40 +2754,25 @@ a\    - mastersalt
 }
 
 maybe_wire_reattached_conf() {
-
     # install salt cloud keys &  reconfigure any preprovisionned daemons
     if [ "x${SALT_REATTACH}" != "x" ];then
         bs_log "SaltCloud mode: killing daemons"
         kill_ms_daemons
         # remove any provisionned init overrides
-        if [ "x$(find /etc/init/*salt*.override 2>/dev/null|wc -l|${SED} "s/ //g")" != "x0" ];then
-            bs_log "SaltCloud mode: removing init stoppers"
+        if find /etc/init/*salt*.override -type f 1>/dev/null 2>/dev/null;then
+            bs_log "SaltCloud mode: removing upstart init stoppers"
             rm -fv /etc/init/*salt*.override
         fi
         bs_log "SaltCloud mode: Resetting some configurations"
-        rm -f "${CONF_PREFIX}/pki/minion/minion_master.pub"
-        # regenerate keys for the local master
-        if [ "x$(which salt-key 2>/dev/null)" != "x" ];then
-            "${SALT_MS}"/bin/salt-key -c /etc/salt --gen-keys=master --gen-keys-dir="${CONF_PREFIX}/pki/master"
-        fi
         if [ "x${IS_MASTERSALT}" != "x" ];then
-            bs_log "SaltCloud mode: Resetting some mastersalt configurations"
-            minion_dest="${MCONF_PREFIX}/pki/minion"
-            master_dest="${MCONF_PREFIX}/pki/master"
-            __install "${SALT_REATTACH_DIR}/minion.pem" "${minion_dest}/minion.pem"
-            __install "${SALT_REATTACH_DIR}/minion.pub" "${minion_dest}/minion.pub"
-            rm -f "${MCONF_PREFIX}/pki/minion/minion_master.pub"
-            # resetting local salt-minion's key
-            find "${CONF_PREFIX}/pki/master" -name $(get_minion_id) 2>/dev/null|while read fic;do rm -fv "${fic}";done
+            gen_mastersalt_keys
         fi
-        bs_log "SaltCloud mode: Installing keys"
-        minion_dest="${CONF_PREFIX}/pki/minion"
-        master_dest="${CONF_PREFIX}/pki/master"
-        __install "${SALT_REATTACH_DIR}/minion.pem" "${minion_dest}/minion.pem"
-        __install "${SALT_REATTACH_DIR}/minion.pub" "${minion_dest}/minion.pub"
-        __install "${SALT_REATTACH_DIR}/minion.pub" "${master_dest}/minions/$(get_minion_id)"
-        __install "${SALT_REATTACH_DIR}/master.pem" "${master_dest}/master.pem"
-        __install "${SALT_REATTACH_DIR}/master.pub" "${master_dest}/master.pub"
+        if [ "x${IS_SALT}" != "x" ];then
+            # force regenerate keys for the local master
+            rm -f "${CONF_PREFIX}/pki/minion/minion_master.pub"
+            bs_log "SaltCloud mode: Installing keys"
+            gen_salt_keys
+        fi
         for i in "${MASTERSALT_PILLAR}/mastersalt.sls" "${SALT_PILLAR}/salt.sls";do
             if [ -e "$i" ];then
                 bs_log "SaltCloud mode: removing ${i} default conf for it to be resetted"
@@ -2983,58 +2971,103 @@ lazy_start_salt_daemons() {
     fi
 }
 
+is_same() {
+    ret=1
+    if [ -e "${1}" ] && [ -e "${2}" ];then
+        diff -aq "${1}" "${2}" 1>/dev/null 2>/dev/null
+        ret=${?}
+    fi
+    return ${ret}
+}
+
+
+test_reattached_keys() {
+    if [ "x${SALT_REATTACH}" != "x" ]\
+        && [ -e "${SALT_REATTACH_DIR}/minion.pem" ] \
+        && [ -e "${SALT_REATTACH_DIR}/minion.pub" ];then
+        alreadydone="y"
+        if ! is_same "${SALT_REATTACH_DIR}/minion.pub" "${MCONF_PREFIX}/pki/minion/minion.pub";then
+            alreadydone=""
+        fi
+        if ! is_same "${SALT_REATTACH_DIR}/minion.pem" "${MCONF_PREFIX}/pki/minion/minion.pem";then
+            alreadydone=""
+        fi
+        if [ "x${alreadydone}" != "x" ];then
+            return 1
+        else
+            return 0
+        fi
+    fi
+    return 1
+}
+
 gen_mastersalt_keys() {
     if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
-    if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
-        if [ ! -e "${MCONF_PREFIX}/pki/master/master.pub" ];then
-            bs_log "Generating mastersalt master key"
-            "${MASTERSALT_MS}/bin/salt-key" -c "${MCONF_PREFIX}" --gen-keys=master --gen-keys-dir="${MCONF_PREFIX}/pki/master"
-            BS_MS_ASSOCIATION_RESTART_MASTER="1"
-        fi
-    fi
-    if [ "x${IS_MASTERSALT_MINION}" != "x" ];then
-        if [ ! -e "${MCONF_PREFIX}/pki/minion/minion.pub" ];then
-            bs_log "Generating mastersalt minion key"
-            "${MASTERSALT_MS}/bin/salt-key" -c "${MCONF_PREFIX}" --gen-keys=minion --gen-keys-dir="${MCONF_PREFIX}/pki/minion"
-            BS_MS_ASSOCIATION_RESTART_MINION="1"
-        fi
+    if [ "x${IS_MASTERSALT_MASTER}" != "x" ]\
+        && [ ! -e "${MCONF_PREFIX}/pki/master/master.pub" ];then
+        bs_log "Generating mastersalt master key"
+        "${MASTERSALT_MS}/bin/salt-key" -c "${MCONF_PREFIX}" --gen-keys=master --gen-keys-dir="${MCONF_PREFIX}/pki/master"
+        BS_MS_ASSOCIATION_RESTART_MASTER="1"
     fi
     if [ "x${IS_MASTERSALT_MINION}" != "x" ]\
-        && [ "x${IS_MASTERSALT_MASTER}" != "x" ]\
-        && [ -e "${MCONF_PREFIX}/pki/minion/minion.pub" ];then
+        && ! test_reattached_keys\
+        && [ ! -e "${MCONF_PREFIX}/pki/minion/minion.pub" ];then
+        bs_log "Generating mastersalt minion key"
+        "${MASTERSALT_MS}/bin/salt-key" -c "${MCONF_PREFIX}" --gen-keys=minion --gen-keys-dir="${MCONF_PREFIX}/pki/minion"
+        BS_MS_ASSOCIATION_RESTART_MINION="1"
+    fi
+    if test_reattached_keys;then
+        bs_log "SaltCloud mode: Resetting some mastersalt configurations"
+        __install "${SALT_REATTACH_DIR}/minion.pub" "${MCONF_PREFIX}/pki/minion/minion.pub"
+        __install "${SALT_REATTACH_DIR}/minion.pem" "${MCONF_PREFIX}/pki/minion/minion.pem"
+        __install "${SALT_REATTACH_DIR}/minion.pub" "${MCONF_PREFIX}/pki/master/minions/$(get_minion_id)"
+
+        __install "${SALT_REATTACH_DIR}/minion.pub" "${CONF_PREFIX}/pki/minion/minion.pub"
+        __install "${SALT_REATTACH_DIR}/minion.pem" "${CONF_PREFIX}/pki/minion/minion.pem"
+        __install "${SALT_REATTACH_DIR}/minion.pub" "${CONF_PREFIX}/pki/master/minions/$(get_minion_id)"
+        __install "${CONF_PREFIX}/pki/master/master.pub" "${CONF_PREFIX}/pki/minion/minion_master.pub"
+
         BS_MS_ASSOCIATION_RESTART_MINION="1"
         BS_MS_ASSOCIATION_RESTART_MASTER="1"
-        __install "${MCONF_PREFIX}/pki/minion/minion.pub" "${MCONF_PREFIX}/pki/master/minions/$(get_minion_id)"
-        __install "${MCONF_PREFIX}/pki/master/master.pub" "${MCONF_PREFIX}/pki/minion/minion_master.pub"
+        BS_ASSOCIATION_RESTART_MASTER="1"
+        BS_ASSOCIATION_RESTART_MINION="1"
+    fi
+    if [ "x${IS_MASTERSALT_MINION}" != "x" ] && [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
+        if ! is_same "${MCONF_PREFIX}/pki/minion/minion.pub" "${MCONF_PREFIX}/pki/master/minions/$(get_minion_id)";then
+            __install "${MCONF_PREFIX}/pki/minion/minion.pub" "${MCONF_PREFIX}/pki/master/minions/$(get_minion_id)"
+            BS_MS_ASSOCIATION_RESTART_MASTER="1"
+            BS_MS_ASSOCIATION_RESTART_MINION="1"
+        fi
+        if ! is_same "${MCONF_PREFIX}/pki/master/master.pub" "${MCONF_PREFIX}/pki/minion/minion_master.pub";then
+            __install "${MCONF_PREFIX}/pki/master/master.pub" "${MCONF_PREFIX}/pki/minion/minion_master.pub"
+            BS_MS_ASSOCIATION_RESTART_MINION="1"
+        fi
     fi
 }
 
 gen_salt_keys() {
     if [ "x${DO_SALT}" = "xno" ];then return;fi
-    if [ "x${IS_SALT_MASTER}" != "x" ];then
-        if [ ! -e "${CONF_PREFIX}/pki/master/master.pub" ];then
-            bs_log "Generating salt minion key"
-            "${SALT_MS}/bin/salt-key" -c "${CONF_PREFIX}" --gen-keys=master --gen-keys-dir=${CONF_PREFIX}/pki/master
-            BS_ASSOCIATION_RESTART_MASTER="1"
-        fi
+    if [ "x${IS_SALT_MASTER}" != "x" ] && [ ! -e "${CONF_PREFIX}/pki/master/master.pub" ];then
+        bs_log "Generating salt minion key"
+        "${SALT_MS}/bin/salt-key" -c "${CONF_PREFIX}" --gen-keys=master --gen-keys-dir=${CONF_PREFIX}/pki/master
+        BS_ASSOCIATION_RESTART_MASTER="1"
     fi
     # in saltcloude mode, keys are already providen
-    if [ "x${SALT_REATTACH}" = "x" ];then
-        if [ "x${IS_SALT_MINION}" != "x" ];then
-            if [ ! -e "${CONF_PREFIX}/pki/minion/minion.pub" ];then
-                bs_log "Generating salt minion key"
-                BS_ASSOCIATION_RESTART_MINION="1"
-                "${SALT_MS}/bin/salt-key" -c "${CONF_PREFIX}" --gen-keys=minion --gen-keys-dir=${CONF_PREFIX}/pki/minion
-            fi
-        fi
-    fi
-    if [ "x${IS_SALT_MINION}" != "x" ]\
-       && [ "x${IS_SALT_MASTER}" != "x" ]\
-       && [ -e "${CONF_PREFIX}/pki/minion/minion.pub" ];then
-        __install "${CONF_PREFIX}/pki/minion/minion.pub" "${CONF_PREFIX}/pki/master/minions/$(get_minion_id)"
-        __install "${CONF_PREFIX}/pki/master/master.pub" "${CONF_PREFIX}/pki/minion/minion_master.pub"
-        BS_ASSOCIATION_RESTART_MASTER="1"
+    if [ "x${IS_SALT_MINION}" != "x" ] && [ ! -e "${CONF_PREFIX}/pki/minion/minion.pub" ];then
+        bs_log "Generating salt minion key"
+        "${SALT_MS}/bin/salt-key" -c "${CONF_PREFIX}" --gen-keys=minion --gen-keys-dir=${CONF_PREFIX}/pki/minion
         BS_ASSOCIATION_RESTART_MINION="1"
+    fi
+    if [ "x${IS_SALT_MINION}" != "x" ] && [ "x${IS_SALT_MASTER}" != "x" ];then
+        if ! is_same "${CONF_PREFIX}/pki/minion/minion.pub" "${CONF_PREFIX}/pki/master/minions/$(get_minion_id)";then
+            __install "${CONF_PREFIX}/pki/minion/minion.pub" "${CONF_PREFIX}/pki/master/minions/$(get_minion_id)"
+            BS_ASSOCIATION_RESTART_MASTER="1"
+            BS_ASSOCIATION_RESTART_MINION="1"
+        fi
+        if ! is_same "${CONF_PREFIX}/pki/master/master.pub" "${CONF_PREFIX}/pki/minion/minion_master.pub";then
+            __install "${CONF_PREFIX}/pki/master/master.pub" "${CONF_PREFIX}/pki/minion/minion_master.pub"
+            BS_ASSOCIATION_RESTART_MINION="1"
+        fi
     fi
 }
 
@@ -3591,17 +3624,16 @@ make_mastersalt_association() {
                 fi
             fi
         fi
-
+        if [ "x${BS_MS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
+            bs_log "Forcing mastersalt master restart"
+            restart_local_mastersalt_masters
+            sleep 10
+        fi
         debug_msg "Forcing mastersalt minion restart"
-        restart_local_mastersalt_minions
-        #if [ "x${BS_MS_ASSOCIATION_RESTART_MASTER}" != "x" ];then
-        #    restart_local_mastersalt_masters
-        #    sleep 10
-        #fi
-        #if [ "x${BS_MS_ASSOCIATION_RESTART_MINION}" != "x" ];then
-        #    restart_local_mastersalt_minions
-        #fi
-        gen_mastersalt_keys
+        if [ "x${BS_MS_ASSOCIATION_RESTART_MINION}" != "x" ];then
+            bs_log "Forcing mastersalt minion restart"
+            restart_local_mastersalt_minions
+        fi
         mastersalt_master_connectivity_check
         bs_log "Waiting for mastersalt minion key hand-shake"
         minion_id="$(get_minion_id)"
@@ -3679,7 +3711,7 @@ install_mastersalt_daemons() {
     if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     # --------- check if we need to run mastersalt setup's
     RUN_MASTERSALT_BOOTSTRAP="${SALT_REBOOTSTRAP}"
-    # regenerate keys if missings
+    # regenerate keys if missing or reattach keys from new mastersalt
     if [ $(which salt-key 2>/dev/null) ];then
         gen_mastersalt_keys
     fi
@@ -3727,7 +3759,7 @@ install_mastersalt_daemons() {
     fi
     if [  "${SALT_BOOT_DEBUG}" != "x" ];then
         debug_msg "mastersalt:"
-        debug_msg "RUN_MASTERSALT_BOOTSTRAP: $RUN_MASTERSALT_BOOTSTRAP"
+        debug_msg "RUN_MASTERSALT_BOOTSTRAP: ${RUN_MASTERSALT_BOOTSTRAP}"
         debug_msg "grains: $(grep makina-states.controllers.mastersalt_ "${MCONF_PREFIX}/grains" |wc -l|${SED} -e "s/ //g")"
         debug_msg $(ls  "${BIN_DIR}/mastersalt-master" "${BIN_DIR}/mastersalt-key" \
             "${BIN_DIR}/mastersalt-minion" "${BIN_DIR}/mastersalt-call" \
