@@ -4,6 +4,7 @@ Description=lxc-setup
 After=sysinit.target
 DefaultDependencies=no
 Before=network-online.target
+After=systemd-tmpfiles-setup.service
 
 [Service]
 Type=oneshot
