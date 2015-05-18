@@ -3074,14 +3074,14 @@ install_salt_daemons() {
     fi
     if [ "x${IS_SALT_MASTER}" != "x" ];then
         if [ ! -e "${ETC_INIT}/salt-master.conf" ]\
-            && [ ! -e "${ETC_SYSTEMD}.d/salt-master.service" ]\
+            && [ ! -e "${ETC_SYSTEMD}/salt-master.service" ]\
             && [ ! -e "${ETC_INIT}.d/salt-master" ];then
             RUN_SALT_BOOTSTRAP="1"
         fi
     fi
     if [ "x${IS_SALT_MINION}" != "x" ];then
         if [ ! -e "${ETC_INIT}/salt-minion.conf" ]\
-            && [ ! -e "${ETC_SYSTEMD}.d/salt-minion.service" ]\
+            && [ ! -e "${ETC_SYSTEMD}/salt-minion.service" ]\
             && [ ! -e "${ETC_INIT}.d/salt-minion" ];then
             RUN_SALT_BOOTSTRAP="1"
         fi
