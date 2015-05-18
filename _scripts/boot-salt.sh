@@ -3020,12 +3020,17 @@ gen_mastersalt_keys() {
         bs_log "SaltCloud mode: Resetting some mastersalt configurations"
         __install "${SALT_REATTACH_DIR}/minion.pub" "${MCONF_PREFIX}/pki/minion/minion.pub"
         __install "${SALT_REATTACH_DIR}/minion.pem" "${MCONF_PREFIX}/pki/minion/minion.pem"
-        __install "${SALT_REATTACH_DIR}/minion.pub" "${MCONF_PREFIX}/pki/master/minions/$(get_minion_id)"
-
         __install "${SALT_REATTACH_DIR}/minion.pub" "${CONF_PREFIX}/pki/minion/minion.pub"
         __install "${SALT_REATTACH_DIR}/minion.pem" "${CONF_PREFIX}/pki/minion/minion.pem"
-        __install "${SALT_REATTACH_DIR}/minion.pub" "${CONF_PREFIX}/pki/master/minions/$(get_minion_id)"
-        __install "${CONF_PREFIX}/pki/master/master.pub" "${CONF_PREFIX}/pki/minion/minion_master.pub"
+        if [ -e "${MCONF_PREFIX}/pki/master/minions" ];then
+            __install "${SALT_REATTACH_DIR}/minion.pub" "${MCONF_PREFIX}/pki/master/minions/$(get_minion_id)"
+        fi
+        if [ -e "${CONF_PREFIX}/pki/master/minions" ];then
+            __install "${SALT_REATTACH_DIR}/minion.pub" "${CONF_PREFIX}/pki/master/minions/$(get_minion_id)"
+        fi
+        if [ -e "${CONF_PREFIX}/pki/master/master.pub" ] && [ -e "${CONF_PREFIX}/pki/minion" ];then
+            __install "${CONF_PREFIX}/pki/master/master.pub" "${CONF_PREFIX}/pki/minion/minion_master.pub"
+        fi
 
         BS_MS_ASSOCIATION_RESTART_MINION="1"
         BS_MS_ASSOCIATION_RESTART_MASTER="1"
