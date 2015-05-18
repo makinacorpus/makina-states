@@ -3199,7 +3199,7 @@ restart_local_mastersalt_minions() {
         killall_local_mastersalt_minions
         stop_and_disable_service mastersalt-minion
     else
-        enable_service salt-minion
+        enable_service mastersalt-minion
         if [ ! -e "${ALIVE_MARKER}" ] && [ "x${IS_MASTERSALT_MINION}" != "x" ];then
             service_ mastersalt-minion stop
             killall_local_mastersalt_minions
