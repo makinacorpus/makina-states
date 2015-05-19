@@ -24,7 +24,7 @@ import copy
 import mc_states.api
 
 __name = 'ubuntugis'
-
+PREFIX = 'makina-states.services.gis.{0}'.format(__name)
 log = logging.getLogger(__name__)
 
 
@@ -33,23 +33,29 @@ def settings():
     ubuntugis registry
 
     ppa
-      use the unstable or stable ppa
+      use the unstable, testing  or stable ppa
 
 
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
-        locations = __salt__['mc_locations.settings']()
-        ubuntugisData = __salt__['mc_utils.defaults'](
-            'makina-states.services.gis.ubuntugis', {
-              'ppa': 'stable',
-            }
-        )
-        return ubuntugisData
+        _g = __grains__
+        pkgssettings = __salt__['mc_pkgs.settings']()
+        if _g['os'] in ['Debian']:
+            dist = pkgssettings['ubuntu_lts']
+        else:
+            dist = pkgssettings['udist']
+        if _g['os'] == 'Ubuntu' and _g['osrelease'] >= '14.04':
+            ppa = 'unstable'
+        data = __salt__['mc_utils.defaults'](
+            PREFIX, {
+                'pkgs': ['libgeos-dev'],
+                'dist': dist,
+                'ppa': ppa,
+                'ubuntu_ppa': None})
+        if not data['ubuntu_ppa']:
+            data['ubuntu_ppa'] = {
+                'stable': 'ppa'
+            }.get(data['ppa'], 'ubuntugis-{0}'.format(data['ppa']))
+        return data
     return _settings()
-
-
-
-#
