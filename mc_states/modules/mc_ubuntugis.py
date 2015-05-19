@@ -45,6 +45,7 @@ def settings():
             dist = pkgssettings['ubuntu_lts']
         else:
             dist = pkgssettings['udist']
+        ppa = 'stable'
         if _g['os'] == 'Ubuntu' and _g['osrelease'] >= '14.04':
             ppa = 'unstable'
         data = __salt__['mc_utils.defaults'](
