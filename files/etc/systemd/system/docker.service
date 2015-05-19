@@ -5,11 +5,14 @@ After=network.target docker.socket docker-net-makina.service
 Requires=docker.socket docker-net-makina.service
 
 [Service]
+Type=simple
 ExecStart=/usr/bin/docker-service.sh
 MountFlags=slave
 LimitNOFILE=1048576
 LimitNPROC=1048576
 LimitCORE=infinity
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
