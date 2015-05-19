@@ -9,7 +9,7 @@ postfix-pkgs:
       - postfix-pcre
       - procmail
     - watch:
-      - mc_proxy: postfix-pre-install-hook
+      - mc_proxy: postfix-preinstall
     - watch_in:
-      - mc_proxy: postfix-post-install-hook
+      - mc_proxy: postfix-postinstall
 {%endif %}

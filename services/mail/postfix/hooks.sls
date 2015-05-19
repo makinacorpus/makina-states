@@ -1,48 +1,52 @@
+include:
+  - makina-states.localsettings.ssl.hooks
 {# postfix orchestration hooks #}
-postfix-pre-install-hook:
+postfix-preinstall:
   mc_proxy.hook:
     - watch_in:
-      - mc_proxy: postfix-post-install-hook
-      - mc_proxy: postfix-pre-conf-hook
-      - mc_proxy: postfix-post-conf-hook
-      - mc_proxy: postfix-pre-restart-hook
-      - mc_proxy: postfix-post-restart-hook
+      - mc_proxy: postfix-postinstall
+      - mc_proxy: postfix-preconf
+      - mc_proxy: postfix-postconf
+      - mc_proxy: postfix-prerestart
+      - mc_proxy: postfix-postrestart
 
-postfix-post-install-hook:
+postfix-postinstall:
   mc_proxy.hook:
     - watch_in:
-      - mc_proxy: postfix-pre-conf-hook
-      - mc_proxy: postfix-post-conf-hook
-      - mc_proxy: postfix-pre-restart-hook
-      - mc_proxy: postfix-post-restart-hook
+      - mc_proxy: postfix-preconf
+      - mc_proxy: postfix-postconf
+      - mc_proxy: postfix-prerestart
+      - mc_proxy: postfix-postrestart
 
-postfix-pre-conf-hook:
+postfix-preconf:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: ssl-certs-post-hook
+    - watch_in:
+      - mc_proxy: postfix-postconf
+      - mc_proxy: postfix-prerestart
+      - mc_proxy: postfix-postrestart
+
+postfix-postconf:
   mc_proxy.hook:
     - watch_in:
-      - mc_proxy: postfix-post-conf-hook
-      - mc_proxy: postfix-pre-restart-hook
-      - mc_proxy: postfix-post-restart-hook
+      - mc_proxy: postfix-prerestart
+      - mc_proxy: postfix-postrestart
 
-postfix-post-conf-hook:
+postfix-prerestart:
   mc_proxy.hook:
     - watch_in:
-      - mc_proxy: postfix-pre-restart-hook
-      - mc_proxy: postfix-post-restart-hook
+      - mc_proxy: postfix-postrestart
 
-postfix-pre-restart-hook:
-  mc_proxy.hook:
-    - watch_in:
-      - mc_proxy: postfix-post-restart-hook
-
-postfix-post-restart-hook:
+postfix-postrestart:
   mc_proxy.hook: []
 
 
-postfix-pre-hardrestart-hook:
+postfix-prehardrestart:
   mc_proxy.hook:
     - watch_in:
-      - mc_proxy: postfix-post-hardrestart-hook
+      - mc_proxy: postfix-posthardrestart
 
-postfix-post-hardrestart-hook:
+postfix-posthardrestart:
   mc_proxy.hook: []
 

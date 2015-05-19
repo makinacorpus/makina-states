@@ -6,8 +6,8 @@
 #myorigin = {{data.conf_dir}}/mailname
 myhostname = {{data.mailname }}
 myorigin = {{data.conf_dir}}/mailname
-inet_protocols = {{data.inet_protocols}}
-inet_interfaces = {{data.inet_interfaces}}
+inet_protocols = {{' '.join(data.inet_protocols)}}
+inet_interfaces = {{' '.join(data.inet_interfaces)}}
 mydestination  = hash:/etc/postfix/destinations,hash:/etc/postfix/destinations.local
 relay_domains  = hash:/etc/postfix/relay_domains,hash:/etc/postfix/relay_domains.local
 mynetworks     = cidr:/etc/postfix/networks,cidr:/etc/postfix/networks.local
@@ -15,8 +15,8 @@ transport_maps = hash:/etc/postfix/transport,hash:/etc/postfix/transport.local
 # TLS parameters
 smtp_use_tls={{data.use_tls}}
 smtpd_use_tls={{data.use_tls}}
-smtpd_tls_cert_file={{data.cert_file}}
-smtpd_tls_key_file={{data.cert_key}}
+smtpd_tls_cert_file=/etc/postix/certificate.pub
+smtpd_tls_key_file=/etc/postix/certificate.key
 
 # aliases
 alias_maps     = hash:{{data.conf_dir}}/aliases

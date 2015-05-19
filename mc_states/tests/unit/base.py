@@ -113,6 +113,7 @@ class _ModuleCase(unittest.TestCase):
     def get_opts(self):
         opts = {'root': self.root,
                 'root_dir': self.root,
+                'cachedir': '{root}/cache',
                 'makina-states.localsettings.locations.root': self.root,
                 'makina-states.localsettings.locations.root_dir': self.root,
                 'testroot': '{root}',
@@ -133,6 +134,8 @@ class _ModuleCase(unittest.TestCase):
         with open(J(self.states_dir, 'modules_dirs.json')) as fic:
             content = json.loads(fic.read())
             opts.update(content)
+        if not os.path.exists(opts['cachedir']):
+            os.makedirs(opts['cachedir'])
         opts = mc_states.modules.mc_utils.format_resolve(opts)
         return opts
 

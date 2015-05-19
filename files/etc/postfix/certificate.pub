@@ -1,0 +1,2 @@
+{%- set data = salt['mc_postfix.settings']() %}
+{{-data['cert']}}

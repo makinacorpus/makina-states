@@ -613,4 +613,27 @@ def have_docker_if():
     if True in ['docker' in a[0] for a in gifaces]:
         ret = True
     return ret
+
+
+def append_netmask(ip):
+    # ipv6 is not supported at the moment
+    if ':' in ip:
+        return ip
+    else:
+        chunks = ip.split('.')[:4]
+        if len(chunks) < 4:
+            while len(chunks[:]) < 4:
+                chunks.append('0')
+        netm = 32
+        if chunks[-1] in ['0', 0]:
+            for i in range(4):
+                if chunks[4 - (i+1)] in ['0']:
+                    netm -= 8
+                else:
+                    break
+            if ip.startswith('172.16'):
+                netm = '12'
+        netm = "{0}".format(netm)
+        net = '.'.join(chunks) + '/' + netm
+        return net
 # vim:set et sts=4 ts=4 tw=80:
