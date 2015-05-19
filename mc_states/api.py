@@ -839,4 +839,17 @@ def prefered_ips(bclients):
                     'target for dnsaddr is neither pinguable '
                     'or resolvable: {0}'.format(client))
     return [a.strip() for a in clients if a.strip()]
+
+
+def param_as_list(data, param):
+    if data.get(param) is None:
+        data.pop(param, None)
+    data.setdefault(param, [])
+    if isinstance(data[param], (int, float)):
+        data[param] = [data[param]]
+    if isinstance(data[param], six.string_types):
+        data[param] = [a.strip()
+                       for a in data[param].split()
+                       if a.strip()]
+    return data
 # vim:set et sts=4 ts=4 tw=80:

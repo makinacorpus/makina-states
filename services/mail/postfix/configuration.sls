@@ -1,9 +1,11 @@
-{% set postfixSettings = salt['mc_postfix.settings']() %}
+{% import "makina-states/_macros/h.jinja" as h with context %}
+{% set data = salt['mc_postfix.settings']() %}
 {% set locs = salt['mc_locations.settings']()%}
 include:
   - makina-states.services.mail.postfix.hooks
 {% if salt['mc_controllers.mastersalt_mode']() %}
   - makina-states.services.mail.postfix.services
+  - makina-states.localsettings.ssl
 
 {{ locs.conf_dir }}-postfix-dir:
   file.directory:
@@ -12,23 +14,23 @@ include:
     - group: root
     - mode: 755
     - watch:
-      - mc_proxy: postfix-post-install-hook
+      - mc_proxy: postfix-postinstall
     - watch_in:
-      - mc_proxy: postfix-pre-conf-hook
+      - mc_proxy: postfix-preconf
 
 {{ locs.conf_dir }}-postfix-mailname:
   file.managed:
     - name: {{ locs.conf_dir }}/mailname
     - source: ''
-    - contents: {{ postfixSettings.mailname }}
+    - contents: {{ data.mailname }}
     - template: jinja
     - user: root
     - group: root
     - mode: 644
     - watch:
-      - mc_proxy: postfix-post-install-hook
+      - mc_proxy: postfix-postinstall
     - watch_in:
-      - mc_proxy: postfix-pre-conf-hook
+      - mc_proxy: postfix-preconf
 
 {{ locs.conf_dir }}-postfix-main.cf:
   file.managed:
@@ -39,10 +41,10 @@ include:
     - group: root
     - mode: 744
     - watch:
-      - mc_proxy: postfix-pre-conf-hook
+      - mc_proxy: postfix-preconf
     - watch_in:
-      - mc_proxy: postfix-post-conf-hook
-      - mc_proxy: postfix-pre-restart-hook
+      - mc_proxy: postfix-postconf
+      - mc_proxy: postfix-prerestart
 
 makina-postfix-chroot-hosts-sync:
   cmd.run:
@@ -50,10 +52,10 @@ makina-postfix-chroot-hosts-sync:
     - stateful: True
     - name: cp -a {{ locs.conf_dir }}/hosts {{ locs.var_spool_dir }}/postfix/etc/hosts && echo "" && echo "changed=yes"
     - watch:
-      - mc_proxy: postfix-pre-conf-hook
+      - mc_proxy: postfix-preconf
     - watch_in:
-      - mc_proxy: postfix-post-conf-hook
-      - mc_proxy: postfix-pre-restart-hook
+      - mc_proxy: postfix-postconf
+      - mc_proxy: postfix-prerestart
 
 makina-postfix-chroot-localtime-sync:
   cmd.run:
@@ -61,10 +63,10 @@ makina-postfix-chroot-localtime-sync:
     - stateful: True
     - name: cp -a {{ locs.conf_dir }}/localtime {{ locs.var_spool_dir }}/postfix/etc/localtime && echo "" && echo "changed=yes"
     - watch:
-      - mc_proxy: postfix-pre-conf-hook
+      - mc_proxy: postfix-preconf
     - watch_in:
-      - mc_proxy: postfix-post-conf-hook
-      - mc_proxy: postfix-pre-restart-hook
+      - mc_proxy: postfix-postconf
+      - mc_proxy: postfix-prerestart
 
 makina-postfix-chroot-nsswitch-sync:
   cmd.run:
@@ -72,10 +74,10 @@ makina-postfix-chroot-nsswitch-sync:
     - stateful: True
     - name: cp -a {{ locs.conf_dir }}/nsswitch.conf  {{ locs.var_spool_dir }}/postfix/etc/nsswitch.conf  && echo "" && echo "changed=yes"
     - watch:
-      - mc_proxy: postfix-pre-conf-hook
+      - mc_proxy: postfix-preconf
     - watch_in:
-      - mc_proxy: postfix-post-conf-hook
-      - mc_proxy: postfix-pre-restart-hook
+      - mc_proxy: postfix-postconf
+      - mc_proxy: postfix-prerestart
 
 makina-postfix-chroot-resolvconf-sync:
   cmd.run:
@@ -83,50 +85,31 @@ makina-postfix-chroot-resolvconf-sync:
     - stateful: True
     - name: cp -a {{ locs.conf_dir }}/resolv.conf {{ locs.var_spool_dir }}/postfix/etc/resolv.conf && echo "" && echo "changed=yes"
     - watch:
-      - mc_proxy: postfix-pre-conf-hook
+      - mc_proxy: postfix-preconf
     - watch_in:
-      - mc_proxy: postfix-post-conf-hook
-      - mc_proxy: postfix-pre-restart-hook
-
-{% set hashtables = ['virtual_alias_maps', 'networks',
-                     'sasl_passwd', 'relay_domains',
-                     'transport', 'destinations']%}
-
-{% for f in hashtables %}
-makina-postfix-{{f}}:
-  file.managed:
-    - name: {{ locs.conf_dir }}/postfix/{{f}}
-    - source: salt://makina-states/files/etc/postfix/{{f}}
-    - user: postfix
-    - template: jinja
-    - group: root
-    - mode: 740
+      - mc_proxy: postfix-postconf
+      - mc_proxy: postfix-prerestart
+{% macro rmacro() %}
     - watch:
-      - mc_proxy: postfix-pre-conf-hook
+      - mc_proxy: postfix-preconf
     - watch_in:
-      - mc_proxy: postfix-post-conf-hook
-makina-postfix-local-{{f}}:
-  file.managed:
-    - name: {{ locs.conf_dir }}/postfix/{{f}}.local
-    - source: ''
-    - user: postfix
-    - group: root
-    - mode: 640
-    - watch:
-      - mc_proxy: postfix-pre-conf-hook
-    - watch_in:
-      - mc_proxy: postfix-post-conf-hook
-{% endfor %}
+      - mc_proxy: postfix-postconf
+{% endmacro %}
+{{ h.deliver_config_files(
+     data.get('extra_confs', {}),
+     after_macro=rmacro,
+     prefix='makina-postfix-')}}
+
 postfix-virtualdir:
   file.directory:
-    - name: {{postfixSettings.virtual_mailbox_base}}
+    - name: {{data.virtual_mailbox_base}}
     - user: root
     - group: root
     - mode: 744
     - watch:
-      - mc_proxy: postfix-pre-conf-hook
+      - mc_proxy: postfix-preconf
     - watch_in:
-      - mc_proxy: postfix-post-conf-hook
+      - mc_proxy: postfix-postconf
 
 {# postalias if {{ locs.conf_dir }}/aliases is altered #}
 makina-postfix-postalias:
@@ -136,12 +119,21 @@ makina-postfix-postalias:
             postalias {{ locs.conf_dir }}/aliases;
             echo "changed=yes"
     - watch:
-      - mc_proxy: postfix-post-conf-hook
+      - mc_proxy: postfix-postconf
+    - watch_in:
+      - cmd: makina-postfix-configuration-check
+
+postfix-fixownership:
+  cmd.run:
+    - name: /usr/bin/ms_resetpostfixperms.sh && echo "changed=false"
+    - stateful: true
+    - watch:
+      - mc_proxy: postfix-postconf
     - watch_in:
       - cmd: makina-postfix-configuration-check
 
 {# postmap when altered #}
-{% for f in hashtables %}
+{% for f in data.hashtables %}
 makina-postfix-postmap-{{f}}:
   cmd.watch:
     - name: |
@@ -152,7 +144,8 @@ makina-postfix-postmap-{{f}}:
             echo "changed=yes"
     - stateful: True
     - watch:
-      - mc_proxy: postfix-post-conf-hook
+      - cmd: postfix-fixownership
+      - mc_proxy: postfix-postconf
     - watch_in:
       - cmd: makina-postfix-configuration-check
 {%endfor %}

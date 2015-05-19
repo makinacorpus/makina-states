@@ -233,7 +233,6 @@ def default_settings():
         'banned_networks': [],
         'trusted_networks': [],
         # list of mappings
-        'allow_local': True,
         'local_networks': LOCAL_NETS[:],
         'no_cloud_rules': False,
         'no_salt': False,
@@ -532,7 +531,7 @@ def complete_rich_rules(rules=None,
                 continue
             for p in destinations:
                 prule = rule
-                if 'ipv4' in rule  and ':' in p:
+                if 'ipv4' in rule and ':' in p:
                     continue
                 if 'ipv6' in rule and '.' in p:
                     continue
@@ -760,7 +759,7 @@ def get_public_ips(cache=True, data=None, ttl=120):
         # this enable to work on private only networks
         is_public = False
         for i in public_ips[:]:
-            if __salt__['mc_network.is_public'](ip):
+            if __salt__['mc_network.is_public'](i):
                 is_public = True
                 break
         # if containers, we assume that all ips are dealed the same way.
