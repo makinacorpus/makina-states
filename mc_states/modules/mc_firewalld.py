@@ -413,8 +413,7 @@ def source_allowed(rule):
 
 def destination_allowed(rule):
     return (
-        (' destination' not in rule) and
-        (' masquerade' not in rule)
+        (' destination' not in rule)
     )
 
 
@@ -485,6 +484,13 @@ def complete_rich_rules(rules=None,
                 if prule not in buffer_rules:
                     buffer_rules.append(prule)
         to_add_rules = buffer_rules
+        # never masquerade a single source to itself
+        if len(sources) == 1 and not destinations:
+            source = sources[0]
+            destination = source
+            if source.startswith('not '):
+                destination = 'not {0}'.format(destination)
+            destinations = [destination]
 
     if icmp_block:
         buffer_rules = []

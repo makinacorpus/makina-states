@@ -768,13 +768,17 @@ class TestCase(base.ModuleCase):
             self.assertEqual(
                 data['zones']['mar']['rules'],
                 ['rule family="ipv4" masquerade'
-                 ' source address="10.1.2.0/24"',
+                 ' source address="10.1.2.0/24"'
+                 ' destination not address="10.1.2.0/24"',
                  'rule family="ipv4" masquerade'
-                 ' source address="192.168.2.0/24"',
+                 ' source address="192.168.2.0/24"'
+                 ' destination not address="192.168.2.0/24"',
                  'rule family="ipv4" masquerade'
-                 ' source address="192.168.1.0/24"',
+                 ' source address="192.168.1.0/24"'
+                 ' destination not address="192.168.1.0/24"',
                  'rule family="ipv4" masquerade'
-                 ' source address="10.1.1.0/24"'])
+                 ' source address="10.1.1.0/24"'
+                 ' destination not address="10.1.1.0/24"'])
 
     def test_service_policies(self):
         def _do():
