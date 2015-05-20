@@ -1,12 +1,15 @@
 # MANAGED VIA SALT -- DO NOT EDIT
 [Unit]
 Description=circusd
+After=syslog.target network.target nss-lookup.target
 
 [Service]
-Type=oneshot
-ExecStart=/usr/bin/circus.sh start
-ExecStopPost=/usr/bin/circus.sh stop
-ExecStopPre=/usr/bin/circus.sh stop
+Type=simple
+ExecStart=-/usr/bin/circus.sh start
+ExecStop=-/usr/bin/circus.sh stop && sleep 2
+ExecStop=-/usr/bin/circus.sh stop
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

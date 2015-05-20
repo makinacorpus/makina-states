@@ -34,7 +34,9 @@ class TestCase(base.ModuleCase):
             mc_states.api.invalidate_memoize_cache('localreg_ubuntugis_settings')
             ret = func()
             self.assertEqual(dict(ret),
-                             {'ppa': 'stable', 'dist': 'boo', 'ubuntu_ppa': 'stable'})
+                             {'ppa': 'stable',
+                              'pkgs': ['libgeos-dev'],
+                              'dist': 'boo', 'ubuntu_ppa': 'ppa'})
         with self.patch(
             funcs={
                 'modules': {
@@ -56,7 +58,9 @@ class TestCase(base.ModuleCase):
             mc_states.api.invalidate_memoize_cache('localreg_ubuntugis_settings')
             ret = func()
             self.assertEqual(dict(ret),
-                             {'ppa': 'stable', 'dist': 'doo', 'ubuntu_ppa': 'stable'})
+                             {'ppa': 'stable',
+                              'pkgs': ['libgeos-dev'],
+                              'dist': 'doo', 'ubuntu_ppa': 'ppa'})
         with self.patch(
             funcs={
                 'modules': {
@@ -78,7 +82,9 @@ class TestCase(base.ModuleCase):
             mc_states.api.invalidate_memoize_cache('localreg_ubuntugis_settings')
             ret = func()
             self.assertEqual(dict(ret),
-                             {'ppa': 'unstable', 'dist': 'doo', 'ubuntu_ppa': 'ubuntu-unstable'})
+                             {'ppa': 'unstable', 'dist': 'doo',
+                              'pkgs': ['libgeos-dev'],
+                              'ubuntu_ppa': 'ubuntugis-unstable'})
 
 if __name__ == '__main__':
     unittest.main()
