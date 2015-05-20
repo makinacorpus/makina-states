@@ -38,8 +38,8 @@ include:
     - source: salt://makina-states/files/etc/postfix/main.cf
     - template: jinja
     - user: root
-    - group: root
-    - mode: 744
+    - group: postfix
+    - mode: 640
     - watch:
       - mc_proxy: postfix-preconf
     - watch_in:
@@ -84,6 +84,16 @@ makina-postfix-chroot-resolvconf-sync:
     - unless: diff -q {{ locs.var_spool_dir }}/postfix/etc/resolv.conf {{ locs.conf_dir }}/resolv.conf
     - stateful: True
     - name: cp -a {{ locs.conf_dir }}/resolv.conf {{ locs.var_spool_dir }}/postfix/etc/resolv.conf && echo "" && echo "changed=yes"
+    - watch:
+      - mc_proxy: postfix-preconf
+    - watch_in:
+      - mc_proxy: postfix-postconf
+      - mc_proxy: postfix-prerestart
+makina-postfix-chroot-cacer-sync:
+  cmd.run:
+    - unless: diff -q {{ locs.var_spool_dir }}/postfix/etc/ssl/certs/ca-certificates.crt {{ locs.conf_dir }}/ssl/certs/ca-certificates.crt
+    - stateful: True
+    - name: cp -a {{ locs.conf_dir }}/ssl/certs/ca-certificates.crt {{ locs.var_spool_dir }}/postfix/etc/ssl/certs/ca-certificates.crt && echo "" && echo "changed=yes"
     - watch:
       - mc_proxy: postfix-preconf
     - watch_in:
@@ -138,7 +148,6 @@ makina-postfix-postmap-{{f}}:
   cmd.watch:
     - name: |
             cd /etc/postfix;
-            chown postfix:postfix "{{f}}" "{{f}}.db" "{{f}}.local" "{{f}}.local.db";
             postmap hash:/{{locs.conf_dir}}/postfix/{{f}}.local;
             postmap hash:/{{locs.conf_dir}}/postfix/{{f}};
             echo "changed=yes"
