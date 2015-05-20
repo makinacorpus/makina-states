@@ -488,7 +488,7 @@ def complete_rich_rules(rules=None,
         if len(sources) == 1 and not destinations:
             source = sources[0]
             destination = source
-            if source.startswith('not '):
+            if not source.startswith('not '):
                 destination = 'not {0}'.format(destination)
             destinations = [destination]
 
