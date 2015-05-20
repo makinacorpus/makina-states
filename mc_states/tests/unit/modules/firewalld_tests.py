@@ -220,6 +220,15 @@ class TestCase(base.ModuleCase):
             filtered=['mc.*'],
             kinds=['modules']
         ):
+
+            data = self._('mc_firewalld.rich_rules')(
+                masquerade=True,
+                source='10.5.0.0/16')
+            self.assertEqual(
+                data,
+                ['rule family="ipv4" masquerade'
+                 ' source address="10.5.0.0/16"'
+                 ' destination not address="10.5.0.0/16"'])
             data = self._('mc_firewalld.rich_rules')(
                 service='http',
                 forward_port={'port': 22, 'to_addr': '1.2.3.4'})
