@@ -200,52 +200,52 @@ def settings():
                         'user': 'root', 'group': 'root',
                         'mode': '750'},
                     '/etc/postfix/virtual_alias_maps': {
-                        'user': 'postfix', 'group': 'root',
+                        'user': 'root', 'group': 'postfix',
                         'mode': '640'},
                     '/etc/postfix/networks': {
-                        'user': 'postfix', 'group': 'root',
+                        'user': 'root', 'group': 'postfix',
                         'mode': '640'},
                     '/etc/postfix/sasl_passwd': {
-                        'user': 'postfix', 'group': 'root',
+                        'user': 'root', 'group': 'postfix',
                         'mode': '640'},
                     '/etc/postfix/relay_domains': {
-                        'user': 'postfix', 'group': 'root',
+                        'user': 'root', 'group': 'postfix',
                         'mode': '640'},
                     '/etc/postfix/transport': {
-                        'user': 'postfix', 'group': 'root',
+                        'user': 'root', 'group': 'postfix',
                         'mode': '640'},
                     '/etc/postfix/destinations': {
-                        'user': 'postfix', 'group': 'root',
+                        'user': 'root', 'group': 'postfix',
                         'mode': '640'},
                     '/etc/postfix/virtual_alias_maps.local': {
                         'source': '',
-                        'user': 'postfix', 'group': 'root',
+                        'user': 'root', 'group': 'postfix',
                         'mode': '640'},
                     '/etc/postfix/networks.local': {
-                        'user': 'postfix', 'group': 'root',
+                        'user': 'root', 'group': 'postfix',
                         'source': '',
                         'mode': '640'},
                     '/etc/postfix/sasl_passwd.local': {
-                        'user': 'postfix', 'group': 'root',
+                        'user': 'root', 'group': 'postfix',
                         'source': '',
                         'mode': '640'},
                     '/etc/postfix/relay_domains.local': {
-                        'user': 'postfix', 'group': 'root',
+                        'user': 'root', 'group': 'postfix',
                         'source': '',
                         'mode': '640'},
                     '/etc/postfix/transport.local': {
-                        'user': 'postfix', 'group': 'root',
+                        'user': 'root', 'group': 'postfix',
                         'source': '',
                         'mode': '640'},
 
                     '/etc/postfix/certificate.pub': {
-                        'user': 'postfix', 'group': 'root',
+                        'user': 'root', 'group': 'postfix',
                         'mode': '640'},
                     '/etc/postfix/certificate.key': {
-                        'user': 'postfix', 'group': 'root',
+                        'user': 'root', 'group': 'postfix',
                         'mode': '640'},
                     '/etc/postfix/destinations.local': {
-                        'user': 'postfix', 'group': 'root',
+                        'user': 'root', 'group': 'postfix',
                         'source': '',
                         'mode': '640'},
                 },
