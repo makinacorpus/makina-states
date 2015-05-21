@@ -1,20 +1,15 @@
-{%- set pkgSettings = salt['mc_pkgs.settings']() %}
+{%- set pkgssettings = salt['mc_pkgs.settings']() %}
 include:
   - makina-states.services.virt.lxc.hooks
 {% if salt['mc_controllers.mastersalt_mode']() %}
 
-{% if grains['os'] in ['Ubuntu'] %}
-{% set dist = pkgSettings.apt.ubuntu.dist %}
-{% else %}
-{% set dist = pkgSettings.apt.ubuntu.lts %}
-{% endif %}
 {% set locs = salt['mc_locations.settings']() %}
 lxc-repo:
   pkgrepo.managed:
     - name: lxc
     - humanname: LXC PPA
-    - name: deb http://ppa.launchpad.net/ubuntu-lxc/stable/ubuntu {{dist}} main
-    - dist: {{dist}}
+    - name: deb http://ppa.launchpad.net/ubuntu-lxc/stable/ubuntu {{pkgssettings.ppa_dist}} main
+    - dist: {{pkgssettings.ppa_dist}}
     - file: {{locs.conf_dir}}/apt/sources.list.d/lxc.list
     - keyid: 7635B973
     - keyserver: keyserver.ubuntu.com
@@ -26,8 +21,8 @@ lxc-pkgs:
   pkg.latest:
 {# no need anymore -> ppa #}
 {% if False and grains['os'] in ['Ubuntu'] -%}
-{% if pkgSettings.udist in ['precise'] %}
-    - fromrepo: {{pkgSettings.udist}}-backports
+{% if pkgssettings.udist in ['precise'] %}
+    - fromrepo: {{pkgssettings.udist}}-backports
 {% endif %}
 {% endif %}
     - pkgs:

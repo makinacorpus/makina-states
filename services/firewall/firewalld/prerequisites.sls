@@ -1,14 +1,13 @@
 {% set data = salt['mc_firewalld.settings']() %}
-{% set pkgs = salt['mc_pkgs.settings']() %}
-{% set dist = pkgs.dist %}
+{% set pkgssettings = salt['mc_pkgs.settings']() %}
 include:
   - makina-states.services.firewall.firewalld.hooks
 {% if salt['mc_controllers.mastersalt_mode']() %}
 firewalld-repo:
   pkgrepo.managed:
     - humanname: firewalld ppa
-    - name: deb http://ppa.launchpad.net/makinacorpus/firewalld/ubuntu {{dist}} main
-    - dist: {{dist}}
+    - name: deb http://ppa.launchpad.net/makinacorpus/firewalld/ubuntu {{pkgssettings.ppa_dist}} main
+    - dist: {{pkgssettings.ppa_dist}}
     - file: /etc/apt/sources.list.d/firewalld.list
     - keyid: 207A7A4E
     - keyserver: keyserver.ubuntu.com
