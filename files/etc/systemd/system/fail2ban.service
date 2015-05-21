@@ -5,7 +5,7 @@ After=network.target iptables.service firewalld.service
 
 [Service]
 Type=forking
-ExecStart=-if [ ! -e /var/run/fail2ban2 ];then mkdir /var/run/fail2ban2;fi
+ExecStartPre=-/bin/sh -ec 'if [ ! -e /var/run/fail2ban ];then mkdir /var/run/fail2ban;fi'
 ExecStart=/usr/bin/fail2ban-client -x start
 ExecStop=/usr/bin/fail2ban-client stop
 ExecReload=/usr/bin/fail2ban-client reload
