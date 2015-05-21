@@ -1,20 +1,12 @@
-{% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% set icinga_webSettings = salt['mc_icinga_web.settings']() %}
 include:
   - makina-states.services.monitoring.icinga_web.hooks
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
-{% if grains['os_family'] in ['Debian'] %}
-{% set dist = pkgssettings.udist %}
-{% endif %}
-{% if grains['os'] in ['Debian'] %}
-{% set dist = pkgssettings.ubuntu_lts %}
-{% endif %}
-
 icinga_web-base:
   pkgrepo.managed:
     - humanname: icingaweb ppa
-    - name: deb http://ppa.launchpad.net/formorer/icinga-web/ubuntu {{dist}} main
-    - dist: {{dist}}
+    - name: deb http://ppa.launchpad.net/formorer/icinga-web/ubuntu {{pkgssettings.ppa_dist}} main
+    - dist: {{pkgssettings.ppa_dist}}
     - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/icingaweb.list
     - keyid: 36862847
     - keyserver: keyserver.ubuntu.com

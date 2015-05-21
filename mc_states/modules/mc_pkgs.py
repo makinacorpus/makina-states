@@ -244,6 +244,9 @@ def settings():
                              'dists': [{'name': ddist+'-backports',
                                         'comps': data['dcomps']}]}
                         ]}), grain='os')
+        data['ppa_dist'] = data.get('udist', ubuntu_lts)
+        if grains['os'] in ['Debian']:
+            data['ppa_dist'] = ubuntu_lts
         data['pkg_data'] = pkg_data
         return data
     return _settings()

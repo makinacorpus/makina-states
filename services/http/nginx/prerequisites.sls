@@ -2,18 +2,12 @@ include:
   - makina-states.services.http.nginx.hooks
 
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
-{% if grains['os_family'] in ['Debian'] %}
-{% set dist = pkgssettings.udist %}
-{% endif %}
-{% if grains['os'] in ['Debian'] %}
-{% set dist = pkgssettings.ubuntu_lts %}
-{% endif %}
+
 nginx-base:
   pkgrepo.managed:
     - humanname: nginx ppa
-    - name: deb http://ppa.launchpad.net/makinacorpus/nginx/ubuntu {{dist}} main
-
-    - dist: {{dist}}
+    - name: deb http://ppa.launchpad.net/makinacorpus/nginx/ubuntu {{pkgssettings.ppa_dist}} main
+    - dist: {{pkgssettings.ppa_dist}}
     - file: /etc/apt/sources.list.d/nginx.list
     - keyid: 207A7A4E
     - keyserver: keyserver.ubuntu.com

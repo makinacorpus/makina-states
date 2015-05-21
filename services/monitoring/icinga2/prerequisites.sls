@@ -1,16 +1,8 @@
-{% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% set icinga2Settings = salt['mc_icinga2.settings']() %}
 include:
   - makina-states.services.monitoring.icinga2.hooks
 
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
-{% if grains['os_family'] in ['Debian'] %}
-{% set dist = pkgssettings.udist %}
-{% endif %}
-{% if grains['os'] in ['Debian'] %}
-{% set dist = pkgssettings.ubuntu_lts %}
-{% endif %}
-
 icinga2-base:
   file.absent:
     - name: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/icinga.list
@@ -20,8 +12,8 @@ icinga2-base:
     - unless: apt-key list|grep -q Icinga
   pkgrepo.managed:
     - humanname: icinga ppa
-    - name: deb http://ppa.launchpad.net/formorer/icinga/ubuntu {{dist}} main
-    - dist: {{dist}}
+    - name: deb http://ppa.launchpad.net/formorer/icinga/ubuntu {{pkgssettings.ppa_dist}} main
+    - dist: {{pkgssettings.ppa_dist}}
     - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/icinga2.list
     - keyid: "36862847"
     - keyserver: keyserver.ubuntu.com
