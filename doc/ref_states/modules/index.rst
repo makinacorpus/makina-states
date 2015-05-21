@@ -29,6 +29,7 @@ Subregistries
    :maxdepth: 2
 
    mc_dns.rst
+   mc_mvn.rst
    mc_firewalld.rst
    mc_dbus.rst
    mc_apparmor.rst
