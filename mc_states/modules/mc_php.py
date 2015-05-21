@@ -230,7 +230,6 @@ def settings():
             'fpm_pm_start_servers': 3,
             'fpm_pm_min_spare_servers': 3,
             'fpm_pm_max_spare_servers': 8,
-            'fpm_clear_env': False,
             'opcache_install': 1,
             'opcache_enabled': 1,
             'opcache_enable_cli': 1,
