@@ -344,6 +344,7 @@ def settings():
                     'ldap': 'php5-ldap',
                     'mcrypt': 'php5-mcrypt',
                 },
+                'ppa_ver': '5.6',
                 'service': 'php5-fpm',
                 'etcdir': locations['conf_dir'] + '/php5',
                 'confdir': locations['conf_dir'] + '/php5/mods-available',

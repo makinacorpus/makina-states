@@ -21,7 +21,7 @@ makina-php-repos:
 
 {% endif %}
 makina-php-pkgs:
-  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
+  pkg.latest:
     - watch:
       - mc_proxy: makina-php-pre-inst
     - watch_in:
