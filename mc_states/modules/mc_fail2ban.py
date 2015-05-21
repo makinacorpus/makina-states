@@ -193,6 +193,7 @@ def settings():
                         'mode': '751'},
                     '/etc/fail2ban/jail.conf': {'mode': '750'},
                     '/etc/init.d/fail2ban': {'mode': '750'},
+                    '/etc/systemd/system/fail2ban.service': {'mode': '644'},
                 },
                 'maxretry': '10',
                 'ssh_maxretry': '{maxretry}',
