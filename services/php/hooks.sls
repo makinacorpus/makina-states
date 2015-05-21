@@ -5,6 +5,16 @@
 include:
   - makina-states.services.http.apache.hooks
 
+makina-php-pre-repo:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: makina-php-post-inst
+      - mc_proxy: makina-php-pre-conf
+      - mc_proxy: makina-php-post-conf
+      - mc_proxy: makina-php-pre-restart
+      - mc_proxy: makina-php-post-restart
+      - mc_proxy: makina-php-pre-inst
+
 makina-php-pre-inst:
   mc_proxy.hook:
     - watch_in:

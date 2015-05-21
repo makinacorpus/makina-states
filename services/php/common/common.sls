@@ -1,5 +1,6 @@
 {% set locs = salt['mc_locations.settings']() %}
 {% set phpSettings = salt['mc_php.settings']()  %}
+{% set pkgssettings = salt['mc_pkgs.settings']()  %}
 {% set s_ALL = phpSettings.s_all %}
 {% import "makina-states/services/php/macros.sls" as macros with context %}
 
@@ -7,16 +8,33 @@
 include:
   - makina-states.services.php.hooks
 {%  if grains.get('lsb_distrib_id','') == "Debian" -%}
-  {# Include dotdeb repository for Debian #}
+{# Include dotdeb repository for Debian #}
   - makina-states.localsettings.repository_dotdeb
+{%endif %}
 
+{% if grains.get('lsb_distrib_id','') == "Debian" -%}
 dotdeb-apache-makina-apache-php-pre-inst:
   mc_proxy.hook:
     - require:
+      - mc_proxy: makina-php-pre-repo
       - pkgrepo: dotdeb-repo
     - watch_in:
       - mc_proxy: makina-php-pre-inst
-{%endif %}
+{# Manage php-fpm packages @#}
+{% elif grains['os'] in ['Ubuntu'] %}
+makina-php-repos:
+  pkgrepo.managed:
+    - humanname: php ppa
+    - name: deb http://ppa.launchpad.net/ondrej/php5-{{phpSettings.ppa_ver}}/ubuntu {{pkgssettings.ppa_dist}} main
+    - dist: {{pkgssettings.ppa_dist}}
+    - file: /etc/apt/sources.list.d/phpppa.list
+    - keyid: E5267A6C
+    - keyserver: keyserver.ubuntu.com
+    - watch:
+      - mc_proxy: makina-php-pre-repo
+    - watch_in:
+      - mc_proxy: makina-php-pre-inst
+{% endif %}
 
 php-cli:
   pkg.installed:
@@ -48,9 +66,18 @@ makina-php-composer:
     - group: root
     - mode: 755
     - name: /usr/local/bin/composer
+    - unless: /usr/local/bin/composer --version
     - source: '{{phpSettings.composer}}'
     - source_hash: 'sha1={{phpSettings.composer_sha1}}'
     - require:
+      - mc_proxy: makina-php-post-inst
+    - watch_in:
+      - mc_proxy: makina-php-pre-conf
+  cmd.run:
+    - name: /usr/local/bin/composer selfupdate
+    - user: root
+    - require:
+      - file: makina-php-composer
       - mc_proxy: makina-php-post-inst
     - watch_in:
       - mc_proxy: makina-php-pre-conf
