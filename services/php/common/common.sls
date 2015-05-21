@@ -66,9 +66,18 @@ makina-php-composer:
     - group: root
     - mode: 755
     - name: /usr/local/bin/composer
+    - unless: /usr/local/bin/composer --version
     - source: '{{phpSettings.composer}}'
     - source_hash: 'sha1={{phpSettings.composer_sha1}}'
     - require:
+      - mc_proxy: makina-php-post-inst
+    - watch_in:
+      - mc_proxy: makina-php-pre-conf
+  cmd.run:
+    - name: /usr/local/bin/composer selfupdate
+    - user: root
+    - require:
+      - file: makina-php-composer
       - mc_proxy: makina-php-post-inst
     - watch_in:
       - mc_proxy: makina-php-pre-conf
