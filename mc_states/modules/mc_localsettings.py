@@ -128,6 +128,7 @@ def registry(ttl=15*60):
             'locales': {'active': True},
             'localrc': {'active': True},
             'desktoptools': {'active': False},
+            'mvn': {'active': False},
             'timezone': {'active': True},
             'network': {'active': True},
             'nodejs': {'active': False},
