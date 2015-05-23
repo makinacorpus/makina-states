@@ -380,6 +380,34 @@ set_colors() {
     fi
 }
 
+get_salt_url() {
+    setting="salt_url"
+    conf_url="$(get_conf ${setting})"
+    param_url="${SALT_URL}"
+    setting_url="${SALT_URL:-"https://github.com/makinacorpus/salt.git"}"
+    if [ "x${param_url}" != "x" ];then
+        setting_url="${param_url}"
+    elif [ "x${conf_url}" != "x" ];then
+        setting_url="${conf_url}"
+    fi
+    store_conf ${setting} "${setting_url}"
+    echo "${setting_url}"
+}
+
+get_ms_url() {
+    setting="ms_url"
+    conf_url="$(get_conf ${setting})"
+    param_url="${MAKINASTATES_URL}"
+    setting_url="${MAKINASTATES_URL:-"https://github.com/makinacorpus/makina-states.git"}"
+    if [ "x${param_url}" != "x" ];then
+        setting_url="${param_url}"
+    elif [ "x${conf_url}" != "x" ];then
+        setting_url="${conf_url}"
+    fi
+    store_conf ${setting} "${setting_url}"
+    echo "${setting_url}"
+}
+
 get_local_mastersalt_mode() {
     default_mode="remote"
     mastersalt_mode="$(get_conf local_mastersalt_mode)"
@@ -451,7 +479,7 @@ set_valid_upstreams() {
     fi
     if [ "x${VALID_BRANCHES}" = "x" ];then
         if [ "x${SALT_BOOT_LIGHT_VARS}" = "x" ];then
-            VALID_BRANCHES="$(echo "$(git ls-remote "${MAKINASTATES_URL}"|grep "refs/heads"|awk -F/ '{print $3}'|grep -v HEAD)")"
+            VALID_BRANCHES="$(echo "$(git ls-remote "$(get_ms_url)"|grep "refs/heads"|awk -F/ '{print $3}'|grep -v HEAD)")"
         fi
         if [ -e "${SALT_MS}/.git/config" ];then
             SETTED_VALID_UPSTREAM="1"
@@ -707,7 +735,6 @@ set_vars() {
     IS_MASTERSALT="${IS_MASTERSALT:-}"
     IS_MASTERSALT_MASTER="${IS_MASTERSALT_MASTER:-}"
     IS_MASTERSALT_MINION="${IS_MASTERSALT_MINION:-}"
-    MAKINASTATES_URL="${MAKINASTATES_URL:-"https://github.com/makinacorpus/makina-states.git"}"
     PREFIX="${PREFIX:-${ROOT}srv}"
     BIN_DIR="${BIN_DIR:-${ROOT}usr/bin}"
     SALT_ROOT="${SALT_ROOT:-$PREFIX/salt}"
@@ -1819,7 +1846,7 @@ setup_and_maybe_update_code() {
                             remote=""
                             branch_pref="changeset_"
                         fi
-                        git clone ${QUIET_GIT} "${MAKINASTATES_URL}" "${ms}" &&\
+                        git clone ${QUIET_GIT} "$(get_ms_url)" "${ms}" &&\
                         cd "${ms}" &&\
                         git checkout ${QUIET_GIT} "${remote}""${ms_branch}" -b "${branch_pref}""${ms_branch}" &&\
                         cd - 1>/dev/null 2>/dev/null
@@ -4034,7 +4061,7 @@ usage() {
         bs_help "    --venv-rebootstrap" "Redo venv, salt bootstrap" "${VENV_REBOOTSTRAP}" "y"
     fi
     bs_log "  Actions settings"
-    bs_help "    -g|--makina-states-url <url>" "makina-states url" "${MAKINASTATES_URL}" y
+    bs_help "    -g|--makina-states-url <url>" "makina-states git url" "$(get_ms_url)" y
     bs_help "    --salt-url <url>" "saltstack fork git url" "$(get_salt_url)" y
     bs_help "    --reattach-dir" "for --reattach, the directory to grab salt master/minion new keys & conf from" "${SALT_REATTACH_DIR}" y
     if [ "x${SALT_LONG_HELP}" != "x" ];then
@@ -4332,6 +4359,9 @@ parse_cli_opts() {
             FORCE_SALT_NODETYPE="${2}";
             sh="2";
             argmatch="1"
+        fi
+        if [ "x${1}" = "x--salt-url" ];then
+            SALT_URL="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x-g" ] || [ "x${1}" = "x--makina-states-url" ];then
             MAKINASTATES_URL="${2}";sh="2";argmatch="1"
