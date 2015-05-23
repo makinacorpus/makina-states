@@ -234,17 +234,19 @@ def format_resolve(value,
     if isinstance(value, dict):
         new = OrderedDict()
         for key, val in value.items():
-            val = format_resolve(val, original_dict, this_call=this_call + 1, topdb=topdb)
+            val = format_resolve(
+                val, original_dict, this_call=this_call + 1, topdb=topdb
+            )
             new[key] = val
     elif isinstance(value, (list, tuple)):
         new = type(value)()
         for v in value:
-            val = format_resolve(v, original_dict, this_call=this_call + 1, topdb=topdb)
+            val = format_resolve(
+                v, original_dict, this_call=this_call + 1, topdb=topdb
+            )
             new = new + type(value)([val])
     elif isinstance(value, basestring):
         new = value
-        if '/downloads' in new:
-            topdb= True
         # do not directly call format to handle keyerror in original mapping
         # where we may have yet keyerrors
         if isinstance(original_dict, dict):
@@ -257,7 +259,8 @@ def format_resolve(value,
                 if subst in new:
                     if isinstance(subst_val, (list, dict)):
                         inner_new = format_resolve(
-                            subst_val, original_dict, this_call=this_call + 1, topdb=topdb)
+                            subst_val, original_dict, this_call=this_call + 1,
+                            topdb=topdb)
                         # composed, we take the repr
                         if new != subst:
                             new = new.replace(subst, str(inner_new))
@@ -276,7 +279,8 @@ def format_resolve(value,
                     if this_call > 1000:
                         raise _CycleError('cycle')
                     new_val = format_resolve(
-                        new, original_dict, this_call=this_call + 1, topdb=topdb)
+                        new, original_dict, this_call=this_call + 1,
+                        topdb=topdb)
                     new_braces = new.count('{'), new.count('}')
                     newval_braces = new_val.count('{'), new_val.count('}')
                     if new_braces == newval_braces:
@@ -357,10 +361,10 @@ def is_a_number(value):
     is the value a number
     '''
     return (
-        is_a_int(value)
-        or is_a_float(value)
-        or is_a_complex(value)
-        or is_a_long(value)
+        is_a_int(value) or
+        is_a_float(value) or
+        is_a_complex(value) or
+        is_a_long(value)
     )
 
 
@@ -397,10 +401,10 @@ def is_iter(value):
     is the value iterable (list, set, dict tuple)
     '''
     return (
-        is_a_list(value)
-        or is_a_dict(value)
-        or is_a_tuple(value)
-        or is_a_set(value)
+        is_a_list(value) or
+        is_a_dict(value) or
+        is_a_tuple(value) or
+        is_a_set(value)
     )
 
 
