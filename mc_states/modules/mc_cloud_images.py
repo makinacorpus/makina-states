@@ -586,9 +586,28 @@ def sf_release(images=None, flavors=None, sync=True):
 clean_lxc_config = mc_lxc.clean_lxc_config
 
 
-def build_from_lxc(img, data):
+def build_from_lxc(img='vivid', data=None):
+    if not data:
+        data = {}
+    path = __salt__['test.rand_str'](16)
+    name = __salt__['test.rand_str'](8)
+    if not os.path.exists(path):
+        os.makedirs(path)
+    rootfs = os.path.join(path, name, 'rootfs')
+    _s = __salt__
+    sd = _s['mc_cloud_lxc.settings']()
+    ret = {}
     if 'create' in data:
-        pass
+        ret['lxc'] = _s['lxc.init'](
+            name,
+            bootstrap_shell=sd['bootstrap_shell'],
+            path=path,
+            script=sd['script'],
+            script_args=sd['script_args'],
+            profile=copy.deepcopy(sd['profile']),
+            network_profile=copy.deepcopy(sd['network_profile']))
+        ret['cleanup'] = _s['cmd.run_chroot'](
+            rootfs, '/sbin/makina-states-snapshot.sh')
     elif 'clone' in data:
         pass
     else:

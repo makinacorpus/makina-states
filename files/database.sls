@@ -240,7 +240,8 @@ configurations:
 #     domains: [app2-developpement.com, app2.mydomain.tld]
 #   provider1-dc1-1.mydomain.tld:
 #     domains: [api.app1.mydomain.tld, ui.app1.mydomain.tld]
-#     from_container: superapp
+#     profile:
+#       clone_from: superapp
 
 # cloud compute node properties
 # cloud_cn_attrs:

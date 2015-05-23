@@ -4035,6 +4035,7 @@ usage() {
     fi
     bs_log "  Actions settings"
     bs_help "    -g|--makina-states-url <url>" "makina-states url" "${MAKINASTATES_URL}" y
+    bs_help "    --salt-url <url>" "saltstack fork git url" "$(get_salt_url)" y
     bs_help "    --reattach-dir" "for --reattach, the directory to grab salt master/minion new keys & conf from" "${SALT_REATTACH_DIR}" y
     if [ "x${SALT_LONG_HELP}" != "x" ];then
         bs_help "    -r|--root <path>" "/ path" "${ROOT}"
