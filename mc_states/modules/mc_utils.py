@@ -437,7 +437,8 @@ def traverse_dict(data, key, delimiter=salt.utils.DEFAULT_TARGET_DELIM):
 
     can be traversed with makina-states.foo.bar.c
     '''
-    delimiters = [delimiter, salt.utils.DEFAULT_TARGET_DELIM, ':', '.']
+    delimiters = uniquify([delimiter, salt.utils.DEFAULT_TARGET_DELIM,
+                           ':', '.'])
     ret = dv = '_|-'
     for dl in delimiters:
         for cdl in reversed(delimiters):
@@ -457,15 +458,16 @@ def traverse_dict(data, key, delimiter=salt.utils.DEFAULT_TARGET_DELIM):
                 # we do not test the last element as it is the exact key !
                 for i in range(key.count(cdl)-1):
                     dkey = nkey.replace(dl, cdl, i+1)
-                    ret = salt.utils.traverse_dict(data, dkey, dv, delimiter=dl)
+                    ret = salt.utils.traverse_dict(
+                        data, dkey, dv, delimiter=dl)
                     if ret != dv:
                         return ret
     return ret
 
 
-def get(key, default='',
-        local_registry=None, registry_format='pack',
-        delimiter=salt.utils.DEFAULT_TARGET_DELIM):
+def uncached_get(key, default='',
+                 local_registry=None, registry_format='pack',
+                 delimiter=salt.utils.DEFAULT_TARGET_DELIM):
     '''
     Same as 'config.get' but with different retrieval order.
 
@@ -488,18 +490,18 @@ def get(key, default='',
     '''
     _s, _g, _p, _o = __salt__, __grains__, __pillar__, __opts__
     if local_registry is None:
-        local_prefs = [(a, 'makina-states.{0}.'.format(a))
-                       for a in api._GLOBAL_KINDS]
-        for reg, pref in local_prefs:
+        for reg, pref in api._LOCAL_PREFS:
             if key.startswith(pref):
                 local_registry = reg
                 break
     if (
-        isinstance(local_registry, basestring)
-        and local_registry not in ['localsettings']
+        isinstance(local_registry, basestring) and
+        local_registry not in ['localsettings']
     ):
         local_registry = _s['mc_macros.get_local_registry'](
             local_registry, registry_format=registry_format)
+    else:
+        local_registry = None
     ret = traverse_dict(_o, key, delimiter=delimiter)
     if ret != '_|-':
         return ret
@@ -517,6 +519,27 @@ def get(key, default='',
     if ret != '_|-':
         return ret
     return default
+
+
+def cached_get(key, default='',
+               local_registry=None, registry_format='pack',
+               delimiter=salt.utils.DEFAULT_TARGET_DELIM, ttl=60):
+    cache_key = 'mc_utils_get.{0}{1}{2}{3}'.format(key,
+                                                   local_registry,
+                                                   registry_format,
+                                                   delimiter)
+    return __salt__['mc_utils.memoize_cache'](
+        uncached_get,
+        [key],
+        {'default': default,
+         'local_registry': local_registry,
+         'registry_format': registry_format,
+         'delimiter': delimiter},
+        cache_key,
+        ttl)
+
+
+get = uncached_get
 
 
 def get_uniq_keys_for(prefix):
@@ -545,7 +568,7 @@ def get_uniq_keys_for(prefix):
                 try:
                     if testn.index('.') < 2:
                         skeys.append(k)
-                except:
+                except (IndexError, ValueError):
                     continue
         skeys.sort()
         for k in skeys:
