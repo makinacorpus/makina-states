@@ -956,8 +956,7 @@ def filter_host_pids(pids):
 
 
 def cache_kwargs(*args, **kw):
-    shared = {'__opts__': __opts__,
-              '__salt__': __salt__}
+    shared = {'__opts__': __opts__, '__salt__': __salt__}
     to_delete = [i for i in kw
                  if i.startswith('__') and i not in shared]
     dc = len(to_delete)
