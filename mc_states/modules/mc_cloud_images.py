@@ -72,6 +72,10 @@ def _imgerror(msg, cret=None):
 
 def complete_images(data):
     root = data['root']
+    if 'makina-states' not in root:
+        nroot = os.path.join(root, 'makina-states')
+        if os.path.exists(nroot):
+            root = nroot
     images = data['lxc'].setdefault('images', OrderedDict())
     images = __salt__['mc_utils.dictupdate'](
         images, copy.deepcopy(LXC_IMAGES))
@@ -82,11 +86,11 @@ def complete_images(data):
         images[img].setdefault('flavors', ['lxc', 'standalone'])
         for flavor in images[img]['flavors']:
             md5_file = os.path.join(root,
-                                    ('makina-states/versions/'
+                                    ('versions/'
                                      '{0}-{1}_version.txt.md5'
                                      '').format(img, flavor))
             ver_file = os.path.join(root,
-                                    ('makina-states/versions/'
+                                    ('versions/'
                                      '{0}-{1}_version.txt'
                                      '').format(img, flavor))
             if (
