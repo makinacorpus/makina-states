@@ -18,6 +18,7 @@ import traceback
 import logging
 import os
 import copy
+import shutil
 import salt.exceptions
 from mc_states import saltapi
 
@@ -586,34 +587,152 @@ def sf_release(images=None, flavors=None, sync=True):
 clean_lxc_config = mc_lxc.clean_lxc_config
 
 
-def build_from_lxc(img='vivid', data=None):
-    if not data:
-        data = {}
-    path = __salt__['test.rand_str'](16)
-    name = __salt__['test.rand_str'](8)
+def get_ret(ret=None):
+    if ret is None:
+        ret = {}
+    ret.setdefault('result', True)
+    return ret
+
+
+def mount_container(path, ret=None):
+    ret = get_ret(ret)
+    _s = __salt__
+    mounted = os.path.join(path, 'mounted')
     if not os.path.exists(path):
         os.makedirs(path)
-    rootfs = os.path.join(path, name, 'rootfs')
+    if not os.path.exists(mounted):
+        mret = _s['mount.mount'](path, 'none', fstype='tmpfs')
+        if mret is not True:
+            raise ImgStepError('lxc: tmpfs wont mount for {0}'.format(path))
+        _s['file.touch'](mounted)
+        ret['result'] = False
+    return ret
+
+
+def umount_container(path, ret=None, destroy=False):
+    ret = get_ret(ret)
     _s = __salt__
-    sd = _s['mc_cloud_lxc.settings']()
-    ret = {}
-    if 'create' in data:
+    name = os.path.split(path)[-1]
+    if os.path.exists(path):
+        try:
+            if _s['lxc.state'](name) in ['running']:
+                cret = ret['umount.lxcstop'] = _s['lxc.stop'](name, kill=True)
+                if cret['result'] is True:
+                    log.info('{0} has been stopped')
+        except Exception:
+            ret['result'] = False
+        mounts = _s['mount.active'](extended=True)
+        if path in mounts:
+            cret = ret['umount.lxcumount'] = _s['mount.umount'](path)
+            if cret is True:
+                log.info('{0} has been umounted (destroyed if tmpfs)')
+            else:
+                ret['result'] = False
+    if ret['result'] and destroy:
+        shutil.rmtree(path)
+    return ret
+
+
+def build_from_lxc(name,
+                   clone_from='ubuntu-vivid',
+                   profile=None,
+                   network_profile=None,
+                   data=None,
+                   ret=None):
+    ret = get_ret(ret)
+    if not clone_from:
+        raise saltapi.ImgError(
+            '{0}: choose between create or clone args for your'
+            ' container')
+    _s = __salt__
+    if not data:
+        data = settings()
+    name = "imgbuild-{0}".format(name)
+    path = os.path.join('/var/lib/lxc', name)
+    try:
+        if os.path.exists(path):
+            raise ImgStepError(
+                'Temporary container {0} already exists'.format(name))
+        mount_container(path, ret=ret)
+        sd = _s['mc_cloud_vm.vt_settings']('lxc')
+        ret = {}
+        if not profile:
+            profile = copy.deepcopy(sd['defaults']['profile'])
+        if not network_profile:
+            network_profile = copy.deepcopy(sd['defaults']['network_profile'])
+        profile['clone_from'] = clone_from
+        containers = _s['lxc.ls'](cache=False)
+        if clone_from not in containers:
+            options = {}
+            if '-' in clone_from:
+                template, release = clone_from.split('-')
+            else:
+                template, release = clone_from, None
+            if release:
+                options['release'] = release
+            ret['lxc_parent'] = _s['lxc.create'](
+                clone_from,
+                template=template,
+                options=options,
+                network_profile=network_profile)
+            if not ret['lxc_parent']['result']:
+                raise ImgStepError(
+                    'lxc template {0} failed to init'.format(clone_from))
         ret['lxc'] = _s['lxc.init'](
             name,
+            password=_s['mc_utils.generate_password'](32),
             bootstrap_shell=sd['bootstrap_shell'],
             path=path,
-            script=sd['script'],
-            script_args=sd['script_args'],
-            profile=copy.deepcopy(sd['profile']),
-            network_profile=copy.deepcopy(sd['network_profile']))
+            seed=False,
+            profile=profile,
+            network_profile=network_profile)
+        import pdb;pdb.set_trace()  ## Breakpoint ##
+        rstr = _s['test.rand_str']()
+        dest_dir = os.path.join('/tmp', rstr)
+        bs_ = _s['config.gather_bootstrap_script'](
+            bootstrap=profile['script'])
+        for cmd in [
+            'mkdir -p {0}'.format(dest_dir),
+            'chmod 700 {0}'.format(dest_dir),
+        ]:
+            if _s['lxc.run_stdout'](name, cmd, path=path):
+                raise ImgStepError(
+                    ('tmpdir {0} creation'
+                     ' failed ({1}').format(dest_dir, cmd))
+        _s['lxc.copy_to'](name,
+                          bs_,
+                          '{0}/bootstrap.sh'.format(dest_dir))
+        cargs = profile['bootstrap_args'].replace("'", "''")
+        cargs += ' --local-mastersalt-mode masterless'
+        cargs += ' --local-salt-mode masterless'
+        cargs += ' --mastersalt 127.0.0.1'
+        cmd = ('{0} {2}/bootstrap.sh {1}'.format(profile['bootstrap_shell'],
+                                                 cargs,
+                                                 dest_dir))
+        # log ASAP the forged bootstrap command which can be wrapped
+        # out of the output in case of unexpected problem
+        log.info('Running {0} in LXC container \'{1}\''
+                 .format(cmd, name))
+        ret = _s['lxc.retcode'](name, cmd, output_loglevel='info',
+                                path=path, use_vt=True) == 0
+        if not ret['lxc_parent']['result']:
+            raise ImgStepError(
+                'lxc image build failed {0}'.format(name))
+        rootfs = os.path.join('/var/lib/lxc', name, 'rootfs')
+        ret['lxc_stop'] = _s['lxc.stop'](name, kill=True)
         ret['cleanup'] = _s['cmd.run_chroot'](
-            rootfs, '/sbin/makina-states-snapshot.sh')
-    elif 'clone' in data:
-        pass
-    else:
-        raise saltapi.ImgErro(
-            '{0}: choose between create or clone args for your'
-            ' container'.format(img))
+            rootfs, '/sbin/makinastates-snapshot.sh')
+        if ret['cleanup']['retcode']:
+            raise ImgStepError(
+                'lxc snapshot failed: {0}'.format(name))
+    except (ImgStepError,) as exc:
+        exc.cret = ret
+        raise exc
+    finally:
+        ret = umount_container(path, ret=ret, destroy=True)
+        if not ret['result']:
+            raise ImgStepError('{0} failed to tear down'.format(name))
+    return ret
 
 
 def build_from_docker(img, data):
