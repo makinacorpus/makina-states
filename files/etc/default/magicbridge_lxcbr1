@@ -3,7 +3,7 @@
 # {%- set vmdata = salt['mc_cloud_vm.settings']() %}
 # {%- set data = vmdata.vts.lxc.defaults %}
 export ACTIVATED="{{data.use_bridge}}"
-export BRIDGE="{{data.defaults.network_profile['eth0']['link']}}"
+export BRIDGE="{{data.network_profile['eth0']['link']}}"
 export ADDR="{{data.gateway}}"
 # export NETWORK="{{data.network}}/{{data.netmask}}"
 # export NETMASK="{{data.netmask_full}}"
