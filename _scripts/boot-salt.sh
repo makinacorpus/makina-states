@@ -4458,6 +4458,7 @@ check_alive() {
     fi
     restart_modes=""
     kill_old_syncs
+    setup_virtualenvs >/dev/null
     # kill all check alive
     ps_etime|sort -n -k2|egrep "boot-salt.*alive"|grep -v grep|while read psline;
     do
