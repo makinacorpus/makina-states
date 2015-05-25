@@ -132,7 +132,7 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 'netmask': '16',
                 'network': '10.3.0.0',
                 'netmask_full': '255.255.0.0',
-                'bridge': 'br0',
+                'bridge': 'lxcbr0',
                 'additional_ips': [],
                 'name': _g['id'],
                 'domains': [_g['id']],
