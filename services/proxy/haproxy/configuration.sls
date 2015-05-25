@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 {% set data = salt['mc_haproxy.settings']() %}
 include:
   - makina-states.services.proxy.haproxy.hooks
@@ -31,23 +32,16 @@ makina-haproxy-default-cfg:
       - mc_proxy: haproxy-pre-conf-hook
     - watch_in:
       - mc_proxy: haproxy-post-conf-hook
-
-{% for f, fdata in data.configs.items() %}
-{% set mode = fdata.get('mode', '644') %}
-{{f}}-makina-haproxy-cfg:
-  file.managed:
-    - name: {{f}}
-    - source: {{fdata.get('template', 'salt://makina-states/files'+f)}}
-    - user: root
-    - group: root
-    - mode: {{mode}}
-    - makedirs: true
-    - template: jinja
+{% macro rmacro() %}
     - watch:
       - mc_proxy: haproxy-pre-conf-hook
     - watch_in:
       - mc_proxy: haproxy-post-conf-hook
-{% endfor %}
+{% endmacro %}
+{{ h.deliver_config_files(
+     data.get('configs', {}),
+     mode='644',
+     after_macro=rmacro, prefix='haproxy-')}}
 
 cpt-cloud-haproxy-cfg:
   file.absent:

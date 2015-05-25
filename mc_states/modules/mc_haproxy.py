@@ -16,7 +16,7 @@ from salt.utils.odict import OrderedDict
 import mc_states.api
 
 __name = 'haproxy'
-
+PREFIX ='makina-states.services.proxy.{0}'.format(__name)
 log = logging.getLogger(__name__)
 
 
@@ -27,21 +27,18 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
         locs = __salt__['mc_locations.settings']()
-        #'capture cookie vgnvisitor= len 32',
-        #'option    httpchk /index.html',
-        #'cookie SERVERID rewrite',
-        #'httpclose',
-        #('rspidel ^Set-cookie:\ IP=    '
-        # '# do not let this cookie tell '
-        # 'our internal IP address'),
-
+        # 'capture cookie vgnvisitor= len 32',
+        # 'option    httpchk /index.html',
+        # 'cookie SERVERID rewrite',
+        # 'httpclose',
+        # ('rspidel ^Set-cookie:\ IP=    '
+        #  '# do not let this cookie tell '
+        #  'our internal IP address'),
         haproxy_password = __salt__['mc_utils.generate_stored_password'](
             'mc_haproxy.password')
         data = __salt__['mc_utils.defaults'](
-            'makina-states.services.proxy.haproxy', {
+            PREFIX, {
                 'location': locs['conf_dir'] + '/haproxy',
                 'config_dir': '/etc/haproxy',
                 'rotate': __salt__['mc_logrotate.settings']()['days'],
@@ -51,12 +48,14 @@ def settings():
                 'defaults': {'extra_opts': '', 'enabled': '1'},
                 'configs': {'/etc/haproxy/haproxy.cfg': {},
                             '/etc/haproxy/extra/backends.cfg': {},
+                            '/etc/systemd/system/haproxy.service': {},
                             '/etc/haproxy/extra/dispatchers.cfg': {},
                             '/etc/haproxy/extra/frontends.cfg': {},
                             '/etc/haproxy/extra/listeners.cfg': {},
                             '/etc/logrotate.d/haproxy': {},
                             '/etc/default/haproxy': {'mode': 755},
                             '/etc/init.d/haproxy': {'mode': 755},
+                            '/usr/bin/mc_haproxy.sh': {'mode': 755},
 
                             '/etc/haproxy/errors/403.http': {},
                             '/etc/haproxy/errors/408.http': {},
@@ -114,7 +113,3 @@ def settings():
         )
         return data
     return _settings()
-
-
-
-#

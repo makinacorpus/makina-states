@@ -192,6 +192,23 @@ class TestCase(base.ModuleCase):
                 }
             )
 
+    def test_format_resolve2(self):
+        fun = self._('mc_utils.unresolved')
+        self.assertFalse(fun(None))
+        self.assertFalse(fun(1))
+        self.assertFalse(fun(1.1))
+        self.assertFalse(fun([1]))
+        self.assertFalse(fun({1: 1}))
+        self.assertFalse(fun([{1: 1}]))
+        self.assertFalse(fun([{'1': 1}]))
+        self.assertFalse(fun([{'1': '1'}]))
+        self.assertTrue(fun([{'1': '{1}'}]))
+        self.assertTrue(fun(['{1}']))
+        self.assertTrue(fun([{'{1}': 1}]))
+        self.assertTrue(fun([{'1': {'1': {2: '{1}'}}}]))
+        self.assertTrue(fun([{'1': {'1': {'{2}': '1'}}}]))
+        self.assertTrue(fun([{'1': {'1': {2: ['{1}']}}}]))
+
     def test_format_resolve(self):
         self.maxDiff = None
         tests = [

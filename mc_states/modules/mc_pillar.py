@@ -3590,12 +3590,17 @@ def ext_pillar(id_, pillar=None, *args, **kw):
     if profile_enabled:
         pr = cProfile.Profile()
         pr.enable()
+
+    dictupdate = _s['mc_utils.dictupdate']
     for i in [
         # catch mc_pillar.& & <foo>.*pillar.*
         '.*(ext)*_?pillar.*',
         'mc_cloud.*(get_cloud_conf|get_vms)'
     ]:
         __salt__['mc_utils.register_memcache_first'](i)
+
+    is_this_salt_managed = is_salt_managed(id_)
+    is_this_managed = is_managed(id_)
     for callback, copts in {
         'mc_env.ext_pillar': {'only_managed': False},
         __name + '.get_autoupgrade_conf': {'only_managed': False},
@@ -3640,17 +3645,19 @@ def ext_pillar(id_, pillar=None, *args, **kw):
             # known from the database but not managed via extpillar
             # and minion is known, force execution
             skip = True
-            if is_salt_managed(id_):
+            if is_this_salt_managed:
                 skip = False
             else:
                 if not copts.get('only_managed', True):
                     skip = False
-                if is_managed(id_) and not copts.get('only_known', True):
+                if is_this_managed and not copts.get('only_known', True):
                     skip = False
             if skip:
                 continue
             # log.error(callback)
-            data = _s['mc_utils.dictupdate'](data, _s[callback](id_))
+            # only dictupdate if there is key overlay
+            subpillar = _s[callback](id_)
+            data = dictupdate(data, subpillar)
         except Exception, ex:
             trace = traceback.format_exc()
             log.error('ERROR in mc_pillar: {0}/{1}'.format(callback, id_))
@@ -3770,8 +3777,11 @@ def get_cloud_conf_by_vts(ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
-def get_cloud_conf_by_vms():
-    return copy.deepcopy(get_cloud_conf()['vms'])
+def get_cloud_conf_by_vms(ttl=PILLAR_TTL):
+    def _do():
+        return copy.deepcopy(get_cloud_conf()['vms'])
+    cache_key = __name + '.get_cloud_conf_by_vms'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def get_cloud_entry_for_cn(id_, default=None):
@@ -3793,7 +3803,7 @@ def get_cloud_conf_for_vt(id_, default=None):
 def get_cloud_conf_for_vm(id_, default=None):
     if not default:
         default = {}
-    return get_cloud_conf_by_vms().get(id_, default)
+    return copy.deepcopy(get_cloud_conf_by_vms().get(id_, default))
 
 
 def get_domains_for(id_, ttl=PILLAR_TTL):

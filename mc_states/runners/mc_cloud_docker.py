@@ -200,7 +200,7 @@ def _load_profile(data, profile_data=None):
                                                ["8.8.8.8", "4.4.4.4"]),
                         'minion': {'master': data['master'],
                                    'master_port': data['master_port']}}
-    for var in ["from_container", "snapshot", "image",
+    for var in ["clone_from", "snapshot", "image",
                 "additional_ips",
                 "bootstrap_shell",
                 "gateway", "bridge", "mac", "docker_conf_unset",

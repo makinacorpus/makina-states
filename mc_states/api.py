@@ -64,6 +64,8 @@ _GLOBAL_KINDS = ['localsettings',
                  'controllers',
                  'nodetypes',
                  'cloud']
+_LOCAL_PREFS = [(a, 'makina-states.{0}.'.format(a))
+                for a in _GLOBAL_KINDS]
 _SUB_REGISTRIES = ['metadata', 'settings', 'registry']
 NETWORK = '10.5.0.0'
 NETMASK = '16'

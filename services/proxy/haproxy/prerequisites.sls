@@ -3,14 +3,26 @@
 include:
   - makina-states.services.proxy.haproxy.hooks
 
+{% set f = salt['mc_locations.settings']().conf_dir + '/apt/sources.list.d/haproxy.list' %}
+
 haproxy-base:
+  cmd.run:
+    - name: sed -i "/vbernat/ d" "{{f}}" && echo changed='false'
+    - stateful: true
+    - watch:
+      - mc_proxy: haproxy-pre-install-hook
+    - watch_in:
+      - mc_proxy: haproxy-pre-hardrestart-hook
+      - mc_proxy: haproxy-post-install-hook 
   pkgrepo.managed:
     - humanname: haproxy ppa
-    - name: deb http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu {{pkgssettings.ppa_dist}} main
+    - name: deb http://ppa.launchpad.net/makinacorpus/haproxy-1.5/ubuntu {{pkgssettings.ppa_dist}} main
     - dist: {{pkgssettings.ppa_dist}}
     - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/haproxy.list
-    - keyid: 1C61B9CD
+    - keyid: 207A7A4E
     - keyserver: keyserver.ubuntu.com
+    - require:
+      - cmd: haproxy-base
     - require_in:
       - pkg: haproxy-pkgs
 

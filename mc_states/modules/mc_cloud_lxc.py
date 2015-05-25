@@ -11,13 +11,9 @@ mc_cloud_lxc / lxc registry for compute nodes
 '''
 
 # Import python libs
-import os
 import logging
-import copy
-import mc_states.api
 
 from mc_states import saltapi
-from salt.utils.odict import OrderedDict
 
 # early in mcpillar, we dont have __salt__
 from mc_states.grains.makina_grains import _is_lxc
@@ -46,25 +42,17 @@ def vt_default_settings(cloudSettings, imgSettings):
     '''
     Default lxc container settings
 
-        from_container
+        clone_from
             default image
         image
             LXC template to use
             'ubuntu'
         profile
-            default size profile to use (medium) (apply only to lvm)
-        profile_type
-            default profile type to use (lvm)
-
-                lvm
-                    lvm backend from default container
-                lvm-scratch
-                    lvm backend from default lxc template
-                dir
-                    dir backend from default container
-                dir-scratch
-                    dir backend from default lxc template
-
+            default profile to use. see saltstack definition
+            of container profiles
+        network_profile
+            default net profile to use. see saltstack definition
+            of container networking profiles
         bridge
             we install via states a bridge in 10.5/16 lxcbr1)
             'lxcbr1'
@@ -88,38 +76,31 @@ def vt_default_settings(cloudSettings, imgSettings):
             The settings are not stored here for obvious performance reasons
     '''
     _s = __salt__
-    from_container = imgSettings['lxc']['default']
-    dptype = 'dir'
+    clone_from = imgSettings['lxc']['default']
     backing = 'dir'
     if _s['mc_nodetypes.is_devhost']():
-        backing = dptype = 'overlayfs'
+        backing = 'overlayfs'
     vmSettings = _s['mc_utils.dictupdate'](
         _s['mc_cloud_vm.vt_default_settings'](cloudSettings, imgSettings), {
             'vt': VT,
-            'defaults': {'from_container': from_container,
-                         'profile': 'medium',
-                         'profile_type': dptype,
-                         #
-                         'gateway': '10.5.0.1',
-                         'network': '10.5.0.0',
-                         'bridge': 'lxcbr1',
-                         #
-                         'backing': backing,
-                         'vgname': 'lxc',
-                         'lvname': None,
-                         #
-                         #
-                         'fstab': None,
-                         'volumes': [
-                             # non implemented yet in any drivers
-                             # {"name": "w", "kind": "host",
-                             #  "source": "/o/t", "readOnly": True}
-                         ],
-                         'mounts': [
-                             # {"volume": "w", "mountPoint": "/path/backup"}
-                         ],
-                         'lxc_conf': [],
-                         'lxc_conf_unset': []},
+            'defaults': {
+                'profile': {'clone_from': clone_from, 'backing': backing},
+                'network_profile': {'eth0': {'link': 'lxcbr1'}},
+                'gateway': '10.5.0.1',
+                'fstab': None,
+                'vgname': 'lxc',
+                'lvname': None,
+                'volumes': [
+                    # non implemented yet in any drivers
+                    # {"name": "w", "kind": "host",
+                    #  "source": "/o/t", "readOnly": True}
+                ],
+                'mounts': [
+                    # {"volume": "w", "mountPoint": "/path/backup"}
+                ],
+                'lxc_conf': [],
+                'lxc_conf_unset': []
+            },
             'host_confs': {
                 '/etc/apparmor.d/lxc/lxc-default': {'mode': 644},
                 '/etc/default/lxc': {},
@@ -141,19 +122,7 @@ def vt_default_settings(cloudSettings, imgSettings):
                     )
                 },
                 # '/usr/share/lxc/templates/lxc-ubuntu': {'template': None}
-            },
-            'lxc_cloud_profiles': {
-                'xxxtrem': {'size': '2000g'},
-                'xxtrem': {'size': '1000g'},
-                'xtrem': {'size': '500g'},
-                'xxxlarge': {'size': '100g'},
-                'xxlarge': {'size': '50g'},
-                'large': {'size': '20g'},
-                'medium': {'size': '10g'},
-                'small': {'size': '5g'},
-                'xsmall': {'size': '3g'},
-                'xxsmall': {'size': '1g'},
-                'xxxsmall': {'size': '500m'}}})
+            }})
     return vmSettings
 
 
@@ -168,8 +137,8 @@ def vm_extpillar(vm, data, *args, **kw):
     '''
     Get per LXC container specific settings
     '''
-    backing = data.setdefault('backing', 'dir')
-    if data['from_container'] is not None:
+    backing = data['profile'].setdefault('backing', 'dir')
+    if data['profile'].get('clone_from') is not None:
         data.pop('image', None)
     if not data.get('fstab'):
         data['fstab'] = []

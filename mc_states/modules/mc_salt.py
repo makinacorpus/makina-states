@@ -21,27 +21,40 @@ loglevelfmt = (
     "[%(name)-17s][%(levelname)-8s] %(message)s'")
 
 
-def get_local_salt_mode():
+def get_local_param(param):
     try:
         with open(
-            '/etc/makina-states/local_salt_mode'
+            '/etc/makina-states/{0}'.format(param)
         ) as fic:
-            local_salt_mode = fic.read().strip()
-    except:
-        local_salt_mode = ''
+            paramv = fic.read().strip()
+    except (OSError, IOError):
+        paramv = ''
+    return paramv
+
+
+def get_ms_url():
+    val = get_local_param('ms_url')
+    if not val:
+        val = 'https://github.com/makinacorpus/makina-states.git'
+    return val
+
+
+def get_salt_url():
+    val = get_local_param('salt_url')
+    if not val:
+        val = 'http://github.com/makinacorpus/salt.git'
+    return val
+
+
+def get_local_salt_mode():
+    local_salt_mode = get_local_param('local_salt_mode')
     if local_salt_mode not in ['masterless', 'remote']:
         local_salt_mode = 'masterless'
     return local_salt_mode
 
 
 def get_local_mastersalt_mode():
-    try:
-        with open(
-            '/etc/makina-states/local_mastersalt_mode'
-        ) as fic:
-            local_salt_mode = fic.read().strip()
-    except:
-        local_salt_mode = ''
+    local_salt_mode = get_local_param('local_mastersalt_mode')
     if local_salt_mode not in ['masterless', 'remote']:
         local_salt_mode = 'remote'
     return local_salt_mode
@@ -86,7 +99,7 @@ def settings():
                 'name': 'https://github.com/dotcloud/docker-py.git',
                 'target': '{venv_path}/src/docker-py'},
             'salt-git': {
-                'name': 'http://github.com/makinacorpus/salt.git',
+                'name': get_salt_url(),
                 'rev': 'develop',
                 'target': '{venv_path}/src/salt'},
             'salttesting-git': {
@@ -110,7 +123,7 @@ def settings():
             #    'name': 'https://github.com/kiorky/openstack-salt-states.git',
             #    'target': '{salt_root}/openstack'},
             'makina-states': {
-                'name': 'https://github.com/makinacorpus/makina-states.git',
+                'name': get_ms_url(),
                 'target': '{salt_root}/makina-states'},
         }
         for i, data in confRepos.items():

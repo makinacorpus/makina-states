@@ -12,7 +12,6 @@ mc_cloud_lxc runner
 # -*- coding: utf-8 -*-
 
 # Import python libs
-import os
 import logging
 from pprint import pformat
 import traceback
@@ -22,24 +21,18 @@ import salt.client
 import salt.payload
 import salt.utils
 import salt.output
-from mc_states.api import memoize_cache
 import salt.minion
-from salt.utils import check_state_result
-from salt.cloud.exceptions import SaltCloudSystemExit
 from salt.utils.odict import OrderedDict
 
-from mc_states import api
 from mc_states.saltapi import (
     LXC_IMPLEMENTATION,
     merge_results,
     result,
-    salt_output,
     check_point,
     SaltExit,
     green, red, yellow,
     SaltCopyError,
     FailedStepError,
-    MessageError,
 )
 
 log = logging.getLogger(__name__)
@@ -244,15 +237,19 @@ def _load_profile(data, profile_data=None):
                                                ["8.8.8.8", "4.4.4.4"]),
                         'minion': {'master': data['master'],
                                    'master_port': data['master_port']}}
-    for var in ["from_container", "snapshot", "image",
-                "additional_ips",
-                "bootstrap_shell",
-                "gateway", "bridge", "mac", "lxc_conf_unset",
-                "ssh_gateway", "ssh_gateway_user", "ssh_gateway_port",
-                "ssh_gateway_key", "ip", "netmask",
-                "size", "backing", "vgname", "script",
-                "lvname", "script_args", "dnsserver",
-                "ssh_username", "password", "lxc_conf"]:
+    for var in [
+        'profile', 'network_profile',
+        "dnsservers", "password",
+        "bootstrap_shell", "script", "script_args",
+        "from_container",  # old, but too toochy to support only
+                           # the migrated place
+        # migrated to lxc profiles
+        # "size", "backing", "vgname",
+        # "gateway", "bridge", "mac", "lxc_conf_unset",
+        # "ssh_gateway", "ssh_gateway_user", "ssh_gateway_port",
+        # "clone_from", "snapshot", "image", "lvname",
+        # "ssh_gateway_key", "ip", "netmask", "ssh_username", "lxc_conf"
+    ]:
         val = data.get(var)
         if val:
             if var in ['script_args']:

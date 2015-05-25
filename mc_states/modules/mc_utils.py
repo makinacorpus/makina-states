@@ -152,6 +152,10 @@ def generate_password(length=None):
 
 class _CycleError(Exception):
     '''.'''
+    def __init__(self, msg, new=None, original_dict=None, *args, **kwargs):
+        super(_CycleError, self).__init__(msg, *args, **kwargs)
+        self.new = new
+        self.original_dict = original_dict
 
 
 def deepcopy(arg):
@@ -199,11 +203,64 @@ def copy_dictupdate(dict1, dict2):
                       copy.deepcopy(dict2))
 
 
+def unresolved(data):
+    ret = None
+    if isinstance(data, six.string_types):
+        if '{' in data and '}' in data:
+            ret = True
+        else:
+            ret = False
+    elif isinstance(data, dict):
+        for k, val in six.iteritems(data):
+            ret1 = unresolved(k)
+            ret2 = unresolved(val)
+            ret = ret1 or ret2
+            if ret:
+                break
+    elif isinstance(data, (list, set)):
+        for val in data:
+            ret = unresolved(val)
+            if ret:
+                break
+    return ret
+
+
+def str_resolve(new, original_dict, this_call=0, topdb=False):
+    # do not directly call format to handle keyerror in original mapping
+    # where we may have yet keyerrors
+    if isinstance(original_dict, dict):
+        for k in original_dict:
+            reprk = k
+            if not isinstance(reprk, six.string_types):
+                reprk = '{0}'.format(k)
+            subst = '{' + reprk + '}'
+            if subst in new:
+                subst_val = original_dict[k]
+                if isinstance(subst_val, (list, dict)):
+                    inner_new = format_resolve(
+                        subst_val, original_dict,
+                        this_call=this_call, topdb=topdb)
+                    # composed, we take the repr
+                    if new != subst:
+                        new = new.replace(subst, str(inner_new))
+                    # no composed value, take the original list
+                    else:
+                        new = inner_new
+                else:
+                    if new != subst_val:
+                        new = new.replace(subst, str(subst_val))
+            if '{' not in new:
+                # new value has been totally resolved
+                break
+    return new
+
+
 def format_resolve(value,
                    original_dict=None,
                    global_tries=50,
                    this_call=0, topdb=False, **kwargs):
-    '''Resolve a dict of formatted strings, mappings & list to a valued dict
+    '''
+    Resolve a dict of formatted strings, mappings & list to a valued dict
     Please also read the associated test::
 
         {"a": ["{b}", "{c}", "{e}"],
@@ -224,89 +281,52 @@ def format_resolve(value,
     '''
     if not original_dict:
         original_dict = OrderedDict()
+
     if this_call == 0 and not original_dict and isinstance(value, dict):
         original_dict = value
-    if isinstance(kwargs, dict):
+
+    this_call += 1
+
+    if kwargs:
         original_dict.update(kwargs)
-    left = False
-    cycle = True
+
+    if not unresolved(value):
+        return value
+
+    if this_call > 2:
+        values = original_dict.values()
 
     if isinstance(value, dict):
-        new = OrderedDict()
-        for key, val in value.items():
-            val = format_resolve(val, original_dict, this_call=this_call + 1, topdb=topdb)
+        new = type(value)()
+        for key, v in value.items():
+            val = format_resolve(v, original_dict, topdb=topdb)
             new[key] = val
     elif isinstance(value, (list, tuple)):
         new = type(value)()
         for v in value:
-            val = format_resolve(v, original_dict, this_call=this_call + 1, topdb=topdb)
+            val = format_resolve(v, original_dict, topdb=topdb)
             new = new + type(value)([val])
-    elif isinstance(value, basestring):
-        new = value
-        if '/downloads' in new:
-            topdb= True
-        # do not directly call format to handle keyerror in original mapping
-        # where we may have yet keyerrors
-        if isinstance(original_dict, dict):
-            for k in original_dict:
-                reprk = k
-                if not isinstance(reprk, basestring):
-                    reprk = '{0}'.format(k)
-                subst = '{' + reprk + '}'
-                subst_val = original_dict[k]
-                if subst in new:
-                    if isinstance(subst_val, (list, dict)):
-                        inner_new = format_resolve(
-                            subst_val, original_dict, this_call=this_call + 1, topdb=topdb)
-                        # composed, we take the repr
-                        if new != subst:
-                            new = new.replace(subst, str(inner_new))
-                        # no composed value, take the original list
-                        else:
-                            new = inner_new
-                    else:
-                        if new != subst_val:
-                            new = new.replace(subst,
-                                              str(subst_val))
-        if ('{' in new) and ('}' in new):
-            i = 0
-            while True:
-                try:
-                    this_call += 1
-                    if this_call > 1000:
-                        raise _CycleError('cycle')
-                    new_val = format_resolve(
-                        new, original_dict, this_call=this_call + 1, topdb=topdb)
-                    new_braces = new.count('{'), new.count('}')
-                    newval_braces = new_val.count('{'), new_val.count('}')
-                    if new_braces == newval_braces:
-                        break
-                    else:
-                        new = new_val
-                except _CycleError:
-                    cycle = True
-                    break
-            if ('{' in new) and ('}' in new):
-                left = True
+    elif isinstance(value, six.string_types):
+        new = str_resolve(value, original_dict, topdb=topdb)
     else:
         new = value
-    if left:
-        if this_call == 0:
-            for i in global_tries:
-                new_val = format_resolve(
-                    new, original_dict, this_call=this_call + 1, topdb=topdb)
-                if (new == new_val) or cycle:
-                    break
-                else:
-                    new = new_val
-        else:
-            while not cycle:
-                new_val = format_resolve(
-                    new, original_dict, this_call=this_call + 1, topdb=topdb)
-                if (new == new_val) or (cycle):
-                    break
-                else:
-                    new = new_val
+
+    retry = unresolved(new)
+    while retry:
+        if this_call > 100:
+            break
+        if this_call > 2 and original_dict.values() == values:
+            raise _CycleError('cycle', new, original_dict)
+        try:
+            new = format_resolve(new, original_dict,
+                                 this_call=this_call, topdb=topdb)
+            retry = unresolved(new)
+        except (_CycleError) as exc:
+            if this_call == 1:
+                new = exc.new
+                retry = False
+            else:
+                raise exc
     return new
 
 
@@ -357,10 +377,10 @@ def is_a_number(value):
     is the value a number
     '''
     return (
-        is_a_int(value)
-        or is_a_float(value)
-        or is_a_complex(value)
-        or is_a_long(value)
+        is_a_int(value) or
+        is_a_float(value) or
+        is_a_complex(value) or
+        is_a_long(value)
     )
 
 
@@ -397,10 +417,10 @@ def is_iter(value):
     is the value iterable (list, set, dict tuple)
     '''
     return (
-        is_a_list(value)
-        or is_a_dict(value)
-        or is_a_tuple(value)
-        or is_a_set(value)
+        is_a_list(value) or
+        is_a_dict(value) or
+        is_a_tuple(value) or
+        is_a_set(value)
     )
 
 
@@ -417,7 +437,8 @@ def traverse_dict(data, key, delimiter=salt.utils.DEFAULT_TARGET_DELIM):
 
     can be traversed with makina-states.foo.bar.c
     '''
-    delimiters = [delimiter, salt.utils.DEFAULT_TARGET_DELIM, ':', '.']
+    delimiters = uniquify([delimiter, salt.utils.DEFAULT_TARGET_DELIM,
+                           ':', '.'])
     ret = dv = '_|-'
     for dl in delimiters:
         for cdl in reversed(delimiters):
@@ -437,15 +458,16 @@ def traverse_dict(data, key, delimiter=salt.utils.DEFAULT_TARGET_DELIM):
                 # we do not test the last element as it is the exact key !
                 for i in range(key.count(cdl)-1):
                     dkey = nkey.replace(dl, cdl, i+1)
-                    ret = salt.utils.traverse_dict(data, dkey, dv, delimiter=dl)
+                    ret = salt.utils.traverse_dict(
+                        data, dkey, dv, delimiter=dl)
                     if ret != dv:
                         return ret
     return ret
 
 
-def get(key, default='',
-        local_registry=None, registry_format='pack',
-        delimiter=salt.utils.DEFAULT_TARGET_DELIM):
+def uncached_get(key, default='',
+                 local_registry=None, registry_format='pack',
+                 delimiter=salt.utils.DEFAULT_TARGET_DELIM):
     '''
     Same as 'config.get' but with different retrieval order.
 
@@ -468,18 +490,18 @@ def get(key, default='',
     '''
     _s, _g, _p, _o = __salt__, __grains__, __pillar__, __opts__
     if local_registry is None:
-        local_prefs = [(a, 'makina-states.{0}.'.format(a))
-                       for a in api._GLOBAL_KINDS]
-        for reg, pref in local_prefs:
+        for reg, pref in api._LOCAL_PREFS:
             if key.startswith(pref):
                 local_registry = reg
                 break
     if (
-        isinstance(local_registry, basestring)
-        and local_registry not in ['localsettings']
+        isinstance(local_registry, basestring) and
+        local_registry not in ['localsettings']
     ):
         local_registry = _s['mc_macros.get_local_registry'](
             local_registry, registry_format=registry_format)
+    else:
+        local_registry = None
     ret = traverse_dict(_o, key, delimiter=delimiter)
     if ret != '_|-':
         return ret
@@ -497,6 +519,27 @@ def get(key, default='',
     if ret != '_|-':
         return ret
     return default
+
+
+def cached_get(key, default='',
+               local_registry=None, registry_format='pack',
+               delimiter=salt.utils.DEFAULT_TARGET_DELIM, ttl=60):
+    cache_key = 'mc_utils_get.{0}{1}{2}{3}'.format(key,
+                                                   local_registry,
+                                                   registry_format,
+                                                   delimiter)
+    return __salt__['mc_utils.memoize_cache'](
+        uncached_get,
+        [key],
+        {'default': default,
+         'local_registry': local_registry,
+         'registry_format': registry_format,
+         'delimiter': delimiter},
+        cache_key,
+        ttl)
+
+
+get = uncached_get
 
 
 def get_uniq_keys_for(prefix):
@@ -525,7 +568,7 @@ def get_uniq_keys_for(prefix):
                 try:
                     if testn.index('.') < 2:
                         skeys.append(k)
-                except:
+                except (IndexError, ValueError):
                     continue
         skeys.sort()
         for k in skeys:
@@ -913,8 +956,7 @@ def filter_host_pids(pids):
 
 
 def cache_kwargs(*args, **kw):
-    shared = {'__opts__': __opts__,
-              '__salt__': __salt__}
+    shared = {'__opts__': __opts__, '__salt__': __salt__}
     to_delete = [i for i in kw
                  if i.startswith('__') and i not in shared]
     dc = len(to_delete)
