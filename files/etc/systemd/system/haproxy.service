@@ -1,0 +1,13 @@
+[Unit]
+Description=HAProxy Load Balancer
+After=network.target
+
+[Service]
+ExecStartPre=/usr/bin/mc_haproxy.sh check
+ExecStart=/usr/bin/mc_haproxy.sh start
+ExecReload=/bin/kill -USR2 $MAINPID
+KillMode=mixed
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
