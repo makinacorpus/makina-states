@@ -725,7 +725,7 @@ def build_from_lxc(name,
             network_profile = copy.deepcopy(sd['defaults']['network_profile'])
         profile['clone_from'] = clone_from
         containers = _s['lxc.ls'](cache=False)
-        if "a"+clone_from not in containers:
+        if clone_from not in containers:
             options = {}
             LXC_TEMPLATES = {}
             template = LXC_TEMPLATES.get(env['os'], env['os'])
