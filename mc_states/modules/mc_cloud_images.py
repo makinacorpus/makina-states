@@ -42,6 +42,14 @@ IMG_URL = ('https://downloads.sourceforge.net/makinacorpus'
 LXC_IMAGES = OrderedDict([('makina-states-vivid', {}),
                           ('makina-states-trusty', {}),
                           ('makina-states-precise', {})])
+DEFAULT_OS = 'ubuntu'
+RELEASES = {
+    'ubuntu': {
+        'default': 'vivid',
+        'releases': ['wily', 'utopic', 'vivid', 'trusty', 'precise']
+    }
+
+}
 # THIS IS A NON FINISHEP WIP TO REFACTOR IMAGE SETTINGS
 IMAGES = OrderedDict([
     ('lxc', OrderedDict([
@@ -68,6 +76,7 @@ ImgStepError = saltapi.ImgStepError
 
 def _imgerror(msg, cret=None):
     msg = saltapi.rich_error(ImgError, msg, cret)
+    return msg
 
 
 def complete_images(data):
@@ -248,23 +257,26 @@ def _run(cmd):
     return __salt__['cmd.run_all'](cmd, python_shell=True)
 
 
-def get_vars(container='makina-states-trusty', flavor='standalone'):
+def get_vars(**kwargs):
     _s = __salt__
     csettings = settings()
-    data = {'container': container, 'flavor': flavor}
-    data['ver_file'] = (
-        '{file_root}/makina-states/versions/{container}-{flavor}_version.txt'
-    )
-    data['file_root'] = _s['mc_utils.get']('file_roots')['base'][0]
-    data['user'] = csettings['sftp_user']
-    data['dest'] = '{container}-{flavor}-{next_ver}.tar.xz'
-    data['root'] = '/var/lib/lxc'
-    data['user'] = csettings['sftp_user']
-    data['fdest'] = '{root}/{dest}'
-    data['container_p'] = '{root}/{container}'
-    data['rootfs'] = '{container_p}/rootfs'
-    data['sftp_url'] = csettings['sftp_url']
-    data['git_url'] = csettings['git_url']
+    data = {'file_root': _s['mc_utils.get']('file_roots')['base'][0],
+            'tarball': '{container}-{flavor}-{next_ver}.tar.xz',
+            'absolute_tarball': '{root}/{tarball}',
+            'root': '/var/lib/lxc',
+            'container_path': '{root}/{container}',
+            'rootfs': '{container_path}/rootfs',
+            'ver_file':
+            '{file_root}/makina-states/versions'
+            '/{container}-{flavor}_version.txt',
+            'user': csettings['sftp_user'],
+            'sftp_url': csettings['sftp_url'],
+            'git_url': csettings['git_url']}
+    if kwargs:
+        data.update(copy.deepcopy(kwargs))
+    data.setdefault('flavor', 'standalone')
+    data.setdefault('container', 'makina-states-vivid')
+    data['container'] = data['container'].replace('imgbuild-', '')
     data = _s['mc_utils.format_resolve'](data)
     try:
         cur_ver = int(open(data['ver_file']).read().strip())
@@ -280,7 +292,9 @@ def get_vars(container='makina-states-trusty', flavor='standalone'):
 
 
 def snapshot(container, flavor, *args, **kwargs):
-    gvars = get_vars(container, flavor)
+    kwargs['container'] = container
+    kwargs['flavor'] = flavor
+    gvars = get_vars(**kwargs)
     cret = mc_lxc.snapshot_container(_run, gvars['rootfs'])
     if cret['retcode']:
         raise _imgerror(
@@ -290,7 +304,7 @@ def snapshot(container, flavor, *args, **kwargs):
 
 
 def snapshot_standalone(container, *args, **kwargs):
-    return snapshot(container, 'lxc', *args, **kwargs)
+    return snapshot(container, 'standalone', *args, **kwargs)
 
 
 def snapshot_lxc(container, *args, **kwargs):
@@ -299,13 +313,16 @@ def snapshot_lxc(container, *args, **kwargs):
 
 def save_acls(container, flavor, *args, **kwargs):
     _s = __salt__
-    gvars = get_vars(container, flavor)
-    aclf = os.path.join(gvars['container_p'], 'acls.txt')
+    kwargs['container'] = container
+    kwargs['flavor'] = flavor
+    gvars = get_vars(**kwargs)
+    aclf = os.path.join(gvars['container_path'], 'acls.txt')
     # all release flavors are releated, so we just check one here
     # and this must be the last one produced
     # if the last one is not present, all flavors will be rebuilt
     log.info('{container}/{flavor}: archiving acls files'.format(**gvars))
-    for root in [gvars['rootfs'], gvars['container_p']]:
+    aclsf = []
+    for root in [gvars['rootfs'], gvars['container_path']]:
         cmd = 'getfacl -R . > acls.txt'
         cret = _s['cmd.run_all'](
             cmd, cwd=root, python_shell=True, salt_timeout=60*60)
@@ -313,6 +330,7 @@ def save_acls(container, flavor, *args, **kwargs):
             raise _imgerror(
                 '{container}/{flavor}: error with acl'.format(**gvars),
                 cret=cret)
+        aclsf.append(os.path.join(root, 'acls.txt'))
     # ignore some paths in the acl file
     # (we have no more special cases, but leave this code in case)
     ignored = []
@@ -329,6 +347,7 @@ def save_acls(container, flavor, *args, **kwargs):
                 acls.append(i)
     with open(aclf, 'w') as w:
         w.write(''.join(acls))
+    return aclsf
 
 
 def save_acls_lxc(container, *args, **kwargs):
@@ -342,21 +361,22 @@ def save_acls_standalone(container, *args, **kwargs):
 def get_ret(**kwargs):
     ret = kwargs.get('ret',
                      {'result': True,
-                      'comment':
-                      'success',
+                      'comment': '',
                       'changes': {}})
     return ret
 
 
 def archive_standalone(container, *args, **kwargs):
     _s = __salt__
-    gvars = get_vars(container, 'standalone')
-    if os.path.exists(gvars['fdest']):
-        log.info('{container}/{flavor}: {fdest} exists'
+    kwargs['container'] = container
+    kwargs.setdefault('flavor', 'standalone')
+    gvars = get_vars(**kwargs)
+    if os.path.exists(gvars['absolute_tarball']):
+        log.info('{container}/{flavor}: {absolute_tarball} exists'
                  ', delete it to redo'.format(**gvars))
     else:
         try:
-            cmd = ('tar cJfp {fdest} '
+            cmd = ('tar cJfp {absolute_tarball} '
                    ' etc/cron.d/*salt*'
                    ' etc/logrotate.d/*salt*'
                    ' etc/init.d/mastersalt-*'
@@ -377,7 +397,7 @@ def archive_standalone(container, *args, **kwargs):
                    ' var/run/{{mastersalt,salt}}'
                    ' --ignore-failed-read --numeric-owner').format(**gvars)
             log.info('{container}/{flavor}: '
-                     'archiving in {fdest}'.format(**gvars))
+                     'archiving in {absolute_tarball}'.format(**gvars))
             cret = _s['cmd.run_all'](
                 cmd,
                 cwd=gvars['rootfs'],
@@ -387,60 +407,64 @@ def archive_standalone(container, *args, **kwargs):
             if cret['retcode']:
                 raise _imgerror(
                     '{container}/{flavor}: '
-                    'error with compressing {fdest}'.format(**gvars),
+                    'error with compressing {absolute_tarball}'.format(**gvars),
                     cret=cret)
         except (Exception,) as exc:
-            if os.path.exists(gvars['fdest']):
-                os.remove(gvars['fdest'])
+            if os.path.exists(gvars['absolute_tarball']):
+                os.remove(gvars['absolute_tarball'])
                 raise exc
-    return gvars['fdest']
+    return gvars['absolute_tarball']
 
 
 def archive_lxc(container, *args, **kwargs):
     _s = __salt__
-    gvars = get_vars(container, 'lxc')
-    if os.path.exists(gvars['fdest']):
-        log.info('{container}/{flavor}: {fdest} exists,'
+    kwargs['container'] = container
+    kwargs['flavor'] = 'lxc'
+    gvars = get_vars(**kwargs)
+    if os.path.exists(gvars['absolute_tarball']):
+        log.info('{container}/{flavor}: {absolute_tarball} exists,'
                  ' delete it to redo'.format(**gvars))
     else:
-        cmd = ('tar cJfp {fdest} . '
+        cmd = ('tar cJfp {absolute_tarball} . '
                '--ignore-failed-read --numeric-owner').format(**gvars)
         try:
             log.info('{container}/{flavor}: '
-                     'archiving in {fdest}'.format(**gvars))
+                     'archiving in {absolute_tarball}'.format(**gvars))
             cret = _s['cmd.run_all'](
                 cmd,
-                cwd=gvars['container_p'],
+                cwd=gvars['container_path'],
                 python_shell=True,
                 env={'XZ_OPT': '-7e'},
                 salt_timeout=60*60)
             if cret['retcode']:
                 raise _imgerror(
                     '{container}/{flavor}: '
-                    'error with compressing {fdest}'.format(**gvars),
+                    'error with compressing {absolute_tarball}'.format(**gvars),
                     cret=cret)
-        except (Exception,) as exc:
-            if os.path.exists(gvars['fdest']):
-                os.remove(gvars['fdest'])
+        except (Exception, KeyboardInterrupt) as exc:
+            if os.path.exists(gvars['absolute_tarball']):
+                os.remove(gvars['absolute_tarball'])
                 raise exc
-    return gvars['fdest']
+    return gvars['absolute_tarball']
 
 
 def upload(container, flavor, *args, **kwargs):
-    gvars = get_vars(container, flavor)
+    kwargs['container'] = container
+    kwargs.setdefault('flavor', flavor)
+    gvars = get_vars(**kwargs)
     _s = __salt__
-    if not os.path.exists(gvars['fdest']):
+    if not os.path.exists(gvars['absolute_tarball']):
         raise _imgerror(
             '{container}/{flavor}: '
             'release is not done'.format(**gvars))
     failed, cret = False, None
-    cmd = ('rsync -avzP {fdest}'
-           ' {user}@{sftp_url}/{dest}.tmp').format(**gvars)
+    cmd = ('rsync -avzP {absolute_tarball}'
+           ' {user}@{sftp_url}/{tarball}.tmp').format(**gvars)
     cret = _s['cmd.run_all'](
         cmd, python_shell=True, use_vt=True, salt_timeout=8*60*60)
     if cret['retcode']:
         failed = True
-    cmd = ('echo "rename {dest}.tmp {dest}" '
+    cmd = ('echo "rename {tarball}.tmp {tarball}" '
            '| sftp {user}@{sftp_url}').format(**gvars)
     cret = _s['cmd.run_all'](
         cmd, python_shell=True, use_vt=True, salt_timeout=60)
@@ -450,7 +474,7 @@ def upload(container, flavor, *args, **kwargs):
         # bindly try to remove the files
         for i in ['', '.tmp']:
             gvars['sufsuf'] = i
-            cmd = ('echo "rm {dest}{sufsuf}" '
+            cmd = ('echo "rm {tarball}{sufsuf}" '
                    '| sftp {user}@{sftp_url}').format(**gvars)
             cret = _s['cmd.run_all'](
                 cmd, python_shell=True, use_vt=True, salt_timeout=60)
@@ -458,7 +482,7 @@ def upload(container, flavor, *args, **kwargs):
             '{container}/{flavor}: '
             'error with remote renaming'.format(**gvars),
             cret=cret)
-    return '{sftp_url}/{dest}'.format(**gvars)
+    return '{sftp_url}/{tarball}'.format(**gvars)
 
 
 def upload_standalone(container, *args, **kwargs):
@@ -472,7 +496,7 @@ def upload_lxc(container, *args, **kwargs):
 def publish_release(container, flavor, *args, **kwargs):
     _s = __salt__
     gvars = get_vars(container, flavor)
-    cmd = "md5sum {fdest} |awk '{{print $1}}'".format(**gvars)
+    cmd = "md5sum {absolute_tarball} |awk '{{print $1}}'".format(**gvars)
     cret = _s['cmd.run_all'](
         cmd, cwd=gvars['root'], python_shell=True, salt_timeout=60*60)
     if cret['retcode']:
@@ -591,15 +615,8 @@ def sf_release(images=None, flavors=None, sync=True):
 clean_lxc_config = mc_lxc.clean_lxc_config
 
 
-def get_ret(ret=None):
-    if ret is None:
-        ret = {}
-    ret.setdefault('result', True)
-    return ret
-
-
-def mount_container(path, ret=None):
-    ret = get_ret(ret)
+def mount_container(path, **kwargs):
+    ret = get_ret(**kwargs)
     _s = __salt__
     mounted = os.path.join(path, 'mounted')
     if not os.path.exists(path):
@@ -613,8 +630,8 @@ def mount_container(path, ret=None):
     return ret
 
 
-def umount_container(path, ret=None, destroy=False):
-    ret = get_ret(ret)
+def umount_container(path, ret=None, destroy=False, **kwargs):
+    ret = get_ret(**kwargs)
     _s = __salt__
     name = os.path.split(path)[-1]
     if os.path.exists(path):
@@ -629,7 +646,8 @@ def umount_container(path, ret=None, destroy=False):
         if path in mounts:
             cret = ret['umount.lxcumount'] = _s['mount.umount'](path)
             if cret is True:
-                log.info('{0} has been umounted (destroyed if tmpfs)')
+                log.info('{0} / {1} has been umounted'
+                         ' (destroyed if tmpfs)'.format(name, path))
             else:
                 ret['result'] = False
     if ret['result'] and destroy:
@@ -637,26 +655,67 @@ def umount_container(path, ret=None, destroy=False):
     return ret
 
 
+def guess_template_env(name, clone_from=None):
+    if not clone_from:
+        clone_from = ''
+    data = {}
+    os = None
+    for i in RELEASES:
+        if i in name:
+            os = i
+            break
+    if not os:
+        for i in RELEASES:
+            if i in clone_from:
+                os = i
+                break
+    if not os:
+        os = DEFAULT_OS
+    data['os'] = os
+    releases = RELEASES[os]
+    release = None
+    for i in releases['releases']:
+        if i in name:
+            release = i
+            break
+    if not release:
+        for i in releases['releases']:
+            if i in clone_from:
+                release = i
+                break
+    if not release:
+        release = releases['default']
+    data['release'] = release
+    return data
+
+
 def build_from_lxc(name,
-                   clone_from='ubuntu-vivid',
+                   clone_from=None,
                    profile=None,
                    network_profile=None,
                    data=None,
-                   ret=None):
-    ret = get_ret(ret)
+                   **kwargs):
+    env = guess_template_env(name, clone_from)
     if not clone_from:
-        raise saltapi.ImgError(
+        clone_from = '{os}-{release}'.format(**env)
+    env = guess_template_env(name, clone_from)
+    ret = get_ret(**kwargs)
+    if not clone_from:
+        raise _imgerror(
             '{0}: choose between create or clone args for your'
-            ' container')
+            ' container'.format(name), cret=ret)
     _s = __salt__
     if not data:
         data = settings()
     name = "imgbuild-{0}".format(name)
     path = os.path.join('/var/lib/lxc', name)
+    rootfs = os.path.join('/var/lib/lxc', name, 'rootfs')
+    lxccfg = os.path.join('/var/lib/lxc', name, 'config')
     try:
         if os.path.exists(path):
-            raise ImgStepError(
-                'Temporary container {0} already exists'.format(name))
+            raise _imgerror(
+                'Temporary container {0} already exists'
+                ''.format(name), cret=ret)
         mount_container(path, ret=ret)
         sd = _s['mc_cloud_vm.vt_settings']('lxc')
         ret = {}
@@ -666,70 +725,91 @@ def build_from_lxc(name,
             network_profile = copy.deepcopy(sd['defaults']['network_profile'])
         profile['clone_from'] = clone_from
         containers = _s['lxc.ls'](cache=False)
-        if clone_from not in containers:
+        if "a"+clone_from not in containers:
             options = {}
-            if '-' in clone_from:
-                template, release = clone_from.split('-')
-            else:
-                template, release = clone_from, None
-            if release:
-                options['release'] = release
+            LXC_TEMPLATES = {}
+            template = LXC_TEMPLATES.get(env['os'], env['os'])
+            options['release'] = env['release']
             ret['lxc_parent'] = _s['lxc.create'](
                 clone_from,
                 template=template,
                 options=options,
                 network_profile=network_profile)
             if not ret['lxc_parent']['result']:
-                raise ImgStepError(
-                    'lxc template {0} failed to init'.format(clone_from))
+                raise _imgerror(
+                    'lxc template {0} failed to init'
+                    ''.format(clone_from), cret=ret)
+        defaults = sd['defaults']
         ret['lxc'] = _s['lxc.init'](
             name,
             password=_s['mc_utils.generate_password'](32),
-            bootstrap_shell=sd['bootstrap_shell'],
-            path=path,
+            bootstrap_shell=defaults['bootstrap_shell'],
             seed=False,
             profile=profile,
             network_profile=network_profile)
-        import pdb;pdb.set_trace()  ## Breakpoint ##
+        if not ret['lxc']['result']:
+            raise ImgStepError('{0} failed to init'.format(name))
+        if _s['lxc.state'](name) != 'running':
+            _s['lxc.start'](name)
         rstr = _s['test.rand_str']()
-        dest_dir = os.path.join('/tmp', rstr)
+        dest_dir = os.path.join('/srv', rstr)
         bs_ = _s['config.gather_bootstrap_script'](
-            bootstrap=profile['script'])
+            bootstrap=defaults['script'])
         for cmd in [
             'mkdir -p {0}'.format(dest_dir),
             'chmod 700 {0}'.format(dest_dir),
         ]:
-            if _s['lxc.run_stdout'](name, cmd, path=path):
-                raise ImgStepError(
+            if _s['lxc.run_stdout'](name, cmd):
+                raise _imgerror(
                     ('tmpdir {0} creation'
-                     ' failed ({1}').format(dest_dir, cmd))
-        _s['lxc.copy_to'](name,
-                          bs_,
-                          '{0}/bootstrap.sh'.format(dest_dir))
-        cargs = profile['bootstrap_args'].replace("'", "''")
+                     ' failed ({1}').format(dest_dir, cmd), cret=ret)
+        ret['bs_copy'] = _s['lxc.copy_to'](name,
+                                           bs_,
+                                           '{0}/bootstrap.sh'.format(dest_dir),
+                                           makedirs=True)
+        if not ret['bs_copy']:
+            raise _imgerror(
+                'lxc bootstrap script wont transfer in {0}'
+                ''.format(name), cret=ret)
+        cargs = '-C'
         cargs += ' --local-mastersalt-mode masterless'
         cargs += ' --local-salt-mode masterless'
         cargs += ' --mastersalt 127.0.0.1'
-        cmd = ('{0} {2}/bootstrap.sh {1}'.format(profile['bootstrap_shell'],
-                                                 cargs,
-                                                 dest_dir))
+        cmd = ('{0} {2}/bootstrap.sh {1}'
+               '').format(defaults['bootstrap_shell'],
+                          cargs,
+                          dest_dir)
         # log ASAP the forged bootstrap command which can be wrapped
         # out of the output in case of unexpected problem
         log.info('Running {0} in LXC container \'{1}\''
                  .format(cmd, name))
-        ret = _s['lxc.retcode'](name, cmd, output_loglevel='info',
-                                path=path, use_vt=True) == 0
-        if not ret['lxc_parent']['result']:
-            raise ImgStepError(
-                'lxc image build failed {0}'.format(name))
-        rootfs = os.path.join('/var/lib/lxc', name, 'rootfs')
+        _s['lxc.wait_started'](name)
+        ret['bootstrap'] = _s['lxc.retcode'](name, cmd, output_loglevel='info',
+                                             use_vt=True) == 0
+        if not ret['bootstrap']:
+            raise _imgerror(
+                'lxc image build failed {0}'.format(name), cret=ret)
+        # shutil.copy2(
+        #     '/srv/mastersalt/makina-states/files'
+        #     '/sbin/makinastates-snapshot.sh',
+        #     rootfs + '/sbin/makinastates-snapshot.sh')
         ret['lxc_stop'] = _s['lxc.stop'](name, kill=True)
+        _s['cmd.run_chroot'](
+            rootfs,
+            'chmod +x {0}'.format('/sbin/makinastates-snapshot.sh'))
         ret['cleanup'] = _s['cmd.run_chroot'](
             rootfs, '/sbin/makinastates-snapshot.sh')
         if ret['cleanup']['retcode']:
-            raise ImgStepError(
-                'lxc snapshot failed: {0}'.format(name))
-    except (ImgStepError,) as exc:
+            raise _imgerror(
+                'lxc snapshot failed: {0}'.format(name), cret=ret)
+        ret['acls'] = save_acls_lxc(name)
+        with open(lxccfg, 'r') as fic:
+            content = fic.read()
+        with open(lxccfg, 'w') as fic:
+            fic.write(content.replace('imgbuild-', ''))
+        ret['tar'] = archive_lxc(container=name,
+                                 container_path=path)
+    except (ImgError, ImgStepError,) as exc:
         exc.cret = ret
         raise exc
     finally:
@@ -737,6 +817,30 @@ def build_from_lxc(name,
         if not ret['result']:
             raise ImgStepError('{0} failed to tear down'.format(name))
     return ret
+
+
+def get_last_local_lxc_images(name, clone_from=None, template=None):
+    env = guess_template_env(name, clone_from)
+    candidates = []
+    if not template:
+        template = 'makina-states-'
+        if env['os'] != DEFAULT_OS:
+            template += env['os']
+        template += '{release}'.format(**env)
+    for i in os.listdir('/var/lib/lxc'):
+        if i.startswith(template) and '.tar' in i:
+            candidates.append(i)
+
+    def sortn(i):
+        return i
+    candidates.sort(key=sortn)
+    return candidates
+
+
+def get_last_local_lxc_image(name, clone_from=None, template=None):
+    return get_last_local_lxc_images(name,
+                                     clone_from=clone_from,
+                                     template=template)[-1]
 
 
 def build_from_docker(img, data):
