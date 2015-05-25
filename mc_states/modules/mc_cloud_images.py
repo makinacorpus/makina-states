@@ -17,11 +17,13 @@ Please also have a look at the runner.
 import traceback
 import logging
 import os
+import re
 import copy
 import shutil
 import salt.exceptions
 from mc_states import saltapi
 
+from distutils.version import LooseVersion
 from mc_states.runners import mc_lxc
 from mc_states.modules.mc_lxc import (
     is_lxc)
@@ -819,7 +821,11 @@ def build_from_lxc(name,
     return ret
 
 
-def get_last_local_lxc_images(name, clone_from=None, template=None):
+def get_last_local_lxc_images(name,
+                              filtered='.*-standalone.*',
+                              clone_from=None,
+                              images_path='/var/lib/lxc',
+                              template=None):
     env = guess_template_env(name, clone_from)
     candidates = []
     if not template:
@@ -827,13 +833,23 @@ def get_last_local_lxc_images(name, clone_from=None, template=None):
         if env['os'] != DEFAULT_OS:
             template += env['os']
         template += '{release}'.format(**env)
-    for i in os.listdir('/var/lib/lxc'):
+    for i in os.listdir(images_path):
         if i.startswith(template) and '.tar' in i:
             candidates.append(i)
+    if isinstance(filtered, six.string_types):
+        filtered = [filtered]
+
+    def ftr(string):
+        for i in filtered:
+            if re.search(i, string):
+                return False
+                break
+        return True
 
     def sortn(i):
         return i
-    candidates.sort(key=sortn)
+    candidates = filter(ftr, candidates)
+    candidates.sort(key=LooseVersion)
     return candidates
 
 

@@ -6,7 +6,7 @@ dhcp-host={{vdata.mac}},{{vdata.ip}},{{vdata.name}},300
 address=/{{vdata.name}}/{{vdata.ip}}
 {% for domain in vdata.domains -%}
 {% if domain != vdata.name -%}
-address=/{{domain}}/{{vdata.ip}}
+host-record={{domain}},{{vdata.ip}}
 {% endif %}
 {%- endfor %}
 {% endif %}
