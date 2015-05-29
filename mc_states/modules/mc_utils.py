@@ -679,6 +679,7 @@ def defaults(prefix,
             ndefaults = defaults(value_key,
                                  value,
                                  overridden=overridden,
+                                 noresolve=noresolve,
                                  firstcall=firstcall)
             if overridden[value_key]:
                 for k, value in overridden[value_key].items():
