@@ -380,26 +380,119 @@ def get_default_configuration(remote_host=None):
     return conf
 
 
-
-def _defaultsConfiguration(
-    cfg,
-    default_env,
-    defaultsConfiguration=None,
-    env_defaults=None,
-    os_defaults=None
-):
+def _prepare_configuration(name, *args, **kwargs):
     _s = __salt__
+    _g = __grains__
+    if not kwargs.get('remote_host', None):
+        kwargs.pop('remote_host', None)
+    cfg = _get_contextual_cached_project(
+        name,
+        remote_host=kwargs.get('remote_host', None))
+    if not (
+        cfg.get('force_reload', True) or
+        kwargs.get('force_reload', False)
+    ):
+        if cfg.get('name', None) == name:
+            return cfg
+    cfg['name'] = name
+    cfg['minion_id'] = _g['id']
+    cfg['fqdn'] = _g['fqdn']
+    cfg.update(dict([a for a in kwargs.items() if a[0] in cfg]))
+    # we must also ignore keys setted on the call to the function
+    # which are explictly setting a value
+    ignored_keys = ['data', 'rollback']
+    for k in kwargs:
+        if k in cfg:
+            ignored_keys.append(k)
+    salt_settings = _s['mc_salt.settings']()
+    # special symlinks inside salt wiring
+    cfg['wired_salt_root'] = os.path.join(
+        salt_settings['saltRoot'], 'makina-projects', cfg['name'])
+    cfg['wired_pillar_root'] = os.path.join(
+        salt_settings['pillarRoot'], 'makina-projects', cfg['name'])
+    # check if the specified sls installer files container
+    if not cfg['default_env']:
+        # one of:
+        # - makina-projects.fooproject.default_env
+        # - fooproject.default_env
+        # - default_env
+        denv = 'dev'
+        for midstart in ['prod', 'staging']:
+            if _g['id'].startswith('{0}-'.format(midstart)):
+                denv = midstart
+        cfg['default_env'] = _s['mc_utils.get'](
+            'makina-projects.{0}.{1}'.format(name, 'default_env'),
+            _s['mc_utils.get'](
+                '{0}.{1}'.format(name, 'default_env'),
+                _s['mc_utils.get']('default_env', denv)))
+
+    # set default skippped steps on a specific environment
+    # to let them maybe be overriden in pillar
+    skipped = {}
+    for step in STEPS:
+        ignored_keys.append('skip_{0}'.format(step))
+        skipped['skip_{0}'.format(step)] = kwargs.get(
+            'skip_{0}'.format(step), False)
+    only = kwargs.get('only', cfg.get('only', None))
+    if only:
+        if isinstance(only, basestring):
+            only = only.split(',')
+        if not isinstance(only, list):
+            raise ValueError('invalid only for {1}: {0}'.format(
+                only, cfg['name']))
+    if only:
+        forced = ['skip_deploy'] + ['skip_{0}'.format(o) for o in only]
+        for s in [a for a in skipped]:
+            if not skipped[s] and s not in forced:
+                skipped[s] = True
+        for s in forced:
+            skipped[s] = False
+    cfg.update(skipped)
+    #
+    if not cfg['user']:
+        cfg['user'] = '{name}-user'
+    if not cfg['groups']:
+        cfg['groups'].append(_s['mc_usergroup.settings']()['group'])
+    cfg['groups'] = uniquify(cfg['groups'])
+    # those variables are overridable via pillar/grains
+    overridable_variables = ['default_env',
+                             'keep_archives',
+                             'no_user',
+                             'no_default_includes']
+
+    # we can override many of default values via pillar/localreg
+    for k in overridable_variables:
+        if k in ignored_keys:
+            continue
+        cfg[k] = _s['mc_utils.get'](
+            '{0}:{1}'.format(name, k), cfg[k],
+            local_registry='makina_projects',
+            registry_format='pack')
+    try:
+        cfg['keep_archives'] = int(cfg['keep_archives'])
+    except (TypeError, ValueError, KeyError):
+        cfg['keep_archives'] = projects_api.KEEP_ARCHIVES
+    cfg['ignored_keys'] = ignored_keys
+    return cfg
+
+
+def load_sample(cfg, *args, **kwargs):
+    '''
+    Load the project PILLAR.sample back to the cfg
+    configuration dict
+    '''
     # load sample if present
-    sample = os.path.join(cfg['wired_salt_root'],
-                          'PILLAR.sample')
-    if defaultsConfiguration is None:
-        defaultsConfiguration = {}
+    if isinstance(cfg, six.string_types):
+        cfg = _prepare_configuration(cfg, *args, **kwargs)
+    _s = __salt__
+    sample = os.path.join(cfg['wired_salt_root'], 'PILLAR.sample')
+    sample_data = OrderedDict()
+    sample_data_l = OrderedDict()
     if os.path.exists(sample):
+        sample_data_l = __salt__['mc_utils.sls_load'](sample)
+        sample_data['sls_default_pillar'] = copy.deepcopy(sample_data_l)
         try:
-            sample_data = OrderedDict()
-            sample_data_l = __salt__['mc_utils.sls_load'](sample)
             # sample_data_l = __salt__['mc_utils.cyaml_load'](fic.read())
-            defaultsConfiguration['sls_default_pillar'] = sample_data_l
             if not isinstance(sample_data_l, dict):
                 sample_data_l = OrderedDict()
             for k, val in sample_data_l.items():
@@ -424,14 +517,27 @@ def _defaultsConfiguration(
                     trace, sample, cfg['name']))
             log.error(error)
             raise ValueError(error)
-        except Exception, exc:
+        except (Exception,):
             trace = traceback.format_exc()
             log.error(trace)
             sample_data = OrderedDict()
             cfg['force_reload'] = True
-        defaultsConfiguration.update(sample_data)
+    return sample_data
+
+
+def _defaultsConfiguration(
+    cfg,
+    default_env,
+    defaultsConfiguration=None,
+    env_defaults=None,
+    os_defaults=None
+):
+    _s = __salt__
+    if defaultsConfiguration is None:
+        defaultsConfiguration = {}
+    sample = load_sample(cfg)
+    defaultsConfiguration.update(sample)
     _dict_update = _s['mc_utils.dictupdate']
-    _defaults = _s['mc_utils.defaults']
     if os_defaults is None:
         os_defaults = OrderedDict()
     if env_defaults is None:
@@ -495,25 +601,23 @@ def _defaultsConfiguration(
     env_defaults.setdefault(default_env, OrderedDict())
     for k in projects_api.ENVS:
         env_defaults.setdefault(k, OrderedDict())
-    defaultsConfiguration = _s['mc_utils.dictupdate'](
+    defaultsConfiguration = _dict_update(
         defaultsConfiguration, pillar_data)
-    defaultsConfiguration = _s['mc_utils.dictupdate'](
+    defaultsConfiguration = _dict_update(
         defaultsConfiguration,
-        _s['grains.filter_by'](
-            env_defaults, grain=default_env, default="dev"))
-    defaultsConfiguration = _s['mc_utils.dictupdate'](
+        _s['grains.filter_by'](env_defaults, grain=default_env, default="dev"))
+    defaultsConfiguration = _dict_update(
         defaultsConfiguration,
         _s['grains.filter_by'](os_defaults, grain='os_family'))
-    # retro compat 'foo-default-settings'
-    defaultsConfiguration = copy.deepcopy(
-        _s['mc_utils.defaults'](
-            '{name}-default-settings'.format(**cfg),
-            defaultsConfiguration, noresolve=True))
-    # new location 'makina-projects.foo.data'
-    defaultsConfiguration = copy.deepcopy(
-        _s['mc_utils.defaults'](
-            'makina-projects.{name}.data'.format(**cfg),
-            defaultsConfiguration, noresolve=True))
+    prefs = [
+        # retro compat 'foo-default-settings'
+        '{name}-default-settings'.format(**cfg),
+        # new location 'makina-projects.foo.data'
+        'makina-projects.{name}.data'.format(**cfg)]
+    for pref in prefs:
+        defaultsConfiguration = copy.deepcopy(
+            _s['mc_utils.defaults'](
+                pref, defaultsConfiguration, noresolve=True))
     return defaultsConfiguration
 
 
@@ -693,97 +797,12 @@ def get_configuration(name, *args, **kwargs):
         makina-projects.foo.data.conf_port = 1234
 
     '''
-    if not kwargs.get('remote_host', None):
-        kwargs.pop('remote_host', None)
-    cfg = _get_contextual_cached_project(
-        name,
-        remote_host=kwargs.get('remote_host', None))
-    nodata = kwargs.pop('nodata', False)
-    if not (
-        cfg.get('force_reload', True)
-        or kwargs.get('force_reload', False)
-    ):
-        if cfg.get('name', None) == name:
-            return cfg
-    cfg['name'] = name
-    cfg['minion_id'] = __grains__['id']
-    cfg['fqdn'] = __grains__['fqdn']
-    cfg.update(dict([a for a in kwargs.items() if a[0] in cfg]))
-    # we must also ignore keys setted on the call to the function
-    # which are explictly setting a value
-    ignored_keys = ['data', 'rollback']
-    for k in kwargs:
-        if k in cfg:
-            ignored_keys.append(k)
-    salt_settings = __salt__['mc_salt.settings']()
+    cfg = _prepare_configuration(name, *args, **kwargs)
+    _s = __salt__
+    salt_settings = _s['mc_salt.settings']()
     salt_root = salt_settings['saltRoot']
-    # special symlinks inside salt wiring
-    cfg['wired_salt_root'] = os.path.join(
-        salt_settings['saltRoot'], 'makina-projects', cfg['name'])
-    cfg['wired_pillar_root'] = os.path.join(
-        salt_settings['pillarRoot'], 'makina-projects', cfg['name'])
-    # check if the specified sls installer files container
-    if not cfg['default_env']:
-        # one of:
-        # - makina-projects.fooproject.default_env
-        # - fooproject.default_env
-        # - default_env
-        denv = 'dev'
-        for midstart in ['prod', 'staging']:
-            if __grains__['id'].startswith('{0}-'.format(midstart)):
-                denv = midstart
-        cfg['default_env'] = __salt__['mc_utils.get'](
-            'makina-projects.{0}.{1}'.format(name, 'default_env'),
-            __salt__['mc_utils.get'](
-                '{0}.{1}'.format(name, 'default_env'),
-                __salt__['mc_utils.get']('default_env', denv)))
-
-    # set default skippped steps on a specific environment
-    # to let them maybe be overriden in pillar
-    skipped = {}
-    for step in STEPS:
-        ignored_keys.append('skip_{0}'.format(step))
-        skipped['skip_{0}'.format(step)] = kwargs.get(
-            'skip_{0}'.format(step), False)
-    only = kwargs.get('only', cfg.get('only', None))
-    if only:
-        if isinstance(only, basestring):
-            only = only.split(',')
-        if not isinstance(only, list):
-            raise ValueError('invalid only for {1}: {0}'.format(
-                only, cfg['name']))
-    if only:
-        forced = ['skip_deploy'] + ['skip_{0}'.format(o) for o in only]
-        for s in [a for a in skipped]:
-            if not skipped[s] and s not in forced:
-                skipped[s] = True
-        for s in forced:
-            skipped[s] = False
-    cfg.update(skipped)
-    #
-    if not cfg['user']:
-        cfg['user'] = '{name}-user'
-    if not cfg['groups']:
-        cfg['groups'].append(__salt__['mc_usergroup.settings']()['group'])
-    cfg['groups'] = uniquify(cfg['groups'])
-    # those variables are overridable via pillar/grains
-    overridable_variables = ['default_env',
-                             'keep_archives',
-                             'no_user',
-                             'no_default_includes']
-
-    # we can override many of default values via pillar/localreg
-    for k in overridable_variables:
-        if k in ignored_keys:
-            continue
-        cfg[k] = __salt__['mc_utils.get'](
-            '{0}:{1}'.format(name, k), cfg[k],
-            local_registry='makina_projects',
-            registry_format='pack')
-    try:
-        cfg['keep_archives'] = int(cfg['keep_archives'])
-    except (TypeError, ValueError, KeyError):
-        cfg['keep_archives'] = projects_api.KEEP_ARCHIVES
+    nodata = kwargs.pop('nodata', False)
+    ignored_keys = cfg['ignored_keys']
     if nodata:
         cfg['data'] = OrderedDict()
     else:
@@ -797,8 +816,8 @@ def get_configuration(name, *args, **kwargs):
         cfg['sls_default_pillar'] = cfg['data'].pop('sls_default_pillar')
     # some vars need to be setted just a that time
     cfg['group'] = cfg['groups'][0]
-    cfg['projects_dir'] = __salt__['mc_locations.settings']()['projects_dir']
-    cfg['remote_projects_dir'] = __salt__[
+    cfg['projects_dir'] = _s['mc_locations.settings']()['projects_dir']
+    cfg['remote_projects_dir'] = _s[
         'mc_locations.settings']()['remote_projects_dir']
 
     # we can try override default values via pillar/grains a last time
@@ -807,23 +826,23 @@ def get_configuration(name, *args, **kwargs):
     if 'data' not in ignored_keys:
         ignored_keys.append('data')
     cfg.update(
-        __salt__['mc_utils.defaults'](
+        _s['mc_utils.defaults'](
             'makina-projects.{0}'.format(name),
-            cfg, ignored_keys=ignored_keys))
+            cfg, ignored_keys=ignored_keys, noresolve=True))
     # add/override data parameters via arguments given on cmdline
     for k in [a for a in kwargs
-              if not a.startswith('__pub')
-              and a not in [b for b in DEFAULT_CONFIGURATION]]:
+              if not a.startswith('__pub') and
+              a not in [b for b in DEFAULT_CONFIGURATION]]:
         cfg['data'][k] = kwargs[k]
     # finally resolve the format-variabilized dict key entries in
     # arbitrary conf mapping
-    cfg['data'] = __salt__['mc_utils.format_resolve'](cfg['data'])
-    cfg['data'] = __salt__['mc_utils.format_resolve'](cfg['data'], cfg)
+    cfg['data'] = _s['mc_utils.format_resolve'](cfg['data'])
+    cfg['data'] = _s['mc_utils.format_resolve'](cfg['data'], cfg)
 
     # finally resolve the format-variabilized dict key entries in global conf
     # the default pillar will also recursively be resolved here
-    cfg.update(__salt__['mc_utils.format_resolve'](cfg))
-    cfg.update(__salt__['mc_utils.format_resolve'](cfg, cfg['data']))
+    cfg.update(_s['mc_utils.format_resolve'](cfg))
+    cfg.update(_s['mc_utils.format_resolve'](cfg, cfg['data']))
 
     now = datetime.datetime.now()
     cfg['chrono'] = '{0}_{1}'.format(
