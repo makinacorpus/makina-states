@@ -815,8 +815,8 @@ def build_from_lxc(name,
         exc.cret = ret
         raise exc
     finally:
-        ret = umount_container(path, ret=ret, destroy=True)
-        if not ret['result']:
+        ret['umount'] = umount_container(path, ret=ret, destroy=True)
+        if not ret['umount']['result']:
             raise ImgStepError('{0} failed to tear down'.format(name))
     return ret
 
@@ -859,7 +859,9 @@ def get_last_local_lxc_image(name, clone_from=None, template=None):
                                      template=template)[-1]
 
 
-def build_from_docker(img, data):
+def build_from_docker(img, path=None, **kwargs):
+    if path:
+        print('path')
     raise saltapi.ImgError('Not implemented')
 
 
