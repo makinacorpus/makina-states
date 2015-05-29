@@ -380,20 +380,26 @@ def get_default_configuration(remote_host=None):
     return conf
 
 
-def load_sample(cfg):
-    '''
-    Load the project PILLAR.sample back to the cfg
-    configuration dict
-    '''
+
+def _defaultsConfiguration(
+    cfg,
+    default_env,
+    defaultsConfiguration=None,
+    env_defaults=None,
+    os_defaults=None
+):
+    _s = __salt__
     # load sample if present
-    sample = os.path.join(cfg['wired_salt_root'], 'PILLAR.sample')
-    sample_data = OrderedDict()
-    sample_data_l = OrderedDict()
+    sample = os.path.join(cfg['wired_salt_root'],
+                          'PILLAR.sample')
+    if defaultsConfiguration is None:
+        defaultsConfiguration = {}
     if os.path.exists(sample):
-        sample_data_l = __salt__['mc_utils.sls_load'](sample)
-        sample_data['sls_default_pillar'] = copy.deepcopy(sample_data_l)
         try:
+            sample_data = OrderedDict()
+            sample_data_l = __salt__['mc_utils.sls_load'](sample)
             # sample_data_l = __salt__['mc_utils.cyaml_load'](fic.read())
+            defaultsConfiguration['sls_default_pillar'] = sample_data_l
             if not isinstance(sample_data_l, dict):
                 sample_data_l = OrderedDict()
             for k, val in sample_data_l.items():
@@ -418,27 +424,14 @@ def load_sample(cfg):
                     trace, sample, cfg['name']))
             log.error(error)
             raise ValueError(error)
-        except (Exception,):
+        except Exception, exc:
             trace = traceback.format_exc()
             log.error(trace)
             sample_data = OrderedDict()
             cfg['force_reload'] = True
-    return sample_data
-
-
-def _defaultsConfiguration(
-    cfg,
-    default_env,
-    defaultsConfiguration=None,
-    env_defaults=None,
-    os_defaults=None
-):
-    _s = __salt__
-    if defaultsConfiguration is None:
-        defaultsConfiguration = {}
-    sample = load_sample(cfg)
-    defaultsConfiguration.update(sample)
+        defaultsConfiguration.update(sample_data)
     _dict_update = _s['mc_utils.dictupdate']
+    _defaults = _s['mc_utils.defaults']
     if os_defaults is None:
         os_defaults = OrderedDict()
     if env_defaults is None:
@@ -502,23 +495,25 @@ def _defaultsConfiguration(
     env_defaults.setdefault(default_env, OrderedDict())
     for k in projects_api.ENVS:
         env_defaults.setdefault(k, OrderedDict())
-    defaultsConfiguration = _dict_update(
+    defaultsConfiguration = _s['mc_utils.dictupdate'](
         defaultsConfiguration, pillar_data)
-    defaultsConfiguration = _dict_update(
+    defaultsConfiguration = _s['mc_utils.dictupdate'](
         defaultsConfiguration,
-        _s['grains.filter_by'](env_defaults, grain=default_env, default="dev"))
-    defaultsConfiguration = _dict_update(
+        _s['grains.filter_by'](
+            env_defaults, grain=default_env, default="dev"))
+    defaultsConfiguration = _s['mc_utils.dictupdate'](
         defaultsConfiguration,
         _s['grains.filter_by'](os_defaults, grain='os_family'))
-    prefs = [
-        # retro compat 'foo-default-settings'
-        '{name}-default-settings'.format(**cfg),
-        # new location 'makina-projects.foo.data'
-        'makina-projects.{name}.data'.format(**cfg)]
-    for pref in prefs:
-        defaultsConfiguration = copy.deepcopy(
-            _s['mc_utils.defaults'](
-                pref, defaultsConfiguration, noresolve=True))
+    # retro compat 'foo-default-settings'
+    defaultsConfiguration = copy.deepcopy(
+        _s['mc_utils.defaults'](
+            '{name}-default-settings'.format(**cfg),
+            defaultsConfiguration, noresolve=True))
+    # new location 'makina-projects.foo.data'
+    defaultsConfiguration = copy.deepcopy(
+        _s['mc_utils.defaults'](
+            'makina-projects.{name}.data'.format(**cfg),
+            defaultsConfiguration, noresolve=True))
     return defaultsConfiguration
 
 
@@ -814,7 +809,7 @@ def get_configuration(name, *args, **kwargs):
     cfg.update(
         __salt__['mc_utils.defaults'](
             'makina-projects.{0}'.format(name),
-            cfg, ignored_keys=ignored_keys, noresolve=True))
+            cfg, ignored_keys=ignored_keys))
     # add/override data parameters via arguments given on cmdline
     for k in [a for a in kwargs
               if not a.startswith('__pub')
