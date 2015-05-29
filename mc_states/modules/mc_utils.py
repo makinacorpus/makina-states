@@ -225,12 +225,7 @@ def unresolved(data):
     return ret
 
 
-def _str_resolve(new, original_dict=None, this_call=0, topdb=False):
-
-    '''
-    low level and optimized call to format_resolve
-    '''
-    init_new = new
+def str_resolve(new, original_dict, this_call=0, topdb=False):
     # do not directly call format to handle keyerror in original mapping
     # where we may have yet keyerrors
     if isinstance(original_dict, dict):
@@ -254,81 +249,16 @@ def _str_resolve(new, original_dict=None, this_call=0, topdb=False):
                 else:
                     if new != subst_val:
                         new = new.replace(subst, str(subst_val))
-            if not unresolved(new):
+            if '{' not in new:
                 # new value has been totally resolved
                 break
-    return new, new != init_new
-
-
-def str_resolve(new, original_dict=None, this_call=0, topdb=False):
-    return _str_resolve(
-        new, original_dict=original_dict, this_call=this_call, topdb=topdb)[0]
-
-
-def _format_resolve(value,
-                    original_dict=None,
-                    this_call=0,
-                    topdb=False,
-                    retry=None,
-                    **kwargs):
-    '''
-    low level and optimized call to format_resolve
-    '''
-    if not original_dict:
-        original_dict = OrderedDict()
-
-    if this_call == 0 and not original_dict and isinstance(value, dict):
-        original_dict = value
-
-    this_call += 1
-    changed = False
-
-    if kwargs:
-        original_dict.update(kwargs)
-
-    if not unresolved(value):
-        return value, False
-
-    if isinstance(value, dict):
-        new = type(value)()
-        for key, v in value.items():
-            val, changed_ = _format_resolve(v, original_dict, topdb=topdb)
-            if changed_:
-                changed = changed_
-            new[key] = val
-    elif isinstance(value, (list, tuple)):
-        new = type(value)()
-        for v in value:
-            val, changed_ = _format_resolve(v, original_dict, topdb=topdb)
-            if changed_:
-                changed = changed_
-            new = new + type(value)([val])
-    elif isinstance(value, six.string_types):
-        new, changed_ = _str_resolve(value, original_dict, topdb=topdb)
-        if changed_:
-            changed = changed_
-    else:
-        new = value
-
-    if retry is None:
-        retry = unresolved(new)
-    while retry and (this_call < 100):
-        new, changed_ = _format_resolve(new,
-                                        original_dict,
-                                        this_call=this_call,
-                                        retry=False,
-                                        topdb=topdb)
-        if not changed_:
-            retry = False
-            changed = False
-        this_call += 1
-    return new, changed
+    return new
 
 
 def format_resolve(value,
                    original_dict=None,
+                   global_tries=50,
                    this_call=0, topdb=False, **kwargs):
-
     '''
     Resolve a dict of formatted strings, mappings & list to a valued dict
     Please also read the associated test::
@@ -349,11 +279,55 @@ def format_resolve(value,
         }
 
     '''
-    return _format_resolve(value,
-                           original_dict=original_dict,
-                           this_call=this_call,
-                           topdb=topdb,
-                           **kwargs)[0]
+    if not original_dict:
+        original_dict = OrderedDict()
+
+    if this_call == 0 and not original_dict and isinstance(value, dict):
+        original_dict = value
+
+    this_call += 1
+
+    if kwargs:
+        original_dict.update(kwargs)
+
+    if not unresolved(value):
+        return value
+
+    if this_call > 2:
+        values = original_dict.values()
+
+    if isinstance(value, dict):
+        new = type(value)()
+        for key, v in value.items():
+            val = format_resolve(v, original_dict, topdb=topdb)
+            new[key] = val
+    elif isinstance(value, (list, tuple)):
+        new = type(value)()
+        for v in value:
+            val = format_resolve(v, original_dict, topdb=topdb)
+            new = new + type(value)([val])
+    elif isinstance(value, six.string_types):
+        new = str_resolve(value, original_dict, topdb=topdb)
+    else:
+        new = value
+
+    retry = unresolved(new)
+    while retry:
+        if this_call > 100:
+            break
+        if this_call > 2 and original_dict.values() == values:
+            raise _CycleError('cycle', new, original_dict)
+        try:
+            new = format_resolve(new, original_dict,
+                                 this_call=this_call, topdb=topdb)
+            retry = unresolved(new)
+        except (_CycleError) as exc:
+            if this_call == 1:
+                new = exc.new
+                retry = False
+            else:
+                raise exc
+    return new
 
 
 def is_a_str(value):
