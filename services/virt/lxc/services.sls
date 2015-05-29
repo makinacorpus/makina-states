@@ -7,21 +7,34 @@ lxc-other-svc:
     - names:
       - apparmor
     - enable: True
-    - enable: True
     - watch:
       - mc_proxy: lxc-pre-restart
     - watch_in:
       - services: lxc-services-enabling
+
+lxc-services-net-enabling:
+  service.running:
+    - enable: true
+    - names:
+      - lxc-net
+      - lxc-net-makina
+    - watch:
+      - mc_proxy: lxc-pre-restart
+      - service: lxc-other-svc
+    - watch_in:
+      - mc_proxy: lxc-post-inst
 
 lxc-services-enabling:
   service.running:
     - enable: true
     - names:
       - lxc
-      - lxc-net
-      - lxc-net-makina
-    - watch:
+    - require:
       - mc_proxy: lxc-pre-restart
-    - watch_in:
+      - service: lxc-services-net-enabling
+      - service: lxc-other-svc
+    - require:
       - mc_proxy: lxc-post-inst
+    - watch:
+      - mc_proxy: lxc-post-pkg
 {% endif %}
