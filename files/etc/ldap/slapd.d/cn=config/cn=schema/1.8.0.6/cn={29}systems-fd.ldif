@@ -1,5 +1,5 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 dc8ead6f
+# CRC32 963c4e58
 dn: cn={29}systems-fd
 objectClass: olcSchemaConfig
 cn: {29}systems-fd
@@ -305,9 +305,9 @@ olcObjectClasses: {8}( 1.3.6.1.4.1.38414.16.2.1 NAME 'fdMobilePhone' DESC 'Fus
  ionDirectory mobile phone class' STRUCTURAL MUST cn MAY ( description $ telep
  honeNumber $ serialNumber $ fdMobileIMEI $ fdMobileOS $ fdMobilePUK ) )
 structuralObjectClass: olcSchemaConfig
-entryUUID: d92a7f7a-9b5f-1034-8d49-2db92414a0c1
+entryUUID: 2d5a90ae-9b6e-1034-8e47-27fadc517a1c
 creatorsName: cn=config
-createTimestamp: 20150530213743Z
-entryCSN: 20150530213743.156413Z#000000#000#000000
+createTimestamp: 20150530232017Z
+entryCSN: 20150530232017.354280Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20150530213743Z
+modifyTimestamp: 20150530232017Z
