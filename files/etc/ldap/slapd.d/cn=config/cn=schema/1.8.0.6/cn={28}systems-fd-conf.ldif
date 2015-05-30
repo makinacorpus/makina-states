@@ -1,5 +1,5 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 3f202ff0
+# CRC32 aebff8d0
 dn: cn={28}systems-fd-conf
 objectClass: olcSchemaConfig
 cn: {28}systems-fd-conf
@@ -35,9 +35,9 @@ olcObjectClasses: {0}( 1.3.6.1.4.1.38414.18.2.1 NAME 'fdSystemsPluginConf' DES
  Y ( fdSystemRDN $ fdServerRDN $ fdWorkstationRDN $ fdTerminalRDN $ fdPrinterR
  DN $ fdComponentRDN $ fdMobilePhoneRDN $ fdEncodings $ fdDeviceRDN ) )
 structuralObjectClass: olcSchemaConfig
-entryUUID: d92a75fc-9b5f-1034-8d48-2db92414a0c1
+entryUUID: 2d5a8708-9b6e-1034-8e46-27fadc517a1c
 creatorsName: cn=config
-createTimestamp: 20150530213743Z
-entryCSN: 20150530213743.156413Z#000000#000#000000
+createTimestamp: 20150530232017Z
+entryCSN: 20150530232017.354280Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20150530213743Z
+modifyTimestamp: 20150530232017Z

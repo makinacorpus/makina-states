@@ -1,5 +1,5 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 74945a9a
+# CRC32 95c95434
 dn: cn={34}ldapns
 objectClass: olcSchemaConfig
 cn: {34}ldapns
@@ -12,9 +12,9 @@ olcObjectClasses: {0}( 1.3.6.1.4.1.5322.17.1.1 NAME 'authorizedServiceObject'
 olcObjectClasses: {1}( 1.3.6.1.4.1.5322.17.1.2 NAME 'hostObject' DESC 'Auxilia
  ry object class for adding host attribute' SUP top AUXILIARY MAY host )
 structuralObjectClass: olcSchemaConfig
-entryUUID: d92a9438-9b5f-1034-8d4e-2db92414a0c1
+entryUUID: 2d5aa5da-9b6e-1034-8e4c-27fadc517a1c
 creatorsName: cn=config
-createTimestamp: 20150530213743Z
-entryCSN: 20150530213743.156413Z#000000#000#000000
+createTimestamp: 20150530232017Z
+entryCSN: 20150530232017.354280Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20150530213743Z
+modifyTimestamp: 20150530232017Z
