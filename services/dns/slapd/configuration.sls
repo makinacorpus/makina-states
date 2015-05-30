@@ -1,5 +1,5 @@
 {% set settings = salt['mc_slapd.settings']() %}
-{% set yameld_data = salt['mc_utils.json_dump'](settings) %}
+{% import "makina-states/_macros/h.jinja" as h with context %}
 include:
   - makina-states.services.dns.slapd.hooks
   - makina-states.services.dns.slapd.tls-setup
@@ -9,7 +9,6 @@ include:
   - makina-states.services.dns.slapd.fix-apparmor
   {% endif %}
   - makina-states.services.dns.slapd.services
-
 
 slapd_usertosslcerts:
   user.present:
@@ -34,33 +33,15 @@ slapd_directory:
     - watch_in:
       - mc_proxy: slapd-pre-conf
 
-{% for tp in [ '/etc/default/slapd', ] %}
-slapd_config_{{tp}}:
-  file.managed:
-    - name: {{tp}}
-    - makedirs: true
-    - source: salt://makina-states/files{{tp}}
-    - template: jinja
-    - mode: 750
-    - user: {{settings.user}}
-    - group: {{settings.group}}
+{% macro rmacro() %}
     - watch:
       - mc_proxy: slapd-pre-conf
     - watch_in:
       - mc_proxy: slapd-post-conf
-{% endfor %}
-{% for tp in settings.cn_config_files %}
-slapd_config_{{tp}}:
-  file.managed:
-    - name: {{ tp }}
-    - source: salt://makina-states/files{{tp}}
-    - template: jinja
-    - makedirs: true
-    - mode: 640
-    - user: {{settings.user}}
-    - group: {{settings.group}}
-    - watch:
-      - mc_proxy: slapd-pre-conf
-    - watch_in:
-      - mc_proxy: slapd-post-conf
-{% endfor %}
+{% endmacro %}
+{{ h.deliver_config_files(
+     settings.get('cn_config_files', {}), 
+     user=settings.user,
+     group=settings.group,
+     mode='640',
+     after_macro=rmacro, prefix='slapd-')}}
