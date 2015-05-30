@@ -1,9 +1,10 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-{%- set data=salt['mc_slapd.settings']() %}
+# {%- set data=salt['mc_slapd.settings']() %}
 dn: olcDatabase={0}config
 objectClass: olcDatabaseConfig
 olcDatabase: {0}config
-olcAccess: {0}to *  by * none
+olcAccess: {0}to * by dn.exact=gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth manage
+olcAccess: {1}to * by * none
 olcAddContentAcl: TRUE
 olcLastMod: TRUE
 olcMaxDerefDepth: 15

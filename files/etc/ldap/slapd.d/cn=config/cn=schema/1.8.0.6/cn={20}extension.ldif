@@ -1,0 +1,28 @@
+# AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
+# CRC32 f6af4698
+dn: cn={20}extension
+objectClass: olcSchemaConfig
+cn: {20}extension
+olcAttributeTypes: {0}( 1.3.6.1.4.1.4203.666.100.121 NAME 'rdn' SUP name )
+olcAttributeTypes: {1}( 1.3.6.1.4.1.4203.666.100.122 NAME 'otherFacsimiletelep
+ honeNumber' SUP telephoneNumber )
+olcAttributeTypes: {2}( 1.3.6.1.4.1.4203.666.100.123 NAME 'IPPhone' SUP teleph
+ oneNumber )
+olcAttributeTypes: {3}( 1.3.6.1.4.1.4203.666.100.124 NAME ( 'URL' 'homeUrl' ) 
+ SUP name )
+olcAttributeTypes: {4}( 1.3.6.1.4.1.4203.666.100.125 NAME 'comment' SUP name )
+olcAttributeTypes: {5}( 1.3.6.1.4.1.4203.666.100.126 NAME 'conferenceInformati
+ on' SUP name )
+olcAttributeTypes: {6}( 1.3.6.1.4.1.4203.666.100.127 NAME 'reports' SUP manage
+ r )
+olcObjectClasses: {0}( 1.3.6.1.4.1.4203.666.100.1 NAME 'officePerson' DESC 'Of
+ fice employee or computer user' SUP inetOrgPerson STRUCTURAL MAY ( c $ rdn $ 
+ otherFacsimiletelephoneNumber $ IPPhone $ URL $ comment $ reports $ conferenc
+ eInformation ) )
+structuralObjectClass: olcSchemaConfig
+entryUUID: b2d26db6-6a4f-1033-86d5-773bdb858bca
+creatorsName: cn=config
+createTimestamp: 20140507162342Z
+entryCSN: 20140507162342.230263Z#000000#000#000000
+modifiersName: cn=config
+modifyTimestamp: 20140507162342Z
