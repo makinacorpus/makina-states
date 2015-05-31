@@ -313,22 +313,14 @@ def _format_resolve(value,
     if retry is None:
         retry = unresolved(new)
 
-    not_changed_count = 0
     while retry and (this_call < 100):
-        new_, changed_ = _format_resolve(new,
-                                         original_dict,
-                                         this_call=this_call,
-                                         retry=False,
-                                         topdb=topdb)
-        if not changed_:
-            if not_changed_count > 2:
-                retry = False
-            elif not unresolved(new_):
-                if not unresolved(original_dict):
-                    retry = False
-            changed = False
-            not_changed_count += 1
-        new = new_
+        new, changed = _format_resolve(new,
+                                       original_dict,
+                                       this_call=this_call,
+                                       retry=False,
+                                       topdb=topdb)
+        if not changed:
+            retry = False
         this_call += 1
     return new, changed
 
