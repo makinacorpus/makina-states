@@ -494,8 +494,8 @@ set_valid_upstreams() {
         fi
     fi
     # remove \n
-    VALID_BRANCHES=$(echo $(echo "${VALID_BRANCHES}"|tr -s [:space:] \\n|sort -u))
-    VALID_CHANGESETS=$(echo $(echo "${VALID_CHANGESETS}"|tr -s [:space:] \\n|sort -u))
+    VALID_BRANCHES=$(echo $(echo "${VALID_BRANCHES}"|tr -s "[:space:]" "\\n"|sort -u))
+    VALID_CHANGESETS=$(echo $(echo "${VALID_CHANGESETS}"|tr -s "[:space:]" "\\n"|sort -u))
 }
 
 get_mastersalt() {
