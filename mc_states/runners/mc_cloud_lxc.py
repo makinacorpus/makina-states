@@ -241,6 +241,7 @@ def _load_profile(data, profile_data=None):
         'profile', 'network_profile',
         "dnsservers", "password",
         "bootstrap_shell", "script", "script_args",
+        "additional_ips",
         "from_container",  # old, but too toochy to support only
                            # the migrated place
         # migrated to lxc profiles

@@ -138,6 +138,9 @@ def vm_extpillar(vm, data, *args, **kw):
     Get per LXC container specific settings
     '''
     backing = data['profile'].setdefault('backing', 'dir')
+    # dhcp now
+    # data['network_profile']['eth0']['ipv4'] = data['ip']
+    data['network_profile']['eth0']['hwaddr'] = data['mac']
     if data['profile'].get('clone_from') is not None:
         data.pop('image', None)
     if not data.get('fstab'):
