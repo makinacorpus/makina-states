@@ -254,11 +254,11 @@ class TestCase(base.ModuleCase):
         ]
         for test, args, res in tests:
             if args:
-                self.assertEquals(self._(
-                    'mc_utils.format_resolve')(test, args), res)
+                data = self._('mc_utils.format_resolve')(test, args)
+                self.assertEquals(data, res)
             else:
-                self.assertEquals(self._(
-                    'mc_utils.format_resolve')(test), res)
+                data = self._('mc_utils.format_resolve')(test)
+                self.assertEquals(data, res)
 
 
 if __name__ == '__main__':

@@ -225,8 +225,6 @@ class TestCase(base.ModuleCase):
                 cfg['pillar_root'].endswith('/projects/foobar/pillar'))
             self.assertTrue(
                 cfg['project_root'].endswith('/projects/foobar/project'))
-            import pdb;pdb.set_trace()  ## Breakpoint ##
-            import pdb;pdb.set_trace()  ## Breakpoint ##
 
 
 if __name__ == '__main__':
