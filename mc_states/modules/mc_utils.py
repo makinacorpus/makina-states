@@ -277,10 +277,10 @@ def _format_resolve(value,
     if not original_dict:
         original_dict = OrderedDict()
 
-    if this_call == 0 and not original_dict and isinstance(value, dict):
-        original_dict = value
+    if this_call == 0:
+        if not original_dict and isinstance(value, dict):
+            original_dict = value
 
-    this_call += 1
     changed = False
 
     if kwargs:
@@ -312,15 +312,23 @@ def _format_resolve(value,
 
     if retry is None:
         retry = unresolved(new)
+
+    not_changed_count = 0
     while retry and (this_call < 100):
-        new, changed_ = _format_resolve(new,
-                                        original_dict,
-                                        this_call=this_call,
-                                        retry=False,
-                                        topdb=topdb)
+        new_, changed_ = _format_resolve(new,
+                                         original_dict,
+                                         this_call=this_call,
+                                         retry=False,
+                                         topdb=topdb)
         if not changed_:
-            retry = False
+            if not_changed_count > 2:
+                retry = False
+            elif not unresolved(new_):
+                if not unresolved(original_dict):
+                    retry = False
             changed = False
+            not_changed_count += 1
+        new = new_
         this_call += 1
     return new, changed
 
