@@ -21,12 +21,18 @@ iface eth0 inet dhcp
 
 EOF
 fi
+lxc_cleanup_args=""
+for i in $@;do
+    if [ "x${i}" = "xsystemd" ];then
+        lxc_cleanup_args="systemd"
+    fi
+done
 if [ "x$(mount|awk '{print $3}'|egrep "^/dev/shm"|wc -l|sed -e "s/ //g")" = "x0" ];then
     mount -t tmpfs none /dev/shm || /bin/true
 fi
 if [ -f /sbin/lxc-cleanup.sh ];then
     chmod +x /sbin/lxc-cleanup.sh || /bin/true
-    /sbin/lxc-cleanup.sh &2>/dev/null || /bin/true
+    /sbin/lxc-cleanup.sh "${lxc_cleanup_args}" &2>/dev/null || /bin/true
 fi
 if [ ! -e /etc/ssh/ssh_host_rsa_key ];then
     dpkg-reconfigure openssh-server || /bin/true

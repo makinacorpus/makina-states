@@ -2,6 +2,12 @@
 # managed via salt, do not edit
 # freeze hostile packages
 is_docker=""
+from_systemd="y"
+for i in ${@};do
+    if [ "x${i}" = "xsystemd" ];then
+        from_systemd="y"
+    fi
+done
 if [ -f /.dockerinit ];then
     is_docker="1"
 fi
@@ -29,11 +35,14 @@ for i in /var/run/*.pid /var/run/dbus/pid /etc/nologin;do
     fi
 done
 # some services needs to be out
-# no apparmor in container
-for i in atop vnstat ondemand umountfs umountroot smartmontools apparmor smartd;do
-    update-rc.d -f ${i} remove || /bin/true
-    systemctl disable ${i} disable || /bin/true
-done
+# o apparmor in container
+# do not do on boot
+if [ "x${from_systemd}" = "x" ];then
+    for i in atop vnstat ondemand umountfs umountroot smartmontools apparmor smartd;do
+        update-rc.d -f ${i} remove || /bin/true
+        systemctl disable ${i} disable || /bin/true
+    done
+fi
 # disabling useless and harmfull services
 #    $(find /etc/init -name dbus.conf)\
 # instead of delete the proccps service, reset it to do nothing by default
