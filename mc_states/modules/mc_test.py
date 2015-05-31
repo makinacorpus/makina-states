@@ -146,6 +146,7 @@ def run_tests(flavors=None, use_vt=True, echo=False, logcapture=True):
 
 
 def run_travis_tests(use_vt=False, echo=True, logcapture=False):
+    use_vt = True
     return run_tests(
         'travis', use_vt=use_vt, echo=echo, logcapture=logcapture)
 # vim:set et sts=4 ts=4 tw=80:
