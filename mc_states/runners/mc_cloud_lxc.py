@@ -448,7 +448,8 @@ def vm_volumes(vm, ret=None, output=True, force=False):
             vm, rmark), python_shell=True, salt_target=cn
     ):
         # if container is running, restart it
-        cret = cli('cmd.run_all', cmd, python_shell=True, salt_target=cn)
+        cret = cli('cmd.run_all',
+                   cmd, use_vt=True, python_shell=True, salt_target=cn)
         if cret['retcode']:
             ret['result'] = False
             merge_results(ret, cret)

@@ -497,7 +497,7 @@ def upload_lxc(container, *args, **kwargs):
 
 def publish_release(container, flavor, *args, **kwargs):
     _s = __salt__
-    gvars = get_vars(container, flavor)
+    gvars = get_vars(container=container, flavor=flavor)
     cmd = "md5sum {absolute_tarball} |awk '{{print $1}}'".format(**gvars)
     cret = _s['cmd.run_all'](
         cmd, cwd=gvars['root'], python_shell=True, salt_timeout=60*60)
