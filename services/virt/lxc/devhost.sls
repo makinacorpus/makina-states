@@ -1,5 +1,6 @@
 include:
   - makina-states.services.virt.lxc.hooks
+
 {% if salt['mc_controllers.mastersalt_mode']() %}
 lxcdevhostmount:
   file.managed:
