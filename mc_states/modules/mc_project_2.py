@@ -219,12 +219,14 @@ def _sls_exec(name, cfg, sls):
     ret = _get_ret(name)
     ret.update({'return': None, 'sls': sls, 'name': name})
     old_retcode = __context__.get('retcode', 0)
-    pillar = __salt__['mc_utils.dictupdate'](copy.deepcopy(cfg['sls_default_pillar']),
-                                             copy.deepcopy(__pillar__))
+    pillar = __salt__['mc_utils.dictupdate'](
+        copy.deepcopy(cfg['sls_default_pillar']),
+        copy.deepcopy(__pillar__))
     # UGLY HACK for the lazyloader
     try:
         __salt__['mc_utils.add_stuff_to_opts'](__opts__)
-        cret = __salt__['state.sls'](sls.format(**cfg), concurrent=True, pillar=pillar)
+        cret = __salt__['state.sls'](sls.format(**cfg),
+                                     concurrent=True, pillar=pillar)
     finally:
         __salt__['mc_utils.remove_stuff_from_opts'](__opts__)
     ret['return'] = cret
@@ -386,14 +388,9 @@ def _prepare_configuration(name, *args, **kwargs):
     if not kwargs.get('remote_host', None):
         kwargs.pop('remote_host', None)
     cfg = _get_contextual_cached_project(
-        name,
-        remote_host=kwargs.get('remote_host', None))
-    if not (
-        cfg.get('force_reload', True) or
-        kwargs.get('force_reload', False)
-    ):
-        if cfg.get('name', None) == name:
-            return cfg
+        name, remote_host=kwargs.get('remote_host', None))
+    if cfg.get('cfg_is_prepared'):
+        return cfg
     cfg['name'] = name
     cfg['minion_id'] = _g['id']
     cfg['fqdn'] = _g['fqdn']
@@ -473,6 +470,7 @@ def _prepare_configuration(name, *args, **kwargs):
     except (TypeError, ValueError, KeyError):
         cfg['keep_archives'] = projects_api.KEEP_ARCHIVES
     cfg['ignored_keys'] = ignored_keys
+    cfg['cfg_is_prepared'] = True
     return cfg
 
 
@@ -683,9 +681,13 @@ def get_project(name, *args, **kwargs):
 def _get_contextual_cached_project(name, remote_host=None):
     _init_context(name=name, remote_host=remote_host)
     # throw KeyError if not already loaded
-    dcfg = get_default_configuration(remote_host=remote_host)
-    remote_host = dcfg['remote_host']
-    cfg = __opts__['ms_projects'].setdefault((name, remote_host), dcfg)
+    key = (name, remote_host)
+    try:
+        cfg = __opts__['ms_projects'][key]
+    except KeyError:
+        dcfg = get_default_configuration(remote_host=remote_host)
+        cfg = __opts__['ms_projects'].setdefault(key, dcfg)
+    remote_host = cfg['remote_host']
     if remote_host == __grains__['fqdn']:
         __opts__['ms_project'] = cfg
         __opts__['ms_project_name'] = cfg['name']
@@ -798,6 +800,11 @@ def get_configuration(name, *args, **kwargs):
 
     '''
     cfg = _prepare_configuration(name, *args, **kwargs)
+    if not (
+        cfg.get('force_reload', True) or
+        kwargs.get('force_reload', False)
+    ) and cfg.get('cfg_is_loaded'):
+        return cfg
     _s = __salt__
     salt_settings = _s['mc_salt.settings']()
     salt_root = salt_settings['saltRoot']
@@ -862,6 +869,7 @@ def get_configuration(name, *args, **kwargs):
     cfg['force_reload'] = False
     if not nodata and not (cfg['remote_host'] == __grains__['fqdn']):
         set_project(cfg)
+    cfg['cfg_is_loaded'] = True
     return cfg
 
 
