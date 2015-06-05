@@ -343,7 +343,11 @@ def settings():
                                     newval.append(sube)
                                 ifdata[k] = newval
                         ifacedata[newif + suf] = ifdata
-        netdata['interfaces_order'] = [a for a in netdata['interfaces']]
+
+        # configure alias interfaces only after real ones ...
+        iorder = [a for a in netdata['interfaces'] if ':' not in a]
+        iorder += [a for a in netdata['interfaces'] if ':' in a]
+        netdata['interfaces_order'] = iorder
         return netdata
     return _settings()
 
