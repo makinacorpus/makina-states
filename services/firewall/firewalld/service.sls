@@ -71,13 +71,26 @@ firewalld-disable-firewall:
       - mc_proxy: firewalld-postrestart
 {%else %}
 firewalld:
+  {# if we masked polkitd on previous run, unmask #}
+  file.absent:
+    - name: /etc/systemd/system/polkitd.service
+    - onlyif: >
+              test -h /etc/systemd/system/polkitd.service &&
+              test "x$(readlink /etc/systemd/system/polkitd.service)" = "x/dev/null"
+    - require:
+      - mc_proxy: firewalld-prerestart
+      - service: firewalld-conflicting-services
+    - require_in:
+      - mc_proxy: firewalld-postrestart
   service.running:
     - enable: true
     - names:
+      - polkitd
       - firewalld
     - require:
       - service: firewalld-conflicting-services
       - mc_proxy: firewalld-prerestart
+      - file: firewalld
     - require_in:
       - mc_proxy: firewalld-postrestart
 firewalld-reapply:
