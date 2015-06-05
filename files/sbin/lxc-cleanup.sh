@@ -97,8 +97,8 @@ for s in\
    ;do
     # upstart
     for i in /etc/init/${s}*.conf;do
-        echo manual>"/etc/init/$(basename ${f} .conf).override" || /bin/true
-        mv -f "${f}" "${f}.orig" || /bin/true
+        echo manual>"/etc/init/$(basename ${i} .conf).override" || /bin/true
+        mv -f "${i}" "${i}.orig" || /bin/true
     done
     # systemd
     rm -vf {/lib/systemd,/etc/systemd,/usr/lib/systemd}/system/*.wants/${s}.service || /bin/true
