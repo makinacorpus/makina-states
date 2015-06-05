@@ -21,7 +21,7 @@ firewalld:
     - enable: false
     - names:
       - firewalld
-      - polkitd
+      {% if grains['os'] in ['Ubuntu'] and grains['osrelease'] >= '15.04' %}- polkitd{%endif%}
     - require:
       - mc_proxy: firewalld-prerestart
       - service: firewalld-conflicting-services
@@ -85,7 +85,7 @@ firewalld:
   service.running:
     - enable: true
     - names:
-      - polkitd
+      {% if grains['os'] in ['Ubuntu'] and grains['osrelease'] >= '15.04' %}- polkitd{%endif%}
       - firewalld
     - require:
       - service: firewalld-conflicting-services
