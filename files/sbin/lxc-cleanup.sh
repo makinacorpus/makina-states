@@ -34,15 +34,6 @@ for i in /var/run/*.pid /var/run/dbus/pid /etc/nologin;do
         rm -f "${i}" || /bin/true
     fi
 done
-# some services needs to be out
-# o apparmor in container
-# do not do on boot
-if [ "x${from_systemd}" = "x" ];then
-    for i in atop vnstat ondemand umountfs umountroot smartmontools apparmor smartd;do
-        update-rc.d -f ${i} remove || /bin/true
-        systemctl disable ${i} disable || /bin/true
-    done
-fi
 # disabling useless and harmfull services
 #    $(find /etc/init -name dbus.conf)\
 # instead of delete the proccps service, reset it to do nothing by default
@@ -67,53 +58,52 @@ for reactivated_service in ${reactivated_services};do
         rm -f "${reactivated_service}.override" ||/bin/true
     fi
 done
-for f in\
-    $(find /etc/init -name console-setup.conf)\
-    $(find /etc/init -name acpid.conf)\
-    $(find /etc/init -name apport.conf)\
-    $(find /etc/init -name control-alt-delete.conf)\
-    $(find /etc/init -name cryptdisks-enable.conf)\
-    $(find /etc/init -name cryptdisks-udev.conf)\
-    $(find /etc/init -name dmesg.conf)\
-    $(find /etc/init -name failsafe.conf)\
-    $(find /etc/init -name mountall-net.conf )\
-    $(find /etc/init -name mountall-reboot.conf)\
-    $(find /etc/init -name mountall-shell.conf)\
-    $(find /etc/init -name mounted-debugfs.conf )\
-    $(find /etc/init -name mounted-dev.conf)\
-    $(find /etc/init -name mounted-proc.conf)\
-    $(find /etc/init -name mounted-run.conf)\
-    $(find /etc/init -name mounted-tmp.conf)\
-    $(find /etc/init -name mounted-var.conf)\
-    $(find /etc/init -name setvtrgb.conf)\
-    $(find /etc/init -name systemd-logind.conf)\
-    $(find /etc/init -name udev*.conf)\
-    $(find /etc/init -name ureadahead*.conf)\
-    $(find /etc/init -name plymouth*.conf)\
-    $(find /etc/init -name hwclock*.conf)\
-    $(find /etc/init -name module*.conf)\
-    ;do SERVICES_DISABLED="${SERVICES_DISABLED} ${f}";done
-# services only harmfull in a docker
-if [ "x${is_docker}" != "x" ];then
-#        $(find /etc/init -name resolvconf.conf)\
-#        $(find /etc/init -name networking.conf)\
-#        $(find /etc/init -name network-interface-security.conf)\
-    for f in\
-        $(find /etc/init -name cloud-init-container.conf)\
-        $(find /etc/init -name cloud-init.conf)\
-        $(find /etc/init -name cloud-init-local.conf)\
-        $(find /etc/init -name cloud-init-nonet.conf)\
-        $(find /etc/init -name console.conf)\
-        $(find /etc/init -name console-setup.conf)\
-        $(find /etc/init -name hostname.conf)\
-        $(find /etc/init -name tty[1-9].conf)\
-        $(find /etc/init -name upstart*.conf)\
-        $(find /etc/init -name upstart-dbus-bridge.conf)\
-    ;do SERVICES_DISABLED="${SERVICES_DISABLED} ${f}";done
-fi
-for f in ${SERVICES_DISABLED};do
-    echo manual>"/etc/init/$(basename $f .conf).override"
-    mv -f "${f}" "${f}.orig"
+# - we must need to rely on direct file system to avoid relying on running process
+#    manager (pid: 1)
+# do not activate those evil services in a container context
+for s in\
+    acpid\
+    apparmor\
+    apport\
+    atop\
+    console-setup\
+    control-alt-delete\
+    cryptdisks-enable\
+    cryptdisks-udev\
+    dmesg\
+    failsafe\
+    hwclock\
+    module\
+    mountall-net\
+    mountall-reboot\
+    mountall-shell\
+    mounted-debugfs\
+    mounted-dev\
+    mounted-proc\
+    mounted-run\
+    mounted-tmp\
+    mounted-var\
+    ondemand\
+    plymouth\
+    setvtrgb\
+    smartd\
+    smartmontools\
+    systemd-modules-load\
+    udev\
+    umountfs\
+    umountroot\
+    ureadahead\
+    vnstat\
+   ;do
+    # upstart
+    for i in /etc/init/${s}*.conf;do
+        echo manual>"/etc/init/$(basename ${f} .conf).override" || /bin/true
+        mv -f "${f}" "${f}.orig" || /bin/true
+    done
+    # systemd
+    rm -vf {/lib/systemd,/etc/systemd,/usr/lib/systemd}/system/*.wants/${s}.service || /bin/true
+    # sysV
+    rm -vf /etc/rc{0,1,2,3,4,5,6}.d/*${s} || /bin/true
 done
 # disabling useless and harmfull sysctls
 for i in \
