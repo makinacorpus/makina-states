@@ -21,11 +21,35 @@ firewalld:
     - enable: false
     - names:
       - firewalld
+      - polkitd
     - require:
       - mc_proxy: firewalld-prerestart
       - service: firewalld-conflicting-services
     - require_in:
       - mc_proxy: firewalld-postrestart
+  {# polkit in container world is evil ! #}
+  {% if  salt['mc_nodetypes.is_container']() %}
+  file.symlink:
+    - name: /etc/systemd/system/polkitd.service
+    - target: /dev/null
+    - onlyif: test -e /lib/systemd/system/polkitd.service
+    - require:
+      - mc_proxy: firewalld-prerestart
+      - service: firewalld-conflicting-services
+    - require_in:
+      - mc_proxy: firewalld-postrestart
+  {% else %}
+  file.absent:
+    - name: /etc/systemd/system/polkitd.service
+    - onlyif: >
+              test -h /etc/systemd/system/polkitd.service &&
+              test "x$(readlink /etc/systemd/system/polkitd.service)" = "x/dev/null"
+    - require:
+      - mc_proxy: firewalld-prerestart
+      - service: firewalld-conflicting-services
+    - require_in:
+      - mc_proxy: firewalld-postrestart
+  {% endif %}
 firewalld-reapply:
   cmd.run:
     - name: /bin/true
