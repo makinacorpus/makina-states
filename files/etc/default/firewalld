@@ -1,2 +1,8 @@
 # MANAGED VIA SALT - DO NOT EDIT
+{% set data = salt['mc_firewalld.settings']() %}
 FIREWALLD_ARGS=""
+{% if data.get('permissive_mode', False) %}
+FIREWALLD_DISABLED="1"
+{% else %}
+FIREWALLD_DISABLED=""
+{% endif %}

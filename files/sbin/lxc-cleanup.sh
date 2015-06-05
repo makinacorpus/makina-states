@@ -8,8 +8,16 @@ for i in ${@};do
         from_systemd="y"
     fi
 done
-if [ -f /.dockerinit ];then
-    is_docker="1"
+for i in /.dockerinit /.dockerenv;do
+    if [ -f "${i}" ];then
+        is_docker="1"
+        break
+    fi
+done
+if [ "x${is_docker}" != "x" ];then
+    if [ "x$(grep -q "system.slice/docker-" /proc/1/cgroup 2>/dev/null;echo ${?})" = "x0" ];then
+        is_docker="1"
+    fi
 fi
 FROZEN_PACKAGES="udev whoopsie ntp fuse grub-common grub-pc grub-pc-bin grub2-common"
 # specific to docker
@@ -19,6 +27,10 @@ FROZEN_PACKAGES="udev whoopsie ntp fuse grub-common grub-pc grub-pc-bin grub2-co
 for i in ${FROZEN_PACKAGES};do
     echo ${i} hold | dpkg --set-selections || /bin/true
 done
+# on docker, disable dhcp on main if unless we explicitly configure the image to
+if [ ! -f /etc/docker_custom_network ] && [ "x${is_docker}" != "x" ];then
+    sed -i  -re "/(auto.*eth0)(eth0.*dhcp)/d" /etc/network/interfaces || /bin/true
+fi
 # disabling fstab
 for i in /lib/init/fstab /etc/fstab;do
     echo > ${i} || /bin/true
@@ -76,6 +88,12 @@ for s in\
     module\
     mountall-net\
     mountall-reboot\
+    ufw\
+    pppd-dns\
+    systemd-remount-fs\
+    lvm2-monitor\
+    dns-clean\
+    lvm2-lvmetad\
     mountall-shell\
     mounted-debugfs\
     mounted-dev\
@@ -90,19 +108,24 @@ for s in\
     smartmontools\
     systemd-modules-load\
     udev\
+    udev-finish\
     umountfs\
     umountroot\
     ureadahead\
+    systemd-udevd.service\
+    systemd-udev-trigger\
     vnstat\
    ;do
     # upstart
     for i in /etc/init/${s}*.conf;do
-        echo manual>"/etc/init/$(basename ${i} .conf).override" || /bin/true
-        mv -f "${i}" "${i}.orig" || /bin/true
+        if [ -e "${i}" ];then
+            echo manual>"/etc/init/$(basename ${i} .conf).override" || /bin/true
+            mv -f "${i}" "${i}.orig" || /bin/true
+        fi
     done
     # systemd
     for d in /lib/systemd /etc/systemd /usr/lib/systemd;do
-        rm -vf "${d}/"*.wants/${s}.service || /bin/true
+        rm -vf "${d}/"*/*.wants/${s}.service || /bin/true
     done
     # sysV
     for i in 0 1 2 3 4 5 6;do
