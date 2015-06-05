@@ -1,0 +1,3 @@
+// MANAGED VIA SALT DO NOT EDIT
+// # {% set p = salt['mc_pkgs.settings']() %} 
+APT::Default-Release "{{p.udist}}";

@@ -128,6 +128,12 @@ def settings():
             extra_confs.update({
                 '/etc/apt/apt.conf.d/99netfamily': {'mode': '644'},
             })
+        if grains['os'] in ['Ubuntu']:
+            extra_confs.update({
+                # '/etc/apt/apt.conf.d/99release': {'mode': '644'},
+                '/etc/apt/apt.conf.d/99notrad': {'mode': '644'},
+                '/etc/apt/preferences.d/00_proposed.pref': {'mode': '644'},
+            })
         DEFAULTS = {
                 'installmode': default_install_mode,
                 'extra_confs': extra_confs,
@@ -197,6 +203,7 @@ def settings():
                 {'mirror': data['ubuntu_mirror'],
                  'dists': [
                      {'name': udist, 'comps': data['ucomps']},
+                     {'name': udist+'-proposed', 'comps': data['ucomps']},
                      {'name': udist+'-updates', 'comps': data['ucomps']},
                      {'name': udist+'-security', 'comps': data['ucomps']}]},
                 {'mirror': 'http://archive.canonical.com/ubuntu',

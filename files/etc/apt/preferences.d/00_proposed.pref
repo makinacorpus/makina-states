@@ -1,0 +1,4 @@
+Explanation: {%- set p = salt['mc_pkgs.settings']() %}
+Package: *
+Pin: release a={{p.udist}}-proposed
+Pin-Priority: -1

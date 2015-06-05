@@ -32,7 +32,6 @@ apt-sources-list:
 {% endmacro %}
 {{ h.deliver_config_files(
      data.get('extra_confs', {}), after_macro=rmacro, prefix='localsettings-pkgmgr-')}}
- 
 
 {% if grains['os'] in ['Debian'] %}
 {% if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] > '5' %}

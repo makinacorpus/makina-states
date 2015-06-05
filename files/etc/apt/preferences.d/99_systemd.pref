@@ -1,0 +1,9 @@
+{%- for i in  ['systemd',
+               'libpam-systemd',
+               'libsystemd0',
+               'systemd-sysv'] %}
+Explanation: {% set p = salt['mc_pkgs.settings']() %}
+Package: {{i}}
+Pin: release a={{p.udist}}-proposed
+Pin-Priority: {{priority}}
+{% endfor %}
