@@ -75,18 +75,24 @@ def test_same_versions(origin, destination, force=False):
 
 
 def get__salt__(__salt__from_exec=None):
+    if __salt__from_exec is None:
+        return __salt__
     try:
-        _s = __salt__
-    except NameError:
-        if __salt__from_exec is None:
-            raise
+        for i in [
+            'mc_api.time_log',
+            'mc_api.get_cloud_controller_settings',
+            'mc_api.get_image_settings'
+        ]:
+            __salt__from_exec[i]
+    except KeyError:
         # from exec module (mock factorization hack)
-        _s = {'mc_api.time_log': _noop,
-              'mc_api.get_cloud_controller_settings': (
-                  __salt__from_exec['mc_cloud_controller.settings']),
-              'mc_api.get_image_settings': (
-                  __salt__from_exec['mc_cloud_images.settings'])}
-    return _s
+        __salt__from_exec.update(
+            {'mc_api.time_log': _noop,
+             'mc_api.get_cloud_controller_settings': (
+                 __salt__from_exec['mc_cloud_controller.settings']),
+             'mc_api.get_image_settings': (
+                 __salt__from_exec['mc_cloud_images.settings'])})
+    return __salt__from_exec
 
 
 def snapshot_container(cmd_runner, destination):
@@ -97,9 +103,23 @@ def snapshot_container(cmd_runner, destination):
     return cret
 
 
-def sync_container(cmd_runner, ret, origin, destination,
-                   __salt__from_exec=None, force=False):
+def get_cmd(_cmd_runner=None):
+    if _cmd_runner is None:
+        def _cmd_runner(cmd):
+            return cli('cmd.run_all', cmd, python_shell=True)
+    return _cmd_runner
+
+
+def sync_container(origin, destination,
+                   cmd_runner=None, ret=None,
+                   __salt__from_exec=None,
+                   snapshot=True,
+                   force=False):
     _s = get__salt__(__salt__from_exec)
+    if ret is None:
+        ret = saltapi.result()
+    cmd_runner = get_cmd(cmd_runner)
+
     fname = 'mc_lxc.sync_container'
     _s['mc_api.time_log'](
         'start', fname, origin, destination, force=force)
@@ -115,12 +135,13 @@ def sync_container(cmd_runner, ret, origin, destination,
                     origin, destination))
             ret['result'] = False
             return ret
-        cret = snapshot_container(cmd_runner, destination)
-        if cret['retcode']:
-            ret['comment'] += (
-                '\nRSYNC(local builder) reset failed {0}'.format(
-                    destination))
-            ret['result'] = False
+        if snapshot:
+            cret = snapshot_container(cmd_runner, destination)
+            if cret['retcode']:
+                ret['comment'] += (
+                    '\nRSYNC(local builder) reset failed {0}'.format(
+                        destination))
+                ret['result'] = False
     _s['mc_api.time_log']('end', fname, ret=ret)
     return ret
 
@@ -168,24 +189,22 @@ def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None,
     _s = get__salt__(__salt__from_exec)
     fname = 'mc_lxc.sync_image_reference_containers'
     _s['mc_api.time_log']('start', fname)
-    if _cmd_runner is None:
-        def _cmd_runner(cmd):
-            return cli('cmd.run_all', cmd, python_shell=True)
+    _cmd_runner = get_cmd(_cmd_runner)
 
     for img in imgSettings['lxc']['images']:
         bref = imgSettings['lxc']['images'][img]['builder_ref']
         # try to find the local img reference building counterpart
         # and sync it back to the reference lxc
         rootfs = '/var/lib/lxc/{0}/rootfs'.format(img)
-        sync_container(_cmd_runner, ret,
-                       '/var/lib/lxc/{0}/rootfs'.format(bref),
+        sync_container('/var/lib/lxc/{0}/rootfs'.format(bref),
                        rootfs,
+                       _cmd_runner, ret,
                        __salt__from_exec=__salt__from_exec,
                        force=force)
         clean_lxc_config(img)
-        sync_container(_cmd_runner, ret,
-                       '/var/lib/lxc/{0}/rootfs'.format(bref),
+        sync_container('/var/lib/lxc/{0}/rootfs'.format(bref),
                        '/var/lib/lxc/{0}.tmp/rootfs'.format(img),
+                       _cmd_runner, ret,
                        __salt__from_exec=__salt__from_exec,
                        force=force)
     _s['mc_api.time_log']('end', fname, ret=ret)
