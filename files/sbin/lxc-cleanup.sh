@@ -101,9 +101,13 @@ for s in\
         mv -f "${i}" "${i}.orig" || /bin/true
     done
     # systemd
-    rm -vf {/lib/systemd,/etc/systemd,/usr/lib/systemd}/system/*.wants/${s}.service || /bin/true
+    for d in /lib/systemd /etc/systemd /usr/lib/systemd;do
+        rm -vf "${d}/"*.wants/${s}.service || /bin/true
+    done
     # sysV
-    rm -vf /etc/rc{0,1,2,3,4,5,6}.d/*${s} || /bin/true
+    for i in 0 1 2 3 4 5 6;do
+       rm -vf /etc/rc${i}.d/*${s} || /bin/true
+    done
 done
 # disabling useless and harmfull sysctls
 for i in \
