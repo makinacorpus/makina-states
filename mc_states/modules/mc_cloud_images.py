@@ -293,6 +293,28 @@ def get_vars(**kwargs):
     return data
 
 
+def sync_container(container,
+                   destination,
+                   snapshot=True,
+                   force=True,
+                   *args,
+                   **kwargs):
+    orig = '/var/lib/lxc/{0}/rootfs'.format(container)
+    dest = '/var/lib/lxc/{0}/rootfs'.format(destination)
+    cret = mc_lxc.sync_container(
+        orig, dest,
+        cmd_runner=_run,
+        __salt__from_exec=__salt__,
+        snapshot=snapshot,
+        force=force)
+    if not cret.get('result', True):
+        raise _imgerror(
+            '{0}/{1}: sync failed'.format(container,
+                                          destination),
+            cret=cret)
+    return cret
+
+
 def snapshot(container, flavor, *args, **kwargs):
     kwargs['container'] = container
     kwargs['flavor'] = flavor
