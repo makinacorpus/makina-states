@@ -58,23 +58,13 @@ do_makina_rules() {
     fi
 }
 
-do_start()
-{
-	# Return
-	#   0 if daemon has been started
-	#   1 if daemon was already running
-	#   other if daemon could not be started or a failure occured
-	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON -- ${FIREWALLD_ARGS}
-    do_makina_rules
-}
-
 do_stop()
 {
-	# Return
-	#   0 if daemon has been stopped
-	#   1 if daemon was already stopped
-	#   other if daemon could not be stopped or a failure occurred
-	start-stop-daemon --stop --quiet --retry 5 --pidfile $PIDFILE --name $NAME
+    # Return
+    #   0 if daemon has been stopped
+    #   1 if daemon was already stopped
+    #   other if daemon could not be stopped or a failure occurred
+    start-stop-daemon --stop --quiet --retry 5 --pidfile $PIDFILE --name $NAME
     pids=$(filter_host_pids $(ps aux|grep firewalld|grep python|awk '{print $2}'))
     if [ "x${pids}" != "x" ];then
         sleep 4
@@ -86,47 +76,66 @@ do_stop()
     done
 }
 
+do_start()
+{
+    # Return
+    #   0 if daemon has been started
+    #   1 if daemon was already running
+    #   other if daemon could not be started or a failure occured
+    if [ "x${FIREWALLD_DISABLED}" = "x" ];then
+        start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON -- ${FIREWALLD_ARGS}
+        do_makina_rules
+    else
+        # try to stop .. on start if the firewall is disabled
+        do_stop
+    fi
+}
+
 do_reload()
 {
-	start-stop-daemon --stop --signal HUP --quiet --pidfile $PIDFILE --name $NAME
-    do_makina_rules
+    if [ "x${FIREWALLD_DISABLED}" = "x" ];then
+        start-stop-daemon --stop --signal HUP --quiet --pidfile $PIDFILE --name $NAME
+        do_makina_rules
+    else
+        do_stop
+    fi
 }
 
 case "$1" in
   start)
-	log_daemon_msg "Starting $DESC" "$NAME"
-	do_start
-	case "$?" in
-		0) log_end_msg 0 ;;
-		1) log_progress_msg "already started"
-		   log_end_msg 0 ;;
-		*) log_end_msg 1 ;;
-	esac
-	;;
+    log_daemon_msg "Starting $DESC" "$NAME"
+    do_start
+    case "$?" in
+        0) log_end_msg 0 ;;
+        1) log_progress_msg "already started"
+           log_end_msg 0 ;;
+        *) log_end_msg 1 ;;
+    esac
+    ;;
   stop)
-	log_daemon_msg "Stopping $DESC" "$NAME"
-	do_stop
-	case "$?" in
-		0) log_end_msg 0 ;;
-		1) log_progress_msg "already stopped"
-		   log_end_msg 0 ;;
-		*) log_end_msg 1 ;;
-	esac
-	;;
+    log_daemon_msg "Stopping $DESC" "$NAME"
+    do_stop
+    case "$?" in
+        0) log_end_msg 0 ;;
+        1) log_progress_msg "already stopped"
+           log_end_msg 0 ;;
+        *) log_end_msg 1 ;;
+    esac
+    ;;
   reload|force-reload)
-	log_daemon_msg "Reloading $DESC" "$NAME"
-	do_reload
-	log_end_msg $?
-	;;
+    log_daemon_msg "Reloading $DESC" "$NAME"
+    do_reload
+    log_end_msg $?
+    ;;
   restart)
-	$0 stop
-	$0 start
-	;;
+    $0 stop
+    $0 start
+    ;;
   status)
-	status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
-	;;
+    status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+    ;;
   *)
-	echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload|reload|status}" >&2
-	exit 3
-	;;
+    echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload|reload|status}" >&2
+    exit 3
+    ;;
 esac
