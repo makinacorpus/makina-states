@@ -28,8 +28,12 @@ for i in ${FROZEN_PACKAGES};do
     echo ${i} hold | dpkg --set-selections || /bin/true
 done
 # on docker, disable dhcp on main if unless we explicitly configure the image to
-if [ ! -f /etc/docker_custom_network ] && [ "x${is_docker}" != "x" ];then
-    sed -i  -re "/(auto.*eth0)(eth0.*dhcp)/d" /etc/network/interfaces || /bin/true
+if [ "x${is_docker}" != "x" ];then
+    if [ -f /etc/docker_custom_network ] || [ "x${DOCKER_CUSTOM_NETWORK}" != "" ];then
+        echo "asked not to unwire dhcp on eth0"
+    else
+        sed -i  -re "/(auto.*eth0)|(eth0.*dhcp)/d" /etc/network/interfaces || /bin/true
+    fi
 fi
 # disabling fstab
 for i in /lib/init/fstab /etc/fstab;do
