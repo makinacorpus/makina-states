@@ -26,6 +26,19 @@ lxc-repo:
     - watch:
       - mc_proxy: lxc-pre-pkg
 
+mclxc-repo:
+  {# 04/06/2015: lxcfs & lxc are utterly bugged in stable #}
+  pkgrepo.managed:
+    - name: lxc
+    - humanname: LXCMC PPA
+    - name: deb http://ppa.launchpad.net/makinacorpus/lxc/ubuntu {{pkgssettings.ppa_dist}} main
+    - dist: {{pkgssettings.ppa_dist}}
+    - file: {{locs.conf_dir}}/apt/sources.list.d/lxcmc.list
+    - keyid: 207A7A4E
+    - keyserver: keyserver.ubuntu.com
+    - watch:
+      - mc_proxy: lxc-pre-pkg
+
 lxc-pkgs:
   {#pkg.{{salt['mc_pkgs.settings']()['installmode']}}: #}
   pkg.latest:
@@ -49,4 +62,5 @@ lxc-pkgs:
     - watch:
       - mc_proxy: lxc-pre-pkg
       - pkgrepo: lxc-repo
+      - pkgrepo: mclxc-repo
 {%endif %}
