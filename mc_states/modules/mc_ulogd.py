@@ -32,8 +32,10 @@ def settings():
             utemplate = (
                 'salt://makina-states/files/etc/ulogd1.conf')
             service = 'ulogd'
+        enabled = not __salt__['mc_nodetypes.is_container']()
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.log.ulogd', {
+                'enabled': enabled,
                 'ulog_emu': True,
                 'nflog_emu': True,
                 'service_name': service,
