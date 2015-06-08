@@ -10,8 +10,9 @@ include:
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {% set kernel = salt['mc_kernel.settings']() %}
 {% set nodetypes_registry = salt['mc_nodetypes.registry']()%}
-{% set isLxc = nodetypes_registry.is.lxccontainer %}
-
+{% set isTravis = nodetypes_registry.is.travis %}
+{% if not (isTravis or salt['mc_nodetypes.is_container']()) %}
+{# increase the length of the processor input queue #}
 sysctl-net.core.somaxconn:
   sysctl.present:
     - name: net.core.somaxconn
@@ -19,9 +20,6 @@ sysctl-net.core.somaxconn:
     - require_in:
       - mc_proxy: sysctl-post-hook
 
-{% set isTravis = nodetypes_registry.is.travis %}
-{% if not (isTravis or isLxc) %}
-{# increase the length of the processor input queue #}
 sysctl-tcp_max_sync_backlog:
   sysctl.present:
     - name: net.ipv4.tcp_max_syn_backlog
