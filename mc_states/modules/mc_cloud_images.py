@@ -14,10 +14,13 @@ Please also have a look at the runner.
 '''
 
 # Import python libs
+import re
+import tempfile
 import traceback
 import pipes
 import logging
 import os
+import textwrap
 import re
 import copy
 import shutil
@@ -71,6 +74,25 @@ IMAGES = OrderedDict([
             'from': 'makina-states:ubuntu-vivid'})
     ]))
 ])
+DOCKERSCRIPT = textwrap.dedent(
+    '''\
+    #!/usr/bin/env bash
+    set -ex
+    /srv/mastersalt/makina-states/_scripts/boot-salt.sh\
+    --refresh-modules -C
+    mastersalt-call --local --retcode-passthrough state.highstate
+    salt-call --local --retcode-passthrough state.highstate
+    if test -e /srv/projects;then
+        cd /srv/projects
+        for i in *;do
+            if test -d ${i};then
+                salt-call --local mc_project.deploy ${i}\
+                only=install,fixperms
+            fi
+        done
+    fi
+    rm -f '${0}'
+    ''')
 
 
 # shortcuts
@@ -908,6 +930,11 @@ def _cleaned_docker(rid, *args, **kwargs):
             pass
 
 
+def safe_container_name(image):
+    image = re.sub('[:/]', '-', image)
+    return image
+
+
 def init_ms_container(container,
                       name=None,
                       command=None,
@@ -946,15 +973,25 @@ def assert_cmd(*args, **kwargs):
     return ret
 
 
-def exec_docker_hook(hooname, hook, cret, rid, project=None, **kwargs):
-    if hook and hook in __salt__:
-        kwargs['project'] = project
-        if project:
-            ret = cret
-        else:
-            ret = cret.setdefault(project, {})
-        ret[hookname] = __salt__[hook](rid, **kwargs)
-        return cret
+def apply_acls_to_docker(image, destination_image=None):
+    _s = __salt__
+    out_d = safe_container_name(image + _s['test.rand_str'](6))
+    cret = OrderedDict()
+    if not destination_image:
+        destination_image = image
+    with _cleaned_docker(image, out_d) as runned2:
+        rid = runned2['create']['Id']
+        cret['apply'] = assert_cmd(
+            rid,
+            "sh -c 'if test -e /.{{i}}.acls.txt;then"
+            "  cd / && setfacl --restore=/acls.txt"
+            "            || /bin/true"
+            " fi'",
+            use_vt=True,
+            python_shell=True)
+        # commit back this 2nd layer with ACLs support
+        cret['commit'] = _s['dockerng.commit'](rid, destination_image)
+    return cret
 
 
 def pack_docker(image,
@@ -973,71 +1010,60 @@ def pack_docker(image,
         cret = OrderedDict()
     if not destination_image:
         destination_image = image
-    in_d = image+'-pack_in'
-    out_t = image+'-pack_tmp'
-    out_d = image+'-pack_out'
-    top_dirs = 'opt home root var srv salt-venv etc'
+    in_d = safe_container_name(image+'-pack_in')
+    tmp_t = image+'-pack-base'
+    tmpimgs = []
     fic = os.path.join(tmpdir, "{0}.tar".format(_s['test.rand_str']()))
     with _cleaned_docker(image, in_d) as runned:
         # run a container based on image & save acls
         rid = runned['create']['Id']
         if acls:
-            cmd = ("sh -c 'for i in {0};do"
-                   " getfacl -R /${{i}} > /.${{i}}.acls.txt;"
-                   "done'").format(top_dirs)
+            cmd = ("sh -c 'if which getfacl >/dev/null 2>&1; then"
+                   " getfacl -R / > /acls.txt || /bin/true;"
+                   "    fi'")
             assert_cmd(rid, cmd, use_vt=True, python_shell=True)
         # export / import  to pack layers
         try:
-            assert_cmd(
+            cret['export'] = assert_cmd(
                 'docker export {0} > {2}'
                 ' && cat {2} | docker import - {1};'
-                ' rm -f {2}'.format(rid, out_t, pipes.quote(fic)),
+                ' rm -f {2}'.format(rid, tmp_t, pipes.quote(fic)),
                 cmd_runner='cmd.run_all',
                 python_shell=True, use_vt=True)
             if os.path.exists(fic):
                 os.remove(fic)
+            tmpimgs.append(_s['dockerng.inspect'](tmp_t)['Id'])
             # run another container based on the import to restore acls
             # that were lost by tar
             if acls:
-                with _cleaned_docker(out_t, out_d) as runned2:
-                    rid = runned2['create']['Id']
-                    assert_cmd(
-                        rid,
-                        "sh -c 'for i in {0};do"
-                        " if test -e /.{{i}}.acls.txt;then"
-                        "  cd / && setfacl --restore=/.{{i}}.acls.txt;"
-                        " fi;"
-                        "done'".format(top_dirs),
-                        use_vt=True,
-                        python_shell=True)
-                    # commit back this 2nd layer with ACLs support
-                    _s['dockerng.commit'](rid, out_t)
+                cret['apply_acls'] = apply_acls_to_docker(tmp_t)
+                tmpimgs.append(_s['dockerng.inspect'](tmp_t)['Id'])
             # update now the destination_image tag up to this new image
-            cret['tag'] = _s['dockerng.tag'](out_t, destination_image)
+            cret['tag'] = _s['dockerng.tag'](tmp_t,
+                                             destination_image,
+                                             force=True)
         except (
             ImgError,
             salt.exceptions.CommandExecutionError,
         ) as exc:
-            try:
-                _s['dockerng.rmi'](out_t)
-            except salt.exceptions.CommandExecutionError:
-                pass
+            for i in tmpimgs:
+                try:
+                    _s['dockerng.rmi'](i)
+                except salt.exceptions.CommandExecutionError:
+                    pass
             raise exc
     return cret
 
 
-def rebuild_ms_docker(image,
+def refresh_ms_docker(image,
                       destination_image=None,
                       projects=None,
                       pack=True,
                       acls=True,
                       snapshot=True,
-                      pre_mastersalt_hook=None,
-                      pre_salt_hook=None,
-                      pre_projects_hook=None,
-                      pre_project_hook=None,
-                      post_project_hook=None,
-                      post_projects_hook=None):
+                      shell='bash',
+                      command='/sbin/init',
+                      script=DOCKERSCRIPT):
     '''
     Refresh a container based on makina-states and pack the layers up to only
     one.
@@ -1061,74 +1087,22 @@ def rebuild_ms_docker(image,
         be sure to save/restore POSIX acls
     snapshot
         run the makina-states image impersonator script
-    pre_mastersalt_hook
-        string (salt function) for a hook to customize the build.
-        Executed before calling the highstates for mastersalt
-    pre_salt_hook
-        string (salt function) for a hook to customize the build.
-        Executed before calling the highstates for salt
-    pre_projects_hook
-        string (salt function) for a hook to customize the build.
-        Executed before calling the projects rebuild
-    post_projects_hook
-        string (salt function) for a hook to customize the build.
-        Executed after calling the projects rebuild
+    script
+        The standard procedure will generate a docker file that
+        builds the new docker which includes:
 
-    The standard procedure includes:
-
-        - Run a new container based from 'image'
-        - Run the pre_salt hook if any
-        - Refresh makina-states trees
-        - Run mastersalt highstates
-        - Run salt highstates
-        - Run the pre_project hook if any
-        - Reinstall any corpus based projects
-            Set projects to False to disable project building.
-            In the other cases, if projects is unset, all projects inside
-            /srv/projects are rebuild.
-        - Run the post_project hook if any
-        - Save acls
-
-    Those hooks must have the following signature:
-
-        - pre_salt_hook
-        - pre_mastersalt_hook
-        - pre_projects_hook
-        - post_projects_hook
-
-    .. code-block:: python
-
-        def hook(rid, image=None, destination_image=None):
-            """
-            cret: the global return dict
-            rid: the docker container runid
-            image: the image from which the container run
-            destination_image: the image to build
-            """
-            pass
-
-    Those hooks must have the following signature:
-
-        - pre_project_hook
-        - post_project_hook
-
-    .. code-block:: python
-
-        def hook(rid, project=None, image=None, destination_image=None):
-            """
-            cret: the global return dict
-            rid: the docker container runid
-            image: the image from which the container run
-            project: the project to build
-            destination_image: the image to build
-            """
-            pass
+            - Run a new container based from 'image'
+            - Refresh makina-states trees
+            - Run mastersalt highstates
+            - Run salt highstates
+            - Build any if existing corpus based projects
+            - Save acls
 
     If snapshot is activated, run '/sbin/makinastates-snapshot.sh' which
     removes a lot of files like the ssh keys, authorized_keys & such to
     impersonate the image.
 
-    If pack is activated, also:
+    If pack is activated,, this will also upon a sucessfull build:
 
         - Import an image from exporting this container
         - Run a container from this new image
@@ -1136,70 +1110,93 @@ def rebuild_ms_docker(image,
         - Reexport / import
 
     - Update the docker image tag
+    '''
+    cret = OrderedDict()
+    _s = __salt__
+    if snapshot:
+        script += (
+            '\n'
+            'if [ -x /sbin/makinastates-snapshot.sh ];then'
+            ' /sbin/makinastates-snapshot.sh;'
+            'fi\n')
+    if acls:
+        script += (
+            '\n'
+            'cd / && getfacl -r / > /acls.txt || /bin/true\n')
+    tmpdir = tempfile.mkdtemp()
+    scriptp = '/tmp/{0}build.sh'.format(_s['test.rand_str']())
+    origs = '{0}/build.sh'.format(tmpdir)
+    try:
+        with open(origs, 'w') as fic:
+            fic.write(script)
+        import pdb;pdb.set_trace()  ## Breakpoint ##
+        with _cleaned_docker(image, command=command) as runned2:
+            rid = runned2['create']['Id']
+            cret['copy'] = _s['dockerng.copy_to'](
+                rid, origs, scriptp,
+                exec_driver='docker-exec', overwrite=True)
+            cret['apply'] = assert_cmd(
+                rid,
+                "'{0}' '{1}'".format(shell, scriptp),
+                use_vt=True,
+                python_shell=True)
+            # commit back this 2nd layer with ACLs support
+            cret['commit'] = _s['dockerng.commit'](rid, destination_image)
+    finally:
+        if os.path.exists(tmpdir):
+            shutil.rmtree(tmpdir)
+    return cret
 
+
+def rebuild_ms_docker(image,
+                      destination_image=None,
+                      projects=None,
+                      pack=True,
+                      acls=True,
+                      refresh=True,
+                      snapshot=True,
+                      command='/sbin/init',
+                      script=DOCKERSCRIPT,
+                      **kwargs):
+    '''
+    Rebuild & pack an image, in one row
+
+    Any kwargs will be forwarded to refresh_ms_docker.
     '''
     _s = __salt__
     if not destination_image:
         destination_image = image
-    tmp = image+'-tmp'
     cret = OrderedDict()
-    hookkw = {'image': image, 'destination_image': destination_image}
-    with _cleaned_docker(image, image+'-refresh') as runned:
-        rid = runned['run']['Id']
-        if projects is not False and not projects:
-            ret = _s['mc_cloud_images.docker_run'](rid, 'ls /srv/projects')
-            if not ret['retcode']:
-                projects = ret['stdout'].split()
-        cmd = ('/srv/mastersalt/makina-states/_scripts/boot-salt.sh'
-               ' --refresh-modules -C')
-        exec_docker_hook(
-            'pre_mastersalt', pre_mastersalt_hook, cret, rid, **hookkw)
-        cmd = 'mastersalt-call --local --retcode-passthrough state.highstate'
-        cret['salt'] = assert_cmd(
-            rid, cmd, use_vt=True, python_shell=False)
-        exec_docker_hook('pre_salt', pre_salt_hook, cret, rid, **hookkw)
-        cmd = 'salt-call --local --retcode-passthrough state.highstate'
-        cret['mastersalt'] = assert_cmd(
-            rid, cmd, use_vt=True, python_shell=False)
-        exec_docker_hook(
-            'pre_projects', pre_projects_hook, cret, rid, **hookkw)
-        cret['projects'] = {}
-        for project in projects:
-            cret['projects'][project] = {}
-            hkws = copy.deepcopy(hookkw)
-            hkws['project'] = project
-            exec_docker_hook(
-                'pre_project', pre_project_hook, cret, rid, **hkws)
-            cmd = ('salt-call --local mc_project.deploy {0}'
-                   ' only=install,fixperms'.format(project))
-            cret['projects'][project]['install'] = assert_cmd(
-                rid, cmd, use_vt=True, python_shell=False)
-            exec_docker_hook(
-                'post_project', post_project_hook, cret, rid, **hkws)
-        exec_docker_hook(
-            'post_projects', post_projects_hook, cret, rid, **hookkw)
-        if snapshot:
-            cmd = ('if [ -x /sbin/makinastates-snapshot.sh ];then'
-                   ' /sbin/makinastates-snapshot.sh;'
-                   'fi')
-            cret['snapshot'] = assert_cmd(
-                rid, cmd, use_vt=True, python_shell=True)
-    _s['docker.commit'](rid, tmp)
+    tmp = image+'-tmp'
+    if refresh:
+        cret['refresh'] = refresh_ms_docker(
+            image,
+            destination_image=tmp,
+            projects=projects,
+            command=command,
+            script=script,
+            acls=acls,
+            snapshot=snapshot)
     cret['pack'] = pack_docker(tmp, acls=acls)
     _s['dockerng.tag'](tmp, destination_image)
     return cret
 
 
-def build_docker_from_rootfs(img, rootfs, acls=True, force=False, **kwargs):
+def build_docker_from_rootfs(img,
+                             rootfs,
+                             acls=True,
+                             refresh=True,
+                             force=False,
+                             **kwargs):
     if not os.path.exists(rootfs):
         raise ValueError('{0} rootfs does not exists'.format(img))
     _s = __salt__
     imgraw = img + '-raw'
-    tar = os.path.join('/var/lib/lxc/{0}.tar'.format(img))
+    tar = '{0}.tar'.format(rootfs)
     # in case of an lxc container, place the tar
     # in the /var/lib/lxc directory
-    if '/rootfs/' in tar and '/var/lib/lxc' in tar:
-        tarname = os.path.basename(tar)
+    if '/rootfs' in tar and '/var/lib/lxc' in tar:
+        tarname = "{0}.tar".format(os.path.basename(os.path.dirname(tar)))
         tar = os.path.join(os.path.dirname(os.path.dirname(tar)), tarname)
     cret = {'rebuild': None, 'tar': None, 'raw': None, 'acls': None}
     if os.path.isdir(rootfs):
@@ -1210,11 +1207,13 @@ def build_docker_from_rootfs(img, rootfs, acls=True, force=False, **kwargs):
         else:
             if acls:
                 ret = cret['acls'] = _s['cmd.retcode'](
-                    'getfacl -R / > /acls.txt'.format(tar), cwd=drootfs)
+                    'getfacl -R . > /acls.txt'.format(tar),
+                    python_shell=True,
+                    cwd=drootfs)
                 if ret:
                     raise _imgerror('{0}: cant save acls'.format(rootfs))
             ret = cret['tar'] = _s['cmd.retcode'](
-                'tar cvf {0} .'.format(tar), cwd=drootfs)
+                'tar cf {0} .'.format(tar), cwd=drootfs)
             if ret:
                 if os.path.exists(tar):
                     os.remove(tar)
@@ -1223,7 +1222,10 @@ def build_docker_from_rootfs(img, rootfs, acls=True, force=False, **kwargs):
     ret = cret['raw'] = _s['dockerng.import'](tar, imgraw, api_response=True)
     if not ret['Id']:
         raise _imgerror('{0}: cant import raw image ({1})'.format(rootfs, tar))
-    cret['rebuild'] = rebuild_ms_docker(imgraw, img)
+    kwargs['acls'] = acls
+    kwargs['refresh'] = refresh
+    cret['rebuild'] = rebuild_ms_docker(imgraw, img, **kwargs)
+    cret['cleanup'] = _s['dockerng.rmi'](ret['id'])
     return cret
 
 
