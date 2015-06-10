@@ -1,0 +1,6 @@
+# STAGE 2/3 install makina-states & base services
+FROM scratch
+ENV DOCKERFILE_ID="1"
+ADD baseimage.tar.xz /
+ADD _scripts/build-docker.sh /run.sh
+CMD /run.sh

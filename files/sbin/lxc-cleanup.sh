@@ -173,5 +173,8 @@ if [ -f /etc/network/if-up.d/upstart ] &&\
    [ ${DISTRIB_CODENAME} != "lucid" ];then
         sed -i 's/^.*emission handled.*$/echo Emitting lo/' /etc/network/if-up.d/upstart
 fi
+if which setfacl 2>/dev/null && test -e /acls.restore && test -e /acls.txt;then
+    cd / && setfacl --restore="/acls.txt" || /bin/true
+fi
 exit 0
 # vim:set et sts=4 ts=4 tw=80:

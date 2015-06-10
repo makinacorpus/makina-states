@@ -1,0 +1,38 @@
+# STAGE 1/3 build
+FROM ubuntu:vivid
+ENV DOCKERFILE_ID="1"\
+    MS_OS="ubuntu"\
+    MS_DEB_RELEASE="vivid"\
+    MS_OLD_DEB_MIRROR="http://archive.ubuntu.com/ubuntu/"\
+    MS_DEB_MIRROR="http://mirror.ovh.net/ftp.ubuntu.com/"\
+    DEBIAN_FRONTEND=noninteractive\
+    container=docker
+ADD files/etc/apt/apt.conf.d/99gzip\
+    files/etc/apt/apt.conf.d/99notrad\
+    files/etc/apt/apt.conf.d/99clean\
+    /etc/apt/apt.conf.d/
+RUN sed -i -re "s|${MS_OLD_DEB_MIRROR}|${MS_DEB_MIRROR}|g" /etc/apt/sources.list\
+    && apt-get update\
+    && apt-get install -y  software-properties-common\
+    && add-apt-repository -y ppa:ubuntu-lxc/daily\
+    && apt-get update\
+    && apt-get install -y --force-yes lxc lxc-templates
+ADD files/sbin/makinastates-snapshot.sh\
+    files/sbin/lxc-cleanup.sh\
+    _scripts/bootstrap_in_docker.sh\
+    _scripts/boot-salt.sh\
+    _scripts/docker_build.sh\
+    /bootstrap_scripts/
+RUN /bootstrap_scripts/makinastates-snapshot.sh
+VOLUME [/bootstrap_scripts/docker_build.sh]
+VOLUME [/bootstrap_scripts/docker_save.sh]
+VOLUME [/var/run/docker.sock]
+VOLUME [/var/run/docker]
+VOLUME [/var/lib/docker]
+VOLUME [/sys/fs]
+VOLUME [/data]
+# You may override this variable to build another image
+ENV MS_BASE="scratch"
+ENV MS_IMAGE="makinacorpus/makina-states-${MS_DEB_RELEASE}"
+ENV MS_IMAGE_CANDIDATE="${MS_IMAGE}:candidate"
+CMD /_scripts/bootstrap_in_docker.sh

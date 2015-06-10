@@ -109,7 +109,7 @@ def test(name="thisisatest"):
           "script": "/srv/mastersalt/makina-states/_scripts/boot-salt.sh",
           "minion": {"master": __opts__['master'],
                      "master_port": __opts__['master_port']},
-          "from_container": "makina-states-trusty",
+          "clone_from": "makina-states-trusty",
           "ssh_username": "ubuntu", "ssh_gateway_key": "/root/.ssh/id_dsa",
           "netmask": "16",
           "password": "testtesttesttest",

@@ -15,6 +15,7 @@ Installation and basic usage
 
    usage_general/index.rst
    usage_quickstart/index.rst
+   usage_docker/index.rst
    usage_mastersalt/index.rst
 
 .. _projects_intro:

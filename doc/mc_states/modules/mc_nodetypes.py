@@ -123,6 +123,10 @@ def is_devhost():
     return makina_grains._is_devhost()
 
 
+def is_docker():
+    return makina_grains._is_docker()
+
+
 def is_container():
     return makina_grains._is_container()
 

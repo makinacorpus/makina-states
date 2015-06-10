@@ -39,6 +39,8 @@ default_acl_schema = [
         "{{0}}"
         " to attrs=userPassword,sambaNTPassword,"
         "sambaLMPassword,sambaPwdLastSet,sambaPWDMustChange"
+        " by dn.exact=gidNumber=0+uidNumber=0,cn=peercred,"
+        "cn=external,cn=auth manage"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         "{data[admin_groups_acls]}"
@@ -54,6 +56,8 @@ default_acl_schema = [
         " to attrs=uid,cn,sn,homeDirectory,"
         "uidNumber,gidNumber,memberUid,loginShell,employeeType"
         "{data[admin_groups_acls]}"
+        " by dn.exact=gidNumber=0+uidNumber=0,cn=peercred,"
+        "cn=external,cn=auth manage"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" read"
@@ -65,6 +69,10 @@ default_acl_schema = [
         " to attrs=description,telephoneNumber,"
         "roomNumber,gecos,cn,sn,givenname,jpegPhoto"
         "{data[admin_groups_acls]}"
+        " by dn.exact=gidNumber=0+uidNumber=0,cn=peercred,"
+        "cn=external,cn=auth manage"
+        " by dn.exact=gidNumber=0+uidNumber=0,cn=peercred,"
+        "cn=external,cn=auth manage"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
@@ -75,6 +83,8 @@ default_acl_schema = [
         "{{3}}"
         " to attrs=homePhone,mobile"
         "{data[admin_groups_acls]}"
+        " by dn.exact=gidNumber=0+uidNumber=0,cn=peercred,"
+        "cn=external,cn=auth manage"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
@@ -85,6 +95,8 @@ default_acl_schema = [
         "{{4}}"
         " to dn.regex=\"(uid=.*,)?ou=People,{data[dn]}\""
         "{data[admin_groups_acls]}"
+        " by dn.exact=gidNumber=0+uidNumber=0,cn=peercred,"
+        "cn=external,cn=auth manage"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,dc={data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
@@ -96,6 +108,8 @@ default_acl_schema = [
         "{{5}}"
         " to dn.subtree=\"ou=group,{data[dn]}\""
         "{data[admin_groups_acls]}"
+        " by dn.exact=gidNumber=0+uidNumber=0,cn=peercred,"
+        "cn=external,cn=auth manage"
         " by dn.base=\"cn=admin,dc={data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by * read"
@@ -103,6 +117,8 @@ default_acl_schema = [
     (
         "{{6}}"
         " to dn.subtree=\"ou=people,{data[dn]}\""
+        " by dn.exact=gidNumber=0+uidNumber=0,cn=peercred,"
+        "cn=external,cn=auth manage"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         "{data[admin_groups_acls]}"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
@@ -114,6 +130,8 @@ default_acl_schema = [
         "{{7}}"
         " to dn.subtree=\"ou=contact,{data[dn]}\""
         "{data[admin_groups_acls]}"
+        " by dn.exact=gidNumber=0+uidNumber=0,cn=peercred,"
+        "cn=external,cn=auth manage"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=ldapwriter,ou=virtual,ou=people,{data[dn]}\" write"
@@ -130,6 +148,8 @@ default_acl_schema = [
         "{{9}}"
         " to *"
         "{data[admin_groups_acls]}"
+        " by dn.exact=gidNumber=0+uidNumber=0,cn=peercred,"
+        "cn=external,cn=auth manage"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
         " by dn.base=\"uid=fd-admin,ou=people,{data[dn]}\" write"
         " by dn.base=\"cn=replicator,ou=virtual,ou=people,{data[dn]}\" read"
@@ -208,17 +228,23 @@ def settings():
         cn_pass = local_conf.setdefault('cn_pass', secure_password(32))
         dn_pass = local_conf.setdefault('dn_pass', secure_password(32))
 
-        cn_config_files = [
+        cn_config_files = OrderedDict([
             ('/etc/ldap/slapd.d/cn=config/olcDatabase={1}hdb/'
-             'olcOverlay={0}memberof.ldif'),
+             'olcOverlay={0}memberof.ldif', {}),
             ('/etc/ldap/slapd.d/cn=config/olcDatabase={1}hdb/'
-             'olcOverlay={1}syncprov.ldif'),
-            '/etc/ldap/slapd.d/cn=config/cn=schema.ldif',
-            '/etc/ldap/slapd.d/cn=config/olcDatabase={1}hdb.ldif',
-            '/etc/ldap/slapd.d/cn=config/olcDatabase={-1}frontend.ldif',
-            '/etc/ldap/slapd.d/cn=config/olcDatabase={0}config.ldif',
-            '/etc/ldap/slapd.d/cn=config/cn=module{0}.ldif',
-        ]
+             'olcOverlay={1}syncprov.ldif', {}),
+            ('/etc/ldap/slapd.d/cn=config/'
+             'cn=schema.ldif', {}),
+            ('/etc/ldap/slapd.d/cn=config/'
+             'olcDatabase={1}hdb.ldif', {}),
+            ('/etc/ldap/slapd.d/cn=config/'
+             'olcDatabase={-1}frontend.ldif', {}),
+            ('/etc/ldap/slapd.d/cn=config/'
+             'olcDatabase={0}config.ldif', {}),
+            ('/etc/default/slapd', {'mode': '750'}),
+            ('/etc/ldap/slapd.d/cn=config/'
+             'cn=module{0}.ldif', {}),
+        ])
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.dns.slapd', {
                 'slapd_directory': "/etc/ldap/slapd.d",
@@ -226,7 +252,7 @@ def settings():
                     '/etc/ldap',
                     '/var/lib/ldap',
                 ],
-                'cn_config_files': [],
+                'fd_ver': '1.8.0.6',
                 'mode': 'master',
                 'writer_groups': ['ldapwriters'],
                 'reader_groups':  ['ldapreaders'],
@@ -293,13 +319,17 @@ def settings():
                 ('/etc/ldap/slapd.d/cn=config/'
                  'cn=schema/cn={2}inetorgperson.ldif'),
                 '/etc/ldap/slapd.d/cn=config/cn=schema/cn={3}misc.ldif',
-                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={19}mozilla.ldif',
-                '/etc/ldap/slapd.d/cn=config/cn=schema/cn={20}extension.ldif',
+                # ('/etc/ldap/slapd.d/cn=config/'
+                #  'cn=schema/cn={21}rfc2307bis.ldif'),
+                ('/etc/ldap/slapd.d/cn=config/'
+                 'cn=schema/cn={4}nis.ldif'),
+                # '/etc/ldap/slapd.d/cn=config/cn=schema/cn={19}mozilla.ldif',
+                # '/etc/ldap/slapd.d/cn=config/cn=schema/cn={20}extension.ldif',
             ]:
                 if i not in schemas:
                     schemas.append(i)
                 if i not in cn_config_files:
-                    cn_config_files.append(i)
+                    cn_config_files[i] = {}
         for mode, key in OrderedDict([
             ('writer', 'manage'),
             ('reader', 'read',)
@@ -321,8 +351,6 @@ def settings():
         data['s_aclchema'] = s_aclchema
         if data['fd_schema']:
             for i in [
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={21}rfc2307bis.ldif'),
                 ('/etc/ldap/slapd.d/cn=config/'
                  'cn=schema/cn={22}samba.ldif'),
                 ('/etc/ldap/slapd.d/cn=config/'
@@ -361,7 +389,7 @@ def settings():
                 if i not in schemas:
                     schemas.append(i)
                 if i not in cn_config_files:
-                    cn_config_files.append(i)
+                    cn_config_files[i] = {}
         srepl = ''
         keys = [a for a in data['syncrepl']]
         keys.sort(key=order_syncrepl)
@@ -370,9 +398,16 @@ def settings():
                 val = data['syncrepl'][k]
                 srepl += ' {0}={1}'.format(k, sync_ldap_quote(k, val))
                 srepl = srepl.strip()
-            data['c_syncrepl'] = srepl
+                data['c_syncrepl'] = srepl
             data['s_syncrepl'] = encode_ldap("olcSyncrepl", srepl)
         __salt__['mc_macros.update_registry_params'](
             'slapd', local_conf, registry_format='pack')
+        for cfg in data['cn_config_files']:
+            cdata = data['cn_config_files'][cfg]
+            cdata.setdefault(
+                'source', "salt://makina-states/files{0}".format(
+                    cfg.replace('slapd.d/cn=config/cn=schema/',
+                                'slapd.d/cn=config/cn=schema/{0}/'.format(
+                                    data['fd_ver']))))
         return data
     return _settings()

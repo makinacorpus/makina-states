@@ -114,6 +114,7 @@ def registry(ttl=15*60):
         has_nodejs = __salt__['mc_utils.get'](
             'makina-states.localsettings.nodejs', False)
         reg = {
+            'systemd': {'active': True},
             'autoupgrade': {'active': True},
             'apparmor': {'active': apparmor_en()},
             'updatedb': {'active': True},
@@ -128,6 +129,7 @@ def registry(ttl=15*60):
             'locales': {'active': True},
             'localrc': {'active': True},
             'desktoptools': {'active': False},
+            'mvn': {'active': False},
             'timezone': {'active': True},
             'network': {'active': True},
             'nodejs': {'active': False},
