@@ -24,6 +24,7 @@ import mc_states.api
 __name = 'pkgs'
 
 log = logging.getLogger(__name__)
+PREFIX = 'makina-states.localsettings.{0}'.format(__name)
 
 
 def settings():
@@ -38,6 +39,10 @@ def settings():
         current system dist
     lts_dist
         current distributaion stable release
+    force_apt_ipv4
+        force apt to use ipv4
+    force_apt_ipv6
+        force apt to use ipv6
     apt
         ubuntu
             dist
@@ -63,12 +68,12 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        saltmods = __salt__
+        _s = __salt__
         grains = __grains__
         # instlall mode latest is really too slow
         # default_install_mode = 'latest'
         default_install_mode = 'installed'
-        env = saltmods['mc_env.settings']()['env']
+        env = _s['mc_env.settings']()['env']
         deb_mirror = 'http://ftp.de.debian.org/debian'
         deb_mirror = 'http://mirror.ovh.net/ftp.debian.org/debian/'
         if env in ['prod']:
@@ -94,7 +99,8 @@ def settings():
             if grains['osrelease'] >= '15.04':
                 umirror = mirrors['dist']
         if grains['os'] in ['Debian']:
-            ddist = saltmods['mc_utils.get']('lsb_distrib_codename', debian_stable)
+            ddist = _s['mc_utils.get'](
+                'lsb_distrib_codename', debian_stable)
             if not ddist:
                 ddist = debian_stable
             if grains['osrelease'][0] == '4':
@@ -104,24 +110,37 @@ def settings():
                 ddist = debian_stable = "lenny"
                 deb_mirror = 'http://archive.debian.org/debian/'
             else:
-                ddist = saltmods['mc_utils.get'](
+                ddist = _s['mc_utils.get'](
                     'lsb_distrib_codename', debian_stable)
         for provider in [a for a in mirrors]:
             for test in ['id', 'fqdn', 'domain', 'host', 'nodename']:
-                val = saltmods['mc_utils.get'](test, '')
+                val = _s['mc_utils.get'](test, '')
                 if isinstance(val, basestring):
                     if provider in val.lower():
                         umirror = mirrors.get(provider, umirror)
 
-        ldist = saltmods['mc_utils.get']('lsb_distrib_codename', ubuntu_lts)
+        ldist = _s['mc_utils.get']('lsb_distrib_codename', ubuntu_lts)
         udist = ldist
+        extra_confs = {}
         if grains['os'] not in ['Ubuntu']:
             udist = ubuntu_lts
-        data = saltmods['mc_utils.defaults'](
-            'makina-states.localsettings.pkgs', {
+        if grains['os_family'] in ['Debian']:
+            extra_confs.update({
+                '/etc/apt/apt.conf.d/99netfamily': {'mode': '644'},
+            })
+        if grains['os'] in ['Ubuntu']:
+            extra_confs.update({
+                # '/etc/apt/apt.conf.d/99release': {'mode': '644'},
+                '/etc/apt/apt.conf.d/99notrad': {'mode': '644'},
+                '/etc/apt/preferences.d/00_proposed.pref': {'mode': '644'},
+            })
+        DEFAULTS = {
                 'installmode': default_install_mode,
+                'extra_confs': extra_confs,
                 'keyserver': 'pgp.mit.edu',
                 'dist': ldist,
+                'force_apt_ipv6': False,
+                'force_apt_ipv4': True,
                 'lts_dist': lts_dist,
                 'apt': {
                     'ubuntu': {
@@ -140,16 +159,19 @@ def settings():
                         'comps': 'main contrib non-free',
                         'mirror': deb_mirror,
                     },
-                }})
+                }}
+        data = _s['mc_utils.defaults'](PREFIX, DEFAULTS)
         data['use_backports'] = data['apt'].get(
             grains['os'].lower(), {}).get('use_backports', True)
         if grains['os'] in ['Ubuntu']:
             data['use_backports'] = data['apt']['ubuntu']['use_backports']
         elif grains['os'] in ['Debian']:
             if grains['osrelease'][0] == '4':
-                data['apt']['debian']['mirror'] = 'http://archive.debian.org/debian/'
+                data['apt']['debian']['mirror'] = (
+                    'http://archive.debian.org/debian/')
             elif grains['osrelease'][0] == '5':
-                data['apt']['debian']['mirror'] = 'http://archive.debian.org/debian/'
+                data['apt']['debian']['mirror'] = (
+                    'http://archive.debian.org/debian/')
 
         data['dcomps'] = data['apt']['debian']['comps']
         data['ddist'] = data['apt']['debian']['dist']
@@ -163,16 +185,9 @@ def settings():
         data['ubp'] = data['apt']['ubuntu']['use_backports']
         data['dbp'] = data['apt']['debian']['use_backports']
         data['udist'] = data['apt']['ubuntu']['dist']
-        # SEEMS NOT USED ANYMORE
-        # {% if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] <='5' %}
-        # {% set upt = 'volatile' %}
-        # {% else %}
-        # {% set upt = 'updates' %}
-        # {% endif %}
         udist = data['udist']
         ddist = data['ddist']
         # more easy managable structure to be use in SLSes and templates
-        extra_udist = udist
         pkg_data = __salt__['grains.filter_by']({
             'default': {'mirrors': []},
             'Debian': {'use-backports': True, 'mirrors': [
@@ -187,9 +202,10 @@ def settings():
             'Ubuntu': {'mirrors': [
                 {'mirror': data['ubuntu_mirror'],
                  'dists': [
-                     {'name': udist, 'comps': data['ucomps'],},
-                     {'name': udist+'-updates', 'comps': data['ucomps'],},
-                     {'name': udist+'-security', 'comps': data['ucomps'],}]},
+                     {'name': udist, 'comps': data['ucomps']},
+                     {'name': udist+'-proposed', 'comps': data['ucomps']},
+                     {'name': udist+'-updates', 'comps': data['ucomps']},
+                     {'name': udist+'-security', 'comps': data['ucomps']}]},
                 {'mirror': 'http://archive.canonical.com/ubuntu',
                  'dists': [{'name': udist, 'comps': 'partner'}]},
             ]}}, grain='os')
@@ -204,26 +220,40 @@ def settings():
                 __salt__['grains.filter_by']({
                     'Debian': [
                         {'mirror': data['debian_mirror'],
-                         'dists': [{'name': ddist+'-backports', 'comps': data['dcomps']}]}],
+                         'dists': [{'name': ddist+'-backports',
+                                    'comps': data['dcomps']}]}],
                     'Ubuntu': [
                         {'mirror':  data['ubuntu_mirror'],
-                         'dists': [{'name': udist+'-backports', 'comps': data['ucomps']}]}
+                         'dists': [{'name': udist+'-backports',
+                                    'comps': data['ucomps']}]}
                     ]}, grain='os'))
         if grains['os'] in ['Debian']:
-            if pkgssettings.ddist not in ['sid'] and grains.get('osrelease', '1')[0] <='5':
+            if (
+                data['ddist'] not in ['sid'] and
+                grains.get('osrelease', '1')[0] <= '5'
+            ):
                 pkg_data['mirrors'][0]['dists'].pop(1)
                 pkg_data['mirrors'].pop(1)
                 pkg_data['mirrors'].pop(1)
                 pkg_data['mirrors'].extend(
                     __salt__['grains.filter_by']({
                         'Debian': [
-                            {'mirror': 'http://archive.debian.org/debian-security',
-                             'dists': [{'name': ddist+'/updates', 'comps': data['dcomps']}]},
-                            {'mirror': 'http://archive.debian.org/debian-volatile',
-                             'dists': [{'name': ddist+'/volatile', 'comps': data['dcomps']}]},
-                            {'mirror': 'http://archive.debian.org/backports.org',
-                             'dists': [{'name': ddist+'-backports', 'comps': data['dcomps']}]}
+                            {'mirror':
+                             'http://archive.debian.org/debian-security',
+                             'dists': [{'name': ddist+'/updates',
+                                        'comps': data['dcomps']}]},
+                            {'mirror':
+                             'http://archive.debian.org/debian-volatile',
+                             'dists': [{'name': ddist+'/volatile',
+                                        'comps': data['dcomps']}]},
+                            {'mirror':
+                             'http://archive.debian.org/backports.org',
+                             'dists': [{'name': ddist+'-backports',
+                                        'comps': data['dcomps']}]}
                         ]}), grain='os')
+        data['ppa_dist'] = data.get('udist', ubuntu_lts)
+        if grains['os'] in ['Debian']:
+            data['ppa_dist'] = ubuntu_lts
         data['pkg_data'] = pkg_data
         return data
     return _settings()

@@ -177,6 +177,34 @@ def _is_systemd():
     return is_
 
 
+def _pgsql_vers():
+    vers = {'details': {}, 'global': {}}
+    for i in ['9.0', '9.1', '9.3', '9.4', '10.0', '10.1']:
+        pid = (
+            '/var/lib/postgresql/{0}'
+            '/main/postmaster.pid'.format(i))
+        dbase = (
+            '/var/lib/postgresql/{0}'
+            '/main/base'.format(i))
+        dglobal = (
+            '/var/lib/postgresql/{0}'
+            '/main/global'.format(i))
+        running = False
+        has_data = False
+        if os.path.exists(pid):
+            running = True
+        for d in [dbase, dglobal]:
+            if not os.path.exists(d):
+                continue
+            if os.listdir(d) > 2:
+                has_data = True
+        if running or has_data:
+            vers['global'][i] = True
+            vers['details'][i] = {'running': running,
+                                  'has_data': has_data}
+    return vers
+
+
 def get_makina_grains():
     '''
     '''
@@ -187,6 +215,7 @@ def get_makina_grains():
               'makina.lxc': _is_lxc(),
               'makina.nodetype': _nodetype(),
               'makina.systemd': _is_systemd(),
+              'makina.pgsql_vers': _pgsql_vers(),
               'makina.docker': _is_docker(),
               'makina.devhost_num': _devhost_num(),
               'makina.default_route': default_route,

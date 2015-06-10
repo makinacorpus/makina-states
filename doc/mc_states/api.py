@@ -64,6 +64,8 @@ _GLOBAL_KINDS = ['localsettings',
                  'controllers',
                  'nodetypes',
                  'cloud']
+_LOCAL_PREFS = [(a, 'makina-states.{0}.'.format(a))
+                for a in _GLOBAL_KINDS]
 _SUB_REGISTRIES = ['metadata', 'settings', 'registry']
 NETWORK = '10.5.0.0'
 NETMASK = '16'
@@ -638,25 +640,26 @@ def memoize_cache(func,
 
     # after the run, try to cache on any cache server
     # and fallback on next server in case of failures
-
     if put_in_cache and (ret is not _default):
         cached = False
-        for cache in caches:
+        for ix, cache in enumerate(caches):
             try:
+                # never cache in the less priority caches more than 1 minute
+                if ix:
+                    try:
+                        if seconds > 60:
+                            seconds = 60
+                    except (ValueError, TypeError):
+                        seconds = 60
                 cache[key] = {'value': ret,
                               'time': time.time(),
                               'ttl': seconds}
                 cached = True
             except Exception:
                 cached = False
-                trace = traceback.format_exc()
+                log.error('error while settings cache {0}'.format(trace))
             if cached:
                 break
-        if caches and not cached:
-            if trace:
-                log.error('error while settings cache {0}'.format(trace))
-            else:
-                log.error('error while settings cache')
     return ret
 
 
@@ -838,4 +841,17 @@ def prefered_ips(bclients):
                     'target for dnsaddr is neither pinguable '
                     'or resolvable: {0}'.format(client))
     return [a.strip() for a in clients if a.strip()]
+
+
+def param_as_list(data, param):
+    if data.get(param) is None:
+        data.pop(param, None)
+    data.setdefault(param, [])
+    if isinstance(data[param], (int, float)):
+        data[param] = [data[param]]
+    if isinstance(data[param], six.string_types):
+        data[param] = [a.strip()
+                       for a in data[param].split()
+                       if a.strip()]
+    return data
 # vim:set et sts=4 ts=4 tw=80:

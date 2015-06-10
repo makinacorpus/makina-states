@@ -118,8 +118,7 @@ def default_settings():
             '-C --reattach --mastersalt-minion'),
         'bootsalt_branch': None,
         'master_port': __opts__.get('master_port'),
-        'master': __grains__['id'],
-        'saltify_profile': 'salt',
+
         'pvdir': prefix + "/cloud.providers.d",
         'pfdir': prefix + "/cloud.profiles.d",
         'ssh_gateway_password': None,
@@ -324,10 +323,10 @@ def gather_expositions(ttl=PILLAR_TTL):
                 if not isinstance(exposed_limited, dict):
                     exposed_limited = OrderedDict()
                 if not (
-                    expose
-                    or expose_limited
-                    or exposed
-                    or exposed_limited
+                    expose or
+                    expose_limited or
+                    exposed or
+                    exposed_limited
                 ):
                     continue
                 for e in expose:
@@ -504,7 +503,7 @@ def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
                 extdata['is']['{0}_host'.format(i)] = True
                 data['makina-states.services.virt.' + i] = True
             data['makina-states.services.is.proxy.haproxy'] = True
-            data['makina-states.services.is.firewall.shorewall'] = True
+            data['makina-states.services.is.firewall.firewall'] = True
         if not limited:
             data[
                 'makina-states.cloud.expositions'
@@ -643,7 +642,8 @@ def settings(ttl=60):
             data['bootsalt_branch'] = 'master'
         return data
     cache_key = '{0}.{1}'.format(__name, 'settings')
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+    data = __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+    return data
 
 
 def registry():

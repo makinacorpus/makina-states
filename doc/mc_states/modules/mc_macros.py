@@ -29,6 +29,9 @@ import mc_states.saltapi
 # retrocompat
 from mc_states.saltapi import NoRegistryLoaderFound
 
+
+six = mc_states.api.six
+
 # cache variable
 _REGISTRY = {}
 _default_activation_status = object()
@@ -323,8 +326,9 @@ def update_registry_params(registry_name, params, registry_format='yaml'):
     '''
     __salt__['mc_utils.invalidate_memoize_cache'](
         RKEY.format(registry_name, registry_format))
-    registry = get_local_registry(
-        registry_name, registry_format=registry_format)
+    registry = get_local_registry(registry_name,
+                                  cached=False,
+                                  registry_format=registry_format)
     changes = {}
     topreg_name = 'mc_{0}.registry'.format(registry_name)
     default = True
@@ -334,26 +338,28 @@ def update_registry_params(registry_name, params, registry_format='yaml'):
         default = False
     else:
         pref = DEFAULT_LOCAL_REG_NAME.format(registry_name)
-    for param, value in params.items():
+    for param, value in six.iteritems(params):
         gparam = param
         if (
-            not param.startswith(pref)
-            and not param.startswith('makina-states.')
+            not param.startswith(pref) and
+            not param.startswith('makina-states.')
         ):
             gparam = '{0}.{1}'.format(pref, param)
-        if registry.get(gparam, _default) != value:
+        reg_value = registry.get(gparam, _default)
+        if reg_value != value:
             for data in changes, registry:
                 data.update({gparam: value})
         if (
-            default
-            and (not param.startswith('makina-states.'))
-            and (param in registry)
+            default and
+            (not param.startswith('makina-states.')) and
+            (param in registry)
         ):
             del registry[param]
     if changes:
         encode_local_registry(
             registry_name, registry, registry_format=registry_format)
-        __salt__['mc_utils.invalidate_memoize_cache'](RKEY.format(registry_name, registry_format))
+        __salt__['mc_utils.invalidate_memoize_cache'](
+            RKEY.format(registry_name, registry_format))
     return changes
 
 
@@ -388,11 +394,11 @@ def get_registry(registry_configuration):
     Will activate the 'makina-states.controllers.salt_master' and
     deactivate all other states to be automaticly run
 
-    EG, for automatic activation of shorewall,
+    EG, for automatic activation of firewalld,
     lookup in Configs for this key (pillar, grains, reg)::
 
-        makina-states.services.is.firewall.shorewall: true
-        makina-states.services.firewall.shorewall: true
+        makina-states.services.is.firewall.firewalld: true
+        makina-states.services.firewall.firewalld: true
 
 
     Idea why for the dict containing 'active', i did not choosed

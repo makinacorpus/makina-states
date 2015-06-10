@@ -14,12 +14,18 @@ Please also have a look at the runner.
 '''
 
 # Import python libs
+import re
+import tempfile
+import sys
 import traceback
+import pipes
 import logging
 import os
+import textwrap
 import re
 import copy
 import shutil
+import contextlib
 import salt.exceptions
 from mc_states import saltapi
 
@@ -69,6 +75,29 @@ IMAGES = OrderedDict([
             'from': 'makina-states:ubuntu-vivid'})
     ]))
 ])
+DOCKERSCRIPT = textwrap.dedent(
+    '''\
+    #!/usr/bin/env bash
+    set -ex
+    /srv/mastersalt/makina-states/_scripts/boot-salt.sh\
+        -C --refresh-modules
+    # mastersalt + salt highstates, & masterless mode
+    /srv/mastersalt/makina-states/_scripts/boot-salt.sh\
+         -C\
+         --local-mastersalt-mode masterless\
+         --local-salt-mode masterless\
+         --mastersalt 127.0.0.1
+    if test -e /srv/projects;then
+        cd /srv/projects
+        for i in *;do
+            if test -d ${i};then
+                salt-call --local mc_project.deploy ${i}\
+                only=install,fixperms
+            fi
+        done
+    fi
+    rm -f '${0}'
+    ''')
 
 
 # shortcuts
@@ -79,6 +108,15 @@ ImgStepError = saltapi.ImgStepError
 def _imgerror(msg, cret=None):
     msg = saltapi.rich_error(ImgError, msg, cret)
     return msg
+
+
+def docker_run(*args, **kwargs):
+    kwargs.setdefault('output', 'all')
+    kwargs.setdefault('use_vt', True)
+    kwargs.setdefault('python_shell', True)
+    kwargs.setdefault('container_type', 'dockerng')
+    kwargs.setdefault('exec_driver', 'docker-exec')
+    return __salt__['container_resource.run'](*args, **kwargs)
 
 
 def complete_images(data):
@@ -325,7 +363,7 @@ def save_acls(container, flavor, *args, **kwargs):
     log.info('{container}/{flavor}: archiving acls files'.format(**gvars))
     aclsf = []
     for root in [gvars['rootfs'], gvars['container_path']]:
-        cmd = 'getfacl -R . > acls.txt'
+        cmd = 'getfacl -R srv home opt root etc var> /acls.txt'
         cret = _s['cmd.run_all'](
             cmd, cwd=root, python_shell=True, salt_timeout=60*60)
         if cret['retcode']:
@@ -463,8 +501,9 @@ def archive_lxc(container, *args, **kwargs):
                 salt_timeout=60*60)
             if cret['retcode']:
                 raise _imgerror(
-                    '{container}/{flavor}: '
-                    'error with compressing {absolute_tarball}'.format(**gvars),
+                    '{container}/{flavor}:'
+                    ' error with compressing'
+                    ' {absolute_tarball}'.format(**gvars),
                     cret=cret)
         except (Exception, KeyboardInterrupt) as exc:
             if os.path.exists(gvars['absolute_tarball']):
@@ -882,10 +921,438 @@ def get_last_local_lxc_image(name, clone_from=None, template=None):
                                      template=template)[-1]
 
 
-def build_from_docker(img, path=None, **kwargs):
-    if path:
-        print('path')
-    raise saltapi.ImgError('Not implemented')
+@contextlib.contextmanager
+def _cleaned_docker(rid, *args, **kwargs):
+    _s = __salt__
+    runned = init_ms_container(rid, *args, **kwargs)
+    try:
+        yield runned
+    finally:
+        try:
+            rid = runned['create']['Id']
+            _s['dockerng.rm'](rid, force=True)
+        except (salt.exceptions.CommandExecutionError,):
+            pass
+
+
+def safe_container_name(image):
+    image = re.sub('[:/]', '-', image)
+    return image
+
+
+def init_ms_container(container,
+                      name=None,
+                      command=None,
+                      detach=True,
+                      cap_add=None):
+    _s = __salt__
+    cret = {'create': None, 'run': None}
+    if not cap_add:
+        cap_add = []
+    if not command:
+        command = '/sbin/init'
+    if command in ['/sbin/init']:
+        [cap_add.append(cap) for cap in ['SYS_ADMIN'] if cap not in cap_add]
+    cret['create'] = ctr = _s['dockerng.create'](
+        container, name=name, detach=detach, command=command)
+    cret['run'] = _s['dockerng.start'](ctr, cap_add=cap_add)
+    return cret
+
+
+def assert_cmd(*args, **kwargs):
+    runner = kwargs.get('cmd_runner', 'mc_cloud_images.docker_run')
+    if isinstance(runner, six.string_types):
+        runner = __salt__[runner]
+    ret = runner(*args, **kwargs)
+    ms = __salt__['mc_utils.magicstring']
+    if ret['retcode']:
+        msg = ''
+        for i in args:
+            msg += '{0}: '.format(ms(i))
+        msg += 'failed'
+        if ret['stdout']:
+            msg += '\n{0}'.format(ms(ret['stdout']))
+        if ret['stderr']:
+            msg += '\n{0}'.format(ms(ret['stderr']))
+        raise _imgerror(msg)
+    return ret
+
+
+def backup_acls_from_docker(image, destination_image=None):
+    _s = __salt__
+    cret = OrderedDict()
+    in_d = safe_container_name(image + '-acls-backup')
+    if not destination_image:
+        destination_image = image
+    tmpimgs = []
+    try:
+        with _cleaned_docker(image, in_d) as runned2:
+            rid = runned2['create']['Id']
+            cret['apply'] = assert_cmd(
+                rid,
+                "sh -c 'if test -e /acls.txt&& which getfacl>/dev/null 2>&1;then"
+                "  cd / && getfacl -R srv home opt root etc var > /acls.txt"
+                "       || /bin/true;"
+                " fi'")
+            # commit back this 2nd layer with ACLs support
+            pid = _s['dockerng.inspect'](image)['Id']
+            cret['commit'] = _s['dockerng.commit'](rid, destination_image)
+            if image == destination_image:
+                tmpimgs.append(pid)
+    finally:
+        graceful_image_remove(tmpimgs)
+    return cret
+
+
+def apply_acls_to_docker(image, destination_image=None):
+    _s = __salt__
+    in_d = safe_container_name(image + '-acls-restore')
+    cret = OrderedDict()
+    if not destination_image:
+        destination_image = image
+    tmpimgs = []
+    try:
+        with _cleaned_docker(image, in_d) as runned2:
+            rid = runned2['create']['Id']
+            cret['apply'] = assert_cmd(
+                rid,
+                "sh -c '"
+                "if test -e /acls.txt&& which setfacl>/dev/null 2>&1;then"
+                "  cd / && setfacl --restore=/acls.txt"
+                "       || /bin/true;"
+                " fi'")
+            # commit back this 2nd layer with ACLs support
+            pid = _s['dockerng.inspect'](image)['Id']
+            cret['commit'] = _s['dockerng.commit'](rid, destination_image)
+            if image == destination_image:
+                tmpimgs.append(pid)
+    finally:
+        graceful_image_remove(tmpimgs)
+    return cret
+
+
+def graceful_image_remove(image_or_images, **kwargs):
+    cret = OrderedDict()
+    if isinstance(image_or_images, six.string_types):
+        image_or_images = image_or_images.split(',')
+    elif not image_or_images:
+        image_or_images = []
+    if not isinstance(image_or_images, list):
+        raise ValueError('{0} is not a list'.format(image_or_images))
+    for i in image_or_images:
+        try:
+            if i:
+                cret[i] = __salt__['dockerng.rmi'](i, **kwargs)
+        except salt.exceptions.CommandExecutionError:
+            log.info('{0} was not removed'.format(i))
+    return cret
+
+
+def pack_docker(image,
+                destination_image=None,
+                acls=None,
+                tmpdir='/var/lib/docker'):
+    '''
+    Pack a docker image up to 1 or 2 layers, whith POSIX Acls support
+
+    First layer is the whole image
+    Second layer contains the acls, restored.
+
+    Procedure:
+
+      - Import an image from exporting this container
+      - Run a container from this new image
+      - Restore acls
+      - Reexport / import
+      - Update the docker image tag
+
+    '''
+    _s = __salt__
+    cret = OrderedDict()
+    if not destination_image:
+        destination_image = image
+    if acls is None:
+        acls = True
+    in_d = safe_container_name(image+'-pack_in')
+    tmp_t = image+'-pack-base'
+    tmpimgs = []
+    fic = os.path.join(tmpdir, "{0}.tar".format(_s['test.rand_str']()))
+    if acls:
+        cret['backup_acls'] = backup_acls_from_docker(image)
+    try:
+        pid = _s['dockerng.inspect'](image)['Id']
+    except salt.exceptions.CommandExecutionError:
+        pid = None
+    with _cleaned_docker(image, in_d) as runned:
+        rid = runned['create']['Id']
+        # export / import  to pack layers
+        try:
+            cret['export'] = assert_cmd(
+                'docker export {0} > {2}'
+                ' && cat {2} | docker import - {1};'
+                ' rm -f {2}'.format(rid, tmp_t, pipes.quote(fic)),
+                cmd_runner='cmd.run_all', use_vt=True)
+            if os.path.exists(fic):
+                os.remove(fic)
+            # run another container based on the import to restore acls
+            # that were lost by tar
+            if acls:
+                if image == destination_image:
+                    sid = _s['dockerng.inspect'](tmp_t)['Id']
+                cret['restore_acls'] = apply_acls_to_docker(tmp_t)
+                tmpimgs.append(sid)
+            # update now the destination_image tag up to this new image
+            cret['tag'] = _s['dockerng.tag'](tmp_t,
+                                             destination_image,
+                                             force=True)
+            if image == destination_image and pid:
+                tmpimgs.append(pid)
+        except (
+            KeyboardInterrupt,
+            ImgError,
+            salt.exceptions.CommandExecutionError,
+        ):
+            infos = sys.exc_info()
+            if (
+                image == destination_image and
+                pid and
+                _s['dockerng.inspect'](image)['Id'] != pid
+            ):
+                _s['dockerng.tag'](pid, image, force=True)
+            six.reraise(*infos)
+        finally:
+            graceful_image_remove(tmpimgs)
+    return cret
+
+
+def refresh_ms_docker(image,
+                      destination_image=None,
+                      pack=True,
+                      acls=None,
+                      snapshot=True,
+                      shell='bash',
+                      command='/sbin/init',
+                      script=DOCKERSCRIPT,
+                      **kwargs):
+    if acls is None:
+        acls = True
+    '''
+    Refresh a container based on makina-states and pack the layers up to only
+    one.
+
+
+    This is only used (for now) to automate the building of base images for
+    STI openshift3 base images.
+
+    You should really have more a look on using Dockerfile instead, the
+    real purpôse of this function is to spawn the makina-states base images.
+
+    image
+        image to rebuild
+    destination_image
+        destination image tag (default to image)
+    pack
+        pack the image up to only one layer
+    acls
+        be sure to save/restore POSIX acls
+    snapshot
+        run the makina-states image impersonator script
+        '/sbin/makinastates-snapshot.sh' which
+        removes a lot of files like the ssh keys, authorized_keys
+        & such to impersonate the image.
+    script
+        The standard procedure will generate a docker file that
+        builds the new docker which includes:
+
+            - Run a new container based from 'image'
+            - Refresh makina-states trees
+            - Run mastersalt highstates
+            - Run salt highstates
+            - Build any if existing corpus based projects
+            - Save acls
+
+    '''
+    cret = OrderedDict()
+    _s = __salt__
+    if not destination_image:
+        destination_image = image
+    if snapshot:
+        script += (
+            '\n'
+            'if [ -x /sbin/makinastates-snapshot.sh ];then'
+            ' /sbin/makinastates-snapshot.sh;'
+            'fi\n')
+    if acls:
+        script += (
+            '\n'
+            'cd / &&'
+            ' getfacl -R srv home opt root etc var > /acls.txt'
+            '  || /bin/true\n')
+    tmpdir = tempfile.mkdtemp()
+    scriptp = '/tmp/ms_{0}_build.sh'.format(_s['test.rand_str']())
+    origs = '{0}/build.sh'.format(tmpdir)
+    tmpimgs = []
+    try:
+        with open(origs, 'w') as fic:
+            fic.write(script)
+        with _cleaned_docker(image, command=command) as runned2:
+            rid = runned2['create']['Id']
+            cret['copy'] = _s['dockerng.copy_to'](
+                rid, origs, scriptp,
+                exec_driver='docker-exec', overwrite=True)
+            cret['apply'] = assert_cmd(
+                rid, "'{0}' '{1}'".format(shell, scriptp), use_vt=False)
+            pid = _s['dockerng.inspect'](image)['Id']
+            # commit back this 2nd layer with ACLs support
+            cret['commit'] = _s['dockerng.commit'](rid, destination_image)
+            if image == destination_image:
+                tmpimgs.append(pid)
+    finally:
+        graceful_image_remove(tmpimgs)
+        if os.path.exists(tmpdir):
+            shutil.rmtree(tmpdir)
+    return cret
+
+
+def rebuild_ms_docker(image, destination_image=None, **kwargs):
+    '''
+    Rebuild & pack an image, in one row
+
+    image
+        docker image to build from
+    destination_image
+        docker image to tag upon successfu build (default to image)
+    acls
+        if True: save/restore acls
+    refresh
+        if True: run the rebuild dance
+    pack
+        if True: pack the resulting image
+
+    Any kwargs will be forwarded to refresh_ms_docker.
+    '''
+    _s = __salt__
+    cret = OrderedDict()
+    acls = kwargs.get('acls', None)
+    pack = kwargs.get('pack', True)
+    refresh = kwargs.get('refresh', True)
+    if refresh:
+        cret['refresh'] = refresh_ms_docker(
+            image, destination_image=destination_image, **kwargs)
+    if pack:
+        cret['pack'] = pack_docker(image, destination_image, acls=acls)
+    return cret
+
+
+def docker_from_tar(image, tar, pack=None, acls=None):
+    if pack is None:
+        pack = True
+    if acls is None:
+        acls = True
+    _s = __salt__
+    tmpimgs = []
+    cret = OrderedDict()
+    try:
+        opid = _s['dockerng.inspect'](image)['Id']
+    except salt.exceptions.CommandExecutionError:
+        opid = None
+    try:
+        cret['raw'] = _s['dockerng.import'](
+            tar, image, api_response=True)
+        if opid and not acls:
+            tmpimgs.append(opid)
+        if not cret['raw']['Id']:
+            raise _imgerror('{0}: cant import raw image ({1})'
+                            .format(image, tar))
+        if acls:
+            pid = _s['dockerng.inspect'](image)['Id']
+            cret['acls'] = apply_acls_to_docker(image)
+            tmpimgs.append(pid)
+    finally:
+        graceful_image_remove(tmpimgs)
+    return cret
+
+
+def build_docker_from_rootfs(image, rootfs, force=False, **kwargs):
+    '''
+    All kwargs are forwarded to mc_cloud_images.rebuild_ms_docker
+
+    image
+        image to build
+    rootfs
+        lxc ROOTFS to package as a docker container
+
+    force
+        if lxc tarfile is present, redo it anyway
+    '''
+    _s = __salt__
+    cret = OrderedDict()
+    if not os.path.exists(rootfs):
+        raise ValueError('{0} rootfs does not exists'.format(image))
+    tar = '{0}.tar'.format(rootfs)
+    # in case of an lxc container, place the tar
+    # in the /var/lib/lxc directory
+    if '/rootfs' in tar and '/var/lib/lxc' in tar:
+        tarname = "{0}.tar".format(os.path.basename(os.path.dirname(tar)))
+        tar = os.path.join(os.path.dirname(os.path.dirname(tar)), tarname)
+    acls = kwargs.setdefault('acls', True)
+    refresh = kwargs.get('refresh', True)
+    tmpimgs = []
+    if os.path.isdir(rootfs):
+        drootfs = rootfs
+        rootfs = rootfs + '.tar'
+        if os.path.exists(tar) and not force:
+            log.info('{0} already exists, delete to redo'.format(tar))
+        else:
+            if acls:
+                ret = cret['acls'] = _s['cmd.retcode'](
+                    'getfacl -R srv home opt root etc var > /acls.txt',
+                    python_shell=True,
+                    cwd=drootfs)
+                if ret:
+                    raise _imgerror('{0}: cant save acls'.format(rootfs))
+            ret = cret['tar'] = _s['cmd.retcode'](
+                'tar cf {0} .'.format(tar), cwd=drootfs)
+            if ret:
+                if os.path.exists(tar):
+                    os.remove(tar)
+                raise _imgerror('{0}: cant compress'.format(rootfs))
+    try:
+        tmpimg = image+"-tmp"
+        try:
+            graceful_image_remove(tmpimg, prune=True)
+            cret['from_tar'] = docker_from_tar(tmpimg, tar, acls=acls)
+            if refresh:
+                cret['rebuild'] = rebuild_ms_docker(tmpimg, **kwargs)
+            try:
+                pid = _s['dockerng.inspect'](image)['Id']
+                graceful_image_remove(pid)
+            except salt.exceptions.CommandExecutionError:
+                pass
+            cret['tag'] = _s['dockerng.tag'](tmpimg, image)
+            graceful_image_remove(tmpimg)
+        except (Exception, KeyboardInterrupt):
+            infos = sys.exc_info()
+            tmpimgs.append(tmpimg)
+            try:
+                pid = _s['dockerng.inspect'](image)['Id']
+            except salt.exceptions.CommandExecutionError:
+                pass
+            else:
+                try:
+                    cret['tag'] = _s['dockerng.tag'](pid, image, force=True)
+                except salt.exceptions.CommandExecutionError:
+                    pass
+            six.reraise(*infos)
+    finally:
+        graceful_image_remove(tmpimgs, prune=True)
+    return cret
+
+
+def build_docker_from_container(image, container,**kwargs):
+    root = os.path.join('/var/lib/lxc/{0}'.format(container))
+    rootfs = os.path.join(root, 'rootfs')
+    return build_docker_from_rootfs(image, rootfs, **kwargs)
 
 
 def build(typs=None, images=None):

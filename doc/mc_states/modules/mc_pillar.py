@@ -48,6 +48,7 @@ ONE_DAY = mc_states.api.ONE_DAY
 HALF_DAY = mc_states.api.HALF_DAY
 ONE_MONTH = mc_states.api.ONE_MONTH
 ONE_YEAR = ONE_MONTH * 12
+FIREWALLD_MANAGED = True
 
 # pillar cache is never expired, only if we detect a change on the database file
 PILLAR_TTL = ONE_YEAR
@@ -1772,10 +1773,51 @@ def get_snmpd_settings(id_=None, ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
+def get_firewalld_conf(id_, ttl=PILLAR_TTL):
+
+    def _do(id_):
+        _s = __salt__
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_firewalld', FIREWALLD_MANAGED):
+            return {}
+        p = 'makina-states.services.firewall.firewalld'
+        prefix = p + '.'
+        qry = _s[__name + '.query']
+        # allowed_ips = _s[__name + '.whitelisted'](id_)
+        firewalld_overrides = qry('firewalld_overrides', {})
+        rdata = OrderedDict([
+            (p, True),
+            # to smelly, whitelist too much with firewlld,
+            # use specific rules for specific case, no real needs
+            #    (prefix + 'trusted_networks', allowed_ips)
+        ])
+        pservices = rdata.setdefault(prefix+'public_services-append', [])
+        is_ldap = is_ldap_master(id_) or is_ldap_slave(id_)
+        is_dns = is_dns_master(id_) or is_dns_slave(id_)
+        if is_ldap:
+            for i in ['ldap', 'ldaps']:
+                if i not in pservices:
+                    pservices.append(i)
+        if is_dns:
+            for i in ['dns']:
+                if i not in pservices:
+                    pservices.append(i)
+        buf = OrderedDict()
+        for param, value in firewalld_overrides.get(id_, {}).items():
+            buf[prefix + param] = value
+        rdata = __salt__['mc_utils.dictupdate'](rdata, buf)
+        return rdata
+    cache_key = __name + '.get_firewalld_conf5{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+
+
 def get_shorewall_settings(id_=None, ttl=PILLAR_TTL):
     def _do(id_, sysadmins=None):
         gconf = get_configuration(id_)
-        if not gconf.get('manage_shorewall', True):
+        managed = gconf.get('manage_shorewall', True)
+        if gconf.get('manage_firewalld', FIREWALLD_MANAGED):
+            managed = False
+        if not managed:
             return {}
         qry = __salt__[__name + '.query']
         allowed_ips = __salt__[__name + '.whitelisted'](id_)
@@ -1829,7 +1871,7 @@ def get_shorewall_settings(id_=None, ttl=PILLAR_TTL):
             param = 'makina-states.services.firewall.shorewall.' + param
             shw_params[param] = value
         return shw_params
-    cache_key = __name + '.get_shorewall_settings_{0}'.format(id_)
+    cache_key = __name + '.get_shorewall_settings3_{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
@@ -1898,7 +1940,7 @@ def get_password(id_, user='root', ttl=PILLAR_TTL, regenerate=False, length=12,
     Return user/password mappings for a particular host from
     a global pillar passwords map. Create it if not done
     '''
-    def _do_pass(id_, user='root'):
+    def _do(id_, user='root'):
         db_reg = __salt__[__name + '.query']('passwords_map', {})
         db_id = db_reg.setdefault(id_, {})
         pw_reg = __salt__['mc_macros.get_local_registry'](
@@ -1935,15 +1977,15 @@ def get_password(id_, user='root', ttl=PILLAR_TTL, regenerate=False, length=12,
             __salt__['mc_macros.update_local_registry'](
                 'passwords_map', pw_reg, registry_format='pack')
         cpw = __salt__['mc_utils.unix_crypt'](pw)
-        return {'clear': pw,
-                'crypted': cpw}
+        return {'clear': pw, 'crypted': cpw}
     if force or regenerate:
-        return _do_pass(id_, user)
-    cache_key = __name + '.get_passwords_for_{0}_{1}'.format(id_, user)
-    return __salt__['mc_utils.memoize_cache'](_do_pass, [id_, user], {}, cache_key, ttl)
+        return _do(id_, user)
+    cache_key = __name + '.get_passwords_for_{0}_{1}1'.format(id_, user)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [id_, user], {}, cache_key, ttl)
 
 
-def get_passwords(id_, ttl=PILLAR_TTL):
+def get_passwords(id_, force=False, ttl=PILLAR_TTL):
     '''
     Return user/password mappings for a particular host from
     a global pillar passwords map
@@ -1951,10 +1993,7 @@ def get_passwords(id_, ttl=PILLAR_TTL):
     But if does not exists in the db, lookup inside the local one
     If stiff non found, generate it and store in in local
     '''
-    if not id_:
-        id_ = __opts__['id']
-
-    def _do_pass(id_):
+    def _do(id_, force):
         defaults_users = ['root', 'sysadmin']
         pw_reg = __salt__['mc_macros.get_local_registry'](
             'passwords_map', registry_format='pack')
@@ -1967,7 +2006,7 @@ def get_passwords(id_, ttl=PILLAR_TTL):
                 if user not in users:
                     users.append(user)
         for user in users:
-            pws = get_password(id_, user)
+            pws = get_password(id_, user, force=force)
             pw = pws['clear']
             cpw = pws['crypted']
             crypted[user] = cpw
@@ -1975,23 +2014,26 @@ def get_passwords(id_, ttl=PILLAR_TTL):
             db_id[user] = pw
         passwords = {'clear': pw_id, 'crypted': crypted}
         return passwords
-    cache_key = __name + '.get_passwords_{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do_pass, [id_], {}, cache_key, ttl)
+    cache_key = __name + '.get_passwords_2{0}{1}'.format(id_, force)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [id_, force], {}, cache_key, ttl)
 
 
 def regenerate_passwords(ids_=None, users=None):
-    pw_reg = __salt__['mc_macros.get_local_registry'](
-        'passwords_map', registry_format='pack')
+    pw_reg = copy.deepcopy(
+        __salt__['mc_macros.get_local_registry'](
+            'passwords_map', registry_format='pack')
+    )
     if ids_ and not isinstance(ids_, list):
         ids_ = ids_.split(',')
     if users and not isinstance(users, list):
         users = users.split(',')
     for pw_id in [a for a in pw_reg]:
-        data = pw_reg[a]
+        data = pw_reg[pw_id]
         if ids_ and pw_id not in ids_:
             continue
         for u, pw, in copy.deepcopy(data).items():
-            print pw_id, u
+            print(pw_id, u)
             if users and u not in users:
                 continue
             get_password(pw_id, u, force=True)
@@ -2055,7 +2097,8 @@ def backup_configuration_type_for(id_, ttl=PILLAR_TTL):
         # for trivial joins (on id_, do it automatically)
         if not confs.get(id_, None) and id_ in qconfs:
             confs[id_] = id_
-        return confs.get(id_, None)
+        conf = confs.get(id_, None)
+        return conf
     cache_key = __name + '.backup_configuration_type_for{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
@@ -2071,13 +2114,18 @@ def backup_configuration_for(id_, ttl=PILLAR_TTL):
         conf_id = _s[__name + '.backup_configuration_type_for'](id_)
         data = OrderedDict()
         if (
-            id_ not in _s[__name + '.query']('non_managed_hosts') and
+            id_ not in _s[__name + '.query']('non_managed_hosts', []) and
             not default_conf_id
         ):
-            raise ValueError(
-                'No backup info for {0}'.format(id_))
+            if id_ in get_cloud_conf_by_vms():
+                t = 'vm'
+            else:
+                t = 'baremetal'
+            conf = confs.get(t, None)
+            if not conf:
+                raise ValueError('No backup info for {0}'.format(id_))
         if (
-            id_ in _s[__name + '.query']('non_managed_hosts', {}) and
+            id_ in _s[__name + '.query']('non_managed_hosts', []) and
             not conf_id
         ):
             conf_id = _s[__name + '.backup_configuration_type_for'](
@@ -2118,7 +2166,14 @@ def backup_configuration_for(id_, ttl=PILLAR_TTL):
 def backup_server_for(id_, ttl=PILLAR_TTL):
     def _do(id_):
         confs = __salt__[__name + '.query']('backup_server_map', {})
-        return confs.get(id_, confs['default'])
+        sconfs = __salt__[__name + '.query']('backup_servers', {})
+        default = confs.get('default')
+        if not default:
+            if sconfs:
+                default = [a for a in sconfs][0]
+            else:
+                raise ValueError('No default backup serveur')
+        return confs.get(id_, default)
     cache_key = __name + '.backup_server_for{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
@@ -2152,7 +2207,7 @@ def backup_server_settings_for(id_, ttl=PILLAR_TTL):
         # hosts and current backup server
         # db['non_managed_hosts'] + [id_]
         try:
-            backup_excluded = query('backup_excluded', {})
+            backup_excluded = query('backup_excluded', [])
             if not isinstance(backup_excluded, list):
                 raise ValueError('{0} is not a list for'
                                  ' backup_excluded'.format(backup_excluded))
@@ -2161,10 +2216,10 @@ def backup_server_settings_for(id_, ttl=PILLAR_TTL):
             log.error(trace)
             backup_excluded = []
         backup_excluded.extend(['default', 'default-vm', id_])
-        manual_hosts = _s[__name + '.query']('backup_manual_hosts', {})
-        non_managed_hosts = _s[__name + '.query']('non_managed_hosts', {})
+        manual_hosts = _s[__name + '.query']('backup_manual_hosts', [])
+        non_managed_hosts = _s[__name + '.query']('non_managed_hosts', [])
         backup_excluded.extend(
-            [a for a in _s[__name + '.query']('non_managed_hosts', {})
+            [a for a in _s[__name + '.query']('non_managed_hosts', [])
              if a not in manual_hosts])
         bms = [a for a in db['bms']
                if a not in backup_excluded and
@@ -2379,10 +2434,10 @@ def get_supervision_objects_defs(id_):
             groups = attrs.setdefault('groups', [])
             parents = attrs.setdefault('parents', [])
             tipaddr = attrs.setdefault('address', ip_for(host))
-            attrs.setdefault('vars.SSH_PORT', 22)
-            attrs.setdefault('vars.SNMP_PORT', 161)
-            attrs.setdefault('vars.SSH_HOST', attrs['address'])
-            attrs.setdefault('vars.SNMP_HOST', attrs['address'])
+            attrs.setdefault('vars.ssh_port', 22)
+            attrs.setdefault('vars.snmp_port', 161)
+            attrs.setdefault('vars.ssh_host', attrs['address'])
+            attrs.setdefault('vars.snmp_host', attrs['address'])
             sconf = get_snmpd_conf(id_)
             p = ('makina-states.services.monitoring.'
                  'snmpd.default_')
@@ -2456,9 +2511,9 @@ def get_supervision_objects_defs(id_):
             sattrs = hdata.setdefault('services_attrs', OrderedDict())
             parents = attrs.setdefault('parents', [])
             tipaddr = attrs.setdefault('address', ip_for(vm))
-            ssh_host = snmp_host = attrs.get('vars.SSH_HOST', tipaddr)
-            ssh_port = attrs.get('vars.SSH_PORT', 22)
-            snmp_port = attrs.get('vars.SNMP_PORT', 161)
+            ssh_host = snmp_host = attrs.get('vars.ssh_host', tipaddr)
+            ssh_port = attrs.get('vars.ssh_port', 22)
+            snmp_port = attrs.get('vars.snmp_port', 161)
             sconf = get_snmpd_conf(id_)
             nic_cards = ['eth0']
             if vt in ['kvm', 'xen']:
@@ -2509,10 +2564,10 @@ def get_supervision_objects_defs(id_):
                 no_common_checks = True
             if no_common_checks:
                 hdata.update(disable_common_checks)
-            attrs['vars.SSH_HOST'] = ssh_host
-            attrs['vars.SNMP_HOST'] = snmp_host
-            attrs['vars.SSH_PORT'] = ssh_port
-            attrs['vars.SNMP_PORT'] = snmp_port
+            attrs['vars.ssh_host'] = ssh_host
+            attrs['vars.snmp_host'] = snmp_host
+            attrs['vars.ssh_port'] = ssh_port
+            attrs['vars.snmp_port'] = snmp_port
             hdata.setdefault('nic_card', nic_cards)
 
         try:
@@ -2566,8 +2621,8 @@ def get_supervision_objects_defs(id_):
                 burp_default_server = bsm['default']
                 burp_server = bsm.get(host, burp_default_server)
                 burpattrs = sattrs.setdefault('backup_burp_age', {})
-                burpattrs.setdefault('vars.SSH_HOST', burp_server)
-                burpattrs.setdefault('vars.SSH_PORT', 22)
+                burpattrs.setdefault('vars.ssh_host', burp_server)
+                burpattrs.setdefault('vars.ssh_port', 22)
             # if id_ not in parents and id_ not in maps['vms']:
             #    parents.append(id_)
             if not hdata['attrs'].get('address'):
@@ -2830,8 +2885,10 @@ def manage_bridged_fo_kvm_network(fqdn, host, ipsfo,
             'dnsservers': __salt__[
                 'mc_network.get_dnss'](fqdn, thisip),
             'post-up': [
-                'route add {0} dev {1}'.format(gw, ifc),
-                'route add default gw {0}'.format(gw),
+                # warning: keep ip of the hosting host
+                # as the network ipv4 gw
+                'route add {0} dev {1}'.format(ip_for(host), ifc),
+                'route add default gw {0}'.format(ip_for(host)),
             ]
         }
     }]
@@ -3098,7 +3155,7 @@ def get_shorewall_conf(id_, ttl=PILLAR_TTL):
             return {}
         rdata.update(__salt__[__name + '.get_shorewall_settings'](id_))
         return rdata
-    cache_key = __name + '.get_shorewall_conf{0}'.format(id_)
+    cache_key = __name + '.get_shorewall_conf1{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
@@ -3253,8 +3310,12 @@ def get_mail_conf(id_, ttl=PILLAR_TTL):
             for k in [
                 a
                 for a in mail_conf
-                if a not in ['mode', 'smtp_auth',
-                             'auth', 'virtual_map', 'transports']
+                if a not in [
+                    'mode',
+                    'smtp_auth',
+                    'auth',
+                    'virtual_map',
+                    'transports']
             ]:
                 p = 'makina-states.services.mail.postfix.{0}'.format(k)
                 data[p] = mail_conf[k]
@@ -3529,12 +3590,17 @@ def ext_pillar(id_, pillar=None, *args, **kw):
     if profile_enabled:
         pr = cProfile.Profile()
         pr.enable()
+
+    dictupdate = _s['mc_utils.dictupdate']
     for i in [
         # catch mc_pillar.& & <foo>.*pillar.*
         '.*(ext)*_?pillar.*',
         'mc_cloud.*(get_cloud_conf|get_vms)'
     ]:
         __salt__['mc_utils.register_memcache_first'](i)
+
+    is_this_salt_managed = is_salt_managed(id_)
+    is_this_managed = is_managed(id_)
     for callback, copts in {
         'mc_env.ext_pillar': {'only_managed': False},
         __name + '.get_autoupgrade_conf': {'only_managed': False},
@@ -3546,6 +3612,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         __name + '.get_mail_conf': {'only_managed': False},
         __name + '.get_packages_conf': {'only_managed': False},
         __name + '.get_pkgmgr_conf': {'only_managed': False},
+        __name + '.get_firewalld_conf': {'only_managed': False},
         __name + '.get_shorewall_conf': {'only_managed': False},
         __name + '.get_snmpd_conf': {'only_known': False},
         __name + '.get_burp_server_conf': {},
@@ -3578,17 +3645,19 @@ def ext_pillar(id_, pillar=None, *args, **kw):
             # known from the database but not managed via extpillar
             # and minion is known, force execution
             skip = True
-            if is_salt_managed(id_):
+            if is_this_salt_managed:
                 skip = False
             else:
                 if not copts.get('only_managed', True):
                     skip = False
-                if is_managed(id_) and not copts.get('only_known', True):
+                if is_this_managed and not copts.get('only_known', True):
                     skip = False
             if skip:
                 continue
             # log.error(callback)
-            data = _s['mc_utils.dictupdate'](data, _s[callback](id_))
+            # only dictupdate if there is key overlay
+            subpillar = _s[callback](id_)
+            data = dictupdate(data, subpillar)
         except Exception, ex:
             trace = traceback.format_exc()
             log.error('ERROR in mc_pillar: {0}/{1}'.format(callback, id_))
@@ -3708,8 +3777,11 @@ def get_cloud_conf_by_vts(ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
-def get_cloud_conf_by_vms():
-    return copy.deepcopy(get_cloud_conf()['vms'])
+def get_cloud_conf_by_vms(ttl=PILLAR_TTL):
+    def _do():
+        return copy.deepcopy(get_cloud_conf()['vms'])
+    cache_key = __name + '.get_cloud_conf_by_vms'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def get_cloud_entry_for_cn(id_, default=None):
@@ -3731,7 +3803,7 @@ def get_cloud_conf_for_vt(id_, default=None):
 def get_cloud_conf_for_vm(id_, default=None):
     if not default:
         default = {}
-    return get_cloud_conf_by_vms().get(id_, default)
+    return copy.deepcopy(get_cloud_conf_by_vms().get(id_, default))
 
 
 def get_domains_for(id_, ttl=PILLAR_TTL):

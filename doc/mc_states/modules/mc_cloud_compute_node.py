@@ -422,21 +422,39 @@ def get_allocated_ips(target):
     return allocated_ips
 
 
-def remove_allocated_ip(target, ip, vm=None):
+def remove_allocated_ip(target=None, ip=None, vm=None):
     '''
     Remove any ip from the allocated IP registry.
     If vm is specified, it must also match a vm
-    which is allocated to this ip
+    which is allocated to this ip.
+
+    target
+        target to act onto (opt if vm is given)
+    ip
+        specifically specify the ip to delete
+    vm
+        if given, delete any ip belonging to this
+        vm name
+
     '''
     sync = False
+    if not (target or vm):
+        raise ValueError('Choose a vm or a target')
+    if vm and not target:
+        target = target_for_vm(vm)
+    if not target:
+        raise ValueError('no target')
     all_ips = get_allocated_ips(target)
-    if ip in all_ips['ips'].values():
+    if ip and ip in all_ips['ips'].values():
         for i in [a for a in all_ips['ips']]:
             if all_ips['ips'][i] == ip:
                 if vm is not None and vm == i:
                     continue
                 del all_ips['ips'][i]
                 sync = True
+    if vm and vm in all_ips['ips']:
+        del all_ips['ips'][vm]
+        sync = True
     if sync:
         set_conf_for_target(target, 'allocated_ips', all_ips)
     return get_allocated_ips(target)['ips']

@@ -396,7 +396,7 @@ def settings():
         for a in views + [b for b in data['default_views']]:
             if a not in data['views']:
                 data['views'].append(a)
-        for k in data:
+        for k in [a for a in data]:
             if k.startswith('zones.') or k.startswith('views.'):
                 del data[k]
         for k in [a for a in data['servers']]:

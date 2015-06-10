@@ -19,6 +19,7 @@ Documentation of this module is available with::
 '''
 import yaml
 import requests
+import ipaddr
 # Import python libs
 import os
 import logging
@@ -342,9 +343,41 @@ def settings():
                                     newval.append(sube)
                                 ifdata[k] = newval
                         ifacedata[newif + suf] = ifdata
-        netdata['interfaces_order'] = [a for a in netdata['interfaces']]
+
+        # configure alias interfaces only after real ones ...
+        iorder = [a for a in netdata['interfaces'] if ':' not in a]
+        iorder += [a for a in netdata['interfaces'] if ':' in a]
+        netdata['interfaces_order'] = iorder
         return netdata
     return _settings()
+
+
+def is_loopback(ip):
+    try:
+        iaddr = ipaddr.IPAddress(ip)
+        return iaddr.is_loopback
+    except (Exception,):
+        return False
+
+
+def is_link_local(ip):
+    try:
+        iaddr = ipaddr.IPAddress(ip)
+        return iaddr.is_link_local
+    except (Exception,):
+        return False
+
+
+def is_public(ip):
+    try:
+        iaddr = ipaddr.IPAddress(ip)
+        return (
+            not iaddr.is_private and
+            not iaddr.is_reserved and
+            not iaddr.is_link_local and
+            not iaddr.is_loopback)
+    except (Exception,):
+        return True
 
 
 def ns_whois(name, ttl=24*60*60, cache=True, whois_ttl=60*60*24*30):
@@ -584,4 +617,27 @@ def have_docker_if():
     if True in ['docker' in a[0] for a in gifaces]:
         ret = True
     return ret
+
+
+def append_netmask(ip):
+    # ipv6 is not supported at the moment
+    if ':' in ip:
+        return ip
+    else:
+        chunks = ip.split('.')[:4]
+        if len(chunks) < 4:
+            while len(chunks[:]) < 4:
+                chunks.append('0')
+        netm = 32
+        if chunks[-1] in ['0', 0]:
+            for i in range(4):
+                if chunks[4 - (i+1)] in ['0']:
+                    netm -= 8
+                else:
+                    break
+            if ip.startswith('172.16'):
+                netm = '12'
+        netm = "{0}".format(netm)
+        net = '.'.join(chunks) + '/' + netm
+        return net
 # vim:set et sts=4 ts=4 tw=80:
