@@ -153,7 +153,8 @@ Those pillars, if given will be commited to the image.
 in the docker run command. Any environment knob defined via CLI args will
 override variable setted via environment variables.
 
-Indeed, it is via this trick that you can override the docker_build.sh script
+Indeed, it is via this trick that you can influence on the behavior of the
+**docker_build_stage2.sh** (**Stage2**) script and **onwards** stages.
 
 .. code-block:: bash
 
