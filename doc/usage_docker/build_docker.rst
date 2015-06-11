@@ -140,7 +140,8 @@ Additionnaly, in stage2, the stage0 script will set:
     MS_IMAGE_CANDIDATE
         Which is the tag of the Image to commit if the build is sucessful
 
-You can feed the image with preconfigured pillars by mounting additional volumes for:
+You can feed the image with preconfigured pillars & project trees
+by mounting additional volumes for:
 
     - **/srv/pillar**
     - **/srv/mastersalt-pillar**
