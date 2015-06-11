@@ -4,11 +4,12 @@
 die_in_error() { if [ "x${?}" != "x0" ];then echo "${@}";exit 1;fi }
 # 1. Launch systemd
 systemd --system &
+apt-get install -y git
 # 2. Refresh makina-states code
 bs="/srv/salt/makina-states/_scripts/boot-salt.sh"
 if [ ! -d /srv/salt ];then mkdir -p /srv/salt;fi
 if [ ! -e ${bs} ];then
-    git clone ${GIT_URL} -b ${BRANCH} /srv/salt/makina-states
+    git clone ${MS_GIT_URL} -b ${MS_GIT_BRANCH} /srv/salt/makina-states
 else
     ${bs} -C --refresh-modules
 fi
@@ -30,5 +31,6 @@ done
 if docker inspect "${MS_IMAGE_CANDIDATE}" >/dev/null 2>&1;then
     docker rmi -f "${MS_IMAGE_CANDIDATE}"
 fi
-docker commit "${MS_DID}" "${MS_IMAGE_CANDIDATE}"
+docker commit "${MS_DID}" "${MS_IMAGE_CANDIDATE}" -c "CMD ${MS_COMMAND}"
+die_in_error "${MS_IMAGE_CANDIDATE} failed commit"
 # vim:set et sts=4 ts=4 tw=0:
