@@ -12,6 +12,7 @@ cyan() { echo -e "${CYAN}${@}${NORMAL}"; }
 yellow() { echo -e "${YELLOW}${@}${NORMAL}"; }
 green() { echo -e "${GREEN}${@}${NORMAL}"; }
 die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
+warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";exit 1;fi }
 v_run() { green "${@}"; "${@}"; }
 
 echo;echo
@@ -51,7 +52,7 @@ if [ "x${MS_BASE}" = "xscratch" ];then
         yellow "${MS_IMAGE}: Delete it to redo"
     fi
 else
-    yellow "${MS_IMAGE}: ${MS_BASE} is not \"scratch\", skipping baseimage build"
+    green "${MS_IMAGE}: ${MS_BASE} is not \"scratch\", skipping baseimage build"
 fi
 
 # if the user (via a volume place a 'stage1.sh' script it will override the
@@ -97,6 +98,7 @@ if [ "x${do_build}" != "x" ];then
     if [ "x${?}" = "x0" ] && [ "x${mid}" != "x" ] ;then
         yellow "${MS_IMAGE}: Deleting old bootstrap layer: ${mid}"
         docker rmi "${mid}"
+        warn_in_error "${MS_IMAGE}: ${mid} was not deleted"
     fi
 else
     yellow "${MS_IMAGE}: Bootstrap image ${mbs} already built, skipping"
@@ -104,10 +106,11 @@ fi
 
 exit 1
 die_in_error "${mbs} failed to build"
+echo
 purple "--------------------"
 purple "- stage1 complete  -"
 purple "--------------------"
-
+echo
 # Stage2. Spawn a container, run systemd & install makina-states
 for i in /srv/pillar /srv/mastersalt-pillar /srv/projects;do
     if [ ! -d ${i} ];then mkdir ${i};fi
@@ -129,6 +132,7 @@ v_run docker run \
  -e MS_OS="${MS_OS}" \
  -e MS_OS_RELEASE="${MS_OS_RELEASE}" \
  -e MS_STAGE0_TAG="${MS_STAGE0_TAG}" \
+ -v /makina-states.git:/makina-states.git \
  -v /docker_data:/docker_data \
  -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
  -v /usr/bin/docker:/usr/bin/docker:ro \

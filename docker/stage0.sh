@@ -11,6 +11,7 @@ cyan() { echo -e "${CYAN}${@}${NORMAL}"; }
 yellow() { echo -e "${YELLOW}${@}${NORMAL}"; }
 green() { echo -e "${GREEN}${@}${NORMAL}"; }
 die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
+warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";exit 1;fi }
 v_run() { green "${@}"; "${@}"; }
 cwd="$(cd "$(dirname "${0}")/.." && pwd)"
 MS_OS="${MS_OS:-"ubuntu"}"
@@ -56,17 +57,16 @@ if [ "x${mid}" != "x" ];then
     if [ "x${mid}" = "x${nmid}" ];then
         yellow "${MS_IMAGE}: stage0 already built"
     else
-        docker rmi "${mid}"
-        if [ "x${?}" != "x0" ];then
-            yellow "${MS_IMAGE}: stage0 can't cleanup old image"
-        else
-            yellow "${MS_IMAGE}: stage0 cleaned up old image: ${mid}"
-        fi
+        docker rmi "${mid}"\
+            && yellow "${MS_IMAGE}: stage0 cleaned up old image: ${mid}"
+        warn_in_error "${MS_IMAGE}: stage0 can't cleanup old image"
     fi
 fi
+echo
 purple "--------------------"
 purple "- stage0 complete  -"
 purple "--------------------"
+echo
 v_run docker run --privileged -ti --rm \
  -e container="docker" \
  -e MS_BASE="${MS_BASE}" \
@@ -79,6 +79,7 @@ v_run docker run --privileged -ti --rm \
  -e MS_OS_RELEASE="${MS_OS_RELEASE}" \
  -e MS_OS_MIRROR="${MS_OS_MIRROR}" \
  -e MS_STAGE0_TAG="${MS_STAGE0_TAG}" \
+ -v "${cwd}/.git":/makina-states.git \
  -v "${MS_DATA_DIR}":/docker_data \
  -v "${MS_DOCKERFILE}":/bootstrap_scripts/Dockerfile \
  -v "${cwd}/files/sbin/makinastates-snapshot.sh":/bootstrap_scripts/makinastates-snapshot.sh \

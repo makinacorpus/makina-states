@@ -15,6 +15,7 @@ cyan() { echo -e "${CYAN}${@}${NORMAL}"; }
 green() { echo -e "${GREEN}${@}${NORMAL}"; }
 yellow() { echo -e "${YELLOW}${@}${NORMAL}"; }
 die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
+warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";exit 1;fi }
 v_run() { green "${@}"; "${@}"; }
 
 echo;echo
@@ -27,25 +28,29 @@ echo
 systemd --system &
 set -x
 export DEBIAN_FRONTEND=noninteractive
-apt-get install -y --force-yes git ca-certificates rsync acl
-rsync -Aa /forwarded_volumes/ /
+v_run apt-get install -y --force-yes git ca-certificates rsync acl
+v_run rsync -Aa /forwarded_volumes/ /
 # 2. Refresh makina-states code
-bs="/srv/salt/makina-states/_scripts/boot-salt.sh"
 ip route
 ifconfig
 if [ ! -d /srv/salt ];then mkdir -p /srv/salt;fi
+bs="/srv/salt/makina-states/_scripts/boot-salt.sh"
 if [ ! -e ${bs} ];then
-    git clone ${MS_GIT_URL} -b ${MS_GIT_BRANCH} /srv/salt/makina-states
-else
-    ${bs} -C --refresh-modules
+    git clone /makina-states.git /srv/salt/makina-states &&\
+    cd /srv/salt/makina-states && \
+    git remote rm origin &&\
+    git remote add origin "${MS_GIT_URL}" &&\
+    git checkout -b "${MS_GIT_BRANCH}"
+    warn_in_error "${MS_IMAGE}: problem while initing makina-states code"
 fi
-die_in_error "${MS_IMAGE} failed to fetch code"
+${bs} -C --refresh-modules
+warn_in_error "${MS_IMAGE}: failed to fetch up-to-data makina-states code"
 
 # 3. mastersalt + salt highstates & masterless mode
 ${bs} -C --mastersalt 127.0.0.1 -n dockercontainer\
     --local-mastersalt-mode masterless --local-salt-mode masterless
-die_in_error "${MS_IMAGE} failed installing makina-states"
-
+die_in_error "${MS_IMAGE}: failed installing makina-states"
+echo
 purple "--------------------"
 purple "- stage2 complete  -"
 purple "--------------------"
@@ -53,11 +58,20 @@ purple "--------------------"
 #    which will be mostly configured by users
 if [ -x /bootstrap_scripts/docker_build_stage3.sh ];then
     /bootstrap_scripts/docker_build_stage3.sh
+    die_in_error "${MS_IMAGE}: Stage3 building failed"
 fi
-
-getfacl -R / > /acls.txt || /bin/true
-touch /acls.restore
-
+echo
+purple "--------------------"
+purple "- stage3 complete  -"
+purple "--------------------"
+echo
+v_run getfacl -R / > /acls.txt || /bin/true
+v_run touch /acls.restore
+echo
+purple "--------------------"
+purple "- POSIX Acls saved -"
+purple "--------------------" 
+echo
 # END -- The common case is to tag back the image as a release candidate at the end
 if docker inspect "${MS_IMAGE_CANDIDATE}" >/dev/null 2>&1;then
     docker rmi -f "${MS_IMAGE_CANDIDATE}"

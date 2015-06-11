@@ -12,6 +12,7 @@ red() { echo -e "${RED}${@}${NORMAL}"; }
 cyan() { echo -e "${CYAN}${@}${NORMAL}"; }
 yellow() { echo -e "${YELLOW}${@}${NORMAL}"; }
 die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
+warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";exit 1;fi }
 v_run() { green "${@}"; "${@}"; }
 
 echo;echo
@@ -24,10 +25,20 @@ echo
 for i in $(find /srv/projects/ -mindepth 1 -maxdepth 1 -type d 2>/dev/null);do
     salt-call --retcode-passthrough --local\
         -linfo mc_project.deploy "$(basename ${i})" only="install,fixperms"
-    die_in_error "${MS_IMAGE}-base failed to build project ${i}"
+    die_in_error "${MS_IMAGE}: failed to build project ${i}"
 done
 
+# <--
+# <--
 # Add here any automated test procedure that ensure that this build is sucessful
 # Exit with a non zero code to signal a failure
 # <--
+# <--
+die_in_error "${MS_IMAGE}: failed to do post build checks"
+
+echo
+purple "--------------------"
+purple "- stage3 complete  -"
+purple "--------------------"
+echo
 # vim:set et sts=4 ts=4 tw=80:
