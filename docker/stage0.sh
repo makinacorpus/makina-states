@@ -32,12 +32,12 @@ docker run --privileged -ti --rm \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -v /var/run/docker:/var/run/docker \
     -v /var/lib/docker:/var/lib/docker \
-    -v /sys/fs:/sys/fs:ro\
+    -v /sys/fs:/sys/fs:ro \
     -e MS_OS="${MS_OS_RELEASE}" \
     -e MS_OS_RELEASE="${MS_OS_RELEASE}" \
     -e MS_OS_MIRROR="${MS_OS_MIRROR}" \
     -e MS_OS_RELEASE="${MS_OS_RELEASE}" \
-    -e MS_STAGE0_TAG="${MS_STAGE0_TAG}"
+    -e MS_STAGE0_TAG="${MS_STAGE0_TAG}" \
     -e MS_IMAGE="${MS_IMAGE}" \
     -e MS_GIT_URL="${MS_GIT_URL}" \
     -e MS_GIT_BRANCH="${MS_GIT_BRANCH}" \
@@ -47,8 +47,6 @@ docker run --privileged -ti --rm \
     -v "${MS_DOCKER_STAGE1}":/bootstrap_scripts/stage1.sh \
     -v "${MS_DOCKER_STAGE2}":/bootstrap_scripts/stage2.sh \
     -v "${MS_DOCKER_STAGE3}":/bootstrap_scripts/stage3.sh \
-    ${MS_DOCKER_ARGS} \
-    "${@}" \
-    "${MS_STAGE0_TAG}" /bootstrap_scripts/stage1.sh
+    ${MS_DOCKER_ARGS} "${@}" "${MS_STAGE0_TAG}" /bootstrap_scripts/stage1.sh
 die_in_error "${MS_IMAGE}: upper stages failed, see logs"
 # vim:set et sts=4 ts=4 tw=80:
