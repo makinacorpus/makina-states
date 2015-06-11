@@ -1,6 +1,7 @@
 
 .. _build_docker:
 .. _Docker scratch image: https://docs.docker.com/articles/baseimages/#creating-a-simple-base-image-using-scratch
+.. __scratch: _Docker scratch image
 
 Docker
 =======
@@ -50,7 +51,7 @@ The script will:
         - the **baseimage.tar.xz** or the providen **MS_BASE**
 
     - If **MB_BASE** is **scratch**, the build will use
-      a `Docker scratch image <https://docs.docker.com/articles/baseimages/#creating-a-simple-base-image-using-scratch>`_,
+      a `scratch`__ image,
       It creates **baseimage.tar.gz** or reuse it,
       this is the OS base image.
       By default, we export this image to the **MS_DATA_DIR** directory.
@@ -110,7 +111,7 @@ The script support those environment variables:
         Any argument to give to the docker run call to the stage0 builder (None)
     MS_BASE
         Stage 1 base image (either scratch or a real image.
-        If stage1 is `scratch <Docker scratch image>`_ , you need to provide a **baseimage.tar.xz**
+        If stage1 is `scratch`__ , you need to provide a **baseimage.tar.xz**
         tarball placed in the "data" volume.
         or the script will fetch for you a basic ubuntu container using
         lxc-utils. For those who dont know, **scratch** is a special
