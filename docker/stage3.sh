@@ -1,22 +1,31 @@
 #!/usr/bin/env bash
 RED='\e[31;01m'
-BLUE='\e[36;01m'
+CYAN='\e[36;01m'
+PURPLE='\e[33;01m'
 YELLOW='\e[33;01m'
 GREEN='\e[32;01m'
 NORMAL='\e[0m'
 
-red() { echo "${RED}${@}${NORMAL}"; }
-cyan() { echo "${CYAN}${@}${NORMAL}"; }
-yellow() { echo "${YELLOW}${@}${NORMAL}"; }
-die_in_error() { if [ "x${?}" != "x0" ];then echo "${@}";exit 1;fi }
-# 4. rebuild any corpus projects
+purple() { echo -e "${PURPLE}${@}${NORMAL}"; }
+green() { echo -e "${GREEN}${@}${NORMAL}"; }
+red() { echo -e "${RED}${@}${NORMAL}"; }
+cyan() { echo -e "${CYAN}${@}${NORMAL}"; }
+yellow() { echo -e "${YELLOW}${@}${NORMAL}"; }
+die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
+v_run() { green "${@}"; "${@}"; }
+
+yellow "-----------------------------------------------"
+yellow "-   STAGE 3  - BUIDING                        -"
+yellow "-----------------------------------------------"
+
+# this should be sufficient to (re)build any makina-states corpus style projects
 for i in $(find /srv/projects/ -mindepth 1 -maxdepth 1 -type d 2>/dev/null);do
     salt-call --retcode-passthrough --local\
         -linfo mc_project.deploy "$(basename ${i})" only="install,fixperms"
     die_in_error "${MS_IMAGE}-base failed to build project ${i}"
 done
 
-# ADD AFTER ANY AUTOMATED TEST PROCEDURE
-# THAT ENSURE THAT THE BUILD IS SUCESSFULL
-/bin/true
+# Add here any automated test procedure that ensure that this build is sucessful
+# Exit with a non zero code to signal a failure
+# <--
 # vim:set et sts=4 ts=4 tw=80:

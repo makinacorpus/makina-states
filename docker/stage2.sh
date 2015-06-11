@@ -1,7 +1,26 @@
 #!/usr/bin/env bash
 # THIS SCRIPT CAN BE OVERRIDEN IN ANY MAKINA-STATES BASED IMAGES
 # Do it via a volume via -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
-die_in_error() { if [ "x${?}" != "x0" ];then echo "${@}";exit 1;fi }
+
+RED='\e[31;01m'
+CYAN='\e[36;01m'
+YELLOW='\e[33;01m'
+PURPLE='\e[33;01m'
+GREEN='\e[32;01m'
+NORMAL='\e[0m'
+
+purple() { echo -e "${PURPLE}${@}${NORMAL}"; }
+red() { echo -e "${RED}${@}${NORMAL}"; }
+cyan() { echo -e "${CYAN}${@}${NORMAL}"; }
+green() { echo -e "${GREEN}${@}${NORMAL}"; }
+yellow() { echo -e "${YELLOW}${@}${NORMAL}"; }
+die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
+v_run() { green "${@}"; "${@}"; }
+
+yellow "-----------------------------------------------"
+yellow "-   STAGE 2  - BUIDING                        -"
+yellow "-----------------------------------------------"
+
 # 1. Launch systemd
 systemd --system &
 set -x

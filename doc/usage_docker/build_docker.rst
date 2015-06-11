@@ -57,7 +57,7 @@ The script will:
       relevant environment variables and volumes are forwarded
     - Inside the container, what we call **Stage2** does:
 
-        - we execute the **/data/build_docker.sh** script which by default:
+        - we execute the **/docker_data/build_docker.sh** script which by default:
         - Maybe copy the inputed pillar, mastersalt pillar &
           corpus pillars inside this container, they are currently mounted as volumes
           in **/forwarded_volumes** by **Stage1**
@@ -88,12 +88,12 @@ a part of **Stage3** or (future) upper stages.
 
 How To
 ++++++++++
-The entry point to this build system is **_scripts/build.sh**
+The entry point to this build system is **docker/stage0.sh**
 You can easily adjust it to your needs in case.
 
 .. code-block:: bash
 
-    _scripts/build.sh
+    docker/stage0.sh
 
 You can override **docker_build.sh** (installing makina-states) by looking and overriding
 it to your need
@@ -152,7 +152,7 @@ by mounting additional volumes for:
 
 Those pillars, if given will be commited to the image.
 
-**_scripts/build.sh** can also take any argument that will be used
+**docker/stage0.sh** can also take any argument that will be used
 in the docker run command. Any environment knob defined via CLI args will
 override variable setted via environment variables.
 
@@ -162,8 +162,8 @@ Indeed, it is via this trick that you can influence on the behavior of the
 .. code-block:: bash
 
     export MS_IMAGE="mycompany/myimage"
-    _scripts/build.sh \
-     -v $PWD:/data \
+    docker/stage0.sh \
+     -v $PWD:/docker_data \
      -v /path/to/custom/docker_build_stage2.sh:/bootstrap_scripts/docker_build_stage2.sh\
      -v /path/to/custom/docker_build_stage3.sh:/bootstrap_scripts/docker_build_stage3.sh
 
@@ -172,18 +172,19 @@ image), you can use **MS_BASE** to indicate your base
 
 .. code-block:: bash
 
+    mkdir data
     export MS_BASE="mycompany/myimage"
-    _scripts/build.sh \
-      -v $PWD:/data \
+    docker/stage0.sh \
+      -v $PWD/data:/docker_data \
       -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
 
 OR
 
 .. code-block:: bash
 
-    _scripts/build.sh \
+    docker/stage0.sh \
         -e MS_BASE="mycompany/myimage"
-        -v $PWD:/data \
+        -v $PWD:/docker_data \
         -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
 
 .. _scratch image: https://docs.docker.com/articles/baseimages/#creating-a-simple-base-image-using-scratch

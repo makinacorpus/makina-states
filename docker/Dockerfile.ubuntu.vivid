@@ -17,7 +17,7 @@ RUN sed -i -re "s|${MS_OLD_DEB_MIRROR}|${MS_OS_MIRROR}|g" /etc/apt/sources.list\
     && add-apt-repository -y ppa:ubuntu-lxc/daily\
     && apt-get update\
     && apt-get install -y --force-yes\
-        lxc lxc-templates git e2fsprogs ca-certificates
+       lxc lxc-templates git e2fsprogs ca-certificates
 ADD files/sbin/makinastates-snapshot.sh\
     files/sbin/lxc-cleanup.sh\
     _scripts/boot-salt.sh\
@@ -34,6 +34,6 @@ VOLUME [/var/run/docker.sock]
 VOLUME [/var/run/docker]
 VOLUME [/var/lib/docker]
 VOLUME [/sys/fs]
-VOLUME [/data]
+VOLUME [/docker_data]
 # You may override this variable to build another image
 CMD /bootstrap_scripts/stage1.sh
