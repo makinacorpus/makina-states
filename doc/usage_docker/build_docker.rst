@@ -48,7 +48,7 @@ The script will:
         - the container template
         - the **baseimage.tar.xz** or the providen **MS_BASE**
 
-    - If **MB_BASE** is a **scratch** image,
+    - If **MB_BASE** is a `scratch <docker_scatch>`_ image,
       It creates **baseimage.tar.gz** or reuse it,
       this is the OS base image.
       By default, we export this image to the **MS_DATA_DIR** directory.
@@ -72,6 +72,9 @@ The script will:
         - Mark the container to restore acls on next boot via touching **/acls.restore**
         - If all the build is sucessfull We commit this container as an image
           but taggued with the **candidate** keyword.
+
+
+.. _docker_scratch: https://docs.docker.com/articles/baseimages/#creating-a-simple-base-image-using-scratch
 
 
 Construct a base docker image with makina-states
