@@ -109,7 +109,7 @@ The script support those environment variables:
         Any argument to give to the docker run call to the stage0 builder (None)
     MS_BASE
         Stage 1 base image (either `scratch image`_ or a real image.
-        If stage1 is scratch_ , you need to provide a **baseimage.tar.xz**
+        If stage1 is **scratch**, you need to provide a **baseimage.tar.xz**
         tarball placed in the "data" volume.
         or the script will fetch for you a basic ubuntu container using
         lxc-utils. For those who dont know, **scratch** is a special
