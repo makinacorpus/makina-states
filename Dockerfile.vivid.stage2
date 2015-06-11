@@ -1,5 +1,0 @@
-# STAGE 3/3 base image
-FROM makinacorpus/makina-states-vivid-1
-ENV DOCKERFILE_ID="1"
-VOLUME [/sys/fs/cgroup]
-CMD /bin/systemd --system
