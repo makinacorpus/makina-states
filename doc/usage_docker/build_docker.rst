@@ -108,7 +108,7 @@ The script support those environment variables:
         Any argument to give to the docker run call to the stage0 builder (None)
     MS_BASE
         Stage 1 base image (either scratch or a real image.
-        If stage1 is **scratch**, you need to provide a **baseimage.tar.xz**
+        If stage1 is **`scratch <https://docs.docker.com/articles/baseimages/#creating-a-simple-base-image-using-scratch>`_**, you need to provide a **baseimage.tar.xz**
         tarball placed in the "data" volume.
         or the script will fetch for you a basic ubuntu container using
         lxc-utils. For those who dont know, **scratch** is a special
@@ -118,7 +118,7 @@ The script support those environment variables:
     MS_GIT_BRANCH
         Branch for makina-states (stable)
     MS_GIT_URL
-        Url for makina-states (github.com/makinacorpus/makina-states)
+        Url for `makina-states <https://github.com/makinacorpus/makina-states>`_
     MS_OS
         OS (eg: ubuntu)
     MS_OS_RELEASE
@@ -129,11 +129,11 @@ The script support those environment variables:
         Tag of the stage0 image, by default it looks like
         **makinacorpus/makina-states-vivid-0**
     MS_DOCKER_STAGE1
-        Path to a **stage1** builder script, eg **_scripts/docker_build_stage1.sh**
+        Path to a **stage1** builder script, eg **`_scripts/docker_build_stage1.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage1.sh>`_**
     MS_DOCKER_STAGE2
-        Path to a **stage2** builder script, eg **_scripts/docker_build_stage2.sh**
+        Path to a **stage2** builder script, eg **`_scripts/docker_build_stage2.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage2.sh>`_**
     MS_DOCKER_STAGE3
-        Path to a **stage2** builder script, eg **_scripts/docker_build_stage3.sh**
+        Path to a **stage2** builder script, eg **`_scripts/docker_build_stage3.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage3.sh>`_**
 
 Additionnaly, in stage2, the stage0 script will set:
 
