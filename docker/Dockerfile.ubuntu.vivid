@@ -25,8 +25,11 @@ ADD files/sbin/makinastates-snapshot.sh\
     docker/stage*.sh\
     /bootstrap_scripts/
 RUN /bootstrap_scripts/makinastates-snapshot.sh
-VOLUME [/bootstrap_scripts/docker_build.sh]
-VOLUME [/bootstrap_scripts/docker_save.sh]
+VOLUME [/bootstrap_scripts/Dockerfile]
+VOLUME [/bootstrap_scripts/stage0.sh]
+VOLUME [/bootstrap_scripts/stage1.sh]
+VOLUME [/bootstrap_scripts/stage2.sh]
+VOLUME [/bootstrap_scripts/stage3.sh]
 VOLUME [/var/run/docker.sock]
 VOLUME [/var/run/docker]
 VOLUME [/var/lib/docker]
