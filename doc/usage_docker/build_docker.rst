@@ -59,7 +59,12 @@ The script will:
           in **/forwarded_volumes** by **Stage1**
         - spawn init (currently: systemd)
         - launch makina-states installation
-        - (RE)Install any corpus based project
+        - We then enter **Stage3** which by default
+
+            - (RE)Install any corpus based project
+            - May execute a basic test suite to test (only the build) that
+              everything is in place.
+
         - Save the **POSIX acls** to **/acls.txt**
         - Mark the container to restore acls on next boot via touching **/acls.restore**
         - If all the build is sucessfull We commit this container as an image
@@ -73,6 +78,9 @@ Idea
 All that the user has to do, is to copy the **_script/docker_build.sh**
 in his project and adapt it for it's need, basically, the only thing
 to change in a corpus based project is the test procedure.
+
+What you, as a regular user, will want to change is likely to be only
+a part of **Stage3**.
 
 How To
 ++++++++++
