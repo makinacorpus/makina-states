@@ -58,3 +58,5 @@ boot_salt_top
 /files/root/admin_scripts/nagios/nagios_plugins/
 .coverage*
 /baseimage.*
+/Dockerfile
+/data

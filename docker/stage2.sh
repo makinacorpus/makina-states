@@ -17,9 +17,11 @@ yellow() { echo -e "${YELLOW}${@}${NORMAL}"; }
 die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
 v_run() { green "${@}"; "${@}"; }
 
+echo;echo
 yellow "-----------------------------------------------"
 yellow "-   STAGE 2  - BUIDING                        -"
 yellow "-----------------------------------------------"
+echo
 
 # 1. Launch systemd
 systemd --system &
@@ -44,6 +46,9 @@ ${bs} -C --mastersalt 127.0.0.1 -n dockercontainer\
     --local-mastersalt-mode masterless --local-salt-mode masterless
 die_in_error "${MS_IMAGE} failed installing makina-states"
 
+purple "--------------------"
+purple "- stage2 complete  -"
+purple "--------------------"
 # 4. Run project installation, this is this script
 #    which will be mostly configured by users
 if [ -x /bootstrap_scripts/docker_build_stage3.sh ];then

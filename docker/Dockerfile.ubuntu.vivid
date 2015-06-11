@@ -1,8 +1,6 @@
 # makina-states - STAGE0 Compatible Container
 FROM ubuntu:vivid
 ENV DOCKERFILE_ID="1"\
-    MS_OS="ubuntu"\
-    MS_OS_RELEASE="vivid"\
     MS_OLD_DEB_MIRROR="http://archive.ubuntu.com/ubuntu/"\
     MS_OS_MIRROR="http://mirror.ovh.net/ftp.ubuntu.com/"\
     DEBIAN_FRONTEND=noninteractive\
@@ -16,15 +14,12 @@ RUN sed -i -re "s|${MS_OLD_DEB_MIRROR}|${MS_OS_MIRROR}|g" /etc/apt/sources.list\
     && apt-get install -y  software-properties-common\
     && add-apt-repository -y ppa:ubuntu-lxc/daily\
     && apt-get update\
-    && apt-get install -y --force-yes\
-       lxc lxc-templates git e2fsprogs ca-certificates
-ADD files/sbin/makinastates-snapshot.sh\
-    files/sbin/lxc-cleanup.sh\
-    _scripts/boot-salt.sh\
-    docker/Dockerfile*\
-    docker/stage*.sh\
-    /bootstrap_scripts/
+    && apt-get install -y --force-yes lxc lxc-templates
+RUN apt-get install -y --force-yes rsync git e2fsprogs ca-certificates
+ADD files/sbin/makinastates-snapshot.sh /bootstrap_scripts/
 RUN /bootstrap_scripts/makinastates-snapshot.sh
+VOLUME [/bootstrap_scripts/makinastates-snapshot.sh]
+VOLUME [/bootstrap_scripts/lxc-cleanup.sh]
 VOLUME [/bootstrap_scripts/Dockerfile]
 VOLUME [/bootstrap_scripts/stage0.sh]
 VOLUME [/bootstrap_scripts/stage1.sh]

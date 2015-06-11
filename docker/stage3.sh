@@ -14,9 +14,11 @@ yellow() { echo -e "${YELLOW}${@}${NORMAL}"; }
 die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
 v_run() { green "${@}"; "${@}"; }
 
+echo;echo
 yellow "-----------------------------------------------"
 yellow "-   STAGE 3  - BUIDING                        -"
 yellow "-----------------------------------------------"
+echo
 
 # this should be sufficient to (re)build any makina-states corpus style projects
 for i in $(find /srv/projects/ -mindepth 1 -maxdepth 1 -type d 2>/dev/null);do
