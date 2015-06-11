@@ -17,9 +17,9 @@ MS_OS_RELEASE="${MS_OS_RELEASE:-"${DEFAULT_RELEASE}"}"
 MS_DOCKER_ARGS="${MS_DOCKER_ARGS:-}"
 MS_DATA_DIR="${MS_DATA_DIR:-${cwd}}"
 MS_DOCKER_STAGE0="${0}"
-MS_DOCKER_STAGE1="${MS_DOCKER_STAGE1:-"${cwd}/docker_build_stage1.sh"}"
-MS_DOCKER_STAGE2="${MS_DOCKER_STAGE2:-"${cwd}/docker_build_stage2.sh"}"
-MS_DOCKER_STAGE3="${MS_DOCKER_STAGE3:-"${cwd}/docker_build_stage3.sh"}"
+MS_DOCKER_STAGE1="${MS_DOCKER_STAGE1:-"${cwd}/stage1.sh"}"
+MS_DOCKER_STAGE2="${MS_DOCKER_STAGE2:-"${cwd}/stage2.sh"}"
+MS_DOCKER_STAGE3="${MS_DOCKER_STAGE3:-"${cwd}/stage3.sh"}"
 MS_DOCKERFILE="${MS_DOCKERFILE:-"Dockerfile.${MS_OS}.${MS_OS_RELEASE}"}"
 MS_STAGE0_TAG="${MS_STAGE0_TAG:-"makinacorpus/makina-states-${MS_OS}-${MS_OS_RELEASE}-0"}"
 MS_GIT_BRANCH="${MS_GIT_BRANCH:-"stable"}"
@@ -43,12 +43,12 @@ docker run --privileged -ti --rm \
     -e MS_GIT_BRANCH="${MS_GIT_BRANCH}" \
     -v "${MS_DATA_DIR}":/data \
     -v "${MS_DOCKERFILE}":/bootstrap_scripts/Dockerfile \
-    -v "${MS_DOCKER_STAGE0}":/bootstrap_scripts/docker_build_stage0.sh \
-    -v "${MS_DOCKER_STAGE1}":/bootstrap_scripts/docker_build_stage1.sh \
-    -v "${MS_DOCKER_STAGE2}":/bootstrap_scripts/docker_build_stage2.sh \
-    -v "${MS_DOCKER_STAGE3}":/bootstrap_scripts/docker_build_stage3.sh \
+    -v "${MS_DOCKER_STAGE0}":/bootstrap_scripts/stage0.sh \
+    -v "${MS_DOCKER_STAGE1}":/bootstrap_scripts/stage1.sh \
+    -v "${MS_DOCKER_STAGE2}":/bootstrap_scripts/stage2.sh \
+    -v "${MS_DOCKER_STAGE3}":/bootstrap_scripts/stage3.sh \
     ${MS_DOCKER_ARGS} \
     "${@}" \
-    "${MS_STAGE0_TAG}" /bootstrap_scripts/docker_build_stage1.sh
+    "${MS_STAGE0_TAG}" /bootstrap_scripts/stage1.sh
 die_in_error "${MS_IMAGE}: upper stages failed, see logs"
 # vim:set et sts=4 ts=4 tw=80:

@@ -21,9 +21,8 @@ RUN sed -i -re "s|${MS_OLD_DEB_MIRROR}|${MS_OS_MIRROR}|g" /etc/apt/sources.list\
 ADD files/sbin/makinastates-snapshot.sh\
     files/sbin/lxc-cleanup.sh\
     _scripts/boot-salt.sh\
-    _scripts/docker_build_stage1.sh\
-    _scripts/docker_build_stage2.sh\
-    _scripts/docker_build_stage3.sh\
+    docker/Dockerfile*\
+    docker/stage*.sh\
     /bootstrap_scripts/
 RUN /bootstrap_scripts/makinastates-snapshot.sh
 VOLUME [/bootstrap_scripts/docker_build.sh]
@@ -34,10 +33,4 @@ VOLUME [/var/lib/docker]
 VOLUME [/sys/fs]
 VOLUME [/data]
 # You may override this variable to build another image
-ENV MS_GIT_URL="https://github.com/makinacorpus/makina-states.git"
-ENV MS_GIT_BRANCH="stable"
-ENV MS_COMMAND="/sbin/init"
-ENV MS_BASE="scratch"
-ENV MS_IMAGE="makinacorpus/makina-states-${MS_OS_RELEASE}"
-ENV MS_IMAGE_CANDIDATE="${MS_IMAGE}:candidate"
-CMD /bootstrap_scripts/docker_build_stage1.sh
+CMD /bootstrap_scripts/stage1.sh

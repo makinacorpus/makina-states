@@ -69,9 +69,8 @@ if [ "x${do_build}" != "x" ];then
         cp /data/baseimage.tar.xz .
     fi
     cp -rf /bootstrap_scripts .
-    echo "ADD bootstrap_scripts/docker_build.sh /bootstrap_scripts/docker_build.sh" >> Dockerfile
     echo "LABEL MS_IMAGE_BUILD_KEY=\"${BUILDKEY}\"" >> Dockerfile
-    echo "CMD /bootstrap_scripts/docker_build.sh" >> Dockerfile
+    echo "CMD /forwarded_volumes/bootstrap_scripts/stage2.sh" >> Dockerfile
     red "${MS_IMAGE}: Bootstraping image ${mbs} with this Dockerfile"
     cat Dockerfile
     docker build -t "${mbs}" .
@@ -88,34 +87,31 @@ exit 1
 die_in_error "${mbs} failed to build"
 
 # Stage3. Spawn a container, run systemd & install makina-states
-volumes="-v /sys/fs/cgroup:/sys/fs/cgroup:ro"
-volumes="${volumes} -v /usr/bin/docker:/usr/bin/docker:ro"
-volumes="${volumes} -v /var/lib/docker:/var/lib/docker"
-volumes="${volumes} -v /var/run/docker:/var/run/docker"
-volumes="${volumes} -v /var/run/docker.sock:/var/run/docker.sock"
-volumes="${volumes} -v /bootstrap_scripts:/forwarded_volumes/bootstrap_scripts"
-for i in $(\
-    find \
-         /srv/pillar \
-         /srv/mastersalt-pillar \
-         /srv/projects \
-    -mindepth 0 -maxdepth 0 -type d 2>/dev/null);do
-    volumes="${volumes} -v ${i}:/forwarded_volumes/${i}"
+for i in /srv/pillar /srv/mastersalt-pillar /srv/projects;do
+    if [ ! -d ${i} ];then mkdir ${i};fi
 done
 NAME="$(echo ${MS_IMAGE}|sed -re "s/\///g")-$(uuidgen)"
-
 # Run the script; it's the script which is in charge to tag the image
-docker run --net="host" \
-    --privileged -ti --rm \
-    -e container="docker"
+MS_IMAGE_CANDIDATE="${MS_IMAGE}:candidate"
+docker run \
+    -e container="docker" \
     -e MS_GIT_URL="${MS_GIT_URL}" \
     -e MS_GIT_BRANCH="${MS_GIT_BRANCH}" \
     -e MS_DID="${NAME}" \
     -e MS_COMMAND="${MS_COMMAND}" \
     -e MS_IMAGE="${MS_IMAGE}" \
     -e MS_IMAGE_CANDIDATE="${MS_IMAGE_CANDIDATE}" \
-    ${volumes} \
-    --name="${NAME}" "${mbs}"
+    -v /data:/data \
+    -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+    -v /usr/bin/docker:/usr/bin/docker:ro \
+    -v /var/lib/docker:/var/lib/docker \
+    -v /var/run/docker:/var/run/docker \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v /bootstrap_scripts:/forwarded_volumes/bootstrap_scripts \
+    -v /srv/pillar:/forwarded_volumes/srv/pillar \
+    -v /srv/mastersalt-pillar:/forwarded_volumes/srv/mastersalt-pillar \
+    -v /srv/projects:/forwarded_volumes/srv/projects \
+    --net="host" --privileged -ti --rm --name="${NAME}" "${mbs}"
 ret=$?
 if [ "x${ret}" != "x0" ];then
     false;die_in_error "${MS_IMAGE} builder script did'nt worked"
