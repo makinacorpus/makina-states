@@ -1,5 +1,6 @@
 
 .. _build_docker:
+.. _Docker scratch image: https://docs.docker.com/articles/baseimages/#creating-a-simple-base-image-using-scratch
 
 Docker
 =======
@@ -74,7 +75,6 @@ The script will:
         - If all the build is sucessfull We commit this container as an image
           but taggued with the **candidate** keyword.
 
-.. _dockerscratch: Docker scratch image_
 
 Construct a base docker image with makina-states
 ---------------------------------------------------
@@ -110,7 +110,7 @@ The script support those environment variables:
         Any argument to give to the docker run call to the stage0 builder (None)
     MS_BASE
         Stage 1 base image (either scratch or a real image.
-        If stage1 is dockerscratch_, you need to provide a **baseimage.tar.xz**
+        If stage1 is `Docker scratch image`_ , you need to provide a **baseimage.tar.xz**
         tarball placed in the "data" volume.
         or the script will fetch for you a basic ubuntu container using
         lxc-utils. For those who dont know, **scratch** is a special
