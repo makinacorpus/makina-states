@@ -9,15 +9,18 @@ cyan() { echo "${CYAN}${@}${NORMAL}"; }
 yellow() { echo "${YELLOW}${@}${NORMAL}"; }
 die_in_error() { if [ "x${?}" != "x0" ];then echo "${@}";exit 1;fi }
 cwd="$(cd $(dirname "${0}") && pwd)"
+MS_OS="${MS_OS:-"ubuntu"}"
 MS_OS_MIRROR="${MS_OS_MIRROR:-"http://mirror.ovh.net/ftp.ubuntu.com/"}"
-MS_OS="${MS_OS:-ubuntu}"
-MS_OS_RELEASE="${MS_OS_RELEASE:-vivid}"
+DEFAULT_RELEASE=""
+if [ "x${MS_OS}" = "xubuntu" ];then DEFAULT_RELEASE="vivid";fi
+MS_OS_RELEASE="${MS_OS_RELEASE:-"${DEFAULT_RELEASE}"}"
 MS_DOCKER_ARGS="${MS_DOCKER_ARGS:-}"
 MS_DATA_DIR="${MS_DATA_DIR:-${cwd}}"
+MS_DOCKER_STAGE0="${0}"
 MS_DOCKER_STAGE1="${MS_DOCKER_STAGE1:-"${cwd}/docker_build_stage1.sh"}"
 MS_DOCKER_STAGE2="${MS_DOCKER_STAGE2:-"${cwd}/docker_build_stage2.sh"}"
 MS_DOCKER_STAGE3="${MS_DOCKER_STAGE3:-"${cwd}/docker_build_stage3.sh"}"
-MS_DOCKERFILE="${MS_DOCKER_FILE:-"Dockerfile.${MS_OS}.${MS_OS_RELEASE}"}"
+MS_DOCKERFILE="${MS_DOCKERFILE:-"Dockerfile.${MS_OS}.${MS_OS_RELEASE}"}"
 MS_STAGE0_TAG="${MS_STAGE0_TAG:-"makinacorpus/makina-states-${MS_OS}-${MS_OS_RELEASE}-0"}"
 MS_GIT_BRANCH="${MS_GIT_BRANCH:-"stable"}"
 MS_GIT_URL="${MS_GIT_URL:-"https://github.com/makinacorpus/makina-states.git"}"
@@ -39,7 +42,9 @@ docker run --privileged -ti --rm \
     -e MS_GIT_URL="${MS_GIT_URL}" \
     -e MS_GIT_BRANCH="${MS_GIT_BRANCH}" \
     -v "${MS_DATA_DIR}":/data \
-    -v "${MS_DOCKER_STAGE1}":/bootstrap_scripts/docker_build_stage1.s h\
+    -v "${MS_DOCKERFILE}":/bootstrap_scripts/Dockerfile \
+    -v "${MS_DOCKER_STAGE0}":/bootstrap_scripts/docker_build_stage0.sh \
+    -v "${MS_DOCKER_STAGE1}":/bootstrap_scripts/docker_build_stage1.sh \
     -v "${MS_DOCKER_STAGE2}":/bootstrap_scripts/docker_build_stage2.sh \
     -v "${MS_DOCKER_STAGE3}":/bootstrap_scripts/docker_build_stage3.sh \
     ${MS_DOCKER_ARGS} \

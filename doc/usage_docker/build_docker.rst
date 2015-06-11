@@ -129,6 +129,8 @@ The script support those environment variables:
     MS_STAGE0_TAG
         Tag of the stage0 image, by default it looks like
         **makinacorpus/makina-states-vivid-0**
+    MS_DOCKER_STAGE0
+        Path to a **stage0** builder script, eg **`_scripts/docker_build_stage0.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage0.sh>`_**
     MS_DOCKER_STAGE1
         Path to a **stage1** builder script, eg **`_scripts/docker_build_stage1.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage1.sh>`_**
     MS_DOCKER_STAGE2
