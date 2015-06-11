@@ -16,7 +16,7 @@ if [ "x${MS_OS}" = "xubuntu" ];then DEFAULT_RELEASE="vivid";fi
 MS_OS_RELEASE="${MS_OS_RELEASE:-"${DEFAULT_RELEASE}"}"
 MS_DOCKER_ARGS="${MS_DOCKER_ARGS:-}"
 MS_DATA_DIR="${MS_DATA_DIR:-${cwd}}"
-MS_DOCKER_STAGE0="${0}"
+MS_DOCKER_STAGE0="${MS_DOCKER_STAGE0:-"${cwd}/stage0.sh"}"
 MS_DOCKER_STAGE1="${MS_DOCKER_STAGE1:-"${cwd}/stage1.sh"}"
 MS_DOCKER_STAGE2="${MS_DOCKER_STAGE2:-"${cwd}/stage2.sh"}"
 MS_DOCKER_STAGE3="${MS_DOCKER_STAGE3:-"${cwd}/stage3.sh"}"
@@ -25,7 +25,7 @@ MS_STAGE0_TAG="${MS_STAGE0_TAG:-"makinacorpus/makina-states-${MS_OS}-${MS_OS_REL
 MS_GIT_BRANCH="${MS_GIT_BRANCH:-"stable"}"
 MS_GIT_URL="${MS_GIT_URL:-"https://github.com/makinacorpus/makina-states.git"}"
 MS_IMAGE="${MS_IMAGE:-"makinacorpus/makina-states-${MS_OS}-${MS_OS_RELEASE}"}"
-docker build -t "${STAGE0_TAG}" -f "${MS_DOCKERFILE}"
+docker build -t "${MS_STAGE0_TAG}" -f "${MS_DOCKERFILE}"
 die_in_error "${MS_IMAGE}: stage0 didnt build"
 docker run --privileged -ti --rm \
     -e MS_GIT_BRANCH="${MS_GIT_BRANCH}" \
