@@ -48,7 +48,7 @@ The script will:
         - the container template
         - the **baseimage.tar.xz** or the providen **MS_BASE**
 
-    - If **MB_BASE** is a `scratch <docker_scratch_>`_ image,
+    - If **MB_BASE** is a `scratch <dockerscratch_>`_ image,
       It creates **baseimage.tar.gz** or reuse it,
       this is the OS base image.
       By default, we export this image to the **MS_DATA_DIR** directory.
@@ -74,7 +74,7 @@ The script will:
           but taggued with the **candidate** keyword.
 
 
-.. _docker_scratch: https://docs.docker.com/articles/baseimages/#creating-a-simple-base-image-using-scratch
+.. _dockerscratch: https://docs.docker.com/articles/baseimages/#creating-a-simple-base-image-using-scratch
 
 
 Construct a base docker image with makina-states
