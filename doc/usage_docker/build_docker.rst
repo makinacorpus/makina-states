@@ -113,7 +113,7 @@ The script support those environment variables:
         tarball placed in the "data" volume.
         or the script will fetch for you a basic ubuntu container using
         lxc-utils. For those who dont know, **scratch** is a special
-        and emppty image in the Docker speaking.
+        and empty image in the Docker speaking.
     MS_COMMAND
         Command to use on the resulting image
     MS_GIT_BRANCH
