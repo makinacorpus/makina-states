@@ -2,25 +2,28 @@
 FROM ubuntu:vivid
 ENV DOCKERFILE_ID="1"\
     MS_OS="ubuntu"\
-    MS_DEB_RELEASE="vivid"\
+    MS_OS_RELEASE="vivid"\
     MS_OLD_DEB_MIRROR="http://archive.ubuntu.com/ubuntu/"\
-    MS_DEB_MIRROR="http://mirror.ovh.net/ftp.ubuntu.com/"\
+    MS_OS_MIRROR="http://mirror.ovh.net/ftp.ubuntu.com/"\
     DEBIAN_FRONTEND=noninteractive\
     container=docker
 ADD files/etc/apt/apt.conf.d/99gzip\
     files/etc/apt/apt.conf.d/99notrad\
     files/etc/apt/apt.conf.d/99clean\
     /etc/apt/apt.conf.d/
-RUN sed -i -re "s|${MS_OLD_DEB_MIRROR}|${MS_DEB_MIRROR}|g" /etc/apt/sources.list\
+RUN sed -i -re "s|${MS_OLD_DEB_MIRROR}|${MS_OS_MIRROR}|g" /etc/apt/sources.list\
     && apt-get update\
     && apt-get install -y  software-properties-common\
     && add-apt-repository -y ppa:ubuntu-lxc/daily\
     && apt-get update\
-    && apt-get install -y --force-yes lxc lxc-templates git e2fsprogs
+    && apt-get install -y --force-yes\
+        lxc lxc-templates git e2fsprogs ca-certificates
 ADD files/sbin/makinastates-snapshot.sh\
     files/sbin/lxc-cleanup.sh\
     _scripts/boot-salt.sh\
-    _scripts/bootstrap_in_docker.sh\
+    _scripts/docker_build_stage1.sh\
+    _scripts/docker_build_stage2.sh\
+    _scripts/docker_build_stage3.sh\
     /bootstrap_scripts/
 RUN /bootstrap_scripts/makinastates-snapshot.sh
 VOLUME [/bootstrap_scripts/docker_build.sh]
@@ -35,6 +38,6 @@ ENV MS_GIT_URL="https://github.com/makinacorpus/makina-states.git"
 ENV MS_GIT_BRANCH="stable"
 ENV MS_COMMAND="/sbin/init"
 ENV MS_BASE="scratch"
-ENV MS_IMAGE="makinacorpus/makina-states-${MS_DEB_RELEASE}"
+ENV MS_IMAGE="makinacorpus/makina-states-${MS_OS_RELEASE}"
 ENV MS_IMAGE_CANDIDATE="${MS_IMAGE}:candidate"
-CMD /bootstrap_scripts/bootstrap_in_docker.sh
+CMD /bootstrap_scripts/docker_build_stage1.sh

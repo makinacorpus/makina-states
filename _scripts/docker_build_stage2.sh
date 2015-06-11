@@ -4,9 +4,14 @@
 die_in_error() { if [ "x${?}" != "x0" ];then echo "${@}";exit 1;fi }
 # 1. Launch systemd
 systemd --system &
-apt-get install -y git
+set -x
+export DEBIAN_FRONTEND=noninteractive
+apt-get install -y --force-yes git ca-certificates rsync acl
+rsync -Aa /forwarded_volumes/ /
 # 2. Refresh makina-states code
 bs="/srv/salt/makina-states/_scripts/boot-salt.sh"
+ip route
+ifconfig
 if [ ! -d /srv/salt ];then mkdir -p /srv/salt;fi
 if [ ! -e ${bs} ];then
     git clone ${MS_GIT_URL} -b ${MS_GIT_BRANCH} /srv/salt/makina-states
@@ -20,12 +25,14 @@ ${bs} -C --mastersalt 127.0.0.1 -n dockercontainer\
     --local-mastersalt-mode masterless --local-salt-mode masterless
 die_in_error "${MS_IMAGE} failed installing makina-states"
 
-# 4. rebuild any corpus projects
-for i in $(find /srv/projects/ -mindepth 1 -maxdepth 1 -type d 2>/dev/null);do
-    salt-call --retcode-passthrough --local\
-        -linfo mc_project.deploy "$(basename ${i})" only="install,fixperms"
-    die_in_error "${MS_IMAGE}-base failed to build project ${i}"
-done
+# 4. Run project installation, this is this script
+#    which will be mostly configured by users
+if [ -x /bootstrap_scripts/docker_build_stage3.sh ];then
+    /bootstrap_scripts/docker_build_stage3.sh
+fi
+
+getfacl -R / > /acls.txt || /bin/true
+touch /acls.restore
 
 # END -- The common case is to tag back the image as a release candidate at the end
 if docker inspect "${MS_IMAGE_CANDIDATE}" >/dev/null 2>&1;then

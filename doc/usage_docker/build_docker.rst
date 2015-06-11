@@ -24,70 +24,139 @@ Intro
 - On the host You will also need a special apparmor profile,
   which is provided by makina-states, see ``localsettings/apparmor.sls`` for details.
 
+DESIGN: The full order of operation
+------------------------------------
+As the makina-states images are based upon a funtionnal init system (systemd)
+for operation,
+Their initial build is a bit tedious in sense that they need a 3 steps build.
+Hopefully, we provide a script which has batteries included for you.
+
+The script will:
+
+- Create a container which has the necessary environment to build the images.
+  This is **Stage0**.
+- The **Stage1** step involves
+
+    - Launching this container and by modifying
+      environment variables and/or command line arguments,
+      the user may influence how to build the final image that will be
+      generated from :
+
+        - the container template
+        - the **baseimage.tar.xz** or the providen **MS_BASE**
+
+    - If **MB_BASE** is a **scratch** image,
+      It creates **baseimage.tar.gz** or reuse it,
+      this is the OS base image.
+      By default, we export this image to the **MS_DATA_DIR** directory.
+    - From this image, we launch a new container, ensuring that all
+      relevant environment variables and volumes are forwarded
+    - Inside the container, what we call **Stage2** does:
+
+        - we execute the **/data/build_docker.sh** script which by default:
+        - Maybe copy the inputed pillar, mastersalt pillar &
+          corpus pillars inside this container, they are currently mounted as volumes
+          in **/forwarded_volumes** by **Stage1**
+        - spawn init (currently: systemd)
+        - launch makina-states installation
+        - (RE)Install any corpus based project
+        - Save the **POSIX acls** to **/acls.txt**
+        - Mark the container to restore acls on next boot via touching **/acls.restore**
+        - If all the build is sucessfull We commit this container as an image
+          but taggued with the **candidate** keyword.
+
+
 Construct a base docker image with makina-states
 ---------------------------------------------------
-As the makina-states images are based upon systemd for operation,
-their initial build is a bit tedious in sense that they need a 3 steps build.
+Idea
+++++++++
+All that the user has to do, is to copy the **_script/docker_build.sh**
+in his project and adapt it for it's need, basically, the only thing
+to change in a corpus based project is the test procedure.
 
-STAGE 1: construct the image builder
-+++++++++++++++++++++++++++++++++++++
+How To
+++++++++++
+The entry point to this build system is **_scripts/build.sh**
+You can easily adjust it to your needs in case.
 
-The goal of this step is to make a base chroot proper to the makina-states initialization::
+.. code-block:: bash
 
-    git clone https://github.com/makinacorpus/makina-states.git -b stable
-    cd makina-states
-    docker build -t makina-states-vivid-0 -f Dockerfile.vivid.stage0  .
+    _scripts/build.sh
 
-STAGE 5 (2+3): build images (base+app)
-+++++++++++++++++++++++++++++++++++++++
-::
+You can override **docker_build.sh** (installing makina-states) by looking and overriding
+it to your need
 
-    docker run --privileged -ti --rm \
-        -e MS_BASE="scratch" -e MS_IMAGE="makinacorpus/makina-states-vivid"\
-        -v /usr/bin/docker:/usr/bin/docker:ro \
-        -v /var/run/docker.sock:/var/run/docker.sock \
-        -v /var/run/docker:/var/run/docker \
-        -v /var/lib/docker:/var/lib/docker \
-        -v /sys/fs:/sys/fs:ro\
-        -v $PWD:/data \
-        -v $PWD/_scripts/docker_build.sh:/bootstrap_scripts/docker_build.sh \
-        makinacorpus/makina-states-vivid-0
+The script support those environment variables:
 
-You can override docker_build (installing makina-states) by looking and overriding
-the **_scripts/docker_build.sh** script. The previous command will be::
+    MS_DOCKERFILE
+        Path to a Stage0 Compliant file,
+        default to current makina-states one
+    MS_DATA_DIR
+        Data volume dir to place the **baseimage.tar.xz** file
+    MS_DOCKER_ARGS
+        Any argument to give to the docker run call to the stage0 builder (None)
+    MS_BASE
+        Stage 1 base image (either scratch or a real image.
+        If stage1 is **scratch**, you need to provide a **baseimage.tar.xz**
+        tarball placed in the "data" volume.
+        or the script will fetch for you a basic ubuntu container using
+        lxc-utils. For those who dont know, **scratch** is a special
+        and emppty image in the Docker speaking.
+    MS_COMMAND
+        Command to use on the resulting image
+    MS_GIT_BRANCH
+        Branch for makina-states (stable)
+    MS_GIT_URL
+        Url for makina-states (github.com/makinacorpus/makina-states)
+    MS_OS
+        OS (eg: ubuntu)
+    MS_OS_RELEASE
+        OS release (eg: vivid)
+    MS_IMAGE
+        Image tarball (like a base lxc container export)
+    MS_STAGE0_TAG
+        Tag of the stage0 image, by default it looks like
+        **makinacorpus/makina-states-vivid-0**
+    MS_DOCKER_STAGE1
+        Path to a **stage1** builder script, eg **_scripts/docker_build_stage1.sh**
+    MS_DOCKER_STAGE2
+        Path to a **stage2** builder script, eg **_scripts/docker_build_stage2.sh**
+    MS_DOCKER_STAGE3
+        Path to a **stage2** builder script, eg **_scripts/docker_build_stage3.sh**
 
-    docker run --privileged -ti --rm \
-        -e MS_BASE="scratch" -e MS_IMAGE="makinacorpus/makina-states-vivid"\
-        -v /usr/bin/docker:/usr/bin/docker:ro \
-        -v /var/run/docker.sock:/var/run/docker.sock \
-        -v /var/run/docker:/var/run/docker \
-        -v /var/lib/docker:/var/lib/docker \
-        -v /sys/fs:/sys/fs:ro\
-        -v $PWD:/data \
-        -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh\
-        makinacorpus/makina-states-vivid-0
+Additionnaly, in stage2, the stage0 script will set:
+
+    MS_IMAGE_CANDIDATE
+        Which is the tag of the Image to commit if the build is sucessful
 
 You can feed the image with preconfigured pillars by mounting additional volumes for:
 
     - **/srv/pillar**
     - **/srv/mastersalt-pillar**
-    - **/srv/projects/<project>/pillar/**
+    - **/srv/projects**
 
-This will generate a **baseimage.baseimage.tar.xz** in the current directory.
-This will also generate 2 images:
+Those pillars, if given will be commited to the image.
 
-    - one for the base image containing a bare ubuntu lxc container.
-      If we find the data avolume the base image, we won't reconstruct it.
-      If we find the image inside the local docker image registry, we won't reconstruct it
-    - one containing makina-states (provisionned via mastersalt + salt + projects dance)
+**_scripts/build.sh** can also take any argument that will be used
+in the docker run command. Any environment knob defined via CLI args will
+override variable setted via environment variables.
 
-Basically, it is just an export of a basic ubuntu LXC container created via the lxc utils.
+Indeed, it is via this trick that you can override the docker_build.sh script
 
-STAGE 2
-++++++++
-You can then eventually build the base image via
-```
-docker build -t makinacorpus/makina-states-vivid-0 -f Dockerfile.vivid
-DID=$(docker run --cap-add=SYS_ADMIN  -d makinacorpus/makina-states-vivid-0)
-```
+.. code-block:: bash
+
+    export MS_IMAGE="mycompany/myimage"
+    _scripts/build.sh \
+        -v $PWD:/data \
+        -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
+
+If you do not want to use an empty base image (for example a prebuilt makina-states
+image), you can use **MS_BASE** to indicate your base
+
+.. code-block:: bash
+
+    export MS_BASE="mycompany/myimage"
+    _scripts/build.sh \
+        -v $PWD:/data \
+        -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
 
