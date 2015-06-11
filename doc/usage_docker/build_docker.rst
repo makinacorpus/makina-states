@@ -1,7 +1,7 @@
 
 .. _build_docker:
 .. _Docker scratch image: https://docs.docker.com/articles/baseimages/#creating-a-simple-base-image-using-scratch
-.. _scratch: _Docker scratch image
+.. _scratch: Docker scratch image_
 
 Docker
 =======
