@@ -166,14 +166,16 @@ Indeed, it is via this trick that you can influence on the behavior of the
 
 If you do not want to use an empty base image (for example a prebuilt makina-states
 image), you can use **MS_BASE** to indicate your base
+
 .. code-block:: bash
 
     export MS_BASE="mycompany/myimage"
     _scripts/build.sh \
-        -v $PWD:/data \
-        -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
+      -v $PWD:/data \
+      -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
 
 OR
+
 .. code-block:: bash
 
     _scripts/build.sh \
