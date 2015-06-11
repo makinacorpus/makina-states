@@ -1,4 +1,4 @@
-# STAGE 1/3 build
+# makina-states - STAGE0 Compatible Container
 FROM ubuntu:vivid
 ENV DOCKERFILE_ID="1"\
     MS_OS="ubuntu"\
