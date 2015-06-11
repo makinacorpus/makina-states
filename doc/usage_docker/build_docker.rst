@@ -24,6 +24,9 @@ Intro
 - On the host You will also need a special apparmor profile,
   which is provided by makina-states, see ``localsettings/apparmor.sls`` for details.
 
+- The build system is inspired from our more than 20 years or UNIX experience, from
+  gentoo to Docker land.
+
 DESIGN: The full order of operation
 ------------------------------------
 As the makina-states images are based upon a funtionnal init system (systemd)
@@ -80,7 +83,7 @@ in his project and adapt it for it's need, basically, the only thing
 to change in a corpus based project is the test procedure.
 
 What you, as a regular user, will want to change is likely to be only
-a part of **Stage3**.
+a part of **Stage3** or (future) upper stages.
 
 How To
 ++++++++++
