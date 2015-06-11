@@ -160,8 +160,9 @@ Indeed, it is via this trick that you can influence on the behavior of the
 
     export MS_IMAGE="mycompany/myimage"
     _scripts/build.sh \
-        -v $PWD:/data \
-        -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
+     -v $PWD:/data \
+     -v /path/to/custom/docker_build_stage2.sh:/bootstrap_scripts/docker_build_stage2.sh\
+     -v /path/to/custom/docker_build_stage3.sh:/bootstrap_scripts/docker_build_stage3.sh
 
 If you do not want to use an empty base image (for example a prebuilt makina-states
 image), you can use **MS_BASE** to indicate your base
