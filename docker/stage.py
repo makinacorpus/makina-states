@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+'''
+Makina-States Stage runner
+
+It will setup the env, then launch & wrap the stage0 -> 3 dance
+
+'''
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from __future__ import division
@@ -76,7 +82,7 @@ def green(msg, pipe=sys.stdout):
     pipe.write('\n')
 
 
-def die(reason, pipe=sys.stdout):
+def die(reason, pipe=sys.stderr):
     red(reason, pipe=pipe)
     raise StageError(reason)
 
@@ -250,7 +256,7 @@ def main(argv=None,
         d = os.path.dirname(j)
         if not os.path.exists(k):
             die('{0}: script {1} ({2})'
-                ' does not exist'.format(MS_IMAGE, i, k), pipe=pipe)
+                ' does not exist'.format(MS_IMAGE, i, k), pipe=errpipe)
         if not os.path.exists(d):
             cyan('{0}: creating {1}'.format(MS_IMAGE, d), pipe=pipe)
             os.makedirs(d)
