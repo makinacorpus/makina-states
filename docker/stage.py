@@ -369,12 +369,11 @@ def main(argv=None,
     purple('- stage-1 complete -', pipe=pipe)
     purple('--------------------', pipe=pipe)
     pipe.write('\n')
-    p = None
-    # p = v_die_run(
-    #     '{0}/injected_volumes/bootstrap_scripts/stage0.sh'
-    #     ' "${@}"'.format(MS_IMAGE_DIR),
-    #           env=environ,
-    #    reason='{0}: build failed'.format(MS_IMAGE))
+    p = v_die_run(
+        '{0}/injected_volumes/bootstrap_scripts/stage0.sh'
+        ' {1}'.format(MS_IMAGE_DIR, ' '.join(argv)),
+        env=environ,
+        reason='{0}: build failed'.format(MS_IMAGE))
     return p, environ, pipe, errpipe
 
 

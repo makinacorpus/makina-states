@@ -41,23 +41,27 @@ v_run rsync -Aa /injected_volumes/ /
 # 2. Refresh makina-states code
 ip route
 ifconfig
-if [ ! -d /srv/salt ];then mkdir -p /srv/salt;fi
-bs="/srv/salt/makina-states/_scripts/boot-salt.sh"
-if [ ! -e ${bs} ];then
-    git clone /makina-states.git /srv/salt/makina-states &&\
-    cd /srv/salt/makina-states && \
-    git remote rm origin &&\
-    git remote add origin "${MS_GIT_URL}" &&\
-    git checkout -b "${MS_GIT_BRANCH}"
-    warn_in_error "${MS_IMAGE}: problem while initing makina-states code"
-fi
-${bs} -C --refresh-modules
-warn_in_error "${MS_IMAGE}: failed to fetch up-to-data makina-states code"
+if [ "x${MS_MAKINASTATES_BUILD_DISABLED}" != "x" ];then
+    yellow "${MS_IMAGE}: makina-states integration is skipped, skipping makina-states install"
+else
+    if [ ! -d /srv/salt ];then mkdir -p /srv/salt;fi
+    bs="/srv/salt/makina-states/_scripts/boot-salt.sh"
+    if [ ! -e ${bs} ];then
+        git clone /makina-states.git /srv/salt/makina-states &&\
+        cd /srv/salt/makina-states && \
+        git remote rm origin &&\
+        git remote add origin "${MS_GIT_URL}" &&\
+        git checkout -b "${MS_GIT_BRANCH}"
+        warn_in_error "${MS_IMAGE}: problem while initing makina-states code"
+    fi
+    ${bs} -C --refresh-modules
+    warn_in_error "${MS_IMAGE}: failed to fetch up-to-data makina-states code"
 
-# 3. mastersalt + salt highstates & masterless mode
-${bs} -C --mastersalt 127.0.0.1 -n dockercontainer\
-    --local-mastersalt-mode masterless --local-salt-mode masterless
-die_in_error "${MS_IMAGE}: failed installing makina-states"
+    # 3. mastersalt + salt highstates & masterless mode
+    ${bs} -C --mastersalt 127.0.0.1 -n dockercontainer\
+        --local-mastersalt-mode masterless --local-salt-mode masterless
+    die_in_error "${MS_IMAGE}: failed installing makina-states"
+fi
 echo
 purple "--------------------"
 purple "- stage2 complete  -"

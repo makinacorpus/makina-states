@@ -28,7 +28,7 @@ if [ "x${mid}" != "x" ];then
     if [ "x${mid}" = "x${nmid}" ];then
         yellow "${MS_IMAGE}: stage0 found"
     else
-        docker rmi "${mid}"\
+        docker rmi "${mid}" \
             && yellow "${MS_IMAGE}: stage0 cleaned up old image: ${mid}"
         warn_in_error "${MS_IMAGE}: stage0 can't cleanup old image"
     fi
@@ -63,6 +63,7 @@ v_run docker run --privileged -ti --rm \
  -v /var/lib/docker:/var/lib/docker \
  -v /var/run/docker:/var/run/docker \
  -v /var/run/docker.sock:/var/run/docker.sock \
- ${MS_DOCKER_ARGS} "${@}" --name="${MS_STAGE1_NAME}" "${MS_STAGE0_TAG}"
+ "${MS_DOCKER_ARGS}" \
+ --name="${MS_STAGE1_NAME}" "${MS_STAGE0_TAG}"
 die_in_error "${MS_IMAGE}: Upper stages failed, see logs"
 # vim:set et sts=4 ts=4 tw=80:

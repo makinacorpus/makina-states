@@ -32,11 +32,15 @@ if [ -e /bootstrap_scripts/stage2.env ];then
 fi
 
 # this should be sufficient to (re)build any makina-states corpus style projects
-for i in $(find /srv/projects/ -mindepth 1 -maxdepth 1 -type d 2>/dev/null);do
-    salt-call --retcode-passthrough --local\
-        -linfo mc_project.deploy "$(basename ${i})" only="install,fixperms"
-    die_in_error "${MS_IMAGE}: failed to build project ${i}"
-done
+if [ "x${MS_MAKINASTATES_BUILD_DISABLED}" != "x" ];then
+    yellow "${MS_IMAGE}: makina-states integration is skipped, skipping corpus projects build"
+else
+    for i in $(find /srv/projects/ -mindepth 1 -maxdepth 1 -type d 2>/dev/null);do
+        salt-call --retcode-passthrough --local\
+            -linfo mc_project.deploy "$(basename ${i})" only="install,fixperms"
+        die_in_error "${MS_IMAGE}: failed to build project ${i}"
+    done
+fi
 
 # <--
 # <--

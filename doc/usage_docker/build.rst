@@ -64,7 +64,7 @@ Layout
 ++++++
 What is good to remember is that it is just a collection of shell scripts, and
 to modulate an image building, we provide environ variables and volumes from
-a well known data directory.
+a well known data directory, which we expose to the build containers.
 Users have just to appropriate the **stageN.sh** scripts and the file layout
 to get their projects into a contineous deployment pipeline::
 
@@ -72,7 +72,8 @@ to get their projects into a contineous deployment pipeline::
  |- docker/
  |  |- stage0.sh stage1.sh stage2.sh stage3.sh [...] <- default build scripts
  |- data/
-    |- globalimage.xxx.yyy.xz
+    |- globalimage.xxx.yyy.xz <- The OS base tarball (like a lxc container
+    |                                                 export)
     |- image1/
     |  |
     |  |- injected_volumes/    <- All what is beneath this level
@@ -118,40 +119,36 @@ Hopefully, we provide a script which has batteries included for you.
 The procedure will then almost initially look like:
 
 - Create a container which has the necessary environment to build the images.
-  This is **Stage0**.
+  This is **Stage0**. we expose here:
+
+    - All the docker related environment (socket, cache, layers)
+    - The top of the data dir inside **/docker/data**
+    - The image dir
+      inside **/injected_volumes**
+      and also in **/docker/injected_volumes** (to make them available during
+      stage1 build)
+
 - The **Stage1** step involves
 
-    - Launching this container modulating the invocation via
-      environment variables and/or command line arguments.
-      This one of the means that end user may influence how to build the final image
-      that will be generated from :
-
-        - the container template
-        - the **baseimage.tar.xz** or the providen **MS_BASE**
-        - the injected volumes **/injected_volumes**
-
-    - If **MB_BASE** is **scratch**, the build will use
-      a `scratch image`_,
-      It creates **baseimage-xxx-yyy.tar.gz** or reuse it,
-      this is the OS base image.
-      By default, we export/read this image to/from the top of
+    - Launching a container on the behalf of any supported environment variables
+      and/or command line arguments.
+    - If **MB_BASE** is **scratch**, the build will create from an lxc template
+      and using `scratch image`_ as a base a **baseimage-xxx-yyy.tar.gz** tarball
+      (or reuse if existing). This is the **OS base image**.
+    - This file **baseimage-xxx-yyy.tar.gz** is store on the top of
       the **MS_DATA_DIR** directory.
     - From this image, we launch a new container, ensuring that all
-      relevant environment variables and volumes are injected
+      relevant environment variables and volumes are re-exposed to this
+      **stage2** container.
     - Inside the container, we now enter **Stage2** step and run the
-      **stage2.sh** script as this container boot command.
-      The default **stage2** script does the following
+      **stage2.sh** script as this container boot command which does:
 
-        - We copy all the content of **/injected_volumes** to **/** ensuring
+        - Copy all the content of **/injected_volumes** to **/** ensuring
           the conservation of any **POSIX ACL**. This will of course
           be commited as of your final image.
-
-          .. note:
-
-              We are not using the **ADD** Dockerfile instruction for
-              stage1 because it does not conserve **POSIX ACLS**.
-              Those acls are heavily used in makina-states setups.
-
+        - We are not using the **ADD** Dockerfile instruction for
+           stage1 because it does not conserve **POSIX ACLS**.
+           Those acls are heavily used in makina-states setups.
         - Spawn an init as in **PID=1** (currently: **systemd**)
         - Launch makina-states installation and refresh unless users
           disabled it via the **MS_MAKINASTATES_BUILD_DISABLED** envionment
@@ -183,8 +180,11 @@ variables or docker volumes (as stage0.sh arguments) to use your custom scripts.
 In most cases, you certainly only:
 
  - place files and directories inside **DATADIR/<image>/injected_volumes**
- - have to override **DATADIR/<image>/bootstrap_scripts/stage3.sh**
-   to construct an image
+ - have to override **DATADIR/<image>/injected_volumes/bootstrap_scripts/stage3.sh**
+   to construct an image. The more convenient way is to drop a file at this
+   place::
+
+     DATADIR/<image>/overrides/injected_volumes/bootstrap_scripts/stage3.sh
 
 .. code-block:: bash
 
@@ -245,9 +245,25 @@ Additionnaly, in stage1 (read-only):
 You can feed the image with preconfigured pillars & project trees
 by creating files inside for example:
 
-    - **<DATADIR>/<IMAGE_NAME>/injected_volumes/srv/pillar**
-    - **<DATADIR>/<IMAGE_NAME>/injected_volumes/srv/mastersalt-pillar**
-    - **<DATADIR>/<IMAGE_NAME>/injected_volumes/srv/projects**
+    - **<DATADIR>/<IMAGE_NAME>/overrides/injected_volumes/srv/pillar**
+    - **<DATADIR>/<IMAGE_NAME>/overrides/injected_volumes/srv/mastersalt-pillar**
+    - **<DATADIR>/<IMAGE_NAME>/overrides/injected_volumes/srv/projects**
+
+.. _volumes:
+
+Those volumes are exposed in all container stages:
+
+    +--------------------------------+-------------------------------------------------+
+    |    container                   | host                                            |
+    +--------------------------------+-------------------------------------------------+
+    |   /docker/data                 |  $DATADIR                                       |
+    +--------------------------------+-------------------------------------------------+
+    |   /docker/injected_volumes     |  $DATADIR/$IMAGE/injected_volumes               |
+    +--------------------------------+-------------------------------------------------+
+    |   /injected_volumes            |  $DATADIR/$IMAGE/injected_volumes               |
+    +--------------------------------+-------------------------------------------------+
+    |   /makina-states.git           |  **makina-states/.git**                         |
+    +--------------------------------+-------------------------------------------------+
 
 Those pillars, if given will be fullycommited to the image.
 Technically, all what is behind **injected_volumes** is copied, via rsync
