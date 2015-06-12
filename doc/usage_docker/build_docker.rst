@@ -334,8 +334,9 @@ Full example
 
 - Replace docker by makina-corpus version (1.7+), we have modified it to allow to use a custom
   apparmor profile instead of inject it's own and broken one.
-- The sources are `here@github <https://github.com/makinacorpus/docker.git>`_.
-- We provide a `prebuilt binary for linux <https://github.com/makinacorpus/docker/releases/download/mc_1/docker>`_.
+
+    - The sources are `here@github <https://github.com/makinacorpus/docker.git>`_.
+    - We provide a `prebuilt binary for linux <https://github.com/makinacorpus/docker/releases/download/mc_1/docker>`_.
 
 - Clone makina-states, even if not installing it on you host
 ::
