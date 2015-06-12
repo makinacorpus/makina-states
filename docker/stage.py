@@ -25,6 +25,15 @@ import subprocess
 import hashlib
 import textwrap
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    try:
+        from orderedict import OrderedDict
+    except ImportError:
+        OrderedDict = dict
+
+
 _CWD = os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))
 RED = '\033[31;01m'
@@ -33,6 +42,12 @@ CYAN = '\033[36;01m'
 YELLOW = '\033[33;01m'
 GREEN = '\033[32;01m'
 NORMAL = '\033[0m'
+COLORS = {'red': RED,
+          'purple': PURPLE,
+          'cyan': CYAN,
+          'yellow': YELLOW,
+          'normal': NORMAL,
+          'green': GREEN}
 
 
 class StageError(Exception):
@@ -49,7 +64,7 @@ def hashfile(afile, hasher=None, blocksize=65536):
     return hasher.digest()
 
 
-def id_generator(size=32, chars=string.ascii_uppercase + string.digits):
+def id_generator(size=10, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
 
@@ -150,7 +165,37 @@ def v_die_run(cmd,
     return p
 
 
+def q_die_run(cmd,
+              env=None,
+              reason=None,
+              shell=True,
+              pipe=sys.stdout,
+              errpipe=sys.stderr):
+    if not reason:
+        reason = 'command {0} failed'.format(cmd)
+    p = run_cmd(
+        cmd, output=False, env=env, shell=shell, pipe=pipe, errpipe=errpipe)
+    die_in_error(p, reason, pipe=errpipe)
+    return p
+
+
+REPORT = textwrap.dedent('''\
+{c[yellow]}OS{c[normal]}:             {c[cyan]}{e[MS_OS]}{c[normal]}
+{c[yellow]}OS_RELEASE{c[normal]}:     {c[cyan]}{e[MS_OS_RELEASE]}{c[normal]}
+{c[yellow]}DATADIR{c[normal]}:        {c[cyan]}{e[MS_DATA_DIR]}{c[normal]}
+{c[yellow]}BASE{c[normal]}:           {c[cyan]}{e[MS_BASE]}{c[normal]}
+{c[yellow]}BASEIMAGE{c[normal]}:      {c[cyan]}{e[MS_BASEIMAGE]}{c[normal]}
+{c[yellow]}IMAGE{c[normal]}:          {c[cyan]}{e[MS_IMAGE]}{c[normal]}
+{c[yellow]}IMAGE_DIR{c[normal]}:      {c[cyan]}{e[MS_IMAGE_DIR]}{c[normal]}
+{c[yellow]}STAGE0 TAG{c[normal]}:     {c[cyan]}{e[MS_STAGE0_TAG]}{c[normal]}
+{c[yellow]}STAGE1 TAG{c[normal]}:     {c[cyan]}{e[MS_STAGE1_NAME]}{c[normal]}
+{c[yellow]}STAGE2 TAG{c[normal]}:     {c[cyan]}{e[MS_STAGE2_NAME]}{c[normal]}
+
+''')
+
+
 def report(environ, pipe=sys.stdout):
+    pipe.write(REPORT.format(c=COLORS, e=environ))
 
 
 def main(argv=None,
@@ -231,14 +276,20 @@ def main(argv=None,
     environ.setdefault(
         'MS_STAGE2_NAME',
         environ['MS_IMAGE'].replace('/', '') + '-stage2-' + id_)
-    MS_INJECTED_DIR = os.path.join(
+    MS_INJECTED_DIR = environ['MS_INJECTED_DIR'] = os.path.join(
         environ['MS_IMAGE_DIR'], 'injected_volumes')
-    MS_BOOTSTRAP_DIR = os.path.join(
-        environ['MS_IMAGE_DIR'], 'bootstrap_scripts')
-    cpcmd = 'cp'
-    if qrun_cmd('which rsync').returncode == 0:
-        cpcmd = 'rsync -aA'
+    MS_OVERRIDES = environ['MS_OVERRIDES'] = os.path.join(
+        environ['MS_IMAGE_DIR'], 'overrides')
+    MS_BOOTSTRAP_DIR = environ['MS_BOOTSTRAP_DIR'] = os.path.join(
+        MS_INJECTED_DIR, 'bootstrap_scripts')
+    report(environ, pipe=pipe)
+    #
+    cpcmd = 'rsync -aA'
+    if qrun_cmd('which rsync').returncode != 0:
+        raise StageError(
+            'You must install rsync and place it in your path')
     # copy base boiler plate to the build directory
+    breakl = False
     for i in [
         MS_DATA_DIR,
         MS_INJECTED_DIR,
@@ -252,18 +303,21 @@ def main(argv=None,
             except OSError:
                 die('{0}: ${1} HOST datadir cant be created'
                     .format(MS_IMAGE, i), pipe=pipe)
-    stage_files = {
-        'lxc-cleanup.sh': os.path.join(
-            _CWD,
-            'files/sbin/lxc-cleanup.sh'),
-        'makinastates-snapshot.sh': os.path.join(
-            _CWD,
-            'files/sbin/makinastates-snapshot.sh'),
-        'Dockerfile': environ['MS_DOCKERFILE'],
-        'stage0.sh': environ['MS_DOCKER_STAGE0'],
-        'stage1.sh': environ['MS_DOCKER_STAGE1'],
-        'stage2.sh': environ['MS_DOCKER_STAGE2'],
-        'stage3.sh': environ['MS_DOCKER_STAGE3']}
+            breakl = True
+    if breakl:
+        pipe.write('\n')
+    stage_files = OrderedDict()
+    stage_files['lxc-cleanup.sh'] = os.path.join(
+        _CWD,
+        'files/sbin/lxc-cleanup.sh')
+    stage_files['makinastates-snapshot.sh'] = os.path.join(
+        _CWD,
+        'files/sbin/makinastates-snapshot.sh')
+    stage_files['Dockerfile'] = environ['MS_DOCKERFILE']
+    stage_files['stage0.sh'] = environ['MS_DOCKER_STAGE0']
+    stage_files['stage1.sh'] = environ['MS_DOCKER_STAGE1']
+    stage_files['stage2.sh'] = environ['MS_DOCKER_STAGE2']
+    stage_files['stage3.sh'] = environ['MS_DOCKER_STAGE3']
     for i in stage_files:
         j = os.path.join(MS_BOOTSTRAP_DIR, i)
         k = stage_files[i]
@@ -274,7 +328,6 @@ def main(argv=None,
         if not os.path.exists(d):
             cyan('{0}: creating {1}'.format(MS_IMAGE, d), pipe=pipe)
             os.makedirs(d)
-
         docp = True
         if os.path.exists(j) and os.path.exists(k):
             docp = False
@@ -286,7 +339,7 @@ def main(argv=None,
         if not docp:
             yellow('{0}: {1} already in place'.format(MS_IMAGE, i), pipe=pipe)
         else:
-            v_die_run(
+            q_die_run(
                 '{0} {1} {2}'.format(cpcmd,
                                      pipes.quote(k),
                                      pipes.quote(j)),
@@ -296,12 +349,26 @@ def main(argv=None,
                 reason=('{0}: script {1} ({2} -> {3})'
                         ' cant be copied'.format(
                             MS_IMAGE, i, k, j)))
+            cyan('{0}: copied {1} -> {2}'.format(MS_IMAGE, j, k), pipe=pipe)
     pipe.write('\n')
+    if os.path.exists(MS_OVERRIDES):
+        q_die_run(
+            '{0} {1}/ {2}/'.format(cpcmd,
+                                   pipes.quote(MS_OVERRIDES),
+                                   pipes.quote(MS_INJECTED_DIR)),
+            env=environ,
+            pipe=pipe,
+            errpipe=errpipe,
+            reason=('{0}: script ({1} -> {2})'
+                    ' cant be overriden'.format(
+                        MS_IMAGE, MS_OVERRIDES, MS_INJECTED_DIR)))
+        cyan('{0}: overidden\n {1}\n  -> {2}\n'.format(
+            MS_IMAGE, MS_OVERRIDES, MS_INJECTED_DIR), pipe=pipe)
+
     purple('--------------------', pipe=pipe)
     purple('- stage-1 complete -', pipe=pipe)
     purple('--------------------', pipe=pipe)
     pipe.write('\n')
-    report(pipe=pipe)
     p = None
     # p = v_die_run(
     #     '{0}/injected_volumes/bootstrap_scripts/stage0.sh'

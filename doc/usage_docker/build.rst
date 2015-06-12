@@ -6,18 +6,23 @@ Docker
 
 Intro
 -------
-- Although we are all on the container & microservices front, the final goal
-  of the makina corpus team is to have base images with systemd.
-- Nowadays, systemd is an extremly powerful tool to manage all the lifecycle
-  of processes and the ditch that they can leave behind on the behalf of
-  the underlying packagers work, so why preventing us from using it ?
+- Although we are all on the container & microservices front,
+  the final goal of the makina corpus team is to have our images using
+  **systemd** as the base command.
+- Indeed, nowadays, systemd is an extremly if not the most powerful linux too
+  l to manage all the lifecycle of processes and the ditch that they can leave
+  behind on the behalf of the underlying packagers work. So why, afterall
+  preventing us from using all the packaging by running only one process ?
+  We are on an **UNIX Like OS** guys...
 - In other words, There all the reasons to eat the **microservice pattern**, but
   there is also no reason to eat the **1 process for all soup**.
 - We refuse here to hack some stuff around an alternative process manager,
   we want to use the underlying distro as it was packaged.
 
 - makina-states is sufficiently flexible to run in all kind of modes, including
-  a docker container, running systemd. This docker can run in unprevileged mode,
+  a docker container, running **systemd** or **not**, **with** or **WITHOUT**
+  ``makina-states``.
+  This docker can run in unprevileged mode,
   but at the condition of bind-mounting /sys/fs/cgroup. Be sure to have the most
   recent version of systemd under ubuntu-vivid, or **journald** wont start.
 
@@ -25,7 +30,8 @@ Intro
   which is provided by makina-states, see ``localsettings/apparmor.sls`` for details.
 
 - The build system is inspired from our more than 20 years or UNIX experience, from
-  gentoo to Docker land.
+  gentoo to Docker land. One of the goals was to make the 4 core build steps
+  in bash and utterly flexibles and easy to override.
 
 
 Construct a base docker image with makina-states
@@ -148,7 +154,8 @@ The procedure will then almost initially look like:
 
         - Spawn an init as in **PID=1** (currently: **systemd**)
         - Launch makina-states installation and refresh unless users
-          disabled it via the **MS_MAKINASTATES_BUILD_DISABLED**
+          disabled it via the **MS_MAKINASTATES_BUILD_DISABLED** envionment
+          variable
         - Execute **/injected_volumes/bootstrap_scripts/stage3.sh**
           and so enter what we call **stage3**  which by default:
 
@@ -325,52 +332,5 @@ Subdirectories are supported as well (for subrepos).
 Eg, for example, you will have to place your **stage3.sh** brewed copy override the **stage3** in the "**mycy/p2** image in::
 
     /srv/mastersalt/makina-states/data/mycy/p2/overrides/injected_volumes/bootstrap_scripts/stage3.sh
-
-Basic development  installation
--------------------------------
-- For ubuntu, you best bet is to use something >= Ubuntu 14.04 with a recent kernel (from enablement stack)
-- Install docker by reading your distribution guidelines for that purpose::
-
-    - Eg on ubuntu
-
-        apt-get install lxc docker
-
-    - Replace docker by makina-corpus version (1.7+), we have modified it to allow to use a custom
-      apparmor profile instead of inject it's own and broken one.
-
-        - The sources are `here@github <https://github.com/makinacorpus/docker.git>`_.
-        - We provide a `prebuilt binary for linux <https://github.com/makinacorpus/docker/releases/download/mc_1/docker>`_.::
-
-            cp /usr/bin/docker /usr/bin/docker.dist
-            curl -L --insecure -s https://github.com/makinacorpus/docker/releases/download/mc_1/docker -o /usr/bin/docker
-            # or wget https://github.com/makinacorpus/docker/releases/download/mc_1/docker -O /usr/bin/docker
-            chmod +x /usr/bin/docker
-
-- If you are on Ubuntu or any system protected by **apparmor**, you ll have to tweak your apparmor installation.
-  If you are not configuring your system via makina-states, you can however bring back the profile quite easily::
-
-    mkdir -pv /etc/apparmor.d/abstractions/lxc
-    curl -L --insecure -s https://raw.githubusercontent.com/makinacorpus/makina-states/master/files/etc/apparmor.d/abstractions/lxc/powercontainer-base -o /etc/apparmor.d/abstractions/lxc/powercontainer-base
-    curl -L --insecure -s https://raw.githubusercontent.com/makinacorpus/makina-states/master/files/etc/apparmor.d/abstractions/dockercontainer -o /etc/apparmor.d/abstractions/dockercontainer
-    service apparmor restart
-
-- Clone makina-states, even if not installing it on you host
-::
-
-    mkdir /srv/mastersalt && cd /srv/mastersalt
-    git clone http://github.com/makinacorpus/makina-states.git
-
-- Create the base makinacorpus image
-
-
-bootstrap a django project
----------------------------
-TBD
-
-bootstrap a drupal project
----------------------------
-TBD
-
-
 
 
