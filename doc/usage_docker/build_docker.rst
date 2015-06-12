@@ -144,7 +144,7 @@ The procedure will then almost initially look like:
 
 How To
 ++++++++++
-The entry point to this build system is **docker/stage.sh**.
+The entry point to this build system is **docker/stage.py**.
 
 You can override any of the **docker/stageX.sh** scripts by looking and overriding
 them to your needs.
@@ -159,7 +159,7 @@ In most cases, you certainly only:
 
 .. code-block:: bash
 
-    docker/stage.sh [ARGS]
+    docker/stage.py [ARGS]
 
 The scripts support those environment variables, in **user facing order**:
 
@@ -224,7 +224,7 @@ Those pillars, if given will be fullycommited to the image.
 Technically, all what is behind **injected_volumes** is copied, via rsync
 with ACL support to the image.
 
-**docker/stage.sh** can also take any argument that will be used
+**docker/stage.py** can also take any argument that will be used
 in the docker run command. Any environment knob defined via CLI args will
 override variable setted via environment variables.
 
@@ -234,7 +234,7 @@ Indeed, it is via this trick that you can influence on the behavior of the
 .. code-block:: bash
 
     export MS_IMAGE="mycompany/myimage"
-    docker/stage.sh \
+    docker/stage.py \
      -v $PWD:/docker/data \
      -v /path/to/custom/docker_build_stage2.sh:/bootstrap_scripts/docker_build_stage2.sh\
      -v /path/to/custom/docker_build_stage3.sh:/bootstrap_scripts/docker_build_stage3.sh
@@ -246,7 +246,7 @@ image), you can use **MS_BASE** to indicate your base
 
     mkdir data
     export MS_BASE="mycompany/myimage"
-    docker/stage.sh \
+    docker/stage.py \
       -v $PWD/data:/docker/data \
       -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
 
@@ -254,7 +254,7 @@ OR
 
 .. code-block:: bash
 
-    docker/stage.sh \
+    docker/stage.py \
         -e MS_BASE="mycompany/myimage"
         -v $PWD:/docker/data \
         -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
