@@ -249,8 +249,12 @@ by creating files inside for example:
     - **<DATADIR>/<IMAGE_NAME>/overrides/injected_volumes/srv/mastersalt-pillar**
     - **<DATADIR>/<IMAGE_NAME>/overrides/injected_volumes/srv/projects**
 
-Technically, all what is behind **injected_volumes** is copied, via rsync
-with ACL support to the **root (/)** of the image.
+Technically:
+ - all what is behind **injected_volumes** is copied, via rsync
+   with ACL support to the **root (/)** of the image.
+ - Any file or directory inside $IMAGEDIR/overrides will override the same
+   file at the same place in the same mevem **injected_volumes** directory.
+   The folders are synced via rsync at build time.
 
 **docker/stage.py** can also take any argument that will be used
 in the docker run command. Any environment knob defined via CLI args will
