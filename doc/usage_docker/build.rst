@@ -260,39 +260,29 @@ Technically:
 in the docker run command. Any environment knob defined via CLI args will
 override variable setted via environment variables.
 
-Indeed, it is via this trick that you can influence on the behavior of the
-**docker_build_stage2.sh** (**Stage2**) script and **onwards** stages.
+Indeed, it is via this trick that you can influence the build system.
 
 .. code-block:: bash
 
     export MS_IMAGE="mycompany/myimage"
-    docker/stage.py \
-     -v $PWD:/docker/data \
-     -v /path/to/custom/docker_build_stage2.sh:/bootstrap_scripts/docker_build_stage2.sh\
-     -v /path/to/custom/docker_build_stage3.sh:/bootstrap_scripts/docker_build_stage3.sh
+    docker/stage.py -v $PWD:/docker/data
 
 If you do not want to use an empty base image (for example a prebuilt makina-states
 image), you can use **MS_BASE** to indicate your base
 
 .. code-block:: bash
 
-    mkdir data
+    mkdir data2
     export MS_BASE="mycompany/myimage"
-    docker/stage.py \
-      -v $PWD/data:/docker/data \
-      -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
+    docker/stage.py -v $PWD/data2:/docker/data2
 
 OR
 
 .. code-block:: bash
 
-    docker/stage.py \
-        -e MS_BASE="mycompany/myimage"
-        -v $PWD:/docker/data \
-        -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
+    docker/stage.py -e MS_BASE="mycompany/myimage"
 
 .. _scratch image: https://docs.docker.com/articles/baseimages/#creating-a-simple-base-image-using-scratch
-
 
 Default build volumes
 +++++++++++++++++++++
