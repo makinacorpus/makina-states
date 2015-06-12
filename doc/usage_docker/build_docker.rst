@@ -53,27 +53,45 @@ All that the user has to do to initiate a build pipeline is:
 
 All commands must then be executed from the root of the repository.
 
+
+Layout
+++++++
 What is good to remember is that it is just a collection of shell scripts, and
 to modulate an image building, we provide environ variables and volumes from
-a well known data directory which has this Layout for the user to populate
-and/or edit any of the build procedure::
+a well known data directory.
+Users have just to appropriate the **stageN.sh** scripts and the file layout
+to get their projects into a contineous deployment pipeline::
 
- makina-states/
+ makina-states/     <- checkout of makina-states
  |- docker/
  |  |- stage0.sh stage1.sh stage2.sh stage3.sh [...] <- default build scripts
  |- data/
     |- globalimage.xxx.yyy.xz
-    |- injected_volumes/
+    |- image1/
+    |  |
+    |  |- injected_volumes/    <- All what is beneath this level
+    |      |- /srv/projects/foobar    will be commited as-is to the image1 image
+    |      |- /bootstrap_scripts/
+    |          |- Dockerfile
+    |          |- stage0.sh        <- build scripts used for image1
+    |          |- stage1.sh           If they are not already present, default ones are used
+    |          |- stage2.sh
+    |          |- stage3.sh
+    |
+    |
+    |- image2/
        |
-       |- image1/               <- All what is beneath this level
-        |- /srv/projects/foobar    will be commited as-is to the image1 image
-        |- /bootstrap_scripts/
-            |- Dockerfile
-            |- stage0.sh        <- build scripts used for image1
-            |- stage1.sh           If they are not already present, default ones are used
-            |- stage2.sh
-            |- stage3.sh
-
+       |- injected_volumes/    <- All what is beneath this level
+       |   |- /srv/projects/foobar    will be commited as-is to the image1 image
+       |   |- /bootstrap_scripts/
+       |
+       |- overrides/
+          |- /bootstrap_scripts/
+               |- Dockerfile
+               |- stage0.sh        <- will override everything that is in
+               |- stage1.sh           injected_volumes/bootstrap_scripts/
+               |- stage2.sh
+               |- stage3.sh
 
 DESIGN: The full order of operation
 ++++++++++++++++++++++++++++++++++++++
