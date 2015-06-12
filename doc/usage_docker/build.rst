@@ -253,7 +253,7 @@ Technically:
  - all what is behind **injected_volumes** is copied, via rsync
    with ACL support to the **root (/)** of the image.
  - Any file or directory inside $IMAGEDIR/overrides will override the same
-   file at the same place in the same mevem **injected_volumes** directory.
+   file at the same place in the same level **injected_volumes** directory.
    The folders are synced via rsync at build time.
 
 **docker/stage.py** can also take any argument that will be used
