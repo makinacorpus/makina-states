@@ -284,7 +284,9 @@ Overriding stage scripts
 -----------------------------
 Anything that is placed in the **overrides** image data directory will override things which are placed
 at first in the **injected_volumes** directory.
+
 The reasoning of this is to provide a simple mean to give custom stage scripts while most user can still use default script files.
+
 For example, if you want to override for example the **stage3** script,
 all you have to do is to place a script in the datadir, in this location::
 
