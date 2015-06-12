@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
+# REMOVE/EDIT THE ROLLOWING MARKER TO UNINDICATE THAT THIS IS A DEFAULT SCRIPT
+# makina-states-default-stage-file
 # THIS SCRIPT CAN BE OVERRIDEN IN ANY MAKINA-STATES BASED IMAGES
-# Do it via a volume via -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
-
 RED='\e[31;01m'
 CYAN='\e[36;01m'
 YELLOW='\e[33;01m'
@@ -30,7 +30,7 @@ systemd --system &
 set -x
 export DEBIAN_FRONTEND=noninteractive
 v_run apt-get install -y --force-yes git ca-certificates rsync acl
-v_run rsync -Aa /forwarded_volumes/ /
+v_run rsync -Aa /injected_volumes/ /
 # 2. Refresh makina-states code
 ip route
 ifconfig
@@ -66,12 +66,12 @@ v_run touch /acls.restore
 echo
 purple "--------------------"
 purple "- POSIX Acls saved -"
-purple "--------------------" 
+purple "--------------------"
 echo
 # END -- The common case is to tag back the image as a release candidate at the end
 if docker inspect "${MS_IMAGE_CANDIDATE}" >/dev/null 2>&1;then
     docker rmi -f "${MS_IMAGE_CANDIDATE}"
 fi
-docker commit "${MS_DID}" "${MS_IMAGE_CANDIDATE}" -c "CMD ${MS_COMMAND}"
+docker commit "${MS_STAGE2_NAME}" "${MS_IMAGE_CANDIDATE}" -c "CMD ${MS_COMMAND}"
 die_in_error "${MS_IMAGE_CANDIDATE} failed commit"
 # vim:set et sts=4 ts=4 tw=0:

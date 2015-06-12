@@ -27,43 +27,111 @@ Intro
 - The build system is inspired from our more than 20 years or UNIX experience, from
   gentoo to Docker land.
 
+
+Construct a base docker image with makina-states
+---------------------------------------------------
+Abstract
+++++++++++
+We provide a pipeline of 4 small shell scripts that bootstrap a proper
+build environment for systemd containers based on ubuntu from **ground0** to
+**mars**.
+
+Those shell script are responsible of executing those containers
+and run inside a build procedure, which should in most case also include
+a test(selfcheck) procedure. Upon a sucessful build, a candidate image
+is taggued.
+
+All what is need for most projects is to create the injected volumes and the
+**stage3.sh** script and onwards, other script are somewhat **core** and have
+merely no change to have any change needs.
+
+All that the user has to do to initiate a build pipeline is:
+
+ - Setup a docker daemon with makina-states & a proper apparmor profile.
+ - clone a copy of the makina-states repository to a location of your choise,
+   with of course plenty if space under that root.
+
+All commands must then be executed from the root of the repository.
+
+What is good to remember is that it is just a collection of shell scripts, and
+to modulate an image building, we provide environ variables and volumes from
+a well known data directory which has this Layout for the user to populate
+and/or edit any of the build procedure::
+
+ makina-states/
+ |- docker/
+ |  |- stage0.sh stage1.sh stage2.sh stage3.sh [...] <- default build scripts
+ |- data/
+    |- globalimage.xxx.yyy.xz
+    |- injected_volumes/
+       |
+       |- image1/               <- All what is beneath this level
+        |- /srv/projects/foobar    will be commited as-is to the image1 image
+        |- /bootstrap_scripts/
+            |- Dockerfile
+            |- stage0.sh        <- build scripts used for image1
+            |- stage1.sh           If they are not already present, default ones are used
+            |- stage2.sh
+            |- stage3.sh
+
+
 DESIGN: The full order of operation
-------------------------------------
+++++++++++++++++++++++++++++++++++++++
 As the makina-states images are based upon a funtionnal init system (systemd)
-for operation,
-Their initial build is a bit tedious in sense that they need a 3 steps build.
+for operation.
+
+To initiate a build, the user can:
+
+- Maybe place a precompiled base image in in the **DATA DIR**.
+- Maybe populate **injected_volumes** in the **DATA DIR** for the particular
+  image we are building. Basically,
+  all what will be placed in **<DATADIR>/$IMAGE/injected_volumes** will
+  be copied as-is and commited to the final image.
+
+Their initial build is a bit tedious in sense that they need at least a **3 steps build**.
 Hopefully, we provide a script which has batteries included for you.
 
-The script will:
+The procedure will then almost initially look like:
 
 - Create a container which has the necessary environment to build the images.
   This is **Stage0**.
 - The **Stage1** step involves
 
-    - Launching this container and by modifying
-      environment variables and/or command line arguments,
-      the user may influence how to build the final image that will be
-      generated from :
+    - Launching this container modulating the invocation via
+      environment variables and/or command line arguments.
+      This one of the means that end user may influence how to build the final image
+      that will be generated from :
 
         - the container template
         - the **baseimage.tar.xz** or the providen **MS_BASE**
+        - the injected volumes **/injected_volumes**
 
     - If **MB_BASE** is **scratch**, the build will use
       a `scratch image`_,
-      It creates **baseimage.tar.gz** or reuse it,
+      It creates **baseimage-xxx-yyy.tar.gz** or reuse it,
       this is the OS base image.
-      By default, we export this image to the **MS_DATA_DIR** directory.
+      By default, we export/read this image to/from the top of
+      the **MS_DATA_DIR** directory.
     - From this image, we launch a new container, ensuring that all
-      relevant environment variables and volumes are forwarded
-    - Inside the container, what we call **Stage2** does:
+      relevant environment variables and volumes are injected
+    - Inside the container, we now enter **Stage2** step and run the
+      **stage2.sh** script as this container boot command.
+      The default **stage2** script does the following
 
-        - we execute the **/docker_data/build_docker.sh** script which by default:
-        - Maybe copy the inputed pillar, mastersalt pillar &
-          corpus pillars inside this container, they are currently mounted as volumes
-          in **/forwarded_volumes** by **Stage1**
-        - spawn init (currently: systemd)
-        - launch makina-states installation
-        - We then enter **Stage3** which by default
+        - We copy all the content of **/injected_volumes** to **/** ensuring
+          the conservation of any **POSIX ACL**. This will of course
+          be commited as of your final image.
+
+          .. note:
+
+              We are not using the **ADD** Dockerfile instruction for
+              stage1 because it does not conserve **POSIX ACLS**.
+              Those acls are heavily used in makina-states setups.
+
+        - Spawn an init as in **PID=1** (currently: **systemd**)
+        - Launch makina-states installation and refresh
+        - Execute **/injected_volumes/bootstrap_scripts/stage3.sh**
+          and so enter what we call **stage3**  which by default:
 
             - (RE)Install any corpus based project
             - May execute a basic test suite to test (only the build) that
@@ -71,32 +139,27 @@ The script will:
 
         - Save the **POSIX acls** to **/acls.txt**
         - Mark the container to restore acls on next boot via touching **/acls.restore**
-        - If all the build is sucessfull We commit this container as an image
-          but taggued with the **candidate** keyword.
-
-
-Construct a base docker image with makina-states
----------------------------------------------------
-Idea
-++++++++
-All that the user has to do, is to copy the **_script/docker_build.sh**
-in his project and adapt it for it's need, basically, the only thing
-to change in a corpus based project is the test procedure.
-
-What you, as a regular user, will want to change is likely to be only
-a part of **Stage3** or (future) upper stages.
+        - If all the build is sucessfull, commit this container
+          as an image taggued with the **candidate** keyword.
 
 How To
 ++++++++++
-The entry point to this build system is **docker/stage0.sh**.
+The entry point to this build system is **docker/stage.sh**.
+
 You can override any of the **docker/stageX.sh** scripts by looking and overriding
-them to your needs. For stages > 0, Don't edit them, but use the environment
-variables or docker volumes (as stage0.sh arguments)  to use your custom scripts.
-In most cases, you certainly only have to override **stage3.sh** to construct an image.
+them to your needs.
+For stages > 0, Don't edit them, but use the environment
+variables or docker volumes (as stage0.sh arguments) to use your custom scripts.
+
+In most cases, you certainly only:
+
+ - place files and directories inside **DATADIR/<image>/injected_volumes**
+ - have to override **DATADIR/<image>/bootstrap_scripts/stage3.sh**
+   to construct an image
 
 .. code-block:: bash
 
-    docker/stage0.sh [ARGS]
+    docker/stage.sh [ARGS]
 
 The scripts support those environment variables, in **user facing order**:
 
@@ -127,9 +190,6 @@ The scripts support those environment variables, in **user facing order**:
     MS_BASEIMAGE
         Filename of the base image
         (default: **baseimage-${MS_OS}-${MS_OS_RELEASE}.tar.xz**)
-    MS_BASEIMAGE_DIR
-        Filepath of the base image directory inside the stage0 container
-        (default: **/docker_data** which is the $MS_DATA_DIR volume)
     MS_STAGE0_TAG
         Tag of the stage0 image, by default it will look like
     MS_DOCKERFILE
@@ -147,23 +207,30 @@ The scripts support those environment variables, in **user facing order**:
         eg `docker/stage2.sh <https://github.com/makinacorpus/makina-states/blob/master/docker/stage2.sh>`_
     MS_DOCKER_ARGS
         Any argument to give to the docker run call to the stage0 builder (None)
+    MS_STAGE1_NAME
+        Name of the stage1 container (use to mount volumes from host in stage2
+        and onwards)
+    MS_STAGE2_NAME
+        Name of the stage2 container  (used to commit the final image)
 
-Additionnaly, in stage2, the stage0 script will set:
+Additionnaly, in stage1, the stage0 script will set:
 
     MS_IMAGE_CANDIDATE
         Tag of the Image to commit if the build is sucessful,
         default to **$MS_IMAGE:candidate**
 
 You can feed the image with preconfigured pillars & project trees
-by mounting additional volumes for:
+by creating files inside for example:
 
-    - **/srv/pillar**
-    - **/srv/mastersalt-pillar**
-    - **/srv/projects**
+    - **<DATADIR>/<IMAGE_NAME>/injected_volumes/srv/pillar**
+    - **<DATADIR>/<IMAGE_NAME>/injected_volumes/srv/mastersalt-pillar**
+    - **<DATADIR>/<IMAGE_NAME>/injected_volumes/srv/projects**
 
-Those pillars, if given will be commited to the image.
+Those pillars, if given will be fullycommited to the image.
+Technically, all what is behind **injected_volumes** is copied, via rsync
+with ACL support to the image.
 
-**docker/stage0.sh** can also take any argument that will be used
+**docker/stage.sh** can also take any argument that will be used
 in the docker run command. Any environment knob defined via CLI args will
 override variable setted via environment variables.
 
@@ -173,8 +240,8 @@ Indeed, it is via this trick that you can influence on the behavior of the
 .. code-block:: bash
 
     export MS_IMAGE="mycompany/myimage"
-    docker/stage0.sh \
-     -v $PWD:/docker_data \
+    docker/stage.sh \
+     -v $PWD:/docker/data \
      -v /path/to/custom/docker_build_stage2.sh:/bootstrap_scripts/docker_build_stage2.sh\
      -v /path/to/custom/docker_build_stage3.sh:/bootstrap_scripts/docker_build_stage3.sh
 
@@ -185,17 +252,17 @@ image), you can use **MS_BASE** to indicate your base
 
     mkdir data
     export MS_BASE="mycompany/myimage"
-    docker/stage0.sh \
-      -v $PWD/data:/docker_data \
+    docker/stage.sh \
+      -v $PWD/data:/docker/data \
       -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
 
 OR
 
 .. code-block:: bash
 
-    docker/stage0.sh \
+    docker/stage.sh \
         -e MS_BASE="mycompany/myimage"
-        -v $PWD:/docker_data \
+        -v $PWD:/docker/data \
         -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
 
 .. _scratch image: https://docs.docker.com/articles/baseimages/#creating-a-simple-base-image-using-scratch

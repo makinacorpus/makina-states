@@ -18,17 +18,14 @@ RUN sed -i -re "s|${MS_OLD_DEB_MIRROR}|${MS_OS_MIRROR}|g" /etc/apt/sources.list\
 RUN apt-get install -y --force-yes rsync git e2fsprogs ca-certificates
 ADD files/sbin/makinastates-snapshot.sh /bootstrap_scripts/
 RUN /bootstrap_scripts/makinastates-snapshot.sh
-VOLUME [/bootstrap_scripts/makinastates-snapshot.sh]
-VOLUME [/bootstrap_scripts/lxc-cleanup.sh]
-VOLUME [/bootstrap_scripts/Dockerfile]
-VOLUME [/bootstrap_scripts/stage0.sh]
-VOLUME [/bootstrap_scripts/stage1.sh]
-VOLUME [/bootstrap_scripts/stage2.sh]
-VOLUME [/bootstrap_scripts/stage3.sh]
-VOLUME [/var/run/docker.sock]
-VOLUME [/var/run/docker]
-VOLUME [/var/lib/docker]
+VOLUME [/docker/data]
+VOLUME [/docker/injected_volumes]
+VOLUME [/injected_volumes]
+VOLUME [/makina-states.git]
 VOLUME [/sys/fs]
-VOLUME [/docker_data]
+VOLUME [/usr/bin/docker]
+VOLUME [/var/lib/docker]
+VOLUME [/var/run/docker]
+VOLUME [/var/run/docker.sock]
 # You may override this variable to build another image
-CMD /bootstrap_scripts/stage1.sh
+CMD /injected_volumes/bootstrap_scripts/stage1.sh
