@@ -249,11 +249,8 @@ by creating files inside for example:
     - **<DATADIR>/<IMAGE_NAME>/overrides/injected_volumes/srv/mastersalt-pillar**
     - **<DATADIR>/<IMAGE_NAME>/overrides/injected_volumes/srv/projects**
 
-.. _volumes:
-
-Those pillars, if given will be fullycommited to the image.
 Technically, all what is behind **injected_volumes** is copied, via rsync
-with ACL support to the image.
+with ACL support to the **root (/)** of the image.
 
 **docker/stage.py** can also take any argument that will be used
 in the docker run command. Any environment knob defined via CLI args will
