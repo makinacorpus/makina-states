@@ -264,8 +264,10 @@ OR
 Adding data files to commited image
 ---------------------------------------
 Anything (file, dir, symlink) that is placed in the **injected_volumes** image data directory will be commited with the image.
+
 The files are copied before **stage2** execution, thus you have them available at build time.
-Thus, all you have to do is to place what you want to go in your imag in this location::
+
+All you have to do is to place what you want to go in your imag in this location::
 
     DATADIR/<IMAGE>/injected_volumes/<stuff>
 
@@ -281,12 +283,14 @@ The principal application is to inject your project code and it's pillar configu
 Overriding stage scripts
 -----------------------------
 Anything that is placed in the **overrides** image data directory will override things which are placed
-in the **injected_volumes** directory. Thus if you want to override for example the **stage3** script,
+at first in the **injected_volumes** directory.
+The reasoning of this is to provide a simple mean to give custom stage scripts while most user can still use default script files.
+For example, if you want to override for example the **stage3** script,
 all you have to do is to place a script in the datadir, in this location::
 
     DATADIR/<IMAGE>/overrides/injected_volumes/bootstrap_scripts/<stage>
 
-For example, you will have to place your **stage3.sh** brewed copy override the **stage3** in the "**project2** image in::
+For example, you will have to place your **stage3.sh** brewed copy override the **stage3** in the **project2** image in::
 
     /srv/mastersalt/makina-states/data/project2/overrides/injected_volumes/bootstrap_scripts/stage3.sh
 
