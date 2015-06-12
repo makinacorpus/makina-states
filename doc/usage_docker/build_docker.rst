@@ -330,13 +330,13 @@ Eg, for example, you will have to place your **stage3.sh** brewed copy override 
 
 Full example
 -------------
-- Install docker from any mean
+- Install docker by reading your distribution guidelines for that purpose
 
-- Replace docker by makina-corpus version (1.7+), we have modified it to allow to use a custom
-  apparmor profile instead of inject it's own and broken one.
+    - Replace docker by makina-corpus version (1.7+), we have modified it to allow to use a custom
+      apparmor profile instead of inject it's own and broken one.
 
-    - The sources are `here@github <https://github.com/makinacorpus/docker.git>`_.
-    - We provide a `prebuilt binary for linux <https://github.com/makinacorpus/docker/releases/download/mc_1/docker>`_.
+        - The sources are `here@github <https://github.com/makinacorpus/docker.git>`_.
+        - We provide a `prebuilt binary for linux <https://github.com/makinacorpus/docker/releases/download/mc_1/docker>`_.
 
 - Clone makina-states, even if not installing it on you host
 ::
