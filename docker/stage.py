@@ -281,6 +281,7 @@ def main(argv=None,
     #           env=environ,
     # )
     # die_in_error(p, '{0}: build failed'.format(MS_IMAGE))
+    return pipe
 
 
 if __name__ == '__main__':
