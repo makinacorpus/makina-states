@@ -53,6 +53,7 @@ v_run docker run --privileged -ti --rm \
  -e MS_STAGE0_TAG="${MS_STAGE0_TAG}" \
  -e MS_STAGE1_NAME="${MS_STAGE1_NAME}" \
  -e MS_STAGE2_NAME="${MS_STAGE2_NAME}" \
+ -e MS_MAKINASTATES_BUILD_DISABLED="${MS_MAKINASTATES_BUILD_DISABLED}" \
  -v "${MS_DATA_DIR}":/docker/data \
  -v "${MS_DATA_DIR}/${MS_IMAGE}/injected_volumes":/docker/injected_volumes \
  -v "${MS_DATA_DIR}/${MS_IMAGE}/injected_volumes":/injected_volumes \

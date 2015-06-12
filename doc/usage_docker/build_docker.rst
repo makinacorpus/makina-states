@@ -147,15 +147,19 @@ The procedure will then almost initially look like:
               Those acls are heavily used in makina-states setups.
 
         - Spawn an init as in **PID=1** (currently: **systemd**)
-        - Launch makina-states installation and refresh
+        - Launch makina-states installation and refresh unless users
+          disabled it via the **MS_MAKINASTATES_BUILD_DISABLED**
         - Execute **/injected_volumes/bootstrap_scripts/stage3.sh**
           and so enter what we call **stage3**  which by default:
 
-            - (RE)Install any corpus based project
+            - (RE)Install any corpus based project unless users
+               disabled it via the **MS_MAKINASTATES_BUILD_DISABLED**
             - May execute a basic test suite to test (only the build) that
-              everything is in place.
+              everything is in place, but basically the **stage3** script
+              is in control from the user and the stage file that has
+              the more chance to be edited by users.
 
-        - Save the **POSIX acls** to **/acls.txt**
+        - Save the **POSIX acls** back to **/acls.txt**
         - Mark the container to restore acls on next boot via touching **/acls.restore**
         - If all the build is sucessfull, commit this container
           as an image taggued with the **candidate** keyword.
@@ -322,3 +326,19 @@ Eg, for example, you will have to place your **stage3.sh** brewed copy override 
 
     /srv/mastersalt/makina-states/data/mycy/p2/overrides/injected_volumes/bootstrap_scripts/stage3.sh
 
+
+
+Full example
+-------------
+- Install docker from any mean
+
+- Replace docker by makina-corpus version (1.7+), we have modified it to allow to use a custom
+  apparmor profile instead of inject it's own and broken one.
+  The sources are `here@github <https://github.com/makinacorpus/docker.git>`_.
+  We provide a `prebuilt binary for linux <https://github.com/makinacorpus/docker/releases/download/mc_1/docker>`_.
+
+- Clone makina-states, even if not installing it on you host
+::
+
+    mkdir /srv/mastersalt && cd /srv/mastersalt
+    git clone http://github.com/makinacorpus/makina-states.git

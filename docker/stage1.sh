@@ -142,6 +142,7 @@ v_run docker run \
  -e MS_STAGE0_TAG="${MS_STAGE0_TAG}" \
  -e MS_STAGE1_NAME="${MS_STAGE1_NAME}" \
  -e MS_STAGE2_NAME="${MS_STAGE2_NAME}" \
+ -e MS_MAKINASTATES_BUILD_DISABLED="${MS_MAKINASTATES_BUILD_DISABLED}" \
  --volume-from="${MS_STAGE1_NAME}" \
  --net="host" --privileged -ti --rm --name="${MS_STAGE1_NAME}"\
  ${stage1_tag} ls /injected_volumes/bootstrap_scripts

@@ -3,6 +3,11 @@
 Makina-States Stage runner
 
 It will setup the env, then launch & wrap the stage0 -> 3 dance
+The stage scripts need:
+
+    - rsync (opt but recommended
+    - python > 2.6
+    - acl (setfacl/getfacl)
 
 '''
 # -*- coding: utf-8 -*-
@@ -18,6 +23,7 @@ import string
 import random
 import subprocess
 import hashlib
+import textwrap
 
 _CWD = os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))
@@ -144,6 +150,9 @@ def v_die_run(cmd,
     return p
 
 
+def report(environ, pipe=sys.stdout):
+
+
 def main(argv=None,
          environ=None,
          pipe=sys.stdout,
@@ -180,6 +189,8 @@ def main(argv=None,
     environ.setdefault(
         'MS_DOCKER_STAGE2',
         os.path.join(_CWD, 'docker/stage2.sh'))
+    environ.setdefault(
+        'MS_MAKINASTATES_BUILD_DISABLED', '')
     environ.setdefault(
         'MS_DOCKER_STAGE3',
         os.path.join(_CWD, 'docker/stage3.sh'))
@@ -290,6 +301,7 @@ def main(argv=None,
     purple('- stage-1 complete -', pipe=pipe)
     purple('--------------------', pipe=pipe)
     pipe.write('\n')
+    report(pipe=pipe)
     p = None
     # p = v_die_run(
     #     '{0}/injected_volumes/bootstrap_scripts/stage0.sh'

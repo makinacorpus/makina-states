@@ -4,7 +4,7 @@
 # ${MS_DATA_DIR}/${MS_IMAGE}
 # EG:
 #  cp stage1.sh /srv/foo/makina-states/data/mycompany/mydocker/overrides/stage2.sh
-#  $ED /srv/foo/makina-states/data/mycompany/mydocker/overrides/stage2.sh 
+#  $ED /srv/foo/makina-states/data/mycompany/mydocker/overrides/stage2.sh
 
 RED='\e[31;01m'
 CYAN='\e[36;01m'
@@ -28,6 +28,9 @@ yellow "-----------------------------------------------"
 yellow "-   STAGE 2  - BUIDING                        -"
 yellow "-----------------------------------------------"
 echo
+
+# 0. Save environment for subshell scripts & history
+env > /bootstrap_scripts/stage2.env
 
 # 1. Launch systemd
 systemd --system &

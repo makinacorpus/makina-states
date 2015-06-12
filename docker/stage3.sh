@@ -27,6 +27,9 @@ yellow "-----------------------------------------------"
 yellow "-   STAGE 3  - BUIDING                        -"
 yellow "-----------------------------------------------"
 echo
+if [ -e /bootstrap_scripts/stage2.env ];then
+    . /bootstrap_scripts/stage2.env
+fi
 
 # this should be sufficient to (re)build any makina-states corpus style projects
 for i in $(find /srv/projects/ -mindepth 1 -maxdepth 1 -type d 2>/dev/null);do
