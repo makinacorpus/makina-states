@@ -300,7 +300,7 @@ Assuming that your makina-states installation copy is installed in **/srv/master
 
 Subdirectories are supported as well (for subrepos).
 
-Eg, for example, you will have to place your **stage3.sh** brewed copy override the **stage3** in the "**mycompany/project2** image in::
+Eg, for example, you will have to place your **stage3.sh** brewed copy override the **stage3** in the "**mycy/p2** image in::
 
-    /srv/mastersalt/makina-states/data/mycompany/project2/overrides/injected_volumes/bootstrap_scripts/stage3.sh
+    /srv/mastersalt/makina-states/data/mycy/p2/overrides/injected_volumes/bootstrap_scripts/stage3.sh
 
