@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # THIS SCRIPT CAN BE OVERRIDEN IN ANY MAKINA-STATES BASED IMAGES
-# REMOVE/EDIT THE ROLLOWING MARKER TO UNINDICATE THAT THIS IS A DEFAULT SCRIPT
-# makina-states-default-stage-file
+# Copy/Edit it inside the overrides directory inside you image data directory:
+# ${MS_DATA_DIR}/${MS_IMAGE}
+# EG:
+#  cp stage1.sh /srv/foo/makina-states/data/mycompany/mydocker/overrides/stage1.sh
+#  $ED /srv/foo/makina-states/data/mycompany/mydocker/overrides/stage1.sh
+
 RED='\e[31;01m'
 PURPLE='\e[33;01m'
 CYAN='\e[36;01m'
@@ -121,27 +125,13 @@ echo
 for i in /srv/pillar /srv/mastersalt-pillar /srv/projects;do
     if [ ! -d ${i} ];then mkdir ${i};fi
 done
-NAME="$(echo ${MS_IMAGE}|sed -re "s/\///g")-stage1-$(uuidgen)"
 # Run the script which is in charge to tag a candidate image after a
 # sucessful build
-MS_IMAGE_CANDIDATE="${MS_IMAGE}:candidate"
-#-v /makina-states.git:/makina-states.git \
-#-v /docker/data:/docker/data \
-#-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-#-v /usr/bin/docker:/usr/bin/docker:ro \
-#-v /var/lib/docker:/var/lib/docker \
-#-v /var/run/docker:/var/run/docker \
-#-v /var/run/docker.sock:/var/run/docker.sock \
-#-v /bootstrap_scripts:/injected_volumes/bootstrap_scripts \
-#-v /srv/pillar:/injected_volumes/srv/pillar \
-#-v /srv/mastersalt-pillar:/injected_volumes/srv/mastersalt-pillar \
-#-v /srv/projects:/injected_volumes/srv/projects \
 v_run docker run \
  -e container="docker" \
  -e MS_BASE="${MS_BASE}" \
+ -e MS_BASEIMAGE="${MS_BASEIMAGE}" \
  -e MS_COMMAND="${MS_COMMAND}" \
- -e MS_STAGE1_NAME="${MS_STAGE1_NAME}" \
- -e MS_STAGE2_NAME="${MS_STAGE2_NAME}" \
  -e MS_GIT_BRANCH="${MS_GIT_BRANCH}" \
  -e MS_GIT_URL="${MS_GIT_URL}" \
  -e MS_IMAGE_CANDIDATE="${MS_IMAGE_CANDIDATE}" \
@@ -150,8 +140,11 @@ v_run docker run \
  -e MS_OS="${MS_OS}" \
  -e MS_OS_RELEASE="${MS_OS_RELEASE}" \
  -e MS_STAGE0_TAG="${MS_STAGE0_TAG}" \
+ -e MS_STAGE1_NAME="${MS_STAGE1_NAME}" \
+ -e MS_STAGE2_NAME="${MS_STAGE2_NAME}" \
  --volume-from="${MS_STAGE1_NAME}" \
- --net="host" --privileged -ti --rm --name="${NAME}" ${stage1_tag} ls /injected_volumes/bootstrap_scripts
+ --net="host" --privileged -ti --rm --name="${MS_STAGE1_NAME}"\
+ ${stage1_tag} ls /injected_volumes/bootstrap_scripts
 # --net="host" --privileged -ti --rm --name="${NAME}" "${stage1_tag}"
 /bin/false
 ret=${?}

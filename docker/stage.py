@@ -173,16 +173,16 @@ def main(argv=None,
         'MS_DATA_DIR', os.path.join(_CWD, 'data'))
     environ.setdefault(
         'MS_DOCKER_STAGE0',
-        os.path.join(_CWD, '/docker/stage0.sh'))
+        os.path.join(_CWD, 'docker/stage0.sh'))
     environ.setdefault(
         'MS_DOCKER_STAGE1',
-        os.path.join(_CWD, '/docker/stage1.sh'))
+        os.path.join(_CWD, 'docker/stage1.sh'))
     environ.setdefault(
         'MS_DOCKER_STAGE2',
-        os.path.join(_CWD, '/docker/stage2.sh'))
+        os.path.join(_CWD, 'docker/stage2.sh'))
     environ.setdefault(
         'MS_DOCKER_STAGE3',
-        os.path.join(_CWD, '/docker/stage3.sh'))
+        os.path.join(_CWD, 'docker/stage3.sh'))
     environ.setdefault(
         'MS_DOCKERFILE',
         os.path.join(
@@ -203,6 +203,13 @@ def main(argv=None,
         'makinacorpus/'
         'makina-states-{0[MS_OS]}-{0[MS_OS_RELEASE]}'.format(environ))
     environ.setdefault(
+        'MS_IMAGE_CANDIDATE',
+        MS_IMAGE.split(':')[0] + ':candidate')
+    MS_IMAGE_DIR = environ.setdefault(
+        'MS_IMAGE_DIR',
+        os.path.join(environ['MS_DATA_DIR'],
+                     environ['MS_IMAGE']))
+    environ.setdefault(
         'MS_BASEIMAGE',
         'baseimage-{0[MS_OS]}-{0[MS_OS_RELEASE]}.tar.xz'
         .format(environ))
@@ -213,10 +220,6 @@ def main(argv=None,
     environ.setdefault(
         'MS_STAGE2_NAME',
         environ['MS_IMAGE'].replace('/', '') + '-stage2-' + id_)
-    MS_IMAGE_DIR = environ.setdefault(
-        'MS_IMAGE_DIR',
-        os.path.join(environ['MS_DATA_DIR'],
-                     environ['MS_IMAGE']))
     MS_INJECTED_DIR = os.path.join(
         environ['MS_IMAGE_DIR'], 'injected_volumes')
     MS_BOOTSTRAP_DIR = os.path.join(

@@ -163,9 +163,6 @@ In most cases, you certainly only:
 
 The scripts support those environment variables, in **user facing order**:
 
-    MS_DOCKER_STAGE3
-        Path to an alternate **stage3** script,
-        eg `docker/stage3.sh <https://github.com/makinacorpus/makina-states/blob/master/docker/stage3.sh>`_
     MS_IMAGE
         Image tarball (like a base lxc container export)
     MS_BASE
@@ -177,6 +174,9 @@ The scripts support those environment variables, in **user facing order**:
         and empty image in the Docker speaking.
     MS_DATA_DIR
         Data volume dir to place the **baseimage.tar.xz** file (default: ./data)
+    MS_IMAGE_DIR
+        Data volume dir to place image related files like stage scripts & injected data
+        (default: $DATA_DIR/$MS_IMAGE)
     MS_GIT_BRANCH
         Branch for makina-states (**stable**)
     MS_OS_RELEASE
@@ -192,28 +192,22 @@ The scripts support those environment variables, in **user facing order**:
         (default: **baseimage-${MS_OS}-${MS_OS_RELEASE}.tar.xz**)
     MS_STAGE0_TAG
         Tag of the stage0 image, by default it will look like
-    MS_DOCKERFILE
-        Path to a Stage0 builder Dockerfile,
-        default to current makina-states one
         **makinacorpus/makina-states-ubuntu-vivid-stage0**
-    MS_DOCKER_STAGE0
-        Path to an alternate **stage0** script,
-        eg `docker/stage0.sh <https://github.com/makinacorpus/makina-states/blob/master/docker/stage0.sh>`_
-    MS_DOCKER_STAGE1
-        Path to an alternate **stage1** script,
-        eg `docker/stage1.sh <https://github.com/makinacorpus/makina-states/blob/master/docker/stage1.sh>`_
-    MS_DOCKER_STAGE2
-        Path to an alternate **stage2** script,
-        eg `docker/stage2.sh <https://github.com/makinacorpus/makina-states/blob/master/docker/stage2.sh>`_
+    MS_DOCKERFILE
+        Path to a **Stage0** builder Dockerfile,
+        default to current makina-states one
     MS_DOCKER_ARGS
         Any argument to give to the docker run call to the stage0 builder (None)
+
+Read Only variables:
+
     MS_STAGE1_NAME
         Name of the stage1 container (use to mount volumes from host in stage2
         and onwards)
     MS_STAGE2_NAME
         Name of the stage2 container  (used to commit the final image)
 
-Additionnaly, in stage1, the stage0 script will set:
+Additionnaly, in stage1 (read-only):
 
     MS_IMAGE_CANDIDATE
         Tag of the Image to commit if the build is sucessful,
@@ -267,16 +261,39 @@ OR
 
 .. _scratch image: https://docs.docker.com/articles/baseimages/#creating-a-simple-base-image-using-scratch
 
+Adding data files to commited image
+---------------------------------------
+Anything (file, dir, symlink) that is placed in the **injected_volumes** image data directory will be commited with the image.
+The files are copied before **stage2** execution, thus you have them available at build time.
+Thus, all you have to do is to place what you want to go in your imag in this location::
+
+    DATADIR/<IMAGE>/injected_volumes/<stuff>
+
+For example, you will have to place your **fic.txt** in the "**project2** image in, that will live in /foo::
+
+    /srv/mastersalt/makina-states/data/project2/injected_volumes/foo/fic.txt
+
+The principal application is to inject your project code and it's pillar configuration::
+
+    /srv/mastersalt/makina-states/data/project2/injected_volumes/srv/projects/project2/project/...
+    /srv/mastersalt/makina-states/data/project2/injected_volumes/srv/projects/project2/pillar/init.sls
+
 Overriding stage scripts
 -----------------------------
-To override a stage script, you ll have to place a script in the datadir, in this location::
+Anything that is placed in the **overrides** image data directory will override things which are placed
+in the **injected_volumes** directory. Thus if you want to override for example the **stage3** script,
+all you have to do is to place a script in the datadir, in this location::
 
-    DATADIR/<IMAGE>/injected_volumes/bootstrap_scripts/<stage>
+    DATADIR/<IMAGE>/overrides/injected_volumes/bootstrap_scripts/<stage>
 
-For example, you will have to place your **stage3.sh** brewed copy override the **stage3** in the "**project2** container in::
+For example, you will have to place your **stage3.sh** brewed copy override the **stage3** in the "**project2** image in::
 
-    /srv/mastersalt/makina-states/data/project2/injected_volumes/bootstrap_scripts/stage3.sh
+    /srv/mastersalt/makina-states/data/project2/overrides/injected_volumes/bootstrap_scripts/stage3.sh
 
 Assuming that your makina-states installation copy is installed in **/srv/mastersalt**.
 
+Subdirectories are supported as well (for subrepos):
+Eg, for example, you will have to place your **stage3.sh** brewed copy override the **stage3** in the "**mycompany/project2** image in::
+
+    /srv/mastersalt/makina-states/data/mycompany/project2/overrides/injected_volumes/bootstrap_scripts/stage3.sh
 

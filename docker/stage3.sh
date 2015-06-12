@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # THIS SCRIPT CAN BE OVERRIDEN IN ANY MAKINA-STATES BASED IMAGES
-# REMOVE/EDIT THE ROLLOWING MARKER TO UNINDICATE THAT THIS IS A DEFAULT SCRIPT
-# makina-states-default-stage-file
+# Copy/Edit it inside the overrides directory inside you image data directory:
+# ${MS_DATA_DIR}/${MS_IMAGE}
+# EG:
+#  cp stage1.sh /srv/foo/makina-states/data/mycompany/mydocker/overrides/stage3.sh
+#  $ED /srv/foo/makina-states/data/mycompany/mydocker/overrides/stage3.sh
 RED='\e[31;01m'
 CYAN='\e[36;01m'
 PURPLE='\e[33;01m'
