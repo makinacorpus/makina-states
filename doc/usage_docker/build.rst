@@ -251,20 +251,6 @@ by creating files inside for example:
 
 .. _volumes:
 
-Those volumes are exposed in all container stages:
-
-    +--------------------------------+-------------------------------------------------+
-    |    container                   | host                                            |
-    +--------------------------------+-------------------------------------------------+
-    |   /docker/data                 |  $DATADIR                                       |
-    +--------------------------------+-------------------------------------------------+
-    |   /docker/injected_volumes     |  $DATADIR/$IMAGE/injected_volumes               |
-    +--------------------------------+-------------------------------------------------+
-    |   /injected_volumes            |  $DATADIR/$IMAGE/injected_volumes               |
-    +--------------------------------+-------------------------------------------------+
-    |   /makina-states.git           |  **makina-states/.git**                         |
-    +--------------------------------+-------------------------------------------------+
-
 Those pillars, if given will be fullycommited to the image.
 Technically, all what is behind **injected_volumes** is copied, via rsync
 with ACL support to the image.
@@ -305,6 +291,24 @@ OR
         -v /path/to/docker_build.sh:/bootstrap_scripts/docker_build.sh
 
 .. _scratch image: https://docs.docker.com/articles/baseimages/#creating-a-simple-base-image-using-scratch
+
+
+Build volumes
+++++++++++++++
+Those volumes are exposed in all container stages:
+
+    +--------------------------------+-------------------------------------------------+
+    |    container                   | host                                            |
+    +--------------------------------+-------------------------------------------------+
+    |   /docker/data                 |  $DATADIR                                       |
+    +--------------------------------+-------------------------------------------------+
+    |   /docker/injected_volumes     |  $DATADIR/$IMAGE/injected_volumes               |
+    +--------------------------------+-------------------------------------------------+
+    |   /injected_volumes            |  $DATADIR/$IMAGE/injected_volumes               |
+    +--------------------------------+-------------------------------------------------+
+    |   /makina-states.git           |  makina-states/.git                             |
+    +--------------------------------+-------------------------------------------------+
+
 
 Adding data files to commited image
 ---------------------------------------
