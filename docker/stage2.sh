@@ -17,6 +17,7 @@ yellow() { echo -e "${YELLOW}${@}${NORMAL}"; }
 die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
 warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";exit 1;fi }
 v_run() { green "${@}"; "${@}"; }
+v_die_run() { v_run "${@}"; die_in_error "command ${@} failed"; }
 
 echo;echo
 yellow "-----------------------------------------------"
@@ -60,11 +61,6 @@ if [ -x /bootstrap_scripts/docker_build_stage3.sh ];then
     /bootstrap_scripts/docker_build_stage3.sh
     die_in_error "${MS_IMAGE}: Stage3 building failed"
 fi
-echo
-purple "--------------------"
-purple "- stage3 complete  -"
-purple "--------------------"
-echo
 v_run getfacl -R / > /acls.txt || /bin/true
 v_run touch /acls.restore
 echo

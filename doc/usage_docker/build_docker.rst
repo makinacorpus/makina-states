@@ -88,25 +88,23 @@ a part of **Stage3** or (future) upper stages.
 
 How To
 ++++++++++
-The entry point to this build system is **docker/stage0.sh**
-You can easily adjust it to your needs in case.
+The entry point to this build system is **docker/stage0.sh**.
+You can override any of the **docker/stageX.sh** scripts by looking and overriding
+them to your needs. For stages > 0, Don't edit them, but use the environment
+variables or docker volumes (as stage0.sh arguments)  to use your custom scripts.
+In most cases, you certainly only have to override **stage3.sh** to construct an image.
 
 .. code-block:: bash
 
-    docker/stage0.sh
+    docker/stage0.sh [ARGS]
 
-You can override **docker_build.sh** (installing makina-states) by looking and overriding
-it to your need
+The scripts support those environment variables, in **user facing order**:
 
-The script support those environment variables:
-
-    MS_DOCKERFILE
-        Path to a Stage0 Compliant file,
-        default to current makina-states one
-    MS_DATA_DIR
-        Data volume dir to place the **baseimage.tar.xz** file
-    MS_DOCKER_ARGS
-        Any argument to give to the docker run call to the stage0 builder (None)
+    MS_DOCKER_STAGE3
+        Path to an alternate **stage3** script,
+        eg `_scripts/docker_build_stage3.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage3.sh>`_
+    MS_IMAGE
+        Image tarball (like a base lxc container export)
     MS_BASE
         Stage 1 base image (either `scratch image`_ or a real image.
         If stage1 is **scratch**, you need to provide a **baseimage.tar.xz**
@@ -114,34 +112,47 @@ The script support those environment variables:
         or the script will fetch for you a basic ubuntu container using
         lxc-utils. For those who dont know, **scratch** is a special
         and empty image in the Docker speaking.
-    MS_COMMAND
-        Command to use on the resulting image
+    MS_DATA_DIR
+        Data volume dir to place the **baseimage.tar.xz** file (default: ./data)
     MS_GIT_BRANCH
-        Branch for makina-states (stable)
+        Branch for makina-states (**stable**)
+    MS_OS_RELEASE
+        OS release (eg: vivid)
     MS_GIT_URL
         Url for `makina-states <https://github.com/makinacorpus/makina-states>`_
     MS_OS
         OS (eg: ubuntu)
-    MS_OS_RELEASE
-        OS release (eg: vivid)
-    MS_IMAGE
-        Image tarball (like a base lxc container export)
+    MS_COMMAND
+        Command to use on the resulting image (**/sbin/init**)
+    MS_BASEIMAGE
+        Filename of the base image
+        (default: **baseimage-${MS_OS}-${MS_OS_RELEASE}.tar.xz**)
+    MS_BASEIMAGE_DIR
+        Filepath of the base image directory inside the stage0 container
+        (default: **/docker_data** which is the $MS_DATA_DIR volume)
     MS_STAGE0_TAG
-        Tag of the stage0 image, by default it looks like
-        **makinacorpus/makina-states-vivid-0**
+        Tag of the stage0 image, by default it will look like
+    MS_DOCKERFILE
+        Path to a Stage0 builder Dockerfile,
+        default to current makina-states one
+        **makinacorpus/makina-states-ubuntu-vivid-stage0**
     MS_DOCKER_STAGE0
-        Path to a **stage0** builder script, eg **`_scripts/docker_build_stage0.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage0.sh>`_**
+        Path to an alternate **stage0** script,
+        eg `_scripts/docker_build_stage0.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage0.sh>`_
     MS_DOCKER_STAGE1
-        Path to a **stage1** builder script, eg **`_scripts/docker_build_stage1.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage1.sh>`_**
+        Path to an alternate **stage1** script,
+        eg `_scripts/docker_build_stage1.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage1.sh>`_
     MS_DOCKER_STAGE2
-        Path to a **stage2** builder script, eg **`_scripts/docker_build_stage2.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage2.sh>`_**
-    MS_DOCKER_STAGE3
-        Path to a **stage2** builder script, eg **`_scripts/docker_build_stage3.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage3.sh>`_**
+        Path to an alternate **stage2** script,
+        eg `_scripts/docker_build_stage2.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage2.sh>`_
+    MS_DOCKER_ARGS
+        Any argument to give to the docker run call to the stage0 builder (None)
 
 Additionnaly, in stage2, the stage0 script will set:
 
     MS_IMAGE_CANDIDATE
-        Which is the tag of the Image to commit if the build is sucessful
+        Tag of the Image to commit if the build is sucessful,
+        default to **$MS_IMAGE:candidate**
 
 You can feed the image with preconfigured pillars & project trees
 by mounting additional volumes for:

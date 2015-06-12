@@ -14,6 +14,9 @@ green() { echo -e "${GREEN}${@}${NORMAL}"; }
 die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
 warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";exit 1;fi }
 v_run() { green "${@}"; "${@}"; }
+v_die_run() { v_run "${@}"; die_in_error "command ${@} failed"; }
+
+MS_BASEIMAGE_PATH="${MS_BASEIMAGE_DIR}/${MS_BASEIMAGE}"
 
 echo;echo
 yellow "-----------------------------------------------"
@@ -21,16 +24,14 @@ yellow "-   STAGE 1  - BUIDING                        -"
 yellow "-----------------------------------------------"
 echo
 
-BASEIMAGE="/docker_data/baseimage-${MS_OS}-${MS_OS_RELEASE}.tar.xz"
-
 # Stage1. Create the base image template
 if [ "x${MS_BASE}" = "x" ];then
     export MS_BASE="scratch"
 fi
 if [ "x${MS_BASE}" = "xscratch" ];then
-    if [ ! -f "${BASEIMAGE}" ];then
+    if [ ! -f "${MS_BASEIMAGE_PATH}" ];then
         if [ "x${MS_OS}" = "xubuntu" ];then
-            red "${MS_IMAGE}: Creating baseimage ${BASEIMAGE} for ${MS_IMAGE}"
+            red "${MS_IMAGE}: Creating baseimage ${MS_BASEIMAGE} for ${MS_IMAGE}"
             v_run lxc-create -t ${MS_OS} -n ${MS_OS} -- --packages="vim,git"\
                 --release=${MS_OS_RELEASE} --mirror=${MS_OS_MIRROR}
             die_in_error "${MS_IMAGE}: lxc template failed"
@@ -38,17 +39,15 @@ if [ "x${MS_BASE}" = "xscratch" ];then
             red "${MS_IMAGE}: Other OS than ubuntu is not currently supported (${MS_OS})"
             exit 1
         fi
-        set -e
         cd /var/lib/lxc/${MS_OS}/rootfs
-        v_run rsync -a /bootstrap_scripts/ bootstrap_scripts/
-        v_run cp /etc/apt/apt.conf.d/99{gzip,notrad,clean} etc/apt/apt.conf.d
-        v_run chroot /var/lib/lxc/${MS_OS}/rootfs /bootstrap_scripts/lxc-cleanup.sh
-        v_run chroot /var/lib/lxc/${MS_OS}/rootfs /bootstrap_scripts/makinastates-snapshot.sh
-        set -e
-        v_run tar cJf "${BASEIMAGE}" .
-        die_in_error "${MS_IMAGE}: can't compress ${BASEIMAGE}"
+        v_die_run rsync -a /bootstrap_scripts/ bootstrap_scripts/
+        v_die_run cp /etc/apt/apt.conf.d/99{gzip,notrad,clean} etc/apt/apt.conf.d
+        v_die_run chroot /var/lib/lxc/${MS_OS}/rootfs /bootstrap_scripts/lxc-cleanup.sh
+        v_die_run chroot /var/lib/lxc/${MS_OS}/rootfs /bootstrap_scripts/makinastates-snapshot.sh
+        v_die_run tar cJf "${MS_BASEIMAGE_PATH}" .
+        die_in_error "${MS_IMAGE}: can't compress ${MS_BASEIMAGE}"
     else
-        green "${MS_IMAGE}: ${BASEIMAGE} for ${MS_IMAGE} already exists"
+        green "${MS_IMAGE}: ${MS_BASEIMAGE} for ${MS_IMAGE} already exists"
         yellow "${MS_IMAGE}: Delete it to redo"
     fi
 else
@@ -61,7 +60,7 @@ fi
 # Stage2. Import the base template a the first level Layer, this image wont
 #    spawn systemd by itself, but a script that builds the image.
 #     script produce the first image
-mbs="${MS_IMAGE}-bootstrap:latest"
+mbs="${MS_IMAGE}-stage1:latest"
 mid="$(docker inspect -f "{{.Id}}" "${mbs}" 2>/dev/null)"
 if [ "x${?}" != "x0" ];then
     mid=""
@@ -71,41 +70,42 @@ fi
 BUILDKEY=""
 BUILDKEY="${BUILDKEY}_$(md5sum /bootstrap_scripts/stage2.sh|awk '{print $1}')"
 BUILDKEY="${BUILDKEY}_$(md5sum /bootstrap_scripts/stage3.sh|awk '{print $1}')"
-if [ "x${MS_BASE}" = "xscratch" ] && [ -f "${BASEIMAGE}" ] ;then
-    BUILDKEY="${BUILDKEY}_$(md5sum "${BASEIMAGE}"|awk '{print $1}')"
+if [ "x${MS_BASE}" = "xscratch" ] && [ -f "${MS_BASEIMAGE_PATH}" ] ;then
+    BUILDKEY="${BUILDKEY}_$(md5sum "${MS_BASEIMAGE_PATH}"|awk '{print $1}')"
 fi
-# only rebuild the bootstrap image if it is useful and something changed
+# only rebuild the stage1 image if it is useful and something changed
 do_build="y"
 if [ "x${mid}" != "x" ];then
     if docker inspect -f "{{.ContainerConfig.Labels.MS_IMAGE_BUILD_KEY}}" "${mbs}" | grep -q "${BUILDKEY}";then
         do_build=""
     fi
 fi
-if [ "x${do_build}" != "x" ];then
+if [ "x${do_build}" != "xx" ];then
     cd /
-    echo "FROM ${MS_BASE}" > Dockerfile
+    echo "FROM ${MS_BASE}" > /Dockerfile
     if [ "x${MS_BASE}" = "xscratch" ];then
-        echo "ADD ${BASEIMAGE} /" >> Dockerfile
-        cp "${BASEIMAGE}" .
+        echo "ADD ${MS_BASEIMAGE_PATH} /" >> /Dockerfile
     fi
-    cp -rf /bootstrap_scripts .
-    echo "LABEL MS_IMAGE_BUILD_KEY=\"${BUILDKEY}\"" >> Dockerfile
-    echo "CMD /forwarded_volumes/bootstrap_scripts/stage2.sh" >> Dockerfile
-    red "${MS_IMAGE}: Bootstraping image ${mbs} with this Dockerfile"
-    cat Dockerfile
-    v_run docker build -t "${mbs}" .
-    # cleanup the old bootstrap image
+    echo "LABEL MS_IMAGE_BUILD_KEY=\"${BUILDKEY}\"" >> /Dockerfile
+    echo "CMD /forwarded_volumes/bootstrap_scripts/stage2.sh" >> /Dockerfile
+    cyan "------------"
+    cyan "${MS_IMAGE}: Bootstraping image ${mbs} with this Dockerfile"
+    cyan "------------"
+    cat /Dockerfile
+    cyan "------------"
+    v_run docker build -t "${mbs}" /
+    die_in_error "${mbs} failed to build stage1 image"
+    # cleanup the old stage1 image
     if [ "x${?}" = "x0" ] && [ "x${mid}" != "x" ] ;then
-        yellow "${MS_IMAGE}: Deleting old bootstrap layer: ${mid}"
+        yellow "${MS_IMAGE}: Deleting old stage1 layer: ${mid}"
         docker rmi "${mid}"
-        warn_in_error "${MS_IMAGE}: ${mid} was not deleted"
+        warn_in_error "${MS_IMAGE}: stage1 ${mid} was not deleted"
     fi
 else
-    yellow "${MS_IMAGE}: Bootstrap image ${mbs} already built, skipping"
+    yellow "${MS_IMAGE}: stage1 image ${mbs} already built, skipping"
 fi
 
 exit 1
-die_in_error "${mbs} failed to build"
 echo
 purple "--------------------"
 purple "- stage1 complete  -"

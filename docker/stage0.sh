@@ -13,6 +13,7 @@ green() { echo -e "${GREEN}${@}${NORMAL}"; }
 die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
 warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";exit 1;fi }
 v_run() { green "${@}"; "${@}"; }
+v_die_run() { v_run "${@}"; die_in_error "command ${@} failed"; }
 cwd="$(cd "$(dirname "${0}")/.." && pwd)"
 MS_OS="${MS_OS:-"ubuntu"}"
 MS_OS_MIRROR="${MS_OS_MIRROR:-"http://mirror.ovh.net/ftp.ubuntu.com/"}"
@@ -32,6 +33,8 @@ MS_STAGE0_TAG="${MS_STAGE0_TAG:-"makinacorpus/makina-states-${MS_OS}-${MS_OS_REL
 MS_GIT_BRANCH="${MS_GIT_BRANCH:-"stable"}"
 MS_GIT_URL="${MS_GIT_URL:-"https://github.com/makinacorpus/makina-states.git"}"
 MS_IMAGE="${MS_IMAGE:-"makinacorpus/makina-states-${MS_OS}-${MS_OS_RELEASE}"}"
+MS_BASEIMAGE="${MS_BASEIMAGE:-"baseimage-${MS_OS}-${MS_OS_RELEASE}.tar.xz"}"
+MS_BASEIMAGE_DIR="${MS_BASEIMAGE_DIR:-"/docker_data"}"
 
 echo;echo
 yellow "-----------------------------------------------"
@@ -50,12 +53,17 @@ mid="$(docker inspect -f "{{.Id}}" "${MS_STAGE0_TAG}" 2>/dev/null)"
 if [ "x${?}" != "x0" ];then
     mid=""
 fi
-v_run docker build --rm -t "${MS_STAGE0_TAG}" -f "${MS_DOCKERFILE}" "${cwd}"
-die_in_error "${MS_IMAGE}: stage0 didn't build correctly"
+if [ "x${MS_SKIP_STAGE0_BUILD}" = "x" ];then
+    v_run docker build --rm -t "${MS_STAGE0_TAG}" -f "${MS_DOCKERFILE}" "${cwd}"
+    die_in_error "${MS_IMAGE}: stage0 didn't build correctly"
+else
+    yellow "${MS_IMAGE}: stage0 building is skipped, be sure that stage0 is available"
+fi
 nmid="$(docker inspect -f "{{.Id}}" "${MS_STAGE0_TAG}" 2>/dev/null)"
+die_in_error "${MS_IMAGE}: stage0 can not be found"
 if [ "x${mid}" != "x" ];then
     if [ "x${mid}" = "x${nmid}" ];then
-        yellow "${MS_IMAGE}: stage0 already built"
+        yellow "${MS_IMAGE}: stage0 found"
     else
         docker rmi "${mid}"\
             && yellow "${MS_IMAGE}: stage0 cleaned up old image: ${mid}"
@@ -79,6 +87,8 @@ v_run docker run --privileged -ti --rm \
  -e MS_OS_RELEASE="${MS_OS_RELEASE}" \
  -e MS_OS_MIRROR="${MS_OS_MIRROR}" \
  -e MS_STAGE0_TAG="${MS_STAGE0_TAG}" \
+ -e MS_BASEIMAGE="${MS_BASEIMAGE}" \
+ -e MS_BASEIMAGE_DIR="${MS_BASEIMAGE_DIR}" \
  -v "${cwd}/.git":/makina-states.git \
  -v "${MS_DATA_DIR}":/docker_data \
  -v "${MS_DOCKERFILE}":/bootstrap_scripts/Dockerfile \

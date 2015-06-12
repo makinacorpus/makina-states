@@ -14,6 +14,7 @@ yellow() { echo -e "${YELLOW}${@}${NORMAL}"; }
 die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
 warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";exit 1;fi }
 v_run() { green "${@}"; "${@}"; }
+v_die_run() { v_run "${@}"; die_in_error "command ${@} failed"; }
 
 echo;echo
 yellow "-----------------------------------------------"
