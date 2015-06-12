@@ -267,3 +267,16 @@ OR
 
 .. _scratch image: https://docs.docker.com/articles/baseimages/#creating-a-simple-base-image-using-scratch
 
+Overriding stage scripts
+-----------------------------
+To override a stage script, you ll have to place a script in the datadir, in this location::
+
+    DATADIR/<IMAGE>/injected_volumes/bootstrap_scripts/<stage>
+
+For example, you will have to place your **stage3.sh** brewed copy override the **stage3** in the "**project2** container in::
+
+    /srv/mastersalt/makina-states/data/project2/injected_volumes/bootstrap_scripts/stage3.sh
+
+Assuming that your makina-states installation copy is installed in **/srv/mastersalt**.
+
+
