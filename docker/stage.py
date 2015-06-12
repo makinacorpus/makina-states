@@ -81,12 +81,12 @@ def die(reason, pipe=sys.stdout):
     raise StageError(reason)
 
 
-def die_in_error(p, reason, pipe=sys.stdout):
+def die_in_error(p, reason, pipe=sys.stderr):
     if p.returncode != 0:
         die(reason, pipe=pipe)
 
 
-def warn_in_error(p, reason='', pipe=sys.stdout):
+def warn_in_error(p, reason='', pipe=sys.stderr):
     if p.returncode != 0:
         yellow(reason, pipe=pipe)
 
@@ -134,7 +134,7 @@ def v_die_run(cmd,
     if not reason:
         reason = 'command {0} failed'.format(cmd)
     p = v_run(cmd, env=env, shell=shell, pipe=pipe, errpipe=errpipe)
-    die_in_error(p, reason, pipe=pipe)
+    die_in_error(p, reason, pipe=errpipe)
     return p
 
 
@@ -281,13 +281,13 @@ def main(argv=None,
     purple('- stage-1 complete -', pipe=pipe)
     purple('--------------------', pipe=pipe)
     pipe.write('\n')
-    # p = v_run(
+    p = None
+    # p = v_die_run(
     #     '{0}/injected_volumes/bootstrap_scripts/stage0.sh'
     #     ' "${@}"'.format(MS_IMAGE_DIR),
     #           env=environ,
-    # )
-    # die_in_error(p, '{0}: build failed'.format(MS_IMAGE))
-    return environ, pipe, errpipe
+    #    reason='{0}: build failed'.format(MS_IMAGE))
+    return p, environ, pipe, errpipe
 
 
 if __name__ == '__main__':
