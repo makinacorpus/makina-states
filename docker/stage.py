@@ -23,6 +23,10 @@ GREEN = '\033[32;01m'
 NORMAL = '\033[0m'
 
 
+class StageError(Exception):
+    '''.'''
+
+
 def hashfile(afile, hasher=None, blocksize=65536):
     if not hasher:
         hasher = hashlib.md5()
@@ -74,7 +78,7 @@ def green(msg, pipe=sys.stdout):
 
 def die(reason, pipe=sys.stdout):
     red(reason, pipe=pipe)
-    sys.exit(1)
+    raise StageError(reason)
 
 
 def die_in_error(p, reason, pipe=sys.stdout):
