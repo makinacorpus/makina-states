@@ -7,7 +7,7 @@ Basic development  installation
 - For ubuntu, you best bet is to use something >= Ubuntu 14.04 with a recent kernel (from enablement stack)
 - Install docker by reading your distribution guidelines for that purpose
 
-    - Eg on ubuntu
+    - Eg on ubuntu::
 
         apt-get install lxc docker
 
