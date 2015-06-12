@@ -177,12 +177,13 @@ def main(argv=None,
         'MS_DOCKERFILE',
         os.path.join(
             _CWD,
-            'docker/Dockerfile.{MS_OS}.{MS_OS_RELEASE}'.format(**environ)))
+            'docker/Dockerfile.{0[MS_OS]}.{0[MS_OS_RELEASE]}'
+            .format(environ)))
     environ.setdefault(
         'MS_STAGE0_TAG',
         'makinacorpus/'
         'makina-states-'
-        '{MS_OS}-{MS_OS_RELEASE}-stage0:latest'.format(**environ))
+        '{0[MS_OS]}-{0[MS_OS_RELEASE]}-stage0:latest'.format(environ))
     environ.setdefault('MS_GIT_BRANCH', 'stable')
     environ.setdefault(
         'MS_GIT_URL',
@@ -190,10 +191,11 @@ def main(argv=None,
     MS_IMAGE = environ.setdefault(
         'MS_IMAGE',
         'makinacorpus/'
-        'makina-states-{MS_OS}-{MS_OS_RELEASE}'.format(**environ))
+        'makina-states-{0[MS_OS]}-{0[MS_OS_RELEASE]}'.format(environ))
     environ.setdefault(
         'MS_BASEIMAGE',
-        'baseimage-{MS_OS}-{MS_OS_RELEASE}.tar.xz'.format(**environ))
+        'baseimage-{0[MS_OS]}-{0[MS_OS_RELEASE]}.tar.xz'
+        .format(environ))
     id_ = id_generator()
     environ.setdefault(
         'MS_STAGE1_NAME',
