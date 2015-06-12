@@ -102,7 +102,7 @@ The scripts support those environment variables, in **user facing order**:
 
     MS_DOCKER_STAGE3
         Path to an alternate **stage3** script,
-        eg `_scripts/docker_build_stage3.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage3.sh>`_
+        eg `_scripts/docker_build_stage3.sh <https://github.com/makinacorpus/makina-states/blob/master/docker/stage3.sh>`_
     MS_IMAGE
         Image tarball (like a base lxc container export)
     MS_BASE
@@ -138,13 +138,13 @@ The scripts support those environment variables, in **user facing order**:
         **makinacorpus/makina-states-ubuntu-vivid-stage0**
     MS_DOCKER_STAGE0
         Path to an alternate **stage0** script,
-        eg `_scripts/docker_build_stage0.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage0.sh>`_
+        eg `_scripts/docker_build_stage0.sh <https://github.com/makinacorpus/makina-states/blob/master/docker/stage0.sh>`_
     MS_DOCKER_STAGE1
         Path to an alternate **stage1** script,
-        eg `_scripts/docker_build_stage1.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage1.sh>`_
+        eg `_scripts/docker_build_stage1.sh <https://github.com/makinacorpus/makina-states/blob/master/docker/stage1.sh>`_
     MS_DOCKER_STAGE2
         Path to an alternate **stage2** script,
-        eg `_scripts/docker_build_stage2.sh <https://github.com/makinacorpus/makina-states/blob/master/_scripts/docker_build_stage2.sh>`_
+        eg `_scripts/docker_build_stage2.sh <https://github.com/makinacorpus/makina-states/blob/master/docker/stage2.sh>`_
     MS_DOCKER_ARGS
         Any argument to give to the docker run call to the stage0 builder (None)
 
