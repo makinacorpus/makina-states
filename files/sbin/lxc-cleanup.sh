@@ -50,6 +50,11 @@ for i in /var/run/*.pid /var/run/dbus/pid /etc/nologin;do
         rm -f "${i}" || /bin/true
     fi
 done
+# disable console login
+if [ -e /etc/rsyslog.d/50-default.conf ];then
+    sed -i -re '/daemon.*;mail.*/ { N;N;N; s/^/#/gm }'\
+        /etc/rsyslog.d/50-default.conf || /bin/true
+fi
 # disabling useless and harmfull services
 #    $(find /etc/init -name dbus.conf)\
 # instead of delete the proccps service, reset it to do nothing by default
@@ -80,12 +85,21 @@ if [ -f /etc/systemd/logind.conf ];then
         echo "${i}=0">>/etc/systemd/logind.conf
     done
 fi
-
+# if ssh keys were removed, be sure to have new keypairs before sshd (re)start
+ssh_keys=""
+find /etc/ssh/ssh_host_*_key -type f || ssh_keys="1"
+if [ -e /etc/ssh ] && [ "x${ssh_keys}" != "x" ];then
+    ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa -b 4096 || /bin/true
+    ssh-keygen -f /etc/ssh/ssh_host_dsa_key -N '' -t dsa -b 1024 || /bin/true
+fi
 # - we must need to rely on direct file system to avoid relying on running process
 #    manager (pid: 1)
 # do not activate those evil services in a container context
 for s in\
     acpid\
+    alsa-restore\
+    alsa-state\
+    alsa-store\
     apparmor\
     apport\
     atop\
@@ -96,6 +110,7 @@ for s in\
     control-alt-delete\
     cryptdisks-enable\
     cryptdisks-udev\
+    debian-fixup\
     display-manager\
     dmesg\
     dns-clean\
@@ -104,6 +119,7 @@ for s in\
     getty-static\
     getty@tty1\
     hwclock\
+    kmod-static-nodes\
     lvm2-lvmetad\
     lvm2-monitor\
     module\
@@ -118,27 +134,26 @@ for s in\
     mounted-var\
     ondemand\
     plymouth\
-    pppd-dns\
-    serial-getty@\
-    plymouth-read-write\
-    plymouth-start\
-    alsa-restore\
-    alsa-store\
-    alsa-state\
-    getty-static\
     plymouth-halt\
     plymouth-kexec\
+    plymouth-read-write\
     plymouth-start\
     plymouth-switch-root\
+    pppd-dns\
+    serial-getty@\
     setvtrgb\
-    systemd-remount-fs\
     smartd\
     smartmontools\
+    systemd-binfmt\
+    systemd-hwdb-update\
+    systemd-journal-flush\
+    systemd-machine-id-commit\
     systemd-modules-load\
     systemd-remount-fs\
+    systemd-timesyncd\
     systemd-udevd.service\
     systemd-udev-trigger\
-    systemd-update-utmp.service\
+    systemd-update-utmp\
     udev\
     udev-finish\
     ufw\
@@ -165,6 +180,17 @@ for s in\
     # sysV
     for i in 0 1 2 3 4 5 6;do
        rm -vf /etc/rc${i}.d/*${s} || /bin/true
+    done
+done
+for s in\
+    sys-kernel-config.mount\
+    systemd-journald-audit.socket\
+    ;do
+    for d in /lib/systemd /etc/systemd /usr/lib/systemd;do
+        if [ -e "/lib/systemd/system/${s}" ];then
+            rm -vf "${d}/"*/*.wants/${s} || /bin/true
+            ln -sfv /dev/null "/etc/systemd/system/${s}"
+        fi
     done
 done
 # disabling useless and harmfull sysctls
@@ -204,6 +230,7 @@ if [ -f /etc/network/if-up.d/upstart ] &&\
    [ ${DISTRIB_CODENAME} != "lucid" ];then
     sed -i 's/^.*emission handled.*$/echo Emitting lo/' /etc/network/if-up.d/upstart
 fi
+# if we  found the acl restore flag, apply !
 if which setfacl >/dev/null 2>&1 && test -e /acls.restore && test -e /acls.txt;then
     cd / && setfacl --restore="/acls.txt" || /bin/true
 fi
