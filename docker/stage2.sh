@@ -76,6 +76,7 @@ else
     # 3. mastersalt + salt highstates & masterless mode
     ${bs} -C --mastersalt 127.0.0.1 -n dockercontainer\
         --local-mastersalt-mode masterless --local-salt-mode masterless
+    for i in  $(seq 300);do echo $i;sleep 1;done
     die_in_error "${MS_IMAGE}: failed installing makina-states"
 fi
 echo

@@ -91,6 +91,9 @@ find /etc/ssh/ssh_host_*_key -type f || ssh_keys="1"
 if [ -e /etc/ssh ] && [ "x${ssh_keys}" != "x" ];then
     ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa -b 4096 || /bin/true
     ssh-keygen -f /etc/ssh/ssh_host_dsa_key -N '' -t dsa -b 1024 || /bin/true
+    ssh-keygen -f /etc/ssh/ssh_host_ed25519_key -N '' -t ed2551  || /bin/true
+    ssh-keygen -f /etc/ssh/ssh_host_ecdsa_key   -N '' -t  ecdsa  || /bin/true
+
 fi
 # - we must need to rely on direct file system to avoid relying on running process
 #    manager (pid: 1)
@@ -154,6 +157,7 @@ for s in\
     systemd-udevd.service\
     systemd-udev-trigger\
     systemd-update-utmp\
+    systemd-update-utmp-runlevel\
     udev\
     udev-finish\
     ufw\
