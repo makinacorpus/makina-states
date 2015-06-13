@@ -1,9 +1,16 @@
-{%- for i in  ['systemd',
-               'libpam-systemd',
-               'libsystemd0',
-               'systemd-sysv'] %}
-Explanation: {% set p = salt['mc_pkgs.settings']() %}
-Package: {{i}}
+Explanation: {% set p = salt['mc_pkgs.settings']() %} - loops are avoided to be used as raw in dockerfiles of this repo 
+Package: systemd
 Pin: release a={{p.udist}}-proposed
-Pin-Priority: {{priority}}
-{% endfor %}
+Pin-Priority: 9999
+
+Package: libpam-systemd
+Pin: release a={{p.udist}}-proposed
+Pin-Priority: 9999
+
+Package: libsystemd0
+Pin: release a={{p.udist}}-proposed
+Pin-Priority: 9999
+
+Package: systemd-sysv
+Pin: release a={{p.udist}}-proposed
+Pin-Priority: 9999

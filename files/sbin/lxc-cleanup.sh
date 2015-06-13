@@ -74,6 +74,13 @@ for reactivated_service in ${reactivated_services};do
         rm -f "${reactivated_service}.override" ||/bin/true
     fi
 done
+if [ -f /etc/systemd/logind.conf ];then
+    for i in NAutoVTs ReserveVT;do
+        sed -i -re "/${i}/ d" /etc/systemd/logind.conf
+        echo "${i}=0">>/etc/systemd/logind.conf
+    done
+fi
+
 # - we must need to rely on direct file system to avoid relying on running process
 #    manager (pid: 1)
 # do not activate those evil services in a container context
@@ -82,22 +89,26 @@ for s in\
     apparmor\
     apport\
     atop\
+    autovt@\
+    console-getty\
     console-setup\
+    container-getty@\
     control-alt-delete\
     cryptdisks-enable\
     cryptdisks-udev\
+    display-manager\
     dmesg\
+    dns-clean\
     failsafe\
+    getty@\
+    getty-static\
+    getty@tty1\
     hwclock\
+    lvm2-lvmetad\
+    lvm2-monitor\
     module\
     mountall-net\
     mountall-reboot\
-    ufw\
-    pppd-dns\
-    systemd-remount-fs\
-    lvm2-monitor\
-    dns-clean\
-    lvm2-lvmetad\
     mountall-shell\
     mounted-debugfs\
     mounted-dev\
@@ -107,17 +118,34 @@ for s in\
     mounted-var\
     ondemand\
     plymouth\
+    pppd-dns\
+    serial-getty@\
+    plymouth-read-write\
+    plymouth-start\
+    alsa-restore\
+    alsa-store\
+    alsa-state\
+    getty-static\
+    plymouth-halt\
+    plymouth-kexec\
+    plymouth-start\
+    plymouth-switch-root\
     setvtrgb\
+    systemd-remount-fs\
     smartd\
     smartmontools\
     systemd-modules-load\
+    systemd-remount-fs\
+    systemd-udevd.service\
+    systemd-udev-trigger\
+    systemd-update-utmp.service\
     udev\
     udev-finish\
+    ufw\
     umountfs\
     umountroot\
     ureadahead\
-    systemd-udevd.service\
-    systemd-udev-trigger\
+    user@\
     vnstat\
    ;do
     # upstart
@@ -131,6 +159,9 @@ for s in\
     for d in /lib/systemd /etc/systemd /usr/lib/systemd;do
         rm -vf "${d}/"*/*.wants/${s}.service || /bin/true
     done
+    if [ -e /etc/systemd/system ];then
+        ln -sfv /dev/null "/etc/systemd/system/${s}.service"
+    fi
     # sysV
     for i in 0 1 2 3 4 5 6;do
        rm -vf /etc/rc${i}.d/*${s} || /bin/true
@@ -171,9 +202,9 @@ fi
 # if this isn't lucid, then we need to twiddle the network upstart bits :(
 if [ -f /etc/network/if-up.d/upstart ] &&\
    [ ${DISTRIB_CODENAME} != "lucid" ];then
-        sed -i 's/^.*emission handled.*$/echo Emitting lo/' /etc/network/if-up.d/upstart
+    sed -i 's/^.*emission handled.*$/echo Emitting lo/' /etc/network/if-up.d/upstart
 fi
-if which setfacl 2>/dev/null && test -e /acls.restore && test -e /acls.txt;then
+if which setfacl >/dev/null 2>&1 && test -e /acls.restore && test -e /acls.txt;then
     cd / && setfacl --restore="/acls.txt" || /bin/true
 fi
 exit 0
