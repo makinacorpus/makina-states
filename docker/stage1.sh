@@ -79,32 +79,41 @@ fi
 #   - it's builder script & stage3 builder
 # if the md5 are matching, we can leverage docker cache.
 echo "FROM ${MS_BASE}" > "${dockerfile}"
-echo "ENV STAGE_DOCKERFILE_ID=1" >> "${dockerfile}"
-if [ "x${MS_BASE}" = "xscratch" ];then a_d "ADD ${MS_BASEIMAGE_ADD} /";fi
+add=""
+if [ "x${MS_BASE}" = "xscratch" ];then add="${add} ${MS_BASEIMAGE_ADD}";fi
 # base survival apt configuration
 if [ "x${MS_OS}" = "xubuntu" ];then
-    a_d "ADD makina-states/docker/ubuntu.sources.list /etc/apt/sources.list"
-    a_d "ADD makina-states/files/etc/apt/preferences.d/00_proposed.pref\
-             makina-states/files/etc/apt/preferences.d/99_systemd.pref\
-             /etc/apt/preferences.d/"
-    a_d "ADD makina-states/files/etc/apt/apt.conf.d/99gzip\
-             makina-states/files/etc/apt/apt.conf.d/99notrad\
-             makina-states/files/etc/apt/apt.conf.d/99clean\
-             etc/apt/apt.conf.d/"
+    tar cvf  /docker/ubuntufiles.tar -C /docker/makina-states/docker/ubuntu .
+    die_in_error "${MS_IMAGE}: cant tar source.list for ubuntu"
+    tar rvf /docker/ubuntufiles.tar -C /docker/makina-states/files\
+        etc/apt/preferences.d/00_proposed.pref\
+        etc/apt/preferences.d/99_systemd.pref\
+        etc/apt/apt.conf.d/99gzip\
+        etc/apt/apt.conf.d/99notrad\
+        etc/apt/apt.conf.d/99clean
+    die_in_error "${MS_IMAGE}: cant tar aptconf"
+    add="${add} ubuntufiles.tar"
 fi
+if [ "x${add}" != "x" ];then a_d "ADD ${add} /";fi
 # install core pkgs & be sure to have up to date systemd on ubuntu systemd enabled
 a_d "RUN \
-    if which apt-get >/dev/null 2>&1;then\\
-      sed -i -re \"s/__ubunturelease__/\$(lsb_release -sc)/g\" /etc/apt/sources.list\\
+    echo DOCKERFILE_ID=1\\
+    && if which apt-get >/dev/null 2>&1;then\\
+      sed -i -re\
+          \"s/Pin: .*/Pin: release a=\$(lsb_release -sc)-proposed/g\"\
+          /etc/apt/preferences.d/*\\
+      && sed -i -re\
+          \"s/__ubunturelease__/\$(lsb_release -sc)/g\"\
+          /etc/apt/sources.list\\
       && apt-get update\\
       && apt-get install -y --force-yes\\
           acl rsync git e2fsprogs ca-certificates\\
       && if dpkg -l |grep systemd|awk '{print \$1 \$2}'|egrep -q '^iisystemd';\\
           then apt-get install -y --force-yes\\
           systemd libpam-systemd systemd-sysv libsystemd0;fi;\\
-    fi"
-a_d "RUN /docker/injected_volumes/bootstrap_scripts/lxc-cleanup.sh\
-         && /docker/injected_volumes/bootstrap_scripts/makinastates-snapshot.sh"
+   fi\\
+   && /docker/injected_volumes/bootstrap_scripts/lxc-cleanup.sh\\
+   && /docker/injected_volumes/bootstrap_scripts/makinastates-snapshot.sh"
 a_d "CMD /docker/injected_volumes/bootstrap_scripts/stage2.sh"
 BUILDKEY=""
 BUILDKEY="${BUILDKEY}_$(md5sum\

@@ -89,17 +89,20 @@ for s in\
     apparmor\
     apport\
     atop\
-    container-getty@\
+    autovt@\
     console-getty\
     console-setup\
+    container-getty@\
     control-alt-delete\
     cryptdisks-enable\
     cryptdisks-udev\
+    display-manager\
     dmesg\
     dns-clean\
     failsafe\
     getty@\
     getty-static\
+    getty@tty1\
     hwclock\
     lvm2-lvmetad\
     lvm2-monitor\
@@ -117,7 +120,18 @@ for s in\
     plymouth\
     pppd-dns\
     serial-getty@\
+    plymouth-read-write\
+    plymouth-start\
+    alsa-restore\
+    alsa-store\
+    alsa-state\
+    getty-static\
+    plymouth-halt\
+    plymouth-kexec\
+    plymouth-start\
+    plymouth-switch-root\
     setvtrgb\
+    systemd-remount-fs\
     smartd\
     smartmontools\
     systemd-modules-load\
@@ -131,6 +145,7 @@ for s in\
     umountfs\
     umountroot\
     ureadahead\
+    user@\
     vnstat\
    ;do
     # upstart

@@ -46,7 +46,7 @@ no_kill() {
     echo "Ignoring kill request"
 }
 
-trap 'no_kill' 1 2 9
+#trap 'no_kill' 1 2 9
 # 1. Launch systemd
 if echo "${MS_COMMAND}" | grep -q "systemd";then
     ( systemd --system& )

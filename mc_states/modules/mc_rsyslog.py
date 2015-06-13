@@ -64,7 +64,7 @@ def settings():
             or os.path.exists('/etc/haproxy')
         ):
             haproxy = True
-        if __salt__['mc_cloud_lxc.is_lxc']():
+        if __salt__['mc_nodetypes.is_container']():
             kernel_log = False
             xconsole = False
         user = group = 'syslog'
