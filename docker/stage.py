@@ -180,6 +180,7 @@ def q_die_run(cmd,
 
 
 REPORT = textwrap.dedent('''\
+{c[yellow]}CWD{c[normal]}:            {c[cyan]}{e[CWD]}{c[normal]}
 {c[yellow]}OS{c[normal]}:             {c[cyan]}{e[MS_OS]}{c[normal]}
 {c[yellow]}OS_RELEASE{c[normal]}:     {c[cyan]}{e[MS_OS_RELEASE]}{c[normal]}
 {c[yellow]}DATADIR{c[normal]}:        {c[cyan]}{e[MS_DATA_DIR]}{c[normal]}
@@ -190,6 +191,8 @@ REPORT = textwrap.dedent('''\
 {c[yellow]}STAGE0 TAG{c[normal]}:     {c[cyan]}{e[MS_STAGE0_TAG]}{c[normal]}
 {c[yellow]}STAGE1 TAG{c[normal]}:     {c[cyan]}{e[MS_STAGE1_NAME]}{c[normal]}
 {c[yellow]}STAGE2 TAG{c[normal]}:     {c[cyan]}{e[MS_STAGE2_NAME]}{c[normal]}
+{c[yellow]}STAGE2 TAG{c[normal]}:     {c[cyan]}{e[MS_STAGE2_NAME]}{c[normal]}
+{c[yellow]}DOCKER ARGS{c[normal]}:    {c[cyan]}{e[MS_DOCKER_ARGS]}{c[normal]}
 
 ''')
 
@@ -235,15 +238,15 @@ def main(argv=None,
         'MS_DOCKER_STAGE2',
         os.path.join(_CWD, 'docker/stage2.sh'))
     environ.setdefault(
-        'MS_MAKINASTATES_BUILD_DISABLED', '')
+        'MS_MAKINASTATES_BUILD_DISABLED', '0')
     environ.setdefault(
         'MS_DOCKER_STAGE3',
         os.path.join(_CWD, 'docker/stage3.sh'))
     environ.setdefault(
-        'MS_DOCKERFILE',
+        'MS_DOCKERFILE_STAGE0',
         os.path.join(
             _CWD,
-            'docker/Dockerfile.{0[MS_OS]}.{0[MS_OS_RELEASE]}'
+            'docker/Dockerfile.stage0'
             .format(environ)))
     environ.setdefault(
         'MS_STAGE0_TAG',
@@ -282,6 +285,7 @@ def main(argv=None,
         environ['MS_IMAGE_DIR'], 'overrides')
     MS_BOOTSTRAP_DIR = environ['MS_BOOTSTRAP_DIR'] = os.path.join(
         MS_INJECTED_DIR, 'bootstrap_scripts')
+    environ['cwd'] = environ['CWD'] = _CWD
     report(environ, pipe=pipe)
     #
     cpcmd = 'rsync -aA'
@@ -313,7 +317,7 @@ def main(argv=None,
     stage_files['makinastates-snapshot.sh'] = os.path.join(
         _CWD,
         'files/sbin/makinastates-snapshot.sh')
-    stage_files['Dockerfile'] = environ['MS_DOCKERFILE']
+    stage_files['Dockerfile.stage0'] = environ['MS_DOCKERFILE_STAGE0']
     stage_files['stage0.sh'] = environ['MS_DOCKER_STAGE0']
     stage_files['stage1.sh'] = environ['MS_DOCKER_STAGE1']
     stage_files['stage2.sh'] = environ['MS_DOCKER_STAGE2']
@@ -364,6 +368,8 @@ def main(argv=None,
                         MS_IMAGE, MS_OVERRIDES, MS_INJECTED_DIR)))
         cyan('{0}: overidden\n {1}\n  -> {2}\n'.format(
             MS_IMAGE, MS_OVERRIDES, MS_INJECTED_DIR), pipe=pipe)
+    if argv[1:]:
+        environ['MS_DOCKER_ARGS'] += ' {0}'.format(' '.join(argv[1:]))
 
     purple('--------------------', pipe=pipe)
     purple('- stage-1 complete -', pipe=pipe)

@@ -3,8 +3,8 @@
 # Copy/Edit it inside the overrides directory inside you image data directory:
 # ${MS_DATA_DIR}/${MS_IMAGE}
 # EG:
-#  cp stage1.sh /srv/foo/makina-states/data/mycompany/mydocker/overrides/stage3.sh
-#  $ED /srv/foo/makina-states/data/mycompany/mydocker/overrides/stage3.sh
+#  cp stage3.sh /srv/foo/makina-states/data/mycompany/mydocker/overrides/bootstrap_scripts/stage3.sh
+#  $ED  /srv/foo/makina-states/data/mycompany/mydocker/overrides/bootstrap_scripts/stage3.sh
 RED='\e[31;01m'
 CYAN='\e[36;01m'
 PURPLE='\e[33;01m'
@@ -32,7 +32,7 @@ if [ -e /bootstrap_scripts/stage2.env ];then
 fi
 
 # this should be sufficient to (re)build any makina-states corpus style projects
-if [ "x${MS_MAKINASTATES_BUILD_DISABLED}" != "x" ];then
+if [ "x${MS_MAKINASTATES_BUILD_DISABLED}" != "x0" ];then
     yellow "${MS_IMAGE}: makina-states integration is skipped, skipping corpus projects build"
 else
     for i in $(find /srv/projects/ -mindepth 1 -maxdepth 1 -type d 2>/dev/null);do

@@ -1,0 +1,23 @@
+#
+# Managed via salt, do not edit
+#
+
+
+deb http://mirror.ovh.net/ftp.ubuntu.com/ __ubunturelease__ main restricted universe multiverse
+deb-src http://mirror.ovh.net/ftp.ubuntu.com/ __ubunturelease__ main restricted universe multiverse
+
+deb http://mirror.ovh.net/ftp.ubuntu.com/ __ubunturelease__-proposed main restricted universe multiverse
+deb-src http://mirror.ovh.net/ftp.ubuntu.com/ __ubunturelease__-proposed main restricted universe multiverse
+
+deb http://mirror.ovh.net/ftp.ubuntu.com/ __ubunturelease__-updates main restricted universe multiverse
+deb-src http://mirror.ovh.net/ftp.ubuntu.com/ __ubunturelease__-updates main restricted universe multiverse
+
+deb http://mirror.ovh.net/ftp.ubuntu.com/ __ubunturelease__-security main restricted universe multiverse
+deb-src http://mirror.ovh.net/ftp.ubuntu.com/ __ubunturelease__-security main restricted universe multiverse
+
+deb http://archive.canonical.com/ubuntu __ubunturelease__ partner
+deb-src http://archive.canonical.com/ubuntu __ubunturelease__ partner
+
+deb http://mirror.ovh.net/ftp.ubuntu.com/ __ubunturelease__-backports main restricted universe multiverse
+deb-src http://mirror.ovh.net/ftp.ubuntu.com/ __ubunturelease__-backports main restricted universe multiverse
+

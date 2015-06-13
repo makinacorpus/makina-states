@@ -3,8 +3,8 @@
 # Copy/Edit it inside the overrides directory inside you image data directory:
 # ${MS_DATA_DIR}/${MS_IMAGE}
 # EG:
-#  cp stage1.sh /srv/foo/makina-states/data/mycompany/mydocker/overrides/stage2.sh
-#  $ED /srv/foo/makina-states/data/mycompany/mydocker/overrides/stage2.sh
+#  cp stage2.sh /srv/foo/makina-states/data/mycompany/mydocker/overrides/bootstrap_scripts/stage2.sh
+#  $ED /srv/foo/makina-states/data/mycompany/mydocker/overrides/bootstrap_scripts/stage2.sh
 
 RED='\e[31;01m'
 CYAN='\e[36;01m'
@@ -25,36 +25,52 @@ v_die_run() { v_run "${@}"; die_in_error "command ${@} failed"; }
 
 echo;echo
 yellow "-----------------------------------------------"
-yellow "-   STAGE 2  - BUIDING                        -"
+yellow "-   STAGE 2  - BUILDING                        -"
 yellow "-----------------------------------------------"
 echo
 
-# 0. Save environment for subshell scripts & history
+# - Inject the wanted data inside the image
+if [ -e /docker/injected_volumes/ ];then
+    v_run rsync -Aa /docker/injected_volumes/ /
+fi
+
+# - Save environment for subshell scripts & history
 env > /bootstrap_scripts/stage2.env
 
+# cleanup a bit the lxc if needed
+if [ -f /bootstrap_scripts/lxc-cleanup.sh ];then
+    v_run /bootstrap_scripts/lxc-cleanup.sh
+fi
+
+no_kill() {
+    echo "Ignoring kill request"
+}
+
+trap 'no_kill' 1 2 9
 # 1. Launch systemd
-systemd --system &
-set -x
+if echo "${MS_COMMAND}" | grep -q "systemd";then
+    ( systemd --system& )
+fi
 export DEBIAN_FRONTEND=noninteractive
+for i in  $(seq 300);do echo $i;sleep 1;done
+
 v_run apt-get install -y --force-yes git ca-certificates rsync acl
-v_run rsync -Aa /injected_volumes/ /
+for i in /srv/pillar /srv/mastersalt-pillar /srv/projects;do
+    if [ ! -d ${i} ];then mkdir ${i};fi
+done
 # 2. Refresh makina-states code
-ip route
-ifconfig
-if [ "x${MS_MAKINASTATES_BUILD_DISABLED}" != "x" ];then
+if [ "x${MS_MAKINASTATES_BUILD_DISABLED}" != "x0" ];then
     yellow "${MS_IMAGE}: makina-states integration is skipped, skipping makina-states install"
 else
     if [ ! -d /srv/salt ];then mkdir -p /srv/salt;fi
     bs="/srv/salt/makina-states/_scripts/boot-salt.sh"
     if [ ! -e ${bs} ];then
-        git clone /makina-states.git /srv/salt/makina-states &&\
+        git clone /docker/makina-states/.git /srv/salt/makina-states &&\
         cd /srv/salt/makina-states && \
         git remote rm origin &&\
-        git remote add origin "${MS_GIT_URL}" &&\
-        git checkout -b "${MS_GIT_BRANCH}"
         warn_in_error "${MS_IMAGE}: problem while initing makina-states code"
     fi
-    ${bs} -C --refresh-modules
+    ${bs} -C --refresh-modules -b "${MS_GIT_BRANCH}"
     warn_in_error "${MS_IMAGE}: failed to fetch up-to-data makina-states code"
 
     # 3. mastersalt + salt highstates & masterless mode
@@ -71,6 +87,9 @@ purple "--------------------"
 if [ -x /bootstrap_scripts/docker_build_stage3.sh ];then
     /bootstrap_scripts/docker_build_stage3.sh
     die_in_error "${MS_IMAGE}: Stage3 building failed"
+fi
+if [ -f /bootstrap_scripts/makinastates-snapshot.sh ];then
+    /bootstrap_scripts/makinastates-snapshot.sh
 fi
 v_run getfacl -R / > /acls.txt || /bin/true
 v_run touch /acls.restore

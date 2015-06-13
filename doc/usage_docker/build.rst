@@ -143,7 +143,7 @@ The procedure will then almost initially look like:
     - Inside the container, we now enter **Stage2** step and run the
       **stage2.sh** script as this container boot command which does:
 
-        - Copy all the content of **/injected_volumes** to **/** ensuring
+        - Copy all the content of **/docker/injected_volumes** to **/** ensuring
           the conservation of any **POSIX ACL**. This will of course
           be commited as of your final image.
         - We are not using the **ADD** Dockerfile instruction for
@@ -153,7 +153,7 @@ The procedure will then almost initially look like:
         - Launch makina-states installation and refresh unless users
           disabled it via the **MS_MAKINASTATES_BUILD_DISABLED** envionment
           variable
-        - Execute **/injected_volumes/bootstrap_scripts/stage3.sh**
+        - Execute **/docker/injected_volumes/bootstrap_scripts/stage3.sh**
           and so enter what we call **stage3**  which by default:
 
             - (RE)Install any corpus based project unless users
@@ -184,7 +184,7 @@ In most cases, you certainly only:
    to construct an image. The more convenient way is to drop a file at this
    place::
 
-     DATADIR/<image>/overrides/injected_volumes/bootstrap_scripts/stage3.sh
+     DATADIR/<image>/overrides/bootstrap_scripts/stage3.sh
 
 .. code-block:: bash
 
@@ -196,35 +196,35 @@ The scripts support those environment variables, in **user facing order**:
         Image tarball (like a base lxc container export)
     MS_BASE
         Stage 1 base image (either `scratch image`_ or a real image.
-        If stage1 is **scratch**, you need to provide a **baseimage.tar.xz**
+        If stage1 is **scratch**, you need to provide a **baseimage-$os-$release.tar.xz**
         tarball placed in the "data" volume.
         or the script will fetch for you a basic ubuntu container using
         lxc-utils. For those who dont know, **scratch** is a special
         and empty image in the Docker speaking.
     MS_DATA_DIR
-        Data volume dir to place the **baseimage.tar.xz** file (default: ./data)
+        Data volume dir to place the **baseimage-$os-$release.tar.xz** file (default: ./data)
     MS_IMAGE_DIR
         Data volume dir to place image related files like stage scripts & injected data
         (default: $DATA_DIR/$MS_IMAGE)
     MS_GIT_BRANCH
         Branch for makina-states (**stable**)
+    MS_OS
+        OS (eg: ubuntu)
     MS_OS_RELEASE
         OS release (eg: vivid)
     MS_GIT_URL
         Url for `makina-states <https://github.com/makinacorpus/makina-states>`_
-    MS_OS
-        OS (eg: ubuntu)
     MS_COMMAND
         Command to use on the resulting image (**/sbin/init**)
     MS_BASEIMAGE
         Filename of the base image
-        (default: **baseimage-${MS_OS}-${MS_OS_RELEASE}.tar.xz**)
+        (default: **baseimage-$os-$release.tar.xz**)
     MS_STAGE0_TAG
         Tag of the stage0 image, by default it will look like
         **makinacorpus/makina-states-ubuntu-vivid-stage0**
-    MS_DOCKERFILE
+    MS_DOCKERFILE_STAGE0
         Path to a **Stage0** builder Dockerfile,
-        default to current makina-states one
+        default to current makina-states one (**docker/Dockerfile.stage0**)
     MS_DOCKER_ARGS
         Any argument to give to the docker run call to the stage0 builder (None)
 
@@ -245,12 +245,12 @@ Additionnaly, in stage1 (read-only):
 You can feed the image with preconfigured pillars & project trees
 by creating files inside for example:
 
-    - **<DATADIR>/<IMAGE_NAME>/overrides/injected_volumes/srv/pillar**
-    - **<DATADIR>/<IMAGE_NAME>/overrides/injected_volumes/srv/mastersalt-pillar**
-    - **<DATADIR>/<IMAGE_NAME>/overrides/injected_volumes/srv/projects**
+    - **<DATADIR>/<IMAGE_NAME>/overrides/srv/pillar**
+    - **<DATADIR>/<IMAGE_NAME>/overrides/srv/mastersalt-pillar**
+    - **<DATADIR>/<IMAGE_NAME>/overrides/srv/projects**
 
 Technically:
- - all what is behind **injected_volumes** is copied, via rsync
+ - all what is behind **/docker/injected_volumes** is copied, via rsync
    with ACL support to the **root (/)** of the image.
  - Any file or directory inside $IMAGEDIR/overrides will override the same
    file at the same place in the same level **injected_volumes** directory.
@@ -295,15 +295,14 @@ Those volumes are exposed in all container stages:
 +--------------------------------+-------------------------------------------------+
 |   /docker/injected_volumes     |  $DATADIR/$IMAGE/injected_volumes               |
 +--------------------------------+-------------------------------------------------+
-|   /injected_volumes            |  $DATADIR/$IMAGE/injected_volumes               |
-+--------------------------------+-------------------------------------------------+
-|   /makina-states.git           |  makina-states/.git                             |
+|   /docker/makina-states        |  makina-states/                                 |
 +--------------------------------+-------------------------------------------------+
 
 
 Adding data files to commited image
 ---------------------------------------
-Anything (file, dir, symlink) that is placed in the **injected_volumes** image data directory will be commited with the image.
+Anything (file, dir, symlink) that is placed in the **/docker/injected_volumes** 
+image data directory will be commited with the image.
 
 The files are copied before **stage2** execution, thus you have them available at build time.
 
@@ -323,18 +322,18 @@ The principal application is to inject your project code and it's pillar configu
 Overriding stage scripts
 -----------------------------
 Anything that is placed in the **overrides** image data directory will override things which are placed
-at first in the **injected_volumes** directory.
+at first in the **/docker/injected_volumes** directory.
 
 The reasoning of this is to provide a simple mean to give custom stage scripts while most user can still use default script files.
 
 For example, if you want to override for example the **stage3** script,
 all you have to do is to place a script in the datadir, in this location::
 
-    DATADIR/<IMAGE>/overrides/injected_volumes/bootstrap_scripts/<stage>
+    DATADIR/<IMAGE>/overrides/bootstrap_scripts/<stage>
 
 For example, you will have to place your **stage3.sh** brewed copy override the **stage3** in the **project2** image in::
 
-    /srv/mastersalt/makina-states/data/project2/overrides/injected_volumes/bootstrap_scripts/stage3.sh
+    /srv/mastersalt/makina-states/data/project2/overrides/bootstrap_scripts/stage3.sh
 
 Assuming that your makina-states installation copy is installed in **/srv/mastersalt**.
 
@@ -342,6 +341,6 @@ Subdirectories are supported as well (for subrepos).
 
 Eg, for example, you will have to place your **stage3.sh** brewed copy override the **stage3** in the "**mycy/p2** image in::
 
-    /srv/mastersalt/makina-states/data/mycy/p2/overrides/injected_volumes/bootstrap_scripts/stage3.sh
+    /srv/mastersalt/makina-states/data/mycy/p2/overrides/bootstrap_scripts/stage3.sh
 
 

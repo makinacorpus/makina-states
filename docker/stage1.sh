@@ -3,8 +3,8 @@
 # Copy/Edit it inside the overrides directory inside you image data directory:
 # ${MS_DATA_DIR}/${MS_IMAGE}
 # EG:
-#  cp stage1.sh /srv/foo/makina-states/data/mycompany/mydocker/overrides/stage1.sh
-#  $ED /srv/foo/makina-states/data/mycompany/mydocker/overrides/stage1.sh
+#  cp stage1.sh /srv/foo/makina-states/data/mycompany/mydocker/overrides/bootstrap_scripts/stage1.sh
+#  $ED /srv/foo/makina-states/data/mycompany/mydocker/overrides/bootstrap_scripts/stage1.sh
 
 RED='\e[31;01m'
 PURPLE='\e[33;01m'
@@ -22,10 +22,13 @@ die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
 warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";exit 1;fi }
 v_run() { green "${@}"; "${@}"; }
 v_die_run() { v_run "${@}"; die_in_error "command ${@} failed"; }
+a_d() { echo "${@}" >> "${dockerfile}"; }
 
 MS_BASEIMAGE_DIR="${MS_BASEIMAGE_DIR:-"/docker/data"}"
 MS_BASEIMAGE_PATH="${MS_BASEIMAGE_DIR}/${MS_BASEIMAGE}"
 MS_BASEIMAGE_ADD="data/${MS_BASEIMAGE}"
+rdockerfile="injected_volumes/bootstrap_scripts/Dockerfile.stage1"
+dockerfile="/docker/${rdockerfile}"
 
 echo;echo
 yellow "-----------------------------------------------"
@@ -33,15 +36,16 @@ yellow "-   STAGE 1  - BUIDING                        -"
 yellow "-----------------------------------------------"
 echo
 
-# Stage1. Create the base image template
 if [ "x${MS_BASE}" = "x" ];then
     export MS_BASE="scratch"
 fi
+
+# Stage1. Create the base image template from an lxc container if supported
 if [ "x${MS_BASE}" = "xscratch" ];then
     if [ ! -f "${MS_BASEIMAGE_PATH}" ];then
         if [ "x${MS_OS}" = "xubuntu" ];then
             red "${MS_IMAGE}: Creating baseimage ${MS_BASEIMAGE} for ${MS_IMAGE}"
-            v_run lxc-create -t ${MS_OS} -n ${MS_OS} -- --packages="vim,git"\
+            v_run lxc-create -t ${MS_OS} -n ${MS_OS} -- --packages="vim,git,rsync,acl,ca-certificates"\
                 --release=${MS_OS_RELEASE} --mirror=${MS_OS_MIRROR}
             die_in_error "${MS_IMAGE}: lxc template failed"
         else
@@ -49,11 +53,7 @@ if [ "x${MS_BASE}" = "xscratch" ];then
             exit 1
         fi
         cd /var/lib/lxc/${MS_OS}/rootfs
-        if [ ! -d injected_volumes];then mkdir injected_volumes;fi
-        v_die_run rsync -aA /injected_volumes/bootstrap_scripts/ injected_volumes/bootstrap_scripts/
-        v_die_run cp /etc/apt/apt.conf.d/99{gzip,notrad,clean} etc/apt/apt.conf.d
-        v_die_run chroot /var/lib/lxc/${MS_OS}/rootfs /injected_volumes/bootstrap_scripts/lxc-cleanup.sh
-        v_die_run chroot /var/lib/lxc/${MS_OS}/rootfs /injected_volumes/bootstrap_scripts/makinastates-snapshot.sh
+        if [ ! -d docker/injected_volumes ];then mkdir -p docker/injected_volumes;fi
         v_die_run tar cJf "${MS_BASEIMAGE_PATH}" .
         die_in_error "${MS_IMAGE}: can't compress ${MS_BASEIMAGE}"
     else
@@ -64,29 +64,54 @@ else
     green "${MS_IMAGE}: ${MS_BASE} is not \"scratch\", skipping baseimage build"
 fi
 
-# if the user (via a volume place a 'stage1.sh' script it will override the
-# default procedure
-
-# Stage2. Import the base template a the first level Layer, this image wont
-#    spawn systemd by itself, but a script that builds the image.
-#     script produce the first image
+# Stage2. Import the base template a the first level Layer, this image won' t
+#  spawn systemd by itself,
+#  It is the command (build script aka stage3.sh) which
+#    - will lanch init (certainly systemd)
+#    - launch the projects building & image finalization
 stage1_tag="${MS_IMAGE}-stage1:latest"
 mid="$(docker inspect -f "{{.Id}}" "${stage1_tag}" 2>/dev/null)"
 if [ "x${?}" != "x0" ];then
     mid=""
 fi
-# an image is carracterized by it's baseimage layout and the builder script
+# An image is carracterized by
+#   - it's baseimage layout
+#   - it's builder script & stage3 builder
 # if the md5 are matching, we can leverage docker cache.
-echo "FROM ${MS_BASE}" > /docker/Dockerfile
-echo "CMD /injected_volumes/bootstrap_scripts/stage2.sh" >> /docker/Dockerfile
-if [ "x${MS_BASE}" = "xscratch" ];then
-    echo "ADD ${MS_BASEIMAGE_ADD} /" >> /docker/Dockerfile
+echo "FROM ${MS_BASE}" > "${dockerfile}"
+echo "ENV STAGE_DOCKERFILE_ID=1" >> "${dockerfile}"
+if [ "x${MS_BASE}" = "xscratch" ];then a_d "ADD ${MS_BASEIMAGE_ADD} /";fi
+# base survival apt configuration
+if [ "x${MS_OS}" = "xubuntu" ];then
+    a_d "ADD makina-states/docker/ubuntu.sources.list /etc/apt/sources.list"
+    a_d "ADD makina-states/files/etc/apt/preferences.d/00_proposed.pref\
+             makina-states/files/etc/apt/preferences.d/99_systemd.pref\
+             /etc/apt/preferences.d/"
+    a_d "ADD makina-states/files/etc/apt/apt.conf.d/99gzip\
+             makina-states/files/etc/apt/apt.conf.d/99notrad\
+             makina-states/files/etc/apt/apt.conf.d/99clean\
+             etc/apt/apt.conf.d/"
 fi
-echo "RUN apt-get update && apt-get install -y --force-yes acl rsync git" >> /docker/Dockerfile
+# install core pkgs & be sure to have up to date systemd on ubuntu systemd enabled
+a_d "RUN \
+    if which apt-get >/dev/null 2>&1;then\\
+      sed -i -re \"s/__ubunturelease__/\$(lsb_release -sc)/g\" /etc/apt/sources.list\\
+      && apt-get update\\
+      && apt-get install -y --force-yes\\
+          acl rsync git e2fsprogs ca-certificates\\
+      && if dpkg -l |grep systemd|awk '{print \$1 \$2}'|egrep -q '^iisystemd';\\
+          then apt-get install -y --force-yes\\
+          systemd libpam-systemd systemd-sysv libsystemd0;fi;\\
+    fi"
+a_d "RUN /docker/injected_volumes/bootstrap_scripts/lxc-cleanup.sh\
+         && /docker/injected_volumes/bootstrap_scripts/makinastates-snapshot.sh"
+a_d "CMD /docker/injected_volumes/bootstrap_scripts/stage2.sh"
 BUILDKEY=""
-BUILDKEY="${BUILDKEY}_$(md5sum /bootstrap_scripts/stage2.sh|awk '{print $1}')"
-BUILDKEY="${BUILDKEY}_$(md5sum /bootstrap_scripts/stage3.sh|awk '{print $1}')"
-BUILDKEY="${BUILDKEY}_$(md5sum /docker/Dockerfile|awk '{print $1}')"
+BUILDKEY="${BUILDKEY}_$(md5sum\
+    /docker/injected_volumes/bootstrap_scripts/stage2.sh|awk '{print $1}')"
+BUILDKEY="${BUILDKEY}_$(md5sum\
+    /docker/injected_volumes/bootstrap_scripts/stage3.sh|awk '{print $1}')"
+BUILDKEY="${BUILDKEY}_$(md5sum ${dockerfile}|awk '{print $1}')"
 if [ "x${MS_BASE}" = "xscratch" ] && [ -f "${MS_BASEIMAGE_PATH}" ] ;then
     BUILDKEY="${BUILDKEY}_$(md5sum "${MS_BASEIMAGE_PATH}"|awk '{print $1}')"
 fi
@@ -98,13 +123,15 @@ if [ "x${mid}" != "x" ];then
     fi
 fi
 if [ "x${do_build}" != "x" ];then
-    echo "LABEL MS_IMAGE_BUILD_KEY=\"${BUILDKEY}\"" >> /docker/Dockerfile
-    cyan "------------"
-    cyan "${MS_IMAGE}: Bootstraping image ${stage1_tag} with this Dockerfile"
-    cyan "------------"
-    cat /docker/Dockerfile
-    cyan "------------"
-    v_run docker build -t "${stage1_tag}" /docker
+    a_d "LABEL MS_IMAGE_BUILD_KEY=\"${BUILDKEY}\""
+    cyan "------------------------------------------------------------------------------"
+    cyan "${MS_IMAGE}:"
+    echo "     Bootstraping image: $(green ${stage1_tag})"
+    echo "     with this Dockerfile: $(green /bootstrap_scripts/Dockerfile.stage1)"
+    cyan "-------------------------------------------------------------------------------"
+    cat "${dockerfile}"
+    cyan "-------------------------------------------------------------------------------"
+    v_run docker build -t "${stage1_tag}" -f "${dockerfile}" /docker
     die_in_error "${stage1_tag} failed to build stage1 image"
     # cleanup the old stage1 image
     if [ "x${?}" = "x0" ] && [ "x${mid}" != "x" ] ;then
@@ -115,16 +142,11 @@ if [ "x${do_build}" != "x" ];then
 else
     yellow "${MS_IMAGE}: stage1 image ${stage1_tag} already built, skipping"
 fi
-
 echo
 purple "--------------------"
 purple "- stage1 complete  -"
 purple "--------------------"
 echo
-# Stage2. Spawn a container, run systemd & install makina-states
-for i in /srv/pillar /srv/mastersalt-pillar /srv/projects;do
-    if [ ! -d ${i} ];then mkdir ${i};fi
-done
 # Run the script which is in charge to tag a candidate image after a
 # sucessful build
 v_run docker run \
@@ -143,11 +165,10 @@ v_run docker run \
  -e MS_STAGE1_NAME="${MS_STAGE1_NAME}" \
  -e MS_STAGE2_NAME="${MS_STAGE2_NAME}" \
  -e MS_MAKINASTATES_BUILD_DISABLED="${MS_MAKINASTATES_BUILD_DISABLED}" \
- --volume-from="${MS_STAGE1_NAME}" \
- "${MS_DOCKER_ARGS}" \
- --net="host" --privileged -ti --rm --name="${MS_STAGE1_NAME}"\
- ${stage1_tag} ls /injected_volumes/bootstrap_scripts
-/bin/false
+ --volumes-from="${MS_STAGE1_NAME}" \
+ ${MS_DOCKER_ARGS} \
+ --privileged -ti --rm --name="${MS_STAGE2_NAME}"\
+ ${stage1_tag}
 ret=${?}
 # only delete cache1 on sucesssul build to speed up cache rebuilds
 if [ "x${ret}" = "x0" ];then docker rmi "${stage1_tag}";fi
