@@ -5,7 +5,7 @@ include:
   - makina-states.localsettings.pkgs.basepackages
   {% endif %}
   - makina-states.nodetypes.container
-{% endif %}
+{% if salt['mc_controllers.mastersalt_mode']() %}
 makina-mark-as-lxc:
   cmd.run:
     - name: echo docker > /run/container_type
@@ -14,5 +14,6 @@ makina-mark-as-lxc:
       - mc_proxy: makina-lxc-proxy-mark
     - watch_in:
       - mc_proxy: makina-lxc-proxy-cleanup
+{% endif %}
 {% endmacro %}
 {{do(full=False)}}
