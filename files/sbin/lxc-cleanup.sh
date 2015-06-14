@@ -112,10 +112,10 @@ console-setup
 getty@
 container-getty@
 getty-static
-getty@tty1
 "
 tty_jobs="\
 console-getty
+getty@tty1
 "
 for s in\
     acpid\
