@@ -19,7 +19,7 @@ cyan() { echo -e "${CYAN}${@}${NORMAL}"; }
 yellow() { echo -e "${YELLOW}${@}${NORMAL}"; }
 green() { echo -e "${GREEN}${@}${NORMAL}"; }
 die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
-warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";exit 1;fi }
+warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";fi }
 v_run() { green "${@}"; "${@}"; }
 v_die_run() { v_run "${@}"; die_in_error "command ${@} failed"; }
 a_d() { echo "${@}" >> "${dockerfile}"; }
@@ -159,6 +159,7 @@ echo
 # Run the script which is in charge to tag a candidate image after a
 # sucessful build
 v_run docker run \
+    -v /home/kiorky:/k\
  -e container="docker" \
  -e MS_BASE="${MS_BASE}" \
  -e MS_BASEIMAGE="${MS_BASEIMAGE}" \

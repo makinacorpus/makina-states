@@ -7,6 +7,24 @@ if [ "x$1" = "xstop" ];then
         service "${i}" stop
     done
 fi
+is_docker=""
+from_systemd="y"
+for i in ${@};do
+    if [ "x${i}" = "xsystemd" ];then
+        from_systemd="y"
+    fi
+done
+for i in /.dockerinit /.dockerenv;do
+    if [ -f "${i}" ];then
+        is_docker="1"
+        break
+    fi
+done
+if [ "x${is_docker}" != "x" ];then
+    if [ "x$(grep -q "system.slice/docker-" /proc/1/cgroup 2>/dev/null;echo ${?})" = "x0" ];then
+        is_docker="1"
+    fi
+fi
 
 REMOVE="
 /tmp/.saltcloud
@@ -147,8 +165,11 @@ fi
 if which getfacl 1>/dev/null 2>/dev/null;then
     getfacl -R / > /acls.txt || /bin/true
 fi
-# deactivate some crons (leave only refresh one)
-sed -i -re "/boot-salt\.sh.*--check-alive/ d" /etc/cron.d/*salt* || /bin/true
-sed -i -re "/boot-salt\.sh.*--cleanup/ d" /etc/cron.d/*salt* || /bin/true
-sed -i -re "/boot-salt\.sh.*--restart-masters/ d" /etc/cron.d/*salt* || /bin/true
-sed -i -re "/boot-salt\.sh.*--restart-minions/ d" /etc/cron.d/*salt* || /bin/true
+# deactivate some crons (leave only refresh one only on non docker-env)
+if [ "x${is_docker}" != "x" ];then
+    sed -i -re "s/(.*boot-salt\.sh.*--refresh-modules.*)/#\1/g" /etc/cron.d/*salt* || /bin/true
+fi
+sed -i -re "s/(.*boot-salt\.sh.*--check-alive.*)/#\1/g" /etc/cron.d/*salt* || /bin/true
+sed -i -re "s/(.*boot-salt\.sh.*--cleanup.*)/#\1/g" /etc/cron.d/*salt* || /bin/true
+sed -i -re "s/(.*boot-salt\.sh.*--restart-masters.*)/#\1/g" /etc/cron.d/*salt* || /bin/true
+sed -i -re "s/(.*boot-salt\.sh.*--restart-minions.*)/#\1/g" /etc/cron.d/*salt* || /bin/true

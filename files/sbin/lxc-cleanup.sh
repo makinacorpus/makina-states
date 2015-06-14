@@ -34,6 +34,10 @@ if [ "x${is_docker}" != "x" ];then
     else
         sed -i -re "/(auto.*eth0)|(eth0.*dhcp)/d" /etc/network/interfaces || /bin/true
     fi
+    # remove /dev/xconsole PIPE from lxc template
+    if [ -p /dev/xconsole ];then
+        rm -f /dev/xconsole
+    fi
 fi
 # disabling fstab
 for i in /lib/init/fstab /etc/fstab;do
@@ -91,13 +95,26 @@ find /etc/ssh/ssh_host_*_key -type f || ssh_keys="1"
 if [ -e /etc/ssh ] && [ "x${ssh_keys}" != "x" ];then
     ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa -b 4096 || /bin/true
     ssh-keygen -f /etc/ssh/ssh_host_dsa_key -N '' -t dsa -b 1024 || /bin/true
-    ssh-keygen -f /etc/ssh/ssh_host_ed25519_key -N '' -t ed2551  || /bin/true
+    ssh-keygen -f /etc/ssh/ssh_host_ed25519_key -N '' -t ed25519 || /bin/true
     ssh-keygen -f /etc/ssh/ssh_host_ecdsa_key   -N '' -t  ecdsa  || /bin/true
-
 fi
 # - we must need to rely on direct file system to avoid relying on running process
 #    manager (pid: 1)
 # do not activate those evil services in a container context
+tty_jobs="\
+user@
+systemd-ask-password-wall\
+systemd-ask-password-console\
+container-getty@
+serial-getty@
+autovt@
+getty@
+getty-static
+getty@tty1
+"
+tty_jobs="\
+getty@tty1
+"
 for s in\
     acpid\
     alsa-restore\
@@ -106,10 +123,8 @@ for s in\
     apparmor\
     apport\
     atop\
-    autovt@\
     console-getty\
     console-setup\
-    container-getty@\
     control-alt-delete\
     cryptdisks-enable\
     cryptdisks-udev\
@@ -118,9 +133,6 @@ for s in\
     dmesg\
     dns-clean\
     failsafe\
-    getty@\
-    getty-static\
-    getty@tty1\
     hwclock\
     kmod-static-nodes\
     lvm2-lvmetad\
@@ -143,7 +155,6 @@ for s in\
     plymouth-start\
     plymouth-switch-root\
     pppd-dns\
-    serial-getty@\
     setvtrgb\
     smartd\
     smartmontools\
@@ -164,7 +175,7 @@ for s in\
     umountfs\
     umountroot\
     ureadahead\
-    user@\
+    ${tty_jobs}\
     vnstat\
    ;do
     # upstart
@@ -188,15 +199,32 @@ for s in\
 done
 for s in\
     sys-kernel-config.mount\
+    multi-user.target.wants/systemd-ask-password-wall.path\
     systemd-journald-audit.socket\
     ;do
     for d in /lib/systemd /etc/systemd /usr/lib/systemd;do
-        if [ -e "/lib/systemd/system/${s}" ];then
+        if [ -e "${d}/system/${s}" ];then
             rm -vf "${d}/"*/*.wants/${s} || /bin/true
             ln -sfv /dev/null "/etc/systemd/system/${s}"
         fi
     done
 done
+set -x
+if [ -e /run/systemd/journal/dev-log ] || [ -e /lib/systemd/systemd ];then
+    if [ -e /dev/log ];then rm -f /dev/log;fi
+    ln -fs /run/systemd/journal/dev-log /dev/log
+fi
+if [ -e /var/run/rsyslogd.pid ];then
+    rm -f /var/run/rsyslogd.pid
+fi
+#for s in
+#    /lib/systemd/system/systemd-journald-dev-log.socket\
+#    ;do
+#    if [ -h /etc/systemd/system/${s} ];then
+#        rm -f
+#    fi
+#    rm -vf "${d}/"*/*.wants/${s} || /bin/true
+#done
 # disabling useless and harmfull sysctls
 for i in \
     vm.mmap_min_addr\
@@ -239,4 +267,5 @@ if which setfacl >/dev/null 2>&1 && test -e /acls.restore && test -e /acls.txt;t
     cd / && setfacl --restore="/acls.txt" || /bin/true
 fi
 exit 0
+
 # vim:set et sts=4 ts=4 tw=80:

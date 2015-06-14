@@ -353,7 +353,7 @@ def main(argv=None,
                 reason=('{0}: script {1} ({2} -> {3})'
                         ' cant be copied'.format(
                             MS_IMAGE, i, k, j)))
-            cyan('{0}: copied {1} -> {2}'.format(MS_IMAGE, j, k), pipe=pipe)
+            cyan('{0}: copied {1} -> {2}'.format(MS_IMAGE, k, j), pipe=pipe)
     pipe.write('\n')
     if os.path.exists(MS_OVERRIDES):
         q_die_run(

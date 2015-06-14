@@ -39,6 +39,7 @@ env > /bootstrap_scripts/stage2.env
 
 # cleanup a bit the lxc if needed
 if [ -f /bootstrap_scripts/lxc-cleanup.sh ];then
+    cat /bootstrap_scripts/lxc-cleanup.sh
     v_run /bootstrap_scripts/lxc-cleanup.sh
 fi
 
@@ -52,7 +53,7 @@ if echo "${MS_COMMAND}" | grep -q "systemd";then
     ( systemd --system& )
 fi
 export DEBIAN_FRONTEND=noninteractive
-for i in  $(seq 300);do echo $i;sleep 1;done
+for i in  $(seq 30000);do echo $i;sleep 60;done
 
 v_run apt-get install -y --force-yes git ca-certificates rsync acl
 for i in /srv/pillar /srv/mastersalt-pillar /srv/projects;do
@@ -66,7 +67,7 @@ else
     bs="/srv/salt/makina-states/_scripts/boot-salt.sh"
     if [ ! -e ${bs} ];then
         git clone /docker/makina-states/.git /srv/salt/makina-states &&\
-        cd /srv/salt/makina-states && \
+        cd /srv/salt/makina-states &&\
         git remote rm origin &&\
         warn_in_error "${MS_IMAGE}: problem while initing makina-states code"
     fi
@@ -76,7 +77,7 @@ else
     # 3. mastersalt + salt highstates & masterless mode
     ${bs} -C --mastersalt 127.0.0.1 -n dockercontainer\
         --local-mastersalt-mode masterless --local-salt-mode masterless
-    for i in  $(seq 300);do echo $i;sleep 1;done
+    for i in  $(seq 1800);do echo $i;sleep 1;done
     die_in_error "${MS_IMAGE}: failed installing makina-states"
 fi
 echo
