@@ -67,7 +67,11 @@ def settings():
         if __salt__['mc_nodetypes.is_container']():
             kernel_log = False
             xconsole = False
-        user = group = 'syslog'
+        # user = group = 'syslog'
+        # systemd problem with NOTIFY_SOCKET access
+        # and syslog is launched too early in process for
+        # having a chance to fix the socket
+        user = group = 'root'
         if __grains__['os'] == 'Debian':
             user = group = 'root'
         data = __salt__['mc_utils.defaults'](

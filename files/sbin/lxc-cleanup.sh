@@ -101,19 +101,21 @@ fi
 # - we must need to rely on direct file system to avoid relying on running process
 #    manager (pid: 1)
 # do not activate those evil services in a container context
-tty_jobs="\
-user@
+# tty units (systemd) are only evil if the lock the first console
+for_now_innofensive_tty_jobs="\
 systemd-ask-password-wall\
 systemd-ask-password-console\
-container-getty@
+user@
 serial-getty@
 autovt@
+console-setup
 getty@
+container-getty@
 getty-static
 getty@tty1
 "
 tty_jobs="\
-getty@tty1
+console-getty
 "
 for s in\
     acpid\
@@ -123,8 +125,6 @@ for s in\
     apparmor\
     apport\
     atop\
-    console-getty\
-    console-setup\
     control-alt-delete\
     cryptdisks-enable\
     cryptdisks-udev\
@@ -266,6 +266,11 @@ fi
 if which setfacl >/dev/null 2>&1 && test -e /acls.restore && test -e /acls.txt;then
     cd / && setfacl --restore="/acls.txt" || /bin/true
 fi
+# uber important: be sure that the notify socket is writable by everyone
+# as systemd service like rsyslog notify about their state this way
+# and debugging notiication failure is really hard
+if [ -e /var/run/systemd/notify ];then
+    chmod 777 /var/run/systemd/notify
+fi
 exit 0
-
 # vim:set et sts=4 ts=4 tw=80:

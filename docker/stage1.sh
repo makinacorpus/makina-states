@@ -90,14 +90,17 @@ if [ "x${MS_OS}" = "xubuntu" ];then
         etc/apt/preferences.d/99_systemd.pref\
         etc/apt/apt.conf.d/99gzip\
         etc/apt/apt.conf.d/99notrad\
-        etc/apt/apt.conf.d/99clean
+        etc/systemd/system/lxc-setup.service\
+        etc/apt/apt.conf.d/99clean\
+        usr/bin/ms-lxc-setup.sh\
+        sbin/lxc-cleanup.sh
     die_in_error "${MS_IMAGE}: cant tar aptconf"
     add="${add} ubuntufiles.tar"
 fi
 if [ "x${add}" != "x" ];then a_d "ADD ${add} /";fi
 # install core pkgs & be sure to have up to date systemd on ubuntu systemd enabled
 a_d "RUN \
-    echo DOCKERFILE_ID=1\\
+    echo DOCKERFILE_ID=3\\
     && if which apt-get >/dev/null 2>&1;then\\
       sed -i -re\
           \"s/Pin: .*/Pin: release a=\$(lsb_release -sc)-proposed/g\"\
@@ -113,7 +116,18 @@ a_d "RUN \
           systemd libpam-systemd systemd-sysv libsystemd0;fi;\\
    fi\\
    && /docker/injected_volumes/bootstrap_scripts/lxc-cleanup.sh\\
-   && /docker/injected_volumes/bootstrap_scripts/makinastates-snapshot.sh"
+   && /docker/injected_volumes/bootstrap_scripts/makinastates-snapshot.sh\\
+   && sed -i -re \"s/PrivDropToUser.*/PrivDropToUser root/g\"\
+       /etc/rsyslog.conf\\
+   && sed -i -re \"s/PrivDropToGroup*/PrivDropToGroup root/g\"\
+       /etc/rsyslog.conf\\
+   && if test -e /lib/systemd/systemd;then\\
+          if ! test -e /etc/systemd/system/network-online.target.wants;then\\
+            mkdir -pv /etc/systemd/system/network-online.target.wants;\\
+          fi;\\
+          ln -sf /etc/systemd/system/lxc-setup.service\\
+          /etc/systemd/system/network-online.target.wants/lxc-setup.service;\\
+      fi"
 a_d "CMD /docker/injected_volumes/bootstrap_scripts/stage2.sh"
 BUILDKEY=""
 BUILDKEY="${BUILDKEY}_$(md5sum\
@@ -159,7 +173,6 @@ echo
 # Run the script which is in charge to tag a candidate image after a
 # sucessful build
 v_run docker run \
-    -v /home/kiorky:/k\
  -e container="docker" \
  -e MS_BASE="${MS_BASE}" \
  -e MS_BASEIMAGE="${MS_BASEIMAGE}" \
