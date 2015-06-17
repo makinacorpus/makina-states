@@ -56,7 +56,7 @@ for i in /var/run/*.pid /var/run/dbus/pid /etc/nologin;do
 done
 # disable console login
 if [ -e /etc/rsyslog.d/50-default.conf ];then
-    sed -i -re '/daemon.*;mail.*/ { N;N;N; s/^/#/gm }'\
+    sed -i -re '/^\s*daemon.*;mail.*/ { N;N;N; s/^/#/gm }'\
         /etc/rsyslog.d/50-default.conf || /bin/true
 fi
 # disabling useless and harmfull services
@@ -102,19 +102,27 @@ fi
 #    manager (pid: 1)
 # do not activate those evil services in a container context
 # tty units (systemd) are only evil if the lock the first console
+systemd_reactivated="
+
+    systemd-update-utmp\
+    systemd-update-utmp-runlevel\
+    udev\
+    udev-finish\
+"
+
 for_now_innofensive_tty_jobs="\
 systemd-ask-password-wall\
 systemd-ask-password-console\
-user@
 serial-getty@
 autovt@
-console-setup
 getty@
+console-setup
 container-getty@
 getty-static
 "
 tty_jobs="\
 console-getty
+user@
 getty@tty1
 "
 for s in\
@@ -165,12 +173,6 @@ for s in\
     systemd-modules-load\
     systemd-remount-fs\
     systemd-timesyncd\
-    systemd-udevd.service\
-    systemd-udev-trigger\
-    systemd-update-utmp\
-    systemd-update-utmp-runlevel\
-    udev\
-    udev-finish\
     ufw\
     umountfs\
     umountroot\
@@ -209,7 +211,6 @@ for s in\
         fi
     done
 done
-set -x
 if [ -e /run/systemd/journal/dev-log ] || [ -e /lib/systemd/systemd ];then
     if [ -e /dev/log ];then rm -f /dev/log;fi
     ln -fs /run/systemd/journal/dev-log /dev/log

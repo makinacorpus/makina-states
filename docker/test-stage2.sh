@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+cd $(dirname $0)/..
+docker run\
+     -e container=docker\
+     -e MS_BASE=scratch\
+     -e MS_BASEIMAGE=baseimage-ubuntu-vivid.tar.xz\
+     -e MS_COMMAND=/bin/systemd\
+     -e MS_GIT_BRANCH=stable\
+     -e MS_GIT_URL=https://github.com/makinacorpus/makina-states.git\
+     -e MS_IMAGE=makinacorpus/makina-states-ubuntu-vivid\
+     -e MS_OS_MIRROR=http://mirror.ovh.net/ftp.ubuntu.com/\
+     -e MS_OS=ubuntu\
+     -e MS_OS_RELEASE=vivid\
+     -e MS_OS_MIRROR=http://mirror.ovh.net/ftp.ubuntu.com/\
+     -e MS_STAGE0_TAG=makinacorpus/makina-states-ubuntu-vivid-stage0:latest\
+     -e MS_STAGE1_NAME=makinacorpusmakina-states-ubuntu-vivid-stage1-$1\
+     -e MS_STAGE2_NAME=makinacorpusmakina-states-ubuntu-vivid-stage2-$1\
+     -e MS_MAKINASTATES_BUILD_DISABLED=0\
+     -v /srv/mastersalt/makina-states/data:/docker/data\
+     -v /srv/mastersalt/makina-states/data/makinacorpus/makina-states-ubuntu-vivid/injected_volumes:/docker/injected_volumes\
+     -v /srv/mastersalt/makina-states:/docker/makina-states\
+     -v /sys/fs:/sys/fs:ro\
+     -v /usr/bin/docker:/usr/bin/docker:ro\
+     -v /var/lib/docker:/var/lib/docker\
+     -v /var/run/docker:/var/run/docker\
+     -v /var/run/docker.sock:/var/run/docker.sock\
+     -e MS_BASE=scratch\
+     -e MS_BASEIMAGE=baseimage-ubuntu-vivid.tar.xz\
+     -e MS_COMMAND=/bin/systemd\
+     -e MS_GIT_BRANCH=stable\
+     -e MS_GIT_URL=https://github.com/makinacorpus/makina-states.git\
+     -e MS_IMAGE_CANDIDATE=\
+     -e MS_IMAGE=makinacorpus/makina-states-ubuntu-vivid\
+     -e MS_OS_MIRROR=http://mirror.ovh.net/ftp.ubuntu.com/\
+     -e MS_OS=ubuntu\
+     -e MS_OS_RELEASE=vivid\
+     -e MS_STAGE0_TAG=makinacorpus/makina-states-ubuntu-vivid-stage0:latest\
+     -e MS_STAGE1_NAME=makinacorpusmakina-states-ubuntu-vivid-stage1-$1\
+     -e MS_STAGE2_NAME=makinacorpusmakina-states-ubuntu-vivid-stage2-$1\
+     -e MS_MAKINASTATES_BUILD_DISABLED=0 \
+--privileged -ti --rm --name=makinacorpusmakina-states-ubuntu-vivid-stage2-$1 ${2:-mytest} /docker/injected_volumes/bootstrap_scripts/stage2.sh

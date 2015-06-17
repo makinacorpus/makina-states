@@ -121,6 +121,7 @@ a_d "RUN \
        /etc/rsyslog.conf\\
    && sed -i -re \"s/PrivDropToGroup*/PrivDropToGroup root/g\"\
        /etc/rsyslog.conf\\
+   && chmod 755 /sbin/lxc-cleanup.sh /usr/bin/ms-lxc-setup.sh\\
    && if test -e /lib/systemd/systemd;then\\
           if ! test -e /etc/systemd/system/network-online.target.wants;then\\
             mkdir -pv /etc/systemd/system/network-online.target.wants;\\
