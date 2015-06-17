@@ -101,7 +101,19 @@ do-lxc-cleanup:
       - mc_proxy: makina-lxc-proxy-end
 
 {% if salt['mc_nodetypes.is_systemd']() and
-      salt['mc_nodetypes.is_container']() %}
+salt['mc_nodetypes.is_container']() %}
+do-systemd-sysv-patch:
+  file.patch:
+    - name: /lib/lsb/init-functions.d/40-systemd
+    - source: salt://makina-states/files/lib/lsb/init-functions.d/40-systemd.patch
+    - options: -Np0
+    - unless: test -e /lib/lsb/init-functions.d/40-systemd && grep -q makinacorpus_container_init /lib/lsb/init-functions.d/40-systemd
+    - watch:
+      - mc_proxy: makina-lxc-proxy-cleanup
+    - watch_in:
+      - mc_proxy: makina-lxc-proxy-end
+
+
 do-lxc-setup-services:
   service.enabled:
     - names: [lxc-setup, lxc-stop]
