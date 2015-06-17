@@ -106,7 +106,7 @@ do-systemd-sysv-patch:
   file.patch:
     - name: /lib/lsb/init-functions.d/40-systemd
     - source: salt://makina-states/files/lib/lsb/init-functions.d/40-systemd.patch
-    - options: -Np0
+    - options: -Np2
     - unless: test -e /lib/lsb/init-functions.d/40-systemd && grep -q makinacorpus_container_init2 /lib/lsb/init-functions.d/40-systemd
     - watch:
       - mc_proxy: makina-lxc-proxy-cleanup
