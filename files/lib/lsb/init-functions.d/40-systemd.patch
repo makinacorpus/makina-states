@@ -1,16 +1,23 @@
---- lib/lsb/init-functions.d/40-systemd.sav	2015-06-17 23:21:53.203426681 +0200
-+++ lib/lsb/init-functions.d/40-systemd	2015-06-17 23:22:26.439207775 +0200
-@@ -23,6 +23,15 @@
+commit e46a4cf706e631b24f05977668455ec2f93787d9
+Author: Mathieu Le Marec - Pasquet <kiorky@cryptelium.net>
+Date:   Thu Jun 18 00:11:27 2015 +0200
+
+    systemd sysv bridge patch
+
+diff --git a/files/lib/lsb/init-functions.d/40-systemd b/files/lib/lsb/init-functions.d/40-systemd
+index 53f5058..1877396 100644
+--- a/files/lib/lsb/init-functions.d/40-systemd
++++ b/files/lib/lsb/init-functions.d/40-systemd
+@@ -23,6 +23,14 @@ if [ -d /run/systemd/system ]; then
                  if [ "$(systemctl -p CanReload show $service 2>/dev/null)" = "CanReload=no" ] && [ "${1:-}" = "reload" ]; then
                      _use_systemctl=0
                  fi
 +                # XXX makinacorpus_container_init,
 +                # some service redirections are not working in a container context
 +                # where systemd pid != 1
-+                if grep [ -f /.dockerinit ];then
++                if [ -f /.dockerinit ];then
 +                  _use_systemctl=0
-+                fi
-+                if grep -q /lxc/ /proc/1/group 2>/dev/null;then
++                elif grep -q /lxc/ /proc/1/group 2>/dev/null;then
 +                  _use_systemctl=0
 +                fi
                  ;;
