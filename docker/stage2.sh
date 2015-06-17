@@ -29,6 +29,12 @@ yellow "-   STAGE 2  - BUILDING                        -"
 yellow "-----------------------------------------------"
 echo
 
+# prerequisites
+if which apt-get >/dev/null 2>&1;then
+    apt-get update
+    v_run apt-get install -y --force-yes git ca-certificates rsync acl patch
+fi
+
 # - Inject the wanted data inside the image
 if [ -e /docker/injected_volumes/ ];then
     v_run rsync -Aa /docker/injected_volumes/ /
@@ -39,23 +45,33 @@ env > /bootstrap_scripts/stage2.env
 
 # cleanup a bit the lxc if needed
 if [ -f /bootstrap_scripts/lxc-cleanup.sh ];then
-    cat /bootstrap_scripts/lxc-cleanup.sh
     v_run /bootstrap_scripts/lxc-cleanup.sh
 fi
 
 no_kill() {
+
     echo "Ignoring kill request"
 }
 
-#trap 'no_kill' 1 2 9
+# When debugging commands, this can help to trap kill commands
+# trap 'no_kill' 1 2 9
+
 # 1. Launch systemd
+# apply system patch for running in containers as non pid1
+# as without, systemd can lockup
+if [ -e /lib/lsb/init-functions.d/40-systemd  ];then
+    if ! grep -q makinacorpus_container_init /lib/lsb/init-functions.d/40-systemd;then
+        v_die_run patch -Np0 < /docker/makina-states/files/lib/lsb/init-functions.d/40-systemd.patch
+    fi
+fi
 if echo "${MS_COMMAND}" | grep -q "systemd";then
     ( systemd --system& )
 fi
 export DEBIAN_FRONTEND=noninteractive
-for i in  $(seq 30000);do echo $i;sleep 60;done
 
-v_run apt-get install -y --force-yes git ca-certificates rsync acl
+# when debugging systemd boot, this make a breakpoint here.
+# for i in  $(seq 30000);do echo $i;sleep 60;done
+
 for i in /srv/pillar /srv/mastersalt-pillar /srv/projects;do
     if [ ! -d ${i} ];then mkdir ${i};fi
 done
@@ -63,21 +79,26 @@ done
 if [ "x${MS_MAKINASTATES_BUILD_DISABLED}" != "x0" ];then
     yellow "${MS_IMAGE}: makina-states integration is skipped, skipping makina-states install"
 else
-    if [ ! -d /srv/salt ];then mkdir -p /srv/salt;fi
-    bs="/srv/salt/makina-states/_scripts/boot-salt.sh"
-    if [ ! -e ${bs} ];then
-        git clone /docker/makina-states/.git /srv/salt/makina-states &&\
-        cd /srv/salt/makina-states &&\
-        git remote rm origin &&\
-        warn_in_error "${MS_IMAGE}: problem while initing makina-states code"
-    fi
+    for pref in /srv/salt /salt/mastersalt;do
+        if [ ! -d ${pref} ];then mkdir -p ${pref};fi
+        bs="${pref}/makina-states/_scripts/boot-salt.sh"
+        if [ ! -e ${bs} ];then
+            git clone /docker/makina-states/.git ${pref}/makina-states &&\
+                cd ${pref}/makina-states &&\
+                git remote rm origin &&\
+                warn_in_error \
+                    "${MS_IMAGE}: problem while initing makina-states code (${pref})"
+        fi
+    done
     ${bs} -C --refresh-modules -b "${MS_GIT_BRANCH}"
     warn_in_error "${MS_IMAGE}: failed to fetch up-to-data makina-states code"
 
     # 3. mastersalt + salt highstates & masterless mode
+    for i in  $(seq 30000);do echo $i;sleep 60;done
     ${bs} -C --mastersalt 127.0.0.1 -n dockercontainer\
         --local-mastersalt-mode masterless --local-salt-mode masterless
-    for i in  $(seq 1800);do echo $i;sleep 1;done
+    # when debugging installation boot, this make a breakpoint here.
+    for i in  $(seq 30000);do echo $i;sleep 60;done
     die_in_error "${MS_IMAGE}: failed installing makina-states"
 fi
 echo
