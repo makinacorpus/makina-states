@@ -59,7 +59,7 @@ no_kill() {
 # apply system patch for running in containers as non pid1
 # as without, systemd can lockup
 if [ -e /lib/lsb/init-functions.d/40-systemd  ];then
-    if ! grep -q makinacorpus_container_init /lib/lsb/init-functions.d/40-systemd;then
+    if ! grep -q makinacorpus_container_init2 /lib/lsb/init-functions.d/40-systemd;then
         v_die_run patch -Np0 < /docker/makina-states/files/lib/lsb/init-functions.d/40-systemd.patch
     fi
 fi
