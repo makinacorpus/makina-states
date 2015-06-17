@@ -23,6 +23,14 @@ if [ -d /run/systemd/system ]; then
                 if [ "$(systemctl -p CanReload show $service 2>/dev/null)" = "CanReload=no" ] && [ "${1:-}" = "reload" ]; then
                     _use_systemctl=0
                 fi
+                # XXX makinacorpus_container_init,
+                # some service redirections are not working in a container context
+                # where systemd pid != 1
+                if [ -f /.dockerinit ];then
+                  _use_systemctl=0
+                elif grep -q /lxc/ /proc/1/group 2>/dev/null;then
+                  _use_systemctl=0
+                fi
                 ;;
         esac
     else
