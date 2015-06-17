@@ -113,7 +113,6 @@ do-systemd-sysv-patch:
     - watch_in:
       - mc_proxy: makina-lxc-proxy-end
 
-
 do-lxc-setup-services:
   service.enabled:
     - names: [lxc-setup, lxc-stop]
