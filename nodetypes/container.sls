@@ -102,13 +102,23 @@ do-lxc-cleanup:
 
 {% if salt['mc_nodetypes.is_systemd']() and
 salt['mc_nodetypes.is_container']() %}
+# apply a patch to be sure that future evols of the
+# script are still compatible with our work
+# (this patch wont apply in other case)
 do-systemd-sysv-patch:
-  file.patch:
-    - name: /lib/lsb/init-functions.d/40-systemd
+  file.managed:
+    - name: /tmp/systemd-initd.patch
     - source: salt://makina-states/files/lib/lsb/init-functions.d/40-systemd.patch
-    - options: -Np2
     - unless: test -e /lib/lsb/init-functions.d/40-systemd && grep -q makinacorpus_container_init /lib/lsb/init-functions.d/40-systemd
     - watch:
+      - mc_proxy: makina-lxc-proxy-cleanup
+    - watch_in:
+      - mc_proxy: makina-lxc-proxy-end
+  cmd.run:
+    - name: cd / && patch -Np2 < /tmp/systemd-initd.patch
+    - unless: test -e /lib/lsb/init-functions.d/40-systemd && grep -q makinacorpus_container_init /lib/lsb/init-functions.d/40-systemd && test -e /tmp/systemd-initd.patch
+    - watch:
+      - file: do-systemd-sysv-patch
       - mc_proxy: makina-lxc-proxy-cleanup
     - watch_in:
       - mc_proxy: makina-lxc-proxy-end
