@@ -69,7 +69,7 @@ fi
 export DEBIAN_FRONTEND=noninteractive
 
 # when debugging systemd boot, this make a breakpoint here.
-# for i in  $(seq 30000);do echo $i;sleep 60;done
+for i in  $(seq 30000);do echo $i;sleep 60;done
 
 for i in /srv/pillar /srv/mastersalt-pillar /srv/projects;do
     if [ ! -d ${i} ];then mkdir ${i};fi
@@ -97,7 +97,7 @@ else
     ${bs} -C --mastersalt 127.0.0.1 -n dockercontainer\
         --local-mastersalt-mode masterless --local-salt-mode masterless
     # when debugging installation boot, this make a breakpoint here.
-    # for i in  $(seq 30000);do echo $i;sleep 60;done
+    for i in  $(seq 30000);do echo $i;sleep 60;done
     die_in_error "${MS_IMAGE}: failed installing makina-states"
 fi
 echo
