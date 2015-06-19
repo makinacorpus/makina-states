@@ -33,17 +33,21 @@ apparmor-ntp-patch:
     - onlyif: |
               set -e
               test -e /etc/apparmor.d/usr.sbin.ntpd
-              grep -q attach_disconnected /etc/apparmor.d/usr.sbin.ntpd && /bin/false
+              if grep -q attach_disconnected /etc/apparmor.d/usr.sbin.ntpd;then exit 1;fi
     - watch:
       - mc_proxy: ms-apparmor-cfg-pre
     - watch_in:
       - mc_proxy: ms-apparmor-cfg-post
   cmd.run:
-    - name: cd / && patch -Np2 < /tmp/apparmor.patch
+    - name: |
+            set -e
+            patch --dry-run -r- -Np2 < /tmp/apparmor.patch
+            patch           -r- -Np2 < /tmp/apparmor.patch
+    - cwd: /
     - onlyif: |
               set -e
               test -e /etc/apparmor.d/usr.sbin.ntpd
-              grep -q attach_disconnected /etc/apparmor.d/usr.sbin.ntpd && /bin/false
+              if grep -q attach_disconnected /etc/apparmor.d/usr.sbin.ntpd;then exit 1;fi
               test -e /tmp/apparmor.patch
     - watch:
       - file: apparmor-ntp-patch
@@ -58,18 +62,22 @@ apparmor-ntp-patch2:
     - onlyif: |
               set -e
               test -e /etc/apparmor.d/usr.sbin.ntpd
-              egrep -q '/\\*\*/libopts\\*.so\\* r,' /etc/apparmor.d/usr.sbin.ntpd && /bin/false
+              if egrep -q '/\*\*/libopts\*.so\* r,' /etc/apparmor.d/usr.sbin.ntpd;then exit 1;fi
     - watch:
       - cmd: apparmor-ntp-patch
       - mc_proxy: ms-apparmor-cfg-pre
     - watch_in:
       - mc_proxy: ms-apparmor-cfg-post
   cmd.run:
-    - name: cd / && patch -Np2 < /tmp/apparmor.patch2
+    - name: |
+            set -e
+            patch --dry-run -r- -Np2 < /tmp/apparmor.patch2 
+            patch           -r- -Np2 < /tmp/apparmor.patch2
+    - cwd: /
     - onlyif: |
               set -e
               test -e /etc/apparmor.d/usr.sbin.ntpd
-              egrep -q '/\*\*/libopts\*.so\* r,' /etc/apparmor.d/usr.sbin.ntpd && /bin/false
+              if egrep -q '/\*\*/libopts\*.so\* r,' /etc/apparmor.d/usr.sbin.ntpd;then exit 1;fi
               test -e /tmp/apparmor.patch2
     - watch:
       - file: apparmor-ntp-patch2
