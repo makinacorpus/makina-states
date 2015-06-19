@@ -69,7 +69,7 @@ fi
 export DEBIAN_FRONTEND=noninteractive
 
 # when debugging systemd boot, this make a breakpoint here.
-for i in  $(seq 30000);do echo $i;sleep 60;done
+# for i in  $(seq 30000);do echo $i;sleep 60;done
 
 for i in /srv/pillar /srv/mastersalt-pillar /srv/projects;do
     if [ ! -d ${i} ];then mkdir ${i};fi

@@ -33,20 +33,54 @@ apparmor-ntp-patch:
     - onlyif: |
               set -e
               test -e /etc/apparmor.d/usr.sbin.ntpd
-              grep -vq attach_disconnected /etc/apparmor.d/usr.sbin.ntpd
+              if grep -q attach_disconnected /etc/apparmor.d/usr.sbin.ntpd;then exit 1;fi
     - watch:
       - mc_proxy: ms-apparmor-cfg-pre
     - watch_in:
       - mc_proxy: ms-apparmor-cfg-post
   cmd.run:
-    - name: cd / && patch -Np2 < /tmp/apparmor.patch
+    - name: |
+            set -e
+            patch --dry-run -r- -Np2 < /tmp/apparmor.patch
+            patch           -r- -Np2 < /tmp/apparmor.patch
+    - cwd: /
     - onlyif: |
               set -e
               test -e /etc/apparmor.d/usr.sbin.ntpd
+              if grep -q attach_disconnected /etc/apparmor.d/usr.sbin.ntpd;then exit 1;fi
               test -e /tmp/apparmor.patch
-              grep -vq attach_disconnected /etc/apparmor.d/usr.sbin.ntpd
     - watch:
       - file: apparmor-ntp-patch
+      - mc_proxy: ms-apparmor-cfg-pre
+    - watch_in:
+      - mc_proxy: ms-apparmor-cfg-post
+
+apparmor-ntp-patch2:
+  file.managed:
+    - source: salt://makina-states/files/etc/apparmor.d/usr.sbin.ntpd.perms.patch
+    - name: /tmp/apparmor.patch2
+    - onlyif: |
+              set -e
+              test -e /etc/apparmor.d/usr.sbin.ntpd
+              if egrep -q '/\*\*/libopts\*.so\* r,' /etc/apparmor.d/usr.sbin.ntpd;then exit 1;fi
+    - watch:
+      - cmd: apparmor-ntp-patch
+      - mc_proxy: ms-apparmor-cfg-pre
+    - watch_in:
+      - mc_proxy: ms-apparmor-cfg-post
+  cmd.run:
+    - name: |
+            set -e
+            patch --dry-run -r- -Np2 < /tmp/apparmor.patch2 
+            patch           -r- -Np2 < /tmp/apparmor.patch2
+    - cwd: /
+    - onlyif: |
+              set -e
+              test -e /etc/apparmor.d/usr.sbin.ntpd
+              if egrep -q '/\*\*/libopts\*.so\* r,' /etc/apparmor.d/usr.sbin.ntpd;then exit 1;fi
+              test -e /tmp/apparmor.patch2
+    - watch:
+      - file: apparmor-ntp-patch2
       - mc_proxy: ms-apparmor-cfg-pre
     - watch_in:
       - mc_proxy: ms-apparmor-cfg-post

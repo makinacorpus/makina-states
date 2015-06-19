@@ -48,6 +48,13 @@
 
   /etc/ntp.keys r,
   /etc/ntp/** r,
+  /**/libm*.so* r,
+  /**/libdl*.so* r,
+  /**/libc*.so* r,
+  /**/libcap*.so* r,
+  /**/libcrypto*.so* r,
+  /**/libm*.so* r,
+  /**/libopts*.so* r,
 
   /etc/ntp.drift rwl,
   /etc/ntp.drift.TEMP rwl,
