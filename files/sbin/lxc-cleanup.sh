@@ -125,6 +125,27 @@ console-getty
 user@
 getty@tty1
 "
+disable_service() {
+    s="$1"
+    # upstart
+    for i in /etc/init/${s}*.conf;do
+        if [ -e "${i}" ];then
+            echo manual>"/etc/init/$(basename ${i} .conf).override" || /bin/true
+            mv -f "${i}" "${i}.orig" || /bin/true
+        fi
+    done
+    # systemd
+    for d in /lib/systemd /etc/systemd /usr/lib/systemd;do
+        rm -vf "${d}/"*/*.wants/${s}.service || /bin/true
+    done
+    if [ -e /etc/systemd/system ];then
+        ln -sfv /dev/null "/etc/systemd/system/${s}.service"
+    fi
+    # sysV
+    for i in 0 1 2 3 4 5 6;do
+       rm -vf /etc/rc${i}.d/*${s} || /bin/true
+    done
+}
 for s in\
     acpid\
     alsa-restore\
@@ -180,25 +201,14 @@ for s in\
     ${tty_jobs}\
     vnstat\
    ;do
-    # upstart
-    for i in /etc/init/${s}*.conf;do
-        if [ -e "${i}" ];then
-            echo manual>"/etc/init/$(basename ${i} .conf).override" || /bin/true
-            mv -f "${i}" "${i}.orig" || /bin/true
-        fi
-    done
-    # systemd
-    for d in /lib/systemd /etc/systemd /usr/lib/systemd;do
-        rm -vf "${d}/"*/*.wants/${s}.service || /bin/true
-    done
-    if [ -e /etc/systemd/system ];then
-        ln -sfv /dev/null "/etc/systemd/system/${s}.service"
-    fi
-    # sysV
-    for i in 0 1 2 3 4 5 6;do
-       rm -vf /etc/rc${i}.d/*${s} || /bin/true
-    done
+    disable_service "${s}"
 done
+if [ "x${is_docker}" != "x" ];then
+    # redirecting console to docker log
+    for i in systemd-update-utmp ifup-wait-all-auto;do
+        disable_service ${i}
+    done
+fi
 for s in\
     sys-kernel-config.mount\
     multi-user.target.wants/systemd-ask-password-wall.path\
@@ -218,14 +228,6 @@ fi
 if [ -e /var/run/rsyslogd.pid ];then
     rm -f /var/run/rsyslogd.pid
 fi
-#for s in
-#    /lib/systemd/system/systemd-journald-dev-log.socket\
-#    ;do
-#    if [ -h /etc/systemd/system/${s} ];then
-#        rm -f
-#    fi
-#    rm -vf "${d}/"*/*.wants/${s} || /bin/true
-#done
 # disabling useless and harmfull sysctls
 for i in \
     vm.mmap_min_addr\
@@ -246,14 +248,6 @@ if [ "x${is_docker}" != "x" ];then
         rm -f /dev/${i} || /bin/true
         ln -s /dev/tty /dev/${i} || /bin/true
     done
-    # disable resolvconf
-    # en="/etc/network"
-    # if [ -f ${en}/if-up.d/000resolvconf ];then
-    #     mv -f ${en}/if-up.d/000resolvconf ${en}/if-up.d_000resolvconf.bak || /bin/true
-    # fi
-    # if [ -f ${en}/if-down.d/resolvconf ];then
-    #     mv -f ${en}/if-down.d/resolvconf ${en}/if-down.d_resolvconf.bak || /bin/true
-    # fi
 fi
 if [ -f /etc/lsb-release ];then
     . /etc/lsb-release
