@@ -109,7 +109,7 @@ do-systemd-sysv-patch:
   file.managed:
     - name: /tmp/systemd-initd.patch
     - source: salt://makina-states/files/lib/lsb/init-functions.d/40-systemd.patch
-    - unless: |
+    - onlyif: |
               set -e
               test -e /lib/lsb/init-functions.d/40-systemd
               if grep -q makinacorpus_container_init /lib/lsb/init-functions.d/40-systemd;then exit 1;fi
