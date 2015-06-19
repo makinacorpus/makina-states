@@ -109,14 +109,25 @@ do-systemd-sysv-patch:
   file.managed:
     - name: /tmp/systemd-initd.patch
     - source: salt://makina-states/files/lib/lsb/init-functions.d/40-systemd.patch
-    - unless: test -e /lib/lsb/init-functions.d/40-systemd && grep -q makinacorpus_container_init /lib/lsb/init-functions.d/40-systemd
+    - unless: |
+              set -e
+              test -e /lib/lsb/init-functions.d/40-systemd
+              if grep -q makinacorpus_container_init /lib/lsb/init-functions.d/40-systemd;then exit 1;fi
     - watch:
       - mc_proxy: makina-lxc-proxy-cleanup
     - watch_in:
       - mc_proxy: makina-lxc-proxy-end
   cmd.run:
-    - name: cd / && patch -Np2 < /tmp/systemd-initd.patch
-    - unless: test -e /lib/lsb/init-functions.d/40-systemd && grep -q makinacorpus_container_init /lib/lsb/init-functions.d/40-systemd && test -e /tmp/systemd-initd.patch
+    - cwd: cd /
+    - name: |
+            set -e
+            patch --dry-run -Np2 < /tmp/systemd-initd.patch
+            patch -Np2 < /tmp/systemd-initd.patch
+    - onlyif: |
+              set -e
+              test -e /lib/lsb/init-functions.d/40-systemd
+              test -e /tmp/systemd-initd.patch
+              if grep -q makinacorpus_container_init /lib/lsb/init-functions.d/40-systemd;then exit 1;fi
     - watch:
       - file: do-systemd-sysv-patch
       - mc_proxy: makina-lxc-proxy-cleanup
