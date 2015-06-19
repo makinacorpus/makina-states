@@ -1,0 +1,18 @@
+diff --git a/files/etc/apparmor.d/usr.sbin.ntpd b/files/etc/apparmor.d/usr.sbin.ntpd
+index afbff24..05ed73d 100644
+--- a/files/etc/apparmor.d/usr.sbin.ntpd
++++ b/files/etc/apparmor.d/usr.sbin.ntpd
+@@ -48,6 +48,13 @@
+ 
+   /etc/ntp.keys r,
+   /etc/ntp/** r,
++  /**/libm*.so* r,
++  /**/libdl*.so* r,
++  /**/libc*.so* r,
++  /**/libcap*.so* r,
++  /**/libcrypto*.so* r,
++  /**/libm*.so* r,
++  /**/libopts*.so* r,
+ 
+   /etc/ntp.drift rwl,
+   /etc/ntp.drift.TEMP rwl,

@@ -33,7 +33,7 @@ apparmor-ntp-patch:
     - onlyif: |
               set -e
               test -e /etc/apparmor.d/usr.sbin.ntpd
-              grep -vq attach_disconnected /etc/apparmor.d/usr.sbin.ntpd
+              grep -q attach_disconnected /etc/apparmor.d/usr.sbin.ntpd && /bin/false
     - watch:
       - mc_proxy: ms-apparmor-cfg-pre
     - watch_in:
@@ -43,10 +43,36 @@ apparmor-ntp-patch:
     - onlyif: |
               set -e
               test -e /etc/apparmor.d/usr.sbin.ntpd
+              grep -q attach_disconnected /etc/apparmor.d/usr.sbin.ntpd && /bin/false
               test -e /tmp/apparmor.patch
-              grep -vq attach_disconnected /etc/apparmor.d/usr.sbin.ntpd
     - watch:
       - file: apparmor-ntp-patch
+      - mc_proxy: ms-apparmor-cfg-pre
+    - watch_in:
+      - mc_proxy: ms-apparmor-cfg-post
+
+apparmor-ntp-patch2:
+  file.managed:
+    - source: salt://makina-states/files/etc/apparmor.d/usr.sbin.ntpd.perms.patch
+    - name: /tmp/apparmor.patch2
+    - onlyif: |
+              set -e
+              test -e /etc/apparmor.d/usr.sbin.ntpd
+              egrep -q '/\\*\*/libopts\\*.so\\* r,' /etc/apparmor.d/usr.sbin.ntpd && /bin/false
+    - watch:
+      - cmd: apparmor-ntp-patch
+      - mc_proxy: ms-apparmor-cfg-pre
+    - watch_in:
+      - mc_proxy: ms-apparmor-cfg-post
+  cmd.run:
+    - name: cd / && patch -Np2 < /tmp/apparmor.patch2
+    - onlyif: |
+              set -e
+              test -e /etc/apparmor.d/usr.sbin.ntpd
+              egrep -q '/\*\*/libopts\*.so\* r,' /etc/apparmor.d/usr.sbin.ntpd && /bin/false
+              test -e /tmp/apparmor.patch2
+    - watch:
+      - file: apparmor-ntp-patch2
       - mc_proxy: ms-apparmor-cfg-pre
     - watch_in:
       - mc_proxy: ms-apparmor-cfg-post
