@@ -118,7 +118,7 @@ do-systemd-sysv-patch:
     - watch_in:
       - mc_proxy: makina-lxc-proxy-end
   cmd.run:
-    - cwd: cd /
+    - cwd: /
     - name: |
             set -e
             patch --dry-run -Np2 < /tmp/systemd-initd.patch
