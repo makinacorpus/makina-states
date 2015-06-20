@@ -8,6 +8,9 @@
 {%- set locs = salt['mc_locations.settings']() %}
 include:
   - makina-states.localsettings.pkgs.hooks
+  {% if not salt['mc_nodetypes.is_container']() %}
+  - makina-states.localsettings.pkgs.tools
+  {% endif %}
 
 {% set pkgs = salt['mc_pkgs.settings']() %}
 
@@ -129,11 +132,6 @@ ubuntu-pkgs:
       - apt-transport-https
       - iputils-tracepath
       - mtr-tiny
-      - ntfs-3g
-      - ppp
-      - pppconfig
-      - pppoeconf
-      - ufw
       - update-manager-core
       - uuid-runtime
       {% endif %}
@@ -240,24 +238,15 @@ net-pkgs:
     - pkgs:
       - wget
       - curl
-      - irssi
       - dnsutils
       - net-tools
       - rsync
-      - tcpdump
       - telnet
-      - traceroute
-      - whois
+      - tcpdump
       {% if salt['mc_controllers.mastersalt_mode']() %}
       - openssh-server
       - openssh-client
-      - ethtool
-      - ifenslave-2.6
-      - iftop
-      - iptraf
-      - nmap
       - ntp
-      - sipcalc
       - vlan
       - wakeonlan
       {% endif %}

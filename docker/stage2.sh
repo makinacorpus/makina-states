@@ -97,7 +97,7 @@ else
     ${bs} -C --mastersalt 127.0.0.1 -n dockercontainer\
         --local-mastersalt-mode masterless --local-salt-mode masterless
     # when debugging installation boot, this make a breakpoint here.
-    for i in  $(seq 30000);do echo $i;sleep 60;done
+    # for i in  $(seq 30000);do echo $i;sleep 60;done
     die_in_error "${MS_IMAGE}: failed installing makina-states"
 fi
 echo
@@ -110,7 +110,7 @@ if [ -x /bootstrap_scripts/docker_build_stage3.sh ];then
     /bootstrap_scripts/docker_build_stage3.sh
     die_in_error "${MS_IMAGE}: Stage3 building failed"
 fi
-if [ -f /bootstrap_scripts/makinastates-snapshot.sh ];then
+if [ "x${MS_DO_SNAPSHOT:-yes}" = "xyes" ] && [ -f /bootstrap_scripts/makinastates-snapshot.sh ];then
     /bootstrap_scripts/makinastates-snapshot.sh
 fi
 v_run getfacl -R / > /acls.txt || /bin/true
@@ -124,6 +124,6 @@ echo
 if docker inspect "${MS_IMAGE_CANDIDATE}" >/dev/null 2>&1;then
     docker rmi -f "${MS_IMAGE_CANDIDATE}"
 fi
-docker commit "${MS_STAGE2_NAME}" "${MS_IMAGE_CANDIDATE}" -c "CMD ${MS_COMMAND}"
+v_run docker commit -c "CMD ${MS_COMMAND}" "${MS_STAGE2_NAME}" "${MS_IMAGE_CANDIDATE}"
 die_in_error "${MS_IMAGE_CANDIDATE} failed commit"
 # vim:set et sts=4 ts=4 tw=0:

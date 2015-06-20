@@ -301,7 +301,7 @@ Those volumes are exposed in all container stages:
 
 Adding data files to commited image
 ---------------------------------------
-Anything (file, dir, symlink) that is placed in the **/docker/injected_volumes** 
+Anything (file, dir, symlink) that is placed in the **/docker/injected_volumes**
 image data directory will be commited with the image.
 
 The files are copied before **stage2** execution, thus you have them available at build time.

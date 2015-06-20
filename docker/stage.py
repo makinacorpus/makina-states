@@ -191,7 +191,7 @@ REPORT = textwrap.dedent('''\
 {c[yellow]}STAGE0 TAG{c[normal]}:     {c[cyan]}{e[MS_STAGE0_TAG]}{c[normal]}
 {c[yellow]}STAGE1 TAG{c[normal]}:     {c[cyan]}{e[MS_STAGE1_NAME]}{c[normal]}
 {c[yellow]}STAGE2 TAG{c[normal]}:     {c[cyan]}{e[MS_STAGE2_NAME]}{c[normal]}
-{c[yellow]}STAGE2 TAG{c[normal]}:     {c[cyan]}{e[MS_STAGE2_NAME]}{c[normal]}
+{c[yellow]}IMAGE CANDIDATE{c[normal]}:     {c[cyan]}{e[MS_IMAGE_CANDIDATE]}{c[normal]}
 {c[yellow]}DOCKER ARGS{c[normal]}:    {c[cyan]}{e[MS_DOCKER_ARGS]}{c[normal]}
 
 ''')
