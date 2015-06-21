@@ -87,4 +87,9 @@ v_run docker run \
  ${MS_DOCKER_ARGS} --privileged -ti --rm \
  --name=${MS_STAGE1_NAME} "${MS_STAGE0_TAG}"
 die_in_error "${MS_IMAGE}: Upper stages failed, see logs"
+
+purple "-----------------------------------------------------"
+purple "- Build complete"
+purple "- Check image tag: $(cyan ${MS_IMAGE_CANDIDATE})"
+purple "-----------------------------------------------------"
 # vim:set et sts=4 ts=4 tw=0:

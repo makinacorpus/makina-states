@@ -76,3 +76,37 @@ TBD
 bootstrap a drupal project
 ---------------------------
 TBD
+
+
+Build a kubernetes cluster
+------------------------------                a
+Behind the scenes a kubernetes cluster involve those following services all run
+inside containers:
+
+    * redis
+    * etcd
+    * kubemaster
+    * kubeproxy
+
+To build something more powerfull that the basic makina-states images and stop
+playing by hand, you ll want to build a kubernetes cluster.
+
+Either do this on a VM based on ubuntu 14-04 and onwards or on baremetal if you
+know makina-states.
+
+Amongst others:
+
+    * Be aware that this will install and configure firewalld, a restrictive firewall.
+    * This will install and configure lot of prerequisites needed by
+      makina-states
+
+
+* Install makina-states and initialize mastersalt
+* Install docker via makina-states
+
+Adapt your /srv/mastersalt-pillar/database.sls
+
+    mastersalt-run -lall mc_cloud_compute_node.orchestrate node=$(hostname -f)
+
+* Install etcd
+* Install

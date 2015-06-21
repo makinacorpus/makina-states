@@ -201,11 +201,11 @@ The scripts support those environment variables, in **user facing order**:
         or the script will fetch for you a basic ubuntu container using
         lxc-utils. For those who dont know, **scratch** is a special
         and empty image in the Docker speaking.
-    MS_DATA_DIR
-        Data volume dir to place the **baseimage-$os-$release.tar.xz** file (default: ./data)
     MS_IMAGE_DIR
         Data volume dir to place image related files like stage scripts & injected data
         (default: $DATA_DIR/$MS_IMAGE)
+    MS_COMMAND
+        Command to use on the resulting image (**/sbin/init**)
     MS_GIT_BRANCH
         Branch for makina-states (**stable**)
     MS_OS
@@ -214,8 +214,8 @@ The scripts support those environment variables, in **user facing order**:
         OS release (eg: vivid)
     MS_GIT_URL
         Url for `makina-states <https://github.com/makinacorpus/makina-states>`_
-    MS_COMMAND
-        Command to use on the resulting image (**/sbin/init**)
+    MS_DATA_DIR
+        Data volume dir to place the **baseimage-$os-$release.tar.xz** file (default: ./data)
     MS_BASEIMAGE
         Filename of the base image
         (default: **baseimage-$os-$release.tar.xz**)
