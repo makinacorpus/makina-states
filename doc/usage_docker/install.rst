@@ -2,6 +2,16 @@
 
 Install a makina-states docker environement
 ============================================
+
+Intro and history
+------------------------------
+luster based on LXC/kvm and mastersalt-pillar was the first experiment we had,
+it's not what you ll have to use to spawn a kubernetes based cluster, as we want
+things to be a lot more dynamic.
+
+We still reuse bits from the past, but we ll input the settings differently as
+it was a bit too hard from end users to use that.
+
 Basic development  installation
 -------------------------------
 - For ubuntu, you best bet is to use something >= Ubuntu 14.04 with a recent kernel (from enablement stack)
@@ -15,7 +25,7 @@ Basic development  installation
       apparmor profile instead of inject it's own and broken one.
 
         - The sources are `here@github <https://github.com/makinacorpus/docker.git>`_.
-        - We provide a `prebuilt binary for linux <https://github.com/makinacorpus/docker/releases/download/mc_1/docker>`_.::
+        - We provide a `prebuilt binary for linux <https://github.com/makinacorpus/docker/releases/download/mc_2/docker>`_.::
 
             cp /usr/bin/docker /usr/bin/docker.dist
             curl -L --insecure -s https://github.com/makinacorpus/docker/releases/download/mc_1/docker -o /usr/bin/docker
@@ -46,7 +56,13 @@ Basic development  installation
     mkdir /srv/mastersalt && cd /srv/mastersalt
     git clone http://github.com/makinacorpus/makina-states.git
 
-- Create the base makinacorpus image
+- Create the base makinacorpus/makina-states image
+
+.. code-block:: bash
+
+ cd /srv/mastersalt/makina-states
+ ./docker/stage.py
+ docker tag makinacorpus/makina-states-ubuntu-vivid:candidate makinacorpus/makina-states-ubuntu-vivid:latest
 
 Run & test a makina-states based docker container
 -----------------------------------------------------
@@ -59,30 +75,12 @@ with the **CAP_SYS_ADMIN**
     docker exec -ti mycontainer bash
     # <play>
 
-
-Common tasks to add on first boot of a container
-------------------------------------------------
-
-Reinject SSL certificates on a makina-states docker
-++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-Reconfigure postfix configuration on a makina-states docker
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-bootstrap a django project
----------------------------
-TBD
-
-bootstrap a drupal project
----------------------------
-TBD
-
-
 Build a kubernetes cluster
-------------------------------                a
+--------------------------
 Behind the scenes a kubernetes cluster involve those following services all run
 inside containers:
 
+    * docker/distribution
     * redis
     * etcd
     * kubemaster
@@ -96,10 +94,10 @@ know makina-states.
 
 Amongst others:
 
-    * Be aware that this will install and configure firewalld, a restrictive firewall.
+    * Be aware that this will install and configure firewalld, a by-default
+      restrictive firewall.
     * This will install and configure lot of prerequisites needed by
       makina-states
-
 
 * Install makina-states and initialize mastersalt
 * Install docker via makina-states

@@ -19,7 +19,7 @@ cyan() { echo -e "${CYAN}${@}${NORMAL}"; }
 yellow() { echo -e "${YELLOW}${@}${NORMAL}"; }
 green() { echo -e "${GREEN}${@}${NORMAL}"; }
 die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
-warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";exit 1;fi }
+warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";fi }
 v_run() { green "${@}"; "${@}"; }
 v_die_run() { v_run "${@}"; die_in_error "command ${@} failed"; }
 
@@ -71,11 +71,12 @@ v_run docker run \
  -e MS_OS="${MS_OS}" \
  -e MS_OS_RELEASE="${MS_OS_RELEASE}" \
  -e MS_OS_MIRROR="${MS_OS_MIRROR}" \
+ -e MS_DO_SNAPSHOT="${MS_DO_SNAPSHOT}" \
  -e MS_STAGE0_TAG="${MS_STAGE0_TAG}" \
  -e MS_STAGE1_NAME="${MS_STAGE1_NAME}" \
  -e MS_STAGE2_NAME="${MS_STAGE2_NAME}" \
  -e MS_IMAGE_CANDIDATE="${MS_IMAGE_CANDIDATE}" \
- -e MS_MAKINASTATES_BUILD_DISABLED="${MS_MAKINASTATES_BUILD_DISABLED}" \
+ -e MS_MAKINASTATES_BUILD_FORCE="${MS_MAKINASTATES_BUILD_FORCE}" \
  -v "${MS_DATA_DIR}":/docker/data \
  -v "${MS_DATA_DIR}/${MS_IMAGE}/injected_volumes":/docker/injected_volumes \
  -v "${cwd}":/docker/makina-states \
@@ -87,7 +88,6 @@ v_run docker run \
  ${MS_DOCKER_ARGS} --privileged -ti --rm \
  --name=${MS_STAGE1_NAME} "${MS_STAGE0_TAG}"
 die_in_error "${MS_IMAGE}: Upper stages failed, see logs"
-
 purple "-----------------------------------------------------"
 purple "- Build complete"
 purple "- Check image tag: $(cyan ${MS_IMAGE_CANDIDATE})"
