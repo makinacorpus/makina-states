@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 '''
-Makina-States Stage runner
+Makina-States Stage SourceToImage runner
 
 It will setup the env, then launch & wrap the stage0 -> 3 dance
 The stage scripts need:
 
-    - rsync (opt but recommended
+    - python-six
+    - rsync
     - python > 2.6
     - acl (setfacl/getfacl)
 
@@ -24,6 +25,7 @@ import random
 import subprocess
 import hashlib
 import textwrap
+import six
 
 try:
     from collections import OrderedDict
@@ -34,6 +36,7 @@ except ImportError:
         OrderedDict = dict
 
 
+J = os.path.join
 _CWD = os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))
 RED = '\033[31;01m'
@@ -180,19 +183,20 @@ def q_die_run(cmd,
 
 
 REPORT = textwrap.dedent('''\
-{c[yellow]}CWD{c[normal]}:            {c[cyan]}{e[CWD]}{c[normal]}
-{c[yellow]}OS{c[normal]}:             {c[cyan]}{e[MS_OS]}{c[normal]}
-{c[yellow]}OS_RELEASE{c[normal]}:     {c[cyan]}{e[MS_OS_RELEASE]}{c[normal]}
-{c[yellow]}DATADIR{c[normal]}:        {c[cyan]}{e[MS_DATA_DIR]}{c[normal]}
-{c[yellow]}BASE{c[normal]}:           {c[cyan]}{e[MS_BASE]}{c[normal]}
-{c[yellow]}BASEIMAGE{c[normal]}:      {c[cyan]}{e[MS_BASEIMAGE]}{c[normal]}
-{c[yellow]}IMAGE{c[normal]}:          {c[cyan]}{e[MS_IMAGE]}{c[normal]}
-{c[yellow]}IMAGE_DIR{c[normal]}:      {c[cyan]}{e[MS_IMAGE_DIR]}{c[normal]}
-{c[yellow]}STAGE0 TAG{c[normal]}:     {c[cyan]}{e[MS_STAGE0_TAG]}{c[normal]}
-{c[yellow]}STAGE1 TAG{c[normal]}:     {c[cyan]}{e[MS_STAGE1_NAME]}{c[normal]}
-{c[yellow]}STAGE2 TAG{c[normal]}:     {c[cyan]}{e[MS_STAGE2_NAME]}{c[normal]}
-{c[yellow]}IMAGE CANDIDATE{c[normal]}:     {c[cyan]}{e[MS_IMAGE_CANDIDATE]}{c[normal]}
-{c[yellow]}DOCKER ARGS{c[normal]}:    {c[cyan]}{e[MS_DOCKER_ARGS]}{c[normal]}
+{c[yellow]}CWD{c[normal]}:          {c[cyan]}{e[CWD]}{c[normal]}
+{c[yellow]}OS{c[normal]}:           {c[cyan]}{e[MS_OS]}{c[normal]}
+{c[yellow]}OS_RELEASE{c[normal]}:   {c[cyan]}{e[MS_OS_RELEASE]}{c[normal]}
+{c[yellow]}DATADIR{c[normal]}:      {c[cyan]}{e[MS_DATA_DIR]}{c[normal]}
+{c[yellow]}BASE{c[normal]}:         {c[cyan]}{e[MS_BASE]}{c[normal]}
+{c[yellow]}BASEIMAGE{c[normal]}:    {c[cyan]}{e[MS_BASEIMAGE]}{c[normal]}
+{c[yellow]}IMAGE{c[normal]}:        {c[cyan]}{e[MS_IMAGE]}{c[normal]}
+{c[yellow]}IMAGE_DIR{c[normal]}:    {c[cyan]}{e[MS_IMAGE_DIR]}{c[normal]}
+{c[yellow]}STAGE0 TAG{c[normal]}:   {c[cyan]}{e[MS_STAGE0_TAG]}{c[normal]}
+{c[yellow]}STAGE1 TAG{c[normal]}:   {c[cyan]}{e[MS_STAGE1_NAME]}{c[normal]}
+{c[yellow]}STAGE2 TAG{c[normal]}:   {c[cyan]}{e[MS_STAGE2_NAME]}{c[normal]}
+{c[yellow]}IMAGE CANDIDATE{c[normal]}:   \
+{c[cyan]}{e[MS_IMAGE_CANDIDATE]}{c[normal]}
+{c[yellow]}DOCKER ARGS{c[normal]}:  {c[cyan]}{e[MS_DOCKER_ARGS]}{c[normal]}
 
 ''')
 
@@ -214,7 +218,6 @@ def main(argv=None,
     yellow('-----------------------------------------------', pipe=pipe)
     yellow('-   STAGE -1 - ASSEMBLING BUILD ENVIRONMENT   -', pipe=pipe)
     yellow('-----------------------------------------------', pipe=pipe)
-
     environ.setdefault('MS_OS', 'ubuntu')
     environ.setdefault(
         'MS_OS_MIRROR', 'http://mirror.ovh.net/ftp.ubuntu.com/')
@@ -228,26 +231,36 @@ def main(argv=None,
     environ.setdefault('MS_BASE', 'scratch')
     MS_DATA_DIR = environ.setdefault(
         'MS_DATA_DIR', os.path.join(_CWD, 'data'))
+    MS_IMAGE = environ.setdefault(
+        'MS_IMAGE',
+        'makinacorpus/'
+        'makina-states-{0[MS_OS]}-{0[MS_OS_RELEASE]}'.format(environ))
+    MS_IMAGE_DIR = environ.setdefault(
+        'MS_IMAGE_DIR',
+        os.path.join(environ['MS_DATA_DIR'], environ['MS_IMAGE']))
+    environ.setdefault('MS_DO_SNAPSHOT', 'yes')
     environ.setdefault(
-        'MS_DOCKER_STAGE0',
-        os.path.join(_CWD, 'docker/stage0.sh'))
-    environ.setdefault(
-        'MS_DOCKER_STAGE1',
-        os.path.join(_CWD, 'docker/stage1.sh'))
-    environ.setdefault(
-        'MS_DOCKER_STAGE2',
-        os.path.join(_CWD, 'docker/stage2.sh'))
-    environ.setdefault(
-        'MS_MAKINASTATES_BUILD_DISABLED', '0')
-    environ.setdefault(
-        'MS_DOCKER_STAGE3',
-        os.path.join(_CWD, 'docker/stage3.sh'))
-    environ.setdefault(
-        'MS_DOCKERFILE_STAGE0',
-        os.path.join(
-            _CWD,
-            'docker/Dockerfile.stage0'
-            .format(environ)))
+        'MS_MAKINASTATES_BUILD_FORCE', '')
+    default_stage_path = os.path.join(_CWD, 'docker')
+    stage_paths = []
+    for p in [
+        J(MS_IMAGE_DIR, '.salt'),
+        environ.setdefault('MS_STAGE_PATH', default_stage_path),
+        default_stage_path
+    ]:
+        if os.path.exists(p) and p not in stage_paths:
+            stage_paths.append(p)
+    for env_key, fic in six.iteritems({
+        'MS_DOCKER_STAGE0': 'stage0.sh',
+        'MS_DOCKER_STAGE1': 'stage1.sh',
+        'MS_DOCKER_STAGE2': 'stage2.sh',
+        'MS_DOCKER_STAGE3': 'stage3.sh',
+        'MS_DOCKERFILE_STAGE0': 'Dockerfile.stage0',
+    }):
+        for stage_path in stage_paths:
+            pretendant = environ.setdefault(env_key, J(stage_path, fic))
+            if os.path.exists(pretendant):
+                break
     environ.setdefault(
         'MS_STAGE0_TAG',
         'makinacorpus/'
@@ -257,17 +270,9 @@ def main(argv=None,
     environ.setdefault(
         'MS_GIT_URL',
         'https://github.com/makinacorpus/makina-states.git')
-    MS_IMAGE = environ.setdefault(
-        'MS_IMAGE',
-        'makinacorpus/'
-        'makina-states-{0[MS_OS]}-{0[MS_OS_RELEASE]}'.format(environ))
     environ.setdefault(
         'MS_IMAGE_CANDIDATE',
         MS_IMAGE.split(':')[0] + ':candidate')
-    MS_IMAGE_DIR = environ.setdefault(
-        'MS_IMAGE_DIR',
-        os.path.join(environ['MS_DATA_DIR'],
-                     environ['MS_IMAGE']))
     environ.setdefault(
         'MS_BASEIMAGE',
         'baseimage-{0[MS_OS]}-{0[MS_OS_RELEASE]}.tar.xz'
@@ -312,18 +317,16 @@ def main(argv=None,
         pipe.write('\n')
     stage_files = OrderedDict()
     stage_files['lxc-cleanup.sh'] = os.path.join(
-        _CWD,
-        'files/sbin/lxc-cleanup.sh')
+        _CWD, 'files/sbin/lxc-cleanup.sh')
     stage_files['makinastates-snapshot.sh'] = os.path.join(
-        _CWD,
-        'files/sbin/makinastates-snapshot.sh')
+        _CWD, 'files/sbin/makinastates-snapshot.sh')
     stage_files['Dockerfile.stage0'] = environ['MS_DOCKERFILE_STAGE0']
-    stage_files['stage0.sh'] = environ['MS_DOCKER_STAGE0']
-    stage_files['stage1.sh'] = environ['MS_DOCKER_STAGE1']
-    stage_files['stage2.sh'] = environ['MS_DOCKER_STAGE2']
-    stage_files['stage3.sh'] = environ['MS_DOCKER_STAGE3']
-    for i in stage_files:
-        j = os.path.join(MS_BOOTSTRAP_DIR, i)
+    stage_files[J(MS_BOOTSTRAP_DIR, 'stage0.sh')] = environ['MS_DOCKER_STAGE0']
+    stage_files[J(MS_BOOTSTRAP_DIR, 'stage1.sh')] = environ['MS_DOCKER_STAGE1']
+    stage_files[J(MS_BOOTSTRAP_DIR, 'stage2.sh')] = environ['MS_DOCKER_STAGE2']
+    stage_files[J(MS_BOOTSTRAP_DIR, 'stage3.sh')] = environ['MS_DOCKER_STAGE3']
+    for j in stage_files:
+        i = os.path.basename(j)
         k = stage_files[i]
         d = os.path.dirname(j)
         if not os.path.exists(k):
@@ -333,7 +336,7 @@ def main(argv=None,
             cyan('{0}: creating {1}'.format(MS_IMAGE, d), pipe=pipe)
             os.makedirs(d)
         docp = True
-        if os.path.exists(j) and os.path.exists(k):
+        if os.path.isfile(j) and os.path.exists(j) and os.path.exists(k):
             docp = False
             with open(j) as jo:
                 with open(k) as ko:
@@ -344,9 +347,7 @@ def main(argv=None,
             yellow('{0}: {1} already in place'.format(MS_IMAGE, i), pipe=pipe)
         else:
             q_die_run(
-                '{0} {1} {2}'.format(cpcmd,
-                                     pipes.quote(k),
-                                     pipes.quote(j)),
+                '{0} {1} {2}'.format(cpcmd, pipes.quote(k), pipes.quote(j)),
                 env=environ,
                 pipe=pipe,
                 errpipe=errpipe,

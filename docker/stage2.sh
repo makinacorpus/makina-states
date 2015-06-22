@@ -19,14 +19,14 @@ cyan() { echo -e "${CYAN}${@}${NORMAL}"; }
 green() { echo -e "${GREEN}${@}${NORMAL}"; }
 yellow() { echo -e "${YELLOW}${@}${NORMAL}"; }
 die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
-warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";exit 1;fi }
+warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";fi }
 v_run() { green "${@}"; "${@}"; }
 v_die_run() { v_run "${@}"; die_in_error "command ${@} failed"; }
 
 echo;echo
-yellow "-----------------------------------------------"
-yellow "-   STAGE 2  - BUILDING                        -"
-yellow "-----------------------------------------------"
+yellow "-------------------------------------"
+yellow "-   STAGE 2  - BUILDING             -"
+yellow "-------------------------------------"
 echo
 
 # prerequisites
@@ -70,19 +70,34 @@ export DEBIAN_FRONTEND=noninteractive
 
 # when debugging systemd boot, this make a breakpoint here.
 # for i in  $(seq 30000);do echo $i;sleep 60;done
-
 for i in /srv/pillar /srv/mastersalt-pillar /srv/projects;do
     if [ ! -d ${i} ];then mkdir ${i};fi
 done
-# 2. Refresh makina-states code
-if [ "x${MS_MAKINASTATES_BUILD_DISABLED}" != "x0" ];then
+
+# We do not automatically trigger makina-states rebuild as it is
+# an heavy and error prone process.
+# We prefer to rely on those simple rules
+#   - If we are a base makina-states image, rebuild
+#   - If the installation seems broken, rebuild
+if [ "x$(echo "${MS_IMAGE}" | sed -re "s/[^/]*\///g")" = "xmakina-states-${MS_OS}-${MS_OS_RELEASE}" ];then
+    MS_MAKINASTATES_BUILD_FORCE="y"
+else
+    for pref in /srv/salt /salt/mastersalt;do
+        for i in bin/salt bin/salt-call src/salt;do
+            if [ ! -e ${pref}/${i} ];then MS_MAKINASTATES_BUILD_FORCE="y";fi
+        done
+    done
+fi
+
+# 2. Refresh makina-states code if needed
+if [ "x${MS_MAKINASTATES_BUILD_FORCE}" = "x" ];then
     yellow "${MS_IMAGE}: makina-states integration is skipped, skipping makina-states install"
 else
     for pref in /srv/salt /salt/mastersalt;do
         if [ ! -d ${pref} ];then mkdir -p ${pref};fi
         bs="${pref}/makina-states/_scripts/boot-salt.sh"
         if [ ! -e ${bs} ];then
-            git clone /docker/makina-states/.git ${pref}/makina-states &&\
+            git clone /docker/makina-states/.git "${pref}/makina-states" &&\
                 cd ${pref}/makina-states &&\
                 git remote rm origin &&\
                 warn_in_error \
@@ -100,6 +115,20 @@ else
     # for i in  $(seq 30000);do echo $i;sleep 60;done
     die_in_error "${MS_IMAGE}: failed installing makina-states"
 fi
+# if image root is a corpus based project, we push the code inside the image and
+# initialise the corpus project
+if [ -e "/docker/data/.git" ] && [ -e "/docker/data/.salt/PILLAR.sample" ];then
+    commit=$(git log HEAD|head -n1|awk '{print $2}')
+    cd /docker/data
+    if [ ! -e /srv/projects/app/project ];then
+        salt-call --local mc_project.deploy app
+    fi &&\
+        v_run cd /srv/projects/app/project &&\
+        ( git remote rm app || /bin/true ) &&\
+        git remote add app /docker/data/.git &&\
+        git fetch --all &&\
+        v_run git reset --hard "${commit}"
+fi
 echo
 purple "--------------------"
 purple "- stage2 complete  -"
@@ -110,7 +139,7 @@ if [ -x /bootstrap_scripts/docker_build_stage3.sh ];then
     /bootstrap_scripts/docker_build_stage3.sh
     die_in_error "${MS_IMAGE}: Stage3 building failed"
 fi
-if [ "x${MS_DO_SNAPSHOT:-yes}" = "xyes" ] && [ -f /bootstrap_scripts/makinastates-snapshot.sh ];then
+if [ "x${MS_DO_SNAPSHOT}" = "xyes" ] && [ -f /bootstrap_scripts/makinastates-snapshot.sh ];then
     /bootstrap_scripts/makinastates-snapshot.sh
 fi
 v_run getfacl -R / > /acls.txt || /bin/true

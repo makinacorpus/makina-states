@@ -79,22 +79,26 @@ to get their projects into a contineous deployment pipeline::
     |  |- injected_volumes/    <- All what is beneath this level
     |      |- /srv/projects/foobar    will be commited as-is to the image1 image
     |      |- /bootstrap_scripts/
-    |          |- Dockerfile
+    |          |- Dockerfile.stage0
     |          |- stage0.sh        <- build scripts used for image1
-    |          |- stage1.sh           If they are not already present, default ones are used
-    |          |- stage2.sh
-    |          |- stage3.sh
+    |          |- stage1.sh           they are always overriden by latest
+    |          |- stage2.sh           version of either corpus projects
+    |          |- stage3.sh           or default ones (makina-states/docker)
     |
     |
     |- image2/
+       |- myapp.{js, php, py} -> various code sources files, your project
+       |
+       |- .git <- as there is also a .salt folder, this signals that this image
+       |          wants to build a corpus based project and will deploy the current
+       |          changeset inside the image
        |
        |- injected_volumes/    <- All what is beneath this level
        |   |- /srv/projects/foobar    will be commited as-is to the image1 image
        |   |- /bootstrap_scripts/
        |
-       |- overrides/
-          |- /bootstrap_scripts/
-               |- Dockerfile
+       |- .salt/
+               |- Dockerfile.stage0
                |- stage0.sh        <- will override everything that is in
                |- stage1.sh           injected_volumes/bootstrap_scripts/
                |- stage2.sh
@@ -151,13 +155,12 @@ The procedure will then almost initially look like:
            Those acls are heavily used in makina-states setups.
         - Spawn an init as in **PID=1** (currently: **systemd**)
         - Launch makina-states installation and refresh unless users
-          disabled it via the **MS_MAKINASTATES_BUILD_DISABLED** envionment
-          variable
+          enable it via the **MS_MAKINASTATES_BUILD_FORCE** envionment
+          variable (set it to no empty string)
         - Execute **/docker/injected_volumes/bootstrap_scripts/stage3.sh**
           and so enter what we call **stage3**  which by default:
 
-            - (RE)Install any corpus based project unless users
-               disabled it via the **MS_MAKINASTATES_BUILD_DISABLED**
+            - (RE)Install any corpus based project
             - May execute a basic test suite to test (only the build) that
               everything is in place, but basically the **stage3** script
               is in control from the user and the stage file that has
@@ -185,6 +188,8 @@ In most cases, you certainly only:
    place::
 
      DATADIR/<image>/overrides/bootstrap_scripts/stage3.sh
+
+To build an image, you set environment variables, and then run
 
 .. code-block:: bash
 
@@ -303,12 +308,15 @@ Adding data files to commited image
 ---------------------------------------
 Anything (file, dir, symlink) that is placed in the **/docker/injected_volumes**
 image data directory will be commited with the image.
+The files are copied before **stage2** execution, thus you have them available at build time in their real place inside the root of the conrainer.
 
-The files are copied before **stage2** execution, thus you have them available at build time.
+Anything that is beyong the **IMAGE_DIR** is available through a volume
+(mountpoint)  in the **/docker/data** path inside **stage2** and onwards.
 
-All you have to do is to place what you want to go in your imag in this location::
+All you have to do is to place what you want to go in your image in this location::
 
-    DATADIR/<IMAGE>/injected_volumes/<stuff>
+    $DATADIR(/path/makinastates/data)/<IMAGE>/injected_volumes/<stuff>
+
 
 For example, you will have to place your **fic.txt** in the "**project2** image in, that will live in /foo::
 
@@ -342,5 +350,33 @@ Subdirectories are supported as well (for subrepos).
 Eg, for example, you will have to place your **stage3.sh** brewed copy override the **stage3** in the "**mycy/p2** image in::
 
     /srv/mastersalt/makina-states/data/mycy/p2/overrides/bootstrap_scripts/stage3.sh
+
+
+Integration with corpus projects (MAKINA PEOPLE, READ THIS)
+--------------------------------------------------------------------
+For corpus based projects based on git, it's even more easier
+The idea is that the root of the image is a clone from your git repo,
+and is pushed back inside the built image.
+
+For now, you can only deploy one project per image, which will be called
+**app** by convention.
+
+This can of course be only a small orchestration project that orchestrate
+deployment of other project inside the image during the build, but it will
+simplify all the files you ll need to place in the injected folder for
+the image assembler to grab them.
+
+You just have to clone your image code in the data folder in the project tag::
+
+    git clone http://goo/foo.git /srv/mastersalt/makina-states/data/mycompany/myproject3
+
+- Inject in there all additionnal files like pillars::
+
+    /srv/mastersalt/makina-states/data/srv/projects/app/pillar/init.sls
+
+- For custom stages, you dont need to use overrides as they will be searched
+  inside your .salt folder, so you only need to drop a "stage3.sh" inside your
+  .salt folder along your codebase.
+
 
 
