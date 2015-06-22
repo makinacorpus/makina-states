@@ -365,7 +365,7 @@ Please note that you can only deploy one project per image, which will be called
 **app** by convention.
 
 This can of course be only a small orchestration project that orchestrate
-deployment of other project inside the image during the build, but it will
+building of other project inside the image during the build, but it will
 drastically simplify all the files you ll need to place in the injected folder
 for the image assembler to grab them later in the build process.
 
@@ -382,8 +382,25 @@ to the project repository, and the image name, eg for **mycompany/project3**::
 
 - For custom stages, you just need to drop them inside your .salt folder.
   For example, to customize the stage3,  you only need to drop a **stage3.sh**
-  inside your .salt folder along your codebase.
+  inside your **.salt** folder alongside your codebase.
 
 - Then build your image::
 
       MS_IMAGE="mycompany/myproject3" /srv/mastersalt/makina-states/docker/stage.py
+
+Initialise a basic corpus project layout from the stage scripts
+----------------------------------------------------------------
+
+To bring bacck everything to everyone, dockerized containers only need
+what's needed for the fixperms & install steps::
+
+    mkdir myproject
+    docker run --rm -ti  -v $PWD/myproject:/srv/projects/myproject makinacorpus/makina-states-ubuntu-vivid bash
+    salt-call --local mc_project.deploy app
+    exit
+
+You will have all the neccessary files inside the myproject folder to include them
+inside your code repository and hack them to apply your deployment rules.
+
+
+
