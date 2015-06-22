@@ -316,18 +316,22 @@ def main(argv=None,
     if breakl:
         pipe.write('\n')
     stage_files = OrderedDict()
-    stage_files['lxc-cleanup.sh'] = os.path.join(
-        _CWD, 'files/sbin/lxc-cleanup.sh')
-    stage_files['makinastates-snapshot.sh'] = os.path.join(
-        _CWD, 'files/sbin/makinastates-snapshot.sh')
-    stage_files['Dockerfile.stage0'] = environ['MS_DOCKERFILE_STAGE0']
+    stage_files[
+        J(MS_BOOTSTRAP_DIR, 'lxc-cleanup.sh')] = os.path.join(
+            _CWD, 'files/sbin/lxc-cleanup.sh')
+    stage_files[
+        J(MS_BOOTSTRAP_DIR, 'makinastates-snapshot.sh')] = os.path.join(
+            _CWD, 'files/sbin/makinastates-snapshot.sh')
+    stage_files[
+        J(MS_BOOTSTRAP_DIR, 'Dockerfile.stage0')] = environ[
+            'MS_DOCKERFILE_STAGE0']
     stage_files[J(MS_BOOTSTRAP_DIR, 'stage0.sh')] = environ['MS_DOCKER_STAGE0']
     stage_files[J(MS_BOOTSTRAP_DIR, 'stage1.sh')] = environ['MS_DOCKER_STAGE1']
     stage_files[J(MS_BOOTSTRAP_DIR, 'stage2.sh')] = environ['MS_DOCKER_STAGE2']
     stage_files[J(MS_BOOTSTRAP_DIR, 'stage3.sh')] = environ['MS_DOCKER_STAGE3']
     for j in stage_files:
         i = os.path.basename(j)
-        k = stage_files[i]
+        k = stage_files[j]
         d = os.path.dirname(j)
         if not os.path.exists(k):
             die('{0}: script {1} ({2})'

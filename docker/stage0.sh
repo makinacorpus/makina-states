@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 # THIS SCRIPT CAN BE OVERRIDEN IN ANY MAKINA-STATES BASED IMAGES
-# Copy/Edit it inside the overrides directory inside you image data directory:
-# ${MS_DATA_DIR}/${MS_IMAGE}
-# EG:
-#  cp stage0.sh /srv/foo/makina-states/data/mycompany/mydocker/overrides/bootstrap_scripts/stage0.sh
-#  $ED /srv/foo/makina-states/data/mycompany/mydocker/overrides/bootstrap_scripts/stage0.sh
+# Copy/Edit it inside the overrides directory either:
+#   - inside you image data directory, inside the image_roots/bootstrap_scripts
+#   - inside your corpus based repository, inside the .salt folder
 
 RED='\e[31;01m'
 PURPLE='\e[33;01m'
@@ -78,6 +76,7 @@ v_run docker run \
  -e MS_IMAGE_CANDIDATE="${MS_IMAGE_CANDIDATE}" \
  -e MS_MAKINASTATES_BUILD_FORCE="${MS_MAKINASTATES_BUILD_FORCE}" \
  -v "${MS_DATA_DIR}":/docker/data \
+ -v "${MS_DATA_DIR}/${MS_IMAGE}":/docker/image \
  -v "${MS_DATA_DIR}/${MS_IMAGE}/injected_volumes":/docker/injected_volumes \
  -v "${cwd}":/docker/makina-states \
  -v /sys/fs:/sys/fs:ro \

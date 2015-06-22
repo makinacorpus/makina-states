@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 # THIS SCRIPT CAN BE OVERRIDEN IN ANY MAKINA-STATES BASED IMAGES
-# Copy/Edit it inside the overrides directory inside you image data directory:
-# ${MS_DATA_DIR}/${MS_IMAGE}
-# EG:
-#  cp stage2.sh /srv/foo/makina-states/data/mycompany/mydocker/overrides/bootstrap_scripts/stage2.sh
-#  $ED /srv/foo/makina-states/data/mycompany/mydocker/overrides/bootstrap_scripts/stage2.sh
+# Copy/Edit it inside the overrides directory either:
+#   - inside you image data directory, inside the image_roots/bootstrap_scripts
+#   - inside your corpus based repository, inside the .salt folder 
 
 RED='\e[31;01m'
 CYAN='\e[36;01m'
@@ -93,7 +91,7 @@ fi
 if [ "x${MS_MAKINASTATES_BUILD_FORCE}" = "x" ];then
     yellow "${MS_IMAGE}: makina-states integration is skipped, skipping makina-states install"
 else
-    for pref in /srv/salt /salt/mastersalt;do
+    for pref in /srv/salt /srv/mastersalt;do
         if [ ! -d ${pref} ];then mkdir -p ${pref};fi
         bs="${pref}/makina-states/_scripts/boot-salt.sh"
         if [ ! -e ${bs} ];then
@@ -104,12 +102,9 @@ else
                     "${MS_IMAGE}: problem while initing makina-states code (${pref})"
         fi
     done
-    ${bs} -C --refresh-modules -b "${MS_GIT_BRANCH}"
-    warn_in_error "${MS_IMAGE}: failed to fetch up-to-data makina-states code"
-
-    # 3. mastersalt + salt highstates & masterless mode
+    # setup mastersalt + salt highstates & masterless mode
     # for i in  $(seq 30000);do echo $i;sleep 60;done
-    ${bs} -C --mastersalt 127.0.0.1 -n dockercontainer\
+    ${bs} -C -b "${MS_GIT_BRANCH}"  --mastersalt 127.0.0.1 -n dockercontainer\
         --local-mastersalt-mode masterless --local-salt-mode masterless
     # when debugging installation boot, this make a breakpoint here.
     # for i in  $(seq 30000);do echo $i;sleep 60;done
@@ -117,11 +112,11 @@ else
 fi
 # if image root is a corpus based project, we push the code inside the image and
 # initialise the corpus project
-if [ -e "/docker/data/.git" ] && [ -e "/docker/data/.salt/PILLAR.sample" ];then
-    commit=$(git log HEAD|head -n1|awk '{print $2}')
-    cd /docker/data
+if [ -e "/docker/image/.git" ] && [ -e "/docker/data/.salt/PILLAR.sample" ];then
+    commit=$(cd /docker/image && git log HEAD|head -n1|awk '{print $2}')
     if [ ! -e /srv/projects/app/project ];then
         salt-call --local mc_project.deploy app
+        die_in_error "${MS_IMAGE}: project layout creation failure"
     fi &&\
         v_run cd /srv/projects/app/project &&\
         ( git remote rm app || /bin/true ) &&\
