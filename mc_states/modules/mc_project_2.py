@@ -1336,7 +1336,7 @@ def git_commit(git,
     try:
         if commit_all:
             _s['git.add'](git, '.', opts=opts, user=user)
-        status = _s['cmd.run']('git st',
+        status = _s['cmd.run']('git status',
                                env={'LANG': 'C', 'LC_ALL': 'C'},
                                runas=user,
                                cwd=git)
