@@ -74,7 +74,7 @@ to get their projects into a contineous deployment pipeline::
  |- data/
     |- globalimage.xxx.yyy.xz <- The OS base tarball (like a lxc container
     |                                                 export)
-    |- image1/
+    |- image1/ (manual image)
     |  |
     |  |- injected_volumes/    <- All what is beneath this level
     |      |- /srv/projects/foobar    will be commited as-is to the image1 image
@@ -86,7 +86,8 @@ to get their projects into a contineous deployment pipeline::
     |          |- stage3.sh           or default ones (makina-states/docker)
     |
     |
-    |- image2/
+    |- image2/ (image based on a git clone of a corpus based project)
+       |
        |- myapp.{js, php, py} -> various code sources files, your project
        |
        |- .git <- as there is also a .salt folder, this signals that this image
@@ -187,7 +188,7 @@ In most cases, you certainly only:
    to construct an image. The more convenient way is to drop a file at this
    place::
 
-     DATADIR/<image>/overrides/bootstrap_scripts/stage3.sh
+     DATADIR/<image>/image_rootfs/bootstrap_scripts/stage3.sh
 
 To build an image, you set environment variables, and then run
 
@@ -250,14 +251,14 @@ Additionnaly, in stage1 (read-only):
 You can feed the image with preconfigured pillars & project trees
 by creating files inside for example:
 
-    - **<DATADIR>/<IMAGE_NAME>/overrides/srv/pillar**
-    - **<DATADIR>/<IMAGE_NAME>/overrides/srv/mastersalt-pillar**
-    - **<DATADIR>/<IMAGE_NAME>/overrides/srv/projects**
+    - **<DATADIR>/<IMAGE_NAME>/image_rootfs/srv/pillar**
+    - **<DATADIR>/<IMAGE_NAME>/image_rootfs/srv/mastersalt-pillar**
+    - **<DATADIR>/<IMAGE_NAME>/image_rootfs/srv/projects**
 
 Technically:
  - all what is behind **/docker/injected_volumes** is copied, via rsync
    with ACL support to the **root (/)** of the image.
- - Any file or directory inside $IMAGEDIR/overrides will override the same
+ - Any file or directory inside $IMAGEDIR/image_rootfs will override the same
    file at the same place in the same level **injected_volumes** directory.
    The folders are synced via rsync at build time.
 
@@ -327,56 +328,62 @@ The principal application is to inject your project code and it's pillar configu
     /srv/mastersalt/makina-states/data/project2/injected_volumes/srv/projects/project2/project/...
     /srv/mastersalt/makina-states/data/project2/injected_volumes/srv/projects/project2/pillar/init.sls
 
-Overriding stage scripts
------------------------------
-Anything that is placed in the **overrides** image data directory will override things which are placed
-at first in the **/docker/injected_volumes** directory.
+Overriding stage scripts, the low level and manual way
+------------------------------------------------------
+Anything that is placed in the **image_rootfs** image data directory will override
+contents which are placedt first in the **/docker/injected_volumes** directory.
 
-The reasoning of this is to provide a simple mean to give custom stage scripts while most user can still use default script files.
+The reasoning of this is to provide a simple mean to give custom stage scripts
+while most users can still use default script files, and we still use the
+last version of those script on a rolling release fashion.
 
 For example, if you want to override for example the **stage3** script,
 all you have to do is to place a script in the datadir, in this location::
 
-    DATADIR/<IMAGE>/overrides/bootstrap_scripts/<stage>
+    DATADIR/<IMAGE>/image_rootfs/bootstrap_scripts/<stage>
 
 For example, you will have to place your **stage3.sh** brewed copy override the **stage3** in the **project2** image in::
 
-    /srv/mastersalt/makina-states/data/project2/overrides/bootstrap_scripts/stage3.sh
+Eg, for example, to customize stage3, you will have to place your **stage3.sh**
+versions which overrides the default one like this::
 
-Assuming that your makina-states installation copy is installed in **/srv/mastersalt**.
-
-Subdirectories are supported as well (for subrepos).
-
-Eg, for example, you will have to place your **stage3.sh** brewed copy override the **stage3** in the "**mycy/p2** image in::
-
-    /srv/mastersalt/makina-states/data/mycy/p2/overrides/bootstrap_scripts/stage3.sh
-
+    cp /srv/mastersalt/makina-states/docker/stage3.sh /srv/mastersalt/makina-states/data/mycy/p2/image_rootfs/bootstrap_scripts/stage3.sh
+    $ED /srv/mastersalt/makina-states/data/mycy/p2/image_rootfs/bootstrap_scripts/stage3.sh
 
 Integration with corpus projects (MAKINA PEOPLE, READ THIS)
---------------------------------------------------------------------
+------------------------------------------------------------
 For corpus based projects based on git, it's even more easier
 The idea is that the root of the image is a clone from your git repo,
 and is pushed back inside the built image.
 
-For now, you can only deploy one project per image, which will be called
+This allow you to:
+
+    - Build automatically images based on a corpus project
+    - Place **stage** builder files inside your **.salt** directory
+
+Please note that you can only deploy one project per image, which will be called
 **app** by convention.
 
 This can of course be only a small orchestration project that orchestrate
 deployment of other project inside the image during the build, but it will
-simplify all the files you ll need to place in the injected folder for
-the image assembler to grab them.
+drastically simplify all the files you ll need to place in the injected folder
+for the image assembler to grab them later in the build process.
 
-You just have to clone your image code in the data folder in the project tag::
+Example:
+
+You just have to clone your image code in the data folder in the data according
+to the project repository, and the image name, eg for **mycompany/project3**::
 
     git clone http://goo/foo.git /srv/mastersalt/makina-states/data/mycompany/myproject3
 
-- Inject in there all additionnal files like pillars::
+- Copy and arrange in there all additionnal files like pillars::
 
     /srv/mastersalt/makina-states/data/srv/projects/app/pillar/init.sls
 
-- For custom stages, you dont need to use overrides as they will be searched
-  inside your .salt folder, so you only need to drop a "stage3.sh" inside your
-  .salt folder along your codebase.
+- For custom stages, you just need to drop them inside your .salt folder.
+  For example, to customize the stage3,  you only need to drop a **stage3.sh**
+  inside your .salt folder along your codebase.
 
+- Then build your image::
 
-
+      MS_IMAGE="mycompany/myproject3" /srv/mastersalt/makina-states/docker/stage.py

@@ -286,8 +286,8 @@ def main(argv=None,
         environ['MS_IMAGE'].replace('/', '') + '-stage2-' + id_)
     MS_INJECTED_DIR = environ['MS_INJECTED_DIR'] = os.path.join(
         environ['MS_IMAGE_DIR'], 'injected_volumes')
-    MS_OVERRIDES = environ['MS_OVERRIDES'] = os.path.join(
-        environ['MS_IMAGE_DIR'], 'overrides')
+    MS_IMAGE_ROOTFS = environ['MS_IMAGE_ROOTFS'] = os.path.join(
+        environ['MS_IMAGE_DIR'], 'image_rootfs')
     MS_BOOTSTRAP_DIR = environ['MS_BOOTSTRAP_DIR'] = os.path.join(
         MS_INJECTED_DIR, 'bootstrap_scripts')
     environ['cwd'] = environ['CWD'] = _CWD
@@ -356,19 +356,19 @@ def main(argv=None,
                             MS_IMAGE, i, k, j)))
             cyan('{0}: copied {1} -> {2}'.format(MS_IMAGE, k, j), pipe=pipe)
     pipe.write('\n')
-    if os.path.exists(MS_OVERRIDES):
+    if os.path.exists(MS_IMAGE_ROOTFS):
         q_die_run(
             '{0} {1}/ {2}/'.format(cpcmd,
-                                   pipes.quote(MS_OVERRIDES),
+                                   pipes.quote(MS_IMAGE_ROOTFS),
                                    pipes.quote(MS_INJECTED_DIR)),
             env=environ,
             pipe=pipe,
             errpipe=errpipe,
             reason=('{0}: script ({1} -> {2})'
                     ' cant be overriden'.format(
-                        MS_IMAGE, MS_OVERRIDES, MS_INJECTED_DIR)))
+                        MS_IMAGE, MS_IMAGE_ROOTFS, MS_INJECTED_DIR)))
         cyan('{0}: overidden\n {1}\n  -> {2}\n'.format(
-            MS_IMAGE, MS_OVERRIDES, MS_INJECTED_DIR), pipe=pipe)
+            MS_IMAGE, MS_IMAGE_ROOTFS, MS_INJECTED_DIR), pipe=pipe)
     if argv[1:]:
         environ['MS_DOCKER_ARGS'] += ' {0}'.format(' '.join(argv[1:]))
 

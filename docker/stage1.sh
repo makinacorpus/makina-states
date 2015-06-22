@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # THIS SCRIPT CAN BE OVERRIDEN IN ANY MAKINA-STATES BASED IMAGES
-# Copy/Edit it inside the overrides directory inside you image data directory:
+# Copy/Edit it inside the image_rootfs directory inside you image data directory:
 # ${MS_DATA_DIR}/${MS_IMAGE}
 # EG:
-#  cp stage1.sh /srv/foo/makina-states/data/mycompany/mydocker/overrides/bootstrap_scripts/stage1.sh
-#  $ED /srv/foo/makina-states/data/mycompany/mydocker/overrides/bootstrap_scripts/stage1.sh
+#  cp stage1.sh /srv/foo/makina-states/data/mycompany/mydocker/image_rootfs/bootstrap_scripts/stage1.sh
+#  $ED /srv/foo/makina-states/data/mycompany/mydocker/image_rootfs/bootstrap_scripts/stage1.sh
 
 RED='\e[31;01m'
 PURPLE='\e[33;01m'
