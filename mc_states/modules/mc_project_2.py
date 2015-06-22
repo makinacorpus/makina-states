@@ -2734,7 +2734,7 @@ def clean_salt_git_commit(directory, commit=True, **kw):
     '''
     user, group = get_default_user_group(**kw)
     cret = OrderedDict()
-    cret['st'] = __salt__['cmd.run']('git st',
+    cret['st'] = __salt__['cmd.run']('git status',
                                      env={'LANG': 'C', 'LC_ALL': 'C'},
                                      runas=user,
                                      cwd=directory, python_shell=True)
