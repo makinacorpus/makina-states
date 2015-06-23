@@ -6,17 +6,16 @@ include:
 
 docker-services-net:
   service.running:
-    - names:
-      - docker-net-makina
+    - name: docker-net-makina
     - enable: True
     - watch:
       - mc_proxy: docker-pre-hardrestart
     - watch_in:
       - mc_proxy: docker-post-hardrestart
+
 docker-services:
   service.running:
-    - names:
-      - docker
+    - name: docker
     - enable: True
     - watch:
       - service: docker-services-net
@@ -24,17 +23,16 @@ docker-services:
     - watch_in:
       - mc_proxy: docker-post-hardrestart
 
+# sometimes docker dies just quick, and relaunching it make things go smooth
 docker-restart:
-  cmd.run:
-    - name: |
-            set -e
-            service docker restart
-            touch {{ locs.conf_dir }}/.docker-installed
-    - unless: ps aux|grep -q -- "docker -d -r"
+  service.running:
+    - name: service docker restart
+    - unless: ps aux|egrep -q  -- "docker .*-d"
     - require:
       - service: docker-services
     - require_in:
       - mc_proxy: docker-post-inst
+
 {% for i in ['ubuntu'] %}
 docker-preload-images-{{i.replace(':', '-')}}:
   docker.pulled:

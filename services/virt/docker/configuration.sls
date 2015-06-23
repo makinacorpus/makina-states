@@ -20,6 +20,16 @@ include:
 {# recently on ubuntu systemd units are disabled for
    docker, wtf ... #}
 
+docker-conf:
+  file.managed:
+    - name: /etc/init/docker.conf
+    - source: salt://makina-states/files/etc/init/docker.conf
+    - makedirs: true
+    - watch:
+      - mc_proxy: docker-pre-conf
+    - watch_in:
+      - mc_proxy: docker-post-conf
+
 docker-remove-symlinks2:
   file.absent:
     - name: /etc/systemd/system/docker.service
@@ -60,12 +70,33 @@ docker-conf-{{f}}:
       - mc_proxy: docker-post-conf
 {% endfor %}
 
-{%- set locs = salt['mc_locations.settings']() %}
-docker-conf:
-  file.managed:
-    - name: {{ locs.upstart_dir }}/docker.conf
-    - source: salt://makina-states/files/etc/init/docker.conf
+{% set url='https://github.com/makinacorpus/docker/releases/download/mc_1/docker' %}
+{% set hash='c10272ed424d08d840f463c196553f5f' %}
+docker-replace-dist-binary:
+  cmd.run:
+    - name: |
+            i=0
+            while test -e "/usr/bin/docker.dist${i}";do
+               i=$((i+1))
+            done
+            cp -f /usr/bin/docker "/usr/bin/docker.dist${i}"
+    - onlyif: |
+           set -e
+           test -e /usr/bin/docker
+           test "x$(md5sum /usr/bin/docker|awk '{print $1}')" != "x{{hash}}"
     - watch:
+      - mc_proxy: docker-pre-conf
+    - watch_in:
+      - mc_proxy: docker-post-conf
+  file.managed:
+    - source: "{{url}}"
+    - name: /usr/bin/docker
+    - source_hash: "md5={{hash}}"
+    - user: root
+    - group: root
+    - mode: 755
+    - watch:
+      - cmd: docker-replace-dist-binary
       - mc_proxy: docker-pre-conf
     - watch_in:
       - mc_proxy: docker-post-conf
