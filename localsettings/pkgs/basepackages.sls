@@ -146,18 +146,10 @@ sys-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       {% if salt['mc_controllers.mastersalt_mode']() %}
-      - acpid
-      - lynx
       - lvm2
-      - smartmontools
       - zerofree
       - strace
-      - ncdu
-      - xfsprogs
-      - mc
-      - gdisk
       - pv
-      - links
       - bridge-utils
       {% endif %}
       - htop
@@ -173,8 +165,6 @@ sys-pkgs:
       - man-db
       - libopts25
       - manpages
-      - manpages-fr
-      - manpages-de
       {% if not nojq %}
       - jq
       {% endif %}
@@ -182,7 +172,6 @@ sys-pkgs:
       - mlocate
       - psmisc
       - debootstrap
-      - mailutils
       - gnupg
       - pwgen
       - virt-what
@@ -192,7 +181,6 @@ sys-pkgs:
       - bsdtar
       - socat
       - screen
-      - tmux
       - tzdata
       - tree
       - unzip
@@ -248,7 +236,6 @@ net-pkgs:
       - openssh-client
       - ntp
       - vlan
-      - wakeonlan
       {% endif %}
 
 salt-pkgs:

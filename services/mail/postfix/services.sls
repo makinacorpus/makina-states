@@ -20,4 +20,14 @@ makina-postfix-service:
       - mc_proxy: postfix-postrestart
     - watch:
       - mc_proxy: postfix-prerestart
+
+
+makina-postfix-cli-client:
+  pkg.latest:
+    - pkgs: [mailutils]
+    - watch_in:
+      - service: makina-postfix-service
+      - mc_proxy: postfix-postrestart
+    - watch:
+      - mc_proxy: postfix-prerestart 
 {% endif %}

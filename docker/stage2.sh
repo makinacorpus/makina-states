@@ -53,7 +53,10 @@ no_kill() {
 breakpoint() {
     touch /breakpoint
     while test -e /breakpoint;do
-        echo "rm -f /breakpoint to continue"
+        echo "To attach the container"
+        echo "docker exec -ti ${MS_STAGE2_NAME} bash"
+        echo "To continue, exec in the container"
+        echo "rm -f /breakpoint"
         sleep 1
     done
 }
@@ -82,19 +85,20 @@ if echo "${MS_COMMAND}" | grep -q "systemd";then
             systemdstarted="1"
             break
         else
-            if [ $i -gt 5 ];then
-                # dbus is flaky on trusty host / vivid container, this is an ugly workaround
-                systemctl stop dbus
-                sleep 0.5
-                ps aux|grep dbus|awk '{print $2}'|xargs kill -9
-                systemctl start dbus
-                sleep 2
-            fi
+            # the systemd dir creation seems to make dbus work
+            # if [ $i -gt 5 ];then
+            #     # dbus is flaky on trusty host / vivid container, this is an ugly workaround
+            #     systemctl stop dbus
+            #     sleep 0.5
+            #     ps aux|grep dbus|awk '{print $2}'|xargs kill -9
+            #     systemctl start dbus
+            #     sleep 2
+            # fi
+            sleep 1
         fi
-        sleep 1
     done
     if [ "x${systemdstarted}" = "x" ];then
-        die_in_error "${MS_IMAGE}: systemd failed starting up"
+        red "${MS_IMAGE}: systemd failed starting up";exit 1
     fi
 fi
 export DEBIAN_FRONTEND=noninteractive
@@ -140,7 +144,7 @@ else
     ${bs} -C -b "${MS_GIT_BRANCH}"  --mastersalt 127.0.0.1 -n dockercontainer\
         --local-mastersalt-mode masterless --local-salt-mode masterless
     # when debugging installation boot, this make a breakpoint here.
-    # breakpoint
+    breakpoint
     die_in_error "${MS_IMAGE}: failed installing makina-states"
 fi
 # if image root is a corpus based project, we push the code inside the image and
