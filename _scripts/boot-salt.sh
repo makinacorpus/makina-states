@@ -608,7 +608,7 @@ get_ms_branch() {
 get_bootsalt_mode() {
     bootsalt_mode="$(get_conf bootsalt_mode)"
     if [ "x${bootsalt_mode}" = "x" ];then
-        if [ "x${IS_MASTERSALT}" != "x" ];then
+        if [ "x${IS_MASTERSALT}" != "x" ] || [ "${IS_MASTERSALT_MINION}" != "x" ];then
             bootsalt_mode="mastersalt"
         else
             bootsalt_mode="salt"
@@ -1230,7 +1230,7 @@ recap_(){
     fi
     bs_log "DATE: ${CHRONO}"
     bs_log "LOCAL_SALT_MODE: $(get_local_salt_mode)"
-    if [ "x${IS_MASTERSALT}" != "x" ] || [ "x${IS_MASTERSALT_MINION}" != "x" ];then
+    if [ "x$(get_do_mastersalt)" != "xno" ];then
         bs_log "LOCAL_MASTERSALT_MODE: $(get_local_mastersalt_mode)"
     fi
     bs_log "SALT_NODETYPE: $(get_salt_nodetype)"
@@ -3867,7 +3867,7 @@ install_mastersalt_daemons() {
 }
 
 install_mastersalt_env() {
-    if [ "x${IS_MASTERSALT}" = "x" ] && [ "x${IS_MASTERSALT_MINION}" = "x" ];then return;fi
+    if [ "x$(get_do_mastersalt)" = "xno" ];then return;fi
     install_mastersalt_daemons
     lazy_start_mastersalt_daemons
     make_mastersalt_association

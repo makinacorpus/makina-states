@@ -156,7 +156,7 @@ else
     # setup mastersalt + salt highstates & masterless mode
     # breakpoint $?
     ${bs} -C -b "${MS_GIT_BRANCH}"  --mastersalt 127.0.0.1 -n dockercontainer\
-        --local-mastersalt-mode masterless --local-salt-mode masterless
+        --mastersalt-minion --local-mastersalt-mode masterless --local-salt-mode masterless
     # when debugging installation boot, this make a breakpoint here.
     breakpoint $?
     die_in_error "${MS_IMAGE}: failed installing makina-states"
