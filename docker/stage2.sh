@@ -2,7 +2,7 @@
 # THIS SCRIPT CAN BE OVERRIDEN IN ANY MAKINA-STATES BASED IMAGES
 # Copy/Edit it inside the overrides directory either:
 #   - inside you image data directory, inside the image_roots/bootstrap_scripts
-#   - inside your corpus based repository, inside the .salt folder 
+#   - inside your corpus based repository, inside the .salt folder
 
 RED='\e[31;01m'
 CYAN='\e[36;01m'
@@ -62,7 +62,32 @@ if [ -e /lib/lsb/init-functions.d/40-systemd  ];then
     fi
 fi
 if echo "${MS_COMMAND}" | grep -q "systemd";then
+    # dbus will need the directory to start
+    if [ ! -d /run/systemd/system/ ];then
+        mkdir /run/systemd/system/
+    fi
+    systemdstarted=""
     ( systemd --system& )
+    for i in $(seq 240);do
+        state=$(systemctl is-system-running)
+        if [ "x${state}" = "xdegraded" ] || [ "x${state}" = "xrunning" ];then
+            systemdstarted=""
+            break
+        else
+            if [ $i -gt 5 ];then
+                # dbus is flaky on trusty host / vivid container, this is an ugly workaround
+                systemctl stop dbus
+                sleep 0.5
+                ps aux|grep dbus|awk '{print $2}'|xargs kill -9
+                systemctl start dbus
+                sleep 2
+            fi
+        fi
+        sleep 1
+    done
+    if [ "x${systemdstarted}" = "x" ];then
+        die_in_error "${MS_IMAGE}: systemd failed starting up"
+    fi
 fi
 export DEBIAN_FRONTEND=noninteractive
 
@@ -107,7 +132,7 @@ else
     ${bs} -C -b "${MS_GIT_BRANCH}"  --mastersalt 127.0.0.1 -n dockercontainer\
         --local-mastersalt-mode masterless --local-salt-mode masterless
     # when debugging installation boot, this make a breakpoint here.
-    # for i in  $(seq 30000);do echo $i;sleep 60;done
+    for i in  $(seq 30000);do echo $i;sleep 60;done
     die_in_error "${MS_IMAGE}: failed installing makina-states"
 fi
 # if image root is a corpus based project, we push the code inside the image and

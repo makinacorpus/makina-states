@@ -210,6 +210,7 @@ if [ "x${is_docker}" != "x" ];then
     done
 fi
 for s in\
+    tmp.mount\
     sys-kernel-config.mount\
     multi-user.target.wants/systemd-ask-password-wall.path\
     systemd-journald-audit.socket\
