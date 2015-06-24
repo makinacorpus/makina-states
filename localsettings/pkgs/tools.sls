@@ -11,12 +11,24 @@ useful-pkgs:
       - irssi
       - ntfs-3g
       - ppp
+      - tmux
+      - manpages-fr
+      - lynx
+      - acpid
+      - smartmontools
+      - ncdu
+      - links
+      - xfsprogs
+      - mc
+      - gdisk
+      - manpages-de
       - pppconfig
       - pppoeconf
       - ufw
       - ethtool
       - traceroute
       - iftop
+      - wakeonlan
     - watch:
       - mc_proxy: before-pkg-install-proxy
     - watch_in:
