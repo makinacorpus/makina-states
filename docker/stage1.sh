@@ -100,7 +100,7 @@ if [ "x${add}" != "x" ];then a_d "ADD ${add} /";fi
 # install core pkgs & be sure to have up to date systemd on ubuntu systemd enabled
 a_d "RUN \\
     set -x &&\\
-    echo DOCKERFILE_ID=3\\
+    echo DOCKERFILE_ID=4\\
     && if which apt-get >/dev/null 2>&1;then\\
       sed -i -re\
           \"s/Pin: .*/Pin: release a=\$(lsb_release -sc)-proposed/g\"\
@@ -113,7 +113,7 @@ a_d "RUN \\
           acl rsync git e2fsprogs ca-certificates\\
       && if dpkg -l |grep systemd|awk '{print \$1 \$2}'|egrep -q '^iisystemd';\\
           then apt-get install -y --force-yes\\
-          systemd libpam-systemd systemd-sysv libsystemd0;fi;\\
+          systemd dbus libpam-systemd systemd-sysv libsystemd0;fi;\\
    fi\\
    && chmod 755 /sbin/lxc-cleanup.sh /usr/bin/ms-lxc-setup.sh\
                 /sbin/makinastates-snapshot.sh\\
