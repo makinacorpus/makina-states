@@ -49,6 +49,7 @@ fi
 
 # - Inject the wanted data inside the image
 if [ -e /docker/injected_volumes/ ];then
+    setfacl -R -bk /docker/injected_volumes
     v_run rsync -Aa /docker/injected_volumes/ /
 fi
 

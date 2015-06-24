@@ -77,8 +77,9 @@ fi
 #   - it's builder script & stage3 builder
 # if the md5 are matching, we can leverage docker cache.
 echo "FROM ${MS_BASE}" > "${dockerfile}"
+padd=""
 add=""
-if [ "x${MS_BASE}" = "xscratch" ];then add="${add} ${MS_BASEIMAGE_ADD}";fi
+if [ "x${MS_BASE}" = "xscratch" ];then padd="${padd} ${MS_BASEIMAGE_ADD}";fi
 # base survival apt configuration
 if [ "x${MS_OS}" = "xubuntu" ];then
     tar cvf  /docker/ubuntufiles.tar -C /docker/makina-states/docker/ubuntu .
@@ -96,11 +97,23 @@ if [ "x${MS_OS}" = "xubuntu" ];then
     die_in_error "${MS_IMAGE}: cant tar aptconf"
     add="${add} ubuntufiles.tar"
 fi
-if [ "x${add}" != "x" ];then a_d "ADD ${add} /";fi
+if [ "x${padd}" != "x" ];then a_d "ADD ${padd} /";fi
+# files layered should be added only after to conserve
+# unix permissions of containers, as makina-states repo does not
+# have them setted yet.
+# Additionaly, do not add directly the tarfile as permissions would
+# then also be messed inside the container, and we then only copy the files
+# to their final destinations afterwards
+#
+# One symptom of broken permissions is systemd+dbus not starting up correctly
+# In case of problems, check /etc permissions !
+#
+if [ "x${add}" != "x" ];then a_d "ADD ${add} /inject";fi
 # install core pkgs & be sure to have up to date systemd on ubuntu systemd enabled
 a_d "RUN \\
-    set -x &&\\
     echo DOCKERFILE_ID=4\\
+    && set -x\\
+    && cd inject && cp -rf * / && cd / && rm -rf /inject\\
     && if which apt-get >/dev/null 2>&1;then\\
       sed -i -re\
           \"s/Pin: .*/Pin: release a=\$(lsb_release -sc)-proposed/g\"\
@@ -129,7 +142,7 @@ a_d "RUN \\
           fi;\\
           ln -sf /etc/systemd/system/lxc-setup.service\\
           /etc/systemd/system/network-online.target.wants/lxc-setup.service;\\
-      fi\
+      fi\\
    && /sbin/makinastates-snapshot.sh
    "
 a_d "CMD /docker/injected_volumes/bootstrap_scripts/stage2.sh"
