@@ -20,7 +20,21 @@ die_in_error() { if [ "x${?}" != "x0" ];then red "${@}";exit 1;fi }
 warn_in_error() { if [ "x${?}" != "x0" ];then yellow "WARNING: ${@}";fi }
 v_run() { green "${@}"; "${@}"; }
 v_die_run() { v_run "${@}"; die_in_error "command ${@} failed"; }
-
+no_kill() { echo "Ignoring kill request"; }
+breakpoint() {
+    arg=$@
+    touch /breakpoint
+    echo "To attach the container"
+    echo "docker exec -ti ${MS_STAGE2_NAME} bash"
+    echo "To continue, exec in the container"
+    echo "rm -f /breakpoint"
+    while test -e /breakpoint;do
+        sleep 5
+    done
+    if [ "x${arg}" != "x" ];then
+        return ${arg}
+    fi
+}
 echo;echo
 yellow "-------------------------------------"
 yellow "-   STAGE 2  - BUILDING             -"
@@ -46,24 +60,10 @@ if [ -f /bootstrap_scripts/lxc-cleanup.sh ];then
     v_run /bootstrap_scripts/lxc-cleanup.sh
 fi
 
-no_kill() {
-    echo "Ignoring kill request"
-}
-
-breakpoint() {
-    touch /breakpoint
-    while test -e /breakpoint;do
-        echo "To attach the container"
-        echo "docker exec -ti ${MS_STAGE2_NAME} bash"
-        echo "To continue, exec in the container"
-        echo "rm -f /breakpoint"
-        sleep 1
-    done
-}
-
 # When debugging commands, this can help to trap kill commands
 # trap 'no_kill' 1 2 9
 
+#breakpoint $?
 # 1. Launch systemd
 # apply system patch for running in containers as non pid1
 # as without, systemd can lockup
@@ -72,39 +72,44 @@ if [ -e /lib/lsb/init-functions.d/40-systemd  ];then
         v_die_run patch -Np2 < /docker/makina-states/files/lib/lsb/init-functions.d/40-systemd.patch
     fi
 fi
-if echo "${MS_COMMAND}" | grep -q "systemd";then
-    # dbus will need the directory to start
-    if [ ! -d /run/systemd/system/ ];then
-        mkdir /run/systemd/system/
-    fi
+
+wait_systemd() {
     systemdstarted=""
-    ( systemd --system& )
     for i in $(seq 240);do
         state=$(systemctl is-system-running)
         if [ "x${state}" = "xdegraded" ] || [ "x${state}" = "xrunning" ];then
             systemdstarted="1"
             break
         else
-            # the systemd dir creation seems to make dbus work
-            # if [ $i -gt 5 ];then
-            #     # dbus is flaky on trusty host / vivid container, this is an ugly workaround
-            #     systemctl stop dbus
-            #     sleep 0.5
-            #     ps aux|grep dbus|awk '{print $2}'|xargs kill -9
-            #     systemctl start dbus
-            #     sleep 2
-            # fi
             sleep 1
         fi
     done
     if [ "x${systemdstarted}" = "x" ];then
         red "${MS_IMAGE}: systemd failed starting up";exit 1
     fi
+}
+
+restart_systemd_dbus() {
+    # the systemd dir creation seems to make dbus work
+    if [ $i -gt 5 ];then
+        # dbus is flaky on trusty host / vivid container, this is an ugly workaround
+        systemctl stop dbus
+        sleep 0.5
+        ps aux|grep dbus|awk '{print $2}'|xargs kill -9
+        systemctl start dbus
+        sleep 2
+    fi
+}
+
+if echo "${MS_COMMAND}" | grep -q "systemd";then
+    ( systemd --system& )
+    sleep 2
+    wait_systemd
 fi
 export DEBIAN_FRONTEND=noninteractive
 
 # when debugging systemd boot, this make a breakpoint here.
-# breakpoint
+# breakpoint $?
 for i in /srv/pillar /srv/mastersalt-pillar /srv/projects;do
     if [ ! -d ${i} ];then mkdir ${i};fi
 done
@@ -140,11 +145,11 @@ else
         fi
     done
     # setup mastersalt + salt highstates & masterless mode
-    # breakpoint
+    # breakpoint $?
     ${bs} -C -b "${MS_GIT_BRANCH}"  --mastersalt 127.0.0.1 -n dockercontainer\
         --local-mastersalt-mode masterless --local-salt-mode masterless
     # when debugging installation boot, this make a breakpoint here.
-    breakpoint
+    breakpoint $?
     die_in_error "${MS_IMAGE}: failed installing makina-states"
 fi
 # if image root is a corpus based project, we push the code inside the image and

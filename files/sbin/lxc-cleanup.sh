@@ -269,8 +269,10 @@ if [ -e /var/run/systemd/notify ];then
     chmod 777 /var/run/systemd/notify
 fi
 # dbus will need the directory to start
-if [ ! -d /run/systemd/system/ ];then
-    mkdir /run/systemd/system/
-fi
+for i in /run/systemd/system /run/uuid;do
+    if [ ! -d ${i} ];then
+        mkdir -p ${i}
+    fi
+done
 exit 0
 # vim:set et sts=4 ts=4 tw=80:

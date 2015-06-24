@@ -32,7 +32,7 @@ for i in fuse ntp;do
         fi
         cd "/root/debbuild/${i}/build"
         dpkg-deb -b . "/root/debbuild/${i}.deb"
-        apt-get install -y $(dpkg-deb -I /root/debbuild/ntp.deb \
+        apt-get install -y $(dpkg-deb -I /root/debbuild/${i}.deb \
             |egrep "^\s*Depends:"\
             |sed -re "s/\([^\)]+\)//g" -e "s/,//g" -e "s/Depends://g")
         dpkg -i /root/debbuild/${i}.deb
