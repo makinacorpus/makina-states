@@ -2,7 +2,7 @@
 # THIS SCRIPT CAN BE OVERRIDEN IN ANY MAKINA-STATES BASED IMAGES
 # Copy/Edit it inside the overrides directory either:
 #   - inside you image data directory, inside the image_roots/bootstrap_scripts
-#   - inside your corpus based repository, inside the .salt folder 
+#   - inside your corpus based repository, inside the .salt folder
 
 RED='\e[31;01m'
 PURPLE='\e[33;01m'
@@ -91,13 +91,15 @@ if [ "x${MS_OS}" = "xubuntu" ];then
         etc/systemd/system/lxc-setup.service\
         etc/apt/apt.conf.d/99clean\
         usr/bin/ms-lxc-setup.sh\
-        sbin/lxc-cleanup.sh
+        sbin/lxc-cleanup.sh\
+        sbin/makinastates-snapshot.sh
     die_in_error "${MS_IMAGE}: cant tar aptconf"
     add="${add} ubuntufiles.tar"
 fi
 if [ "x${add}" != "x" ];then a_d "ADD ${add} /";fi
 # install core pkgs & be sure to have up to date systemd on ubuntu systemd enabled
-a_d "RUN \
+a_d "RUN \\
+    set -x &&\\
     echo DOCKERFILE_ID=3\\
     && if which apt-get >/dev/null 2>&1;then\\
       sed -i -re\
@@ -113,20 +115,23 @@ a_d "RUN \
           then apt-get install -y --force-yes\\
           systemd libpam-systemd systemd-sysv libsystemd0;fi;\\
    fi\\
-   && /docker/injected_volumes/bootstrap_scripts/lxc-cleanup.sh\\
-   && /docker/injected_volumes/bootstrap_scripts/makinastates-snapshot.sh\\
+   && chmod 755 /sbin/lxc-cleanup.sh /usr/bin/ms-lxc-setup.sh\
+                /sbin/makinastates-snapshot.sh\\
+   && sleep 0.4\\
+   && /sbin/lxc-cleanup.sh\\
    && sed -i -re \"s/PrivDropToUser.*/PrivDropToUser root/g\"\
        /etc/rsyslog.conf\\
    && sed -i -re \"s/PrivDropToGroup*/PrivDropToGroup root/g\"\
        /etc/rsyslog.conf\\
-   && chmod 755 /sbin/lxc-cleanup.sh /usr/bin/ms-lxc-setup.sh\\
    && if test -e /lib/systemd/systemd;then\\
           if ! test -e /etc/systemd/system/network-online.target.wants;then\\
             mkdir -pv /etc/systemd/system/network-online.target.wants;\\
           fi;\\
           ln -sf /etc/systemd/system/lxc-setup.service\\
           /etc/systemd/system/network-online.target.wants/lxc-setup.service;\\
-      fi"
+      fi\
+   && /sbin/makinastates-snapshot.sh
+   "
 a_d "CMD /docker/injected_volumes/bootstrap_scripts/stage2.sh"
 BUILDKEY=""
 BUILDKEY="${BUILDKEY}_$(md5sum\
