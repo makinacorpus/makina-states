@@ -68,10 +68,13 @@ docker-conf-{{f}}:
       - mc_proxy: docker-pre-conf
     - watch_in:
       - mc_proxy: docker-post-conf
+      - mc_proxy: docker-services-net
 {% endfor %}
 
-{% set url='https://github.com/makinacorpus/docker/releases/download/mc_1/docker' %}
-{% set hash='c10272ed424d08d840f463c196553f5f' %}
+{% set url='https://github.com/makinacorpus/docker/releases/download/mc_1/docker-1.8-mc_3.txz' %}
+{% set fn = url.split('/')[-1] %}
+{% set hash='36ea74c00f42a37f65a31c84dce43f24' %}
+{% set dhash='81d4391b879c0111c24bd222744dc483' %}
 docker-replace-dist-binary:
   cmd.run:
     - name: |
@@ -83,21 +86,71 @@ docker-replace-dist-binary:
     - onlyif: |
            set -e
            test -e /usr/bin/docker
-           test "x$(md5sum /usr/bin/docker|awk '{print $1}')" != "x{{hash}}"
+           test "x$(md5sum /usr/bin/docker|awk '{print $1}')" != "x{{dhash}}"
     - watch:
       - mc_proxy: docker-pre-conf
     - watch_in:
       - mc_proxy: docker-post-conf
   file.managed:
     - source: "{{url}}"
-    - name: /usr/bin/docker
     - source_hash: "md5={{hash}}"
+    - name: "/opt/{{fn}}"
+    - makedirs: true
     - user: root
     - group: root
     - mode: 755
     - watch:
-      - cmd: docker-replace-dist-binary
       - mc_proxy: docker-pre-conf
+    - watch_in:
+      - mc_proxy: docker-post-conf
+docker-replace-dist-binaryb:
+  service.dead:
+    - name: docker
+    - onlyif: |
+              if test -e /usr/bin/docker;then exit 0;fi
+              test "x$(md5sum /usr/bin/docker|awk '{print $1}')" != "x{{dhash}}"
+    - watch:
+      - cmd: docker-replace-dist-binary
+      - file: docker-replace-dist-binary
+    - watch_in:
+      - mc_proxy: docker-post-conf
+      - mc_proxy: docker-pre-hardrestart
+  cmd.run:
+    - name: cd /usr/bin && tar xJvf "/opt/{{fn}}"
+    - onlyif: |
+              if test ! -e /usr/bin/docker;then exit 0;fi
+              test "x$(md5sum /usr/bin/docker|awk '{print $1}')" != "x{{dhash}}"
+    - watch:
+      - service: docker-replace-dist-binaryb
+      - cmd: docker-replace-dist-binary
+      - file: docker-replace-dist-binary
+    - watch_in:
+      - mc_proxy: docker-post-conf
+      - mc_proxy: docker-pre-hardrestart
+  file.managed:
+    - name: /usr/bin/docker
+    - user: root
+    - group: root
+    - mode: 755
+    - watch:
+      - cmd: docker-replace-dist-binaryb
+    - watch_in:
+      - mc_proxy: docker-post-conf
+      - mc_proxy: docker-pre-hardrestart
+{# net service should not be restarted if running
+   not to disrupt any connected docker #}
+docker-services-net:
+  service.running:
+    - name: docker-net-makina
+    - enable: True
+    - require:
+      - file: docker-replace-dist-binaryb
+    - watch:
+      - file: docker-conf-/etc/default/magicbridge_docker1
+      - file: docker-conf-/etc/dnsmasq.d/docker1
+      - file: docker-conf-/etc/init/docker-net-makina.conf
+      - file: docker-conf-/etc/systemd/system/docker-net-makina.service
+      - file: docker-conf-/usr/bin/docker-net-makina.sh
     - watch_in:
       - mc_proxy: docker-post-conf
 {%endif %}

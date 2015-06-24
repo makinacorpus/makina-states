@@ -3,22 +3,11 @@ include:
   - makina-states.services.virt.docker.hooks
   - makina-states.services.virt.cgroups
 {%- set locs = salt['mc_locations.settings']() %}
-
-docker-services-net:
-  service.running:
-    - name: docker-net-makina
-    - enable: True
-    - watch:
-      - mc_proxy: docker-pre-hardrestart
-    - watch_in:
-      - mc_proxy: docker-post-hardrestart
-
 docker-services:
   service.running:
     - name: docker
     - enable: True
     - watch:
-      - service: docker-services-net
       - mc_proxy: docker-pre-hardrestart
     - watch_in:
       - mc_proxy: docker-post-hardrestart
