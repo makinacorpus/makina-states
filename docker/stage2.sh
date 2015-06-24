@@ -50,6 +50,14 @@ no_kill() {
     echo "Ignoring kill request"
 }
 
+breakpoint() {
+    touch /breakpoint
+    while test -e /breakpoint;do
+        echo "rm -f /breakpoint to continue"
+        sleep 1
+    done
+}
+
 # When debugging commands, this can help to trap kill commands
 # trap 'no_kill' 1 2 9
 
@@ -71,7 +79,7 @@ if echo "${MS_COMMAND}" | grep -q "systemd";then
     for i in $(seq 240);do
         state=$(systemctl is-system-running)
         if [ "x${state}" = "xdegraded" ] || [ "x${state}" = "xrunning" ];then
-            systemdstarted=""
+            systemdstarted="1"
             break
         else
             if [ $i -gt 5 ];then
@@ -92,7 +100,7 @@ fi
 export DEBIAN_FRONTEND=noninteractive
 
 # when debugging systemd boot, this make a breakpoint here.
-# for i in  $(seq 30000);do echo $i;sleep 60;done
+# breakpoint
 for i in /srv/pillar /srv/mastersalt-pillar /srv/projects;do
     if [ ! -d ${i} ];then mkdir ${i};fi
 done
@@ -128,11 +136,11 @@ else
         fi
     done
     # setup mastersalt + salt highstates & masterless mode
-    # for i in  $(seq 30000);do echo $i;sleep 60;done
+    # breakpoint
     ${bs} -C -b "${MS_GIT_BRANCH}"  --mastersalt 127.0.0.1 -n dockercontainer\
         --local-mastersalt-mode masterless --local-salt-mode masterless
     # when debugging installation boot, this make a breakpoint here.
-    for i in  $(seq 30000);do echo $i;sleep 60;done
+    # breakpoint
     die_in_error "${MS_IMAGE}: failed installing makina-states"
 fi
 # if image root is a corpus based project, we push the code inside the image and
