@@ -34,7 +34,8 @@ for i in fuse ntp;do
         dpkg-deb -b . "/root/debbuild/${i}.deb"
         apt-get install -y $(dpkg-deb -I /root/debbuild/${i}.deb \
             |egrep "^\s*Depends:"\
-            |sed -re "s/\([^\)]+\)//g" -e "s/,//g" -e "s/Depends://g")
+            |sed -re "s/\([^\)]+\)//g" -e "s/,//g" -e "s/Depends://g"
+            |sed -re "s/[|]//g" -e "s/udev|makedev//g")
         dpkg -i /root/debbuild/${i}.deb
         echo ${i} hold | dpkg --set-selections
         touch "${mark}"
