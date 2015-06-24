@@ -50,7 +50,15 @@ fi
 # - Inject the wanted data inside the image
 if [ -e /docker/injected_volumes/ ];then
     setfacl -R -bk /docker/injected_volumes
-    v_run rsync -Aa /docker/injected_volumes/ /
+    # do not directly copy root as it would mess "/" permissions
+    cd /docker/injected_volumes/
+    find . -mindepth 1 -maxdepth 1|while read i;do
+        if [ -d "${i}" ];then
+            i="${i}/"
+        fi
+        v_run rsync -Aa /docker/injected_volumes/${i} /${i}
+        done
+    cd /
 fi
 
 # - Save environment for subshell scripts & history

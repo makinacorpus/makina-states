@@ -57,6 +57,10 @@ purple "--------------------"
 purple "- stage0 complete  -"
 purple "--------------------"
 echo
+if [ ! -e "${MS_DATA_DIR}" ];then
+    mkdir -p "${MS_DATA_DIR}"
+fi
+setfacl -R -bk "${MS_DATA_DIR}"
 v_run docker run \
  -e container="docker" \
  -e MS_BASE="${MS_BASE}" \
