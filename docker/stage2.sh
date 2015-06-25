@@ -189,7 +189,12 @@ if [ "x${MS_DO_SNAPSHOT}" = "xyes" ] && [ -f /bootstrap_scripts/makinastates-sna
     /bootstrap_scripts/makinastates-snapshot.sh
 fi
 if [ "x${MS_DO_ACLS}" = "xyes" ];then ( getfacl -R / > /acls.txt && touch /acls.restore ) || /bin/true;fi
-if [ "x${MS_DO_PASSWORDS_RESET}" = "xyes" ];then v_run touch /passwords.reset; fi
+if [ "x${MS_DO_PASSWORDS_RESET}" = "xyes" ];then
+    if [ -e /sbin/passwords-reset.sh ];then
+        touch /passwords.reset && /sbin/passwords-reset.sh || /bin/true
+    fi
+    v_run touch /passwords.reset
+fi
 echo
 purple "--------------------"
 purple "- POSIX Acls saved -"
