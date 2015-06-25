@@ -189,6 +189,7 @@ for s in\
     smartmontools\
     systemd-binfmt\
     systemd-hwdb-update\
+    systemd-logind\
     systemd-journal-flush\
     systemd-machine-id-commit\
     systemd-modules-load\
