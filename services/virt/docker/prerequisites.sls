@@ -22,4 +22,18 @@ docker-pkgs:
       - mc_proxy: docker-post-install
     - pkgs:
       - lxc-docker
+
+ms-dockerviz:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: 755
+    - name: /usr/bin/dockviz
+    - source: https://github.com/justone/dockviz/releases/download/v0.2/dockviz_linux_amd64
+    - source_hash: md5=bb4e629a7a09db7c3ac2e7b824fa405d
+    - watch:
+      - mc_proxy: docker-pre-install
+    - watch_in:
+      - mc_proxy: docker-post-install
 {% endif %}
+
