@@ -110,7 +110,8 @@ systemd_reactivated="
     udev-finish\
 "
 
-for_now_innofensive_tty_jobs="\
+for_now_innofensive_tty_jobs=""
+tty_jobs="\
 systemd-ask-password-wall\
 systemd-ask-password-console\
 serial-getty@
@@ -119,10 +120,9 @@ getty@
 console-setup
 container-getty@
 getty-static
-"
-tty_jobs="\
 console-getty
 user@
+systemd-logind
 getty@tty1
 "
 disable_service() {
@@ -189,7 +189,6 @@ for s in\
     smartmontools\
     systemd-binfmt\
     systemd-hwdb-update\
-    systemd-logind\
     systemd-journal-flush\
     systemd-machine-id-commit\
     systemd-modules-load\
