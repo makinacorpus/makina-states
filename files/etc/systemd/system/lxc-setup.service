@@ -3,7 +3,7 @@
 Description=lxc-setup
 After=sysinit.target
 DefaultDependencies=no
-Before=network-online.target network.target
+Before=network-online.target network.target multi-user.target dbus.service
 After=systemd-tmpfiles-setup.service
 
 [Service]
@@ -12,4 +12,4 @@ ExecStart=/usr/bin/ms-lxc-setup.sh systemd
 RemainAfterExit=yes
 
 [Install]
-WantedBy=network.target network-online.target
+WantedBy=sysinit.target

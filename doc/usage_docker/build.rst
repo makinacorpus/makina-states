@@ -233,6 +233,15 @@ The scripts support those environment variables, in **user facing order**:
         default to current makina-states one (**docker/Dockerfile.stage0**)
     MS_DOCKER_ARGS
         Any argument to give to the docker run call to the stage0 builder (None)
+    MS_DO_SNAPSHOT
+        Cleanup all sensible data before saving image (ssh keys, pillars & so on).
+        set to empty string to disable
+    MS_DO_ACLS
+        Save POSIX Acls before saving image.
+        set to empty string to disable
+    MS_DO_PASSWORDS_RESET
+        reset all defined unix user passwords before commiting the image.
+        set to empty string to disable
 
 Read Only variables:
 

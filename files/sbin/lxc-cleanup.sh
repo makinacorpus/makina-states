@@ -247,7 +247,7 @@ if [ -f /etc/network/if-up.d/upstart ] &&\
    [ ${DISTRIB_CODENAME} != "lucid" ];then
     sed -i 's/^.*emission handled.*$/echo Emitting lo/' /etc/network/if-up.d/upstart
 fi
-# if we  found the acl restore flag, apply !
+# if we found the acl restore flag, apply !
 if which setfacl >/dev/null 2>&1 && test -e /acls.restore && test -e /acls.txt;then
     cd / && setfacl --restore="/acls.txt" || /bin/true
 fi
@@ -259,5 +259,7 @@ if [ -e /var/run/systemd/notify ];then chmod 777 /var/run/systemd/notify;fi
 for i in /run/systemd/system /run/uuid;do
     if [ ! -d ${i} ];then mkdir -p ${i};fi
 done
+# if we found the password reset flag, reset any password found
+if [ /sbin/reset-passwords.sh ];then /sbin/reset-passwords.sh || /bin/true:fi
 exit 0
 # vim:set et sts=4 ts=4 tw=80:

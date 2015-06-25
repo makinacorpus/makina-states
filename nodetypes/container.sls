@@ -26,6 +26,7 @@ etc-init-lxc-setup:
       - mc_proxy: makina-lxc-proxy-cfg
 
 {% set extra_confs = {'/usr/bin/ms-lxc-setup.sh': {"mode": "755"},
+                      '/sbin/reset-passwords.sh': {"mode": "755"},
                       '/etc/systemd/system/lxc-stop.service': {"mode": "644"},
                       '/etc/systemd/system/lxc-setup.service': {"mode": "644"},
                       '/usr/bin/ms-lxc-stop.sh': {"mode": "755"}} %}

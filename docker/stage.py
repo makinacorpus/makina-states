@@ -239,6 +239,8 @@ def main(argv=None,
         'MS_IMAGE_DIR',
         os.path.join(environ['MS_DATA_DIR'], environ['MS_IMAGE']))
     environ.setdefault('MS_DO_SNAPSHOT', 'yes')
+    environ.setdefault('MS_DO_ACLS', 'yes')
+    environ.setdefault('MS_DO_PASSWORDS_RESET', 'yes')
     environ.setdefault(
         'MS_MAKINASTATES_BUILD_FORCE', '')
     default_stage_path = os.path.join(_CWD, 'docker')
