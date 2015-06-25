@@ -52,8 +52,10 @@ if [ "x${MS_BASE}" = "xscratch" ];then
         fi
         cd /var/lib/lxc/${MS_OS}/rootfs
         if [ ! -d docker/injected_volumes ];then mkdir -p docker/injected_volumes;fi
-        v_die_run tar cJf "${MS_BASEIMAGE_PATH}" .
-        die_in_error "${MS_IMAGE}: can't compress ${MS_BASEIMAGE}"
+        v_die_run tar cJf "${MS_BASEIMAGE_PATH}.tmp" .
+        die_in_error "${MS_IMAGE}: can't compress ${MS_BASEIMAGE}.tmp"
+        mv -f "${MS_BASEIMAGE_PATH}.tmp" "${MS_BASEIMAGE_PATH}"
+        die_in_error "${MS_IMAGE}: can't move tarball to ${MS_BASEIMAGE}"
     else
         green "${MS_IMAGE}: ${MS_BASEIMAGE} for ${MS_IMAGE} already exists"
         yellow "${MS_IMAGE}: Delete it to redo"

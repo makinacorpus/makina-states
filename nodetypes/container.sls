@@ -134,9 +134,13 @@ do-systemd-sysv-patch:
     - watch_in:
       - mc_proxy: makina-lxc-proxy-end
 
+# only enable, no stuff around
 do-lxc-setup-services:
-  service.enabled:
-    - names: [lxc-setup, lxc-stop]
+  cmd.run:
+    - name:  |
+        set -e
+        systemctl enable lxc-setup
+        systemctl enable lxc-stop
     - require:
       - mc_proxy: makina-lxc-proxy-cleanup
     - require_in:
