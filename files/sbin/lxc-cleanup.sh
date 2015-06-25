@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # managed via salt, do not edit
 # freeze hostile packages
+if [ -f /etc/lsb-release ];then . /etc/lsb-release;fi
 is_docker=""
 from_systemd="y"
 for i in ${@};do
@@ -45,6 +46,7 @@ for i in /lib/init/fstab /etc/fstab;do
 done
 #pruning old logs & pids
 rm -rf /var/run/network/* || /bin/true
+rm -f /var/run/rsyslogd.pid || /bin/true
 # comment out the ntpdate ifup plugin inside a container
 if [ -f /etc/network/if-up.d/ntpdate ];then
     sed -re "s/^(([^#].*)|)$/#\\1/g" -i /etc/network/if-up.d/ntpdate
@@ -54,28 +56,13 @@ for i in /var/run/*.pid /var/run/dbus/pid /etc/nologin;do
         rm -f "${i}" || /bin/true
     fi
 done
-# disable console login
+# disable rsyslog console logging
 if [ -e /etc/rsyslog.d/50-default.conf ];then
     sed -i -re '/^\s*daemon.*;mail.*/ { N;N;N; s/^/#/gm }'\
         /etc/rsyslog.d/50-default.conf || /bin/true
 fi
-# disabling useless and harmfull services
-#    $(find /etc/init -name dbus.conf)\
-# instead of delete the proccps service, reset it to do nothing by default
-#    $(find /etc/init -name procps.conf)\
-syscfgs="/etc/sysctl.conf"
-if [ -e /etc/sysctl.d ];then
-    syscfgs="${syscfgs} $(ls /etc/sysctl.d/*conf)"
-fi
-for syscfg in ${syscfgs};do
-    if [ "x$(grep -q mastersalt-cleanup "${syscfg}";echo ${?})" != "x0" ];then
-        sed -i -e "s/^/#/g" "${syscfg}" ||/bin/true
-        echo "# mastersalt-cleanup" >> "${syscfg}" ||/bin/true
-    fi
-done
-# reacticated services
-reactivated_services="procps"
-for reactivated_service in ${reactivated_services};do
+# reacticated services that were disabled in an earlier time
+for reactivated_service in procps;do
     if [ -e "/etc/init/${reactivated_service}.conf.orig" ];then
         mv -f "/etc/init/${reactivated_service}.conf.orig" "/etc/init/${reactivated_service}.conf" ||/bin/true
     fi
@@ -89,43 +76,14 @@ if [ -f /etc/systemd/logind.conf ];then
         echo "${i}=0">>/etc/systemd/logind.conf
     done
 fi
-# if ssh keys were removed, be sure to have new keypairs before sshd (re)start
-ssh_keys=""
-find /etc/ssh/ssh_host_*_key -type f || ssh_keys="1"
-if [ -e /etc/ssh ] && [ "x${ssh_keys}" != "x" ];then
-    ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa -b 4096 || /bin/true
-    ssh-keygen -f /etc/ssh/ssh_host_dsa_key -N '' -t dsa -b 1024 || /bin/true
-    ssh-keygen -f /etc/ssh/ssh_host_ed25519_key -N '' -t ed25519 || /bin/true
-    ssh-keygen -f /etc/ssh/ssh_host_ecdsa_key   -N '' -t  ecdsa  || /bin/true
-fi
+# disabling useless and harmfull services
+#    $(find /etc/init -name dbus.conf)\
+# instead of delete the proccps service, reset it to do nothing by default
+#    $(find /etc/init -name procps.conf)\
 # - we must need to rely on direct file system to avoid relying on running process
 #    manager (pid: 1)
 # do not activate those evil services in a container context
 # tty units (systemd) are only evil if the lock the first console
-systemd_reactivated="
-
-    systemd-update-utmp\
-    systemd-update-utmp-runlevel\
-    udev\
-    udev-finish\
-"
-
-for_now_innofensive_tty_jobs=""
-tty_jobs="\
-accounts-daemon\
-systemd-ask-password-wall\
-systemd-ask-password-console\
-serial-getty@\
-autovt@\
-getty@\
-console-setup\
-container-getty@\
-getty-static\
-console-getty\
-user@\
-systemd-logind\
-getty@tty1\
-"
 disable_service() {
     s="$1"
     # upstart
@@ -147,6 +105,12 @@ disable_service() {
        rm -vf /etc/rc${i}.d/*${s} || /bin/true
     done
 }
+systemd_reactivated="
+    systemd-update-utmp\
+    systemd-update-utmp-runlevel\
+    udev\
+    udev-finish\
+"
 for s in\
     acpid\
     alsa-restore\
@@ -199,8 +163,20 @@ for s in\
     umountfs\
     umountroot\
     ureadahead\
-    ${tty_jobs}\
     vnstat\
+    accounts-daemon\
+    systemd-ask-password-wall\
+    systemd-ask-password-console\
+    serial-getty@\
+    autovt@\
+    getty@\
+    console-setup\
+    container-getty@\
+    getty-static\
+    console-getty\
+    user@\
+    systemd-logind\
+    getty@tty1\
    ;do
     disable_service "${s}"
 done
@@ -227,20 +203,35 @@ if [ -e /run/systemd/journal/dev-log ] || [ -e /lib/systemd/systemd ];then
     if [ -e /dev/log ];then rm -f /dev/log;fi
     ln -fs /run/systemd/journal/dev-log /dev/log
 fi
-if [ -e /var/run/rsyslogd.pid ];then
-    rm -f /var/run/rsyslogd.pid
+# disable harmful sysctls
+syscfgs="/etc/sysctl.conf"
+if [ -e /etc/sysctl.d ];then
+    syscfgs="${syscfgs} $(ls /etc/sysctl.d/*conf)"
 fi
-# disabling useless and harmfull sysctls
-for i in \
-    vm.mmap_min_addr\
-    fs.protected_hardlinks\
-    fs.protected_symlinks\
-    kernel.yama.ptrace_scope\
-    kernel.kptr_restrict\
-    kernel.printk;do
-    sed -re "s/^(${i})/#\1/g" -i \
-    /etc/sysctl*/* /etc/sysctl.conf || /bin/true
+for syscfg in ${syscfgs};do
+    if [ "x$(grep -q mastersalt-cleanup "${syscfg}";echo ${?})" != "x0" ];then
+        sed -i -e "s/^/#/g" "${syscfg}" ||/bin/true
+        echo "# mastersalt-cleanup" >> "${syscfg}" ||/bin/true
+    fi
+    for i in \
+        vm.mmap_min_addr\
+        fs.protected_hardlinks\
+        fs.protected_symlinks\
+        kernel.yama.ptrace_scope\
+        kernel.kptr_restrict\
+        kernel.printk;do
+        sed -i -re "s/^(${i})/#\1/g" -i "${syscfg}" || /bin/true
+    done
 done
+# if ssh keys were removed, be sure to have new keypairs before sshd (re)start
+ssh_keys=""
+find /etc/ssh/ssh_host_*_key -type f || ssh_keys="1"
+if [ -e /etc/ssh ] && [ "x${ssh_keys}" != "x" ];then
+    ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa -b 4096 || /bin/true
+    ssh-keygen -f /etc/ssh/ssh_host_dsa_key -N '' -t dsa -b 1024 || /bin/true
+    ssh-keygen -f /etc/ssh/ssh_host_ed25519_key -N '' -t ed25519 || /bin/true
+    ssh-keygen -f /etc/ssh/ssh_host_ecdsa_key   -N '' -t  ecdsa  || /bin/true
+fi
 # uid accouting is broken in lxc, breaking in turn pam_ssh login
 sed -re "s/^(session.*\spam_loginuid\.so.*)/#\\1/g" -i /etc/pam.d/* || /bin/true
 # specific to docker
@@ -250,9 +241,6 @@ if [ "x${is_docker}" != "x" ];then
         rm -f /dev/${i} || /bin/true
         ln -s /dev/tty /dev/${i} || /bin/true
     done
-fi
-if [ -f /etc/lsb-release ];then
-    . /etc/lsb-release
 fi
 # if this isn't lucid, then we need to twiddle the network upstart bits :(
 if [ -f /etc/network/if-up.d/upstart ] &&\
@@ -266,14 +254,10 @@ fi
 # uber important: be sure that the notify socket is writable by everyone
 # as systemd service like rsyslog notify about their state this way
 # and debugging notiication failure is really hard
-if [ -e /var/run/systemd/notify ];then
-    chmod 777 /var/run/systemd/notify
-fi
+if [ -e /var/run/systemd/notify ];then chmod 777 /var/run/systemd/notify;fi
 # dbus will need the directory to start
 for i in /run/systemd/system /run/uuid;do
-    if [ ! -d ${i} ];then
-        mkdir -p ${i}
-    fi
+    if [ ! -d ${i} ];then mkdir -p ${i};fi
 done
 exit 0
 # vim:set et sts=4 ts=4 tw=80:
