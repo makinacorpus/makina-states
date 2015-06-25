@@ -12,4 +12,4 @@ ExecStart=/usr/bin/ms-lxc-setup.sh systemd
 RemainAfterExit=yes
 
 [Install]
-WantedBy=network-online.target
+WantedBy=network.target network-online.target
