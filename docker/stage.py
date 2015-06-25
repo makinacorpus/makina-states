@@ -222,7 +222,7 @@ def main(argv=None,
     environ.setdefault(
         'MS_OS_MIRROR', 'http://mirror.ovh.net/ftp.ubuntu.com/')
     environ.setdefault('DEFAULT_RELEASE', '')
-    environ.setdefault('MS_COMMAND', '/bin/systemd')
+    environ.setdefault('MS_COMMAND', '/bin/systemd --system')
     DEFAULT_RELEASE = ''
     if environ['MS_OS'] == 'ubuntu':
         DEFAULT_RELEASE = 'vivid'
