@@ -158,7 +158,7 @@ else
     ${bs} -C -b "${MS_GIT_BRANCH}"  --mastersalt 127.0.0.1 -n dockercontainer\
         --mastersalt-minion --local-mastersalt-mode masterless --local-salt-mode masterless
     # when debugging installation boot, this make a breakpoint here.
-    breakpoint $?
+    # breakpoint $?
     die_in_error "${MS_IMAGE}: failed installing makina-states"
 fi
 # if image root is a corpus based project, we push the code inside the image and
@@ -188,8 +188,8 @@ fi
 if [ "x${MS_DO_SNAPSHOT}" = "xyes" ] && [ -f /bootstrap_scripts/makinastates-snapshot.sh ];then
     /bootstrap_scripts/makinastates-snapshot.sh
 fi
-v_run getfacl -R / > /acls.txt || /bin/true
-v_run touch /acls.restore
+if [ "x${MS_DO_ACLS}" = "xyes" ];then ( getfacl -R / > /acls.txt && touch /acls.restore ) || /bin/true;fi
+if [ "x${MS_DO_PASSWORDS_RESET}" = "xyes" ];then v_run touch /passwords.reset; fi
 echo
 purple "--------------------"
 purple "- POSIX Acls saved -"
