@@ -112,18 +112,19 @@ systemd_reactivated="
 
 for_now_innofensive_tty_jobs=""
 tty_jobs="\
+accounts-daemon\
 systemd-ask-password-wall\
 systemd-ask-password-console\
-serial-getty@
-autovt@
-getty@
-console-setup
-container-getty@
-getty-static
-console-getty
-user@
-systemd-logind
-getty@tty1
+serial-getty@\
+autovt@\
+getty@\
+console-setup\
+container-getty@\
+getty-static\
+console-getty\
+user@\
+systemd-logind\
+getty@tty1\
 "
 disable_service() {
     s="$1"
