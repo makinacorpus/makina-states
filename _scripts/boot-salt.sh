@@ -3236,10 +3236,10 @@ mastersalt_ping_test() {
     done
     if [ -e "${SALT_BOOT_LOCK_FILE}" ];then
         kill -9 ${testpid}
-        echo 256
+        return 256
     fi
     rm -f "${SALT_BOOT_LOCK_FILE}" "${LAST_RETCODE_FILE}"
-    echo "${last_salt_retcode}"
+    return ${last_salt_retcode}
 }
 
 minion_challenge() {
@@ -3291,11 +3291,11 @@ mastersalt_minion_challenge() {
         restart_local_mastersalt_minions
         resultping="1"
         for j in `seq ${inner_tries}`;do
-            resultping="$(mastersalt_ping_test)"
-            if [ "x${resultping}" != "x0" ];then
+            if ! mastersalt_ping_test;then
                 bs_yellow_log " sub challenge try (${i}/${global_tries}) (${j}/${inner_tries})"
                 sleep 1
             else
+                resultping="0"
                 break
             fi
         done
@@ -3490,7 +3490,7 @@ make_mastersalt_association() {
             die "Minion did not start correctly, the minion_id cache file is always empty"
         fi
     fi
-    if [ "x$(mastersalt_ping_test)" = "x0" ];then
+    if mastersalt_ping_test;then
         debug_msg "Mastersalt minion \"${minion_id}\" already registered on $(get_mastersalt)"
         salt_echo "changed=false comment='mastersalt minion already registered'"
     else
@@ -3531,8 +3531,7 @@ make_mastersalt_association() {
         mastersalt_master_connectivity_check
         bs_log "Waiting for mastersalt minion key hand-shake"
         minion_id="$(get_minion_id)"
-        mastersalt_call_wrapper test.ping -lall
-        if [ "x$(mastersalt_ping_test)" = "x0" ];then
+        if mastersalt_ping_test;then
             salt_echo "changed=yes comment='mastersalt minion registered'"
             bs_log "Mastersalt minion \"${minion_id}\" registered on master"
             registered="1"
@@ -3754,7 +3753,7 @@ highstate_in_mastersalt_env() {
         bs_log "Running makina-states highstate for mastersalt"
         bs_log "    export MASTERSALT_BOOT_SKIP_HIGHSTATE=1 to skip (dangerous)"
         LOCAL=""
-        if [ "x$(mastersalt_ping_test)" != "x0" ];then
+        if ! mastersalt_ping_test;then
             LOCAL="--local ${LOCAL}"
             bs_yellow_log " [bs] mastersalt highstate running offline !"
         fi
@@ -4387,8 +4386,7 @@ check_alive() {
             fi
         fi
         if [ "x${IS_MASTERSALT}" != "x" ];then
-            resultping="$(mastersalt_ping_test)"
-            if [ "x${resultping}" != "x0" ];then
+            if ! mastersalt_ping_test;then
                 if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
                     killall_local_mastersalt_masters
                 fi
@@ -4479,7 +4477,6 @@ synchronize_code() {
     fi
 }
 
-
 set_dns_minionid() {
     totest=$1
     shift
@@ -4493,7 +4490,6 @@ set_dns_minionid() {
         fi
     fi
 }
-
 
 set_dns() {
     if [ "x${NICKNAME_FQDN}" != "x" ];then
