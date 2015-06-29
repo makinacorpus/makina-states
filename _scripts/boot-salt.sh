@@ -3207,10 +3207,10 @@ salt_ping_test() {
     done
     if [ -e "${SALT_BOOT_LOCK_FILE}" ];then
         kill -9 ${testpid}
-        echo 256
+        return 256
     fi
     rm -f "${SALT_BOOT_LOCK_FILE}" "${LAST_RETCODE_FILE}"
-    echo "${last_salt_retcode}"
+    echo ${last_salt_retcode}
 }
 
 mastersalt_ping_test() {
@@ -3257,11 +3257,11 @@ minion_challenge() {
         restart_local_minions
         resultping="1"
         for j in `seq ${inner_tries}`;do
-            resultping="$(salt_ping_test)"
-            if [ "x${resultping}" != "x0" ];then
+            if ! salt_ping_test;then
                 bs_yellow_log " sub challenge try (${i}/${global_tries}) (${j}/${inner_tries})"
                 sleep 1
             else
+                resultping="0"
                 break
             fi
         done
@@ -3427,7 +3427,7 @@ make_association() {
         salt_master_connectivity_check 20
         bs_log "Waiting for salt minion key hand-shake"
         minion_id="$(get_minion_id)"
-        if [ "x$(salt_ping_test)" = "x0" ] && [ "x${minion_keys}" != "x0" ];then
+        if salt_ping_test && [ "x${minion_keys}" != "x0" ];then
             # sleep 15 seconds giving time for the minion to wake up
             bs_log "Salt minion \"${minion_id}\" registered on master"
             registered="1"
@@ -3777,7 +3777,7 @@ highstate_in_salt_env() {
         bs_log "Running makina-states highstate"
         bs_log "    export SALT_BOOT_SKIP_HIGHSTATE=1 to skip (dangerous)"
         LOCAL=""
-        if [ "x$(salt_ping_test)" != "x0" ];then
+        if ! salt_ping_test;then
             bs_yellow_log " [bs] salt highstate running offline !"
             LOCAL="--local ${LOCAL}"
         fi
@@ -4377,8 +4377,7 @@ check_alive() {
     # ping masters if we are not already forcing restart
     if [ "x${alive_mode}" != "xrestart" ];then
         if [ "x${IS_SALT}" != "x" ];then
-            resultping="$(salt_ping_test)"
-            if [ "x${resultping}" != "x0" ];then
+            if ! salt_ping_test;then
                 if [ "x${IS_SALT_MASTER}" != "x" ];then
                     killall_local_masters
                 fi
