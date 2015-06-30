@@ -3210,7 +3210,7 @@ salt_ping_test() {
         return 256
     fi
     rm -f "${SALT_BOOT_LOCK_FILE}" "${LAST_RETCODE_FILE}"
-    echo ${last_salt_retcode}
+    return ${last_salt_retcode}
 }
 
 mastersalt_ping_test() {
