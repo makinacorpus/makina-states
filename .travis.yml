@@ -16,6 +16,7 @@ env:
 install: [sudo -E ./_scripts/travis_install.sh]
 script: sudo -E ./_scripts/travis_test.sh
 after_success: [/usr/bin/sudo -E /srv/mastersalt/makina-states/_scripts/travis_aftersuccess.sh]
+
 #too noisy
 #notifications:
 #  irc:
