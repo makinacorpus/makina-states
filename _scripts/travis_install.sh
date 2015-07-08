@@ -21,30 +21,14 @@ fi
 sed -i -re "/makina-states.nodetypes.*: (true|false)/ d" /etc/*salt/grains
 rm -f .git/shallow
 git clone --mirror --bare . "${REPO}"
-cd /srv/salt/makina-states
-git remote rm travis || /bin/true
-git remote add travis "${REPO}"
-git fetch --all
-git reset --hard ${MS_BRANCH}
-cd /srv/mastersalt/makina-states
-git remote rm travis || /bin/true
-git remote add travis "${REPO}"
-git fetch --all
-git reset --hard ${MS_BRANCH}
-for i in mastersalt salt;do
-    cd /srv/${i}/makina-states
-    bin/pip install -r requirements/requirements.txt
-    bin/pip install -r requirements/dev.txt
+for i in salt mastersalt;do
+    mkdir -p /srv/$i
+    git clone "${REPO}" /srv/${i}/makina-states
+    cd /srv/$i/makina-states
+    git reset --hard ${MS_BRANCH}
 done
 if ! ./_scripts/boot-salt.sh ${BOOTSALT_ARGS};then
-    if which shorewall 2>/dev/null;then
-        cat /etc/shorewall/params
-        cat /etc/shorewall/rules
-        shorewall check
-        for i in $(ls .bootlogs/* -1t | head -n 5);do
-            cat "${i}"
-        done
-    fi
+     # fi
     exit 1
 fi
 # be sure to let travis be sudoer, in case
