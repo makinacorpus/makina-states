@@ -28,7 +28,6 @@ for i in salt mastersalt;do
     git reset --hard ${MS_BRANCH}
 done
 if ! ./_scripts/boot-salt.sh ${BOOTSALT_ARGS};then
-     # fi
     exit 1
 fi
 # be sure to let travis be sudoer, in case
