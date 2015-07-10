@@ -12,9 +12,6 @@ BOOTSALT_ARGS="${BOOTSALT_ARGS} -n travis"
 set -x
 env
 apt-get install xz-utils python rsync acl
-#if !  ./_scripts/install_prebuilt_makina_states.py --skip-salt;then
-#    exit 1
-#fi
 if [ -f /etc/makina-states/nodetype ];then
     rm -vf /etc/makina-states/nodetype
 fi
