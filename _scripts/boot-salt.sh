@@ -4475,18 +4475,12 @@ set_dns() {
             bs_log "Resetting hostname file to ${HOST}"
             echo "${HOST}" > /etc/hostname
         fi
+        if [ "x$(hostname)" != "x${HOST}" ];then
+            bs_log "Resetting hostname to ${HOST}"
+            hostname "${HOST}"
+        fi
         set_dns_minionid "${IS_SALT}" "${CONF_PREFIX}"
         set_dns_minionid "${IS_MASTERSALT}" "${MCONF_PREFIX}"
-        if hash -r domainname 2>/dev/null ;then
-            if [ "x$(domainname)" != "x${DOMAINNAME}" ];then
-                bs_log "Resetting domainname to ${DOMAINNAME}"
-                domainname "${DOMAINNAME}"
-            fi
-        fi
-        if [ "x$(hostname)" != "x${NICKNAME_FQDN}" ];then
-            bs_log "Resetting hostname to ${NICKNAME_FQDN}"
-            hostname "${NICKNAME_FQDN}"
-        fi
         if ! egrep -q "127.*${NICKNAME_FQDN}" /etc/hosts;then
             bs_log "Adding new core hostname alias to localhost"
             echo "127.0.0.1 ${NICKNAME_FQDN}">/tmp/hosts
@@ -4496,6 +4490,12 @@ set_dns() {
                 # do not use cp for docker  or any LAYERED FS shadowing compatiblity
                 cat /tmp/hosts > /etc/hosts
                 rm -f /tmp/hosts
+            fi
+        fi
+        if hash -r domainname 2>/dev/null ;then
+            if [ "x$(domainname)" != "x${DOMAINNAME}" ];then
+                bs_log "Resetting domainname to ${DOMAINNAME}"
+                domainname "${DOMAINNAME}"
             fi
         fi
     fi
