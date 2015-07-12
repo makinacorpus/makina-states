@@ -216,7 +216,10 @@ die_in_error() {
 
 test_online() {
     ping -W 10 -c 1 8.8.8.8 1>/dev/null 2>/dev/null
-    echo "${?}"|"${SED}" -e "s/^\(.\).*/\1/g"
+    if [ "x${?}" = "x0" ] || [ "x${TRAVIS}" != "x" ];then
+        return 0
+    fi
+    return 1
 }
 
 dns_resolve() {
@@ -1644,9 +1647,8 @@ setup_and_maybe_update_code() {
         done
     fi
     SALT_MSS="$(get_salt_mss)"
-    is_offline="$(test_online)"
     minion_keys="$(find "${CONF_PREFIX}/pki/master/"{minions_pre,minions} -type f 2>/dev/null|wc -l|${SED} -e "s/ //g")"
-    if [ "x${is_offline}" != "x0" ];then
+    if ! test_online;then
         if [ ! -e "${CONF_PREFIX}" ]\
             || [ "x${minion_keys}" = "x0" ]\
             || [ ! -e "${SALT_MS}/src/salt" ]\
@@ -1656,7 +1658,7 @@ setup_and_maybe_update_code() {
             exit 1
         fi
     fi
-    if [ "x${SALT_BOOT_IN_RESTART}" = "x" ] && [ "x${is_offline}" = "x0" ];then
+    if [ "x${SALT_BOOT_IN_RESTART}" = "x" ] && test_online;then
         skip_co="${SALT_BOOT_SKIP_CHECKOUTS}"
         if [ "x$(is_basedirs_there)" = "x" ];then
             skip_co=""
