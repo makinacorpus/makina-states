@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--origin', required=True)
 parser.add_argument('--destination', required=True)
 parser.add_argument('--same-ssh-for-all', action='store_true')
-for i in ('salt', 'files', 'ssh', 'postfix'):
+for i in ('salt', 'files', 'ssh', 'postfix', 'sshd_keys'):
     parser.add_argument(
         '--reset-{0}'.format(i),
         dest='reset_{0}'.format(i),
@@ -136,6 +136,8 @@ def main(argv=None):
                 cmd = ("ssh-keygen -q -N '' -f {0} {1}"
                        "").format(cdt, sshargs[tkey])
                 vsystem(cmd)
+        opts.refresh_sshd_keys = True
+    if opts.refresh_sshd_keys:
         systemwide_sshkeys()
     if opts.reset_salt:
         for binary in ['mastersalt-key', 'salt-key', None]:

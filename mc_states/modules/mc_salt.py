@@ -240,7 +240,7 @@ def settings():
             'init_d': '{initd_dir}',
             'prefix': locs['prefix'],
             'venv': locs['venv'],
-            'venv_path': "{venv}/{name}",
+            'venv_path': "{venv}/salt",
             'salt_root': '{prefix}/{name}',
             'msr': '{salt_root}/makina-states',
             'pillar_root': '{prefix}/pillar',

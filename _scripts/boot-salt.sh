@@ -413,7 +413,7 @@ get_minion_id() {
             mmid="${2:-$(hostname)}"
         fi
     fi
-    if [ "x$(echo "${mmid}"|grep -q '\.';echo ${?})" != "x0" ];then
+    if ! echo "${mmid}" | grep -q '\.';then
         mmid="${mmid}.${DEFAULT_DOMAINNAME}"
     fi
     echo $mmid
@@ -584,20 +584,22 @@ set_vars() {
         SALT_REATTACH="${SALT_REATTACH:-}"
     fi
     LOCAL_SALT_MODE="$(get_local_salt_mode)"
-    DEFAULT_DOMAINNAME="local"
     HOST="$(hostname -f)"
+    DEFAULT_DOMAINNAME="${DEFAULT_DOMAINNAME:-local}"
     if [ $(hostname -f|sed -e "s/\./\.\n/g"|grep -c "\.") -ge 2 ];then
-        DEFAULT_DOMAINNAME="$(hostname -f|sed -re "s/[^.]+\.(.*)/\1/g")"
         HOST="$(hostname -f|$SED -re "s/([^.]+)\.(.*)/\1/g")"
+        DEFAULT_DOMAINNAME="$(hostname -f|sed -re "s/[^.]+\.(.*)/\1/g")"
     fi
     HOST=$(echo ${HOST} | $SED "s/ //g")
+    DOMAINNAME=$(echo ${DOMAINNAME} | $SED "s/ //g")
+    NICKNAME_FQDN="${HOST}.${DOMAINNAME}"
     SALT_BOOT_LOCK_FILE="/tmp/boot_salt_sleep-$(get_full_chrono)"
     LAST_RETCODE_FILE="/tmp/boot_salt_rc-$(get_full_chrono)"
     QUIET=${QUIET:-}
     ROOT="${ROOT:-"/"}"
     CONF_ROOT="${CONF_ROOT:-"${ROOT}etc"}"
     ETC_INIT="${ETC_INIT:-"${CONF_ROOT}/init"}"
-    ETC_SYSTEMD="${ETC_SYSTEMD:-"${CONF_ROOT}/systemd/service"}"
+    ETC_SYSTEMD="${ETC_SYSTEMD:-"${CONF_ROOT}/systemd/system"}"
     CHRONO="$(get_chrono)"
     TRAVIS_DEBUG="${TRAVIS_DEBUG:-}"
     VENV_REBOOTSTRAP="${VENV_REBOOTSTRAP:-}"
@@ -652,7 +654,6 @@ set_vars() {
     # global installation marker
     SALT_BOOT_NOW_INSTALLED=""
     # the current mastersalt.makinacorpus.net hostname
-    MASTERSALT_MAKINA_DNS="mastersalt.makina-corpus.net"
     BOOT_LOGS="${SALT_MS}/.bootlogs"
     MBOOT_LOGS="${MASTERSALT_MS}/.bootlogs"
     # base sls bootstrap
@@ -670,15 +671,9 @@ set_vars() {
     DO_PIP="${DO_PIP:-}"
     DO_MS_PIP="${DO_MS_PIP:-}"
     SALT_LIGHT_INSTALL=""
-    NICKNAME_FQDN="$(get_minion_id)"
-    DOMAINNAME="$(echo "${NICKNAME_FQDN}"|${SED} -e "s/^[^.]*\.//")"
+    HOST="$(get_minion_id|$SED -re "s/([^.]+)\.(.*)/\1/g")"
+    DOMAINNAME="$(get_minion_id|${SED} -e "s/^[^.]*\.//")"
     DOMAINNAME="${DOMAINNAME:-${DEFAULT_DOMAINNAME}}"
-    # if the minion id does not container a FQDN, sets it
-    # we obviously sync system hostname with minion_id
-    if [ "x$(echo "${NICKNAME_FQDN}"|grep -q \.;echo ${?})" != "x0" ];then
-        NICKNAME_FQDN="${HOST}.${DEFAULT_DOMAINNAME}"
-        set_dns
-    fi
     # select the daemons to install but also
     # detect what is already present on the system
     if [ "x${SALT_CONTROLLER}" = "xsalt_master" ]\
@@ -699,7 +694,7 @@ set_vars() {
         IS_MASTERSALT_MINION="y"
     fi
     if [ -e "${ETC_INIT}/salt-master.conf" ]\
-        || [ -e "${ETC_SYSTEMD}/salt-master.service" ]\
+        || [ -f "${ETC_SYSTEMD}/salt-master.service" ]\
         || [ -e "${ETC_INIT}.d/salt-master" ]\
         || [ "x${IS_SALT_MASTER}" != "x" ];then
         IS_SALT="y"
@@ -707,7 +702,7 @@ set_vars() {
         IS_SALT_MINION="y"
     fi
     if [ -e "${ETC_INIT}/salt-minion.conf" ]\
-        || [ -e "${ETC_SYSTEMD}/salt-minion.service" ]\
+        || [ -f "${ETC_SYSTEMD}/salt-minion.service" ]\
         || [ -e "${ETC_INIT}.d/salt-minion" ]\
         || [ "x${IS_SALT_MINION}" != "x" ];then
         IS_SALT="y"
@@ -731,14 +726,14 @@ set_vars() {
     if [ "x${SALT_REATTACH}" = "x" ];then
         if [ -e "${ETC_INIT}.d/mastersalt-master" ]\
             || [ -e "${ETC_INIT}/mastersalt-master.conf" ]\
-            || [ -e "${ETC_SYSTEMD}/mastersalt-master.service" ]\
+            || [ -f "${ETC_SYSTEMD}/mastersalt-master.service" ]\
             || [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
             MASTERSALT_INIT_MASTER_PRESENT="y"
             MASTERSALT_INIT_PRESENT="y"
         fi
         if [ -e "${ETC_INIT}.d/mastersalt-minion" ]\
             || [ -e "${ETC_INIT}/mastersalt-minion.conf" ]\
-            || [ -e "${ETC_SYSTEMD}/mastersalt-minion.service" ]\
+            || [ -f "${ETC_SYSTEMD}/mastersalt-minion.service" ]\
             || [ "x${IS_MASTERSALT_MINION}" != "x" ];then
             MASTERSALT_INIT_MINION_PRESENT="y"
             MASTERSALT_INIT_PRESENT="y"
@@ -959,10 +954,6 @@ set_vars() {
         QUIET_GIT="-q"
     fi
 
-    if [ "x$(get_local_salt_mode)" = "xmasterless" ] && [ "x${IS_MASTERSALT}" = "x" ];then
-        SALT_LIGHT_INSTALL="y"
-    fi
-
     # try to get a released version of the virtualenv to speed up installs
     VENV_URL="${VENV_URL:-"https://github.com/makinacorpus/makina-states/releases/download/attachedfiles/virtualenv-makina-states-${DISTRIB_ID}-${DISTRIB_CODENAME}-stable.tar.xz"}"
     declare -A VENV_URLS_MD5
@@ -971,18 +962,18 @@ set_vars() {
     VENV_MD5=${VENV_MD5:-${VENV_URLS_MD5[${VENV_URL}]}}
     # export variables to support a restart
 
+    export MS_BRANCH="$(get_ms_branch)"
     export VENV_URL VENV_MD5 VENV_URLS_MD5 NO_MS_VENV_CACHE
     export SALT_BOOT_ONLY_PREREQS SALT_BOOT_ONLY_INSTALL_SALT
     export BS_MS_ASSOCIATION_RESTART_MINION BS_MS_ASSOCIATION_RESTART_MASTER
     export BS_ASSOCIATION_RESTART_MASTER BS_ASSOCIATION_RESTART_MINION
     export DO_PIP DO_MS_PIP DO_MASTERSALT DO_SALT DO_REFRESH_MODULES
     export FORCE_SALT_BOOT_SKIP_CHECKOUTS
-    export ONLY_BUILDOUT_REBOOTSTRAP SALT_LIGHT_INSTALL
+    export ONLY_BUILDOUT_REBOOTSTRAP
     export EGGS_GIT_DIRS
     export TRAVIS_DEBUG SALT_BOOT_LIGHT_VARS TRAVIS
     export IS_SALT_UPGRADING SALT_BOOT_SYNC_CODE SALT_BOOT_INITIAL_HIGHSTATE
     export SALT_REBOOTSTRAP BUILDOUT_REBOOTSTRAP VENV_REBOOTSTRAP
-    export MS_BRANCH="$(get_ms_branch)"
     export IS_SALT IS_SALT_MASTER IS_SALT_MINION
     export IS_MASTERSALT IS_MASTERSALT_MASTER IS_MASTERSALT_MINION
     export FORCE_IS_SALT FORCE_IS_SALT_MASTER FORCE_IS_SALT_MINION
@@ -1118,11 +1109,8 @@ recap_(){
     fi
     bs_yellow_log "HOST variables:"
     bs_yellow_log "---------------"
-    if [ "x$(get_local_mastersalt_mode)" = "xremote" ];then
-	    bs_log "NICKNAME_FQDN/HOST/DOMAIN: ${NICKNAME_FQDN}/${HOST}/${DOMAINNAME}"
-    else
-	    bs_log "Light install, minion id: $(get_minion_id)"
-    fi
+    bs_log "  Minion Id: $(get_minion_id)"
+    bs_log "HOST/DOMAIN: ${HOST}/${DOMAINNAME}"
     bs_log "DATE: ${CHRONO}"
     bs_log "LOCAL_SALT_MODE: $(get_local_salt_mode)"
     if [ "x$(get_do_mastersalt)" != "xno" ];then
@@ -1913,6 +1901,18 @@ download_file() {
 
 }
 
+may_install_virtualenv() {
+    if [ "x${DO_SALT}" != "xno" ];then
+        return 0
+    fi
+    if [ "x$(get_do_mastersalt)" != "xno" ];then
+        if [ "x${IS_MASTERSALT_MINION}" != "x" ] || [ "x${IS_MASTERSALT}" != "x" ];then
+            return 0
+        fi
+    fi
+    return 1
+}
+
 setup_virtualenvs() {
     if [ ! -e "${VENV_PATH}/salt/bin/salt" ];then
         tmparc="${TMPDIR:-/tmp}/salt.tar.xz"
@@ -1935,13 +1935,8 @@ setup_virtualenvs() {
             bs_log "Warn: virtualenv cache archive not found, will rebuild"
         fi
     fi
-    if [ "x${DO_SALT}" != "xno" ];then
+    if may_install_virtualenv;then
         setup_virtualenv "${SALT_VENV_PATH}"
-    fi
-    if [ "x$(get_do_mastersalt)" != "xno" ];then
-        if [ "x${IS_MASTERSALT_MINION}" != "x" ] || [ "x${IS_MASTERSALT}" != "x" ];then
-            setup_virtualenv "${MASTERSALT_VENV_PATH}"
-        fi
     fi
 }
 
@@ -2101,8 +2096,10 @@ link_salt_dir() {
         fi
         do_link="1"
         if [ -h "${where}/${i}" ];then
-            if [ "x$(readlink ${where}/${i})" != "${vpath}/${i}" ];then
+            if [ "x$(readlink ${where}/${i})" = "x${vpath}/${i}" ];then
                 do_link=""
+            else
+                rm -v "${where}/${i}"
             fi
         fi
         if [ "x${do_link}" != "x" ];then
@@ -2131,34 +2128,24 @@ kill_ms_daemons() {
 }
 
 has_sshd() {
-    has_=""
-    if which sshd 2>/dev/null 1>/dev/null;then
-        has_="1"
+    if which sshd >/dev/null 2>&1;then
+        return 0
     fi
-    has_=""
-    if [ "x${has_sshd}" = "x" ];then
-        for i in /usr /usr/local /usr;do
-            for j in sbin bin;do
-                if [ -x "${i}/${j}/sshd" ];then
-                    has_="1"
-                    break
-                fi
-            done
-            if [ "x${has_sshd}" != "x" ];then
-                break
+    for i in /usr /usr/local /usr;do
+        for j in sbin bin;do
+            if [ -x "${i}/${j}/sshd" ];then
+                return 0
             fi
         done
-    fi
-    echo "${has_}"
+    done
+    return 1
 }
 
 regenerate_openssh_keys() {
-    bs_log "Regenerating sshd server keys"
-    if which dpkg-reconfigure 2>/dev/null 1>/dev/null;then
-        if [ "$(has_sshd)" != "x" ];then
-            /bin/rm /etc/ssh/ssh_host_*
-            dpkg-reconfigure openssh-server
-        fi
+    if has_sshd;then
+        bs_log "Regenerating sshd server keys"
+        /bin/rm /etc/ssh/ssh_host_*
+        "${SALT_MS}/files/usr/bin/reset-host.py" --refresh-sshd_keys
     fi
 }
 
@@ -2530,7 +2517,6 @@ reconfigure_minions() {
     reconfigure_mastersalt_minion
 }
 
-
 create_pillars() {
     # create pillars
     SALT_PILLAR_ROOTS="${SALT_PILLAR}"
@@ -2578,12 +2564,6 @@ EOF
             fi
         fi
     done
-    # do not copy anymore
-    # if [ "x${IS_MASTERSALT}" != "x" ];then
-    #     if [ ! -e  "${MASTERSALT_PILLAR}/database.sls" ];then
-    #         cp -vf "${MASTERSALT_MS}/files/database.sls" "${MASTERSALT_PILLAR}/database.sls"
-    #     fi
-    # fi
 }
 
 create_salt_tops() {
@@ -3020,14 +3000,14 @@ install_salt_daemons() {
     fi
     if [ "x${IS_SALT_MASTER}" != "x" ];then
         if [ ! -e "${ETC_INIT}/salt-master.conf" ]\
-            && [ ! -e "${ETC_SYSTEMD}/salt-master.service" ]\
+            && [ ! -f "${ETC_SYSTEMD}/salt-master.service" ]\
             && [ ! -e "${ETC_INIT}.d/salt-master" ];then
             RUN_SALT_BOOTSTRAP="1"
         fi
     fi
     if [ "x${IS_SALT_MINION}" != "x" ];then
         if [ ! -e "${ETC_INIT}/salt-minion.conf" ]\
-            && [ ! -e "${ETC_SYSTEMD}/salt-minion.service" ]\
+            && [ ! -f "${ETC_SYSTEMD}/salt-minion.service" ]\
             && [ ! -e "${ETC_INIT}.d/salt-minion" ];then
             RUN_SALT_BOOTSTRAP="1"
         fi
@@ -3629,14 +3609,14 @@ install_mastersalt_daemons() {
     fi
     if [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
         if [ ! -e "${ETC_INIT}.d/mastersalt-master" ]\
-            &&  [ ! -e "${ETC_SYSTEMD}/mastersalt-master.service" ]\
+            &&  [ ! -f "${ETC_SYSTEMD}/mastersalt-master.service" ]\
             &&  [ ! -e "${ETC_INIT}/mastersalt-master.conf" ];then
             RUN_MASTERSALT_BOOTSTRAP="1"
         fi
     fi
     if  [ "x${IS_MASTERSALT_MINION}" != "x" ];then
         if [ ! -e "${ETC_INIT}.d/mastersalt-minion" ]\
-            &&  [ ! -e "${ETC_SYSTEMD}/mastersalt-minion.service" ]\
+            &  [ ! -f "${ETC_SYSTEMD}/mastersalt-minion.service" ]\
             && [ ! -e "${ETC_INIT}/mastersalt-minion.conf" ];then
             RUN_MASTERSALT_BOOTSTRAP="1"
         fi
@@ -4472,7 +4452,7 @@ set_dns_minionid() {
 }
 
 set_dns() {
-    if [ "x${NICKNAME_FQDN}" != "x" ];then
+    if [ "x$(get_mastersalt)" != "x" ];then
         if [ "x$(cat /etc/hostname 2>/dev/null|${SED} -e "s/ //")" != "x${HOST}" ];then
             bs_log "Resetting hostname file to ${HOST}"
             echo "${HOST}" > /etc/hostname
