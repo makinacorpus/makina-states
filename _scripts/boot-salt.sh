@@ -648,7 +648,6 @@ set_vars() {
     EGGS_GIT_DIRS="docker-py m2crypto salt salttesting"
     PIP_CACHE="${VENV_PATH}/cache"
     SALT_VENV_PATH="${VENV_PATH}/salt"
-    MASTERSALT_VENV_PATH="${VENV_PATH}/mastersalt"
     CONF_PREFIX="${CONF_PREFIX:-"${CONF_ROOT}/salt"}"
     MCONF_PREFIX="${MCONF_PREFIX:-"${CONF_ROOT}/mastersalt"}"
     # global installation marker
@@ -990,7 +989,7 @@ set_vars() {
     #
     export ROOT PREFIX ETC_INIT ETC_SYSTEMD
     export VENV_PATH CONF_ROOT
-    export MASTERSALT_VENV_PATH SALT_VENV_PATH PIP_CACHE
+    export SALT_VENV_PATH PIP_CACHE
     export MCONF_PREFIX CONF_PREFIX
     #
     export FORCE_SALT_NODETYPE
@@ -1041,19 +1040,12 @@ if OpenSSL_version <= LooseVersion('0.15'):
 # futures
 import concurrent
 EOF
-    if [ "x${?}" != "x0" ];then
-        echo "1"
-    fi
-}
-
-
-check_mastersalt_py_modules() {
-    check_py_modules mastersalt
+    return ${?}
 }
 
 do_pip() {
     # test if salt binaries are there & working
-    ret=""
+    ret=0
     kind="${1:-"salt"}"
     bins="salt salt-api salt-call salt-cloud salt-cp salt-jenkins-build"
     bins="${bins} salt-key salt-master salt-minion salt-run salt-ssh"
@@ -1062,7 +1054,7 @@ do_pip() {
         for i in ${bins};do
             bin="${VENV_PATH}/${kind}/bin/${i}"
             if [ ! -e "${bin}" ];then
-                ret="1"
+                ret=1
                 break
             else
                 py="${VENV_PATH}/${kind}/bin/python"
@@ -1072,18 +1064,14 @@ do_pip() {
                 $SED -e "s/exec(compile(\(.*\)))/compile(\1)/g" "${bin}" > "${fic}"
                 "${py}" "${fic}" 1>/dev/null 2>/dev/null
                 if [ "x${?}" != "x0" ];then
-                    ret="1"
+                    ret=1
                     break
                 fi
                 rm -f "${fic}"
             fi
         done
     fi
-    echo "${ret}"
-}
-
-do_mastersalt_pip() {
-    do_pip mastersalt
+    return ${ret}
 }
 
 # --------- PROGRAM START
@@ -1600,7 +1588,6 @@ git_pack() {
     # pack git repositories in salt scope
     find\
         "${SALT_VENV_PATH}/src" \
-        "${MASTERSALT_VENV_PATH}/src" \
         "${SALT_ROOT}"\
         "${MASTERSALT_ROOT}"\
         "${SALT_PILLAR}"\
@@ -1993,25 +1980,10 @@ setup_virtualenv() {
     if [ ! -e requirements/requirements.txt ];then
         git pull
     fi
-    do_pip_func="do_pip"
-    do_check_mods="check_py_modules"
-    if [ "x${venv_path}" = "x${MASTERSALT_VENV_PATH}" ];then
-        do_pip_func="do_mastersalt_pip"
-        do_check_mods="check_mastersalt_py_modules"
-    fi
-    will_do_pip="y"
-    if [ "x$(${do_pip_func})" = "x" ];then
-        will_do_pip=""
-    fi
-    if [ "x${will_do_pip}" = "x" ];then
-        if [ "x$(${do_check_mods})" != "x" ];then
-            bs_log "Python install incomplete"
-            will_do_pip="y"
-        else
-            bs_log "Pip install in place"
-        fi
-    fi
-    if [ "x${will_do_pip}" != "x" ];then
+    if do_pip && check_py_modules;then
+        bs_log "Pip install in place"
+    else
+        bs_log "Python install incomplete"
         pip install -U --download-cache "${PIP_CACHE}" -r requirements/requirements.txt
         if [ "x${install_git}" != "x" ];then
             pip install -U --download-cache "${PIP_CACHE}" -e "git+$(get_salt_url)@$(get_salt_branch)#egg=salt"
