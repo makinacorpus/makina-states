@@ -648,6 +648,7 @@ set_vars() {
     EGGS_GIT_DIRS="docker-py m2crypto salt salttesting"
     PIP_CACHE="${VENV_PATH}/cache"
     SALT_VENV_PATH="${VENV_PATH}/salt"
+    MASTERSALT_VENV_PATH="${VENV_PATH}/mastersalt"
     CONF_PREFIX="${CONF_PREFIX:-"${CONF_ROOT}/salt"}"
     MCONF_PREFIX="${MCONF_PREFIX:-"${CONF_ROOT}/mastersalt"}"
     # global installation marker
@@ -989,7 +990,7 @@ set_vars() {
     #
     export ROOT PREFIX ETC_INIT ETC_SYSTEMD
     export VENV_PATH CONF_ROOT
-    export SALT_VENV_PATH PIP_CACHE
+    export SALT_VENV_PATH PIP_CACHE MASTERSALT_VENV_PATH
     export MCONF_PREFIX CONF_PREFIX
     #
     export FORCE_SALT_NODETYPE
@@ -1043,7 +1044,7 @@ EOF
     return ${?}
 }
 
-do_pip() {
+is_salt_bins_in_place() {
     # test if salt binaries are there & working
     ret=0
     kind="${1:-"salt"}"
@@ -1888,18 +1889,6 @@ download_file() {
 
 }
 
-may_install_virtualenv() {
-    if [ "x${DO_SALT}" != "xno" ];then
-        return 0
-    fi
-    if [ "x$(get_do_mastersalt)" != "xno" ];then
-        if [ "x${IS_MASTERSALT_MINION}" != "x" ] || [ "x${IS_MASTERSALT}" != "x" ];then
-            return 0
-        fi
-    fi
-    return 1
-}
-
 setup_virtualenvs() {
     if [ ! -e "${VENV_PATH}/salt/bin/salt" ];then
         tmparc="${TMPDIR:-/tmp}/salt.tar.xz"
@@ -1922,8 +1911,13 @@ setup_virtualenvs() {
             bs_log "Warn: virtualenv cache archive not found, will rebuild"
         fi
     fi
-    if may_install_virtualenv;then
+    if [ "x${DO_SALT}" != "xno" ];then
         setup_virtualenv "${SALT_VENV_PATH}"
+    fi
+    if [ "x$(get_do_mastersalt)" != "xno" ];then
+        if [ "x${IS_MASTERSALT_MINION}" != "x" ] || [ "x${IS_MASTERSALT}" != "x" ];then
+            setup_virtualenv "${MASTERSALT_VENV_PATH}"
+        fi
     fi
 }
 
@@ -1980,10 +1974,14 @@ setup_virtualenv() {
     if [ ! -e requirements/requirements.txt ];then
         git pull
     fi
-    if do_pip && check_py_modules;then
-        bs_log "Pip install in place"
+    skind="salt"
+    if [ "x${venv_path}" = "x${MASTERSALT_VENV_PATH}" ];then
+        skind="mastersalt"
+    fi
+    if is_salt_bins_in_place ${skind} && check_py_modules ${skind};then
+        bs_log "Pip install in place for $skind"
     else
-        bs_log "Python install incomplete"
+        bs_log "Python install incomplete for $skind"
         pip install -U --download-cache "${PIP_CACHE}" -r requirements/requirements.txt
         if [ "x${install_git}" != "x" ];then
             pip install -U --download-cache "${PIP_CACHE}" -e "git+$(get_salt_url)@$(get_salt_branch)#egg=salt"
