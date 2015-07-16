@@ -95,7 +95,7 @@ def main(argv=None):
         argv = sys.argv
     opts = parser.parse_args()
     if not opts.destination:
-        opts.destination = opts.name
+        opts.destination = opts.origin
     if opts.reset_ssh:
         copies = set()
         for tkey in 'rsa', 'dsa':
@@ -165,15 +165,16 @@ def main(argv=None):
                 shutil.rmtree(tmpdir)
     if opts.reset_postfix:
         os.system('newaliases')
-    for kind, files in RESET_FILES.items():
-        for fg in files:
-            for fp in glob.glob(fg):
-                if not os.path.exists(fp):
-                    continue
-                if opts.reset_files:
-                    rewrite(fp, opts.origin, opts.destination)
-                if opts.reset_postfix and (kind == 'postfix'):
-                    os.system('postmap {0}'.format(fp))
+    if opts.reset_files or opts.reset_postfix:
+        for kind, files in RESET_FILES.items():
+            for fg in files:
+                for fp in glob.glob(fg):
+                    if not os.path.exists(fp):
+                        continue
+                    if opts.reset_files:
+                        rewrite(fp, opts.origin, opts.destination)
+                    if opts.reset_postfix and (kind == 'postfix'):
+                        os.system('postmap {0}'.format(fp))
 
 
 if __name__ == '__main__':
