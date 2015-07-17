@@ -86,6 +86,7 @@ apparmor-ntp-patch2:
       - mc_proxy: ms-apparmor-cfg-post
 
 {% macro restart(suf='') %}
+{% if salt['mc_nodetypes.is_travis']() %}
 ms-apparmor-restart{{suf}}:
 {% if settings.get('enabled', True) %}
   service.running:
@@ -99,5 +100,6 @@ ms-apparmor-restart{{suf}}:
       - mc_proxy: ms-apparmor-cfg-post
     - watch_in:
       - mc_proxy: ms-apparmor-post
+{% endif %}
 {% endmacro %}
 {{restart()}}

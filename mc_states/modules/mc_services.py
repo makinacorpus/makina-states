@@ -70,11 +70,12 @@ def registry():
         true = not __salt__['mc_nodetypes.is_scratch']()
         allow_lowlevel_states = __salt__['mc_controllers.allow_lowlevel_states']()
         is_docker = __salt__['mc_nodetypes.is_docker']()
+        is_travis = __salt__['mc_nodetypes.is_travis']()
         ids = __salt__['mc_nodetypes.is_docker_service']()
         # sshen = true and (ids or (allow_lowlevel_states and not is_docker))
         sshen = true and ((is_docker and ids) or allow_lowlevel_states)
         ntpen = _ntpEn() and true
-        binden = _bindEn() and true
+        binden = _bindEn() and true and not is_travis
         rsyslogen = _rsyslogEn() and true
         ulogden = _ulogdEn() and true
         ntp_u = False
@@ -93,7 +94,7 @@ def registry():
                 'log.ulogd': {'force': True, 'active': ulogden},
                 'base.ntp': {'force': True, 'active': ntpen},
                 'base.ntp.uninstall': {'active': ntp_u},
-                'base.dbus': {'force': True, 'active': not is_docker},
+                'base.dbus': {'force': True, 'active': not (is_travis or is_docker)},
                 'base.ssh': {'force': True, 'active': sshen},
                 'base.cron': {'force': True, 'active': true},
                 'dns.dhcpd': {'active': False},

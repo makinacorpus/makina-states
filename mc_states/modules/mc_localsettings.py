@@ -104,9 +104,10 @@ def settings(ttl=15*60):
 def apparmor_en():
     ret = False
     is_docker = __salt__['mc_nodetypes.is_docker']()
+    is_travis = __salt__['mc_nodetypes.is_travis']()
     if __grains__['os'] in ['Ubuntu']:
         ret = True
-    return ret and not is_docker
+    return ret and not (is_docker or is_travis)
 
 
 def registry(ttl=15*60):
@@ -115,6 +116,7 @@ def registry(ttl=15*60):
         has_nodejs = __salt__['mc_utils.get'](
             'makina-states.localsettings.nodejs', False)
         is_docker = __salt__['mc_nodetypes.is_docker']()
+        is_travis = __salt__['mc_nodetypes.is_travis']()
         # only some services will be fully done  on mastersalt side if any
         # in scratch mode, deactivating all default configuration for services
         true = not __salt__['mc_nodetypes.is_scratch']()
@@ -129,15 +131,15 @@ def registry(ttl=15*60):
             'grub': {'active': False},
             'git': {'active': true},
             'dns': {'active': False},
-            'hosts': {'active': true and not is_docker},
+            'hosts': {'active': true and not (is_travis or is_docker)},
             'jdk': {'active': False},
-            'etckeeper': {'active': true and not is_docker},
+            'etckeeper': {'active': true and not (is_travis or is_docker)},
             'locales': {'active': true},
             'localrc': {'active': true},
             'desktoptools': {'active': False},
             'mvn': {'active': False},
             'timezone': {'active': true},
-            'network': {'active': true and not is_docker},
+            'network': {'active': true and not (is_travis or is_docker)},
             'nodejs': {'active': False},
             'npm': {'active': has_nodejs},
             'pkgs.mgr': {'active': true},
