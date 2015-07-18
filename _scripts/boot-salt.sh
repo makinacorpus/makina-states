@@ -2115,7 +2115,7 @@ regenerate_openssh_keys() {
     if has_sshd;then
         bs_log "Regenerating sshd server keys"
         find /etc/ssh/ssh_host_* -type f 2>/dev/null|while read f;do rm -vf "${f}";done
-        "${SALT_MS}/files/usr/bin/reset-host.py" --refresh-sshd_keys --origin $(hostname -f)
+        "${SALT_MS}/files/usr/bin/reset-host.py" --reset-sshd_keys --origin $(hostname -f)
     fi
 }
 
