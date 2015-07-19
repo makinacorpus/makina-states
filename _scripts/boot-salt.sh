@@ -3528,6 +3528,9 @@ run_salt_bootstrap_() {
     warn_log
     if [ "x${last_salt_retcode}" != "x0" ];then
         echo "${salt_type}: Failed bootstrap: ${bs}"
+        if [ "x${TRAVIS}" != "x" ];then
+            cat "${SALT_BOOT_OUTFILE}" "${SALT_BOOT_LOGFILE}"
+        fi
         exit 1
     fi
 }
