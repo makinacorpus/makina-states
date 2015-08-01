@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+{% set defaults = salt['mc_supervisor.settings']() %}
+. {{defaults.venv}}/bin/activate
+{{defaults.venv}}/bin/supervisorctl \
+  -c "{{defaults.conf}}" \
+  -u "{{defaults.supervisorctl.username}}"\
+  -p "{{defaults.supervisorctl.password}}" "$@"

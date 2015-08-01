@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source /etc/profile || /bin/true
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_supervisor.settings']() %}
 # MANAGED VIA SALT -- DO NOT EDIT
 # RedHat startup script for a supervisor instance
 # chkconfig: - 90 15
@@ -16,7 +16,7 @@ source /etc/profile || /bin/true
 # Short-Description: ms_supervisor
 # Description:       ms_supervisor
 ### END INIT INFO
-. /srv/apps/supervisor/venv/bin/activate
+. {{settings.venv}}/bin/activate
 TMPDIR="{{data.supervisord.tmpdir}}"
 EFFECTIVE_USER="{{data.supervisord.user}}"
 FORCE_STOP="1"
@@ -29,8 +29,26 @@ export TMPDIR
 [ -f $supervisord ] || exit 1
 [ -f $supervisorctl ] || exit 1
 
+is_lxc() {
+    echo  "$(cat -e /proc/1/environ |grep container=lxc|wc -l|sed -e "s/ //g")"
+}
+
+filter_host_pids() {
+    if [ "x$(is_lxc)" != "x0" ];then
+        echo "${@}"
+    else
+        for pid in ${@};do
+            if [ "x$(grep -q lxc /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
+                 echo ${pid}
+             fi
+         done
+    fi
+}
+
+
 supervisord_pids() {
-    ps aux|grep supervisord|grep -v grep|grep -v supervisorctl|awk '{print $2}'
+    filter_host_pids $(\
+        ps aux|grep supervisord|grep -v grep|grep -v supervisorctl|awk '{print $2}')
 }
 
 RETVAL=0
@@ -52,7 +70,7 @@ stop() {
     if [ "x$(echo ${pids}|wc -w|sed -e "s/  //g")" != "x0" ];then
         "${supervisorctl}" shutdown
         if [ "x${FORCE_STOP}" = "x" ];then
-            echo "Waiting {{data.program.stopwaitsecs|int+1}}sec for exit" 
+            echo "Waiting {{data.program.stopwaitsecs|int+1}}sec for exit"
             sleep "{{data.program.stopwaitsecs|int+1}}"
         fi
     fi
@@ -68,24 +86,39 @@ stop() {
     fi
     return ${RETVAL}
 }
+reload() {
+    echo "Reloading ${supervisord}"
+    pids="$(supervisord_pids)"
+    if [ "x$(echo ${pids}|wc -w|sed -e "s/  //g")" != "x0" ];then
+        "${supervisorctl}" reread && "${supervisorctl}" update
+    else
+        start
+    fi
+    RETVAL=$?
+    return ${RETVAL}
+}
 case "${1}" in
-         start)
-             start
-             ;;
-         stop)
-             stop
-             ;;
-         graceful-stop)
-             FORCE_STOP=""
-             stop
-             ;;
-         restart)
-             stop
-             start
-             ;;
-        *)
-            echo "/etc/init.d/ms_supervisorctl start|stop|restart|graceful-stop"
-            ;;
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    graceful-stop)
+        FORCE_STOP=""
+        stop
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    reload)
+        stop
+        start
+        ;;
+    *)
+        echo "${0} start|stop|restart|reload|graceful-stop"
+        ;;
 esac
 exit $REVAL
 # vim:set ft=sh:
