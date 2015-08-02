@@ -25,11 +25,9 @@ circus-post-conf:
     - watch_in:
       - mc_proxy: circus-pre-restart
       - mc_proxy: circus-post-restart
-
 circus-pre-restart:
   mc_proxy.hook:
     - watch_in:
       - mc_proxy: circus-post-restart
-
 circus-post-restart:
   mc_proxy.hook: []
