@@ -2,6 +2,7 @@
 # managed via salt, do not edit
 # freeze hostile packages
 if [ -f /etc/lsb-release ];then . /etc/lsb-release;fi
+is_upstart="$(echo $(/sbin/init --version || /bin/true) | sed "s/.*upstart.*/matched/g")"
 is_docker=""
 from_systemd="y"
 for i in ${@};do
@@ -9,6 +10,12 @@ for i in ${@};do
         from_systemd="y"
     fi
 done
+echo $is_upstart
+if [ "x${is_upstart}" = "xmatched" ];then
+    is_upstart="y"
+else
+    is_upstart=""
+fi
 for i in /.dockerinit /.dockerenv;do
     if [ -f "${i}" ];then
         is_docker="1"
@@ -257,7 +264,15 @@ fi
 if [ -e /var/run/systemd/notify ];then chmod 777 /var/run/systemd/notify;fi
 # dbus will need the directory to start
 for i in /run/systemd/system /run/uuid;do
-    if [ ! -d ${i} ];then mkdir -p ${i};fi
+    if [ "x${is_upstart}" = "x" ];then
+        if [ ! -d ${i} ];then mkdir -p ${i};fi
+    else
+        if [ "x${i}" = "x/run/systemd/system" ];then
+            if [ -d ${i} ];then
+                rm -rf "${i}"
+            fi
+        fi
+    fi
 done
 # if we found the password reset flag, reset any password found
 if [ -e /sbin/reset-passwords.sh ];then /sbin/reset-passwords.sh || /bin/true;fi
