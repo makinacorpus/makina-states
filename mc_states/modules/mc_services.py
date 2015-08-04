@@ -12,9 +12,13 @@ mc_services / servives registries & functions
 
 # Import salt libs
 import os
+import logging
 import mc_states.api
 
 __name = 'services'
+six = mc_states.api.six
+PREFIX = 'makina-states.{0}'.format(__name)
+logger = logging.getLogger(__name__)
 
 
 def _bindEn(**kwargs):
@@ -57,9 +61,40 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        data = {}
+        _s = __salt__
+        processes_manager = None
+        is_docker = _s['mc_nodetypes.is_docker']()
+        is_docker_service = _s['mc_nodetypes.is_docker_service']()
+        if not is_docker:
+            if not is_docker_service:
+                processes_manager = 'system'
+        if is_docker_service:
+            processes_manager = 'circus'
+        DEFAULTS = {
+            #  one of None | system | circus | supervisor
+            #  None means no service
+            'processes_manager': processes_manager
+        }
+        data = _s['mc_utils.defaults'](PREFIX, DEFAULTS)
         return data
     return _settings()
+
+
+def get_processes_manager(data=None):
+    if not data:
+        data = {}
+    return data.get('processes_manager',
+                    settings()['processes_manager'])
+
+
+def toggle_service(pm='system'):
+    if pm == 'system' or not __salt__['mc_nodetypes.is_docker']():
+        return (pm == 'system') and 'running' or 'dead'
+
+
+def toggle_enable(pm='system'):
+    is_running = toggle_service(pm)
+    return is_running == 'running' and True or False
 
 
 def registry():
