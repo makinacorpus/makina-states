@@ -23,7 +23,5 @@ sshgroup:
       - mc_proxy: ssh-service-prerestart
 {% endmacro %}
 {{ h.deliver_config_files(
-     openssh.get('extra_confs', {})
-     , after_macro=rmacro, 
-     prefix='ssh-')}}
+     openssh.get('extra_confs', {}) , after_macro=rmacro, prefix='ssh-')}}
 {%endif %}
