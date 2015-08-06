@@ -71,7 +71,7 @@ docker-conf-{{f}}:
       - mc_proxy: docker-services-net
 {% endfor %}
 
-{% set url='https://github.com/makinacorpus/docker/releases/download/mc_1/docker-1.8-mc_3.txz' %}
+{% set url='https://github.com/makinacorpus/docker/releases/download/mc_1/docker-1.8-mc_4.xz' %}
 {% set fn = url.split('/')[-1] %}
 {% set hash='36ea74c00f42a37f65a31c84dce43f24' %}
 {% set dhash='81d4391b879c0111c24bd222744dc483' %}
@@ -116,7 +116,7 @@ docker-replace-dist-binaryb:
       - mc_proxy: docker-post-conf
       - mc_proxy: docker-pre-hardrestart
   cmd.run:
-    - name: cd /usr/bin && tar xJvf "/opt/{{fn}}"
+    - name: xz -c -k -d "/opt/{{fn}}" > /usr/bin/docker
     - onlyif: |
               if test ! -e /usr/bin/docker;then exit 0;fi
               test "x$(md5sum /usr/bin/docker|awk '{print $1}')" != "x{{dhash}}"
