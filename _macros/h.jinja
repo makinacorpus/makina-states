@@ -12,10 +12,15 @@
 {{prefix}}{{f}}:
   file.managed:
     - name: "{{fdata.get('target', f)}}"
-    - source: "{{fdata.get('source', 'salt://{0}{1}'.format(dir ,f))}}"
+    - source: "{{fdata.get('source', 'salt://{0}{1}'.format(dir, f))}}"
     - mode: "{{fdata.get('mode', mode)}}"
     - user: "{{fdata.get('user', user)}}"
     - group:  "{{fdata.get('group', group)}}"
+    {% if kwargs %}
+    - context:
+        data: |
+              {{ kwargs | json }}
+    {% endif %}
     {% if fdata.get('makedirs', makedirs) %}
     - makedirs: true
     {% endif %}
