@@ -188,9 +188,6 @@ def update_no_list(dest, upd, recursive_update=True):
                     and isinstance(val, collections.Mapping):
                 ret = update_no_list(dest_subkey, val)
                 dest[key] = ret
-            elif isinstance(dest_subkey, list) \
-                     and isinstance(val, list):
-                dest[key] = val
             else:
                 dest[key] = upd[key]
         return dest
