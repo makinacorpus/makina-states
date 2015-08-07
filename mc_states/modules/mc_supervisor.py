@@ -54,7 +54,6 @@ def settings():
                     '/etc/logrotate.d/supervisor.conf': {"mode": "644"},
                     '/usr/bin/ms_supervisorctl': {"mode": "755"},
                     '/etc/init.d/ms_supervisor': {"mode": "755"},
-                    '/etc/init/ms_supervisor.conf': {"mode": "755"},
                     '/etc/systemd/system/ms_supervisor.service': {
                         "mode": "644"}
                 },

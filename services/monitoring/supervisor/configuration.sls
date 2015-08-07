@@ -30,6 +30,15 @@ supervisor-setup-conf-directories:
     - watch_in:
       - mc_proxy: supervisor-post-conf
 
+supervisor-cleanup:
+  file.absent:
+    - names:
+      - /etc/init/ms_supervisor.conf
+    - watch:
+      - mc_proxy: supervisor-pre-conf
+    - watch_in:
+      - mc_proxy: supervisor-post-conf
+
 {% for i in ['supervisord', 'supervisorctl'] %}
 file-symlink-{{i}}:
   file.symlink:
