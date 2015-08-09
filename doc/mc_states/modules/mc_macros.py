@@ -40,7 +40,7 @@ _LOCAL_REG_CACHE = {}
 
 
 NOT_SHARED = ['controllers', 'services', 'nodetypes',
-              'localsettings', 'cloud']
+              'services_managers', 'localsettings', 'cloud']
 log = logging.getLogger(__name__)
 DEFAULT_SUF = 'makina-states.local'
 DEFAULT_LOCAL_REG_NAME = '{0}.{{0}}'.format(DEFAULT_SUF)

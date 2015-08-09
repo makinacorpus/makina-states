@@ -28,14 +28,13 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
         log = '/var/log/circus/circus.log'
         locs = __salt__['mc_locations.settings']()
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.circus', {
                 'location': locs['apps_dir'] + '/circus',
                 'venv': '{location}/venv',
+                'tmpdir': '/tmp',
                 'log': log,
                 'conf': '/etc/circus/circusd.ini',
                 'rotate': __salt__['mc_logrotate.settings'](),
@@ -45,6 +44,19 @@ def settings():
                     'circus==0.12.1',
                     'circus-web==0.5',
                 ],
+                'services': ['circusd'],
+                'configs': {
+                    # compat wrapper
+                    '/usr/bin/circus.sh': {'mode': '755'},
+                    '/etc/systemd/system/circusd.service': {'mode': '644'},
+                    '/usr/bin/ms_circusctl': {'mode': '755'},
+                    '/etc/init.d/circusd': {'mode': '755'},
+                    '/etc/default/circusd': {'mode': '644'},
+                    '/etc/circus/circusd.conf.d/010_global.ini': {
+                        'mode': '644'},
+                    '/etc/logrotate.d/circus.conf': {'mode': '644'},
+                    '/etc/circus/circusd.ini': {'mode': '644'},
+                },
                 # parameters to set in circus configuration section
                 'circusd': {
                     'warmup_delay': "0",
@@ -68,7 +80,3 @@ def settings():
         )
         return data
     return _settings()
-
-
-
-#

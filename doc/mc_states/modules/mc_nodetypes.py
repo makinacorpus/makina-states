@@ -70,32 +70,12 @@ def is_fs_nodetype(nodetype):
     return is_nodetype
 
 
-def is_container_nodetype(nodetype):
-    is_nodetype = None
-    if nodetype in ['lxccontainer', 'dockercontainer']:
-        nt = nodetype.replace('container', '')
-        try:
-            is_nodetype = __salt__[
-                'mc_nodetypes.is_{0}'.format(nt)]()
-        except Exception:
-            is_nodetype = None
-    return is_nodetype
-
-
-def is_travis():
-    return makina_grains._is_travis()
-
-
 def is_nt(nodetype):
     is_nodetype = None
-    if nodetype == 'travis':
-        is_nodetype = is_travis()
     is_nodetype = __salt__['mc_utils.get'](
         'makina-states.nodetypes.{0}'.format(nodetype), None)
     if is_nodetype is None:
         is_nodetype = is_fs_nodetype(nodetype)
-    # if is_nodetype is None:
-    #     is_nodetype = is_container_nodetype(nodetype)
     if is_nodetype is None:
         is_nodetype = False
     return is_nodetype
@@ -145,24 +125,82 @@ def is_scratch():
     return not true
 
 
-def is_devhost():
-    return makina_grains._is_devhost()
+def is_travis():
+    return makina_grains._is_travis()
 
 
 def is_docker():
     return makina_grains._is_docker()
 
 
-def is_container():
+def is_lxc():
+    return makina_grains._is_lxc()
 
-    return makina_grains._is_container()
+
+def is_container():
+    return is_lxc() or is_docker()
+
+
+def is_vagrantvm():
+    return makina_grains._is_vagrantvm()
+
+
+def is_devhost():
+    return makina_grains._is_devhost() or is_vagrantvm()
+
+
+def is_container_nodetype(nodetype):
+    is_nodetype = None
+    _s = __salt__
+    if nodetype in ['lxccontainer', 'dockercontainer']:
+        nt = nodetype.replace('container', '')
+        try:
+            is_nodetype = _s['mc_nodetypes.is_{0}'.format(nt)]()
+        except Exception:
+            is_nodetype = None
+    return is_nodetype
 
 
 def is_docker_service():
     return (
         is_docker() and
-        not __salt__['mc_controllers.mastersalt_mode']()
-    )
+        not __salt__['mc_controllers.mastersalt_mode']())
+
+
+def is_vm():
+    reg = registry()
+    for i in [
+        'lxccontainer',
+        'dockercontainer',
+        'vagrantvm',
+        'devhost',
+        'travis',
+        'kvm',
+        'vm',
+    ]:
+        if is_nt(i):
+            return True
+        elif reg['is'].get(i, False):
+            return True
+    for i in [
+        is_travis,
+        is_devhost,
+        is_vagrantvm,
+        is_docker,
+        is_container,
+        is_lxc
+    ]:
+        if i():
+            return True
+    return False
+
+
+def has_system_services_manager():
+    '''
+    Does the actual host has a system level services manager
+    aka a PIDEINS
+    '''
+    return not is_docker()
 
 
 def activate_sysadmin_states():
@@ -173,14 +211,4 @@ def activate_sysadmin_states():
         is_docker_service()
     ):
         return True
-    return False
-
-
-def is_vm():
-    reg = registry()
-    if is_container():
-        return True
-    for i in ['kvm', 'travis']:
-        if reg['is'].get(i, False):
-            return True
     return False

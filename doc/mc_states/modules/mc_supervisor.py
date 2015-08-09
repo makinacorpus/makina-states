@@ -29,8 +29,6 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
         supervisor_reg = __salt__[
             'mc_macros.get_local_registry'](
                 'supervisor', registry_format='pack')
@@ -51,10 +49,16 @@ def settings():
                     '/etc/supervisor.d/*.conf',
                     '/etc/supervisor.d/*.ini',
                 ]),
-                'conf_template': (
-                    'salt://makina-states/files/etc/supervisord.conf'
-                ),
-                'requirements': ['supervisor==3.0'],
+                'services': ['ms_supervisor'],
+                'configs': {
+                    '/etc/supervisord.conf': {"mode": "644"},
+                    '/etc/logrotate.d/supervisor.conf': {"mode": "644"},
+                    '/usr/bin/ms_supervisorctl': {"mode": "755"},
+                    '/etc/init.d/ms_supervisor': {"mode": "755"},
+                    '/etc/systemd/system/ms_supervisor.service': {
+                        "mode": "644"}
+                },
+                'requirements': ['supervisor==3.2.0'],
                 # parameters to set in supervisor configuration section
                 'program': {
                     'autostart': 'true',
@@ -108,7 +112,3 @@ def settings():
             registry_format='pack')
         return data
     return _settings()
-
-
-
-#

@@ -225,7 +225,7 @@ def settings():
         ifaces.sort(key=sort_ifaces)
         devhost_ip = None
         forced_ifs = {}
-        devhost = __salt__['mc_nodetypes.registry']()['is']['devhost']
+        devhost = __salt__['mc_nodetypes.is_devhost']()
         real_ifaces = [(a, ip)
                        for a, ip in ifaces
                        if 'br' not in a and

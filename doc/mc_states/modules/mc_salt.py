@@ -147,7 +147,7 @@ def settings():
         crons = True
         env = saltmods['mc_env.settings']()['env']
         if (
-            nodetypes_reg['is']['devhost']
+            __salt__['mc_nodetypes.is_devhost']()
             or env in ['dev']
         ):
             crons = False

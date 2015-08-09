@@ -685,6 +685,20 @@ def set_project(cfg):
     return cfg
 
 
+def uncache_project(name):
+    '''Uncache a configuration after an initial load
+    either by it's name or by its structure'''
+    if isinstance(name, dict):
+        name = name['name']
+    __opts__.get('ms_projects', {}).pop(name, None)
+    __opts__.pop('ms_project_name', None)
+    for cfg, remote_host in [
+        a for a in __opts__.get('ms_projects', {})
+    ]:
+        if cfg == name:
+            __opts__.pop((cfg, remote_host), None)
+
+
 def get_project(name, *args, **kwargs):
     '''
     Alias of get_configuration for convenience
@@ -710,14 +724,19 @@ def _get_contextual_cached_project(name, remote_host=None):
     return cfg
 
 
+'''
+Seems not be used
+Deactivate in a while ;)
+
 def refresh_cached_configuration(name, *args, **kwargs):
-    '''
+    \'''
     To inter operate with external tools, we will
     cache a serialized configuration inside the project root
-    '''
+    \'''
     get_configuration(name *args, **kwargs)
     json_cfg = __salt__['mc_utils.json_dump'](cfg)
     pack_cfg = __salt__['mc_utils.json_dump'](cfg)
+'''
 
 
 def get_configuration(name, *args, **kwargs):
@@ -822,11 +841,15 @@ def get_configuration(name, *args, **kwargs):
 
     '''
     cfg = _prepare_configuration(name, *args, **kwargs)
-    if not (
-        cfg.get('force_reload', True) or
-        kwargs.get('force_reload', False)
-    ) and cfg.get('cfg_is_loaded'):
-        return cfg
+    to_reload = (cfg.get('force_reload', None) or
+                 kwargs.get('force_reload', None))
+    if cfg.get('cfg_is_loaded'):
+        if to_reload:
+            uncache_project(cfg['name'])
+            cfg = _prepare_configuration(name, *args, **kwargs)
+            cfg['force_reload'] = True
+        else:
+            return cfg
     _s = __salt__
     salt_settings = _s['mc_salt.settings']()
     salt_root = salt_settings['saltRoot']
@@ -1954,7 +1977,11 @@ def init_project(name, *args, **kwargs):
                 sync_working_copy(wc, user=user, rev=rev, ret=ret)
         link(name, *args, **kwargs)
         refresh_files_in_working_copy_kwargs = copy.deepcopy(kwargs)
-        refresh_files_in_working_copy_kwargs.pop('remote_less', None)
+        for k in [
+            'user', 'group', 'project', 'init_data', 'force', 'do_push',
+            'remote_less', 'api_version', 'remote_less'
+        ]:
+            refresh_files_in_working_copy_kwargs.pop(k, None)
         refresh_files_in_working_copy_kwargs['commit_all'] = commit_all
         pillar = os.path.join(cfg['pillar_root'], 'init.sls')
         if not os.path.exists(pillar):
@@ -2005,6 +2032,12 @@ def init_project(name, *args, **kwargs):
                             cfg['push_salt_url']))
     msplitstrip(ret)
     return _filter_ret(ret, cfg['raw_console_return'])
+
+
+def reload_cfg(cfg, *args, **kwargs):
+    kwargs['force_reload'] = True
+    cfg = get_configuration(cfg['name'], *args, **kwargs)
+    return cfg
 
 
 def guarded_step(cfg,
@@ -2078,15 +2111,27 @@ def execute_garded_step(name,
 
 
 def sync_modules(name, *args, **kwargs):
+    '''
+    Install custom modules to the salt modules directory
+    in the global module dir,
+
+    Note: we install two symlinks to provide room for overlapping modules
+    eg: project1/project/.salt/_modules/foo.py:bar can be called::
+
+          salt-call foo.bar()
+          salt-call foo_foo.bar()
+
+    '''
     cfg = get_configuration(name, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
     _s = __salt__
     salt_root = cfg['salt_root']
     system_salt = __opts__['file_roots']['base'][0]
     if _s['mc_controllers.mastersalt_mode']():
-       k = 'mastersalt'
+        k = 'mastersalt'
     else:
-       k = 'salt'
+        k = 'salt'
+
     saltsettings = __salt__['mc_salt.settings']()[
         'data_mappings']['minion'][k]
     for config_opt, dirs in saltsettings['saltmods'].items():
@@ -2094,24 +2139,26 @@ def sync_modules(name, *args, **kwargs):
         _d = os.path.basename(dest)
         orig = os.path.join(salt_root, _d)
         if os.path.isdir(orig):
-            for i in [
+            for module in [
                 a for a in os.listdir(orig)
                 if a.endswith('.py')
             ]:
-                lnk = os.path.join(orig,  i)
-                lnkdst = os.path.join(dest, i)
-                if os.path.exists(lnkdst):
-                    if os.path.islink(lnkdst):
-                        if os.readlink(lnkdst) == lnk:
-                            continue
-                    _s['file.remove'](lnkdst)
-                if os.path.isfile(lnk):
-                    if not os.path.exists(dest):
-                        os.makedirs(dest)
-                    _append_comment(
-                        ret, summary=(
-                            'Linking {0} <- {1}'.format(lnkdst, lnk)))
-                    _s['file.symlink'](lnk, lnkdst)
+                lnk = os.path.join(orig,  module)
+                for j in ['{module}', '{name}_{module}']:
+                    i = j.format(**locals())
+                    lnkdst = os.path.join(dest, i)
+                    if os.path.exists(lnkdst):
+                        if os.path.islink(lnkdst):
+                            if os.readlink(lnkdst) == lnk:
+                                continue
+                        _s['file.remove'](lnkdst)
+                    if os.path.isfile(lnk):
+                        if not os.path.exists(dest):
+                            os.makedirs(dest)
+                        _append_comment(
+                            ret, summary=(
+                                'Linking {0} <- {1}'.format(lnkdst, lnk)))
+                        _s['file.symlink'](lnk, lnkdst)
     return ret
 
 
@@ -2125,12 +2172,14 @@ def deploy(name, *args, **kwargs):
 
     Run only one or certain install step::
 
-        salt-call --local -ldebug mc_project.deploy <name> only=install only_steps=00_foo
-        salt-call --local -ldebug mc_project.deploy <name> only=install only_steps=00_foo,02_bar
+        salt-call --local -ldebug mc_project.deploy\\
+                <name> only=install only_steps=00_foo
+        salt-call --local -ldebug mc_project.deploy\\
+                <name> only=install only_steps=00_foo,02_bar
 
     Only run install & fixperms step::
 
-        salt-call --local -ldebug mc_project.deploy <name> only=install,fixperms
+        salt-call --local -ldebug mc_project.deploy <n> only=install,fixperms
 
     Deploy entirely (this is what is run whithin the git hook)::
 
@@ -2138,8 +2187,8 @@ def deploy(name, *args, **kwargs):
 
     Skip a particular step::
 
-        salt-call --local -ldebug mc_project.deploy <name> skip_release_sync=True \\
-                skip_archive=True skip_notify=True
+        salt-call --local -ldebug mc_project.deploy <name>\\
+                skip_release_sync=True skip_archive=True skip_notify=True
 
     '''
     ret = _get_ret(name, *args, **kwargs)
@@ -2158,6 +2207,8 @@ def deploy(name, *args, **kwargs):
     # okay, if backups are now done and in OK status
     # hand tights for the deployment
 
+    only_steps = kwargs.get('only_steps', None)
+    # be sure to have modules pre-synced
     if ret['result']:
         guarded_step(cfg,
                      ['sync_modules'],
@@ -2165,14 +2216,12 @@ def deploy(name, *args, **kwargs):
                      inner_step=True,
                      ret=ret)
 
-    only_steps = kwargs.get('only_steps', None)
     if ret['result']:
         guarded_step(cfg,
                      ['release_sync'],
                      rollback=True,
                      inner_step=True,
                      ret=ret)
-        cfg['force_reload'] = True
         cfg = get_configuration(name, *args, **kwargs)
 
     if ret['result']:
@@ -2258,6 +2307,7 @@ def archive(name, *args, **kwargs):
 def release_sync(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
     iret = init_project(name, *args, **kwargs)
+    cfg = reload_cfg(cfg)
     return iret
 
 

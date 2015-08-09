@@ -187,6 +187,14 @@ def _nodetype():
     return _get_msconf('nodetype')
 
 
+def _is_vagrantvm():
+    return _get_msconf('nodetype') in ['vagrantvm']
+
+
+def _is_kvm():
+    return _get_msconf('nodetype') in ['kvm']
+
+
 def _bootsalt_mode():
     return _get_msconf('bootsalt_mode')
 
@@ -245,18 +253,21 @@ def get_makina_grains():
     '''
     routes, default_route, gw = _routes()
     grains = {'makina.upstart': _is_upstart(),
+              'makina.systemd': _is_systemd(),
+              'makina.bootsalt_mode': _bootsalt_mode(),
+              'makina.nodetype': _nodetype(),
               'makina.container': _is_container(),
               'makina.vm': _is_vm(),
+              'makina.travis': _is_travis(),
               'makina.lxc': _is_lxc(),
-              'makina.nodetype': _nodetype(),
-              'makina.bootsalt_mode': _bootsalt_mode(),
-              'makina.systemd': _is_systemd(),
-              'makina.pgsql_vers': _pgsql_vers(),
               'makina.docker': _is_docker(),
+              'makina.kvm': _is_kvm(),
+              'makina.vagrantvm': _is_vagrantvm(),
+              'makina.devhost': _is_devhost(),
               'makina.devhost_num': _devhost_num(),
+              'makina.pgsql_vers': _pgsql_vers(),
               'makina.default_route': default_route,
               'makina.default_gw': gw,
               'makina.routes': routes}
-
     return grains
 # vim:set et sts=4 ts=4 tw=80:

@@ -10,6 +10,7 @@ Registries
    mc_controllers.rst
    mc_localsettings.rst
    mc_services.rst
+   mc_services_managers.rst
 
 
 RemoteExecution/PaaS/ProjectManagement modules

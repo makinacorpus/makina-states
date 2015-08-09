@@ -24,18 +24,24 @@ six = api.six
 log = logging.getLogger(__name__)
 
 
+def test_ns(ns):
+    ret = False
+    try:
+        request = dns.message.make_query('fr', dns.rdatatype.NS)
+        res = dns.query.tcp(request, ns, timeout=5)
+        if res.rcode() == 0:
+            ret = ns
+    except Exception:
+        pass
+    return ret
+
+
 def gateway_ns():
     # try to default nameserver to the default gateway addr
     ns = None
     routes, route, gw = makina_grains._routes()
-    if gw:
-        try:
-            request = dns.message.make_query('fr', dns.rdatatype.NS)
-            res = dns.query.tcp(request, gw, timeout=5)
-            if res.rcode() == 0:
-                ns = gw
-        except (Exception,):
-            pass
+    if test_ns(gw):
+        ns = gw
     return ns
 
 

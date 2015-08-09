@@ -56,7 +56,7 @@ def select_networks(data=None):
 
 def select_mode(data):
     nodetypes_registry = __salt__['mc_nodetypes.registry']()
-    if nodetypes_registry['is']['devhost'] and not data['mode']:
+    if __salt__['mc_nodetypes.is_devhost']() and not data['mode']:
         data['mode'] = 'localdeliveryonly'
     data['mode'] = {
         'localdeliveryonly': 'localdeliveryonly',
@@ -70,7 +70,7 @@ def select_mode(data):
 def select_catchall(data):
     nodetypes_registry = __salt__['mc_nodetypes.registry']()
     if data['catchall'] is None:
-        if nodetypes_registry['is']['devhost']:
+        if __salt__['mc_nodetypes.is_devhost']():
             data['catchall'] = 'vagrant@localhost'
         elif data['mode'] in ['localdeliveryonly']:
             data['catchall'] = 'root@localhost'
@@ -277,7 +277,7 @@ def settings():
                 'virtual_map': [],
                 'catchall': None})
         if data['recipient_access'] is None:
-            data['recipient_access'] = {'/.*/': 'smtpd_permissive'}
+            data['recipient_access'] = [{'/.*/': 'smtpd_permissive'}]
         data = select_mode(data)
         data = select_catchall(data)
         data = select_networks(data)
