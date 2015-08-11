@@ -29,8 +29,6 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
         supervisor_reg = __salt__[
             'mc_macros.get_local_registry'](
                 'supervisor', registry_format='pack')
@@ -53,12 +51,10 @@ def settings():
                 ]),
                 'configs': {
                     '/etc/supervisord.conf': {"mode": "644"},
-                    '/etc/logrotate.d/supervisor.conf ': {"mode": "755"},
-                    '/etc/logrotate.d/supervisor.conf ': {"mode": "644"},
+                    '/etc/logrotate.d/supervisor.conf': {"mode": "644"},
                     '/usr/bin/ms_supervisorctl': {"mode": "755"},
                     '/etc/init.d/ms_supervisor': {"mode": "755"},
                     '/etc/init/ms_supervisor.conf': {"mode": "755"},
-                    '/usr/bin/ms_supervisor.sh': {"mode": "755"},
                     '/etc/systemd/system/ms_supervisor.service': {
                         "mode": "644"}
                 },
@@ -116,7 +112,3 @@ def settings():
             registry_format='pack')
         return data
     return _settings()
-
-
-
-#

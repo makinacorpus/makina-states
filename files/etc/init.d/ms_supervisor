@@ -16,7 +16,7 @@ source /etc/profile || /bin/true
 # Short-Description: ms_supervisor
 # Description:       ms_supervisor
 ### END INIT INFO
-. {{settings.venv}}/bin/activate
+. {{data.venv}}/bin/activate
 TMPDIR="{{data.supervisord.tmpdir}}"
 EFFECTIVE_USER="{{data.supervisord.user}}"
 FORCE_STOP="1"
@@ -54,7 +54,7 @@ supervisord_pids() {
 RETVAL=0
 start() {
     echo "Starting ${supervisord}"
-    "${supervisord}" -c '{{data.conf}}'
+    "${supervisord}" -c '{{data.conf}}' "${@}"
     RETVAL="${?}"
     if [ "x${RETVAL}" = "x0" ];then
         touch "${lock}"
@@ -77,7 +77,7 @@ stop() {
     pids="$(supervisord_pids)"
     if [ "x$(echo ${pids}|wc -w|sed -e "s/  //g")" != "x0" ];then
         for pid in ${pids};do
-            kill -9  $pid
+            kill -9 $pid || /bin/true
         done
     fi
     RETVAL=${?}
@@ -92,29 +92,33 @@ reload() {
     if [ "x$(echo ${pids}|wc -w|sed -e "s/  //g")" != "x0" ];then
         "${supervisorctl}" reread && "${supervisorctl}" update
     else
-        start
+        start "${@}"
     fi
     RETVAL=$?
     return ${RETVAL}
 }
 case "${1}" in
     start)
-        start
+        shift
+        start "$@"
         ;;
     stop)
-        stop
+        shift
+        stop "$@"
         ;;
     graceful-stop)
         FORCE_STOP=""
-        stop
+        shift
+        stop "$@"
         ;;
     restart)
+        shift
         stop
-        start
+        start "$@"
         ;;
     reload)
-        stop
-        start
+        shift
+        reload "$@"
         ;;
     *)
         echo "${0} start|stop|restart|reload|graceful-stop"
