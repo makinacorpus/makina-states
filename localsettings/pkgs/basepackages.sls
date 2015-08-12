@@ -9,13 +9,7 @@
 {%- set locs = salt['mc_locations.settings']() %}
 include:
   - makina-states.localsettings.pkgs.hooks
-  {% if not light %}
-  - makina-states.localsettings.pkgs.tools
-  {% endif %}
-
 {% set pkgs = salt['mc_pkgs.settings']() %}
-
-
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}
 before-ubuntu-pkg-install-proxy:
   mc_proxy.hook:
@@ -27,9 +21,6 @@ before-ubuntu-pkg-install-proxy:
       - pkg: ubuntu-pkgs
       {% endif %}
       - pkg: sys-pkgs
-      - pkg: dev-pkgs
-      - pkg: net-pkgs
-      - pkg: salt-pkgs
 
 after-ubuntu-pkg-install-proxy:
   mc_proxy.hook:
@@ -40,9 +31,6 @@ after-ubuntu-pkg-install-proxy:
       - pkg: ubuntu-pkgs
       {% endif %}
       - pkg: sys-pkgs
-      - pkg: dev-pkgs
-      - pkg: net-pkgs
-      - pkg: salt-pkgs
     - watch_in:
       - mc_proxy: after-pkg-install-proxy
 
@@ -52,7 +40,6 @@ ubuntu-pkgs:
     - pkgs:
       - debian-archive-keyring
       - debian-keyring
-      - ca-certificates
       - ubuntu-cloudimage-keyring
       - ubuntu-cloud-keyring
       {% if grains ['osrelease'] < '15.04' %}
@@ -60,9 +47,6 @@ ubuntu-pkgs:
       {% endif %}
       - ubuntu-keyring
       # light version of ubuntu-minimal
-      {% if not salt['mc_nodetypes.is_container']() %}
-      - ubuntu-minimal
-      {% else %}
       # those are harmful packages in a generic container context
       # - whiptail
       # - udev
@@ -79,33 +63,23 @@ ubuntu-pkgs:
       - apt
       - apt-utils
       - console-setup
+      - ca-certificates
       - debconf
       - debconf-i18n
       - ifupdown
-      {% if grains.get('osrelease', '') >= '13.10' %}
-      - iproute2
-      {% endif %}
       - iputils-ping
       - locales
       - lsb-release
       - mawk
-      - net-tools
       - netbase
-      - netcat-openbsd
-      - ntpdate
       - passwd
       - procps
       - python3
       - resolvconf
-      - rsyslog
       - sudo
       - tzdata
       - vim-tiny
-      {% endif %}
       # light version of ubuntu-standard
-      {% if not light %}
-      - ubuntu-standard
-      {% else %}
       # those are harmful packages in a generic container context
       #- command-not-found
       #- friendly-recovery
@@ -131,7 +105,6 @@ ubuntu-pkgs:
       - apt-transport-https
       - iputils-tracepath
       - uuid-runtime
-      {% endif %}
 {%- endif %}
 {% if grains.get('osrelease', '') != '5.0.10' and (not grains.get('lsb_distrib_codename') in ['wheezy', 'sarge'])%}
 {% set nojq = True%}
@@ -144,81 +117,48 @@ sys-pkgs:
     - pkgs:
       {% if salt['mc_controllers.allow_lowlevel_states']() %}
       - lvm2
-      - pv
       - bridge-utils
       {% endif %}
-      - htop
       - acl
-      - libacl1-dev
-      - bash-completion
       - bzip2
       - cron
       - findutils
       - locales
-      - man-db
-      - libopts25
-      - manpages
-      {% if not nojq %}
-      - jq
-      {% endif %}
+      {% if not nojq %}- jq{% endif %}
       - lsof
       - mlocate
+      - netcat-openbsd
       - psmisc
-      - debootstrap
       - gnupg
-      - pwgen
       - virt-what
       - python
+      - bsdtar
+      - screen
       - python-dev
       - sudo
-      - bsdtar
-      - socat
-      - screen
       - tzdata
-      - tree
       - unzip
       - zip
       {% if grains['os_family'] == 'Debian' -%}
       - python-software-properties
       - debconf-utils
-      - dstat
+      - at
       {%- endif %}
-# too much consuming
-#      - atop
-#      - vnstat
-
-{% if salt['mc_nodetypes.is_devhost']() %}
-devhost-pkgs:
-  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
-    - pkgs:
-      - localepurge
-{%- endif %}
-
-dev-pkgs:
-  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
-    - pkgs:
+      {% if salt['mc_nodetypes.is_devhost']() %}- localepurge{%- endif %}
       - git
       - git-core
-
-net-pkgs:
-  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
-    - pkgs:
-      - wget
-      - curl
-      - dnsutils
-      - net-tools
-      - rsync
-      - telnet
-      - tcpdump
-      - openssh-client
-      {% if not light %}
-      - ntp
-      - vlan
-      {% endif %}
-
-salt-pkgs:
-  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
-    - pkgs:
+      {# salt-pkgs #}
       - python-apt
       - libgmp3-dev
+      {# net-pkgs #}
+      - vlan
+      - wget
+      - curl
+      {% if grains.get('osrelease', '') >= '13.10' %}
+      - iproute2
+      {% endif %}
+      - rsync
+      - openssh-client
+      - socat
+      - telnet
 {% endif %}

@@ -1,5 +1,6 @@
 include:
   - makina-states.localsettings.pkgs.hooks
+
 useful-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
@@ -13,7 +14,6 @@ useful-pkgs:
       - ntfs-3g
       - ppp
       - tmux
-      - manpages-fr
       - lynx
       - acpid
       - smartmontools
@@ -49,10 +49,19 @@ useful-pkgs:
       - vim
       - language-pack-en
       - language-pack-fr
-      - rsyslog
-      - apport
+      - pv
+      - htop
+      - man-db
+      - manpages
+      - manpages-fr
+      - debootstrap
+      - pwgen
+      - tree
+      {# net-pkgs #}
+      - dnsutils
+      - net-tools
+      - tcpdump
     - watch:
       - mc_proxy: before-pkg-install-proxy
     - watch_in:
       - mc_proxy: after-pkg-install-proxy
-
