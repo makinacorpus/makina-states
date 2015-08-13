@@ -142,7 +142,7 @@ sys-pkgs:
       {% if grains['os_family'] == 'Debian' -%}
       - python-software-properties
       - debconf-utils
-      - at
+      - dstat
       {%- endif %}
       {% if salt['mc_nodetypes.is_devhost']() %}- localepurge{%- endif %}
       - git
