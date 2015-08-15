@@ -606,7 +606,7 @@ set_vars() {
     ONLY_BUILDOUT_REBOOTSTRAP="${ONLY_BUILDOUT_REBOOTSTRAP:-}"
     BUILDOUT_REBOOTSTRAP="${BUILDOUT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
     SALT_REBOOTSTRAP="${SALT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
-    BASE_PACKAGES="python-software-properties curl python-virtualenv git rsync"
+    BASE_PACKAGES="python-software-properties curl python-virtualenv git rsync libzmq3-dev"
     BASE_PACKAGES="${BASE_PACKAGES} libmemcached-dev acl build-essential m4 libtool pkg-config autoconf gettext bzip2"
     BASE_PACKAGES="${BASE_PACKAGES} groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
     BASE_PACKAGES="${BASE_PACKAGES} debconf-utils swig libssl-dev libgmp3-dev libffi-dev"
