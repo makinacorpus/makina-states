@@ -7,8 +7,8 @@ include:
 lxc-repo:
   {# 04/06/2015: lxcfs & lxc are utterly bugged in stable #}
   cmd.run:
-    - name: sed -i -re "/daily/d" {{locs.conf_dir}}/apt/sources.list.d/lxc.list && echo changed='false'
     #- name: sed -i -re "/stable/d" {{locs.conf_dir}}/apt/sources.list.d/lxc.list && echo changed='false'
+    - name: sed -i -re "/daily/d" {{locs.conf_dir}}/apt/sources.list.d/lxc.list && echo changed='false'
     - stateful: true
     - onlyif: test -e {{locs.conf_dir}}/apt/sources.list.d/lxc.list
     - watch:
@@ -16,11 +16,8 @@ lxc-repo:
     - watch_in:
       - pkgrepo: lxc-repo
   pkgrepo.managed:
-    - name: lxc
-    - humanname: LXC PPA
-    - name: deb http://ppa.launchpad.net/ubuntu-lxc/stable/ubuntu {{pkgssettings.ppa_dist}} main
     #- name: deb http://ppa.launchpad.net/ubuntu-lxc/daily/ubuntu {{pkgssettings.ppa_dist}} main
-    - dist: {{pkgssettings.ppa_dist}}
+    - name: deb http://ppa.launchpad.net/ubuntu-lxc/stable/ubuntu {{pkgssettings.ppa_dist}} main
     - file: {{locs.conf_dir}}/apt/sources.list.d/lxc.list
     - keyid: 7635B973
     - keyserver: keyserver.ubuntu.com
@@ -28,7 +25,10 @@ lxc-repo:
       - mc_proxy: lxc-pre-pkg
 
 mclxc-repo:
+  file.absent:
+    - name: {{locs.conf_dir}}/apt/sources.list.d/lxcmc.list
   {# 04/06/2015: lxcfs & lxc are utterly bugged in stable #}
+  {#
   pkgrepo.managed:
     - name: lxc
     - humanname: LXCMC PPA
@@ -39,6 +39,7 @@ mclxc-repo:
     - keyserver: keyserver.ubuntu.com
     - watch:
       - mc_proxy: lxc-pre-pkg
+  #}
 
 lxc-pkgs:
   {#pkg.{{salt['mc_pkgs.settings']()['installmode']}}: #}
@@ -63,5 +64,5 @@ lxc-pkgs:
     - watch:
       - mc_proxy: lxc-pre-pkg
       - pkgrepo: lxc-repo
-      - pkgrepo: mclxc-repo
+      - file: mclxc-repo
 {%endif %}
