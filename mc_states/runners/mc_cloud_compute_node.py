@@ -315,8 +315,11 @@ def provision_compute_nodes(skip=None, only=None,
             except Exception, exc:
                 trace = traceback.format_exc()
                 cret = {'result': False,
-                        'output': 'unknown error on {0}\n{1}'.format(cn, exc),
-                        'comment': 'unknown error on {0}\n'.format(cn),
+                        'output': ('provision: '
+                                   'unknown error on {0}\n{1}'
+                                   '').format(cn, exc),
+                        'comment': ('provision: unknown error on {0}\n'
+                                    '').format(cn),
                         'trace': trace}
         if cret['result']:
             if cn not in provision:
@@ -370,8 +373,9 @@ def post_provision_compute_nodes(skip=None, only=None,
         except Exception, exc:
             trace = traceback.format_exc()
             cret = {'result': False,
-                    'output': 'unknown error on {0}\n{1}'.format(cn, exc),
-                    'comment': 'unknown error on {0}\n'.format(cn),
+                    'output': ('postdeploy: '
+                               'unknown error on {0}\n{1}').format(cn, exc),
+                    'comment': 'postdeploy: unknown error on {0}\n'.format(cn),
                     'trace': trace}
         if cret['result']:
             if cn not in provision:
