@@ -192,10 +192,18 @@ def sync_image_reference_containers(imgSettings, ret, _cmd_runner=None,
     _cmd_runner = get_cmd(_cmd_runner)
 
     for img in imgSettings['lxc']['images']:
-        bref = imgSettings['lxc']['images'][img]['builder_ref']
+        imgs = imgSettings['lxc']['images'][img]
+        bref = imgs['builder_ref']
         # try to find the local img reference building counterpart
         # and sync it back to the reference lxc
         rootfs = '/var/lib/lxc/{0}/rootfs'.format(img)
+        if not os.path.exists(rootfs):
+            lxccreate = _cmd_runner('lxc-create -t {1} -n {0}'.format(
+                img, imgs.get('template', 'ubuntu')))
+            if lxccreate['retcode'] != 0:
+                ret['result'] = False
+                ret['comment'] = (
+                    'creation container for {0} failed'.format(img))
         sync_container('/var/lib/lxc/{0}/rootfs'.format(bref),
                        rootfs,
                        _cmd_runner, ret,
@@ -253,8 +261,8 @@ def sync_images(only=None,
     lxctargets = []
     for vm, vmdata in controllersettings['vms'].items():
         if (
-            (vmdata['vt'] == 'lxc')
-            and (vmdata['target'] not in lxctargets)
+            (vmdata['vt'] == 'lxc') and
+            (vmdata['target'] not in lxctargets)
         ):
             lxctargets.append(vmdata['target'])
     for target in lxctargets:
