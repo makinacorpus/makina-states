@@ -9,6 +9,7 @@ include:
   {% endif %}
 {% if salt['mc_nodetypes.activate_sysadmin_states']() %}
 {% set service_function = salt['mc_services.get_service_function'](pm) %}
+
 {% if service_function %}
 openssh-svc:
   {{service_function}}:
@@ -20,6 +21,7 @@ openssh-svc:
       {% if pm != 'system' %}- mc_proxy: {{pm}}-pre-restart{%endif%}
       - mc_proxy: ssh-service-postrestart
 {% endif %}
+
 {% if pm == 'circus' %}
 {% set circus_data = {
   'cmd': '/usr/bin/sshd_wrapper.sh -D',
@@ -32,6 +34,8 @@ openssh-svc:
   'working_dir': '/',
   'warmup_delay': "4"} %}
 {{ circus.circusAddWatcher('ssh', **circus_data) }}
+{% endif %}
+
 {% if pm == 'supervisor' %}
 {% set supervisor_data = {
   'command': '/usr/bin/sshd_wrapper.sh -D',
@@ -42,5 +46,5 @@ openssh-svc:
   'startsecs': "4"} %}
 {{ supervisor.supervisorAddProgram('ssh', **supervisor_data) }}
 {% endif %}
-{% endif %}
+
 {% endif %}
