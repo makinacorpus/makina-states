@@ -13,7 +13,7 @@ include:
   - makina-states.localsettings.localrc
   - makina-states.services.firewall.shorewall.prerequisites
   - makina-states.services.firewall.shorewall.configuration
-  - makina-states.services.firewall.shorewall.service
+  - makina-states.services.firewall.shorewall.services
 {% endif %}
 {% endif %}
 shorewall-orchestrate:

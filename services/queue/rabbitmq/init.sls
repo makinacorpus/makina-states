@@ -2,7 +2,7 @@
 include:
   - makina-states.services.queue.rabbitmq.prerequisites
   - makina-states.services.queue.rabbitmq.configuration
-  - makina-states.services.queue.rabbitmq.service
+  - makina-states.services.queue.rabbitmq.services
   - makina-states.services.queue.rabbitmq.admin
   - makina-states.services.backup.dbsmartbackup
 

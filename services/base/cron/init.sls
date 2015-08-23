@@ -2,4 +2,4 @@
 include:
   - makina-states.services.base.cron.prerequisites
   - makina-states.services.base.cron.configuration
-  - makina-states.services.base.cron.service
+  - makina-states.services.base.cron.services

@@ -3,7 +3,7 @@
 include:
   - makina-states.services.firewall.ms_iptables.hooks
 {% if salt['mc_controllers.allow_lowlevel_states']() %}
-  - makina-states.services.firewall.ms_iptables.service
+  - makina-states.services.firewall.ms_iptables.services
   - makina-states.localsettings.network
 {% macro rmacro() %}
     - watch:

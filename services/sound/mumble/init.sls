@@ -2,4 +2,4 @@
 include:
   - makina-states.services.sound.mumble.prerequisites
   - makina-states.services.sound.mumble.configuration
-  - makina-states.services.sound.mumble.service
+  - makina-states.services.sound.mumble.services

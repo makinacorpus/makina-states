@@ -2,7 +2,7 @@
 {% set data = salt['mc_redis.settings']() %}
 include:
   - makina-states.services.db.redis.hooks
-  - makina-states.services.db.redis.service
+  - makina-states.services.db.redis.services
 
 {% macro rmacro() %}
     - watch:

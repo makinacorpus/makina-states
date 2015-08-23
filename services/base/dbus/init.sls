@@ -2,4 +2,4 @@
 include:
   - makina-states.services.base.dbus.prerequisites
   - makina-states.services.base.dbus.configuration
-  - makina-states.services.base.dbus.service
+  - makina-states.services.base.dbus.services

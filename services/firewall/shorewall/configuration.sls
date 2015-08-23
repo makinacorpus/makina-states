@@ -8,7 +8,7 @@
 include:
   - makina-states.services.firewall.shorewall.hooks
 {% if salt['mc_controllers.allow_lowlevel_states']() %}
-  - makina-states.services.firewall.shorewall.service
+  - makina-states.services.firewall.shorewall.services
 
 shorewall-config:
   file.directory:

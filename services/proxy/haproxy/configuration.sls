@@ -2,7 +2,7 @@
 {% set data = salt['mc_haproxy.settings']() %}
 include:
   - makina-states.services.proxy.haproxy.hooks
-  - makina-states.services.proxy.haproxy.service
+  - makina-states.services.proxy.haproxy.services
 
 makina-haproxy-configuration-check:
   cmd.run:

@@ -3,7 +3,7 @@
 
 include:
   - makina-states.services.sound.mumble.hooks
-  - makina-states.services.sound.mumble.service
+  - makina-states.services.sound.mumble.services
 {% for f in ['/etc/default/mumble-server',
              '/etc/mumble-server.ini']%}
 makina-mumble-{{f}}:

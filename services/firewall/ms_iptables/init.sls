@@ -12,7 +12,7 @@ include:
   - makina-states.localsettings.network
   - makina-states.services.firewall.ms_iptables.prerequisites
   - makina-states.services.firewall.ms_iptables.configuration
-  - makina-states.services.firewall.ms_iptables.service
+  - makina-states.services.firewall.ms_iptables.services
 {% endif %}
 ms_iptables-orchestrate:
   mc_proxy.hook:

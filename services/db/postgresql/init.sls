@@ -18,7 +18,7 @@ include:
   - makina-states.services.db.postgresql.pg_hba
   - makina-states.services.db.postgresql.groups
   - makina-states.services.db.postgresql.dbs
-  - makina-states.services.db.postgresql.service
+  - makina-states.services.db.postgresql.services
   - makina-states.services.backup.dbsmartbackup
 {# api for macro consumers #}
 {% set orchestrate = hooks.orchestrate %}

@@ -3,7 +3,7 @@
 include:
   - makina-states.services.base.dbus.hooks
 {% if salt['mc_controllers.allow_lowlevel_states']() %}
-  - makina-states.services.base.dbus.service
+  - makina-states.services.base.dbus.services
 {% macro rmacro() %}
     - watch:
       - mc_proxy: dbus-preconf

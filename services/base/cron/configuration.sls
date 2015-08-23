@@ -2,7 +2,7 @@
 {% set data = salt['mc_cron.settings']() %}
 include:
   - makina-states.services.base.cron.hooks
-  - makina-states.services.base.cron.service
+  - makina-states.services.base.cron.services
 {% macro rmacro() %}
     - watch:
       - mc_proxy: cron-preconf

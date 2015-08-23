@@ -2,7 +2,7 @@
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 include:
   - makina-states.services.queue.rabbitmq.hooks
-  - makina-states.services.queue.rabbitmq.service
+  - makina-states.services.queue.rabbitmq.services
 
 {% set modes = {
   '/etc/rabbitmq/rabbitmq.config': 700,

@@ -2,7 +2,7 @@
 {% set sdata = salt['mc_utils.json_dump'](data) %}
 include:
   - makina-states.services.db.mongodb.hooks
-  - makina-states.services.db.mongodb.service
+  - makina-states.services.db.mongodb.services
 
 {% for f in ['/etc/mongod.conf']%}
 makina-mongodb-{{f}}:
