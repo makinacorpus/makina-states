@@ -19,7 +19,7 @@ firewalld-stop-firewalld:
       - file: firewalld-disable-makinastates-firewalld
       - mc_proxy: firewalld-predisable
     - watch_in:
-      - mc_proxy: firewalld-postdisable 
+      - mc_proxy: firewalld-postdisable
 firewalld-purge-firewalld:
   pkg.purged:
     - pkgs: [firewalld]
