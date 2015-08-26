@@ -26,7 +26,10 @@
             find -H \
               "{{cfg.project_root}}" \
               "{{cfg.data_root}}" \
-              -type f -or -type d | while read i;do
+              \( -type f -or -type d \) \
+              -and \( -not -user {{cfg.user}} \
+                      -or -not -group {{cfg.group}} \) \
+              | while read i;do
                 if [ ! -h "${i}" ];then
                   if [ -d "${i}" ];then
                     chmod g-s "${i}"
