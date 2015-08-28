@@ -386,36 +386,41 @@ get_local_salt_mode() {
 }
 
 get_minion_id() {
-    confdir="${1}"
+    confdirs="${1:-"/etc/mastersalt /etc/salt"}"
     force="${3}"
     notfound=""
-    if [ "x$(egrep -q "^id: [^ ]+" /etc/hosts $(find "${confdir}/minion"* -type f 2>/dev/null) 2>/dev/null;echo ${?})" != "x0" ]\
-       || [ "$(find ${confdir}/minion* -type f 2>/dev/null|wc -l|sed -e "s/ //g")" ];then
-       notfound="y"
-    fi
-    if [ "x${notfound}" != "x" ] && [ "x${SALT_REATTACH}" != "x" ] && [ -e "${SALT_REATTACH_DIR}/minion" ];then
-        mmid="$(egrep "^id:" "${SALT_REATTACH_DIR}/minion"|awk '{print $2}'|sed -e "s/ //")"
-    else
-        mmid="${2:-$(hostname)}"
-        if [ "x${force}" = "x" ];then
-            fics=$(find "${confdir}"/minion* -type f 2>/dev/null)
-            if [ "x${fics}" != "x" ];then
-                mmid=$(egrep -r "^id:" $(find "${confdir}"/minion* -type f 2>/dev/null|grep -v sed) 2>/dev/null|awk '{print $2}'|head -n1)
-            fi
-            if [ "x${mmid}" = "x" ] && [ -f "${confdir}/minion_id" ];then
-                mmid=$(cat "${confdir}/minion_id" 2> /dev/null)
-            fi
-            if [ "x${mmid}" = "x" ] && [ -f "${CONF_PREFIX}/minion_id" ];then
-                mmid=$(cat "${CONF_PREFIX}/minion_id" 2> /dev/null)
-            fi
+    for confdir in $confdirs;do
+        if [ "x$(egrep -q "^id: [^ ]+" /etc/hosts $(find "${confdir}/minion"* -type f 2>/dev/null) 2>/dev/null;echo ${?})" != "x0" ]\
+           || [ "$(find ${confdir}/minion* -type f 2>/dev/null|wc -l|sed -e "s/ //g")" ];then
+           notfound="y"
         fi
-        if [ "x${mmid}" = "x" ];then
+        if [ "x${notfound}" != "x" ] && [ "x${SALT_REATTACH}" != "x" ] && [ -e "${SALT_REATTACH_DIR}/minion" ];then
+            mmid="$(egrep "^id:" "${SALT_REATTACH_DIR}/minion"|awk '{print $2}'|sed -e "s/ //")"
+        else
             mmid="${2:-$(hostname)}"
+            if [ "x${force}" = "x" ];then
+                fics=$(find "${confdir}"/minion* -type f 2>/dev/null)
+                if [ "x${fics}" != "x" ];then
+                    mmid=$(egrep -r "^id:" $(find "${confdir}"/minion* -type f 2>/dev/null|grep -v sed) 2>/dev/null|awk '{print $2}'|head -n1)
+                fi
+                if [ "x${mmid}" = "x" ] && [ -f "${confdir}/minion_id" ];then
+                    mmid=$(cat "${confdir}/minion_id" 2> /dev/null)
+                fi
+                if [ "x${mmid}" = "x" ] && [ -f "${CONF_PREFIX}/minion_id" ];then
+                    mmid=$(cat "${CONF_PREFIX}/minion_id" 2> /dev/null)
+                fi
+            fi
+            if [ "x${mmid}" = "x" ];then
+                mmid="${2:-$(hostname)}"
+            fi
         fi
-    fi
-    if ! echo "${mmid}" | grep -q '\.';then
-        mmid="${mmid}.${DEFAULT_DOMAINNAME}"
-    fi
+        if ! echo "${mmid}" | grep -q '\.';then
+            mmid="${mmid}.${DEFAULT_DOMAINNAME}"
+        fi
+        if [ "x${mmid}" != "x" ];then
+            break
+        fi
+    done
     echo $mmid
 }
 
@@ -591,8 +596,6 @@ set_vars() {
         DEFAULT_DOMAINNAME="$(hostname -f|sed -re "s/[^.]+\.(.*)/\1/g")"
     fi
     HOST=$(echo ${HOST} | $SED "s/ //g")
-    DOMAINNAME=$(echo ${DOMAINNAME} | $SED "s/ //g")
-    NICKNAME_FQDN="${HOST}.${DOMAINNAME}"
     SALT_BOOT_LOCK_FILE="/tmp/boot_salt_sleep-$(get_full_chrono)"
     LAST_RETCODE_FILE="/tmp/boot_salt_rc-$(get_full_chrono)"
     QUIET=${QUIET:-}
@@ -674,6 +677,11 @@ set_vars() {
     HOST="$(get_minion_id|$SED -re "s/([^.]+)\.(.*)/\1/g")"
     DOMAINNAME="$(get_minion_id|${SED} -e "s/^[^.]*\.//")"
     DOMAINNAME="${DOMAINNAME:-${DEFAULT_DOMAINNAME}}"
+    DOMAINNAME=$(echo ${DOMAINNAME} | $SED "s/ //g")
+    if [ "x${DOMAINNAME}" = "x" ];then
+        DOMAINNAME="local"
+    fi
+    NICKNAME_FQDN="${HOST}.${DOMAINNAME}"
     # select the daemons to install but also
     # detect what is already present on the system
     if [ "x${SALT_CONTROLLER}" = "xsalt_master" ]\
