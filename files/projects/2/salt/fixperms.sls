@@ -26,10 +26,12 @@
             find -H \
               "{{cfg.project_root}}" \
               "{{cfg.data_root}}" \
-              \( -type f -or -type d \) \
-              -and \( -not -user {{cfg.user}} \
-                      -or -not -group {{cfg.group}} \) \
-              | while read i;do
+              \(\
+                \(     -type f -and \( -not -user {{cfg.user}} -or -not -group {{cfg.group}}                     \) \)\
+                -or \( -type d -and \( -not -user {{cfg.user}} -or -not -group {{cfg.group}} -or -not -perm 2000 \) \)\
+              \)\
+              |\
+              while read i;do
                 if [ ! -h "${i}" ];then
                   if [ -d "${i}" ];then
                     chmod g-s "${i}"
