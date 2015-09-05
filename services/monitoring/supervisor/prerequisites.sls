@@ -1,5 +1,5 @@
-{%- set supervisorSettings = salt['mc_supervisor.settings']() %}
-{%- set venv = supervisorSettings['location'] + "/venv" %}
+{%- set settings = salt['mc_supervisor.settings']() %}
+{%- set venv = settings['location'] + "/venv" %}
 include:
   - makina-states.services.monitoring.supervisor.hooks
 
@@ -9,7 +9,7 @@ supervisor-install-pkg:
     - makedirs: true
     - source: ''
     - contents: |
-                {{'\n                 '.join(supervisorSettings['requirements'])}}
+                {{'\n'.join(settings['requirements'])|indent(18)}}
     - user: root
     - group: root
     - mode: 750
