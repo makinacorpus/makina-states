@@ -252,7 +252,7 @@ def settings():
                     '/etc/ldap',
                     '/var/lib/ldap',
                 ],
-                'fd_ver': '1.8.0.6',
+                'fd_ver': '1.8.0.9',
                 'mode': 'master',
                 'writer_groups': ['ldapwriters'],
                 'reader_groups':  ['ldapreaders'],
