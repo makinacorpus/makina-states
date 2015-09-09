@@ -20,9 +20,25 @@ postgresql-pkgs:
       - postgresql-{{pgver}}-pgextwlist
       {% endfor %}
       - libpq-dev
-      - pgtune
       - postgresql-contrib
       {% endif %}
+    {% if grains['os_family'] in ['Debian'] %}
+    - require:
+      - pkgrepo: pgsql-repo
+      - pkg: postgresql-pkgs-client
+      - mc_proxy: {{orchestrate['base']['prepkg']}}
+    - require_in:
+      - mc_proxy: {{orchestrate['base']['postpkg']}}
+    {% endif %}
+
+postpkg-pgtune:
+  file.managed:
+    - source: "https://raw.githubusercontent.com/makinacorpus/pgtune/515b7bd684c8c157b600b4dbef302ddee4873387/pgtune"
+    - name: /usr/local/bin/pgtune
+    - user: root
+    - group: root
+    - mode: 755
+    - source_hash: "md5=bbf70e7fb5858f8ec6ca6cc6cb13ad49"
     {% if grains['os_family'] in ['Debian'] %}
     - require:
       - pkgrepo: pgsql-repo
