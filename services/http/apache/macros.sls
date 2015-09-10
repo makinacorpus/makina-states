@@ -171,6 +171,7 @@ makina-apache-virtualhost-{{ project }}-ssl-{{k}}:
 
 {# exposed macro to switch the mpm #}
 {% macro extend_switch_mpm(mpm) %}
+{#
   apache-uninstall-others-mpms:
     pkg.removed:
       - pkgs:
@@ -179,6 +180,7 @@ makina-apache-virtualhost-{{ project }}-ssl-{{k}}:
     pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
       - pkgs:
         {{ mpm_pkgs(mpm, indent='  ') }}
+#}
   makina-apache-main-conf:
     mc_apache.deployed:
       - mpm: {{mpm}}

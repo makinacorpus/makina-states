@@ -1,8 +1,11 @@
 {% import "makina-states/services/http/apache/macros.sls" as macros with context %}
 {% set apacheSettings = salt['mc_apache.settings']() %}
+{% set pkgssettings = salt['mc_pkgs.settings']() %}
 include:
   - makina-states.services.http.apache.hooks
 
+{#
+# use now ondrej ppa with event by default & others mpm are bundled
 apache-uninstall-others-mpms:
   pkg.removed:
     - pkgs:
@@ -12,11 +15,36 @@ apache-uninstall-others-mpms:
     - watch_in:
       - mc_proxy: makina-apache-post-inst
       - pkg: apache-mpm
+apache-mpm:
+  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
+    - pkgs: [apache2]
+      {{ macros.mpm_pkgs(apacheSettings.mpm) }}
+    - require:
+      - mc_proxy: makina-apache-post-pkgs
+    - watch_in:
+      - mc_proxy: makina-apache-post-inst
+
+#}
+
+apache-repo:
+  pkgrepo.managed:
+    - humanname: apache ppa
+    - name: deb http://ppa.launchpad.net/ondrej/apache2/ubuntu {{pkgssettings.ppa_dist}} main
+    - dist: {{pkgssettings.ppa_dist}}
+    - file: /etc/apt/sources.list.d/apacheppa.list
+    - keyid: E5267A6C
+    - keyserver: keyserver.ubuntu.com
+    - require:
+      - mc_proxy: makina-apache-post-pkgs
+    - watch_in:
+      - mc_proxy: makina-apache-post-inst
+      - pkg: makina-apache-pkgs
+      - pkg: apache-mpm
+
 
 apache-mpm:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
-    - pkgs:
-      {{ macros.mpm_pkgs(apacheSettings.mpm) }}
+    - pkgs: [apache2]
     - require:
       - mc_proxy: makina-apache-post-pkgs
     - watch_in:
@@ -33,4 +61,3 @@ makina-apache-pkgs:
       - {{ package }}
       {% endfor %}
       - cronolog
-
