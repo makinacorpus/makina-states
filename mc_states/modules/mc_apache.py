@@ -435,7 +435,7 @@ def a2enmod(module):
         salt '*' mc_apache.a2enmod autoindex
     '''
     ret = {}
-    command = ['a2enmod', module]
+    command = ['a2enmod', '-f', '-m',  module]
     try:
         status = __salt__['cmd.retcode'](command, python_shell=False)
     except Exception as e:
@@ -473,7 +473,7 @@ def a2dismod(module):
         salt '*' mc_apache.a2dismod autoindex
     '''
     ret = {}
-    command = ['a2dismod', module]
+    command = ['a2dismod', '-f', '-m', module]
 
     try:
         status = __salt__['cmd.retcode'](command, python_shell=False)
