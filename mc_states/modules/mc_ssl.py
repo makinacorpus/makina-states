@@ -1077,6 +1077,7 @@ def common_settings(ttl=60):
                      'domains': [_g['fqdn']],
                      'certificates_domains_map': OrderedDict(),
                      'certificates': OrderedDict()})
+        data['domains'] = __salt__['mc_utils.uniquify'](data['domains'])
         return data
     cache_key = 'mc_ssl.common_settings'
     return deepcopy(__salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl))
@@ -1109,7 +1110,7 @@ def reload_settings(data=None):
         dcerts[cert] = cdata
         matched_domains = [cert]
         # XXX: load also here subAlNames
-        for i in matched_domains:
+        for i in matched_domains + list(data.get('domains', [])):
             match = matches.setdefault(cert, [])
             if cert not in match:
                 match.append(cert)
