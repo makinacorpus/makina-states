@@ -39,7 +39,7 @@ include:
     - template: jinja
     - user: root
     - group: postfix
-    - mode: 640
+    - mode: 644
     - watch:
       - mc_proxy: postfix-preconf
     - watch_in:
