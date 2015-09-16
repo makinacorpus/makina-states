@@ -115,6 +115,8 @@ def settings():
                 'dbexclude': '',
                 'dbnames': 'all',
                 'disable_mail': '',
+                'global_backup': '',
+                'es_global_backup': '',
                 'global_backup': '1',
                 'mongodb_path': '/var/lib/mongodb',
                 'group': 'root',
