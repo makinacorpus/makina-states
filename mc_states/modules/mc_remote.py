@@ -1072,7 +1072,8 @@ def ssh_transfer_file(host, orig, dest=None, **kwargs):
                 'host': host,
                 'port': port,
                 'tmpfile': tmpfile,
-                'ssh_args': ssh_args}))
+                'ssh_args': ssh_args})
+        ).replace('-p "22"', '').replace('-P "22"', '')
         ret = interactive_ssh(cmd, **kw)
     finally:
         try:
@@ -1188,7 +1189,8 @@ def ssh_transfer_dir(host, orig, dest=None, **kwargs):
             'host': host,
             'port': port,
             'tmpfile': tmpfile,
-            'ssh_args': ssh_args}))
+            'ssh_args': ssh_args})
+    ).replace('-p "22"', '').replace('-P "22"', '')
     try:
         ret = interactive_ssh(cmd, **kw)
     finally:
@@ -1305,14 +1307,20 @@ def ssh(host, script, **kwargs):
         # chmod the script to be executable if it is not locally
         # indeed, the transfer script conserve execution permisions
         if not executable:
-            cmd = 'ssh {0} "{3}@{4}" -p "{5}" "chmod +x \\{2}\\"'.format(
-                sssh_args, script_p, dest, user, host, port)
+            args = (sssh_args, script_p, dest, user, host, port)
+            cmd = 'ssh {0} "{3}@{4}"'.format(*args)
+            if port not in [22, '22']:
+                cmd += ' -p "{5}"'.format(*args)
+            cmd += ' "chmod +x \\{2}\\"'.format(*args)
             cret = interactive_ssh(cmd, **copy.deepcopy(kw))
         # Exec the script, eventually
         if kw['ssh_show_running_cmd']:
             log.info(msg)
-        cmd = 'ssh {0} "{3}@{4}" -p "{5}" "{2}"'.format(
-            sssh_args, script_p, dest, user, host, port)
+        args = (sssh_args, script_p, dest, user, host, port)
+        cmd = 'ssh {0} "{3}@{4}"'.format(*args)
+        if port not in [22, '22']:
+            cmd += ' -p "{5}"'.format(*args)
+        cmd += ' "{2}"'.format(*args)
         cret = interactive_ssh(cmd, **kw)
     except (_SSHExecError,) as exc:
         if not kw['ssh_no_error_log']:
@@ -1324,11 +1332,13 @@ def ssh(host, script, **kwargs):
         # try to delete the remove pass
         if transfered:
             try:
-                cmd = ('ssh {0} "{3}@{4}" -p "{5}" '
-                       '"'
-                       'if [ -f\"{2}\" ];then rm -f \"{2}\";fi'
-                       '"').format(
-                           sssh_args, script_p, dest, user, host, port)
+                args = (sssh_args, script_p, dest, user, host, port)
+                cmd = 'ssh {0} "{3}@{4}"'.format(*args)
+                if port not in ['22', 22]:
+                    cmd += ' -p "{5}" '
+                cmd += '"'.format(*args)
+                cmd += 'if [ -f\"{2}\" ];then rm -f \"{2}\";fi'.format(*args)
+                cmd += '"'.format(*args)
                 interactive_ssh(cmd, **copy.deepcopy(kw))
             except _SSHExecError:
                 pass
