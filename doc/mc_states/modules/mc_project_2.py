@@ -1336,7 +1336,7 @@ def git_commit(git,
     try:
         if commit_all:
             _s['git.add'](git, '.', opts=opts, user=user)
-        status = _s['cmd.run']('git st',
+        status = _s['cmd.run']('git status',
                                env={'LANG': 'C', 'LC_ALL': 'C'},
                                runas=user,
                                cwd=git)
@@ -2734,7 +2734,7 @@ def clean_salt_git_commit(directory, commit=True, **kw):
     '''
     user, group = get_default_user_group(**kw)
     cret = OrderedDict()
-    cret['st'] = __salt__['cmd.run']('git st',
+    cret['st'] = __salt__['cmd.run']('git status',
                                      env={'LANG': 'C', 'LC_ALL': 'C'},
                                      runas=user,
                                      cwd=directory, python_shell=True)

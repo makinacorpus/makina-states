@@ -148,7 +148,6 @@ def settings():
         grains = __grains__
         pillar = __pillar__
         locs = __salt__['mc_locations.settings']()
-        data = {}
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.backup.burp', {
                 'admins': 'root',

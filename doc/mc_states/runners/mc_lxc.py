@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import absolute_import, print_function
 
 '''
 .. _runner_mc_lxc:

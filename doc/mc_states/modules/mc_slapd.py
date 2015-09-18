@@ -252,7 +252,7 @@ def settings():
                     '/etc/ldap',
                     '/var/lib/ldap',
                 ],
-                'fd_ver': '1.8.0.6',
+                'fd_ver': '1.8.0.9',
                 'mode': 'master',
                 'writer_groups': ['ldapwriters'],
                 'reader_groups':  ['ldapreaders'],
@@ -281,6 +281,7 @@ def settings():
                 'root_pw': dn_pass,
                 'eroot_pw': '',
                 'loglevel': 'sync',
+                'non_anonymous': True,
                 'syncprov': True,
                 'syncrepl': OrderedDict([
                     ('starttls', 'yes'),
@@ -341,9 +342,22 @@ def settings():
                 data['admin_groups_acls'] += (
                     " by group.exact=\"cn={0},ou=Group,{data[dn]}\" {1}"
                 ).format(group, key, data=data)
+        if data['non_anonymous']:
+            for ix in range(len(data['acls_schema'])):
+                acl = data['acls_schema'][ix]
+                if 'by anonymous' in acl:
+                    for i in ['read', 'write', 'none', 'auth']:
+                        acl.replace('by anonymous {0}'.format(i),
+                                    'by anonymous none')
+                elif 'by *' in acl and 'anonymous' not in acl:
+                    acl = acl.replace('by *', 'by anonymous auth by *')
+                    data['acls_schema'][ix] = acl
         if not data['acls']:
-            acls = [a.format(data=data)
-                    for a in data['acls_schema'][:]]
+            acls = []
+            for a in data['acls_schema'][:]:
+                acl = a.format(data=data)
+
+                acls.append(acl)
             data['acls'] = acls
         s_aclchema = ''
         if data['acls']:
