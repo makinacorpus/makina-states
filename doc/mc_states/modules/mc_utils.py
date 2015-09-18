@@ -14,6 +14,7 @@ from pprint import pformat
 import copy
 import cProfile
 import crypt
+import collections
 import datetime
 import hashlib
 import logging
@@ -162,6 +163,45 @@ def deepcopy(arg):
     return copy.deepcopy(arg)
 
 
+
+def update_no_list(dest, upd, recursive_update=True):
+    '''
+    Recursive version of the default dict.update
+
+    Merges upd recursively into dest
+    But instead of merging lists, it overrides them from target dict
+    '''
+    if (not isinstance(dest, collections.Mapping)) \
+            or (not isinstance(upd, collections.Mapping)):
+        raise TypeError('Cannot update using non-dict types in dictupdate.update()')
+    updkeys = list(upd.keys())
+    if not set(list(dest.keys())) & set(updkeys):
+        recursive_update = False
+    if recursive_update:
+        for key in updkeys:
+            val = upd[key]
+            try:
+                dest_subkey = dest.get(key, None)
+            except AttributeError:
+                dest_subkey = None
+            if isinstance(dest_subkey, collections.Mapping) \
+                    and isinstance(val, collections.Mapping):
+                ret = update_no_list(dest_subkey, val)
+                dest[key] = ret
+            else:
+                dest[key] = upd[key]
+        return dest
+    else:
+        try:
+            dest.update(upd)
+        except AttributeError:
+            # this mapping is not a dict
+            for k in upd:
+                dest[k] = upd[k]
+        return dest
+
+
+
 def dictupdate(dict1, dict2):
     '''
     Merge two dictionnaries recursively
@@ -191,7 +231,7 @@ def dictupdate(dict1, dict2):
     if not isinstance(dict2, dict):
         raise SaltException(
             'mc_utils.dictupdate 2nd argument is not a dictionnary!')
-    return salt.utils.dictupdate.update(dict1, dict2)
+    return update_no_list(dict1, dict2)
 
 
 def copy_dictupdate(dict1, dict2):
@@ -671,7 +711,7 @@ def defaults(prefix,
             pkeys[a] = (k, datadict[a])
     for key, value_data in pkeys.items():
         value_key, default_value = value_data
-        # special key to completly overrides the dictionnary
+        # special key to completly override the dictionnary
         avalue = _default_marker
         value = __salt__['mc_utils.get'](
             value_key + "-overrides", _default_marker)
@@ -707,10 +747,11 @@ def defaults(prefix,
                                  overridden=overridden,
                                  noresolve=noresolve,
                                  firstcall=firstcall)
+                                 # firstcall=False)
             if overridden[value_key]:
                 for k, value in overridden[value_key].items():
                     default_value[k] = value
-            # override speific keys values handle:
+            # override specific keys values handle:
             # eg: makina-states.services.firewall.params.RESTRICTED_SSH = foo
             # eg: makina-states.services.firewall.params:
             #        foo: var

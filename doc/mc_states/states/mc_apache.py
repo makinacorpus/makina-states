@@ -458,8 +458,8 @@ def deployed(name,
         comments.append("WARNING: BLIND MODE: Current apache configuration "
                         "is maybe broken")
     if (
-        (versions['version'] and versions['version'] > "2.2")
-        and (cur_mpm != mpm or blind_mode)
+        (versions['version'] and versions['version'] > "2.2") and
+        (cur_mpm != mpm or blind_mode)
     ):
         # try to activate the mpm and deactivate the others
         # if mpm are shared modules

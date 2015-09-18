@@ -3243,8 +3243,9 @@ def get_ldap_client_conf(id_, ttl=PILLAR_TTL):
             ]:
                 if conf.get(i):
                     rdata[p + i] = conf[i]
-            if 'ssl' in conf.get('nslcd', {}):
-                rdata[p + 'nslcd.ssl'] = conf['nslcd']['ssl']
+            for subs in ['nslcd']:
+                for k in conf.get(subs, {}):
+                    rdata[p + '{1}.{0}'.format(k, subs)] = conf[subs][k]
         return rdata
     cache_key = __name + '.get_ldap_client_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
