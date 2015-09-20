@@ -57,9 +57,13 @@ su postgres -c '\
         psql --host=127.0.0.1 -f {dump} {db_name}'
 """
 
-
 DROP_DB = '''
-su postgres -c "dropdb {db_name}"
+echo "SELECT 1 FROM pg_database WHERE datname='{db_name}';" | \\
+    su postgres -c "psql -v ON_ERROR_STOP=1" | grep -q 1
+if [ "x$?" = "x0" ]
+then
+    su postgres -c "dropdb {db_name}"
+fi
 if [ "x$?" != "x0" ];then exit 1;fi
 '''
 
