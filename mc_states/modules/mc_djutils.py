@@ -13,6 +13,7 @@ mc_djutils / django helpers
 
 from datetime import datetime
 import os
+import copy
 from pprint import pprint
 
 
@@ -56,11 +57,40 @@ su postgres -c '\
         psql --host=127.0.0.1 -f {dump} {db_name}'
 """
 
-
 DROP_DB = '''
-su postgres -c "dropdb {db_name}"
+echo "SELECT 1 FROM pg_database WHERE datname='{db_name}';" | \\
+    su postgres -c "psql -v ON_ERROR_STOP=1" | grep -q 1
+if [ "x$?" = "x0" ]
+then
+    su postgres -c "dropdb {db_name}"
+fi
 if [ "x$?" != "x0" ];then exit 1;fi
 '''
+
+HAS_PG_RUNNING = '''
+set -e
+ps afux|grep "postgres -D"|grep -v grep|grep -q postgres
+'''
+
+
+def run(host, script, *args, **kwargs):
+    if host in ['localhost', '127.0.0.1']:
+        kw = copy.deepcopy(kwargs)
+        kw['python_shell'] = True
+        return __salt__['cmd.run_all'](script, *args, **kw)
+    else:
+        return __salt__['mc_remote.ssh'](host, script, *args, **kwargs)
+
+
+def test_pg(db_host=None, cfg='project'):
+    if not db_host:
+        data = __salt__['mc_project.get_configuration'](cfg)
+        db = data['data']['django_settings']['DATABASES']['default']
+        db_host = db['HOST']
+    ret = run(db_host, HAS_PG_RUNNING)
+    if ret['retcode']:
+        pprint(ret)
+        raise Exception('pg is not present')
 
 
 def setup_database(db_host=None,
@@ -91,7 +121,7 @@ def setup_database(db_host=None,
         script += DROP_DB
     script += CREATE_DB
     script = script.format(**locals())
-    ret = __salt__['mc_remote.ssh'](host=db_host, script=script)
+    ret = run(host=db_host, script=script)
     if ret['retcode']:
         pprint(ret)
         raise Exception('setup failed')
@@ -110,7 +140,7 @@ def backup_database(db_host=None, db_name=None, cfg='project'):
         datetime.now().strftime('%Y-%m-%d-%H-%M'))
     script = BACKUP.format(**locals())
     script += "exit $?\n"
-    ret = __salt__['mc_remote.ssh'](host=db_host, script=script)
+    ret = run(host=db_host, script=script)
     if ret['retcode']:
         pprint(ret)
         raise Exception('dump failed')
@@ -182,7 +212,7 @@ def restore_from(db_host=None,
                 if ret['retcode']:
                     raise Exception('Failed to download dump')
             finally:
-                ormret = __salt__['mc_remote.ssh'](
+                ormret = run(
                     host=orig_db_host,
                     script="\nrm -f {dump}\n".format(**locals()))
         if not skip_setup:
@@ -199,12 +229,12 @@ def restore_from(db_host=None,
             raise Exception('Failed to upload dump')
         try:
             script = RESTORE.format(**locals())
-            ret = __salt__['mc_remote.ssh'](
+            ret = run(
                 host=db_host, script=script)
             if ret['retcode']:
                 raise Exception('Failed to restore & load  dump')
         finally:
-            rmret = __salt__['mc_remote.ssh'](
+            rmret = run(
                 host=db_host,
                 script="\nrm -f {dump}\n".format(**locals()))
     if media and orig_media and not skip_media:

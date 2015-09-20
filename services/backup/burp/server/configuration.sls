@@ -133,22 +133,22 @@ etc-burp-burp-client.{{client}}-backup-init:
     - watch_in:
       - mc_proxy: burp-post-conf-hook
 
-{% for f in [
-  '/etc/logrotate.d/burp',
-  '/etc/default/burp-client',
-  '/etc/init.d/burp-client',
-  '/etc/burp/burp-client-restore.conf',
-  '/usr/bin/burp-restore',
-  '/etc/burp/timer_script',
-  '/etc/burp/notify_script',
-  '/etc/burp/burp.conf',
-  '/etc/burp/CA.cnf',
-] %}
+{% for f, fdata in {
+  '/etc/logrotate.d/burp': {'mode': '755'},
+  '/etc/default/burp-client': {'mode': '755'},
+  '/etc/init.d/burp-client': {'mode': '755'},
+  '/etc/burp/burp-client-restore.conf': {'mode': '750'},
+  '/usr/bin/burp-restore': {'mode': '755'},
+  '/etc/burp/timer_script': {'mode': '750'},
+  '/etc/burp/notify_script': {'mode': '750'},
+  '/etc/burp/burp.conf': {'mode': '750'},
+  '/etc/burp/CA.cnf': {'mode': '750'},
+}.items() %}
 etc-burp-burp-client.{{client}}-conf-{{f}}:
   file.managed:
     - name: /etc/burp/clients/{{client}}/{{f}}
     - source: salt://makina-states/files/{{f}}
-    - mode: 700
+    - mode: {{fdata.mode}}
     - user: {{data.user}}
     - template: jinja
     - makedirs: true
