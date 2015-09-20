@@ -51,7 +51,11 @@ makina-postgresql-{{version}}-fix-{{db}}:
   cmd.run:
     - user: {{default_user}}
     - name: psql-{{version}} {{db}} -f {{tmpf}}
-    - unless: psql -t -A -F';;;' -c'\l'|egrep '^{{db}};;;'|egrep -i "{{locale[0:2]}}"|egrep -i 'utf.?8;;;$'
+    - unless: |
+              # either locale is good => skip
+              psql -t -A -F';;;' -c'\l'|egrep '^{{db}};;;'|egrep -i "{{locale[0:2]}}"|egrep -i 'utf.?8;;;$' ||\
+              # or database does not exist => skip
+              psql -t -A -F';;;' -c'\l'|awk -F";" '{print $1}'|egrep -vq "^{{db}}$"
     {% if db in ['template0', 'template1'] %}
     - require:
       - file: makina-postgresql-{{version}}-fix-{{db}}
