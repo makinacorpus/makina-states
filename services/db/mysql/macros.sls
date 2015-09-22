@@ -110,6 +110,22 @@ makina-mysql-settings..:
    #}
 {% macro gen_settings(suf='') %}
 {% set settings = salt['mc_mysql.settings'](**kwargs) %}
+makina-mysql-settings{{suf}}-pre:
+  file.absent:
+    - names:
+      - /etc/mysql/mysql.conf.d/mysqld_safe_syslog.cnf
+      - /etc/mysql/mysql.conf.d/mysqld.cnf
+    - watch:
+      - mc_proxy: mysql-pre-conf-hook
+      {% if suf %}
+      - mc_proxy: mysql-post-default-tuning-hook
+      {% endif %}
+    - watch_in:
+      - mc_proxy: mysql-post-conf-hook
+      {% if not suf %}
+      - mc_proxy: mysql-post-default-tuning-hook
+      {% endif %}
+
 makina-mysql-settings{{suf}}:
   file.managed:
     - name: {{ mysqlData.etcdir }}/local.cnf

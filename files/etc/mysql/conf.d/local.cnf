@@ -107,7 +107,11 @@ query_cache_size    = {{ data.query_cache_size_M }}M
 # Error logging goes to syslog due to /etc/mysql/conf.d/mysqld_safe_syslog.cnf.
 #
 # Here you can see queries with especially long duration
-log_slow_queries	= {{ data.var_log}}/mysql-slow.log
+{% if grains['os'] in 'Ubuntu' and grains['osrelease'] >= '15.04' %}
+slow_query_log_file	= {{data.var_log}}/mysql-slow.log
+{% else %}
+log_slow_queries	= {{data.var_log}}/mysql-slow.log
+{% endif %}
 long_query_time = 3
 log-queries-not-using-indexes
 #
