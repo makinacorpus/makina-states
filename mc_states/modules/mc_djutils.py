@@ -46,7 +46,12 @@ fi
 """
 
 BACKUP = """#!/bin/bash
-su postgres -c "pg_dump {db_name} -f {dump_filename}"
+echo "SELECT 1 FROM pg_database WHERE datname='{db_name}';" | \\
+    su postgres -c "psql -v ON_ERROR_STOP=1" | grep -q 1
+if [ "x$?" = "x0" ]
+then
+    su postgres -c "pg_dump {db_name} -f {dump_filename}"
+fi
 """
 
 
@@ -201,11 +206,11 @@ def restore_from(db_host=None,
     if not db_name:
         db_name = db['NAME']
     if not skip_db:
-        dodump = backup_database(db_host=db_host, db_name=db_name)
+        dodump = backup_database(db_host=db_host, db_name=db_name, cfg=cfg)
         if not dump:
             try:
                 dump = backup_database(db_host=orig_db_host,
-                                       db_name=orig_db_name)
+                                       db_name=orig_db_name, cfg=cfg)
                 script = ('rsync -azv'
                           ' {orig_db_host}:{dump} {dump}').format(**locals())
                 ret = __salt__['cmd.run_all'](script)
