@@ -9,12 +9,17 @@ mc_nodetypes / nodetypes registry
 
 
 import os
+import copy
 import mc_states.api
 from mc_states.grains import makina_grains
 
 
 __name = 'nodetypes'
 DEFAULT_NT = 'server'
+
+
+def environ():
+    return copy.deepcopy(os.environ)
 
 
 def get_makina_grains():
@@ -77,13 +82,16 @@ def is_container_nodetype(nodetype):
     return is_nodetype
 
 
+def is_travis():
+    return makina_grains._is_travis()
+
+
 def is_nt(nodetype):
     if nodetype == DEFAULT_NT:
         return True
     is_nodetype = None
     if nodetype == 'travis':
-        if os.environ.get('TRAVIS', 'false') == 'true':
-            is_nodetype = True
+        is_nodetype = is_travis()
     is_nodetype = __salt__['mc_utils.get'](
         'makina-states.nodetypes.{0}'.format(nodetype), None)
     if is_nodetype is None:

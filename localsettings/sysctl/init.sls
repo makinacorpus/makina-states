@@ -9,8 +9,7 @@ include:
 {{ salt['mc_macros.register']('localsettings', 'sysctl') }}
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {% set kernel = salt['mc_kernel.settings']() %}
-{% set nodetypes_registry = salt['mc_nodetypes.registry']()%}
-{% set isTravis = nodetypes_registry.is.travis %}
+{% set isTravis = salt['mc_nodetypes.is_travis']() %}
 {% if not (isTravis or salt['mc_nodetypes.is_container']()) %}
 {# increase the length of the processor input queue #}
 sysctl-net.core.somaxconn:

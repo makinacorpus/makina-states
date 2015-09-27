@@ -37,12 +37,14 @@ for i in mastersalt salt;do
     bin/pip install -r requirements/dev.txt
 done
 if ! ./_scripts/boot-salt.sh ${BOOTSALT_ARGS};then
-    cat /etc/shorewall/params
-    cat /etc/shorewall/rules
-    shorewall check
-    for i in $(ls .bootlogs/* -1t | head -n 5);do
-        cat "${i}"
-    done
+    if which shorewall 2>/dev/null;then
+        cat /etc/shorewall/params
+        cat /etc/shorewall/rules
+        shorewall check
+        for i in $(ls .bootlogs/* -1t | head -n 5);do
+            cat "${i}"
+        done
+    fi
     exit 1
 fi
 # be sure to let travis be sudoer, in case
