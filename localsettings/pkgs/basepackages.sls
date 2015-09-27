@@ -50,9 +50,6 @@ ubuntu-pkgs:
     - pkgs:
       - debian-archive-keyring
       - debian-keyring
-      - language-pack-en
-      - language-pack-fr
-      - rsyslog
       - ca-certificates
       - ubuntu-cloudimage-keyring
       - ubuntu-cloud-keyring
@@ -63,7 +60,6 @@ ubuntu-pkgs:
       # light version of ubuntu-minimal
       {% if not salt['mc_nodetypes.is_container']() %}
       - ubuntu-minimal
-      - apport
       {% else %}
       # those are harmful packages in a generic container context
       # - whiptail
@@ -147,8 +143,6 @@ sys-pkgs:
     - pkgs:
       {% if salt['mc_controllers.mastersalt_mode']() %}
       - lvm2
-      - zerofree
-      - strace
       - pv
       - bridge-utils
       {% endif %}
@@ -184,8 +178,6 @@ sys-pkgs:
       - tzdata
       - tree
       - unzip
-      - nano
-      - vim
       - zip
       {% if grains['os_family'] == 'Debian' -%}
       - python-software-properties
@@ -208,18 +200,6 @@ dev-pkgs:
     - pkgs:
       - git
       - git-core
-      {%- if grains['os_family'] == 'Debian' %}
-      - build-essential
-      - m4
-      - libtool
-      - pkg-config
-      - autoconf
-      - gettext
-      - groff
-      - automake
-      - libsigc++-2.0-dev
-      - tcl8.5
-      {%- endif %}
 
 net-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
@@ -232,7 +212,6 @@ net-pkgs:
       - telnet
       - tcpdump
       {% if salt['mc_controllers.mastersalt_mode']() %}
-      - openssh-server
       - openssh-client
       - ntp
       - vlan
