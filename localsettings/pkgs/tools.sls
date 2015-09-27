@@ -2,7 +2,7 @@ include:
   - makina-states.localsettings.pkgs.hooks
 useful-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
-    - pkgs: 
+    - pkgs:
       - ifenslave-2.6
       - iptraf
       - nmap
@@ -29,8 +29,29 @@ useful-pkgs:
       - traceroute
       - iftop
       - wakeonlan
+      - openssh-server
+      {%- if grains['os_family'] == 'Debian' %}
+      - build-essential
+      - m4
+      - libtool
+      - pkg-config
+      - autoconf
+      - gettext
+      - groff
+      - automake
+      - libsigc++-2.0-dev
+      - tcl8.5
+      {%- endif %}
+      - zerofree
+      - strace
+      - nano
+      - vim
+      - language-pack-en
+      - language-pack-fr
+      - rsyslog
+      - apport
     - watch:
       - mc_proxy: before-pkg-install-proxy
     - watch_in:
       - mc_proxy: after-pkg-install-proxy
- 
+
