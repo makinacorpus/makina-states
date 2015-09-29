@@ -7,7 +7,7 @@
             if [ -d "{{dest}}" ];then
               rsync -Aa --delete "{{cfg.project_root}}/" "{{fdest}}/"
             fi;
-    - user: {{cfg.user}}
+    - user: root
 
 {{cfg.name}}-rollback-project-dir:
   cmd.run:
@@ -15,6 +15,6 @@
             if [ -d "{{dest}}" ];then
               rsync -Aa --delete "{{dest}}/" "{{cfg.project_root}}/"
             fi;
-    - user: {{cfg.user}}
+    - user: root
     - require:
       - cmd:  {{cfg.name}}-rollback-faileproject-dir
