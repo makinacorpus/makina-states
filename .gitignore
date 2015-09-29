@@ -60,3 +60,7 @@ boot_salt_top
 /baseimage.*
 /Dockerfile
 /data
+/docker/baseimage*xz
+/docker/Dockerfile
+/docker/ubuntufiles.tar
+

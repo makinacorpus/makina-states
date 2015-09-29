@@ -98,6 +98,9 @@ def settings():
             lts_dist = ubuntu_lts
             if grains['osrelease'] >= '15.04':
                 umirror = mirrors['dist']
+            elif __salt__['mc_nodetypes.is_travis']():
+                umirror = mirrors['dist']
+
         if grains['os'] in ['Debian']:
             ddist = _s['mc_utils.get'](
                 'lsb_distrib_codename', debian_stable)

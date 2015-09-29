@@ -1,8 +1,8 @@
 
 .. _project_corpus:
 
-corpus, the Glue PaaS Platform -  RFC VERSION - 2
-===================================================
+corpus, embedded project configuration with salt - RFC VERSION - 2
+==================================================================
 
 The origin
 ------------
@@ -452,8 +452,8 @@ This will in order:
 
 - Run the mastersalt highstate.
 
-Initialisation of a container environment
------------------------------------------
+Initialisation of a project - container environment
+----------------------------------------------------
 This will in order:
 
 - auth user
@@ -574,95 +574,4 @@ EG: in .salt/notify.sls we will have something that looks to::
 Project initialisation & installation
 ----------------------------------------
 Refer to :ref:`project_creation`
-
-corpus CLI Tools (not implemented yet)
------------------------------------------------------
-All of those commands will require you to be authenticated via a config file::
-
-    ~/.makinastates.conf
-
-This is a yaml configuration file::
-
-    envnickname:
-        url: <ENDPOINTURL>
-        id: <dientifier
-        password <password>
-
-EG:
-
-     prod:
-        url: masteralt.foo.net
-        id: someone@foo.net
-        password s3cr3t
-     dev:
-        url: devhost.local
-        id: someone@foo.net
-        password s3cr3t3
-
-Commands
-+++++++++
-
-Authenticated and distant call
-
-- corpus computenode_list
-
-List all available hosts to install projects onto
-
-- corpus computenode_init <ENDPOINT> <platform_type>  [host] -> returns new platform UUID
-
-<platform_type>
-staging
-prod
-dev [MAY BE DEACTIVATED]
-<host>
-eventual host selection
-
-create a container/vm to deploy our future project
-
-- corpus computenode_switchmode <ENDPOINT> <ENV_UUID> <operation_mode>
-
-Request for the sitch of an operation mode to another
-
-- corpus computenode_init <ENDPOINT> <platform_type> [host] [space separted list of guest types]-> returns new platform UUID
-
-<platform_type>
-staging
-prod
-dev [MAY BE DEACTIVATED]
-<host>
-eventual host selection
-
-request for the link of an host for container/vm to deploy our futures guests
-
-- corpus computenode_infos <ENDPOINT> <ENV_UUID>
-
-List for a specific compute node tenant
-
-        - available guest slots
-        - a list of slots with the number at a minium and hence we have access
-          the guests metadatas
-
-- corpus project_create <API_ENDPOINT> project <- return uuid
-
-    Create a new project to link containers onto
-
-- corpus guest_create <API_ENDPOINT> guest <- return guest_id
-
-    Create a new guest to push project code onto
-
-- corpus push <ENDPOINT> <guest_id> <project>
-    deploy our future project
-
-    This will in turn:
-
-        - push the pillar code
-        - push the salt code triggering the local deploy hook
-
-- corpus guest_delete <API_ENDPOINT> <guest_id>
-
-  Delete a guest
-
-- corpus project_destroy <API_ENDPOINT> <UUID_ENV> <project>
-
-  Destroys and free any project resources on a located endpoint
 

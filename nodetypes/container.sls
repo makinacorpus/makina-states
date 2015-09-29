@@ -1,5 +1,9 @@
+{% set isDocker = salt['mc_nodetypes.is_docker']() %}
+
 include:
+  {% if not isDocker %}
   - makina-states.nodetypes.vm
+  {% endif %}
   - makina-states.localsettings.pkgs.hooks
   - makina-states.nodetypes.container-hooks
 

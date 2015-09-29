@@ -19,6 +19,32 @@ import copy
 import subprocess
 
 
+_cache = {}
+
+
+def init_environ():
+    key = 'init_environ'
+    try:
+        return _cache[key]
+    except KeyError:
+        try:
+            with open('/proc/1/environ') as fic:
+                _cache[key] = fic.read()
+        except (IOError, OSError):
+            _cache[key] = ''
+    return _cache[key]
+
+
+def _is_travis():
+    is_nodetype = None
+    val = "{0}".format(os.environ.get('TRAVIS', 'false')).lower()
+    if val in ['y', 't', 'o', 'true', '1']:
+        is_nodetype = True
+    elif val:
+        is_nodetype = False
+    return is_nodetype
+
+
 def _is_docker():
     """
     Return true if we find a system or grain flag
@@ -30,10 +56,7 @@ def _is_docker():
     except (ValueError, NameError, IndexError):
         pass
     if not docker:
-        try:
-            docker = 'docker' in open('/proc/1/environ').read()
-        except (IOError, OSError):
-            docker = False
+        docker = 'docker' in init_environ()
     if not docker:
         if os.path.exists('.dockerinit'):
             docker = True
