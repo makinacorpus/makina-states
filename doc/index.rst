@@ -4,9 +4,8 @@
    contain the root `toctree` directive.
 
 
-Makina-States, the Glue PaaS platform docs
-================================================
-Makina-States is a consistent collection of saltstack states orchestrated via cloud controller.
+Makina-States, a consistent collection of saltstack formulaes and modules
+=================================================================================
 Please note that the documentation is far from complete, more over on the usage front.
 Please have more a look on the reference chapters.
 

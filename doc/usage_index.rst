@@ -1,4 +1,4 @@
-Makina-States, the Glue PaaS platform: usage
+Makina-States, overview
 =============================================
 
 .. toctree::
