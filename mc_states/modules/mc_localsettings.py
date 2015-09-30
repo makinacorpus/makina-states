@@ -113,7 +113,7 @@ def registry(ttl=15*60):
     def _do():
         has_nodejs = __salt__['mc_utils.get'](
             'makina-states.localsettings.nodejs', False)
-        is_docker = salt['mc_nodetypes.is_docker']()
+        is_docker = __salt__['mc_nodetypes.is_docker']()
         reg = {
             'env': {'active': True},
             'systemd': {'active': True},

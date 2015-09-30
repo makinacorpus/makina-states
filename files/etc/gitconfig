@@ -43,7 +43,9 @@
         jpcn = config user.email "jpc@makina-corpus.com"
         jpce = config user.name 'Jean-Philippe Camguilhem'
         jpc =  !git jpcn && git jpce
-
+        mstn = config user.email 'makinastates@paas.tld'
+        mste = config user.name 'Makina-States'
+        mst =  !git mstn && git mste
         rn = config user.email "regis.leroy@makina-corpus.com"
         re = config user.name 'Régis Leroy'
         r =  !git rn && git re
@@ -60,16 +62,10 @@
 
 [core]
         whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
-       filemode=false
-	excludesfile = /home/kiorky/.gitignore
-
-[url "ssh://mpa@cgit.makina-corpus.net/var/git/"]
-        insteadOf = mc:
-
-[url "ssh://mpa@cgit.makina-corpus.net/home/users/mpa/git/"]
-        insteadOf = mchome:
+        filemode=false
+        excludesfile = /home/kiorky/.gitignore
 
 [diff]
         renames = true
 [push]
-	default = matching
+        default = matching

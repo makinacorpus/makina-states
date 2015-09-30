@@ -745,6 +745,8 @@ set_vars() {
     SALT_BOOT_NOCONFIRM="${SALT_BOOT_NOCONFIRM:-}"
     SALT_BOOT_OUTFILE="${SALT_MS}/.boot_salt.$(get_chrono).out"
     SALT_BOOT_LOGFILE="${SALT_MS}/.boot_salt.$(get_chrono).log"
+    SALT_BOOT_ONLY_PREREQS="${SALT_BOOT_ONLY_PREREQS}"
+    SALT_BOOT_ONLY_INSTALL_SALT="${SALT_BOOT_ONLY_INSTALL_SALT}"
     MASTERSALT_PILLAR="${MASTERSALT_PILLAR:-$PREFIX/mastersalt-pillar}"
     MASTERSALT_MS="${MASTERSALT_ROOT}/makina-states"
     TMPDIR="${TMPDIR:-"/tmp"}"
@@ -1071,6 +1073,8 @@ set_vars() {
 
     # export variables to support a restart
 
+
+    export SALT_BOOT_ONLY_PREREQS SALT_BOOT_ONLY_INSTALL_SALT
     export BS_MS_ASSOCIATION_RESTART_MINION BS_MS_ASSOCIATION_RESTART_MASTER
     export BS_ASSOCIATION_RESTART_MASTER BS_ASSOCIATION_RESTART_MINION
     export DO_PIP DO_MS_PIP DO_MASTERSALT DO_SALT DO_REFRESH_MODULES
@@ -1507,16 +1511,17 @@ salt_call_wrapper_() {
     if [ -e "${outf}" ];then
       stmpf=$(mktemp)
       cat > "${stmpf}" << EOF
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
-from __future__ import print_function
+from __future__ import (absolute_import, division, print_function)
 import yaml, sys, codecs
 from pprint import pprint
 ret = 0
 statecheck = False
+saltargs = """
+${saltargs}
+${@}
+"""
 for i in ['state.highstate', 'state.sls']:
-    if i in "${saltargs//\"/} ${@//\"/}":
+    if i in saltargs:
         statecheck = True
 if statecheck:
     with codecs.open("${outf}", "r", "utf-8") as fic:
@@ -4077,6 +4082,8 @@ usage() {
     bs_help "    --no-salt" "Do not install salt daemons" "" y
     bs_help "    --pack" "Do run git pack (gc) if necessary" "" y
     bs_help "    --only-pack" "Do run git pack (gc) if necessary and skip any further step" "" y
+    bs_help "    --only-prereqs" "Do only pre install steps" "" y
+    bs_help "    --only-install-saltenvs" "Do not go further than installing salt envs" "" y
     if [ "x${SALT_LONG_HELP}" != "x" ];then
         bs_help "    -M|--salt-master" "install a salt master" "${IS_SALT_MASTER}" y
         bs_help "    -N|--salt-minion" "install a salt minion" "${IS_SALT_MINION}" y
@@ -4261,6 +4268,14 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--local-mastersalt-mode" ];then
             FORCE_LOCAL_MASTERSALT_MODE="${2}"; sh="2";argmatch="1"
+        fi
+        if [ "x${1}" = "x--only-prereqs" ];then
+            SALT_BOOT_ONLY_PREREQS="yes"
+            argmatch="1"
+        fi
+        if [ "x${1}" = "x--only-saltenvs" ];then
+            SALT_BOOT_ONLY_INSTALL_SALT="yes"
+            argmatch="1"
         fi
         if [ "x${1}" = "x--only-salt" ];then
             DO_SALT="y"
@@ -4822,11 +4837,16 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     if [ "x${abort}" = "x" ];then
         recap
         set_dns
-        setup_and_maybe_update_code
+        install_prerequisites
         setup_virtualenvs
+        setup_and_maybe_update_code
         create_salt_skeleton
         install_mastersalt_env
         install_salt_env
+        ret=$?
+        if [ "x${SALT_BOOT_ONLY_INSTALL_SALT}" != "x" ];then
+            exit $ret
+        fi
         if [ "x${SALT_BOOT_INITIAL_HIGHSTATE}" != "x" ];then
             initial_highstates
         else
