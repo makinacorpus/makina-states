@@ -28,12 +28,13 @@ def _rsyslogEn(__grains__):
 
 def _ulogdEn(__salt__):
     is_container = __salt__['mc_nodetypes.is_container']()
+    is_docker = __salt__['mc_nodetypes.is_docker']()
     ret = False
     if (
         __grains__['os'].lower() in ['ubuntu'] and
         __grains__.get('osrelease') >= '13.10'
     ):
-        ret = is_container
+        ret = is_container and not is_docker
     return ret
 
 
@@ -65,7 +66,8 @@ def registry():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _registry():
         # only some services will be fully done  on mastersalt side if any
-        sshen = True
+        is_docker = __salt__['mc_nodetypes.is_container']()
+        sshen = not is_docker
         ntpen = _ntpEn(__salt__)
         binden = _bindEn(__salt__)
         rsyslogen = _rsyslogEn(__grains__)
@@ -83,7 +85,7 @@ def registry():
                 'log.ulogd': {'force': True, 'active': ulogden},
                 'base.ntp': {'force': True, 'active': ntpen},
                 'base.ntp.uninstall': {'active': ntp_u},
-                'base.dbus': {'force': True, 'active': True},
+                'base.dbus': {'force': True, 'active': not is_docker},
                 'base.ssh': {'force': True, 'active': sshen},
                 'dns.dhcpd': {'active': False},
                 'dns.bind': {'force': True, 'active': binden},
