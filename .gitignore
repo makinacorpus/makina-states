@@ -68,3 +68,4 @@ boot_salt_top
 /docker/Dockerfile*stage1
 /docker/makina-states.tar
 /docker/osfiles.tar
+/docker/makina-states.tar.xz
