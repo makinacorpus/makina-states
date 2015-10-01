@@ -132,6 +132,10 @@ class MastersaltNotInstalled(salt.exceptions.SaltException, ValueError):
     pass
 
 
+class MastersaltNotRunning(salt.exceptions.SaltException, ValueError):
+    pass
+
+
 class SaltExit(salt.exceptions.SaltException):
     pass
 

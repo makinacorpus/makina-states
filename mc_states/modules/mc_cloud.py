@@ -551,6 +551,7 @@ On node side, after ext pillar is loaded
 
 def is_(typ, ttl=120):
     def do(typ):
+        in_mastersalt = __salt__['mc_controllers.mastersalt_mode']()
         def _fdo(typ, ttl):
             gr = 'makina-states.cloud.is.{0}'.format(typ)
             try:
@@ -560,6 +561,8 @@ def is_(typ, ttl=120):
             except mc_states.saltapi.MastersaltNotInstalled:
                 return {'result': False}
         days15 = 15*24*60*60
+        if in_mastersalt:
+            days15 = 0
         # if we are a 'kind', (result: True), cache it way longer
         ret = _fdo(typ, days15)['result']
         # in other case, retry in case of vm and  without using cache

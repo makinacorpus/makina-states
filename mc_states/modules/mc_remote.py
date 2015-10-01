@@ -1916,10 +1916,7 @@ def salt_call(host,
                 if not __salt__['mc_controllers.has_mastersalt']():
                     raise mc_states.saltapi.MastersaltNotInstalled('Mastersalt is not installed')
                 if not __salt__['mc_controllers.has_mastersalt_running']():
-                    log.error(
-                        'MastersaltMinion deamon is not running,'
-                        ' we will try to call mastersalt-call but it may fail,'
-                        ' badly')
+                    raise mc_states.saltapi.MastersaltNotRunning('Mastersalt is not running')
         if remote is None:
             remote = False
     if new_shell is None:
