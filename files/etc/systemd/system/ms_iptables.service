@@ -1,0 +1,23 @@
+[Unit]
+Description=ms iptables
+Before=network.target
+Before=libvirtd.service
+Before=NetworkManager.service
+Before=lxc-net-makina.service
+Before=lxc-net.service
+Before=docker-net-makina.service
+Before=docker-net.service
+Before=docker.service
+Before=openvpn.service
+Conflicts=iptables.service ip6tables.service ebtables.service shorewall.service ms_iptables.services
+
+[Service]
+EnvironmentFile=-/etc/sysconfig/ms_iptables
+EnvironmentFile=-/etc/default/ms_iptables
+ExecStart=/etc/init.d/ms_iptables start
+ExecReload=/etc/init.d/ms_iptables reload
+ExecReload=/etc/init.d/ms_iptables stop
+Type=oneshot
+
+[Install]
+WantedBy=basic.target

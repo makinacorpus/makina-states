@@ -374,6 +374,20 @@ ssh_groups:
 #     - hosts: a.foo.com
 #     - hosts: b.foo.com
 
+# ms_iptables configuration
+#ms_iptables_overrides:
+#  foo.bar.net:
+#    config:
+#      policy: hard
+#      rules:
+#        - "iptables -w -t filter -A INPUT -m tcp --dport 880 -j ACCEPT"
+#        {% for r in salt['mc_ms_iptables.add_ports']('881', protocols=['tcp']) %}
+#        - {{r}}
+#        {% endfor %}
+#        {% for r in salt['mc_ms_iptables.add_nat']('881', to_addr='1.2.4.3', protocols=['tcp']) %}
+#        - {{r}}
+#        {% endfor %}
+#        - "iptables -w -t filter -A INPUT -m tcp --dport 880 -j ACCEPT"
 
 # Configuration overrides for makina-states's firewalld integration
 # We install firewalld everywhere by default.
@@ -898,6 +912,6 @@ backup_configurations:
 #     no_dns: false
 #     no_smtp: false
 #     no_ftp: false
- 
+
 
 # vim: set ft=yaml sts=2 ts=2 ai et:

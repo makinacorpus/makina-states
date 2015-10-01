@@ -1,0 +1,4 @@
+{{salt['mc_dumper.json_dump'](
+  salt['mc_ms_iptables.settings']().config,
+  pretty=True
+)}}
