@@ -1,0 +1,7 @@
+# MANAGED VIA SALT - DO NOT EDIT
+{% set data = salt['mc_ms_iptables.settings']() %}
+{% if data.get('permissive_mode', False) %}
+MS_IPTABLES_DISABLED="1"
+{% else %}
+MS_IPTABLES_DISABLED=""
+{% endif %}

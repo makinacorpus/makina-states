@@ -49,6 +49,7 @@ HALF_DAY = mc_states.api.HALF_DAY
 ONE_MONTH = mc_states.api.ONE_MONTH
 ONE_YEAR = ONE_MONTH * 12
 FIREWALLD_MANAGED = True
+MS_IPTABLES_MANAGED = False
 
 # pillar cache is never expired, only if we detect a change on the database file
 PILLAR_TTL = ONE_YEAR
@@ -1770,6 +1771,25 @@ def get_snmpd_settings(id_=None, ttl=PILLAR_TTL):
             data = __salt__['mc_utils.dictupdate'](data, snmpd_settings[id_])
         return data
     cache_key = __name + '.get_snmpd_settings_{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+
+
+def get_ms_iptables_conf(id_, ttl=PILLAR_TTL):
+
+    def _do(id_):
+        _s = __salt__
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_ms_iptables', MS_IPTABLES_MANAGED):
+            return {}
+        p = 'makina-states.services.firewall.ms_iptables'
+        prefix = p + '.'
+        qry = _s[__name + '.query']
+        ms_iptables_overrides = qry('ms_iptables_overrides', {})
+        rdata = OrderedDict([(p, True)])
+        for param, value in ms_iptables_overrides.get(id_, {}).items():
+            rdata[prefix + param] = value
+        return rdata
+    cache_key = __name + '.get_ms_iptables_conf5{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
@@ -3616,6 +3636,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         __name + '.get_packages_conf': {'only_managed': False},
         __name + '.get_pkgmgr_conf': {'only_managed': False},
         __name + '.get_firewalld_conf': {'only_managed': False},
+        __name + '.get_ms_iptables_conf': {'only_managed': False},
         __name + '.get_shorewall_conf': {'only_managed': False},
         __name + '.get_snmpd_conf': {'only_known': False},
         __name + '.get_burp_server_conf': {},

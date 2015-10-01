@@ -35,6 +35,14 @@ LOCAL_NETS = ['10.0.0.0/8',
               '172.16.0.0/12']
 
 
+def prefered_ips(ips, ttl=60, *args, **kw):
+    def _do(*a, **k):
+            return mc_states.api.prefered_ips(*a, **k)
+    cache_key = __name + '.prefered_ips{0}'.format(ips)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [ips], {}, cache_key, ttl)
+
+
 def is_allow_local():
     _s = __salt__
     data_net = _s['mc_network.default_net']()
