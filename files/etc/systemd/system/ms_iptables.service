@@ -16,7 +16,7 @@ EnvironmentFile=-/etc/sysconfig/ms_iptables
 EnvironmentFile=-/etc/default/ms_iptables
 ExecStart=/etc/init.d/ms_iptables start
 ExecReload=/etc/init.d/ms_iptables reload
-ExecReload=/etc/init.d/ms_iptables stop
+ExecStop=/etc/init.d/ms_iptables stop
 Type=oneshot
 
 [Install]
