@@ -3,6 +3,7 @@
 {% if salt['mc_controllers.mastersalt_mode']() %}
 include:
   - makina-states.localsettings.etckeeper.hooks
+  - makina-states.localsettings.git
 {% set defaults = salt['mc_etckeeper.settings']() %}
 
 etckeeper-pkgs:
@@ -37,6 +38,9 @@ etckeeper-initial:
   cmd.run:
     - name: |
             /usr/bin/etckeeper init
+            cd /etc
+            git config user.email 'makinastates@paas.tld'
+            git config user.name 'Makina-States'
             /usr/bin/etckeeper commit "Initial commit"
     - unless: test -d {{locs.conf_dir}}/.git
     - watch:

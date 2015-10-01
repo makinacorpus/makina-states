@@ -58,8 +58,9 @@ def _is_docker():
     if not docker:
         docker = 'docker' in init_environ()
     if not docker:
-        if os.path.exists('.dockerinit'):
-            docker = True
+        for i in ['.dockerinit', '/.dockerinit']:
+            if os.path.exists(i):
+                docker = True
     return docker
 
 

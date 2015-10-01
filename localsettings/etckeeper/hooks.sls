@@ -1,10 +1,12 @@
 {# hooks for etckeeper orchestration #}
 include:
   - makina-states.localsettings.pkgs.hooks
+  - makina-states.localsettings.git.hooks
 etckeeper-inst-pre:
   mc_proxy.hook:
     - watch:
       - mc_proxy: after-pkg-install-proxy
+      - mc_proxy: install-recent-git-post
     - watch_in:
       - mc_proxy: etckeeper-inst-post
 etckeeper-inst-post:

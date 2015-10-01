@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+do_ver=""
+for arg in ${@};do
+    if [ "x$arg" = "x--version" ];then
+        do_ver=1
+    fi
+done
+if [ "x${0}" = "x/usr/sbin/policy-rc.d" ];then
+    exit 101
+elif [ "x${do_ver}" != "x" ];then
+    if [ -e /lib/systemd/systemd.distrib ];then
+        exec /lib/systemd/systemd.distrib --version
+    else
+        exit 0
+    fi
+else
+    exit 0
+fi
+# vim:set ft=sh:

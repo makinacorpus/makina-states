@@ -1232,7 +1232,7 @@ def init_repo(working_copy,
             _s['file.set_mode'](igit, 0750)
             _s['file.chown'](igit, user=user, group=group)
             empty = os.path.join(igit, '.empty')
-            _s['git.remote_set'](igit, 'origin', working_copy, user=user)
+            _s['git.remote_set'](igit, remote='origin', url=working_copy, user=user)
             if bare:
                 set_makina_states_author(igit, user=user)
             if init_salt:
@@ -1387,7 +1387,7 @@ def set_git_remote(wc, user, localgit, remote='origin', ret=None):
     if not ret:
         ret = _get_ret(user)
     # add the local and distant remotes
-    cret = _s['git.remote_set'](localgit, remote, wc, user=user)
+    cret = _s['git.remote_set'](localgit, remote=remote, url=wc, user=user)
     if not cret:
         raise projects_api.ProjectInitException(
             'Can\'t initialize git local remote '
@@ -2606,7 +2606,7 @@ def sync_git_directory(directory,
         user, _ = get_default_user_group(**kw)
         cret['clean'] = clean_salt_git_commit(directory)
         if origin:
-            _s['git.remote_set'](directory, sync_remote, origin, user=user)
+            _s['git.remote_set'](directory, remote=sync_remote, url=origin, user=user)
         try:
             remotes = _s['git.remotes'](directory, user=user)
         except Exception:
@@ -3062,7 +3062,7 @@ def sync_remote_working_copy(host,
                                             opts='--bare',
                                             user=user)
         cret['remote'] = _s['git.remote_set'](
-            directory, lremote, tmpbare, user=user)
+            directory, remote=lremote, url=tmpbare, user=user)
         cret['push'] = _s['git.push'](
             directory, lremote, branch='', opts=gforce, user=user)
     except (Exception,) as exc:

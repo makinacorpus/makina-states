@@ -10,6 +10,7 @@
 include:
   - makina-states.localsettings.users
   - makina-states.localsettings.git.hooks
+{#
 {%- for i, data in usersettings.users.items() %}
 {%- set home = data['home'] %}
 gitorious_base_ssh_configs-group-{{ i }}:
@@ -38,12 +39,15 @@ gitorious_base_ssh_configs-append-{{ i }}:
             HostName=gitorious.makina-corpus.net
             Port=2242
 {%- endfor %}
+#}
 global-git-config:
   file.managed:
     - name: {{ locs.conf_dir }}/gitconfig
     - source: salt://makina-states/files/etc/gitconfig
     - mode: 755
     - template: jinja
+    - watch_in:
+      - mc_proxy: install-recent-git-post
 {% endif %}
 
 {% if grains['oscodename'] in ['precise'] %}

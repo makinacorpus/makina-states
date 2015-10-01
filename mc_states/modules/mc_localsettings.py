@@ -113,6 +113,7 @@ def registry(ttl=15*60):
     def _do():
         has_nodejs = __salt__['mc_utils.get'](
             'makina-states.localsettings.nodejs', False)
+        is_docker = __salt__['mc_nodetypes.is_docker']()
         reg = {
             'env': {'active': True},
             'systemd': {'active': True},
@@ -124,7 +125,7 @@ def registry(ttl=15*60):
             'grub': {'active': False},
             'git': {'active': True},
             'dns': {'active': False},
-            'hosts': {'active': True},
+            'hosts': {'active': not is_docker},
             'jdk': {'active': False},
             'etckeeper': {'active': True},
             'locales': {'active': True},
@@ -132,7 +133,7 @@ def registry(ttl=15*60):
             'desktoptools': {'active': False},
             'mvn': {'active': False},
             'timezone': {'active': True},
-            'network': {'active': True},
+            'network': {'active': not is_docker},
             'nodejs': {'active': False},
             'npm': {'active': has_nodejs},
             'pkgs.mgr': {'active': True},
