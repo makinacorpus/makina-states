@@ -22,7 +22,7 @@ DAEMON=/usr/bin/ms_iptables.py
 SCRIPTNAME=/etc/init.d/$NAME
 
 # Exit if the package is not installed
-if [ -x "${DAEMON}" ];then
+if [ ! -x "${DAEMON}" ];then
     echo "ms_iptables.py is not installed"
     exit 0
 fi

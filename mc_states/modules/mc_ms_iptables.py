@@ -78,6 +78,7 @@ def default_settings():
         'no_bind': False,
         #
         'permissive_mode': is_permissive(),
+        'disabled': False,
         'extra_confs': {
             '/etc/default/ms_iptables': {},
             '/etc/ms_iptables.json': {'mode': '644'},
