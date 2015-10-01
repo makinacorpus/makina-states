@@ -43,7 +43,7 @@ def __virtual__():
     return 'mc_git' if __salt__['cmd.has_exec']('git') else False
 
 
-def latest(name,
+def old_latest(name,
            rev=None,
            target=None,
            runas=None,
@@ -335,3 +335,25 @@ def latest(name,
             onlyif=onlyif,
             unless=unless)
     return ret
+
+
+def latest(*args, **kwargs):
+    '''
+    Compat wrapper
+    '''
+    # KISS: let do the rest of the job by original git.latest
+    locs = globals()
+    locs.update(locals())
+    for i in [
+        '__env__',
+        '__grains__',
+        '__lowstate__',
+        '__opts__',
+        '__package__',
+        '__pillar__',
+        '__running__',
+        '__salt__',
+    ]:
+        if not hasattr(git, i):
+            setattr(git, i, locs[i])
+    return git.latest(*args, **kwargs)
