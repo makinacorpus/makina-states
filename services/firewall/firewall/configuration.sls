@@ -11,5 +11,5 @@ include:
 {% endmacro %}
 
 {{ h.deliver_config_files({
-'/usr/bin/ms_disable_firewall.sh': {'mode': '755'}
+'/usr/bin/ms_disable_firewall.sh': {'mode': '755'},
 }, after_macro=rmacro, prefix='firewall-')}}

@@ -21,6 +21,19 @@ firewalld-postinstall:
       - mc_proxy: firewalld-preconf
       - mc_proxy: firewalld-postconf
       - mc_proxy: firewalld-prerestart
+firewalld-predisable:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: firewalld-preconf
+      - mc_proxy: firewalld-postconf
+      - mc_proxy: firewalld-prerestart
+      - mc_proxy: firewalld-postdisable
+firewalld-postdisable:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: firewalld-preconf
+      - mc_proxy: firewalld-postconf
+      - mc_proxy: firewalld-prerestart
 firewalld-preconf:
   mc_proxy.hook:
     - require:

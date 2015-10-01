@@ -18,8 +18,10 @@
     {% if fdata.get('makedirs', makedirs) %}
     - makedirs: true
     {% endif %}
-    {% if template %}
-    - template: "{{template}}"
+    {% if templated %}
+    - template: "{{templated}}"
+    {%else %}
+    - template: false
     {%endif%}
 {% if after_macro %}{{ after_macro() }}{% endif %}
 {% endfor %}
