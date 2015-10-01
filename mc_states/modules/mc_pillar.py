@@ -3734,6 +3734,8 @@ def get_cloud_conf(ttl=PILLAR_TTL):
             if vt not in supported_vts:
                 continue
             for cn, vms in targets.items():
+                if vms is None:
+                    vms = {}
                 if cn in _s[__name + '.query']('non_managed_hosts', {}):
                     continue
                 dcn = dcns.setdefault(cn, OrderedDict())
