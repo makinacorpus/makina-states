@@ -34,7 +34,7 @@ if [  -f "/etc/default/$NAME" ];then . "/etc/default/$NAME";fi
 do_stop()
 {
     if [ "x${MS_IPTABLES_DISABLED}" = "x" ];then
-        "${DAEMON}" --reset
+        "${DAEMON}" --clear
     else
         echo "$0: ms_iptables is disabled"
     fi

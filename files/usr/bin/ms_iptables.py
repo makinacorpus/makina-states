@@ -6,6 +6,10 @@ from __future__ import print_function
 '''
 CONFIGURE a basic iptables based firewall
 and takes a configuration file for any further configuration
+
+This firewall is meant to integrate with tools that mess with iptables
+by securing a bit (limiting INPUT) and not flushing any already
+defined rule if possible
 '''
 
 import os
@@ -22,6 +26,13 @@ import subprocess
 import fcntl
 
 
+def uniquify(seq):
+    '''uniquify a list'''
+    seen = set()
+    return [x for x in seq
+            if x not in seen and not seen.add(x)]
+
+
 def lock(fd, flags=fcntl.LOCK_NB | fcntl.LOCK_EX):
     fcntl.flock(fd.fileno(), flags)
 
@@ -35,7 +46,7 @@ ms_iptables.py [--config=f]
     - set the 'harden rules', by default: INPUT policy is DROP
     - apply the default rules (accept loopback traffic, and
       input dns, ssh, http(s)
-ms_iptables.py --reset [--config=f]
+ms_iptables.py --clear [--config=f]
     - set all iptables policies to ACCEPT and remove any rule
 
 ms_iptables.py --stop [--config=f]
@@ -124,7 +135,7 @@ parser.add_argument(
     default=False, action='store_true')
 
 parser.add_argument(
-    "--reset",
+    "--clear",
     help="Flush the firewall (policies & rules) to a permissive state",
     default=False, action='store_true')
 
@@ -255,6 +266,7 @@ DEFAULT_FIREWALL = {
         'iptables -w -t filter -I  INPUT 1 -i lo -j ACCEPT',
         'iptables -w -t filter -I  INPUT 1 -p icmp -j ACCEPT',
         'iptables -w -t filter -I  INPUT 1 -p tcp --dport 22  -j ACCEPT',
+        'iptables -w -t filter -I  INPUT 1 -p udp --dport 22  -j ACCEPT',
         'iptables -w -t filter -I  INPUT 1 -p tcp --dport 80  -j ACCEPT',
         'iptables -w -t filter -I  INPUT 1 -p tcp --dport 443 -j ACCEPT',
         'iptables -w -t filter -I  INPUT 1 -p tcp --dport 25  -j ACCEPT',
@@ -278,6 +290,24 @@ RULES_AND_POLICIES = ['rules', 'flush_rules',
                       'hard_policies', 'open_policies']
 FLAGS = ['ipv6', 'load_default_open_policies', 'load_default_rules',
          'load_default_hard_policies', 'load_default_flush_rules']
+appliedrule_re = re.compile(
+    '(?P<binary>ip6?tables)\s+'
+    '(-w\s+)?'
+    '(-t\s+(?P<table>(filter|nat|mangle))\s+)?'
+    '(?P<action>-I|-A)\s+'
+    '(?P<chain>OUTPUT|INPUT|FORWARD|POSTROUTING|PREROUTING)\s+'
+    '((?P<index>[0-9]+)\s+)?'
+    '(?P<rule>.*$)',
+    flags=re_flags)
+policyrule_re = re.compile(
+    '(?P<binary>ip6?tables)\s+'
+    '(-w\s+)?'
+    '(-t\s+(?P<table>(filter|nat|mangle))\s+)?'
+    '(?P<switch>-P)\s+'
+    '(?P<chain>OUTPUT|INPUT|FORWARD|POSTROUTING|PREROUTING)\s+'
+    '(?P<policy>ACCEPT|REJECT|DROP)',
+    flags=re_flags)
+policyout_re = re.compile(' (?P<policy>ACCEPT|DROP|REJECT)\)')
 
 
 class InvalidConfiguration(ValueError):
@@ -325,18 +355,25 @@ def validate_and_complete(vopts, config):
         loadk = 'load_default_{0}'.format(section)
         if (
             (section in RULES_AND_POLICIES) and
-            not config.setdefault(loadk, DEFAULT_FIREWALL[loadk])
+            not config.setdefault(loadk,
+                                  copy.deepcopy(DEFAULT_FIREWALL[loadk]))
         ):
             use_default = False
         if use_default:
-            config.setdefault(section, DEFAULT_FIREWALL[section])
+            config.setdefault(section,
+                              copy.deepcopy(DEFAULT_FIREWALL[section]))
             if section in RULES_AND_POLICIES:
                 for val in DEFAULT_FIREWALL[section]:
                     if val not in config[section]:
                         config[section].append(val)
+        if (
+            (vopts['clear'] or vopts['stop']) and
+            (section in RULES_AND_POLICIES)
+        ):
+            config[section] = uniquify(config[section])
         if section == 'policy' and config['policy'] not in ['open', 'hard']:
             config['policy'] = DEFAULT_FIREWALL['policy']
-        if vopts['open'] or vopts['reset'] or vopts['stop']:
+        if vopts['open'] or vopts['clear'] or vopts['stop']:
             config['policy'] = 'open'
     if vopts['no_ipv6']:
         config['ipv6'] = False
@@ -344,6 +381,13 @@ def validate_and_complete(vopts, config):
 
 
 def load_configs(vopts, config=None):
+    if (
+        (vopts['stop'] or vopts['clear']) and (
+            os.path.exists(vopts['state_file']) and
+            vopts['state_file'] not in vopts['config']
+        )
+    ):
+        vopts['config'].insert(0, vopts['state_file'])
     for fcfgdir in vopts['config_dir']:
         if os.path.exists(fcfgdir):
             for cfg in sorted(glob.glob('{0}/*.json'.format(fcfgdir))):
@@ -358,9 +402,9 @@ def load_configs(vopts, config=None):
             log.error('{0} is not valid'.format(fcfg))
             log.error('{0}'.format(exc))
     # we fail the firewall completly only in the case of apply
-    # in case of a stop or a reset, we try to best effort
+    # in case of a stop or a clear, we try to best effort
     # even relying on a default FW
-    if invalid_cfgs and not(vopts['stop'] or vopts['reset']):
+    if invalid_cfgs and not(vopts['stop'] or vopts['clear']):
         raise InvalidConfiguration(
             'Firewall will not load, configuration is invalid')
     else:
@@ -371,36 +415,46 @@ def load_configs(vopts, config=None):
     return config
 
 
-def load_state(vopts):
-    try:
-        with open(vopts['state_file']) as fic:
-            config = json.loads(fic.read())
-    except (Exception,):
-        config = {}
-    validate_and_complete(vopts, config)
-    return config
-
-
 def apply_rule(raw_rule, config):
     rule = raw_rule
     if '{' in config and '}' in config:
         rule = rule.format(**config)
-    appliedrule_re = re.compile(
-        '( -I|-A\s+)'
-        '(OUTPUT|INPUT|FORWARD|'
-        'POSTROUTING|PREROUTING\s+)([0-9]+)?',
-        flags=re_flags)
     to_apply = True
     ret = None
     if 'ip6tables' in rule and not config.get('ipv6', True):
         log.info('{0} won\'t be applied, '
                  'ipv6 support is disabled'.format(rule))
         to_apply = False
+    if not to_apply:
+        return ret
+    pobj = policyrule_re.search(rule)
+    if pobj:
+        pgroups = pobj.groupdict()
+        table = pgroups['table']
+        chain = pgroups['chain']
+        binary = pgroups['binary']
+        if not table:
+            table = 'filter'
+        pout = popen(
+            '{binary} -t {table} -L {chain} | head -n1'
+            ''.format(chain=chain, table=table, binary=binary),
+            stdout=subprocess.PIPE)
+        pret = pout.wait()
+        if pret:
+            policy = None
+        else:
+            out = pout.stdout.read().strip()
+            policy = policyout_re.search(out)
+            if policy:
+                policy = policy.groupdict()['policy']
+        if policy == pgroups['policy']:
+            to_apply = False
+            log.info('{0} policy already applied'.format(rule))
     elif appliedrule_re.search(rule):
-        crule = appliedrule_re.sub(' -C \\2 ', rule)
-        p = popen(crule)
-        ret = p.wait()
-        if ret:
+        crule = appliedrule_re.sub('\g<binary> -C  \g<chain> \g<rule>', rule)
+        p = popen(crule, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cret = p.wait()
+        if cret:
             to_apply = True
         else:
             to_apply = False
@@ -409,6 +463,79 @@ def apply_rule(raw_rule, config):
         log.info('{0} applied'.format(rule))
         p = popen(rule)
         ret = p.wait()
+        if ret:
+            log.error('{0} failed'.format(rule))
+    return ret
+
+
+def remove_rule(raw_rule, config):
+    rule = raw_rule
+    if '{' in config and '}' in config:
+        rule = rule.format(**config)
+    to_apply = True
+    ret = None
+    if 'ip6tables' in rule and not config.get('ipv6', True):
+        log.info('{0} won\'t be applied, '
+                 'ipv6 support is disabled'.format(rule))
+        to_apply = False
+    if not to_apply:
+        return ret
+    pobj = policyrule_re.search(rule)
+    robj = appliedrule_re.search(rule)
+    drule = None
+    if pobj:
+        pgroups = pobj.groupdict()
+        table = pgroups['table']
+        chain = pgroups['chain']
+        binary = pgroups['binary']
+        if not table:
+            table = 'filter'
+        pout = popen(
+            '{binary} -t {table} -L {chain} |head -n1'
+            ''.format(chain=chain, table=table, binary=binary),
+            stdout=subprocess.PIPE)
+        pret = pout.wait()
+        if pret:
+            policy = None
+        else:
+            out = pout.stdout.read().strip()
+            policy = policyout_re.search(out)
+            policy = policy.groupdict()['policy']
+        if policy == 'ACCEPT':
+            to_apply = False
+            log.info('{0} policy already cleared'.format(rule))
+        else:
+            rule = rule.replace('DROP', 'ACCEPT')
+            rule = rule.replace('REJECT', 'ACCEPT')
+    elif robj:
+        pgroups = robj.groupdict()
+        if not pgroups['table']:
+            pgroups['table'] = 'filter'
+        crule = '{binary} -t {table} -C {chain} {rule}'.format(**pgroups)
+        p = popen(crule, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cret = p.wait()
+        if cret:
+            to_apply = False
+            log.info('{0} already removed'.format(rule))
+        else:
+            to_apply = True
+            drule = ('{binary} -w -t {table} -D {chain} {rule}'
+                     '').format(**pgroups)
+    if to_apply:
+        if drule:
+            rule = drule
+        log.info('{0} applied'.format(rule))
+        p = popen(rule)
+        ret = p.wait()
+        # try to remove extra rules if we leaked two times
+        # and inserted the same rule a bunch of times
+        tries = 10000
+        while tries > 0:
+            tries -= 1
+            p = popen(rule, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            iret = p.wait()
+            if iret:
+                break
         if ret:
             log.error('{0} failed'.format(rule))
     return ret
@@ -447,6 +574,17 @@ def apply_policies(config, errors=None, changes=None):
              ' (mode: {policy})'.format(**config))
     for r in config['{policy}_policies'.format(**config)]:
         report(r, apply_rule(r, config), errors, changes)
+    return errors, changes
+
+
+def remove_rules(config, errors=None, changes=None):
+    if errors is None:
+        errors = []
+    if changes is None:
+        changes = []
+    log.info('Removing rules from firewall')
+    for r in config['rules']:
+        report(r, remove_rule(r, config), errors, changes)
     return errors, changes
 
 
@@ -501,11 +639,14 @@ def _main(timeout=60):
                 with open(vopts['state_file'], 'w') as fic:
                     fic.write(
                         json.dumps(config, indent=2, separators=(',', ': ')))
-            apply_policies(config, errors, changes)
-            if not vopts['stop'] and (vopts['reset'] or vopts['flush']):
+            if not vopts['stop'] and (vopts['clear'] or vopts['flush']):
                 flush_fw(config, errors, changes)
-            if not (vopts['reset'] or vopts['no_rules']):
-                apply_rules(config, errors, changes)
+            if not (vopts['clear'] or vopts['no_rules']):
+                if vopts['stop']:
+                    remove_rules(config, errors, changes)
+                else:
+                    apply_rules(config, errors, changes)
+            apply_policies(config, errors, changes)
             unlock(locko)
         else:
             errors.append('Another instance is locking the firewall')
@@ -516,7 +657,9 @@ def _main(timeout=60):
         for e in errors:
             ret['comment'] += '\n * {0}'.format(e)
     elif changes:
-            ret['result'] = True
+        ret['result'] = True
+        if vopts['stop']:
+            ret['comment'] = 'Firewall cleared'
     log.info(ret['comment'])
     if vopts['from_salt']:
         print(json.dumps(ret))
