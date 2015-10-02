@@ -135,7 +135,7 @@ def add_nat(port_s,
             if source and ('-s' not in source):
                 source = '-s {0}'.format(source)
             if destination and ('-d' not in destination):
-                destination = '-s {0}'.format(destination)
+                destination = '-d {0}'.format(destination)
             rule = ('{binary} -w -t nat'
                     ' -{insert} PREROUTING'
                     ' -p {proto} --dport {port_s}'
@@ -184,7 +184,7 @@ def add_ports(port_s,
             if source and ('-s' not in source):
                 source = '-s {0}'.format(source)
             if destination and ('-d' not in destination):
-                destination = '-s {0}'.format(destination)
+                destination = '-d {0}'.format(destination)
             rule = ('{binary} -w -t {table} -{insert}'
                     ' {chain} -m state --state new'
                     ' {source} {destination}'
