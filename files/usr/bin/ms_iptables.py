@@ -10,6 +10,7 @@ and takes a configuration file for any further configuration
 
 import os
 import json
+import time
 import argparse
 import six
 import sys
@@ -18,6 +19,16 @@ import glob
 import copy
 import logging
 import subprocess
+import fcntl
+
+
+def lock(fd, flags=fcntl.LOCK_NB | fcntl.LOCK_EX):
+    fcntl.flock(fd.fileno(), flags)
+
+
+def unlock(fd):
+    fcntl.flock(fd.fileno(), fcntl.LOCK_UN)
+
 
 DESC = '''
 ms_iptables.py [--config=f]
@@ -130,6 +141,11 @@ parser.add_argument(
     "--state-file",
     help="store/load the firewall state in/from this file",
     default='/run/ms_iptables.state')
+
+parser.add_argument(
+    "--lock-file",
+    help="store/load the firewall lock in/from this file",
+    default='/run/ms_iptables.lock')
 
 parser.add_argument("--no-rules",
                     help="Do not apply rules",
@@ -445,7 +461,7 @@ def apply_rules(config, errors=None, changes=None):
     return errors, changes
 
 
-def _main():
+def _main(timeout=60):
     opts = parser.parse_args()
     code = 0
     vopts = vars(opts)
@@ -464,14 +480,35 @@ def _main():
     except (InvalidConfiguration,) as exc:
         errors.append('{0}'.format(exc))
     else:
-        if not vopts['no_state']:
-            with open(vopts['state_file'], 'w') as fic:
-                fic.write(json.dumps(config, indent=2, separators=(',', ': ')))
-        apply_policies(config, errors, changes)
-        if not vopts['stop'] and (vopts['reset'] or vopts['flush']):
-            flush_fw(config, errors, changes)
-        if not (vopts['reset'] or vopts['no_rules']):
-            apply_rules(config, errors, changes)
+        now = time.time()
+        end = now + timeout
+        lockp = vopts['lock_file']
+        if not os.path.exists(lockp):
+            with open(lockp, 'w') as fic:
+                fic.write('')
+        locko = open(lockp)
+        has_lock = False
+        while time.time() < end:
+            try:
+                lock(locko)
+                has_lock = True
+                break
+            except IOError:
+                log.error('Locked: wait')
+                time.sleep(0.5)
+        if has_lock:
+            if not vopts['no_state']:
+                with open(vopts['state_file'], 'w') as fic:
+                    fic.write(
+                        json.dumps(config, indent=2, separators=(',', ': ')))
+            apply_policies(config, errors, changes)
+            if not vopts['stop'] and (vopts['reset'] or vopts['flush']):
+                flush_fw(config, errors, changes)
+            if not (vopts['reset'] or vopts['no_rules']):
+                apply_rules(config, errors, changes)
+            unlock(locko)
+        else:
+            errors.append('Another instance is locking the firewall')
     if errors:
         ret['result'] = False
         code = 1
