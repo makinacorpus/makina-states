@@ -11,8 +11,10 @@ and takes a configuration file for any further configuration
 import os
 import json
 import argparse
+import six
 import sys
 import re
+import glob
 import copy
 import logging
 import subprocess
@@ -25,6 +27,11 @@ ms_iptables.py [--config=f]
 ms_iptables.py --reset [--config=f]
     - set all iptables policies to ACCEPT and remove any rule
 
+ms_iptables.py --stop [--config=f]
+    - set all iptables policies to ACCEPT and remove any rule
+    - remove any defined rule that are configured
+    - this must leave the firewall with other tools iptables
+      left as-is
 
 ms_iptables.py --open [--config=f]
     - set the firewall policy to OPEN
@@ -41,6 +48,8 @@ ms_iptables.py --no-rules [--config=f]
 
 NOTES:
     - --config=f => "f" is a configuration file in the JSON format in the form
+    - --config-dir=d => "d" is a directory where you can add conf files
+      which will be merged to the whole config
     - multiple config files can be given (--config=a --config=b), they
       will be merged
     - Any section not declared will default to the default config defined in
@@ -84,7 +93,11 @@ EG: to add the port 8080 and a log/drop on masquerade/input, plus a custom rule
 {fle}
 '''.format(fle=__file__)
 parser = argparse.ArgumentParser(DESC)
-parser.add_argument("--config", nargs='+', default=['/etc/ms_iptables.json'])
+default_configs = []
+if os.path.exists('/etc/ms_iptables.json'):
+    default_configs.append('/etc/ms_iptables.json')
+parser.add_argument("--config", nargs='+', default=default_configs)
+parser.add_argument("--config-dir", nargs='+', default=['/etc/ms_iptables.d'])
 parser.add_argument("--debug", default=False, action='store_true')
 parser.add_argument("--from-salt", default=False, action='store_true')
 
@@ -95,14 +108,28 @@ parser.add_argument(
     default=False, action='store_true')
 
 parser.add_argument(
+    "--stop",
+    help="Stop the firewall (policies & rules) to a permissive state",
+    default=False, action='store_true')
+
+parser.add_argument(
     "--reset",
     help="Flush the firewall (policies & rules) to a permissive state",
     default=False, action='store_true')
 
 parser.add_argument(
     "--flush",
-    help="flush all the firewall rules before applying anything",
+    help="Flush all the firewall rules before applying anything",
     default=False, action='store_true')
+
+parser.add_argument(
+    "--no-state",
+    help="Do no store state (dangerous)",
+    default=False, action='store_true')
+parser.add_argument(
+    "--state-file",
+    help="store/load the firewall state in/from this file",
+    default='/run/ms_iptables.state')
 
 parser.add_argument("--no-rules",
                     help="Do not apply rules",
@@ -127,11 +154,7 @@ DEFAULT_FIREWALL = {
     'load_default_flush_rules': True,
     'load_default_rules': True,
     'policy': 'hard',
-    'open_policies': [],
-    'hard_policies': [],
-    'flush_rules': [],
-    'rules': [],
-    'default_open_policies': [
+    'open_policies': [
         'iptables  -w -t filter -P INPUT       ACCEPT',
         'iptables  -w -t filter -P OUTPUT      ACCEPT',
         'iptables  -w -t filter -P FORWARD     ACCEPT',
@@ -158,7 +181,7 @@ DEFAULT_FIREWALL = {
         'ip6tables -w -t nat    -P OUTPUT      ACCEPT',
         'ip6tables -w -t nat    -P POSTROUTING ACCEPT',
     ],
-    'default_hard_policies': [
+    'hard_policies': [
         'iptables  -w -t filter -P INPUT       DROP',
         'iptables  -w -t filter -P OUTPUT      ACCEPT',
         'iptables  -w -t filter -P FORWARD     ACCEPT',
@@ -185,7 +208,7 @@ DEFAULT_FIREWALL = {
         'ip6tables -w -t nat    -P OUTPUT      ACCEPT',
         'ip6tables -w -t nat    -P POSTROUTING ACCEPT',
     ],
-    'default_flush_rules': [
+    'flush_rules': [
         'iptables -w -t filter -F OUTPUT',
         'iptables -w -t filter -F INPUT',
         'iptables -w -t filter -F FORWARD',
@@ -212,7 +235,7 @@ DEFAULT_FIREWALL = {
         'ip6tables -w -t nat    -F OUTPUT',
         'ip6tables -w -t nat    -F POSTROUTING',
     ],
-    'default_rules': [
+    'rules': [
         'iptables -w -t filter -I  INPUT 1'
         ' -m state --state RELATED,ESTABLISHED -j ACCEPT',
         'iptables -w -t filter -I OUTPUT 1 -o lo -j ACCEPT',
@@ -238,6 +261,15 @@ DEFAULT_FIREWALL = {
         'ip6tables -w -t filter -I  INPUT 1 -p udp --dport 53  -j ACCEPT',
     ],
 }
+MODES = ['policy']
+RULES_AND_POLICIES = ['rules', 'flush_rules',
+                      'hard_policies', 'open_policies']
+FLAGS = ['ipv6', 'load_default_open_policies', 'load_default_rules',
+         'load_default_hard_policies', 'load_default_flush_rules']
+
+
+class InvalidConfiguration(ValueError):
+    pass
 
 
 def popen(cmd, **kwargs):
@@ -246,37 +278,94 @@ def popen(cmd, **kwargs):
     return subprocess.Popen(cmd, **kw)
 
 
-def load_config(vopts, fcfg, config=None):
-    if not config:
-        config = copy.deepcopy(DEFAULT_FIREWALL)
-    econfig = copy.deepcopy(config)
-    try:
-        if fcfg and os.path.exists(fcfg):
-            with open(fcfg) as fic:
-                rl = json.loads(fic.read())
-                if isinstance(rl, dict):
-                    config.update(rl)
-    except (OSError, IOError):
-        pass
-    if not config.get('rules', []):
-        config['rules'] = []
-    for section in ['rules', 'flush_rules', 'hard_policies', 'open_policies']:
-        if config['load_default_{0}'.format(section)]:
-            for rl in econfig['default_{0}'.format(section)]:
-                if rl not in config[section]:
-                    config[section].append(rl)
-    if vopts['open'] or vopts['reset']:
-        config['policy'] = 'open'
-    if not config['policy'] in ['open', 'hard']:
-        config['policy'] = 'hard'
+def load_config(fcfg, merged_config=None):
+    with open(fcfg) as fic:
+        config = json.loads(fic.read())
+        if not isinstance(config, dict):
+            raise ValueError('not a valid dict json format')
+    error_msgs = []
+    for section in RULES_AND_POLICIES:
+        if not isinstance(config.get(section, []), list):
+            error_msgs.append('{0} is not a list'.format(section))
+    for section in FLAGS:
+        if not isinstance(config.get(section, True), bool):
+            error_msgs.append('{0} is not a boolean'.format(section))
+    for section in MODES:
+        if not isinstance(config.get('section', ''), six.string_types):
+            error_msgs.append('{0} is not a string'.format(section))
+    if error_msgs:
+        raise InvalidConfiguration(
+            'config file is invalid:\n * {0}'.format(
+                ' * '.join(error_msgs)))
+    if merged_config:
+        for section, val in six.iteritems(merged_config):
+            if section in FLAGS and section not in config:
+                config[section] = val
+            config.setdefault(section, [])
+            if section in RULES_AND_POLICIES:
+                config[section].extend(val[:])
+    return config
+
+
+def validate_and_complete(vopts, config):
+    for section in FLAGS + MODES + RULES_AND_POLICIES:
+        use_default = True
+        loadk = 'load_default_{0}'.format(section)
+        if (
+            (section in RULES_AND_POLICIES) and
+            not config.setdefault(loadk, DEFAULT_FIREWALL[loadk])
+        ):
+            use_default = False
+        if use_default:
+            config.setdefault(section, DEFAULT_FIREWALL[section])
+            if section in RULES_AND_POLICIES:
+                for val in DEFAULT_FIREWALL[section]:
+                    if val not in config[section]:
+                        config[section].append(val)
+        if section == 'policy' and config['policy'] not in ['open', 'hard']:
+            config['policy'] = DEFAULT_FIREWALL['policy']
+        if vopts['open'] or vopts['reset'] or vopts['stop']:
+            config['policy'] = 'open'
     if vopts['no_ipv6']:
         config['ipv6'] = False
     return config
 
 
 def load_configs(vopts, config=None):
+    for fcfgdir in vopts['config_dir']:
+        if os.path.exists(fcfgdir):
+            for cfg in sorted(glob.glob('{0}/*.json'.format(fcfgdir))):
+                if cfg not in vopts['config']:
+                    vopts['config'].append(cfg)
+    invalid_cfgs = []
     for fcfg in vopts['config']:
-        config = load_config(vopts, fcfg, config=config)
+        try:
+            config = load_config(fcfg, merged_config=config)
+        except (OSError, IOError, ValueError) as exc:
+            invalid_cfgs.append(fcfg)
+            log.error('{0} is not valid'.format(fcfg))
+            log.error('{0}'.format(exc))
+    # we fail the firewall completly only in the case of apply
+    # in case of a stop or a reset, we try to best effort
+    # even relying on a default FW
+    if invalid_cfgs and not(vopts['stop'] or vopts['reset']):
+        raise InvalidConfiguration(
+            'Firewall will not load, configuration is invalid')
+    else:
+        # invalid configuration files may result in an empty config
+        if not config:
+            config = copy.deepcopy(DEFAULT_FIREWALL)
+    validate_and_complete(vopts, config)
+    return config
+
+
+def load_state(vopts):
+    try:
+        with open(vopts['state_file']) as fic:
+            config = json.loads(fic.read())
+    except (Exception,):
+        config = {}
+    validate_and_complete(vopts, config)
     return config
 
 
@@ -373,24 +462,29 @@ def _main():
         format='%(asctime)-15s %(name)-5s %(levelname)-6s %(message)s')
     log.info('Firewall: start configuration')
     ret = {'changed': False, 'comment': 'Firewall in place', 'result': None}
-    config = load_configs(vopts)
-
     errors, changes = [], []
-    apply_policies(config, errors, changes)
-    if vopts['reset'] or vopts['flush']:
-        flush_fw(config, errors, changes)
-    if not (vopts['reset'] or vopts['no_rules']):
-        apply_rules(config, errors, changes)
-    if errors:
-        code = 1
+    try:
+        config = load_configs(vopts)
+    except (InvalidConfiguration,) as exc:
+        errors.append('{0}'.format(exc))
+    else:
+        if not vopts['no_state']:
+            with open(vopts['state_file'], 'w') as fic:
+                fic.write(json.dumps(config, indent=2, separators=(',', ': ')))
+        apply_policies(config, errors, changes)
+        if not vopts['stop'] and (vopts['reset'] or vopts['flush']):
+            flush_fw(config, errors, changes)
+        if not (vopts['reset'] or vopts['no_rules']):
+            apply_rules(config, errors, changes)
     if errors:
         ret['result'] = False
+        code = 1
         ret['comment'] = 'Firewall failed configuration'
         for e in errors:
             ret['comment'] += '\n * {0}'.format(e)
     elif changes:
-        ret['result'] = True
-    log.info('Firewall: end configuration')
+            ret['result'] = True
+    log.info(ret['comment'])
     if vopts['from_salt']:
         print(json.dumps(ret))
     return code, ret
