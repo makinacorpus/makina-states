@@ -167,7 +167,6 @@ DEFAULT_FIREWALL = {
         'iptables  -w -t nat    -P INPUT       ACCEPT',
         'iptables  -w -t nat    -P OUTPUT      ACCEPT',
         'iptables  -w -t nat    -P POSTROUTING ACCEPT',
-        #
         'ip6tables -w -t filter -P INPUT       ACCEPT',
         'ip6tables -w -t filter -P OUTPUT      ACCEPT',
         'ip6tables -w -t filter -P FORWARD     ACCEPT',
@@ -179,7 +178,7 @@ DEFAULT_FIREWALL = {
         'ip6tables -w -t nat    -P PREROUTING  ACCEPT',
         'ip6tables -w -t nat    -P INPUT       ACCEPT',
         'ip6tables -w -t nat    -P OUTPUT      ACCEPT',
-        'ip6tables -w -t nat    -P POSTROUTING ACCEPT',
+        'ip6tables -w -t nat    -P POSTROUTING ACCEPT'
     ],
     'hard_policies': [
         'iptables  -w -t filter -P INPUT       DROP',
@@ -194,7 +193,6 @@ DEFAULT_FIREWALL = {
         'iptables  -w -t nat    -P INPUT       ACCEPT',
         'iptables  -w -t nat    -P OUTPUT      ACCEPT',
         'iptables  -w -t nat    -P POSTROUTING ACCEPT',
-        #
         'ip6tables -w -t filter -P INPUT       DROP',
         'ip6tables -w -t filter -P OUTPUT      ACCEPT',
         'ip6tables -w -t filter -P FORWARD     ACCEPT',
@@ -206,7 +204,7 @@ DEFAULT_FIREWALL = {
         'ip6tables -w -t nat    -P PREROUTING  ACCEPT',
         'ip6tables -w -t nat    -P INPUT       ACCEPT',
         'ip6tables -w -t nat    -P OUTPUT      ACCEPT',
-        'ip6tables -w -t nat    -P POSTROUTING ACCEPT',
+        'ip6tables -w -t nat    -P POSTROUTING ACCEPT'
     ],
     'flush_rules': [
         'iptables -w -t filter -F OUTPUT',
@@ -221,7 +219,6 @@ DEFAULT_FIREWALL = {
         'iptables -w -t nat    -F INPUT',
         'iptables -w -t nat    -F OUTPUT',
         'iptables -w -t nat    -F POSTROUTING',
-        #
         'ip6tables -w -t filter -F OUTPUT',
         'ip6tables -w -t filter -F INPUT',
         'ip6tables -w -t filter -F FORWARD',
@@ -233,7 +230,7 @@ DEFAULT_FIREWALL = {
         'ip6tables -w -t nat    -F PREROUTING',
         'ip6tables -w -t nat    -F INPUT',
         'ip6tables -w -t nat    -F OUTPUT',
-        'ip6tables -w -t nat    -F POSTROUTING',
+        'ip6tables -w -t nat    -F POSTROUTING'
     ],
     'rules': [
         'iptables -w -t filter -I  INPUT 1'
@@ -247,7 +244,6 @@ DEFAULT_FIREWALL = {
         'iptables -w -t filter -I  INPUT 1 -p tcp --dport 25  -j ACCEPT',
         'iptables -w -t filter -I  INPUT 1 -p tcp --dport 53  -j ACCEPT',
         'iptables -w -t filter -I  INPUT 1 -p udp --dport 53  -j ACCEPT',
-        #
         'ip6tables -w -t filter -I  INPUT 1'
         ' -m state --state RELATED,ESTABLISHED -j ACCEPT',
         'ip6tables -w -t filter -I OUTPUT 1 -o lo -j ACCEPT',
@@ -258,8 +254,8 @@ DEFAULT_FIREWALL = {
         'ip6tables -w -t filter -I  INPUT 1 -p tcp --dport 443 -j ACCEPT',
         'ip6tables -w -t filter -I  INPUT 1 -p tcp --dport 25  -j ACCEPT',
         'ip6tables -w -t filter -I  INPUT 1 -p tcp --dport 53  -j ACCEPT',
-        'ip6tables -w -t filter -I  INPUT 1 -p udp --dport 53  -j ACCEPT',
-    ],
+        'ip6tables -w -t filter -I  INPUT 1 -p udp --dport 53  -j ACCEPT'
+    ]
 }
 MODES = ['policy']
 RULES_AND_POLICIES = ['rules', 'flush_rules',
