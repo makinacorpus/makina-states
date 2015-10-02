@@ -34,7 +34,7 @@ if [  -f "/etc/default/$NAME" ];then . "/etc/default/$NAME";fi
 do_stop()
 {
     if [ "x${MS_IPTABLES_DISABLED}" = "x" ];then
-        "${DAEMON}" --reset
+        "${DAEMON}" --stop
     else
         echo "$0: ms_iptables is disabled"
     fi
@@ -54,33 +54,25 @@ do_start()
 do_reload()
 {
     if [ "x${MS_IPTABLES_DISABLED}" = "x" ];then
-        "${DAEMON}"
+        do_stop
+        do_start
     else
         echo "$0: ms_iptables is disabled"
     fi
     return $?
+
 }
 
 case "$1" in
   start)
     log_daemon_msg "Starting $DESC" "$NAME"
     do_start
-    case "$?" in
-        0) log_end_msg 0 ;;
-        1) log_progress_msg "already started"
-           log_end_msg 0 ;;
-        *) log_end_msg 1 ;;
-    esac
+    log_end_msg $?
     ;;
   stop)
     log_daemon_msg "Stopping $DESC" "$NAME"
     do_stop
-    case "$?" in
-        0) log_end_msg 0 ;;
-        1) log_progress_msg "already stopped"
-           log_end_msg 0 ;;
-        *) log_end_msg 1 ;;
-    esac
+    log_end_msg $?
     ;;
   reload|force-reload)
     log_daemon_msg "Reloading $DESC" "$NAME"

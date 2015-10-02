@@ -9,11 +9,12 @@ Before=docker-net-makina.service
 Before=docker-net.service
 Before=docker.service
 Before=openvpn.service
-Conflicts=iptables.service ip6tables.service ebtables.service shorewall.service
+Conflicts=iptables.service ip6tables.service ebtables.service shorewall.service ms_iptables.services
 
 [Service]
 EnvironmentFile=-/etc/sysconfig/firewalld
 EnvironmentFile=-/etc/default/firewalld
+RemainAfterExit=yes
 ExecStart=/usr/sbin/firewalld --nofork --nopid $FIREWALLD_ARGS
 ExecStartPost=-/usr/bin/ms_firewalld.py
 ExecReload=/bin/kill -HUP $MAINPID
