@@ -37,7 +37,7 @@ ms_iptables-reapply:
       - mc_proxy: ms_iptables-postrestart
 ms_iptables-disable-firewall:
   cmd.run:
-    - name: /usr/bin/ms_iptables.py --from-salt --reset
+    - name: /usr/bin/ms_iptables.py --from-salt --stop
     - stateful: true
     - watch:
       - service: ms_iptables
