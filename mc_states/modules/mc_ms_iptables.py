@@ -77,7 +77,9 @@ def default_settings():
         'no_slapd': True,
         'no_bind': False,
         #
+        'public_interfaces': ['eth0', 'br0'],
         'permissive_mode': is_permissive(),
+        'is_container': __salt__['mc_nodetypes.is_container'](),
         'disabled': False,
         'extra_confs': {
             '/etc/default/ms_iptables': {},
@@ -92,6 +94,75 @@ def default_settings():
         data['config']['policy'] = 'open'
         data['config']['load_default_rules'] = False
     return data
+
+
+def get_public_ips(cache=True, data=None, ttl=120):
+    if not cache:
+        ttl = 0
+
+    def _do(data):
+        if not data:
+            data = default_settings()
+        running_net = __salt__['mc_network.default_net']()
+        net = __salt__['mc_network.settings']()
+        ifcs = set()
+        public_ips = set()
+
+        for ifc in data['public_interfaces']:
+            ifcs.add(ifc)
+
+        for ifc, ips in six.iteritems(
+            __grains__.get('ip4_interfaces', {})
+        ):
+            if ifc not in ifcs:
+                continue
+            for ip in ips:
+                public_ips.add(ip)
+
+        # if we are early in privisonning, we get a change to configure
+        # the rules via the net settings
+        for iface, ips in running_net.get('gifaces', []):
+            if ifc not in ifcs:
+                continue
+            for addr in ips:
+                if addr:
+                    public_ips.add(addr)
+        for interfaces in net.get('ointerfaces', []):
+            for ifc, odata in six.iteritems(interfaces):
+                ifc = ifc.replace('_', ':')
+                if ifc not in ifcs:
+                    continue
+                addr = odata.get('address', '')
+                if addr:
+                    public_ips.add(addr)
+        public_ips = list(public_ips)
+
+        def _filter_local(is_public):
+            def do(ip):
+                if is_public:
+                    return __salt__['mc_network.is_public'](ip)
+                else:
+                    return not __salt__['mc_network.is_loopback'](ip)
+            return do
+
+        # filter public_ips only if if have at least one public ip*
+        # this enable to work on private only networks
+        is_public = False
+        for i in public_ips[:]:
+            if __salt__['mc_network.is_public'](i):
+                is_public = True
+                break
+        # if containers, we assume that all ips are dealed the same way.
+        if data['is_container']:
+            is_public = False
+        public_ips = filter(_filter_local(is_public), public_ips)
+        return public_ips
+    cache_key = __name + 'get_public_ips'
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [data], {}, cache_key, ttl)
+
+
+
 
 
 def add_nat(port_s,
@@ -237,12 +308,21 @@ def add_cloud_proxies(data):
         cloud_rules = cloud_reg.get(
             'reverse_proxies', {}).get('network_mappings', [])
         for port, portdata in six.iteritems(cloud_rules):
-            add_nat(
-                portdata['hostPort'],
-                to_addr=portdata['to_addr'],
-                to_port=portdata['port'],
-                protocols=[portdata['protocol']],
-                rules=data['config']['rules'])
+            kw = {'to_addr': portdata['to_addr'],
+                  'to_port': portdata['port'],
+                  'protocols': [portdata['protocol']],
+                  'rules': data['config']['rules']}
+            # on hosted nodes, do not blindly map the target port
+            # to an host port if not destination has been explicitly
+            # be chosen
+            if data['public_ips']:
+                for ip in data['public_ips']:
+                    dkw = copy.deepcopy(kw)
+                    dkw['rules'] = data['config']['rules']
+                    dkw['destination'] = ip
+                    add_nat(portdata['hostPort'], **dkw)
+            else:
+                add_nat(portdata['hostPort'], **kw)
     return data
 
 
@@ -253,6 +333,7 @@ def settings():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         data = default_settings()
+        data['public_ips'] = get_public_ips(data=data)
         data = add_services_policies(data)
         data = add_cloud_proxies(data)
         return data
