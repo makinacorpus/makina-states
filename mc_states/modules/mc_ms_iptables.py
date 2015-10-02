@@ -139,7 +139,9 @@ def get_public_ips(cache=True, data=None, ttl=120):
 
         def _filter_local(is_public):
             def do(ip):
-                if is_public:
+                if ':' in ip:
+                    return False
+                elif is_public:
                     return __salt__['mc_network.is_public'](ip)
                 else:
                     return not __salt__['mc_network.is_loopback'](ip)
