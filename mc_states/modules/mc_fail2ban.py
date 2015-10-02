@@ -100,6 +100,10 @@ def settings():
         firewalld = __salt__['mc_firewalld.settings']()
         banaction = 'iptables'
         if (
+            services_registry['has']['firewall.ms_iptables']
+        ):
+            banaction = 'iptables'
+        elif (
             (
                 services_registry['has']['firewall.shorewall'] and
                 shorewall['shw_enabled']

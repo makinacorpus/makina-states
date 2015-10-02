@@ -109,7 +109,7 @@ def add_nat(port_s,
     if isinstance(port_s, (float, int)):
         port_s = str(port_s)
     if isinstance(to_port, (float, int)):
-        port_s = str(to_port)
+        to_port = str(to_port)
     if (':' in port_s or ',' in port_s):
         to_port = None
     if to_port:
@@ -238,8 +238,10 @@ def add_cloud_proxies(data):
             'reverse_proxies', {}).get('network_mappings', [])
         for port, portdata in six.iteritems(cloud_rules):
             add_nat(
-                portdata['hostPort'], portdata['to_addr'],
-                portdata['port'], protocols=[portdata['protocol']],
+                portdata['hostPort'],
+                to_addr=portdata['to_addr'],
+                to_port=portdata['port'],
+                protocols=[portdata['protocol']],
                 rules=data['config']['rules'])
     return data
 
