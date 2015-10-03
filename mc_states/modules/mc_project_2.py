@@ -131,6 +131,19 @@ SPECIAL_SLSES = ["{0}.sls".format(a)
                               'rotate_archives',
                               'install']]
 
+CUSTOM = ''''
+custom: bar
+'''
+TOP = '''
+#
+# This is the top pillar configuration file, link here all your
+# environment configurations files to their respective minions
+#
+base:
+'*':
+- custom
+'''
+
 
 for step in STEPS:
     DEFAULT_CONFIGURATION['skip_{0}'.format(step)] = None
@@ -182,17 +195,17 @@ def set_makina_states_author(directory,
     user, _ = get_default_user_group(**kw)
     force = kw.get('force', False)
     try:
-        cemail = __salt__['git.config_get'](directory, 'user.email', user=user)
+        cemail = __salt__['git.config_get'](cwd=directory, key='user.email', user=user)
     except salt.exceptions.CommandExecutionError:
         cemail = None
     try:
-        cname = __salt__['git.config_get'](directory, 'user.name', user=user)
+        cname = __salt__['git.config_get'](cwd=directory, key='user.name', user=user)
     except salt.exceptions.CommandExecutionError:
         cname = None
     if force or not cemail:
-        __salt__['git.config_set'](directory, 'user.email', email, user=user)
+        __salt__['git.config_set'](cwd=directory, key='user.email', value=email, user=user)
     if force or not cname:
-        __salt__['git.config_set'](directory, 'user.name', name, user=user)
+        __salt__['git.config_set'](cwd=directory, key='user.name', value=name, user=user)
 
 
 def remove_path(path):
@@ -1265,7 +1278,7 @@ def init_repo(working_copy,
                        commit_all=True, opts='-f', user=user)
             if bare:
                 _s['git.push'](
-                    igit, 'origin', branch='master:master',
+                    cwd=igit, remote='origin', branch='master:master',
                     opts='--force -u', user=user)
         except Exception:
             log.error(traceback.format_exc())
@@ -1307,8 +1320,8 @@ def push_changesets_in(directory,
     user, group = get_default_user_group(**kw)
     try:
         return __salt__['git.push'](
-            directory,
-            remote,
+            cwd=directory,
+            remote=remote,
             branch=branch,
             opts=opts,
             user=user
@@ -1335,7 +1348,7 @@ def git_commit(git,
     cret = None
     try:
         if commit_all:
-            _s['git.add'](git, '.', opts=opts, user=user)
+            _s['git.add'](cwd=git, filename='.', opts=opts, user=user)
         status = _s['cmd.run']('git status',
                                env={'LANG': 'C', 'LC_ALL': 'C'},
                                runas=user,
@@ -1546,7 +1559,7 @@ def sync_working_copy(wc,
         )
     ):
         cret = _s['git.reset'](
-            wc, '--hard {1}/{0}'.format(rev, origin),
+            wc, opts='--hard {1}/{0}'.format(rev, origin),
             user=user)
         # in dev mode, no local repo, but we sync it anyway
         # to avoid bugs
@@ -2280,12 +2293,18 @@ def link_pillar(names, *args, **kwargs):
         cfg = get_configuration(name, nodata=True, *args, **kwargs)
         salt_settings = __salt__['mc_salt.settings']()
         pillar_root = os.path.join(salt_settings['pillarRoot'])
+        upillar_top = 'makina-projects.{name}'.format(**cfg)
         pillarf = os.path.join(pillar_root, 'top.sls')
+        customf = os.path.join(pillar_root, 'custom.sls')
         pillar_top = 'makina-projects.{name}'.format(**cfg)
         link_into_root(
             name, ret,
             cfg['wired_pillar_root'], cfg['pillar_root'], do_link=True)
         added = '    - {0}'.format(pillar_top)
+        for f, content in six.iteritems({pillarf: TOP, customf: CUSTOM}):
+            if not os.path.exists(f):
+                with open(f, 'w') as fic:
+                    fic.write(content)
         with open(pillarf) as fpillarf:
             pillars = fpillarf.read().splitlines()
             found = False
@@ -2615,7 +2634,7 @@ def sync_git_directory(directory,
             local_branch = 'master'
         if refresh and (sync_remote in remotes):
             cret['fetch'] = _s['git.fetch'](
-                directory, sync_remote, user=user)
+                directory, remote=sync_remote, user=user)
             cret['stash_local_changes'] = _s['git.stash'](
                 directory,
                 user=user)
@@ -2625,7 +2644,7 @@ def sync_git_directory(directory,
                 user=user)
             cret['sync'] = _s['git.reset'](
                 directory,
-                '--hard {0}/{1}'.format(sync_remote, rev),
+                opts='--hard {0}/{1}'.format(sync_remote, rev),
                 user=user)
     except (
         OSError,
@@ -2843,7 +2862,7 @@ def _init_local_remote_directory(host,
         maybe_sync = not empty_directory
         if origin:
             if empty_directory:
-                cret['clone'] = _s['git.clone'](directory, origin, user=user)
+                cret['clone'] = _s['git.clone'](directory, url=origin, user=user)
                 cret['st'] = clean_salt_git_commit(directory)['st']
         else:
             if empty_directory:
@@ -3058,13 +3077,13 @@ def sync_remote_working_copy(host,
         clean_salt_git_commit(directory)
         if not os.path.exists(tmpbare):
             cret['clone'] = _s['git.clone'](tmpbare,
-                                            directory,
+                                            url=directory,
                                             opts='--bare',
                                             user=user)
         cret['remote'] = _s['git.remote_set'](
             directory, remote=lremote, url=tmpbare, user=user)
         cret['push'] = _s['git.push'](
-            directory, lremote, branch='', opts=gforce, user=user)
+            directory, remote=lremote, branch='', opts=gforce, user=user)
     except (Exception,) as exc:
         trace = traceback.format_exc()
         failed, original = True, exc
