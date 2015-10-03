@@ -4838,8 +4838,12 @@ if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
         recap
         set_dns
         install_prerequisites
-        setup_virtualenvs
         setup_and_maybe_update_code
+        setup_virtualenvs
+        ret=$?
+        if [ "x${SALT_BOOT_ONLY_PREREQS}" != "x" ];then
+            exit $ret
+        fi
         create_salt_skeleton
         install_mastersalt_env
         install_salt_env
