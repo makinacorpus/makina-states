@@ -1,11 +1,11 @@
 FROM __MS_STAGE0_IMAGE__
-ENV DEBIAN_FRONTEND="noninteractive"\
-    MS_GIT="__MS_GIT__" \
-    MS_STAGE0_IMAGE="__MS_STAGE0_IMAGE__" \
-    MS_BASEIMAGE="__MS_BASEIMAGE__"
 ADD docker/makina-states.tar.xz /
 RUN echo DOCKERFILE_ID=4\
     && set -x \
+    && DEBIAN_FRONTEND="noninteractive"\
+    MS_GIT="__MS_GIT__" \
+    MS_STAGE0_IMAGE="__MS_STAGE0_IMAGE__" \
+    MS_BASEIMAGE="__MS_BASEIMAGE__"\
     && apt-get update \
     && cd /srv/salt/makina-states \
     && ( git remote rm msgit 2>/dev/null || /bin/true ) \

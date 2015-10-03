@@ -1,11 +1,11 @@
 FROM scratch
-ENV DEBIAN_FRONTEND="noninteractive"\
-    MS_GIT="__MS_GIT__" \
-    MS_STAGE0_IMAGE="__MS_STAGE0_IMAGE__" \
-    MS_BASEIMAGE="__MS_BASEIMAGE__" 
 ADD docker/__MS_BASEIMAGE__ docker/osfiles.tar docker/ms_initd_wrapper /
 RUN echo DOCKERFILE_ID=5\
  && set -x\
+ && export DEBIAN_FRONTEND="noninteractive"\
+        MS_GIT="__MS_GIT__" \
+        MS_STAGE0_IMAGE="__MS_STAGE0_IMAGE__" \
+        MS_BASEIMAGE="__MS_BASEIMAGE__"\
  && chmod +x /ms_initd_wrapper\
  && if which apt-get >/dev/null 2>&1;then\
    sed -i -re\

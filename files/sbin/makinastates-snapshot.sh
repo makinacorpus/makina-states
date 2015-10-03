@@ -37,6 +37,7 @@ REMOVE="
 /etc/systemd/system/multi-user.target.wants/salt-master.service
 "
 if [ "x${is_docker}" != "x" ];then
+    set +e
     REMOVE="${REMOVE}
 $(find \
     /salt-venv\
@@ -44,7 +45,7 @@ $(find \
     -name .git)
 "
 fi
-
+    set -e
 WIPE="
 /etc/mastersalt/makina-states/
 /etc/salt/makina-states/
