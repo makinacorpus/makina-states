@@ -558,7 +558,7 @@ def is_(typ, ttl=120):
                 return __salt__[
                     'mc_remote.local_mastersalt_call'
                 ]('mc_utils.get', gr, ttl=ttl)
-            except saltapi.MastersaltNotRunning:
+            except mc_states.saltapi.MastersaltNotRunning:
                 log.debug('mc_cloud.is_: Mastersalt not running')
                 return {'result': False}
             except mc_states.saltapi.MastersaltNotInstalled:
