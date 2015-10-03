@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 {%- set vmdata = salt['mc_cloud_vm.settings']() %}
 {%- set data = vmdata.vts.lxc %}
 {% set extra_confs = {} %}
@@ -31,24 +32,12 @@ include:
      '/usr/share/lxc/config/ubuntu.common.conf': {'mode': '644'}}) %}
 {%  endif %}
 
-{% for f, fdata in extra_confs.items() %}
-{% set template = fdata.get('template', 'jinja') %}
-lxc-conf-{{f}}:
-  file.managed:
-    - name: "{{fdata.get('target', f)}}"
-    - source: "{{fdata.get('source', 'salt://makina-states/files'+f)}}"
-    - mode: "{{fdata.get('mode', 750)}}"
-    - user: "{{fdata.get('user', 'root')}}"
-    - group:  "{{fdata.get('group', 'root')}}"
-    {% if fdata.get('makedirs', True) %}
-    - makedirs: true
-    {% endif %}
-    {% if template %}
-    - template: "{{template}}"
-    {%endif%}
+{% macro rmacro() %}
     - watch:
       - mc_proxy: lxc-pre-conf
     - watch_in:
       - mc_proxy: lxc-post-conf
-{% endfor %}
-{% endif %}
+{% endmacro %}
+{{ h.deliver_config_files(
+     extra_confs, after_macro=rmacro, prefix='lxc-conf-')}}
+ {%  endif %}

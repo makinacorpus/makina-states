@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 {%- set vmdata = salt['mc_cloud_vm.settings']() %}
 {%- set data = vmdata.vts.docker %}
 {% set extra_confs = {} %}
@@ -17,19 +18,24 @@ include:
         data['host_confs'],
         extra_confs) %}
 
-{# recently on ubuntu systemd units are disabled for
-   docker, wtf ... #}
+{% set url = data.binary_url %}
+{% set fn = url.split('/')[-1] %}
+{% set hash=data.hashes[fn]['hash'] %}
+{% set dhash=data.hashes[fn]['dhash'] %}
 
-docker-conf:
-  file.managed:
-    - name: /etc/init/docker.conf
-    - source: salt://makina-states/files/etc/init/docker.conf
-    - makedirs: true
+{% macro rmacro() %}
     - watch:
+      - file: docker-remove-symlinks1
+      - file: docker-remove-symlinks2
       - mc_proxy: docker-pre-conf
     - watch_in:
       - mc_proxy: docker-post-conf
+      - mc_proxy: docker-services-net
+{% endmacro %}
+{{ h.deliver_config_files(
+     extra_confs, after_macro=rmacro, prefix='docker-conf-')}}
 
+{# ubuntu systemd units are disabled for docker, wtf ... #}
 docker-remove-symlinks2:
   file.absent:
     - name: /etc/systemd/system/docker.service
@@ -47,34 +53,6 @@ docker-remove-symlinks1:
     - watch_in:
       - mc_proxy: docker-post-conf
 
-{% for f, fdata in extra_confs.items() %}
-{% set template = fdata.get('template', 'jinja') %}
-docker-conf-{{f}}:
-  file.managed:
-    - name: "{{fdata.get('target', f)}}"
-    - source: "{{fdata.get('source', 'salt://makina-states/files'+f)}}"
-    - mode: "{{fdata.get('mode', 750)}}"
-    - user: "{{fdata.get('user', 'root')}}"
-    - group:  "{{fdata.get('group', 'root')}}"
-    {% if fdata.get('makedirs', True) %}
-    - makedirs: true
-    {% endif %}
-    {% if template %}
-    - template: "{{template}}"
-    {%endif%}
-    - watch:
-      - file: docker-remove-symlinks1
-      - file: docker-remove-symlinks2
-      - mc_proxy: docker-pre-conf
-    - watch_in:
-      - mc_proxy: docker-post-conf
-      - mc_proxy: docker-services-net
-{% endfor %}
-
-{% set url='https://github.com/makinacorpus/docker/releases/download/mc_1/docker-1.8-mc_4.xz' %}
-{% set fn = url.split('/')[-1] %}
-{% set hash='36ea74c00f42a37f65a31c84dce43f24' %}
-{% set dhash='81d4391b879c0111c24bd222744dc483' %}
 docker-replace-dist-binary:
   cmd.run:
     - name: |
