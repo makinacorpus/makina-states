@@ -1781,11 +1781,17 @@ def get_ms_iptables_conf(id_, ttl=PILLAR_TTL):
         gconf = get_configuration(id_)
         if not gconf.get('manage_ms_iptables', MS_IPTABLES_MANAGED):
             return {}
-        p = 'makina-states.services.firewall.ms_iptables'
-        prefix = p + '.'
+        is_ldap = is_ldap_master(id_) or is_ldap_slave(id_)
+        is_dns = is_dns_master(id_) or is_dns_slave(id_)
         qry = _s[__name + '.query']
         ms_iptables_overrides = qry('ms_iptables_overrides', {})
+        p = 'makina-states.services.firewall.ms_iptables'
         rdata = OrderedDict([(p, True)])
+        if is_ldap:
+            rdata[p + '.no_slapd'] = False
+        if is_dns:
+            rdata[p + '.no_bind'] = False
+        prefix = p + '.'
         for param, value in ms_iptables_overrides.get(id_, {}).items():
             rdata[prefix + param] = value
         return rdata
