@@ -48,8 +48,8 @@ ONE_DAY = mc_states.api.ONE_DAY
 HALF_DAY = mc_states.api.HALF_DAY
 ONE_MONTH = mc_states.api.ONE_MONTH
 ONE_YEAR = ONE_MONTH * 12
-FIREWALLD_MANAGED = True
-MS_IPTABLES_MANAGED = False
+FIREWALLD_MANAGED = False
+MS_IPTABLES_MANAGED = True
 
 # pillar cache is never expired, only if we detect a change on the database file
 PILLAR_TTL = ONE_YEAR
@@ -1807,6 +1807,8 @@ def get_firewalld_conf(id_, ttl=PILLAR_TTL):
     def _do(id_):
         _s = __salt__
         gconf = get_configuration(id_)
+        if get_ms_iptables_conf(id_):
+            return {}
         if not gconf.get('manage_firewalld', FIREWALLD_MANAGED):
             return {}
         p = 'makina-states.services.firewall.firewalld'
