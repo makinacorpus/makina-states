@@ -1778,13 +1778,16 @@ def get_ms_iptables_conf(id_, ttl=PILLAR_TTL):
 
     def _do(id_):
         _s = __salt__
+        qry = _s[__name + '.query']
         gconf = get_configuration(id_)
-        if not gconf.get('manage_ms_iptables', MS_IPTABLES_MANAGED):
+        ms_iptables_overrides = qry('ms_iptables_overrides', {})
+        if gconf.get('manage_ms_iptables', MS_IPTABLES_MANAGED):
+            # configure
+            pass
+        elif id_ not in ms_iptables_overrides:
             return {}
         is_ldap = is_ldap_master(id_) or is_ldap_slave(id_)
         is_dns = is_dns_master(id_) or is_dns_slave(id_)
-        qry = _s[__name + '.query']
-        ms_iptables_overrides = qry('ms_iptables_overrides', {})
         p = 'makina-states.services.firewall.ms_iptables'
         rdata = OrderedDict([(p, True)])
         if is_ldap:
