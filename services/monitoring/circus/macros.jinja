@@ -4,11 +4,24 @@
 {% macro circusAddWatcher(name, cmd) %}
 {% set args = kwargs.pop('args', []) %}
 {% set conf_priority = kwargs.pop('conf_priority', '100') %}
+circus-add-watcher-{{ name }}-parents:
+  file.directory:
+    - mode: 755
+    - names:
+      - {{ locs['conf_dir'] }}
+      - {{ locs['conf_dir'] }}/circus/
+      - {{ locs['conf_dir'] }}/circus/circusd.conf.d
+    - makedirs: true
+    - watch:
+      - mc_proxy: circus-pre-conf
+    - watch_in:
+      - mc_proxy: circus-post-conf
 circus-add-watcher-{{ name }}:
   file.managed:
     - name: {{ locs['conf_dir'] }}/circus/circusd.conf.d/{{conf_priority}}_watcher-{{ name }}.ini
     - source: salt://makina-states/files/etc/circus/circusd.conf.d/watcher.ini
     - template: jinja
+    - mode: 755
     - defaults:
         name: {{ name }}
         cmd: {{ cmd }}
@@ -19,6 +32,7 @@ circus-add-watcher-{{ name }}:
                 {{salt['mc_utils.json_dump'](kwargs)}}
     - watch:
       - mc_proxy: circus-pre-conf
+      - file: circus-add-watcher-{{ name }}-parents
     - watch_in:
       - mc_proxy: circus-post-conf
 {% endmacro %}
