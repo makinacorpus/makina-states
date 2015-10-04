@@ -37,6 +37,9 @@ def settings():
         pw = redis_reg.setdefault(
             'password', __salt__['mc_utils.generate_password']())
         locs = __salt__['mc_locations.settings']()
+        daemonize = 'yes'
+        if __salt__['mc_nodetypes.is_docker']():
+            daemonize = 'no'
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.db.redis', {
                 'admin': 'admin',
@@ -88,7 +91,7 @@ def settings():
                     'hash-max-ziplist-value': 64,
                     'activerehashing': 'yes',
                     'list-max-ziplist-entries': 512,
-                    'daemonize': 'yes',
+                    'daemonize': daemonize,
                     'pidfile': '/var/run/redis/redis-server.pid',
                     'list-max-ziplist-value': 64,
                     'set-max-intset-entries': 512,

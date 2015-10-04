@@ -1,24 +1,17 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 {% set data = salt['mc_redis.settings']() %}
 include:
   - makina-states.services.db.redis.hooks
   - makina-states.services.db.redis.service
 
-{% for f, tdata in data.templates.items() %}
-makina-redis-{{f}}:
-  file.managed:
-    - name: {{f}}
-    - source: "{{tdata.get('template', 'salt://makina-states/files'+f)}}"
-    - user: "{{tdata.get('user', 'redis')}}"
-    - group: "{{tdata.get('group', 'redis')}}"
-    - mode: "{{tdata.get('mode', 750)}}"
-    - makedirs: true
-    - template: jinja
+{% macro rmacro() %}
     - watch:
       - mc_proxy: redis-pre-conf
     - watch_in:
       - mc_proxy: redis-post-conf
-{% endfor %}
-
+{% endmacro %}
+{{ h.deliver_config_files(
+     data.templates, after_macro=rmacro, prefix='makina-redis-')}}
 makina-redis-localconf:
   file.managed:
     - name: /etc/redis/redis.local.conf
