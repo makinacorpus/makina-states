@@ -25,7 +25,7 @@ makina-nginx-conf-syntax-check:
 
 {% if salt['mc_nodetypes.is_docker']() and not salt['mc_controllers.mastersalt_mode']() %}
 {% set circus_data = {
-  'cmd': '/usr/bin/nginx',
+  'cmd': '/usr/sbin/nginx',
   'environment': {},
   'uid': 'root',
   'gid': 'root',
