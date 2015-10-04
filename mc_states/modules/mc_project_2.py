@@ -131,7 +131,7 @@ SPECIAL_SLSES = ["{0}.sls".format(a)
                               'rotate_archives',
                               'install']]
 
-CUSTOM = ''''
+CUSTOM = '''
 custom: bar
 '''
 TOP = '''
