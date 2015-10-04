@@ -87,6 +87,7 @@ def registry():
                 'base.ntp.uninstall': {'active': ntp_u},
                 'base.dbus': {'force': True, 'active': not is_docker},
                 'base.ssh': {'force': True, 'active': sshen},
+                'base.cron': {'force': True, 'active': True},
                 'dns.dhcpd': {'active': False},
                 'dns.bind': {'force': True, 'active': binden},
                 'dns.slapd': {'active': False},

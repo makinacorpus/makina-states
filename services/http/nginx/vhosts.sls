@@ -39,4 +39,3 @@ removedef-nginx-test:
 {%   do siteDef.update({'domain': site}) %}
 {{   virtualhost(**siteDef) }}
 {% endfor %}
-

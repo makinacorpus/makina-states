@@ -1,5 +1,12 @@
+{% import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
 include:
   - makina-states.services.http.nginx.hooks
+  - makina-states.services.base.cron
+  {% if salt['mc_nodetypes.is_docker']() %}
+  - makina-states.services.monitoring.circus.hooks
+  {% endif %}
+
+
 #--- MAIN SERVICE RESTART/RELOAD requireers --------------
 # Configuration checker, always run before restart of graceful restart
 {% set settings = salt['mc_nginx.settings']() %}
@@ -10,10 +17,26 @@ makina-nginx-conf-syntax-check:
     - watch:
       - mc_proxy: nginx-pre-restart-hook
       - mc_proxy: nginx-pre-hardrestart-hook
+{% if not salt['mc_nodetypes.is_docker']() %}
     - watch_in:
       - service: makina-nginx-restart
       - service: makina-nginx-reload
+{% endif %}
 
+{% if salt['mc_nodetypes.is_docker']() and not salt['mc_controllers.mastersalt_mode']() %}
+{% set circus_data = {
+  'cmd': '/usr/bin/nginx',
+  'environment': {},
+  'uid': 'root',
+  'gid': 'root',
+  'copy_env': True,
+  'rlimit_nofile': '4096',
+  'working_dir': '/var/www/html',
+  'warmup_delay': "10",
+  'max_age': 24*60*60} %}
+{{ circus.circusAddWatcher('makina-states-nginx', **circus_data) }}
+
+{% else %}
 {# compat: reload #}
 {% for i in ['reload', 'restart'] %}
 makina-nginx-{{i}}:
@@ -42,3 +65,4 @@ makina-ngin-naxsi-ui-running:
       - mc_proxy: nginx-post-restart-hook
     - require:
       - mc_proxy: nginx-pre-restart-hook
+{% endif %}
