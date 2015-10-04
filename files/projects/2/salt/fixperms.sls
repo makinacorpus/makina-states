@@ -24,10 +24,17 @@
               "{{locs.resetperms}}" "${@}" \
               --dmode '0770' --fmode '0770'  \
               --paths "{{cfg.project_root}}" \
-              --paths "{{cfg.data_root}}" \
-              --users www-data \
+              --users www-data:r-x \
               --users {% if not cfg.no_user%}{{cfg.user}}{% else -%}root{% endif %} \
-              --groups {{cfg.group}} \
+              --groups {{cfg.group}}:r-x \
+              --user {% if not cfg.no_user%}{{cfg.user}}{% else -%}root{% endif %} \
+              --group {{cfg.group}};
+              "{{locs.resetperms}}" "${@}" \
+              --dmode '0770' --fmode '0770'  \
+              --paths "{{cfg.data_root}}" \
+              --users www-data:r-x \
+              --users {% if not cfg.no_user%}{{cfg.user}}{% else -%}root{% endif %} \
+              --groups {{cfg.group}}:r-x \
               --user {% if not cfg.no_user%}{{cfg.user}}{% else -%}root{% endif %} \
               --group {{cfg.group}};
               "{{locs.resetperms}}" "${@}" \
@@ -37,7 +44,7 @@
               --paths "{{cfg.project_dir}}" \
               --paths "{{cfg.project_dir}}"/.. \
               --paths "{{cfg.project_dir}}"/../.. \
-              --users www-data ;
+              --users www-data:--x ;
             fi
   cmd.run:
     - name: {{cfg.project_dir}}/global-reset-perms.sh
