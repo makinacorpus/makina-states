@@ -19,6 +19,18 @@ __name = 'redis'
 log = logging.getLogger(__name__)
 
 
+def change_password(pw=None):
+    redis_reg = __salt__[
+        'mc_macros.get_local_registry'](
+            'redis', registry_format='pack')
+    if not pw:
+        pw = __salt__['mc_utils.generate_password']()
+    redis_reg['password'] = pw
+    __salt__['mc_macros.update_local_registry'](
+        'redis', redis_reg, registry_format='pack')
+    return pw
+
+
 def settings():
     '''
     redis settings

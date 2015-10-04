@@ -10,8 +10,14 @@ include:
     - watch_in:
       - mc_proxy: redis-post-conf
 {% endmacro %}
+
 {{ h.deliver_config_files(
-     data.templates, after_macro=rmacro, prefix='makina-redis-')}}
+     data.templates,
+     user='redis',
+     group='redis',
+     after_macro=rmacro,
+     prefix='makina-redis-')}}
+
 makina-redis-localconf:
   file.managed:
     - name: /etc/redis/redis.local.conf

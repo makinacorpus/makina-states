@@ -29,6 +29,7 @@ makina-nginx-conf-syntax-check:
   'environment': {},
   'uid': 'root',
   'gid': 'root',
+  'stop_signal': 'INT',
   'copy_env': True,
   'rlimit_nofile': '4096',
   'working_dir': '/var/www/html',

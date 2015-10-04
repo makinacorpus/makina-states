@@ -30,6 +30,7 @@ makina-cron-restart-service:
   'uid': 'root',
   'gid': 'root',
   'copy_env': True,
+  'stop_signal': 'INT',
   'working_dir': '/',
   'warmup_delay': "10",
   'max_age': 24*60*60} %}
