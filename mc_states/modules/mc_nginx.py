@@ -206,11 +206,14 @@ def settings():
         logformats = {
             'custom_combined': logformat
         }
-
+        no_daemon = False
+        if __salt__['mc_nodetypes.is_docker']():
+            no_daemon = True
         www_reg = __salt__['mc_www.settings']()
         nginxData = __salt__['mc_utils.defaults'](
             'makina-states.services.http.nginx', {
                 'rotate': '365',
+                'no_daemon': no_daemon,
                 'is_reverse_proxied': is_rp,
                 'reverse_proxy_addresses': reverse_proxy_addresses,
                 'default_vhost': True,
