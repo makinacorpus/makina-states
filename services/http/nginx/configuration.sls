@@ -37,7 +37,6 @@ makina-nginx-helman:
   '/etc/init.d/nginx': 755,
 } %}
 
-{% set sdata =salt['mc_utils.json_dump'](settings)  %}
 {% for f in [
     '/etc/logrotate.d/nginx',
 ] %}
@@ -46,9 +45,6 @@ makina-nginx-minimal-{{f}}:
     - name: {{f}}
     - source: salt://makina-states/files/{{f}}
     - template: jinja
-    - defaults:
-      data: |
-            {{sdata}}
     - user: root
     - mode: 644
     - group: root
@@ -99,9 +95,6 @@ makina-nginx-minimal-{{f}}:
     - name: {{f}}
     - source: salt://makina-states/files/{{f}}
     - template: jinja
-    - defaults:
-      data: |
-            {{sdata}}
     - user: root
     - group: root
     - makedirs: true
