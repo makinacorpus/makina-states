@@ -28,7 +28,7 @@
               --users {% if not cfg.no_user%}{{cfg.user}}{% else -%}root{% endif %} \
               --groups {{cfg.group}}:r-x \
               --user {% if not cfg.no_user%}{{cfg.user}}{% else -%}root{% endif %} \
-              --group {{cfg.group}};            
+              --group {{cfg.group}};
               "{{locs.resetperms}}" "${@}" \
               --dmode '0770' --fmode '0770'  \
               --paths "{{cfg.data_root}}" \
