@@ -140,8 +140,8 @@ TOP = '''
 # environment configurations files to their respective minions
 #
 base:
-'*':
-- custom
+  '*':
+    - custom
 '''
 
 
