@@ -43,6 +43,14 @@ $(find \
     /salt-venv\
     /srv/*salt/makina-states/\
     -name .git)
+/salt-venv/salt/src/m2crypto/build
+/salt-venv/mastersalt/src/m2crypto/build
+/salt-venv/mastersalt/src/salt/doc
+/salt-venv/salt/src/salt/doc
+/salt-venv/mastersalt/lib/python2.7/site-packages/libcloud/test/compute/fixtures
+/salt-venv/salt/lib/python2.7/site-packages/libcloud/test/compute/fixtures
+/salt-venv/mastersalt/src/salt/pkg
+/salt-venv/salt/src/salt/pkg
 "
 fi
     set -e
@@ -56,11 +64,14 @@ WIPE="
 /etc/salt/makina-states
 /usr/local/share/ca-certificates/
 
+/var/cache/salt/minion
 /var/cache/salt/salt-master
 /var/cache/salt/salt-minion
 
-/var/cache/mastersalt/master-master
+/var/cache/mastersalt/mastersalt-master
 /var/cache/mastersalt/mastersalt-minion
+/var/cache/mastersalt/minion
+/var/cache/mastersalt/master-master
 
 /tmp
 
@@ -173,6 +184,9 @@ if [ -e /etc/.git ];then
 fi
 if which getfacl 1>/dev/null 2>/dev/null;then
     getfacl -R / > /acls.txt || /bin/true
+    if [ -e /acls.txt ];then
+        xz -f -z -9e /acls.txt || /bin/true
+    fi
 fi
 # deactivate some crons (leave only refresh one only on non docker-env)
 if [ "x${is_docker}" != "x" ];then

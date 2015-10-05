@@ -722,7 +722,7 @@ set_vars() {
         BASE_PACKAGES="${BASE_PACKAGES} libzmq3-dev"
     fi
     BASE_PACKAGES="${BASE_PACKAGES} swig libssl-dev debconf-utils python-virtualenv"
-    BASE_PACKAGES="${BASE_PACKAGES} vim git rsync"
+    BASE_PACKAGES="${BASE_PACKAGES} git rsync"
     BASE_PACKAGES="${BASE_PACKAGES} libgmp3-dev"
     BASE_PACKAGES="${BASE_PACKAGES} libffi-dev"
     BRANCH_PILLAR_ID="makina-states.salt.makina-states.rev"

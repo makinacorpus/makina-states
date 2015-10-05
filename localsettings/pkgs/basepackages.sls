@@ -69,6 +69,10 @@ ubuntu-pkgs:
       # - kbd
       # - kmod
       # - ureadahead
+      {% if not salt['mc_nodestype.is_docker']() %}
+      - update-manager-core
+      - mtr-tiny
+      {% endif %}
       - adduser
       - apt
       - apt-utils
@@ -127,8 +131,6 @@ ubuntu-pkgs:
       - time
       - apt-transport-https
       - iputils-tracepath
-      - mtr-tiny
-      - update-manager-core
       - uuid-runtime
       {% endif %}
 {%- endif %}
