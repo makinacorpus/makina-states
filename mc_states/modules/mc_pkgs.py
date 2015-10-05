@@ -97,7 +97,8 @@ def settings():
         if grains['os'] in ['Ubuntu']:
             lts_dist = ubuntu_lts
             if grains['osrelease'] >= '15.04':
-                umirror = mirrors['dist']
+                # umirror = mirrors['dist']
+                umirror = mirrors['ovh']
             elif __salt__['mc_nodetypes.is_travis']():
                 umirror = mirrors['dist']
 
