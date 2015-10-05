@@ -58,7 +58,6 @@ RUN echo DOCKERFILE_ID=5\
         swig\
         tcl8.5\
         tcpdump\
-        vim\
    && if dpkg -l |grep systemd|awk '{print $1 $2}'|egrep -q '^iisystemd';then\
        apt-get install -y --force-yes\
          systemd dbus libpam-systemd systemd-sysv libsystemd0;\
