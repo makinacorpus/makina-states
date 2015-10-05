@@ -58,7 +58,7 @@ function build_stage0() {
             if [ "x${MS_OS}" = "xubuntu" ];then
                 red "${MS_STAGE0_IMAGE}: Creating baseimage ${MS_BASEIMAGE} for ${MS_STAGE0_IMAGE}"
                 v_run lxc-create -t ${MS_OS} -n ms-${MS_OS}-${MS_OS_RELEASE} \
-                    -- --packages="vim,git,rsync,acl,ca-certificates,socat,tcpdump,netcat"\
+                    -- --packages="vim-tiny,git,rsync,acl,ca-certificates,socat,tcpdump,netcat"\
                     --release=${MS_OS_RELEASE} --mirror=${MS_OS_MIRROR}
                 die_in_error "${MS_STAGE0_IMAGE}: lxc template failed"
             else
