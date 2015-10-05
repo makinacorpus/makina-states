@@ -69,7 +69,7 @@ ubuntu-pkgs:
       # - kbd
       # - kmod
       # - ureadahead
-      {% if not salt['mc_nodestype.is_docker']() %}
+      {% if not salt['mc_nodetypes.is_docker']() %}
       - update-manager-core
       - mtr-tiny
       {% endif %}
