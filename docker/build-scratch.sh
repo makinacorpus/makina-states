@@ -107,9 +107,7 @@ function build_stage0() {
         fi
     fi
     if [ "x${do_build}" != "x" ];then
-        touch "$W/.osfiles"
-        tar cf "$W/osfiles.tar" -C "${W}" .osfiles
-        rm -f "$W/.osfiles"
+        tar cf "$W/osfiles.tar" -C "${W}" ms_initd_wrapper
         # base survival apt configuration
         if [ "x${MS_OS}" = "xubuntu" ];then
             yellow "${MS_STAGE0_IMAGE}: Adding base files to stage0"
@@ -127,6 +125,7 @@ function build_stage0() {
                 sbin/makinastates-snapshot.sh
             die_in_error "${MS_STAGE0_IMAGE}: cant tar aptconf"
         fi
+        xz -9e -f -z "$W/osfiles.tar" -c > "$W/osfiles.tar.xz"
         a_d "LABEL MS_STAGE0_IMAGE_BUILD_KEY=\"${BUILDKEY}\""
         cyan "------------------------------------------------------------------------------"
         echo "     Bootstraping image: $(green ${MS_STAGE0_IMAGE})"

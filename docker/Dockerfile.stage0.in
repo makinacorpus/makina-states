@@ -1,5 +1,5 @@
 FROM scratch
-ADD docker/__MS_BASEIMAGE__ docker/osfiles.tar docker/ms_initd_wrapper /
+ADD docker/__MS_BASEIMAGE__ docker/osfiles.tar.xz /
 RUN echo DOCKERFILE_ID=5\
  && set -x\
  && export DEBIAN_FRONTEND="noninteractive"\
