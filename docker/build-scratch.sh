@@ -68,7 +68,13 @@ function build_stage0() {
         else
             yellow "${MS_STAGE0_IMAGE}: container already exists"
         fi
-        v_die_run cd "/var/lib/lxc/ms-${MS_OS}-${MS_OS_RELEASE}/rootfs"
+        rootfs="/var/lib/lxc/ms-${MS_OS}-${MS_OS_RELEASE}/rootfs"
+        v_die_run cd "${rootfs}"
+        find\
+            "${rootfs}/var/cache/apt/archives"\
+            "${rootfs}/var/lib/apt/lists"\
+            "${rootfs}/etc/ssh/ssh_host"*"key"\
+            "${rootfs}/etc/ssh/ssh_host"*"pub" -type f|while read f;do rm -vf "${f}";done
         # if [ ! -d docker/injected_volumes ];then mkdir -p docker/injected_volumes;fi
         v_die_run tar cJf "${MS_BASEIMAGE_PATH}.tmp" .
         die_in_error "${MS_STAGE0_IMAGE}: can't compress ${MS_BASEIMAGE}.tmp"
