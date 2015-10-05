@@ -1,10 +1,11 @@
 {% import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
 include:
   - makina-states.services.log.rsyslog.hooks
-  {% if salt['mc_nodetypes.is_docker']() %}
+  {% if salt['mc_nodetypes.is_docker_service']()%}
   - makina-states.services.monitoring.circus.hooks
   {% endif %}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_nodetypes.activate_sysadmin_states']() %}
+{% if not salt['mc_nodetypes.is_docker_service']() %}
 makina-rsyslog-restart-service:
   service.running:
     - name: rsyslog
@@ -15,17 +16,19 @@ makina-rsyslog-restart-service:
     - watch_in:
       - mc_proxy: rsyslog-post-restart-hook
       - mc_proxy: rsyslog-post-hardrestart-hook
-{% endif %}
-{% if salt['mc_nodetypes.is_docker']() and not salt['mc_controllers.mastersalt_mode']()%}
+{% else %}
 {% set circus_data = {
   'cmd': '/usr/sbin/rsyslogd -n',
   'environment': {},
   'uid': 'root',
   'gid': 'root',
+  'stop_signal': 'INT',
+  'conf_priority': '11',
   'copy_env': True,
   'rlimit_nofile': '4096',
   'working_dir': '/var',
-  'warmup_delay': "10",
+  'warmup_delay': "1",
   'max_age': 24*60*60} %}
-{{ circus.circusAddWatcher('makina-states-rsyslogd', **circus_data) }}
+{{ circus.circusAddWatcher('rsyslogd', **circus_data) }}
+{%endif%}
 {%endif%}

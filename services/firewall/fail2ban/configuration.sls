@@ -4,7 +4,7 @@ include:
   - makina-states.services.firewall.fail2ban.hooks
   - makina-states.services.firewall.fail2ban.services
 {%- set locs = salt['mc_locations.settings']()%}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_nodetypes.activate_sysadmin_states']() %}
 makina-fail2ban-pre-conf:
   mc_proxy.hook: []
 {% macro rmacro() %}

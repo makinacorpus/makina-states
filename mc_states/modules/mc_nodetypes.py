@@ -136,7 +136,26 @@ def is_docker():
 
 
 def is_container():
+
     return makina_grains._is_container()
+
+
+def is_docker_service():
+    return (
+        is_docker() and
+        not __salt__['mc_controllers.mastersalt_mode']()
+    )
+
+
+def activate_sysadmin_states():
+    if (
+        __salt__['mc_controllers.mastersalt_mode']() and
+        not is_docker_service()
+    ) or (
+        is_docker_service()
+    ):
+        return True
+    return False
 
 
 def is_vm():

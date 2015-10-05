@@ -1,8 +1,7 @@
 {% import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
 include:
   - makina-states.services.http.nginx.hooks
-  - makina-states.services.base.cron
-  {% if salt['mc_nodetypes.is_docker']() %}
+  {% if salt['mc_nodetypes.is_docker_service']() %}
   - makina-states.services.monitoring.circus.hooks
   {% endif %}
 
@@ -23,7 +22,7 @@ makina-nginx-conf-syntax-check:
       - service: makina-nginx-reload
 {% endif %}
 
-{% if salt['mc_nodetypes.is_docker']() and not salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_nodetypes.is_docker_service']()%}
 {% set circus_data = {
   'cmd': '/usr/sbin/nginx',
   'environment': {},
@@ -32,11 +31,11 @@ makina-nginx-conf-syntax-check:
   'stop_signal': 'INT',
   'copy_env': True,
   'rlimit_nofile': '4096',
+  'conf_priority': '60',
   'working_dir': '/var/www/html',
-  'warmup_delay': "10",
+  'warmup_delay': "2",
   'max_age': 24*60*60} %}
-{{ circus.circusAddWatcher('makina-states-nginx', **circus_data) }}
-
+{{ circus.circusAddWatcher('nginx', **circus_data) }}
 {% else %}
 {# compat: reload #}
 {% for i in ['reload', 'restart'] %}

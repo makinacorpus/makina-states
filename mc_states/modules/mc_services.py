@@ -66,8 +66,10 @@ def registry():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _registry():
         # only some services will be fully done  on mastersalt side if any
+        mastersaltrmode = __salt__['mc_controllers.mastersalt_mode']()
         is_docker = __salt__['mc_nodetypes.is_container']()
-        sshen = not is_docker
+        ids = __salt__['mc_nodetypes.is_docker_service']()
+        sshen = ids or (mastersalt_mode and not is_docker)
         ntpen = _ntpEn(__salt__)
         binden = _bindEn(__salt__)
         rsyslogen = _rsyslogEn(__grains__)
@@ -94,7 +96,7 @@ def registry():
                 'db.mongodb': {'active': False},
                 'db.mysql': {'active': False},
                 'db.postgresql': {'active': False},
-                'firewall.fail2ban': {'active': False},
+                'firewall.fail2ban': {'active': sshen},
                 'firewall.shorewall': {'active': False},
                 'firewall.firewalld': {'active': False},
                 'firewall.ms_iptables': {'active': False},

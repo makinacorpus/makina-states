@@ -58,6 +58,8 @@ def settings():
                 'password': pw,
                 'templates': _OrderedDict([
                     ('/etc/default/redis-server', {}),
+                    ('/etc/systemd/system/redis-server.service', {'mode': '644'}),
+                    ('/usr/bin/redis-server-wrapper.sh', {'mode': '755'}),
                     ('/etc/redis/redis.conf', {})]),
                 'packages':  [
                     'redis-server',

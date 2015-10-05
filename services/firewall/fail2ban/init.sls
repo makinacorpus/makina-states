@@ -7,7 +7,7 @@
 {{ salt['mc_macros.register']('services', 'firewall.fail2ban') }}
 include:
   - makina-states.services.firewall.fail2ban.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_nodetypes.activate_sysadmin_states']() %}
   - makina-states.services.firewall.fail2ban.prerequisites
   - makina-states.services.firewall.fail2ban.configuration
   - makina-states.services.firewall.fail2ban.services

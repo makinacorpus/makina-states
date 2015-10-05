@@ -105,14 +105,12 @@ def settings():
             if grains['osrelease'][0] < '6':
                 UsePrivilegeSeparation = 'no'
                 AuthorizedKeysFile = '.ssh/authorized_keys'
-
         data.update({
-            'sshd_config_src': (
-                'salt://makina-states/files/'
-                'etc/ssh/sshd_config'),
-            'banner_src': (
-                'salt://makina-states/files/etc/'
-                'ssh/banner'),
+            'extra_confs': {
+                '/etc/ssh/sshd_config': {'mode': '640'},
+                '/etc/ssh/banner': {'mode': '644'},
+                '/usr/bin/sshd_wrapper.sh': {'mode': '755'},
+            },
             'server': {
                 'allowusers': [],
 

@@ -1,6 +1,6 @@
 include:
   - makina-states.services.firewall.fail2ban.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_nodetypes.activate_sysadmin_states']() %}
 fail2ban-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
@@ -10,4 +10,3 @@ fail2ban-pkgs:
     - watch_in:
       - mc_proxy: fail2ban-post-install-hook
 {% endif %}
-

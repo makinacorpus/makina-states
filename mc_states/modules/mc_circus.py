@@ -42,7 +42,7 @@ def settings():
                 'pidf': locs['var_run_dir'] + '/circusd.pid',
                 'logdir': '/var/log/circus',
                 'requirements': [
-                    'circus==0.11.1',
+                    'circus==0.12.1',
                     'circus-web==0.5',
                 ],
                 # parameters to set in circus configuration section

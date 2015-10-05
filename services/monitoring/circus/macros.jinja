@@ -3,7 +3,7 @@
 {% set locs = salt['mc_locations.settings']() %}
 {% macro circusAddWatcher(name, cmd) %}
 {% set args = kwargs.pop('args', []) %}
-{% set conf_priority = kwargs.pop('conf_priority', '100') %}
+{% set conf_priority = kwargs.get('priority', kwargs.get('conf_priority', '100')) %}
 circus-add-watcher-{{ name }}-parents:
   file.directory:
     - mode: 755

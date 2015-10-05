@@ -2,20 +2,23 @@
 {% set redisSettings = salt['mc_redis.settings']() %}
 include:
   - makina-states.services.db.redis.hooks
-{% if salt['mc_nodetypes.is_docker']() %}
+  {% if salt['mc_nodetypes.is_docker_service']() %}
   - makina-states.services.monitoring.circus.hooks
+  {% endif %}
 
+{% if salt['mc_nodetypes.is_docker_service']() %}
 {% set circus_data = {
-  'cmd': '/usr/bin/redis-server /etc/redis.conf',
+  'cmd': '/usr/bin/redis-server-wrapper.sh /etc/redis/redis.conf',
   'environment': {},
-  'uid': 'redis',
+  'uid': 'root',
   'gid': 'redis',
+  'rlimit_nofile': '65536',
   'copy_env': True,
   'working_dir': '/',
-  'warmup_delay': "10",
+  'warmup_delay': "3",
+  'conf_priority': '50',
   'max_age': 24*60*60} %}
-{{ circus.circusAddWatcher('makina-states-redis', **circus_data) }}
-
+{{ circus.circusAddWatcher('redis', **circus_data) }}
 {%else %}
 makina-redis-service:
   service.running:
