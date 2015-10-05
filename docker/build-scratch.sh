@@ -171,8 +171,8 @@ function build_image() {
         cyan "-------------------------------------------------------------------------------"
         cat "${dockerfile}"
         cyan "-------------------------------------------------------------------------------"
+        #( cd "${MS_ROOT}" &&  v_run docker build -t "${MS_IMAGE}" -f "${dockerfile}" . ) || exit 1
         ( cd "${MS_ROOT}" &&  v_run docker build --rm -t "${MS_IMAGE}" -f "${dockerfile}" . )
-        #( cd "${MS_ROOT}" &&  v_run docker build -t "${MS_IMAGE}" -f "${dockerfile}" . )
         die_in_error "${MS_IMAGE} failed to build image"
         # cleanup the old stage1 image
         if [ "x${?}" = "x0" ] && [ "x${mid}" != "x" ] ;then

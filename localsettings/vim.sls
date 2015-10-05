@@ -42,7 +42,9 @@ vimrc_configs-append-{{ i }}:
             sed -i -e "/sts=2 ts=2 ai et tw=0 sw=2/ d" ~/.vimrc &&
             sed -i -e "/set sts=4 ts=4 sw=4 ai et nu bg=dark nocompatible/ d" ~/.vimrc &&
             sed -i -e "/autocmd! BufRead,BufNewFile *.sls set sts=2 ts=2 ai et tw=0/ d" ~/.vimrc
+            echo "changed=no comment='vimrc edited'"
     - user: {{i}}
+    - stateful: true
     - onlyif: test -e ~/.vimrc
   file.accumulated:
     - require:
@@ -86,6 +88,8 @@ vimrc_configs-append-global:
             sed -i -e "/sts=2 ts=2 ai et tw=0 sw=2/ d" /etc/vim/vimrc.local &&
             sed -i -e "/set sts=4 ts=4 sw=4 ai et nu bg=dark nocompatible/ d" /etc/vim/vimrc.local &&
             sed -i -e "/autocmd! BufRead,BufNewFile *.sls set sts=2 ts=2 ai et tw=0/ d" /etc/vim/vimrc.local
+            echo "changed=no comment='vimrc edited'"
+    - stateful: true
     - user: root
     - onlyif: test -e /etc/vim/vimrc.local
   file.accumulated:

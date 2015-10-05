@@ -179,8 +179,15 @@ for i in\
 done
 if [ -e /etc/.git ];then
     rm -rf /etc/.git
-    etckeeper init || /bin/true
-    etckeeper commit "init" || /bin/true
+    # save space in image
+    if [ "x${is_docker}" != "x" ];then
+        etckeeper init || /bin/true
+        cd /etc
+        git config user.name "name"
+        git config user.email "a@b.com"
+        etckeeper commit "init" || /bin/true
+    fi
+
 fi
 if which getfacl 1>/dev/null 2>/dev/null;then
     getfacl -R / > /acls.txt || /bin/true
