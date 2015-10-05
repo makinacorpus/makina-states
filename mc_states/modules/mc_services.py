@@ -66,7 +66,7 @@ def registry():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _registry():
         # only some services will be fully done  on mastersalt side if any
-        mastersaltrmode = __salt__['mc_controllers.mastersalt_mode']()
+        mastersalt_mode = __salt__['mc_controllers.mastersalt_mode']()
         is_docker = __salt__['mc_nodetypes.is_container']()
         ids = __salt__['mc_nodetypes.is_docker_service']()
         sshen = ids or (mastersalt_mode and not is_docker)
