@@ -36,19 +36,10 @@
   group.present:
     - name: {{ ugroup }}
     - system: {{system}}
-  file.directory:
-    - require:
-      - file: {{ id }}-homes
-    - name: {{ home }}
-    - mode: 751
-    - makedirs: true
-    - user: "{{id}}"
-    - group: "{{id}}"
   user.present:
     - system: {{system}}
     - require:
       - group: {{ id }}
-      - file: {{ id }}
     - require_in:
       - mc_proxy: users-ready-hook
     - name: {{ id }}
@@ -89,6 +80,16 @@
       {% endif %}
       {% endif %}
       {% endif %}
+  file.directory:
+    - require:
+      - file: {{ id }}-homes
+      - group: {{ id }}
+      - user: {{ id }}
+    - name: {{ home }}
+    - mode: 751
+    - makedirs: true
+    - user: "{{id}}"
+    - group: "{{id}}"
 
 give-home-{{ id }}:
   file.directory:
