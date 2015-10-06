@@ -101,7 +101,9 @@ FILE_REMOVE="
 FILE_WIPE="
 /var/log
 "
-/srv/mastersalt/makina-states/_scripts/boot-salt.sh -C -s -S --only-pack || /bin/true
+if [ "x${is_docker}" != "x" ];then
+    /srv/mastersalt/makina-states/_scripts/boot-salt.sh -C -s -S --only-pack || /bin/true
+fi
 for i in ${REMOVE};do
     if [ -d "${i}" ];then rm -vrf "${i}" || /bin/true;fi
     if [ -h "${i}" ] || [ -f "${i}" ];then rm -vf "${i}" || /bin/true;fi
