@@ -136,6 +136,7 @@ def settings():
             extra_confs.update({
                 # '/etc/apt/apt.conf.d/99release': {'mode': '644'},
                 '/etc/apt/apt.conf.d/99clean': {'mode': '644'},
+                '/etc/apt/apt.conf.d/99confhold': {'mode': '644'},
                 '/etc/apt/apt.conf.d/99gzip': {'mode': '644'},
                 '/etc/apt/apt.conf.d/99notrad': {'mode': '644'},
                 '/etc/apt/preferences.d/00_proposed.pref': {'mode': '644'},

@@ -127,7 +127,7 @@ def registry(ttl=15*60):
             'dns': {'active': False},
             'hosts': {'active': not is_docker},
             'jdk': {'active': False},
-            'etckeeper': {'active': True},
+            'etckeeper': {'active': not is_docker},
             'locales': {'active': True},
             'localrc': {'active': True},
             'desktoptools': {'active': False},

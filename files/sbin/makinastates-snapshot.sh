@@ -179,7 +179,7 @@ for i in\
 ;do
     if [ -e "${i}" ];then echo masterless > "${i}";fi
 done
-if [ -e /etc/.git ];then
+if [ -e /etc/.git ] && [ -e /usr/bin/etckeeper ];then
     rm -rf /etc/.git
     # save space in image
     if [ "x${is_docker}" != "x" ];then

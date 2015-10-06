@@ -4,7 +4,6 @@ include:
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {%- set data = salt['mc_autoupgrade.settings']() %}
 {% for f in [
-  '/etc/apt/apt.conf.d/99confhold',
   '/etc/apt/apt.conf.d/50unattended-upgrades',
   '/etc/apt/apt.conf.d/10periodic',
   ] %}
