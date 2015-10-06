@@ -154,7 +154,6 @@ sys-pkgs:
       - bash-completion
       - bzip2
       - cron
-      - cronolog
       - dialog
       - findutils
       - locales
