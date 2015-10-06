@@ -27,11 +27,10 @@
   file.directory:
     - names:
       - {{locs.users_home_dir}}
-      - {{home}}
     - makedirs: true
     - user: root
     - group: root
-    - mode: 755
+    - mode: "0755"
 
 {{ id }}:
   group.present:
@@ -43,8 +42,8 @@
     - name: {{ home }}
     - mode: 751
     - makedirs: true
-    - user: root
-    - group: root
+    - user: "{{id}}"
+    - group: "{{id}}"
   user.present:
     - system: {{system}}
     - require:
@@ -155,22 +154,16 @@ ssh_auth-key-{{id}}-keys-{{loop.index0}}-ssh-keys:
 {% endif %}
 
 makina-{{id}}-bashfiles:
-  file.touch:
+  file.managed:
     - names:
         - {{bashrc}}
         - {{bashprofile}}
-    - require_in:
-      - file: makina-{{id}}-bashprofile-load
+    - source: ''
+    - user: "{{id}}"
+    - mode: 755
+    - group: "{{id}}"
     - require:
       - file: {{id}}
-  cmd.run:
-    - name: >
-            chown {{id}}:{{id}} '{{bashrc}}' '{{bashprofile}}';
-            chmod 755 '{{bashrc}}' '{{bashprofile}}';
-            echo;echo "changed=false comment='do no trigger changes'"
-    - stateful: True
-    - require:
-      - file: makina-{{id}}-bashfiles
     - require_in:
       - file: makina-{{id}}-bashprofile-load
       - mc_proxy: users-ready-hook

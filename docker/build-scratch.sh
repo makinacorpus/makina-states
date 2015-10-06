@@ -57,8 +57,16 @@ function build_stage0() {
         if [ ! -e "/var/lib/lxc/ms-${MS_OS}-${MS_OS_RELEASE}/rootfs" ];then
             if [ "x${MS_OS}" = "xubuntu" ];then
                 red "${MS_STAGE0_IMAGE}: Creating baseimage ${MS_BASEIMAGE} for ${MS_STAGE0_IMAGE}"
-                v_run lxc-create -t ${MS_OS} -n ms-${MS_OS}-${MS_OS_RELEASE} \
-                    -- --packages="vim-tiny,git,rsync,acl,ca-certificates,socat,tcpdump,netcat"\
+                cp -f "/usr/share/lxc/templates/lxc-ubuntu" "/usr/share/lxc/templates/lxc-ubuntudocker"
+                lxc_template="${MS_OS}"
+                # remove vim from the base template, this frees 40MO on baseimage
+                if [ "x${MS_OS}" = "xubuntu" ];then
+                    cp -f "/usr/share/lxc/templates/lxc-ubuntu" "/usr/share/lxc/templates/lxc-ubuntudocker"
+                    sed -i -re "s/,vim//g" /usr/share/lxc/templates/lxc-ubuntudocker
+                    lxc_template="ubuntudocker"
+                fi
+                v_run lxc-create -t ${lxc_template} -n ms-${MS_OS}-${MS_OS_RELEASE} \
+                    -- --packages="git,rsync,acl,ca-certificates,socat,tcpdump,netcat"\
                     --release=${MS_OS_RELEASE} --mirror=${MS_OS_MIRROR}
                 die_in_error "${MS_STAGE0_IMAGE}: lxc template failed"
             else
@@ -134,6 +142,7 @@ function build_stage0() {
         cyan "-------------------------------------------------------------------------------"
         ( cd "${MS_ROOT}" && v_run docker build --rm -t "${MS_STAGE0_IMAGE}" -f "${dockerfile}" . )
         die_in_error "${MS_STAGE0_IMAGE} failed to build stage0 image"
+        rm -f "${dockerfile}"
         # cleanup the old stage1 image
         if [ "x${?}" = "x0" ] && [ "x${mid}" != "x" ] ;then
             yellow "${MS_STAGE0_IMAGE}: Deleting old stage0 layer: ${mid}"
@@ -179,6 +188,7 @@ function build_image() {
         #( cd "${MS_ROOT}" &&  v_run docker build -t "${MS_IMAGE}" -f "${dockerfile}" . ) || exit 1
         ( cd "${MS_ROOT}" &&  v_run docker build --rm -t "${MS_IMAGE}" -f "${dockerfile}" . )
         die_in_error "${MS_IMAGE} failed to build image"
+        rm -f "${dockerfile}"
         # cleanup the old stage1 image
         if [ "x${?}" = "x0" ] && [ "x${mid}" != "x" ] ;then
             yellow "${MS_IMAGE}: Deleting old layer: ${mid}"

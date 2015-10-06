@@ -7,14 +7,18 @@
 {{ salt['mc_macros.register']('localsettings', 'vim') }}
 {% if salt['mc_controllers.mastersalt_mode']() %}
 {% set ugs = salt['mc_usergroup.settings']() %}
+{% set vim = salt['mc_vim.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 include:
   - makina-states.localsettings.users
 
+
+{% if vim.full %}
 vim-ctags:
   pkg.installed:
     - pkgs:
       - exuberant-ctags
+{% endif %}
 
 vim-editor-env-var:
   file.managed:
@@ -24,33 +28,41 @@ vim-editor-env-var:
                 export EDITOR="$(which vim)"
                 export ED="$EDITOR"
 
+{% if vim.kiorky_config %}
 vim-kiorky-config:
   mc_git.latest:
     - name: https://github.com/kiorky/dotfiles.git
     - target: /etc/kiorky-dotfiles
     - user: root
+{% endif %}
 
 {%- for i, data in ugs.users.items() %}
 {%- set home = data['home'] %}
 vimrc_configs-touch-{{ i }}:
-  file.touch:
+  file.managed:
     - name: {{ home }}/.vimrc
+    - source: ""
+    - mode: "644"
+    - user: "{{i}}"
+    - group: "{{i}}"
 
 vimrc_configs-append-{{ i }}:
-  cmd.run:
-    - name: >
-            sed -i -e "/sts=2 ts=2 ai et tw=0 sw=2/ d" ~/.vimrc &&
-            sed -i -e "/set sts=4 ts=4 sw=4 ai et nu bg=dark nocompatible/ d" ~/.vimrc &&
-            sed -i -e "/autocmd! BufRead,BufNewFile *.sls set sts=2 ts=2 ai et tw=0/ d" ~/.vimrc &&
-            echo "changed=no comment='vimrc edited'"
-    - user: {{i}}
-    - stateful: true
-    - onlyif: test -e ~/.vimrc
+  #cmd.run:
+  #  - name: >
+  #          sed -i -e "/sts=2 ts=2 ai et tw=0 sw=2/ d" ~/.vimrc &&
+  #          sed -i -e "/set sts=4 ts=4 sw=4 ai et nu bg=dark nocompatible/ d" ~/.vimrc &&
+  #          sed -i -e "/autocmd! BufRead,BufNewFile *.sls set sts=2 ts=2 ai et tw=0/ d" ~/.vimrc &&
+  #          echo "changed=no comment='vimrc edited'"
+  #  - user: {{i}}
+  #  - stateful: true
+  #  - onlyif: test -e ~/.vimrc
   file.accumulated:
     - require:
+      #- cmd: vimrc_configs-append-{{ i }}
       - file: vimrc_configs-touch-{{ i }}
-      - cmd: vimrc_configs-append-{{ i }}
+      {% if vim.full %}
       - pkg: vim-ctags
+      {% endif %}
     - require_in:
       - file: vimrc-config-block-{{i}}
     - filename: {{ home }}/.vimrc
@@ -83,20 +95,22 @@ vimrc_configs-touch-global:
     - group: root
 
 vimrc_configs-append-global:
-  cmd.run:
-    - name: >
-            sed -i -e "/sts=2 ts=2 ai et tw=0 sw=2/ d" /etc/vim/vimrc.local &&
-            sed -i -e "/set sts=4 ts=4 sw=4 ai et nu bg=dark nocompatible/ d" /etc/vim/vimrc.local &&
-            sed -i -e "/autocmd! BufRead,BufNewFile *.sls set sts=2 ts=2 ai et tw=0/ d" /etc/vim/vimrc.local &&
-            echo "changed=no comment='vimrc edited'"
-    - stateful: true
-    - user: root
-    - onlyif: test -e /etc/vim/vimrc.local
+  #cmd.run:
+  #  - name: >
+  #          sed -i -e "/sts=2 ts=2 ai et tw=0 sw=2/ d" /etc/vim/vimrc.local &&
+  #          sed -i -e "/set sts=4 ts=4 sw=4 ai et nu bg=dark nocompatible/ d" /etc/vim/vimrc.local &&
+  #          sed -i -e "/autocmd! BufRead,BufNewFile *.sls set sts=2 ts=2 ai et tw=0/ d" /etc/vim/vimrc.local &&
+  #          echo "changed=no comment='vimrc edited'"
+  #  - stateful: true
+  #  - user: root
+  #  - onlyif: test -e /etc/vim/vimrc.local
   file.accumulated:
     - require:
       - file: vimrc_configs-touch-global
-      - cmd: vimrc_configs-append-global
+      #- cmd: vimrc_configs-append-global
+      {% if vim.full %}
       - pkg: vim-ctags
+      {% endif %}
     - require_in:
       - file: vimrc-config-block-global
     - filename: /etc/vim/vimrc.local
