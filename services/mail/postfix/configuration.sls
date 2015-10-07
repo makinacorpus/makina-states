@@ -46,6 +46,17 @@ include:
       - mc_proxy: postfix-postconf
       - mc_proxy: postfix-prerestart
 
+
+makina-postfix-chroot-sslconf:
+  cmd.run:
+    - unless: test -e  "{{ locs.var_spool_dir }}/postfix/etc/ssl"
+    - name: rsync -a /etc/ssl/  "{{ locs.var_spool_dir }}/postfix/etc/ssl/"
+    - watch:
+      - mc_proxy: postfix-preconf
+    - watch_in:
+      - mc_proxy: postfix-postconf
+      - mc_proxy: postfix-prerestart
+
 makina-postfix-chroot-hosts-sync:
   cmd.run:
     - unless: diff -q {{ locs.var_spool_dir }}/postfix/etc/hosts {{ locs.conf_dir }}/hosts
@@ -53,6 +64,7 @@ makina-postfix-chroot-hosts-sync:
     - name: cp -a {{ locs.conf_dir }}/hosts {{ locs.var_spool_dir }}/postfix/etc/hosts && echo "" && echo "changed=yes"
     - watch:
       - mc_proxy: postfix-preconf
+      - cmd: makina-postfix-chroot-sslconf
     - watch_in:
       - mc_proxy: postfix-postconf
       - mc_proxy: postfix-prerestart
@@ -96,6 +108,7 @@ makina-postfix-chroot-cacer-sync:
     - name: cp -a {{ locs.conf_dir }}/ssl/certs/ca-certificates.crt {{ locs.var_spool_dir }}/postfix/etc/ssl/certs/ca-certificates.crt && echo "" && echo "changed=yes"
     - watch:
       - mc_proxy: postfix-preconf
+      - cmd: makina-postfix-chroot-sslconf
     - watch_in:
       - mc_proxy: postfix-postconf
       - mc_proxy: postfix-prerestart
