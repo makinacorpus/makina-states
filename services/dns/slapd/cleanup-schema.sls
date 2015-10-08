@@ -1,6 +1,8 @@
 {% set settings = salt['mc_slapd.settings']() %}
 include:
   - makina-states.services.dns.slapd.hooks
+{#
+removed and use now file.recurse with clean=true
 slapd-d-cleanup-schema:
   file.managed:
     - name: /etc/ldap/cleanup-schema.py
@@ -39,3 +41,4 @@ slapd-d-cleanup-schema:
       - mc_proxy: slapd-pre-conf
     - watch_in:
       - mc_proxy: slapd-post-conf
+#}

@@ -38,10 +38,36 @@ slapd_directory:
       - mc_proxy: slapd-pre-conf
     - watch_in:
       - mc_proxy: slapd-post-conf
+      - mc_proxy: slapd_directory-schema-pre
 {% endmacro %}
 {{ h.deliver_config_files(
-     settings.get('cn_config_files', {}), 
+     settings.get('cn_config_files', {}),
      user=settings.user,
      group=settings.group,
      mode='640',
      after_macro=rmacro, prefix='slapd-')}}
+slapd_directory-schema-pre:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: slapd-pre-conf
+    - watch_in:
+      - mc_proxy: slapd-post-conf
+
+{% if settings.fd_schema %}
+slapd_directory-schema:
+  file.recurse:
+    - name: "/etc/ldap/slapd.d/cn=config/cn=schema"
+    - source: "salt://makina-states/files/etc/ldap/slapd.d/cn=config/cn=schema/{{settings.fd_ver}}"
+    - user: {{settings.user}}
+    - group: {{settings.group}}
+    - dir_mode: '0775'
+    - file_mode: '0644'
+    - template: false
+    - makedirs: True
+    - clean: true
+    - watch:
+      - mc_proxy: slapd_directory-schema-pre
+      - mc_proxy: slapd-pre-conf
+    - watch_in:
+      - mc_proxy: slapd-post-conf
+{% endif%}

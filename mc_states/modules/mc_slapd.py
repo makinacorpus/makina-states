@@ -37,8 +37,7 @@ log = logging.getLogger(__name__)
 default_acl_schema = [
     (
         "{{0}}"
-        " to attrs=userPassword,sambaNTPassword,"
-        "sambaLMPassword,sambaPwdLastSet,sambaPWDMustChange"
+        " to attrs=userPassword"
         " by dn.exact=gidNumber=0+uidNumber=0,cn=peercred,"
         "cn=external,cn=auth manage"
         " by dn.base=\"cn=admin,{data[dn]}\" write"
@@ -252,7 +251,7 @@ def settings():
                     '/etc/ldap',
                     '/var/lib/ldap',
                 ],
-                'fd_ver': '1.8.0.9',
+                'fd_ver': '1.9.0',
                 'mode': 'master',
                 'writer_groups': ['ldapwriters'],
                 'reader_groups':  ['ldapreaders'],
@@ -363,47 +362,48 @@ def settings():
         if data['acls']:
             s_aclchema = encode_ldap('olcAccess', data['acls'])
         data['s_aclchema'] = s_aclchema
-        if data['fd_schema']:
-            for i in [
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={22}samba.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={23}core-fd.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={24}core-fd-conf.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={25}sudo-fd-conf.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={26}sudo.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={27}service-fd.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={28}systems-fd-conf.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={29}systems-fd.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={30}recovery-fd.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={31}mail-fd-conf.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={32}mail-fd.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={33}gpg-fd.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={34}ldapns.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={35}openssh-lpk.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={36}pgp-keyserver.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={37}pgp-recon.ldif'),
-                ('/etc/ldap/slapd.d/cn=config/'
-                 'cn=schema/cn={38}pgp-remte-prefs.ldif'),
-            ]:
-                if i not in schemas:
-                    schemas.append(i)
-                if i not in cn_config_files:
-                    cn_config_files[i] = {}
+        # deployed noa via file.recurse
+        #if data['fd_schema']:
+        #    for i in [
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={22}samba.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={23}core-fd.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={24}core-fd-conf.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={25}sudo-fd-conf.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={26}sudo.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={27}service-fd.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={28}systems-fd-conf.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={29}systems-fd.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={30}recovery-fd.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={31}mail-fd-conf.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={32}mail-fd.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={33}gpg-fd.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={34}ldapns.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={35}openssh-lpk.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={36}pgp-keyserver.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={37}pgp-recon.ldif'),
+        #        ('/etc/ldap/slapd.d/cn=config/'
+        #         'cn=schema/cn={38}pgp-remte-prefs.ldif'),
+        #    ]:
+        #        if i not in schemas:
+        #            schemas.append(i)
+        #        if i not in cn_config_files:
+        #            cn_config_files[i] = {}
         srepl = ''
         keys = [a for a in data['syncrepl']]
         keys.sort(key=order_syncrepl)
