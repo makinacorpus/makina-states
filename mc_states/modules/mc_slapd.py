@@ -326,6 +326,8 @@ def settings():
                 # '/etc/ldap/slapd.d/cn=config/cn=schema/cn={19}mozilla.ldif',
                 # '/etc/ldap/slapd.d/cn=config/cn=schema/cn={20}extension.ldif',
             ]:
+                if ('cn=schema/cn=' in i) and data['fd_schema']:
+                    continue
                 if i not in schemas:
                     schemas.append(i)
                 if i not in cn_config_files:
