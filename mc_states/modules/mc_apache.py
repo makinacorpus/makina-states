@@ -154,6 +154,13 @@ def settings():
         pillar = __pillar__
         www_reg = __salt__['mc_www.settings']()
         locations = __salt__['mc_locations.settings']()
+        include_modules = ['version', 'rewrite',
+                           'expires', 'headers',
+                           'deflate', 'setenvif',
+                           'socache_shmcb', 'ldap',
+                           'authnz_ldap', 'ssl',
+                           'status']
+        exclude_modules = ['negotiation', 'autoindex', 'cgid']
         virtualhosts = {
             'default': {
                 'number': '000',
@@ -172,6 +179,7 @@ def settings():
                     "apacheConfCheck.sh"),
                 'httpd_user': 'www-data',
                 'mpm': 'worker',
+                'mpms': ['worker', 'event', 'prefork', 'itk'],
                 'mpm-packages': {},
                 'fastcgi_socket_directory': www_reg[
                     'socket_directory'],
@@ -196,17 +204,15 @@ def settings():
                     "apache2/includes/"
                     "in_virtualhost_template.conf"),
                 'KeepAlive': True,
+                'exclude_modules': exclude_modules,
+                'include_modules': include_modules,
                 'log_level': 'warn',
                 'ssl_interface': '*',
                 'ssl_ciphers': 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA',
                 'ssl_protocols': '+SSLv3 +TLSv1 +TLSv1.1 +TLSv1.2',
                 'ssl_session_timeout': '600',
-                'ssl_session_cache_path': (
-                    '/var/cache/apache2/{vhost_basename}'),
-                'ssl_session_cache_file_path': (
-                    '{ssl_session_cache_path}/session'),
                 'ssl_session_cache': (
-                    'shmcb:{ssl_session_cache_file_path}(512000)'),
+                    'shmcb:/var/cache/apache2/ssl_sessions(512000)'),
                 'ssl_port': '443',
                 "fastcgi_params": {
                     "InitStartDelay": 1,
@@ -223,12 +229,7 @@ def settings():
                     "processSlack": 5,
                 },
                 'fastcgi_shared_mode': True,
-                'fastcgi_enabled': True,
-                'allow_bad_modules': {
-                    'negotiation': False,
-                    'autoindex': False,
-                    'cgid': False,
-                },
+                'fastcgi_enabled': True
             },
             __salt__['grains.filter_by'](
                 {
@@ -350,12 +351,19 @@ def settings():
         # FINAL STEP: merge with data from pillar and grains
         apacheSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.http.apache', apacheDefaultSettings)
-        #mpm = apacheSettings.get('mpm', None)
-        #apacheSettings['mpm-packages'] = []
-        #if __grains__['os_family'] in ['Debian'] and mpm:
-        #    apacheSettings['packages'].extend(
-        #        'apache2-mpm-{0}'.format(mpm)
-        #    )
+        modmpm = 'mpm_{0}'.format(apacheSettings['mpm'])
+        apacheSettings['include_modules'].append(modmpm)
+        for mpm in apacheSettings['mpms']:
+            if mpm != apacheSettings['mpm']:
+                modmpm = 'mpm_{0}'.format(mpm)
+                apacheSettings['exclude_modules'].append(modmpm)
+        for k in 'include_modules', 'exclude_modules':
+            apacheSettings[k] = __salt__['mc_utils.uniquify'](
+                apacheSettings[k])
+        for i in [
+            'ssl_session_cache',
+        ]:
+            apacheSettings[i] = apacheSettings[i].format(**apacheSettings)
         return apacheSettings
     return _settings()
 
@@ -418,6 +426,34 @@ def check_version(version):
     return ret
 
 
+def _togglemod(title, action, module, checked):
+    ret = {'Name': title,
+           'Module': module,
+           'status': 0,
+           'result': False,
+           'changed': True}
+    command = [action, '-f', '-m',  module]
+    cret = __salt__['cmd.run_all'](command, python_shell=False)
+    for k in 'stderr', 'stdout':
+        if 'does not exist' in cret[k]:
+            cret['retcode'] = 0
+            ret['changed'] = False
+    status = cret['retcode']
+    ret['return'] = cret
+    pat = '{0} already {1}'.format(module, checked)
+    if pat in cret['stdout']:
+        ret['changed'] = False
+    if status == 1:
+        ret['Status'] = 'Module {0} Not found'.format(module)
+    elif status == 0:
+        ret['Status'] = 'Module {0} {1}'.format(
+            module, checked)
+        ret['result'] = True
+    else:
+        ret['Status'] = status
+    return ret
+
+
 def a2enmod(module):
     '''
     Runs a2enmod for the given module.
@@ -434,26 +470,9 @@ def a2enmod(module):
 
         salt '*' mc_apache.a2enmod autoindex
     '''
-    ret = {}
-    command = ['a2enmod', '-f', '-m',  module]
-    try:
-        status = __salt__['cmd.retcode'](command, python_shell=False)
-    except Exception as e:
-        return e
-
-    ret['Name'] = 'Apache2 Enable Module'
-    ret['Module'] = module
-    ret['result'] = False
-
-    if status == 1:
-        ret['Status'] = 'Module {0} Not found'.format(module)
-    elif status == 0:
-        ret['Status'] = 'Module {0} enabled'.format(module)
-        ret['result'] = True
-    else:
-        ret['Status'] = status
-
-    return ret
+    return _togglemod(
+        'Apache2 Enable Module',
+        'a2enmod', module, 'enabled')
 
 
 def a2dismod(module):
@@ -472,27 +491,10 @@ def a2dismod(module):
 
         salt '*' mc_apache.a2dismod autoindex
     '''
-    ret = {}
-    command = ['a2dismod', '-f', '-m', module]
 
-    try:
-        status = __salt__['cmd.retcode'](command, python_shell=False)
-    except Exception as e:
-        return e
-
-    ret['Name'] = 'Apache2 Disable Modules'
-    ret['Module'] = module
-    ret['result'] = False
-
-    if status == 1:
-        ret['Status'] = 'Module {0} Not found'.format(module)
-    elif status == 0:
-        ret['Status'] = 'Module {0} disabled'.format(module)
-        ret['result'] = True
-    else:
-        ret['Status'] = status
-
-    return ret
+    return _togglemod(
+        'Apache2 Disable Module',
+        'a2dismod', module, 'disabled')
 
 
 def vhost_settings(domain, doc_root, **kwargs):
@@ -586,13 +588,6 @@ def vhost_settings(domain, doc_root, **kwargs):
                       apacheSettings['ssl_port'])
     kwargs.setdefault('ssl_ciphers',
                       apacheSettings['ssl_ciphers'])
-    for i in [
-        'ssl_session_cache_path',
-        'ssl_session_cache_file_path',
-        'ssl_session_cache',
-    ]:
-        val = kwargs.setdefault(i, apacheSettings[i])
-        kwargs[i] = val.format(**kwargs)
 
     kwargs.setdefault('ssl_session_timeout',
                       apacheSettings['ssl_session_timeout'])

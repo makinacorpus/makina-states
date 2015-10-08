@@ -20,8 +20,3 @@
 {% import "makina-states/services/http/apache/init.sls" as apache with context %}
 include:
   - makina-states.services.http.apache
-
-{# only thing to to do there is to ensure the use of
-# prefork #}
-extend:
-{{apache.extend_switch_mpm('prefork')}}

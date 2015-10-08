@@ -64,20 +64,12 @@ include:
 {% set minimal_index = macros.minimal_index %}
 {% set virtualhost = macros.virtualhost %}
 
-{# Read states documentation to alter main apache configuration
-#}
+# left over for retrocompat !
 makina-apache-main-conf:
   mc_apache.deployed:
-    - version: {{ apacheSettings.version }}
-    - mpm: {{ apacheSettings.mpm }}
-    - log_level: {{ apacheSettings.log_level }}
     - watch:
       - mc_proxy: makina-apache-pre-conf
-    # full service restart in case of changes
     - watch_in:
-      # NO: this would prevent syntax check in case of error here
-      # and errors here may be caused by syntax problems
-      # - cmd: makina-apache-conf-syntax-check
       - mc_proxy: makina-apache-post-conf
       - mc_proxy: makina-apache-pre-restart
 
@@ -110,6 +102,7 @@ makina-apache-settings:
         worker_MaxClients: "{{ apacheSettings.worker.MaxClients }}"
         event_AsyncRequestWorkerFactor: "{{ apacheSettings.event.AsyncRequestWorkerFactor }}"
         log_level: "{{ apacheSettings.log_level }}"
+        ssl_session_cache: "{{ apacheSettings.ssl_session_cache }}"
 {% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
     - context:
         mode: "dev"
@@ -121,42 +114,31 @@ makina-apache-settings:
       - mc_proxy: makina-apache-pre-conf
       - mc_proxy: makina-apache-pre-restart
 
+
+{# Default lists of included and excluded modules
+ extend theses two states if you need others modules #}
 makina-apache-main-conf-excluded-modules:
   mc_apache.exclude_module:
     - modules:
-{% if not apacheSettings.allow_bad_modules.negotiation %}
-      - negotiation
-{% endif %}
-{% if not apacheSettings.allow_bad_modules.autoindex %}
-      - autoindex
-{% endif %}
-{% if not apacheSettings.allow_bad_modules.cgid %}
-      - cgid
-{% endif %}
-    - require_in:
-      - mc_apache: makina-apache-main-conf
+      {% for i in apacheSettings.exclude_modules %}
+      - {{i}}
+      {% endfor %}
+    - watch:
+      - mc_proxy: makina-apache-post-inst
+    # full service restart in case of changes
     - watch_in:
       - mc_proxy: makina-apache-pre-conf
       - mc_proxy: makina-apache-pre-restart
 
-{# Default lists of included and excluded modules
- extend theses two states if you need others modules #}
 makina-apache-main-conf-included-modules:
   mc_apache.include_module:
     - modules:
-      - version
-      - rewrite
-      - expires
-      - headers
-      - deflate
-      - setenvif
-      - socache_shmcb
-      - ldap
-      - authnz_ldap
-      - ssl
-      - status
-    - require_in:
-      - mc_apache: makina-apache-main-conf
+      {% for i in apacheSettings.include_modules %}
+      - {{i}}
+      {% endfor %}
+    - watch:
+      - mc_proxy: makina-apache-post-inst
+    # full service restart in case of changes
     - watch_in:
       - mc_proxy: makina-apache-pre-conf
       - mc_proxy: makina-apache-pre-restart

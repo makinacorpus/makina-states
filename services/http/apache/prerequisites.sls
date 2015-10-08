@@ -39,16 +39,16 @@ apache-repo:
     - watch_in:
       - mc_proxy: makina-apache-post-inst
       - pkg: makina-apache-pkgs
-      - pkg: apache-mpm
+#      - pkg: apache-mpm
 
-
-apache-mpm:
-  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
-    - pkgs: [apache2]
-    - require:
-      - mc_proxy: makina-apache-post-pkgs
-    - watch_in:
-      - mc_proxy: makina-apache-post-inst
+# no more used in our ondrej ppa
+#apache-mpm:
+#  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
+#    - pkgs: [apache2]
+#    - require:
+#      - mc_proxy: makina-apache-post-pkgs
+#    - watch_in:
+#      - mc_proxy: makina-apache-post-inst
 
 makina-apache-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:

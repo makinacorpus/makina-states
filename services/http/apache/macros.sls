@@ -163,15 +163,18 @@ makina-apache-virtualhost-{{ project }}-ssl-{{k}}:
 {% endfor %}
 {% endmacro %}
 
-{% macro mpm_pkgs(mpm, indent='') %}
+{# LEFT OVER FOR RETROCOMPAT #}
+{% macro mpm_pkgs(mpm, indent='') %}{#
+DISABLED USE MAKINA-STATES settings
 {% set pkgs = apacheSettings['mpm-packages'].get(mpm, [] ) %}
 {% for pkg in pkgs -%}{{indent}}      - {{ pkg }}
 {% endfor -%}
-{% endmacro %}
+#}{% endmacro %}
 
 {# exposed macro to switch the mpm #}
-{% macro extend_switch_mpm(mpm) %}
-{#
+{# LEFT OVER FOR RETROCOMPAT #}
+{% macro extend_switch_mpm(mpm) %}{#{#
+DISABLED USE MAKINA-STATES settings
   apache-uninstall-others-mpms:
     pkg.removed:
       - pkgs:
@@ -180,11 +183,10 @@ makina-apache-virtualhost-{{ project }}-ssl-{{k}}:
     pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
       - pkgs:
         {{ mpm_pkgs(mpm, indent='  ') }}
-#}
   makina-apache-main-conf:
     mc_apache.deployed:
       - mpm: {{mpm}}
-{% endmacro %}
+#}{% endmacro %}
 
 {# Macro dedicated to generate a minimal index.html #}
 {% macro minimal_index(doc_root, domain="no domain", mode="unkown mode") %}

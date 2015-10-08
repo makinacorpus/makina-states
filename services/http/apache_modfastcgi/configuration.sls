@@ -8,9 +8,6 @@ include:
   - makina-states.services.http.apache.hooks
   - makina-states.services.http.apache
 
-extend:
-{{ apache.extend_switch_mpm(apacheSettings.multithreaded_mpm) }}
-
 makina-fastcgi-apache-module_connect_fastcgi_mod_fastcgi_module_conf:
   file.managed:
     - user: root
