@@ -636,13 +636,13 @@ def _main(timeout=60):
                 log.error('Locked: wait')
                 time.sleep(0.5)
         if has_lock:
+            if not vopts['stop'] and (vopts['clear'] or vopts['flush']):
+                flush_fw(config, errors, changes)
+                config = load_configs(vopts, use_cache=False)
             if not vopts['no_state']:
                 with open(vopts['state_file'], 'w') as fic:
                     fic.write(
                         json.dumps(config, indent=2, separators=(',', ': ')))
-            if not vopts['stop'] and (vopts['clear'] or vopts['flush']):
-                flush_fw(config, errors, changes)
-                config = load_configs(vopts, use_cache=False)
             if not (vopts['clear'] or vopts['no_rules']):
                 if vopts['stop']:
                     remove_rules(config, errors, changes)
