@@ -1,5 +1,5 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 1098feb3
+# CRC32 802ee847
 dn: cn={6}core-fd
 objectClass: olcSchemaConfig
 cn: {6}core-fd
@@ -79,9 +79,9 @@ olcObjectClasses: {9}( 1.3.6.1.4.1.10098.1.2.1.19.19 NAME 'gosaSnapshotObject'
   MUST ( gosaSnapshotTimestamp $ gosaSnapshotDN $ gosaSnapshotData ) MAY descr
  iption )
 structuralObjectClass: olcSchemaConfig
-entryUUID: a097cc02-013b-1035-8ef1-4376745ffc6f
+entryUUID: cf5cf9a8-057e-1035-96fe-a38bf5edb059
 creatorsName: cn=config
-createTimestamp: 20151007123524Z
-entryCSN: 20151007123524.962714Z#000000#000#000000
+createTimestamp: 20151012224624Z
+entryCSN: 20151012224624.364300Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151007123524Z
+modifyTimestamp: 20151012224624Z

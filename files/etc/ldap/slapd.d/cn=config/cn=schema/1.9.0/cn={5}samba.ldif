@@ -1,5 +1,5 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 e38736ff
+# CRC32 148a0a22
 dn: cn={5}samba
 objectClass: olcSchemaConfig
 cn: {5}samba
@@ -186,9 +186,9 @@ olcObjectClasses: {10}( 1.3.6.1.4.1.7165.2.2.12 NAME 'sambaConfigOption' DESC
  mbaBoolOption $ sambaIntegerOption $ sambaStringOption $ sambaStringListoptio
  n $ description ) )
 structuralObjectClass: olcSchemaConfig
-entryUUID: a097be9c-013b-1035-8ef0-4376745ffc6f
+entryUUID: cf5cf426-057e-1035-96fd-a38bf5edb059
 creatorsName: cn=config
-createTimestamp: 20151007123524Z
-entryCSN: 20151007123524.962714Z#000000#000#000000
+createTimestamp: 20151012224624Z
+entryCSN: 20151012224624.364300Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151007123524Z
+modifyTimestamp: 20151012224624Z

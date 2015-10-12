@@ -1,8 +1,8 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 f4f1f689
-dn: cn={10}service-fd
+# CRC32 5d6cc757
+dn: cn={11}service-fd
 objectClass: olcSchemaConfig
-cn: {10}service-fd
+cn: {11}service-fd
 olcAttributeTypes: {0}( 1.3.6.1.4.1.10098.1.1.9.1 NAME 'goXdmcpIsEnabled' DESC
   'Indicates if the server is enabled for XDMCP queries' EQUALITY caseExactIA5
  Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE )
@@ -174,9 +174,9 @@ olcObjectClasses: {12}( 1.3.6.1.4.1.10098.1.2.1.39 NAME 'goVirusServer' DESC '
  ecursion $ avArchiveMaxCompressionRatio $ avDatabaseMirror $ avChecksPerDay $
   avHttpProxyURL ) )
 structuralObjectClass: olcSchemaConfig
-entryUUID: a097fe5c-013b-1035-8ef5-4376745ffc6f
+entryUUID: cf5d0ff6-057e-1035-9703-a38bf5edb059
 creatorsName: cn=config
-createTimestamp: 20151007123524Z
-entryCSN: 20151007123524.962714Z#000000#000#000000
+createTimestamp: 20151012224624Z
+entryCSN: 20151012224624.364300Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151007123524Z
+modifyTimestamp: 20151012224624Z

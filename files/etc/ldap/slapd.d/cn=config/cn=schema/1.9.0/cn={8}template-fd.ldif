@@ -1,0 +1,17 @@
+# AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
+# CRC32 113ef882
+dn: cn={8}template-fd
+objectClass: olcSchemaConfig
+cn: {8}template-fd
+olcAttributeTypes: {0}( 1.3.6.1.4.1.38414.38.1.1 NAME 'fdTemplateField' DESC '
+ FusionDirectory - template field' EQUALITY caseExactIA5Match SYNTAX 1.3.6.1.4
+ .1.1466.115.121.1.26 )
+olcObjectClasses: {0}( 1.3.6.1.4.1.38414.38.2.1 NAME 'fdTemplate' DESC 'Fusion
+ Directory - template object' STRUCTURAL MUST cn MAY fdTemplateField )
+structuralObjectClass: olcSchemaConfig
+entryUUID: cf5d06fa-057e-1035-9700-a38bf5edb059
+creatorsName: cn=config
+createTimestamp: 20151012224624Z
+entryCSN: 20151012224624.364300Z#000000#000#000000
+modifiersName: cn=config
+modifyTimestamp: 20151012224624Z

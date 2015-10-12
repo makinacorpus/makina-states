@@ -1,8 +1,8 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 40c80c0f
-dn: cn={12}systems-fd
+# CRC32 ba828eef
+dn: cn={13}systems-fd
 objectClass: olcSchemaConfig
-cn: {12}systems-fd
+cn: {13}systems-fd
 olcAttributeTypes: {0}( 1.3.6.1.4.1.10098.1.1.11.7 NAME 'gotoProfileFlags' DES
  C 'GOto - Flags for Profile handling - C is for caching' OBSOLETE EQUALITY ca
  seIgnoreIA5Match SUBSTR caseIgnoreIA5SubstringsMatch SYNTAX 1.3.6.1.4.1.1466.
@@ -315,9 +315,9 @@ olcObjectClasses: {9}( 1.3.6.1.4.1.38414.16.2.7 NAME 'fdPhone' DESC 'FusionDir
  ectory phone class' SUP top AUXILIARY MUST cn MAY ( description $ telephoneNu
  mber ) )
 structuralObjectClass: olcSchemaConfig
-entryUUID: a0981eb4-013b-1035-8ef7-4376745ffc6f
+entryUUID: cf5d1cee-057e-1035-9705-a38bf5edb059
 creatorsName: cn=config
-createTimestamp: 20151007123524Z
-entryCSN: 20151007123524.962714Z#000000#000#000000
+createTimestamp: 20151012224624Z
+entryCSN: 20151012224624.364300Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151007123524Z
+modifyTimestamp: 20151012224624Z
