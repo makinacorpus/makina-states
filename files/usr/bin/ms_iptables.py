@@ -380,8 +380,9 @@ def validate_and_complete(vopts, config):
     return config
 
 
-def load_configs(vopts, config=None):
+def load_configs(vopts, config=None, use_cache=True):
     if (
+        use_cache and
         (vopts['stop'] or vopts['clear']) and (
             os.path.exists(vopts['state_file']) and
             vopts['state_file'] not in vopts['config']
@@ -641,6 +642,7 @@ def _main(timeout=60):
                         json.dumps(config, indent=2, separators=(',', ': ')))
             if not vopts['stop'] and (vopts['clear'] or vopts['flush']):
                 flush_fw(config, errors, changes)
+                config = load_configs(vopts, use_cache=False)
             if not (vopts['clear'] or vopts['no_rules']):
                 if vopts['stop']:
                     remove_rules(config, errors, changes)
