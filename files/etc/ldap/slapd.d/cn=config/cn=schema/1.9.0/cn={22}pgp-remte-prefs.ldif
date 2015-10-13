@@ -1,5 +1,5 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 80fb1295
+# CRC32 0278fe48
 dn: cn={22}pgp-remte-prefs
 objectClass: olcSchemaConfig
 cn: {22}pgp-remte-prefs
@@ -18,9 +18,9 @@ olcObjectClasses: {1}( 1.3.6.1.4.1.3401.8.2.1 NAME 'pgpElement' DESC 'PGP defi
  Class MAY ( pgpElementType $ pgpData $ owner ) X-ORIGIN 'Pretty Good Privacy 
  (PGP)' )
 structuralObjectClass: olcSchemaConfig
-entryUUID: cf5d3724-057e-1035-970e-a38bf5edb059
+entryUUID: 9a6a336c-05c6-1035-8909-05b015a685b9
 creatorsName: cn=config
-createTimestamp: 20151012224624Z
-entryCSN: 20151012224624.364300Z#000000#000#000000
+createTimestamp: 20151013072019Z
+entryCSN: 20151013072019.294131Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151012224624Z
+modifyTimestamp: 20151013072019Z

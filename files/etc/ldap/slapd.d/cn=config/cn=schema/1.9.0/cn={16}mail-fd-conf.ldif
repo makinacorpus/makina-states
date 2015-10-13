@@ -1,5 +1,5 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 46c8083b
+# CRC32 8c65a91a
 dn: cn={16}mail-fd-conf
 objectClass: olcSchemaConfig
 cn: {16}mail-fd-conf
@@ -39,9 +39,9 @@ olcObjectClasses: {0}( 1.3.6.1.4.1.38414.10.2.1 NAME 'fdMailPluginConf' DESC '
  Slashes $ fdCyrusDeleteMailbox $ fdCyrusAutocreateFolders $ fdImapTimeout $ f
  dMailSharedPrefix ) )
 structuralObjectClass: olcSchemaConfig
-entryUUID: cf5d2a4a-057e-1035-9708-a38bf5edb059
+entryUUID: 9a6a23e0-05c6-1035-8903-05b015a685b9
 creatorsName: cn=config
-createTimestamp: 20151012224624Z
-entryCSN: 20151012224624.364300Z#000000#000#000000
+createTimestamp: 20151013072019Z
+entryCSN: 20151013072019.294131Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151012224624Z
+modifyTimestamp: 20151013072019Z

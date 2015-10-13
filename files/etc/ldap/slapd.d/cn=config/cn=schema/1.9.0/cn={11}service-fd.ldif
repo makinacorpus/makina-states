@@ -1,5 +1,5 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 5d6cc757
+# CRC32 adc91e37
 dn: cn={11}service-fd
 objectClass: olcSchemaConfig
 cn: {11}service-fd
@@ -174,9 +174,9 @@ olcObjectClasses: {12}( 1.3.6.1.4.1.10098.1.2.1.39 NAME 'goVirusServer' DESC '
  ecursion $ avArchiveMaxCompressionRatio $ avDatabaseMirror $ avChecksPerDay $
   avHttpProxyURL ) )
 structuralObjectClass: olcSchemaConfig
-entryUUID: cf5d0ff6-057e-1035-9703-a38bf5edb059
+entryUUID: 9a6a041e-05c6-1035-88fe-05b015a685b9
 creatorsName: cn=config
-createTimestamp: 20151012224624Z
-entryCSN: 20151012224624.364300Z#000000#000#000000
+createTimestamp: 20151013072019Z
+entryCSN: 20151013072019.294131Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151012224624Z
+modifyTimestamp: 20151013072019Z

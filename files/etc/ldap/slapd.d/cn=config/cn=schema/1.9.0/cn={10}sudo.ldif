@@ -1,5 +1,5 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 b90bf0a1
+# CRC32 ffa76128
 dn: cn={10}sudo
 objectClass: olcSchemaConfig
 cn: {10}sudo
@@ -39,9 +39,9 @@ olcObjectClasses: {0}( 1.3.6.1.4.1.15953.9.2.1 NAME 'sudoRole' DESC 'Sudoer En
  udoRunAs $ sudoRunAsUser $ sudoRunAsGroup $ sudoOption $ sudoOrder $ sudoNotB
  efore $ sudoNotAfter $ description ) )
 structuralObjectClass: olcSchemaConfig
-entryUUID: cf5d0aba-057e-1035-9702-a38bf5edb059
+entryUUID: 9a69fdde-05c6-1035-88fd-05b015a685b9
 creatorsName: cn=config
-createTimestamp: 20151012224624Z
-entryCSN: 20151012224624.364300Z#000000#000#000000
+createTimestamp: 20151013072019Z
+entryCSN: 20151013072019.294131Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151012224624Z
+modifyTimestamp: 20151013072019Z

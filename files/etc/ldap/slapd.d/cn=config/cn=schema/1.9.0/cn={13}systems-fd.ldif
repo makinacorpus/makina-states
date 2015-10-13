@@ -1,5 +1,5 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 ba828eef
+# CRC32 3853980e
 dn: cn={13}systems-fd
 objectClass: olcSchemaConfig
 cn: {13}systems-fd
@@ -315,9 +315,9 @@ olcObjectClasses: {9}( 1.3.6.1.4.1.38414.16.2.7 NAME 'fdPhone' DESC 'FusionDir
  ectory phone class' SUP top AUXILIARY MUST cn MAY ( description $ telephoneNu
  mber ) )
 structuralObjectClass: olcSchemaConfig
-entryUUID: cf5d1cee-057e-1035-9705-a38bf5edb059
+entryUUID: 9a6a13be-05c6-1035-8900-05b015a685b9
 creatorsName: cn=config
-createTimestamp: 20151012224624Z
-entryCSN: 20151012224624.364300Z#000000#000#000000
+createTimestamp: 20151013072019Z
+entryCSN: 20151013072019.294131Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151012224624Z
+modifyTimestamp: 20151013072019Z

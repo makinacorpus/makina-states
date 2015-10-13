@@ -1,5 +1,5 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 295e4c98
+# CRC32 f9aa9cf0
 dn: cn={14}recovery-fd
 objectClass: olcSchemaConfig
 cn: {14}recovery-fd
@@ -38,9 +38,9 @@ olcObjectClasses: {0}( 1.3.6.1.4.1.38414.1.2.1 NAME 'recoveryConfig' DESC 'Pas
   $ passwordRecoveryMail2Subject $ passwordRecoveryMail2Body $ passwordRecover
  yValidity $ passwordRecoverySalt $ passwordRecoveryUseAlternate ) )
 structuralObjectClass: olcSchemaConfig
-entryUUID: cf5d22fc-057e-1035-9706-a38bf5edb059
+entryUUID: 9a6a1b02-05c6-1035-8901-05b015a685b9
 creatorsName: cn=config
-createTimestamp: 20151012224624Z
-entryCSN: 20151012224624.364300Z#000000#000#000000
+createTimestamp: 20151013072019Z
+entryCSN: 20151013072019.294131Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151012224624Z
+modifyTimestamp: 20151013072019Z

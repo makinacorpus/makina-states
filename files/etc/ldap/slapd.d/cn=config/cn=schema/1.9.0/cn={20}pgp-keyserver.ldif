@@ -1,5 +1,5 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 204e5996
+# CRC32 6ede9753
 dn: cn={20}pgp-keyserver
 objectClass: olcSchemaConfig
 cn: {20}pgp-keyserver
@@ -67,9 +67,9 @@ olcObjectClasses: {1}( 1.3.6.1.4.1.3401.8.2.24 NAME 'pgpKeyInfo' DESC 'PGP def
  erID $ pgpKeyCreateTime $ pgpSignerID $ pgpRevoked $ pgpSubKeyID $ pgpKeySize
   $ pgpKeyExpireTime ) X-ORIGIN 'Pretty Good Privacy (PGP)' )
 structuralObjectClass: olcSchemaConfig
-entryUUID: cf5d32a6-057e-1035-970c-a38bf5edb059
+entryUUID: 9a6a2dd6-05c6-1035-8907-05b015a685b9
 creatorsName: cn=config
-createTimestamp: 20151012224624Z
-entryCSN: 20151012224624.364300Z#000000#000#000000
+createTimestamp: 20151013072019Z
+entryCSN: 20151013072019.294131Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151012224624Z
+modifyTimestamp: 20151013072019Z

@@ -1,0 +1,26 @@
+# AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
+# CRC32 d51f8fc2
+dn: cn={23}personal-fd
+objectClass: olcSchemaConfig
+cn: {23}personal-fd
+olcAttributeTypes: {0}( 1.3.6.1.4.1.38414.48.1.1 NAME 'fdSocialAccount' DESC '
+ FusionDirectory - social accounts - syntax is site:id or protocole:id' EQUALI
+ TY caseExactIA5Match SUBSTR caseExactIA5SubstringsMatch SYNTAX 1.3.6.1.4.1.14
+ 66.115.121.1.26 )
+olcAttributeTypes: {1}( 1.3.6.1.4.1.38414.48.1.2 NAME 'fdNickName' DESC 'Fusio
+ nDirectory - nickname' EQUALITY caseExactIA5Match SUBSTR caseExactIA5Substrin
+ gsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
+olcAttributeTypes: {2}( 1.3.6.1.4.1.38414.48.1.3 NAME 'fdPrivateMail' DESC 'Fu
+ sionDirectory - private email used for identification' EQUALITY caseExactIA5M
+ atch SUBSTR caseExactIA5SubstringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 
+ )
+olcObjectClasses: {0}( 1.3.6.1.4.1.38414.48.2.1 NAME 'fdPersonalInfo' DESC 'Fu
+ sionDirectory - User personal tab' SUP top AUXILIARY MAY ( fdSocialAccount $ 
+ fdNickName $ fdPrivateMail $ personalTitle $ dateOfBirth $ gender ) )
+structuralObjectClass: olcSchemaConfig
+entryUUID: 9a6a35b0-05c6-1035-890a-05b015a685b9
+creatorsName: cn=config
+createTimestamp: 20151013072019Z
+entryCSN: 20151013072019.294131Z#000000#000#000000
+modifiersName: cn=config
+modifyTimestamp: 20151013072019Z

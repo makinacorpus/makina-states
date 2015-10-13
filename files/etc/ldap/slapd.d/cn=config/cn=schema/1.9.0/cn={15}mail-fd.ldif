@@ -1,5 +1,5 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 79d8e935
+# CRC32 f69cfdac
 dn: cn={15}mail-fd
 objectClass: olcSchemaConfig
 cn: {15}mail-fd
@@ -100,9 +100,9 @@ olcObjectClasses: {4}( 1.3.6.1.4.1.38414.10.2.5 NAME 'fdGroupMail' DESC 'Basic
  Y ( gosaMailAlternateAddress $ gosaMailForwardingAddress $ gosaMailMaxSize $ 
  fdGroupMailLocalOnly ) )
 structuralObjectClass: olcSchemaConfig
-entryUUID: cf5d26da-057e-1035-9707-a38bf5edb059
+entryUUID: 9a6a1fd0-05c6-1035-8902-05b015a685b9
 creatorsName: cn=config
-createTimestamp: 20151012224624Z
-entryCSN: 20151012224624.364300Z#000000#000#000000
+createTimestamp: 20151013072019Z
+entryCSN: 20151013072019.294131Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151012224624Z
+modifyTimestamp: 20151013072019Z
