@@ -1,8 +1,8 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 6c556353
-dn: cn={17}ldapns
+# CRC32 fb6111b8
+dn: cn={20}ldapns
 objectClass: olcSchemaConfig
-cn: {17}ldapns
+cn: {20}ldapns
 olcAttributeTypes: {0}( 1.3.6.1.4.1.5322.17.2.1 NAME 'authorizedService' DESC 
  'IANA GSS-API authorized service name' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.
  1.4.1.1466.115.121.1.15{256} )
@@ -12,9 +12,9 @@ olcObjectClasses: {0}( 1.3.6.1.4.1.5322.17.1.1 NAME 'authorizedServiceObject'
 olcObjectClasses: {1}( 1.3.6.1.4.1.5322.17.1.2 NAME 'hostObject' DESC 'Auxilia
  ry object class for adding host attribute' SUP top AUXILIARY MAY host )
 structuralObjectClass: olcSchemaConfig
-entryUUID: a0984894-013b-1035-8efc-4376745ffc6f
+entryUUID: a2bd234e-05ee-1035-89b9-b3b579c61d5e
 creatorsName: cn=config
-createTimestamp: 20151007123524Z
-entryCSN: 20151007123524.962714Z#000000#000#000000
+createTimestamp: 20151013120653Z
+entryCSN: 20151013120653.129402Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151007123524Z
+modifyTimestamp: 20151013120653Z

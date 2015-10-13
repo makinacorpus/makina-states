@@ -1,5 +1,5 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 bd5d3624
+# CRC32 31f2612d
 dn: cn={3}misc
 objectClass: olcSchemaConfig
 cn: {3}misc
@@ -21,9 +21,9 @@ olcObjectClasses: {0}( 2.16.840.1.113730.3.2.147 NAME 'inetLocalMailRecipient'
 olcObjectClasses: {1}( 1.3.6.1.4.1.42.2.27.1.2.5 NAME 'nisMailAlias' DESC 'NIS
   mail alias' SUP top STRUCTURAL MUST cn MAY rfc822MailMember )
 structuralObjectClass: olcSchemaConfig
-entryUUID: a097a4a2-013b-1035-8eee-4376745ffc6f
+entryUUID: a2bcdb3c-05ee-1035-89a8-b3b579c61d5e
 creatorsName: cn=config
-createTimestamp: 20151007123524Z
-entryCSN: 20151007123524.962714Z#000000#000#000000
+createTimestamp: 20151013120653Z
+entryCSN: 20151013120653.129402Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151007123524Z
+modifyTimestamp: 20151013120653Z

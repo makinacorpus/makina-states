@@ -1,8 +1,8 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 1cb13f99
-dn: cn={13}recovery-fd
+# CRC32 09feb1cd
+dn: cn={16}recovery-fd
 objectClass: olcSchemaConfig
-cn: {13}recovery-fd
+cn: {16}recovery-fd
 olcAttributeTypes: {0}( 1.3.6.1.4.1.38414.1.1.1 NAME 'passwordRecoveryActivate
  d' DESC 'Fusion Directory - Password recovery enabled/disabled' EQUALITY bool
  eanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE )
@@ -38,9 +38,9 @@ olcObjectClasses: {0}( 1.3.6.1.4.1.38414.1.2.1 NAME 'recoveryConfig' DESC 'Pas
   $ passwordRecoveryMail2Subject $ passwordRecoveryMail2Body $ passwordRecover
  yValidity $ passwordRecoverySalt $ passwordRecoveryUseAlternate ) )
 structuralObjectClass: olcSchemaConfig
-entryUUID: a0982d5a-013b-1035-8ef8-4376745ffc6f
+entryUUID: a2bd1868-05ee-1035-89b5-b3b579c61d5e
 creatorsName: cn=config
-createTimestamp: 20151007123524Z
-entryCSN: 20151007123524.962714Z#000000#000#000000
+createTimestamp: 20151013120653Z
+entryCSN: 20151013120653.129402Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151007123524Z
+modifyTimestamp: 20151013120653Z

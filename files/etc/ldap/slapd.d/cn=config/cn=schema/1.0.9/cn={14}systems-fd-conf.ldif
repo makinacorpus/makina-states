@@ -1,8 +1,8 @@
 # AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
-# CRC32 81ab7949
-dn: cn={11}systems-fd-conf
+# CRC32 15033259
+dn: cn={14}systems-fd-conf
 objectClass: olcSchemaConfig
-cn: {11}systems-fd-conf
+cn: {14}systems-fd-conf
 olcAttributeTypes: {0}( 1.3.6.1.4.1.38414.18.10.1 NAME 'fdSystemRDN' DESC 'Fus
  ionDirectory - System RDN' EQUALITY caseExactIA5Match SUBSTR caseExactIA5Subs
  tringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 SINGLE-VALUE )
@@ -58,9 +58,9 @@ olcObjectClasses: {1}( 1.3.6.1.4.1.38414.19.2.1 NAME 'fdAsteriskPluginConf' DE
  PhoneRDN $ fdPhoneMacroRDN $ fdPhoneConferenceRDN $ fdSipContexts $ fdVoicema
  ilContexts ) )
 structuralObjectClass: olcSchemaConfig
-entryUUID: a09809ba-013b-1035-8ef6-4376745ffc6f
+entryUUID: a2bd09e0-05ee-1035-89b3-b3b579c61d5e
 creatorsName: cn=config
-createTimestamp: 20151007123524Z
-entryCSN: 20151007123524.962714Z#000000#000#000000
+createTimestamp: 20151013120653Z
+entryCSN: 20151013120653.129402Z#000000#000#000000
 modifiersName: cn=config
-modifyTimestamp: 20151007123524Z
+modifyTimestamp: 20151013120653Z
