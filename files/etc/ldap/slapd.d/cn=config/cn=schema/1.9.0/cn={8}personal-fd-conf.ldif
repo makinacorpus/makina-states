@@ -1,0 +1,19 @@
+# AUTO-GENERATED FILE - DO NOT EDIT!! Use ldapmodify.
+# CRC32 b9b73adb
+dn: cn={8}personal-fd-conf
+objectClass: olcSchemaConfig
+cn: {8}personal-fd-conf
+olcAttributeTypes: {0}( 1.3.6.1.4.1.38414.50.1.1 NAME 'fdPrivateEmailPasswordR
+ ecovery' DESC 'FusionDirectory - Allow use of private email address for passw
+ ord recovery' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGL
+ E-VALUE )
+olcObjectClasses: {0}( 1.3.6.1.4.1.38414.50.2.1 NAME 'fdPersonalPluginConf' DE
+ SC 'FusionDirectory personal plugin configuration' SUP top AUXILIARY MUST cn 
+ MAY fdPrivateEmailPasswordRecovery )
+structuralObjectClass: olcSchemaConfig
+entryUUID: f275a76a-05eb-1035-80d8-9ba4c9a9612a
+creatorsName: cn=config
+createTimestamp: 20151013114738Z
+entryCSN: 20151013114738.389498Z#000000#000#000000
+modifiersName: cn=config
+modifyTimestamp: 20151013114738Z
