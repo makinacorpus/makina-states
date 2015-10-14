@@ -1278,7 +1278,7 @@ def init_repo(working_copy,
                        commit_all=True, opts='-f', user=user)
             if bare:
                 _s['git.push'](
-                    cwd=igit, remote='origin', branch='master:master',
+                    cwd=igit, remote='origin', ref='master:master',
                     opts='--force -u', user=user)
         except Exception:
             log.error(traceback.format_exc())
@@ -1322,7 +1322,7 @@ def push_changesets_in(directory,
         return __salt__['git.push'](
             cwd=directory,
             remote=remote,
-            branch=branch,
+            ref=branch,
             opts=opts,
             user=user
         )
@@ -1548,14 +1548,15 @@ def sync_working_copy(wc,
     nocommits = "fatal: bad default revision 'HEAD'" in _s['cmd.run'](
         'git log', env={'LANG': 'C', 'LC_ALL': 'C'},
         cwd=wc, runas=user)
+    force_sync = False
+    set_target='{1}/{0}'.format(rev, origin)
     # the local copy is not yet synchronnized with any repo
     if (
-        initial
-        or reset
-        or nocommits
-        or (
-            [a for a in os.listdir(wc) if a not in ['.git']]
-            == ['.empty']
+        initial or
+        reset or
+        nocommits or (
+            [a for a in os.listdir(wc)
+             if a not in ['.git']] == ['.empty']
         )
     ):
         cret = _s['git.reset'](
@@ -1571,19 +1572,38 @@ def sync_working_copy(wc,
         cret = _s['cmd.run_all']('git pull {1} {0}'.format(rev, origin),
                                  cwd=wc, python_shell=True, runas=user)
         if cret['retcode']:
-            # finally try to reset hard
+            force_sync = True
+        corigin_log = __salt__['cmd.run_all'](
+            'git log {0}/{1}'.format(origin, rev),
+            python_shell=True, cwd=wc, user=kw['user'])
+        if corigin_log['retcode'] != 0:
+            raise projects_api.ProjectInitException(
+                'Can not get origin log from {0}/{1} in {2}'.format(
+                    origin, rev, wc))
+        loc_sha1 = __salt__['git.revision'](wc, user=kw['user'])
+        origin_sha1 = corigin_log['stdout'].splitlines()[0].split()[1]
+        if loc_sha1 != origin_sha1:
+            _append_comment(
+                ret, summary=(
+                    'Synchronise working copy {0}'
+                    ' from upstream {2}/{1}@{3}'.format(
+                        wc, rev, origin, origin_sha1)))
+            set_target = origin_sha1
+            force_sync = True
+    if force_sync:
+        # finally try to reset hard
+        cret = _s['cmd.run_all'](
+            'git reset --hard {0}'.format(set_target),
+            cwd=wc, user=user)
+        if cret['retcode']:
+            # try to merge a bit but only what's mergeable
             cret = _s['cmd.run_all'](
-                'git reset --hard {1}/{0}'.format(rev, origin),
-                cwd=wc, user=user)
+                'git merge --ff-only {1}/{0}'.format(rev, origin),
+                cwd=wc, python_shell=True, runas=user)
             if cret['retcode']:
-                # try to merge a bit but only what's mergeable
-                cret = _s['cmd.run_all'](
-                    'git merge --ff-only {1}/{0}'.format(rev, origin),
-                    cwd=wc, python_shell=True, runas=user)
-                if cret['retcode']:
-                    raise projects_api.ProjectInitException(
-                        'Can not sync from {0}/{1} in {2}'.format(
-                            origin, rev, wc))
+                raise projects_api.ProjectInitException(
+                    'Can not sync from {0}/{1} in {2}'.format(
+                        origin, rev, wc))
     return ret
 
 
@@ -3083,7 +3103,7 @@ def sync_remote_working_copy(host,
         cret['remote'] = _s['git.remote_set'](
             directory, remote=lremote, url=tmpbare, user=user)
         cret['push'] = _s['git.push'](
-            directory, remote=lremote, branch='', opts=gforce, user=user)
+            directory, remote=lremote, ref='', opts=gforce, user=user)
     except (Exception,) as exc:
         trace = traceback.format_exc()
         failed, original = True, exc
