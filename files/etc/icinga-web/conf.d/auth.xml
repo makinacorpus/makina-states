@@ -43,6 +43,7 @@
       <ae:parameter name="ldap_start_tls">false</ae:parameter>
       {% endif %}
       <ae:parameter name="ldap_base_dn">{{data.ldap_auth.base_dn}}</ae:parameter>
+      <ae:parameter name="ldap_basedn">{{data.ldap_auth.base_dn}}</ae:parameter>
       {% if data.ldap_auth.binddn %}
       <ae:parameter name="ldap_binddn">{{data.ldap_auth.binddn}}</ae:parameter>
       {% endif %}
