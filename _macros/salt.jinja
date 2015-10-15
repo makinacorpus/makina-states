@@ -545,7 +545,7 @@ etc-{{data.name}}-dirs-perms:
   cmd.run:
     - name: >
             {{settings.c.o.resetperms }}
-            --dmode 0770 --fmode 0770
+            --dmode 0770 --fmode 0770 --no-acls
             --user "root" --group "{{ ugs.group }}"
             --paths {{ data.conf_prefix }}
     - require:
@@ -557,7 +557,7 @@ etc-{{data.name}}-dirs-perms:
   cmd.run:
     - name: >
             {{ settings.c.o.resetperms }}
-            -u root -g "{{ ugs.group }}"
+            -u root -g "{{ ugs.group }}" --no-acls
             --dmode 0771 --fmode 0771
             --no-recursive
             --only-acls
@@ -570,7 +570,7 @@ etc-{{data.name}}-dirs-perms:
   cmd.run:
     - name: >
             {{ settings.c.o.resetperms }}
-            --dmode 0770 --fmode 0770
+            --dmode 0770 --fmode 0770 --no-acls
             --user "root" --group "{{ ugs.group }}"
             --users "root" --groups "{{ ugs.group }}"
             --paths "{{ data.salt_root }}"
@@ -586,7 +586,7 @@ etc-{{data.name}}-dirs-perms:
   cmd.run:
     - name: >
             {{ resetperms }}
-            --fmode 0750 --dmode 0750
+            --fmode 0750 --dmode 0750 --no-acls
             --user "root" --group "{{ ugs.group }}"
             --users "root" --groups "{{ ugs.group }}"
             --paths "{{ data.log_prefix }}"

@@ -68,10 +68,10 @@ include:
 {%- set ssl = salt['mc_ssl.settings']() %}
 {{key}}-makina-pureftpd:
   cmd.run:
-    - name: >
-            openssl req -batch -x509 -nodes -days 36500 -newkey rsa:2048 
-            -keyout "{{key}}" -out "{{key}}" 
-            -subj "/C={{ssl.country}}/ST={{ssl.st}}/L={{ssl.l}}/O={{ssl.o}}/CN={{ssl.cn}}/EMAIL={{ssl.email}}"
+    - name: |
+            openssl req -batch -x509 -nodes -days 36500 -newkey rsa:2048 \
+             -keyout "{{key}}" -out "{{key}}" \
+             -subj "/C={{ssl.country}}/ST={{ssl.st}}/L={{ssl.l}}/O={{ssl.o}}/CN={{ssl.cn}}/EMAIL={{ssl.email}}"
     - unless: test -e {{key}}
     - watch:
       - mc_proxy: ftpd-pre-configuration-hook
@@ -83,7 +83,7 @@ include:
   cmd.run:
     - name: >
             '{{salt['mc_salt.settings']()['msr']}}/_scripts/reset-perms.py'
-            --dmode 0700 --fmode 0700
+            --dmode 0700 --fmode 0700 --no-acls
             --user root --group root
             --paths {{ key }}
     - watch:

@@ -107,7 +107,7 @@ rvm-{{version}}{{suf}}:
 
 active-rvm-bundler-hook:
   cmd.run:
-    - name: {{saltmac.msr}}/_scripts/reset-perms.py --dmode 0700 --fmode 0700 --paths "{{locs.rvm_path}}/hooks/after_cd_bundler"
+    - name: {{saltmac.msr}}/_scripts/reset-perms.py --no-acls --dmode 0700 --fmode 0700 --paths "{{locs.rvm_path}}/hooks/after_cd_bundler"
     - require_in:
       - mc_proxy: rvm-last
 
