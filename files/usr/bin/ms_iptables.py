@@ -383,10 +383,9 @@ def validate_and_complete(vopts, config):
 def load_configs(vopts, config=None, use_cache=True):
     if (
         use_cache and
-        (vopts['stop'] or vopts['clear']) and (
-            os.path.exists(vopts['state_file']) and
-            vopts['state_file'] not in vopts['config']
-        )
+        os.path.exists(vopts['state_file']) and
+        vopts['state_file'] not in vopts['config']
+
     ):
         vopts['config'].insert(0, vopts['state_file'])
     for fcfgdir in vopts['config_dir']:
@@ -600,6 +599,18 @@ def apply_rules(config, errors=None, changes=None):
     return errors, changes
 
 
+def cleanup_old_rules(cache_config, config, errors=None, changes=None):
+    log.info('Cleaning up the firewall from obsolete rules')
+    if errors is None:
+        errors = []
+    if changes is None:
+        changes = []
+    for rule in cache_config['rules']:
+        if rule not in config['rules']:
+            report(rule, remove_rule(rule, config), errors, changes)
+    return errors, changes
+
+
 def _main(timeout=60):
     opts = parser.parse_args()
     code = 0
@@ -615,7 +626,8 @@ def _main(timeout=60):
     ret = {'changed': False, 'comment': 'Firewall in place', 'result': None}
     errors, changes = [], []
     try:
-        config = load_configs(vopts)
+        config = load_configs(vopts, use_cache=False)
+        cache_config = load_configs(vopts, use_cache=True)
     except (InvalidConfiguration,) as exc:
         errors.append('{0}'.format(exc))
     else:
@@ -638,7 +650,7 @@ def _main(timeout=60):
         if has_lock:
             if not vopts['stop'] and (vopts['clear'] or vopts['flush']):
                 flush_fw(config, errors, changes)
-                config = load_configs(vopts, use_cache=False)
+            cleanup_old_rules(cache_config, config, errors=errors, changes=changes)
             if not vopts['no_state']:
                 with open(vopts['state_file'], 'w') as fic:
                     fic.write(
