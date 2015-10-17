@@ -103,9 +103,10 @@ def settings(ttl=15*60):
 
 def apparmor_en():
     ret = False
+    is_docker = __salt__['mc_nodetypes.is_docker']()
     if __grains__['os'] in ['Ubuntu']:
         ret = True
-    return ret
+    return ret and not is_docker
 
 
 def registry(ttl=15*60):
@@ -117,7 +118,7 @@ def registry(ttl=15*60):
         reg = {
             'env': {'active': True},
             'systemd': {'active': True},
-            'autoupgrade': {'active': True},
+            'autoupgrade': {'active': not is_docker},
             'apparmor': {'active': apparmor_en()},
             'updatedb': {'active': True},
             'nscd': {'active': _ldapEn(__salt__)},
