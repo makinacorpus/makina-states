@@ -44,7 +44,7 @@ def get_ms_url():
 def get_salt_url():
     val = get_local_param('salt_url')
     if not val:
-        val = 'http://github.com/makinacorpus/salt.git'
+        val = 'https://github.com/makinacorpus/salt.git'
     return val
 
 
@@ -105,7 +105,7 @@ def settings():
                 'rev': 'develop',
                 'target': '{venv_path}/src/salt'},
             'salttesting-git': {
-                'name': 'http://github.com/saltstack/salt-testing.git',
+                'name': 'https://github.com/saltstack/salt-testing.git',
                 'rev': 'develop',
                 'target': '{venv_path}/src/salttesting'},
             'm2crypto': {
