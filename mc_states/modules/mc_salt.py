@@ -14,8 +14,10 @@ import random
 import json
 import os
 
+
 __name = 'salt'
 
+J = os.path.join
 loglevelfmt = (
     "'%(asctime)s,%(msecs)03.0f "
     "[%(name)-17s][%(levelname)-8s] %(message)s'")
@@ -586,5 +588,4 @@ def has_mastersalt():
 def has_mastersalt_running():
     return __salt__['mc_controllers.has_mastersalt_running']()
 
-
-#
+# vim:set et sts=4 ts=4 tw=80:
