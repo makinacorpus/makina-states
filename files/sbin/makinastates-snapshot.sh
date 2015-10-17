@@ -39,10 +39,6 @@ REMOVE="
 if [ "x${is_docker}" != "x" ];then
     set +e
     REMOVE="${REMOVE}
-$(find \
-    /salt-venv\
-    /srv/*salt/makina-states/\
-    -name .git)
 /salt-venv/salt/src/m2crypto/build
 /salt-venv/mastersalt/src/m2crypto/build
 /salt-venv/mastersalt/src/salt/doc
@@ -52,6 +48,12 @@ $(find \
 /salt-venv/mastersalt/src/salt/pkg
 /salt-venv/salt/src/salt/pkg
 "
+# removing .git strip 100mo but really leave a gap when it comes to debug
+#$(find \
+#    /salt-venv\
+#    /srv/*salt/makina-states/\
+#    -name .git)
+#"
 fi
     set -e
 WIPE="
@@ -101,9 +103,10 @@ FILE_REMOVE="
 FILE_WIPE="
 /var/log
 "
-if [ "x${is_docker}" != "x" ];then
-    /srv/mastersalt/makina-states/_scripts/boot-salt.sh -C -s -S --only-pack || /bin/true
-fi
+# we already have clean checkouts, now, we do not upgrade
+# if [ "x${is_docker}" != "x" ];then
+#     /srv/mastersalt/makina-states/_scripts/boot-salt.sh -C -s -S --only-pack || /bin/true
+# fi
 for i in ${REMOVE};do
     if [ -d "${i}" ];then rm -vrf "${i}" || /bin/true;fi
     if [ -h "${i}" ] || [ -f "${i}" ];then rm -vf "${i}" || /bin/true;fi

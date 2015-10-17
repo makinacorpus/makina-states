@@ -206,7 +206,7 @@ function build_image() {
 }
 
 function docker_cleanup() {
-    $(dirname $0)/cleanup.sh
+    ${W}/cleanup.sh
 }
 
 function full_cleanup() {
