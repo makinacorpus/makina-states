@@ -2,6 +2,7 @@
 include:
   - makina-states.services.base.ntp.hooks
 {% if salt['mc_controllers.mastersalt_mode']() %}
+{% if not salt['mc_nodetypes.is_docker']() %}
 {%- if grains['os'] not in ['Debian', 'Ubuntu'] %}
 ntpdate-svc:
   service.enabled:
@@ -49,4 +50,5 @@ ntpd-kill:
     - watch:
       - service: ntpd
       - mc_proxy: ntp-pre-restart-hook
+{%- endif %}
 {%- endif %}

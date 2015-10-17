@@ -2,6 +2,7 @@
 include:
   - makina-states.services.base.ntp.hooks
 {% if salt['mc_controllers.mastersalt_mode']() %}
+{% if not salt['mc_nodetypes.is_docker']() %}
 ntpd-uninstall-svc:
   service.dead:
     - enable: false
@@ -36,4 +37,5 @@ ntpd-killall-svc:
       - mc_proxy: ntp-post-restart-hook
     - watch:
       - mc_proxy: ntp-pre-restart-hook
+{%- endif %}
 {%- endif %}
