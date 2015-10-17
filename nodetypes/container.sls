@@ -7,6 +7,19 @@ include:
   - makina-states.localsettings.pkgs.hooks
   - makina-states.nodetypes.container-hooks
 
+
+container-makinastates-snapshot.sh:
+  file.managed:
+    - name: /sbin/makinastates-snapshot.sh
+    - source: salt://makina-states/files/sbin/makinastates-snapshot.sh
+    - user: root
+    - group: root
+    - mode: 0755
+    - watch:
+      - mc_proxy: makina-lxc-proxy-pkgs-pre
+    - watch_in:
+      - mc_proxy: makina-lxc-proxy-pkgs
+
 lxc-container-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
