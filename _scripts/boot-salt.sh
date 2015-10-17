@@ -1071,9 +1071,14 @@ set_vars() {
         SALT_LIGHT_INSTALL="y"
     fi
 
+    # try to get a released version of the virtualenv to speed up installs
+    VENV_URL="${VENV_URL:-"https://github.com/makinacorpus/makina-states/releases/download/attachedfiles/virtualenv-makina-states-${SALT_BOOT_OS}-${DISTRIB_CODENAME}.tar.xz"}"
+    declare -A VENV_URLS_MD5
+    VENV_URLS_MD5[ahttps://github.com/makinacorpus/makina-states/releases/download/attachedfiles/virtualenv-makina-states-ubuntu-vivid.tar.xz]="badf958739d789aca5d004935bd19214"
+    VENV_MD5=${VENV_MD5:-${VENV_URLS_MD5[${VENV_URL}]}}
     # export variables to support a restart
 
-
+    export VENV_URL VENV_MD5 VENV_URLS_MD5
     export SALT_BOOT_ONLY_PREREQS SALT_BOOT_ONLY_INSTALL_SALT
     export BS_MS_ASSOCIATION_RESTART_MINION BS_MS_ASSOCIATION_RESTART_MASTER
     export BS_ASSOCIATION_RESTART_MASTER BS_ASSOCIATION_RESTART_MINION
@@ -1431,7 +1436,7 @@ install_prerequisites() {
     if [ "x${QUIET}" = "x" ];then
         bs_log "Check package dependencies"
     fi
-    lazy_apt_get_install python-software-properties
+    lazy_apt_get_install python-software-properties curl
     # XXX: only lts package in this ppa
     if [ "x${DISTRIB_CODENAME}" != "xlenny" ];then
         if     [ "x$(is_apt_installed libzmq3    )" = "xno" ] \
@@ -2059,7 +2064,45 @@ local/lib/python*
     fi
 }
 
+download_file() {
+    url="${1}"
+    dest="${2}"
+    refmd5="${3}"
+    bs_log "Downloading & extracting ${url}"
+    curl -Lfk "${url}" > "${dest}"
+    if [ "x${?}" != "x0" ];then
+        bs_log "download error"
+    else
+        md5="$(md5sum "${dest}"|awk '{print $1}')"
+        if [ "x${refmd5}" != "x" ];then
+            if [ "x${refmd5}" != "x${md5}" ];then
+                bs_log "MD5 verification failed ( ${md5} != ${refmd5})"
+                return 1
+            fi
+        fi
+        bs_log "download complete"
+    fi
+
+}
+
 setup_virtualenvs() {
+    if [ ! -e "${VENV_PATH}/salt/bin/salt" ];then
+        tmparc="${TMPDIR:-/tmp}/salt.tar.xz"
+        # only download if exists
+        if curl -kfI ${VENV_URL} >/dev/null 2>&1;then
+            if ! download_file "${VENV_URL}" "${tmparc}" "${VENV_MD5}";then
+                bs_log "Archive error, aborting"
+                exit 1
+            fi
+            tar xJf "${tmparc}" -C /
+            if [ "x${?}" != "x0" ];then
+                bs_log "extract error"
+            else
+                bs_log "extract complete"
+            fi
+            rm -f "${tmparc}"
+        fi
+    fi
     if [ "x${DO_SALT}" != "xno" ];then
         setup_virtualenv "${SALT_VENV_PATH}"
     fi
