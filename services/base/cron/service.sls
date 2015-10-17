@@ -7,6 +7,7 @@ include:
 
 {% if salt['mc_nodetypes.activate_sysadmin_states']() %}
 {% if not salt['mc_nodetypes.is_docker_service']() %}
+{% if not salt['mc_nodetypes.is_docker']() %}
 makina-cron-service:
   service.running:
     - name: cron
@@ -24,6 +25,7 @@ makina-cron-restart-service:
       - mc_proxy: cron-prehardrestart
     - watch_in:
       - mc_proxy: cron-posthardrestart
+{% endif %}
 {% else %}
 {% set circus_data = {
   'cmd': '/usr/sbin/cron -f',

@@ -7,6 +7,7 @@ include:
   {%endif %}
 {% if salt['mc_nodetypes.activate_sysadmin_states']() %}
 {% if not salt['mc_nodetypes.is_docker_service']() %}
+{% if not salt['mc_nodetypes.is_docker']() %}
 openssh-svc:
   service.running:
     - watch_in:
@@ -19,6 +20,7 @@ openssh-svc:
     {% else %}
     - name: sshd
     {%- endif %}
+{% endif %}
 {% else %}
 {% set circus_data = {
   'cmd': '/usr/bin/sshd_wrapper.sh -D',

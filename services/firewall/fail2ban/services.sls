@@ -6,6 +6,7 @@ include:
   {%endif %}
 {% if salt['mc_nodetypes.activate_sysadmin_states']() %}
 {% if not salt['mc_nodetypes.is_docker_service']() %}
+{% if not salt['mc_nodetypes.is_docker']() %}
 fail2ban-service:
   service.running:
     - name: fail2ban
@@ -14,6 +15,7 @@ fail2ban-service:
       - mc_proxy: fail2ban-pre-hardrestart-hook
     - watch_in:
       - mc_proxy: fail2ban-post-hardrestart-hook
+{% endif %}
 {% else %}
 {% set circus_data = {
   'cmd': '/usr/bin/fail2ban-server -s /var/run/fail2ban/fail2ban.sock -p /var/run/fail2ban/fail2ban.pid -x -f',

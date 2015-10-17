@@ -37,6 +37,7 @@ makina-nginx-conf-syntax-check:
   'max_age': 24*60*60} %}
 {{ circus.circusAddWatcher('nginx', **circus_data) }}
 {% else %}
+{% if not salt['mc_nodetypes.is_docker']() %}
 {# compat: reload #}
 {% for i in ['reload', 'restart'] %}
 makina-nginx-{{i}}:
@@ -49,6 +50,7 @@ makina-nginx-{{i}}:
     - watch:
       - mc_proxy: nginx-pre-restart-hook
       - mc_proxy: nginx-pre-hardrestart-hook
+{%endif %}
 {% endfor %}
 
 makina-ngin-naxsi-ui-running:

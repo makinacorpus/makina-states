@@ -6,6 +6,7 @@ include:
   {% endif %}
 {% if salt['mc_nodetypes.activate_sysadmin_states']() %}
 {% if not salt['mc_nodetypes.is_docker_service']() %}
+{% if not salt['mc_nodetypes.is_docker']() %}
 makina-rsyslog-restart-service:
   service.running:
     - name: rsyslog
@@ -16,6 +17,7 @@ makina-rsyslog-restart-service:
     - watch_in:
       - mc_proxy: rsyslog-post-restart-hook
       - mc_proxy: rsyslog-post-hardrestart-hook
+{%endif%}
 {% else %}
 {% set circus_data = {
   'cmd': '/usr/sbin/rsyslogd -n',

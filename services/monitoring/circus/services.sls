@@ -8,6 +8,7 @@ include:
   - makina-states.services.firewall.fail2ban.services
   {% endif %}
 {% if salt['mc_nodetypes.activate_sysadmin_states']() and not salt['mc_nodetypes.is_docker_service']() %}
+{% if not salt['mc_nodetypes.is_docker']() %}
 circus-start:
   service.running:
     - name: circusd
@@ -16,4 +17,5 @@ circus-start:
       - mc_proxy: circus-pre-restart
     - watch_in:
       - mc_proxy: circus-post-restart
+{% endif %}
 {% endif %}

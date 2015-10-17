@@ -20,6 +20,7 @@ include:
   'max_age': 24*60*60} %}
 {{ circus.circusAddWatcher('redis', **circus_data) }}
 {%else %}
+{% if not salt['mc_nodetypes.is_docker']() %}
 makina-redis-service:
   service.running:
     - name: {{redisSettings.service}}
@@ -38,4 +39,5 @@ makina-redis-restart-service:
       - mc_proxy: redis-pre-hardrestart
     - watch_in:
       - mc_proxy: redis-post-hardrestart
+{%endif%}
 {% endif %}
