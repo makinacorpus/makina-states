@@ -78,7 +78,10 @@ def virtualenv_release(ms_os=DEFAULT_OS,
             raise Exception('Extraction failed')
     if not upload:
         return
-    u = "https://api.github.com/repos/makinacorpus/makina-states"
+    ssettings = __salt__['mc_salt.settings']()
+    orga = ssettings['c']['minion']['confRepos']['makina-states'][
+        'name'].replace('.git', '').split('github.com/')[1]
+    u = "https://api.github.com/repos/" + orga
     tok = HTTPBasicAuth(data['github_user'], data['github_password'])
     releases = requests.get("{0}/releases".format(u), auth=tok)
     pub = releases.json()
@@ -104,23 +107,28 @@ def virtualenv_release(ms_os=DEFAULT_OS,
     fpath = J(ms_root, dest)
     if not os.path.exists(fpath):
         raise Exception('Release file is not here: {0}'.format(fpath))
-    if toup not in [a['name'] for a in assets]:
-        size = os.stat(fpath).st_size
-        with open(fpath) as fup:
-            fcontent = fup.read()
-            upurl = re.sub(
-                '{.*', '', release['upload_url']
-            )+'?name={0}&size={1}'.format(toup, size)
-            cret = requests.post(
-                upurl, auth=tok,
-                data=fcontent,
-                headers={
-                    'Content-Type':
-                    'application/x-xz'})
-            jret = cret.json()
-            if jret.get('size', '') != size:
-                pprint(jret)
-                raise ValueError('upload failed')
+    if toup in [a['name'] for a in assets]:
+        asset = [a for a in assets if a['name'] == toup][0]
+        cret = requests.delete(asset['url'], auth=tok)
+        if not cret.ok:
+            raise ValueError('error deleting release')
+    log.info('Upload of {0} started'.format(toup))
+    size = os.stat(fpath).st_size
+    with open(fpath) as fup:
+        fcontent = fup.read()
+        upurl = re.sub(
+            '{.*', '', release['upload_url']
+        )+'?name={0}&size={1}'.format(toup, size)
+        cret = requests.post(
+            upurl, auth=tok,
+            data=fcontent,
+            headers={
+                'Content-Type':
+                'application/x-xz'})
+        jret = cret.json()
+        if jret.get('size', '') != size:
+            pprint(jret)
+            raise ValueError('upload failed')
 
 
 def docker_release(ms_os=DEFAULT_OS,
@@ -134,7 +142,7 @@ def docker_release(ms_os=DEFAULT_OS,
                    do_docker_upload=True,
                    venv_extract=True,
                    venv_upload=True,
-                   virtualenv=True):
+                   virtualenv=False):
     ms_root = _ms()
     img = _get_img(img, ms_os, release)
     if env is None:
@@ -150,10 +158,11 @@ def docker_release(ms_os=DEFAULT_OS,
         env['MS_BRANCH'] = branch
     if not logfile:
         logfile = os.path.join(
-            'docker/logfile-{0-}{1}.log'.format(ms_os, release))
+            'docker/logfile-{0}{1}.log'.format(ms_os, release))
     if do_docker:
         log.info('Starting release building {0}/{1}'.format(ms_os, release))
-        log.info('You can attach build log by tail -f {0}'.format(logfile))
+        log.info('You can attach build log by tail -f {0}'.format(
+            J(ms_root, logfile)))
         ret = __salt__['cmd.run_all'](
             'docker/build-scratch.sh>{0}'.format(logfile),
             python_shell=True, cwd=ms_root, env=env)

@@ -1072,9 +1072,10 @@ set_vars() {
     fi
 
     # try to get a released version of the virtualenv to speed up installs
-    VENV_URL="${VENV_URL:-"https://github.com/makinacorpus/makina-states/releases/download/attachedfiles/virtualenv-makina-states-${SALT_BOOT_OS}-${DISTRIB_CODENAME}.tar.xz"}"
+    VENV_URL="${VENV_URL:-"https://github.com/makinacorpus/makina-states/releases/download/attachedfiles/virtualenv-makina-states-${SALT_BOOT_OS}-${DISTRIB_CODENAME}-stable.tar.xz"}"
     declare -A VENV_URLS_MD5
-    VENV_URLS_MD5[ahttps://github.com/makinacorpus/makina-states/releases/download/attachedfiles/virtualenv-makina-states-ubuntu-vivid.tar.xz]="940c8d19e6b7d25dffb091634ddf629a"
+    VENV_URLS_MD5[ahttps://github.com/makinacorpus/makina-states/releases/download/attachedfiles/virtualenv-makina-states-ubuntu-vivid-stable.tar.xz]="940c8d19e6b7d25dffb091634ddf629a"
+    VENV_URLS_MD5[ahttps://github.com/makinacorpus/makina-states/releases/download/attachedfiles/virtualenv-makina-states-ubuntu-trusty-stable.tar.xz]="940c8d19e6b7d25dffb091634ddf629a"
     VENV_MD5=${VENV_MD5:-${VENV_URLS_MD5[${VENV_URL}]}}
     # export variables to support a restart
 
@@ -2101,6 +2102,8 @@ setup_virtualenvs() {
                 bs_log "extract complete"
             fi
             rm -f "${tmparc}"
+        else
+            bs_log "Warn: virtualenv cache archive not found, will rebuild"
         fi
     fi
     if [ "x${DO_SALT}" != "xno" ];then
