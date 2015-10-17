@@ -248,4 +248,5 @@ if [ "x${THIS_AS_FUNCS}" = "x" ];then
     #cleanup
     exit ${ret}
 fi
+
 # vim:set et sts=4 ts=4 tw=0:
