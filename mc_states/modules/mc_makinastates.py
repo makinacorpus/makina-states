@@ -16,44 +16,74 @@ from pprint import pprint
 
 
 log = logging.getLogger(__name__)
+__name = 'config'
 J = os.path.join
 DEFAULT_OS = 'ubuntu'
 DEFAULT_RELEASE = 'vivid'
 DEFAULT_IMG = None
+PREFIX = 'makina-states.{0}'.format(__name)
 
 
 def _ms():
     return __opts__['file_roots']['base'][0] + '/makina-states'
 
 
-def virtualenv_release(ms_os=DEFAULT_OS,
-                       release=DEFAULT_RELEASE,
-                       upload=True,
-                       img=DEFAULT_RELEASE):
+def settings():
+    @mc_states.api.lazy_subregistry_get(__salt__, __name)
+    def _settings():
+        data = __salt__['mc_utils.defaults'](
+            PREFIX, {
+                'github_user': None,
+                'github_password': None,
+                'releases': {
+                    'ubuntu': ['trusty', 'vivid']
+                }
+            }
+        )
+        return data
+    return _settings()
+
+def _get_img(img, ms_os, release):
     if not img:
         img = 'makinacorpus/makina-states-{0}-{1}-stable'.format(
             ms_os, release)
+    return img
+
+
+def virtualenv_release(ms_os=DEFAULT_OS,
+                       release=DEFAULT_RELEASE,
+                       extract=True,
+                       upload=True,
+                       logfile=None,
+                       img=None):
+
     ms_root = _ms()
-    dest = 'virtualenv-{img}.tar.xz'.format(img=img.split('/')[1])
-    dname = '{0}-venv-extracter'.format(img)
-    infos = __salt__['docker.inspect_container'](dname)
-    if infos['status']:
-        __salt__['docker.remove_container'](dname, force=True)
-    ret = __salt__['cmd.run_all'](
-        'docker run --rm --name="${dname}" -v "{ms_root}":/makina-states \\'
-        '-e XZ_OPTS="-9e" {img}\\'
-        'tar cJf "/makina-states/docker/${dest}" /salt-venv'
-        ''.format(img=img, dname=dname, dest=dest, ms_root=ms_root))
-    if ret['retcode'] != 0:
-        raise Exception('Extraction failed')
+    data = settings()
+    img = _get_img(img, ms_os, release)
+    bimg = img.split('/')[1]
+    dest = 'docker/virtualenv-{img}.tar.xz'.format(img=bimg)
+    dname = '{0}-venv-extracter'.format(bimg)
+    if extract:
+        infos = __salt__['docker.inspect_container'](dname)
+        if infos['status']:
+            __salt__['docker.remove_container'](dname, force=True)
+        cmd = ('docker run --rm --name="{dname}" -v "{ms_root}":/makina-states'
+               ' -e XZ_OPTS="-9e" {img}'
+               ' tar cJf "/makina-states/{dest}" /salt-venv'
+               '').format(img=img, dname=dname, dest=dest, ms_root=ms_root)
+        ret = __salt__['cmd.run_all'](cmd, cwd=ms_root, python_shell=True)
+        if ret['retcode'] != 0:
+            print(ret['stdout'])
+            print(ret['stderr'])
+            raise Exception('Extraction failed')
     if not upload:
         return
     u = "https://api.github.com/repos/makinacorpus/makina-states"
-    tok = HTTPBasicAuth(data['gh_user'], data['gh_pw'])
+    tok = HTTPBasicAuth(data['github_user'], data['github_password'])
     releases = requests.get("{0}/releases".format(u), auth=tok)
     pub = releases.json()
     fdv = 'attachedfiles'
-    if fdv not in [a['name'] for a in pub]:
+    if fdv not in [a['tag_name'] for a in pub]:
         cret = requests.post(
             "{0}/releases".format(u),
             auth=tok,
@@ -63,15 +93,18 @@ def virtualenv_release(ms_os=DEFAULT_OS,
         if 'created_at' not in cret.json():
             pprint(cret)
             raise ValueError('error creating release')
+        log.info('Created release {0}/{1}'.format(u, fdv))
         pub = requests.get("{0}/releases".format(u), auth=tok).json()
-        if fdv not in [a['name'] for a in pub]:
+        if fdv not in [a['tag_name'] for a in pub]:
             raise ValueError('error getting release')
-    release = [a for a in pub if a['name'] == fdv][0]
+    release = [a for a in pub if a['tag_name'] == fdv][0]
     assets = requests.get("{0}/releases/{1}/assets".format(
         u, release['id']), auth=tok).json()
-    toup = dest
+    toup = os.path.basename(dest)
+    fpath = J(ms_root, dest)
+    if not os.path.exists(fpath):
+        raise Exception('Release file is not here: {0}'.format(fpath))
     if toup not in [a['name'] for a in assets]:
-        fpath = J(ms_root, "docker/"+toup)
         size = os.stat(fpath).st_size
         with open(fpath) as fup:
             fcontent = fup.read()
@@ -96,11 +129,14 @@ def docker_release(ms_os=DEFAULT_OS,
                    branch=None,
                    changeset=None,
                    env=None,
+                   logfile=None,
                    do_docker=True,
                    do_docker_upload=True,
-                   do_venv_upload=True,
+                   venv_extract=True,
+                   venv_upload=True,
                    virtualenv=True):
     ms_root = _ms()
+    img = _get_img(img, ms_os, release)
     if env is None:
         env = {}
     for i, v in {
@@ -112,11 +148,21 @@ def docker_release(ms_os=DEFAULT_OS,
         env['MS_CHANGESET'] = changeset
     if branch:
         env['MS_BRANCH'] = branch
+    if not logfile:
+        logfile = os.path.join(
+            'docker/logfile-{0-}{1}.log'.format(ms_os, release))
     if do_docker:
         log.info('Starting release building {0}/{1}'.format(ms_os, release))
+        log.info('You can attach build log by tail -f {0}'.format(logfile))
         ret = __salt__['cmd.run_all'](
-            'docker/build-scratch.sh', cwd=ms_root, use_vt=True, env=env)
+            'docker/build-scratch.sh>{0}'.format(logfile),
+            python_shell=True, cwd=ms_root, env=env)
+        if ret['retcode'] != 0:
+            print(ret['stdout'])
+            print(ret['stderr'])
+            raise Exception('docker building failed')
     if virtualenv:
         virtualenv_release(
-            ms_os=ms_os, release=release, img=img, upload=do_venv_upload)
+            ms_os=ms_os, release=release, img=img,
+            extract=venv_extract, upload=venv_upload)
 # vim:set et sts=4 ts=4 tw=80:
