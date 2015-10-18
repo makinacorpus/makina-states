@@ -71,3 +71,4 @@ boot_salt_top
 /tags.python
 /tests/mc_states
 /docker/virtualenv-makina-states-*
+/docker/*.log
