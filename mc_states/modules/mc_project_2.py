@@ -55,6 +55,8 @@ import mc_states.project as projects_api
 log = logger = logging.getLogger(__name__)
 
 _MARKER = object()
+J = os.path.join
+D = os.path.dirname
 API_VERSION = '2'
 ENVS = projects_api.ENVS
 KEEP_ARCHIVES = projects_api.KEEP_ARCHIVES
@@ -66,6 +68,7 @@ DEFAULT_AUTHOR = 'makina-states'
 DEFAULT_EMAIL = '{0}@paas.tld'.format(DEFAULT_AUTHOR)
 DEFAULT_CONFIGURATION = {
     'name': None,
+    'remote_less': None,
     'minion_id': None,
     'fqdn': None,
     'remote_host': '{fqdn}',
@@ -727,6 +730,14 @@ def get_configuration(name, *args, **kwargs):
 
     name
         name of the project
+    remote_less
+        Does the project use local remotes (via git hooks) for users
+        to push code inside remotes and have the local working copy
+        synchronized with those remotes before deploy.
+        Default to False, set to True to not use local remotes
+        If the project directory .git folder exists, and there
+        is no local remote created, the local remotes feature
+        will also be disabled
     fqdn
         fqdn of the box
     minion_id
@@ -864,6 +875,9 @@ def get_configuration(name, *args, **kwargs):
     cfg.update(_s['mc_utils.format_resolve'](cfg))
     cfg.update(_s['mc_utils.format_resolve'](cfg, cfg['data']))
 
+    if cfg['remote_less'] is None:
+        cfg['remote_less'] = is_remote_less(cfg)
+
     now = datetime.datetime.now()
     cfg['chrono'] = '{0}_{1}'.format(
         datetime.datetime.strftime(now, '%Y-%m-%d_%H_%M-%S'),
@@ -949,6 +963,22 @@ def get_configuration_item(project, item=_MARKER, **kw):
     return {'item': val, 'cfg': cfg, 'key': key}
 
 
+def is_pillar_remote_less(cfg):
+    no_remote = (
+        (os.path.exists(J(cfg['pillar_root'], '.git')) or
+         os.path.exists(J(cfg['pillar_root'], 'init.sls')))and
+        not os.path.exists(cfg['pillar_git_root']))
+    return no_remote
+
+
+def is_remote_less(cfg):
+    no_remote = cfg.get('remote_less', False) or (
+        (os.path.exists(J(cfg['project_root'], '.git')) or
+         os.path.exists(J(cfg['project_root'], '.salt'))) and
+        not os.path.exists(cfg['project_git_root']))
+    return no_remote
+
+
 def init_user_groups(user, groups=None, ret=None):
     _append_comment(
         ret, summary='Verify user:{0} & groups:{1} for project'.format(
@@ -994,13 +1024,13 @@ def init_project_dirs(cfg, ret=None):
         'Initialize or verify core '
         'project layout for {0}').format(cfg['name']))
     # create various directories
-    for dr, mode in [
-        (cfg['git_root'], '770'),
-        (cfg['archives_root'], '770'),
-        (os.path.dirname(cfg['wired_pillar_root']), '770'),
-        (os.path.dirname(cfg['wired_salt_root']), '770'),
-        (cfg['data_root'], '770'),
-    ]:
+    dirs = [(cfg['archives_root'], '770'),
+            (os.path.dirname(cfg['wired_pillar_root']), '770'),
+            (os.path.dirname(cfg['wired_salt_root']), '770'),
+            (cfg['data_root'], '770')]
+    if not cfg['remote_less']:
+        dirs.insert(0, (cfg['git_root'], '770'))
+    for dr, mode in dirs:
         cret = _state_exec(sfile,
                            'directory',
                            dr,
@@ -1149,6 +1179,7 @@ def init_repo(working_copy,
               project=None,
               remote_host=None,
               cfg=None,
+              remote_less=False,
               api_version=API_VERSION):
     '''
     Initialize an empty git repository, either bare or a working copy
@@ -1231,6 +1262,8 @@ def init_repo(working_copy,
         igit = working_copy
         if bare:
             igit += '.tmp'
+        if remote_less:
+            igit = lgit
         try:
             parent = os.path.dirname(igit)
             if not os.path.exists(parent):
@@ -1238,14 +1271,14 @@ def init_repo(working_copy,
                     parent, user=user, group=group, mode=0750)
             _s['file.set_mode'](parent, 0750)
             _s['file.chown'](parent, user=user, group=group)
-            if not os.path.exists(
-                os.path.join(igit, '.git')
-            ):
+            if not os.path.exists(os.path.join(igit, '.git')):
                 _s['git.init'](igit, user=user)
             _s['file.set_mode'](igit, 0750)
             _s['file.chown'](igit, user=user, group=group)
             empty = os.path.join(igit, '.empty')
-            _s['git.remote_set'](igit, remote='origin', url=working_copy, user=user)
+            if not remote_less:
+                _s['git.remote_set'](
+                    igit, remote='origin', url=working_copy, user=user)
             if bare:
                 set_makina_states_author(igit, user=user)
             if init_salt:
@@ -1257,6 +1290,7 @@ def init_repo(working_copy,
                                               force=True,
                                               commit_all=False,
                                               do_push=False,
+                                              remote_less=remote_less,
                                               api_version=api_version)
             elif init_pillar:
                 init_pillar_dir(
@@ -1268,6 +1302,7 @@ def init_repo(working_copy,
                     bare=bare,
                     do_push=False,
                     api_version=api_version,
+                    remote_less=remote_less,
                     ret=ret)
             else:
                 if not os.path.exists(empty):
@@ -1276,7 +1311,7 @@ def init_repo(working_copy,
             set_makina_states_author(igit, user=user)
             git_commit(igit, message=INITIAL_COMMIT_MESSAGE,
                        commit_all=True, opts='-f', user=user)
-            if bare:
+            if bare and not remote_less:
                 _s['git.push'](
                     cwd=igit, remote='origin', ref='master:master',
                     opts='--force -u', user=user)
@@ -1285,7 +1320,7 @@ def init_repo(working_copy,
             raise projects_api.ProjectInitException(
                 'Can\'t create init layout in {0}'.format(working_copy))
         finally:
-            if bare:
+            if bare and (igit != lgit) and (igit != working_copy):
                 cret = _s['cmd.run_all']('rm -rf "{0}"'.format(igit),
                                          runas=user)
     return ret
@@ -1627,6 +1662,7 @@ def init_pillar_dir(directory,
                     project=None,
                     commit_all=False,
                     do_push=False,
+                    remote_less=False,
                     **kw):
     '''
     Initialize a basic versionned pillar directory
@@ -1695,8 +1731,9 @@ def init_pillar_dir(directory,
                 'Can\'t create default {0}\n{1}'.format(fil, cret['comment']))
     if os.path.join(directory, '.git'):
         if commit_all:
+            set_makina_states_author(directory, user=user)
             git_commit(directory, commit_all=commit_all, user=user)
-        if do_push:
+        if do_push and not remote_less:
             push_changesets_in(directory, opts='-u', user=user)
 
 
@@ -1710,6 +1747,7 @@ def refresh_files_in_working_copy(project_root,
                                   commit_all=False,
                                   do_push=False,
                                   remote_host=None,
+                                  remote_less=False,
                                   *args,
                                   **kwargs):
     if not api_version:
@@ -1736,6 +1774,7 @@ def refresh_files_in_working_copy(project_root,
                                 project=project,
                                 do_push=do_push,
                                 commit_all=commit_all,
+                                remote_less=remote_less,
                                 ret=ret)
     set_project(init_data)
     for fil in ['PILLAR.sample']:
@@ -1755,7 +1794,7 @@ def refresh_files_in_working_copy(project_root,
             raise projects_api.ProjectInitException(
                 'Can\'t create default {0}\n{1}'.format(
                     fil, cret['comment']))
-    if os.path.join(project_root, '.git'):
+    if os.path.join(project_root, '.git') and not remote_less:
         if commit_all:
             git_commit(project_root, commit_all=commit_all, user=user)
         if do_push:
@@ -1770,6 +1809,7 @@ def init_salt_dir(directory,
                   do_push=False,
                   project=None,
                   init_data=None,
+                  remote_less=False,
                   **kw):
     '''
     Initialize a basic corpus project directory
@@ -1829,7 +1869,7 @@ def init_salt_dir(directory,
                 raise projects_api.ProjectInitException(
                     'Can\'t create default {0}\n{1}'.format(
                         fil, cret['comment']))
-    if os.path.join(directory, '.git'):
+    if os.path.join(directory, '.git') and not remote_less:
         if commit_all:
             git_commit(directory, commit_all=commit_all, user=user)
         if do_push:
@@ -1861,6 +1901,8 @@ def init_project(name, *args, **kwargs):
         init_project_dirs(cfg, ret=ret)
         project_git_root = cfg['project_git_root']
         pillar_git_root = cfg['pillar_git_root']
+        remote_less = is_remote_less(cfg)
+        pillar_remote_less = remote_less or is_pillar_remote_less(cfg)
         repos = [
             (
                 cfg['pillar_root'],
@@ -1869,6 +1911,7 @@ def init_project(name, *args, **kwargs):
                 False,
                 False,
                 True,
+                pillar_remote_less
             ),
             (
                 cfg['project_root'],
@@ -1877,29 +1920,50 @@ def init_project(name, *args, **kwargs):
                 True,
                 True,
                 False,
+                remote_less
             ),
         ]
-        for wc, rev, localgit, hook, init_salt, init_pillar in repos:
-            init_repo(localgit, user=user, group=group,
-                      ret=ret,
-                      init_salt=init_salt, init_pillar=init_pillar,
-                      bare=True, init_data=cfg)
-            init_repo(wc, user=user, group=group, cfg=cfg,
-                      ret=ret, bare=False, init_data=cfg)
-            for working_copy, remote in [(localgit, wc),
-                                         (wc, localgit)]:
-                set_git_remote(working_copy, user, remote, ret=ret)
-            fetch_last_commits(wc, user, ret=ret)
+
+        for (wc, rev, localgit, hook,
+             init_salt, init_pillar, lremote_less) in repos:
+            # allow to have projects without remote
+            if not lremote_less:
+                init_repo(localgit, user=user, group=group, ret=ret,
+                          init_salt=init_salt, init_pillar=init_pillar,
+                          bare=True, init_data=cfg, remote_less=lremote_less)
+            init_repo(wc, user=user, group=group, cfg=cfg, ret=ret,
+                      bare=False, init_data=cfg, remote_less=lremote_less)
+            if not lremote_less:
+                for (working_copy, remote) in [
+                    (localgit, wc), (wc, localgit)
+                ]:
+                    set_git_remote(working_copy, user, remote, ret=ret)
+                fetch_last_commits(wc, user, ret=ret)
         sync_hooks(name, ret=ret, api_version=cfg['api_version'])
         # to mutally sync remotes, all repos must be created
         # first, so we need to cut off and reiterate over
         # the same iterables, but in 2 times
-        for wc, rev, localgit, hook, init_salt, init_pillar in repos:
-            set_upstream(wc, rev, user, ret=ret)
-            sync_working_copy(wc, user=user, rev=rev, ret=ret)
+        for (wc, rev, localgit, hook, init_salt,
+             init_pillar, lremote_less) in repos:
+            if not lremote_less:
+                set_upstream(wc, rev, user, ret=ret)
+                sync_working_copy(wc, user=user, rev=rev, ret=ret)
         link(name, *args, **kwargs)
         refresh_files_in_working_copy_kwargs = copy.deepcopy(kwargs)
+        refresh_files_in_working_copy_kwargs.pop('remote_less', None)
         refresh_files_in_working_copy_kwargs['commit_all'] = commit_all
+        pillar = os.path.join(cfg['pillar_root'], 'init.sls')
+        if not os.path.exists(pillar):
+            init_pillar_dir(
+                cfg['pillar_root'],
+                init_data=cfg,
+                project=cfg['name'],
+                user=user,
+                commit_all=False,
+                bare=False,
+                do_push=False,
+                remote_less=pillar_remote_less,
+                ret=ret)
         refresh_files_in_working_copy(cfg['project_root'],
                                       user=user,
                                       group=group,
@@ -1907,9 +1971,14 @@ def init_project(name, *args, **kwargs):
                                       init_data=cfg,
                                       force=True,
                                       do_push=True,
+                                      remote_less=remote_less,
                                       api_version=cfg['api_version'],
                                       *args,
                                       **refresh_files_in_working_copy_kwargs)
+        # in case of remoteless the .salt folder may have just been created
+        # in working dir, so link must be redone here
+        if remote_less or pillar_remote_less:
+            link(name, *args, **kwargs)
         # remove if found, the force marker
         fm = os.path.join(cfg['project_git_root'], 'hooks', 'force_marker')
         if os.path.exists(fm):
@@ -1923,7 +1992,7 @@ def init_project(name, *args, **kwargs):
                         body="{0}{1}{2}".format(
                             _colors('RED'), trace, _colors('ENDC')
                         ))
-    if ret['result']:
+    if ret['result'] and not remote_less:
         set_configuration(cfg['name'], cfg)
         _append_comment(ret, summary="You can now push to",
                         color='RED',
@@ -2403,9 +2472,9 @@ def link_into_root(name, ret, link, target, do_link=True):
     if os.path.islink(link):
         if (
             # target changed
-            os.path.abspath(os.readlink(link)) != ftarget
+            os.path.abspath(os.readlink(link)) != ftarget or
             # dangling symlink
-            or not os.path.exists(link)
+            not os.path.exists(link)
         ):
             remove = True
         if (
@@ -2413,9 +2482,8 @@ def link_into_root(name, ret, link, target, do_link=True):
         ):
             do_link = False
     if (
-        remove
-        and (os.path.islink(link)
-             or os.path.exists(link))
+        remove and (os.path.islink(link) or
+                    os.path.exists(link))
     ):
         _append_comment(
             ret, body=indent(
