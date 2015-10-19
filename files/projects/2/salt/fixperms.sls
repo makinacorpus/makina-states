@@ -7,45 +7,43 @@
 {{cfg.name}}-restricted-perms:
   file.managed:
     - name: {{cfg.project_dir}}/global-reset-perms.sh
-    - mode: 750
-    - user: {% if not cfg.no_user%}{{cfg.user}}{% else -%}root{% endif %}
-    - group: {{cfg.group}}
+    - mode: 755
+    - user: root
+    - group: root
     - contents: |
             #!/usr/bin/env bash
-            if [ -e "{{cfg.pillar_root}}" ];then
-            "{{locs.resetperms}}" "${@}" \
-              --dmode '0770' --fmode '0770' \
+            # hack to be sure that nginx is in www-data
+            # in most cases
+            datagroup="www-data"
+            groupadd -r $datagroup || /bin/true
+            gpasswd -a nginx $datagroup || /bin/true
+            gpasswd -a www-data $datagroup || /bin/true
+            # be sure to remove POSIX acls support
+            setfacl -P -R -b -k "{{cfg.project_dir}}"
+            "{{locs.resetperms}}" --no-acls\
               --user root --group "{{ugs.group}}" \
-              --users root \
-              --groups "{{ugs.group}}" \
+              --dmode '0770' --fmode '0770' \
               --paths "{{cfg.pillar_root}}";
-            fi
-            if [ -e "{{cfg.project_root}}" ];then
-              "{{locs.resetperms}}" "${@}" \
-              --dmode '0770' --fmode '0770'  \
-              --paths "{{cfg.project_root}}" \
-              --users www-data:r-x \
-              --users {{cfg.user}}:rwx \
-              --groups {{cfg.group}}:r-x \
-              --user {% if not cfg.no_user%}{{cfg.user}} \
-              --group {{cfg.group}};
-              "{{locs.resetperms}}" "${@}" \
-              --dmode '0770' --fmode '0770'  \
-              --paths "{{cfg.data_root}}" \
-              --users www-data:r-x \
-              --users {{cfg.user}}:rwx \
-              --groups {{cfg.group}}:r-x \
-              --user {{cfg.user}} \
-              --group {{cfg.group}};
-              "{{locs.resetperms}}" "${@}" \
-              --no-recursive -o\
-              --dmode '0555' --fmode '0644'  \
-              --paths "{{cfg.project_root}}" \
+            find\
+              "{{cfg.project_root}}" \
+              "{{cfg.data_root}}" \
+              -type f -or -type d | while read i;do
+                if [ ! -h "${i}" ];then
+                  if [ -d "${i}" ];then
+                    chmod g-s "${i}"
+                    chown {{cfg.user}}:$datagroup "${i}"
+                    chmod g+rxs,o-rwx "${i}"
+                  elif [ -f "${i}" ];then
+                    chown {{cfg.user}}:$datagroup "${i}"
+                  fi
+                fi
+              done
+            "{{locs.resetperms}}" --no-acls --no-recursive\
+              --user root --group "{{ugs.group}}" \
+              --dmode '0555' --fmode '0644' \
               --paths "{{cfg.project_dir}}" \
               --paths "{{cfg.project_dir}}"/.. \
-              --paths "{{cfg.project_dir}}"/../.. \
-              --users www-data:--x ;
-            fi
+              --paths "{{cfg.project_dir}}"/../..;
   cmd.run:
     - name: {{cfg.project_dir}}/global-reset-perms.sh
     - cwd: {{cfg.project_root}}
