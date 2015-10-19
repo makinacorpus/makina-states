@@ -38,6 +38,10 @@ REMOVE="
 "
 if [ "x${is_docker}" != "x" ];then
     set +e
+    find /srv/projects/*/archives \
+     -mindepth 1 -maxdepth 1 -type d|while read i;do
+        rm -rf "${i}" || /bin/true
+    done
     REMOVE="${REMOVE}
 /salt-venv/salt/src/m2crypto/build
 /salt-venv/mastersalt/src/m2crypto/build
@@ -55,7 +59,7 @@ if [ "x${is_docker}" != "x" ];then
 #    -name .git)
 #"
 fi
-    set -e
+set -e
 WIPE="
 /etc/mastersalt/makina-states/
 /etc/salt/makina-states/
