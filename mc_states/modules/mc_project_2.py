@@ -443,9 +443,14 @@ def _prepare_configuration(name, *args, **kwargs):
     # to let them maybe be overriden in pillar
     skipped = {}
     for step in STEPS:
+        defaultskip = {
+            'notify': True,
+            'default': False
+        }
         ignored_keys.append('skip_{0}'.format(step))
         skipped['skip_{0}'.format(step)] = kwargs.get(
-            'skip_{0}'.format(step), False)
+            'skip_{0}'.format(step),
+            defaultskip.get(step, defaultskip['default']))
     only = kwargs.get('only', cfg.get('only', None))
     if only:
         if isinstance(only, basestring):
