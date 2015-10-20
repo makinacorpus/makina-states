@@ -50,8 +50,8 @@ makina-nginx-{{i}}:
     - watch:
       - mc_proxy: nginx-pre-restart-hook
       - mc_proxy: nginx-pre-hardrestart-hook
-{%endif %}
 {% endfor %}
+{%endif %}
 
 makina-ngin-naxsi-ui-running:
 {# totally disable naxui for now #}
