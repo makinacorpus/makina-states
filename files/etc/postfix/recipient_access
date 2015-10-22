@@ -1,0 +1,6 @@
+{% set data = salt['mc_postfix.settings']() %}
+{% for recipient_access in data.recipient_access %}
+{% for host, action in recipient_access.items() %}
+{{host}} {{action}}
+{% endfor %} 
+{% endfor %} 

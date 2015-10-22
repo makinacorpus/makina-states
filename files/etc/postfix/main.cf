@@ -15,8 +15,8 @@ transport_maps = hash:/etc/postfix/transport,hash:/etc/postfix/transport.local
 # TLS parameters
 smtp_use_tls={{data.use_tls}}
 smtpd_use_tls={{data.use_tls}}
-smtpd_tls_cert_file=/etc/postix/certificate.pub
-smtpd_tls_key_file=/etc/postix/certificate.key
+smtpd_tls_cert_file=/etc/postfix/certificate.pub
+smtpd_tls_key_file=/etc/postfix/certificate.key
 
 # aliases
 alias_maps     = hash:{{data.conf_dir}}/aliases
@@ -85,6 +85,10 @@ smtpd_client_restrictions =
     reject_non_fqdn_recipient,
     reject_unknown_recipient_domain, {% if data.check_policy_service %}check_policy_service: {{data.check_policy_service}},{%endif%} permit
 
+smtpd_restriction_classes = smtpd_restrictive, smtpd_permissive
+smtpd_restrictive = reject_unverified_recipient, permit
+smtpd_permissive = permit
+
 smtpd_recipient_restrictions =
     permit_mynetworks,
     permit_sasl_authenticated,
@@ -94,8 +98,19 @@ smtpd_recipient_restrictions =
     reject_non_fqdn_sender,
     reject_unknown_sender_domain,
     reject_non_fqdn_recipient,
-    reject_unknown_recipient_domain, {% if data.check_policy_service %}check_policy_service: {{data.check_policy_service}},{%endif%} permit
-smtpd_relay_restrictions = permit_mynetworks permit_sasl_authenticated defer_unauth_destination
+    check_recipient_access regexp:/etc/postfix/recipient_access,
+    check_recipient_access regexp:/etc/postfix/recipient_access.local,
+    reject_unknown_recipient_domain, {% if data.check_policy_service %}check_policy_service: {{data.check_policy_service}},{%endif%}
+    permit
+
+smtpd_relay_restrictions =
+    permit_mynetworks,
+    permit_sasl_authenticated ,
+    check_recipient_access regexp:/etc/postfix/recipient_access,
+    check_recipient_access regexp:/etc/postfix/recipient_access.local
+    reject_unknown_recipient_domain, {% if data.check_policy_service %}check_policy_service: {{data.check_policy_service}},{%endif%}
+    defer_unauth_destination
+
 mailbox_size_limit = {{data.mailbox_size_limit}}
 
 # misc

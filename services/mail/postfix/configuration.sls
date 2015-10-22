@@ -46,11 +46,13 @@ include:
       - mc_proxy: postfix-postconf
       - mc_proxy: postfix-prerestart
 
-
 makina-postfix-chroot-sslconf:
   cmd.run:
-    - unless: test -e  "{{ locs.var_spool_dir }}/postfix/etc/ssl"
-    - name: rsync -a /etc/ssl/  "{{ locs.var_spool_dir }}/postfix/etc/ssl/"
+    - name: |
+        set -e
+        rsync -a /etc/ssl/  "{{ locs.var_spool_dir }}/postfix/etc/ssl/"
+        echo changed="false"
+    - stateful: true
     - watch:
       - mc_proxy: postfix-preconf
     - watch_in:
@@ -117,11 +119,26 @@ makina-postfix-chroot-cacer-sync:
       - mc_proxy: postfix-preconf
     - watch_in:
       - mc_proxy: postfix-postconf
+      - cmd: makina-postfix-chroot-sslconf2
 {% endmacro %}
 {{ h.deliver_config_files(
      data.get('extra_confs', {}),
      after_macro=rmacro,
      prefix='makina-postfix-')}}
+
+makina-postfix-chroot-sslconf2:
+  cmd.run:
+    - name: |
+        set -e
+        mkdir "{{ locs.var_spool_dir }}/postfix/etc/postfix" || /bin/true
+        rsync -a "/etc/postfix/certificate.pub"  "{{ locs.var_spool_dir }}/postfix/etc/postfix/certificate.pub" || /bin/true
+        rsync -a "/etc/postfix/certificate.key"  "{{ locs.var_spool_dir }}/postfix/etc/postfix/certificate.key" || /bin/true
+        echo changed="false"
+    - stateful: true
+    - watch:
+      - mc_proxy: postfix-preconf
+    - watch_in:
+      - mc_proxy: postfix-postconf 
 
 postfix-virtualdir:
   file.directory:
