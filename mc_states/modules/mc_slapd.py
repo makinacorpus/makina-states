@@ -251,7 +251,7 @@ def settings():
                     '/etc/ldap',
                     '/var/lib/ldap',
                 ],
-                'fd_ver': '1.9.0',
+                'fd_ver': '1.0.9',
                 'mode': 'master',
                 'writer_groups': ['ldapwriters'],
                 'reader_groups':  ['ldapreaders'],
@@ -364,7 +364,7 @@ def settings():
         if data['acls']:
             s_aclchema = encode_ldap('olcAccess', data['acls'])
         data['s_aclchema'] = s_aclchema
-        # deployed noa via file.recurse
+        # deployed now via file.recurse
         #if data['fd_schema']:
         #    for i in [
         #        ('/etc/ldap/slapd.d/cn=config/'
