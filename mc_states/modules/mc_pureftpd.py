@@ -146,19 +146,19 @@ def settings():
         pillar = __pillar__
         data = {
             'defaults': __salt__['mc_utils.defaults'](
-                'makina-states.services.ftp.pureftpdefaults', {
+                'makina-states.services.ftp.pureftpd.defaults', {
                     'Virtualchroot': 'false',
                     'InetdMode': 'standalone',
                     'UploadUid': '',
                     'UploadGid': '',
                     'UploadScript': '',
+                    'configs': {
+                        '/etc/init.d/pure-ftpd': {},
+                    },
                 }
             ),
             'conf': __salt__['mc_utils.defaults'](
                 'makina-states.services.ftp.pureftp', {
-                    'configs': {
-                        '/etc/init.d/pure-ftpd': {},
-                    },
                     'AllowAnonymousFXP': 'no',
                     'AllowDotFiles': '',
                     'AllowUserFXP': '',
@@ -222,7 +222,3 @@ def settings():
                 data['conf'].update({setting: value + '\n'})
         return data
     return _settings()
-
-
-
-#

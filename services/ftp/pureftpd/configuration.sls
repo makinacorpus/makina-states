@@ -107,7 +107,7 @@ include:
     - watch_in:
       - mc_proxy: ftpd-post-configuration-hook
 {% endmacro %}
-{{ h.deliver_config_files(settings.configs, after_macro=rmacro, prefix='pureftp-conf-')}}
+{{ h.deliver_config_files(settings.defaults.configs, after_macro=rmacro, prefix='pureftp-conf-')}}
 
 makina-pureftpd-shell-contents:
   file.accumulated:
