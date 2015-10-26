@@ -1,0 +1,184 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          pure-ftpd
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Should-Start:      slapd mysql postgresql-8.3 postgresql-8.4
+# Should-Stop:       slapd mysql postgresql-8.3 postgresql-8.4
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+### END INIT INFO
+#
+# pure-ftpd    starts and stops the pure-ftpd ftp daemon
+#
+# Copyright 2002-2011 by Stefan Hornburg (Racke) <racke@linuxia.de>
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+NAME=pure-ftpd
+DESC="ftp server"
+: ${SSDAEMONLOGOPTS:="--quiet"}
+UPLOADDAEMON=/usr/sbin/pure-uploadscript
+UDNAME=pure-uploadscript
+UDDESC="ftp upload handler"
+WRAPPER=/usr/sbin/pure-ftpd-wrapper
+
+# load LSB init-functions to get status_of_proc helper
+. /lib/lsb/init-functions
+
+PIDFILE=/var/run/pure-ftpd/pure-ftpd.pid
+
+# try to figure with suffix this script is called,
+# $0 might be a symlink pointing to this script
+if [ -h $0 ]; then
+    ME=`/bin/readlink $0`
+else
+    ME=$0
+fi
+
+SUFFIX=`basename $ME | sed -ne 's/^pure-ftpd-\(.*\)/\1/p'`
+if [ "$SUFFIX" ] ; then
+    DAEMON=/usr/sbin/pure-ftpd-$SUFFIX
+else
+    DAEMON=/usr/sbin/pure-ftpd
+fi
+
+export STANDALONE_OR_INETD=inetd
+export VIRTUALCHROOT=
+test -r /etc/default/pure-ftpd-common && . /etc/default/pure-ftpd-common
+
+if [ "$VIRTUALCHROOT" = "true" ]; then
+    if [ "$SUFFIX" ]; then
+        SUFFIX="$SUFFIX-virtualchroot"
+    else
+        SUFFIX="virtualchroot"
+    fi
+fi
+
+test -x $DAEMON || exit 0
+test -x $WRAPPER || exit 0
+
+set -e
+
+if [ ! -e `dirname $PIDFILE` ];then
+       mkdir `dirname $PIDFILE`
+fi
+
+
+TWO_DAEMONS_DPORT=",2221"
+TWO_DAEMONS_PORT="${TWO_DAEMONS_PORT-"${TWO_DAEMONS_DPORT}"}"
+TWO_DAEMONS_PASSIVEIP="${TWO_DAEMONS_PASSIVEIP-}"
+TWO_DAEMONS=""
+if [ -f /etc/pure-ftpd/conf/ForcePassiveIP ];then
+    TWO_DAEMONS="y"
+fi
+
+start_uploadscript() {
+    if [ "$UPLOADSCRIPT" -a "$STANDALONE_OR_INETD" != inetd ] && \
+        egrep -i '^[     ]*(yes|1|on)[     ]*' /etc/pure-ftpd/conf/CallUploadScript > /dev/null 2>&1
+    then
+        UOPTS=""
+        test "$UPLOADUID" && UOPTS="$UOPTS -u $UPLOADUID"
+        test "$UPLOADGID" && UOPTS="$UOPTS -g $UPLOADGID"
+        echo -n "$1 $UDDESC: "
+        start-stop-daemon --start $SSDAEMONLOGOPTS --oknodo \
+            --exec $UPLOADDAEMON -- -r "$UPLOADSCRIPT" -B $UOPTS
+        echo "$UDNAME."
+
+    fi
+}
+
+do_config() {
+    cp -f ${WRAPPER} ${WRAPPER}2
+    sed -i -re "s#/etc/pure-ftpd/conf#/etc/pure-ftpd/conf2#g" "${WRAPPER}2"
+    if [ -e /etc/pure-ftpd/conf/ ];then
+        rm -rf /etc/pure-ftpd/conf2/
+        cp -rf /etc/pure-ftpd/conf/ /etc/pure-ftpd/conf2/
+        if [ "x${TWO_DAEMONS_PASSIVEIP}" != "x" ];then
+            echo "${TWO_DAEMONS_PASSIVEIP}" > /etc/pure-ftpd/conf2/ForcePassiveIP
+        else
+            rm /etc/pure-ftpd/conf2/ForcePassiveIP
+        fi
+        echo "${TWO_DAEMONS_PORT}" > /etc/pure-ftpd/conf2/Bind
+    fi
+}
+
+
+do_start() {
+     test "$STANDALONE_OR_INETD" = standalone || exit 0
+    echo -n "Starting $DESC: "
+    start-stop-daemon --start $SSDAEMONLOGOPTS --pidfile "$PIDFILE" \
+        --exec ${WRAPPER}2 -- $SUFFIX
+    ret=$?
+
+    if [ "x${ret}" = "x0" ] && [ "x${TWO_DAEMONS}" != "x" ];then
+        ETCCONF_B=${ETCCONF}
+        export ETCCONF="/etc/pure-ftpd/conf2"
+        ETCCONF="/etc/pure-ftpd/conf2" start-stop-daemon \
+            --start $SSDAEMONLOGOPTS --pidfile "${PIDFILE}.2" \
+            --exec $WRAPPER -- $SUFFIX
+        export ETCCONF=${ETCCONF_B}
+        ret=$?
+    fi
+    if [ "x${ret}" = "x0" ];then
+        start_uploadscript Starting
+    fi
+    return $ret
+}
+
+
+do_stop() {
+    echo -n "Stopping $DESC: "
+    ret=0
+    if [ "x${TWO_DAEMONS}" != "x" ];then
+        start-stop-daemon --stop $SSDAEMONLOGOPTS --oknodo \
+            --pidfile "${PIDFILE}.2"
+        ret=$?
+    fi
+    start-stop-daemon --stop $SSDAEMONLOGOPTS --oknodo \
+        --pidfile "$PIDFILE"
+    if [ "x${ret}" = "x0" ];then
+        ret=$?
+    fi
+    if [ "x${ret}" = "x0" ];then
+        start-stop-daemon --stop $SSDAEMONLOGOPTS --oknodo --exec $UPLOADDAEMON
+    fi
+    if [ "x${ret}" = "x0" ];then
+        ret=$?
+    fi
+    echo "$NAME."
+    return $ret
+}
+
+case "$1" in
+    start)
+        do_config
+        do_start
+        exit $?
+        ;;
+    stop)
+        do_config
+        do_stop
+        exit $?
+        ;;
+    restart|force-reload)
+        test "$STANDALONE_OR_INETD" = standalone || exit 0
+        do_config
+        do_stop && sleep 1 do_start
+        exit $?
+        ;;
+    status)
+        ret=0
+        do_config
+        status_of_proc -p ${PIDFILE} $DAEMON $NAME && noop=0 || ret=$?
+        if [ "x${TWO_DAEMONS}" != "x" ];then
+            status_of_proc -p ${PIDFILE} $DAEMON $NAME && noop=0 || ret=$?
+        fi
+        exit ${ret}
+        ;;
+    *)
+        N=/etc/init.d/$NAME
+        echo "Usage: $N {start|stop|restart|force-reload|status}" >&2
+        exit 1
+        ;;
+esac
+exit 0
