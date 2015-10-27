@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 {#-
 # Pure FTPd service
 #}
@@ -99,6 +100,14 @@ include:
       - mc_proxy: ftpd-pre-configuration-hook
     - watch_in:
       - mc_proxy: ftpd-post-configuration-hook
+
+{% macro rmacro() %}
+    - watch:
+      - mc_proxy: ftpd-pre-configuration-hook
+    - watch_in:
+      - mc_proxy: ftpd-post-configuration-hook
+{% endmacro %}
+{{ h.deliver_config_files(settings.configs, after_macro=rmacro, prefix='pureftp-conf-')}}
 
 makina-pureftpd-shell-contents:
   file.accumulated:
