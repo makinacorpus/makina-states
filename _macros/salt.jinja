@@ -353,7 +353,7 @@ salt-{{ data.name }}-{{ i }}:
     - target:  {{link.target}}
     - name:  {{link.name}}
     - require:
-      - mc_git: salt-{{ data.name }}-{{ i }}
+      - git: salt-{{ data.name }}-{{ i }}
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
   {% endif %}
@@ -386,7 +386,7 @@ salt-{{ data.name }}-buildout-bootstrap:
     - require_in:
       - cmd: update-makinastates-{{ data.name }}
     - require:
-      - mc_git: salt-{{ data.name }}-makina-states
+      - git: salt-{{ data.name }}-makina-states
 
 update-makinastates-{{ data.name }}-venv:
   virtualenv.managed:
