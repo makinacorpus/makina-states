@@ -4483,14 +4483,14 @@ ps_etime() {
 start_missing_or_dead() {
     if [ "x$(get_local_salt_mode)" != "xmasterless" ]\
         && [ "x${IS_SALT_MASTER}" != "x" ]\
-        && [ "x$(master_processes)" = "x0" ];then
+        && [ $(master_processes) -lt 2 ];then
         if [ "x${QUIET}" = "x" ];then
             bs_log "Zero master, restarting them all"
         fi
         killall_local_masters
         restart_local_masters
     fi
-    if [ "x${IS_MASTERSALT_MASTER}" != "x" ] && [ "x$(mastersalt_master_processes)" = "x0" ];then
+    if [ "x${IS_MASTERSALT_MASTER}" != "x" ] && [ $(mastersalt_master_processes) -lt 2 ];then
         if [ "x${QUIET}" = "x" ];then
             bs_log "Zero mastersalt master, restarting them all"
         fi
@@ -4499,14 +4499,14 @@ start_missing_or_dead() {
     fi
     if [ "x$(get_local_salt_mode)" != "xmasterless" ]\
         && [ "x${IS_SALT_MINION}" != "x" ]\
-        && [ "x$(minion_processes)" != "x2" ];then
+        && [ $(minion_processes) -gt 5 ];then
         if [ "x${QUIET}" = "x" ];then
             bs_log "More than one or zero minion, restarting them all"
         fi
         killall_local_minions
         restart_local_minions
     fi
-    if [ "x${IS_MASTERSALT_MINION}" != "x" ] && [ "x$(mastersalt_minion_processes)" != "x2" ];then
+    if [ "x${IS_MASTERSALT_MINION}" != "x" ] && [ $(mastersalt_minion_processes) -gt 5 ];then
         if [ "x${QUIET}" = "x" ];then
             bs_log "More than one or zero mastersalt minion, restarting them all"
         fi
