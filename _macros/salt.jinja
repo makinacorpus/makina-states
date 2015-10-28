@@ -337,9 +337,10 @@ salt-{{ data.name }}-{{ i }}:
     - onlyif: ls -d "{{ git }}"
     - unless: if [ -d "{{ git }}" ];then cd "{{ rdata['target'] }}" && grep -q "filemode = false" .git/config;fi
   {# on each run, update the code -#}
-  mc_git.latest:
+  git.latest:
     - name: {{ rdata['name'] }}
     - target: {{ rdata['target'] }}
+    - force_fetch: {{rdata.get('force_fetch', False)}}
     - force_reset: {{rdata.get('force_reset', False)}}
     {% if rev %}
     - rev: {{ rev }}

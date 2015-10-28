@@ -100,6 +100,7 @@ def settings():
             'docker-py-git': {
                 'name': 'https://github.com/dotcloud/docker-py.git',
                 'force_reset': True,  # dockerpy always do shit (push -f...)
+                'force_fetch': True,
                 'target': '{venv_path}/src/docker-py'},
             'salt-git': {
                 'name': get_salt_url(),
