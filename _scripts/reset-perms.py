@@ -87,8 +87,9 @@ parser.add_option("-R",
                   dest="recursive")
 parser.add_option("-q",
                   "--quiet",
-                  default=False,
-                  action="store_true",
+                  default=True,
+                  action="store_false",
+                  help="make script verbose ('not quiet')",
                   dest="quiet")
 
 parser.add_option("-p",
@@ -117,8 +118,9 @@ DEBUG = os.environ.get('RESETPERMS_DEBUG', options.debug)
 ACLS = {}
 SKIPPED = {}
 ALL_PATHS = {}
-# OWNERSHIPS: files & directories to apply ownership grouped by ownership (uid/gid)
-# UNIX_PERMS: files & directories to apply ownership grouped by perm
+
+# OWNERSHIPS: files/directories to apply ownership grpd by ownership (uid/gid)
+# UNIX_PERMS: files/directories to apply ownership grpd by perm
 # SKIPPED: skipped paths
 # ACLS: all couples ACL type, [paths to apply]
 # ALL_PATHS:  all paths to apply perms, combined
@@ -135,9 +137,9 @@ def which(program, environ=None, key='PATH', split=':'):
         if os.path.exists(fp):
             return fp
         if (
-            (sys.platform.startswith('win')
-             or sys.platform.startswith('cyg'))
-            and os.path.exists(fp + '.exe')
+            (sys.platform.startswith('win') or
+             sys.platform.startswith('cyg')) and
+            os.path.exists(fp + '.exe')
         ):
             return fp + '.exe'
     raise IOError('Program not fond: {0} in {1} '.format(
@@ -231,7 +233,7 @@ def quote_paths(paths):
 def shell_exec(cmd, shell=False):
     scmd = ' '.join([encode_str(a) for a in cmd[:]])
     try:
-        if options.debug:
+        if options.debug and not options.quiet:
             print('Executing {0}'.format(scmd))
         ret = subprocess.check_output(
             cmd, stderr=sys.stdout, shell=shell)
@@ -404,7 +406,7 @@ def collect_paths(path,
             for lsp in os.listdir(path):
                 sp = os.path.join(path, lsp)
                 if to_skip(sp):
-                    if DEBUG:
+                    if DEBUG and not options.quiet:
                         print("SKIPPED {0}".format(sp))
                         continue
                 todo.append(sp)
@@ -427,17 +429,20 @@ def collect_paths(path,
 
 
 def reset(path):
-    if not options.quiet: print("Path: {0} ({1}:{2}, dmode: {3}, fmode: {4})".format(
-        path, USER, GROUP, DMODE, FMODE))
+    if not options.quiet:
+        print("Path: {0} ({1}:{2}, dmode: {3}, fmode: {4})".format(
+            path, USER, GROUP, DMODE, FMODE))
     if not os.path.exists(path):
-        if not options.quiet: print("\n\nWARNING: {0} does not exist\n\n".format(path))
+        if not options.quiet:
+            print("\n\nWARNING: {0} does not exist\n\n".format(path))
         return
     collect_paths(path)
     reset_permissions()
     if DEBUG and SKIPPED:
         skipped = list(SKIPPED)
         skipped.sort()
-        if not options.quiet: print('Skipped content:')
+        if not options.quiet:
+            print('Skipped content:')
         pprint.pprint(skipped)
 
 done = []
