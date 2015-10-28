@@ -1958,7 +1958,9 @@ setup_and_maybe_update_code() {
                                         bs_log "Update is necessary"
                                     fi
                                 fi && if \
-                                    [ "x${i}" = "x${ms}/src/SaltTesting" ] || [ "x${i}" = "x${ms}/src/salttesting" ]\
+                                    [ "x${i}" = "x${ms}/src/SaltTesting" ] \
+                                    || [ "x${i}" = "x${ms}/src/salttesting" ] \
+                                    || [ "x${i}" = "x${ms}/src/docker-py" ] \
                                 ;then
                                     git reset ${QUIET_GIT} --hard origin/${co_branch}
                                 else
