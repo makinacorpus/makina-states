@@ -85,12 +85,19 @@ parser.add_option("-R",
                   action="store_false",
                   help="Do not run recursivly (default)",
                   dest="recursive")
+
 parser.add_option("-q",
                   "--quiet",
-                  default=True,
-                  action="store_false",
-                  help="make script verbose ('not quiet')",
+                  default=None,
+                  action="store_true",
+                  help="make script quiet",
                   dest="quiet")
+parser.add_option("-v",
+                  "--verbose",
+                  default=None,
+                  action="store_true",
+                  help="make script verbose",
+                  dest="verbose")
 
 parser.add_option("-p",
                   "--paths",
@@ -105,6 +112,10 @@ parser.add_option(
 
 (options, args) = parser.parse_args()
 
+verbose = False
+if not options.quiet:
+    if options.verbose:
+        verbose = True
 
 if options.debug:
     # copy debug script for later manual debugging on debug mode
@@ -233,12 +244,12 @@ def quote_paths(paths):
 def shell_exec(cmd, shell=False):
     scmd = ' '.join([encode_str(a) for a in cmd[:]])
     try:
-        if options.debug and not options.quiet:
+        if options.debug and verbose:
             print('Executing {0}'.format(scmd))
         ret = subprocess.check_output(
             cmd, stderr=sys.stdout, shell=shell)
         if ret:
-            if not options.quiet:
+            if verbose:
                 print(ret)
     except Exception:
         print(u'Reset failed for {0}'.format(scmd))
@@ -406,7 +417,7 @@ def collect_paths(path,
             for lsp in os.listdir(path):
                 sp = os.path.join(path, lsp)
                 if to_skip(sp):
-                    if DEBUG and not options.quiet:
+                    if DEBUG and verbose:
                         print("SKIPPED {0}".format(sp))
                         continue
                 todo.append(sp)
@@ -429,11 +440,11 @@ def collect_paths(path,
 
 
 def reset(path):
-    if not options.quiet:
+    if verbose:
         print("Path: {0} ({1}:{2}, dmode: {3}, fmode: {4})".format(
             path, USER, GROUP, DMODE, FMODE))
     if not os.path.exists(path):
-        if not options.quiet:
+        if verbose:
             print("\n\nWARNING: {0} does not exist\n\n".format(path))
         return
     collect_paths(path)
@@ -441,7 +452,7 @@ def reset(path):
     if DEBUG and SKIPPED:
         skipped = list(SKIPPED)
         skipped.sort()
-        if not options.quiet:
+        if verbose:
             print('Skipped content:')
         pprint.pprint(skipped)
 
