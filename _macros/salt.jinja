@@ -340,6 +340,7 @@ salt-{{ data.name }}-{{ i }}:
   mc_git.latest:
     - name: {{ rdata['name'] }}
     - target: {{ rdata['target'] }}
+    - force_reset: {{rdata.get('force_reset', False)}}
     {% if rev %}
     - rev: {{ rev }}
     {% endif %}
