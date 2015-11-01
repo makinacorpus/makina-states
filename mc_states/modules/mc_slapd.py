@@ -274,6 +274,7 @@ def settings():
                 'config_rootdn': 'cn=admin,cn=config',
                 'config_pw': cn_pass,
                 'econfig_pw': '',
+                'group_ou': 'Group',
                 'dn': 'dc=sample,dc=com',
                 'verify_client': 'never',
                 'root_dn': None,
@@ -341,7 +342,7 @@ def settings():
                 if match in data['admin_groups_acls']:
                     continue
                 data['admin_groups_acls'] += (
-                    " by group.exact=\"cn={0},ou=Group,{data[dn]}\" {1}"
+                    " by group.exact=\"cn={0},ou={data[group_ou]},{data[dn]}\" {1}"
                 ).format(group, key, data=data)
         if data['non_anonymous']:
             for ix in range(len(data['acls_schema'])):
