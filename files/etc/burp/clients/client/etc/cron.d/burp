@@ -5,4 +5,4 @@
 {% set cdata = data %}
 MAILTO=""
 {{cdata.cron_periodicity}} {{cdata.cron_cmd}}
-* */3 * * * root /etc/burp/cleanup-burp-processes.sh
+0 */3 * * * root /etc/burp/cleanup-burp-processes.sh
