@@ -66,7 +66,7 @@ def main(argv=None):
         argv = sys.argv[1:]
     parser = argparse.ArgumentParser()
     parser.add_argument('--keep-count', type=int, default=KEEPCOUNT)
-    parser.add_argument('--dirs', nargs="+",)
+    parser.add_argument('--dirs', nargs="+")
     opts = parser.parse_args(argv)
     for d in opts.dirs:
         cleanup_backup(d, count=opts.keep_count)
