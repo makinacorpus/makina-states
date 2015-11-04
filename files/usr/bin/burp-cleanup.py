@@ -33,6 +33,7 @@ def cleanup_backup(pbdir, count=1, skipped=None):
         for cskipped in skippeds:
             skipped = os.path.join(bdir, cskipped)
             if skipped in files:
+                count += 1
                 target = os.path.abspath(os.readlink(skipped))
                 print('Skipping {0}'.format(target))
                 files.pop(files.index(target))
