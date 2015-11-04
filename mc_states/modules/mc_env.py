@@ -45,6 +45,8 @@ def settings():
     def _settings():
         _s = __salt__
         default_env = _s['mc_utils.get']('default_env', None)
+        # ATTENTION: DO NOT USE 'env' to detect when we configure
+        # over when we inherit between salt modes
         local_conf = __salt__['mc_macros.get_local_registry'](
             'default_env', registry_format='pack')
         # in makina-states, only salt mode,
@@ -66,11 +68,17 @@ def settings():
         # - default_env
         data = _s['mc_utils.defaults'](
             'makina-states.localsettings.env', {
-                'env': default_env})
+                'env': None})
+        save = False
+        # detect when we configure over default value
+        if data['env'] is None:
+            data['env'] = default_env
+        else:
+            save = True
         # retro compat
         data['default_env'] = data['env']
         # only write to the shared registry if we are in mastersalt mode
-        if __salt__['mc_controllers.mastersalt_mode']():
+        if save:
             local_conf['default_env'] = data['env']
             __salt__['mc_macros.update_registry_params'](
                 'default_env', local_conf, registry_format='pack')
