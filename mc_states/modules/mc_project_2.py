@@ -429,15 +429,11 @@ def _prepare_configuration(name, *args, **kwargs):
         # - makina-projects.fooproject.default_env
         # - fooproject.default_env
         # - default_env
-        denv = 'dev'
-        for midstart in ['prod', 'staging']:
-            if _g['id'].startswith('{0}-'.format(midstart)):
-                denv = midstart
+        default_env = __salt__['mc_env.settings']()['env']
         cfg['default_env'] = _s['mc_utils.get'](
             'makina-projects.{0}.{1}'.format(name, 'default_env'),
-            _s['mc_utils.get'](
-                '{0}.{1}'.format(name, 'default_env'),
-                _s['mc_utils.get']('default_env', denv)))
+            _s['mc_utils.get']('{0}.{1}'.format(name, 'default_env'),
+                               default_env))
 
     # set default skippped steps on a specific environment
     # to let them maybe be overriden in pillar
@@ -478,14 +474,11 @@ def _prepare_configuration(name, *args, **kwargs):
                              'no_user',
                              'no_default_includes']
 
-    # we can override many of default values via pillar/localreg
+    # we can override many of default values via pillar
     for k in overridable_variables:
         if k in ignored_keys:
             continue
-        cfg[k] = _s['mc_utils.get'](
-            '{0}:{1}'.format(name, k), cfg[k],
-            local_registry='makina_projects',
-            registry_format='pack')
+        cfg[k] = _s['mc_utils.get']('{0}:{1}'.format(name, k), cfg[k])
     try:
         cfg['keep_archives'] = int(cfg['keep_archives'])
     except (TypeError, ValueError, KeyError):
@@ -934,8 +927,9 @@ def set_configuration(name, cfg=None, *args, **kwargs):
     local_conf = __salt__['mc_macros.get_local_registry'](
         'makina_projects', registry_format='pack')
     local_conf[name] = _get_filtered_cfg(cfg)
-    __salt__['mc_macros.update_local_registry'](
-        'makina_projects', local_conf, registry_format='pack')
+    # saved registry is now deactivated to simplify things
+    # __salt__['mc_macros.update_local_registry'](
+    #     'makina_projects', local_conf, registry_format='pack')
     return get_configuration(name)
 
 
