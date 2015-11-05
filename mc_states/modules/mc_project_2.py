@@ -1111,41 +1111,46 @@ def sync_hooks(name, ret=None, api_version=API_VERSION, *args, **kwargs):
     params = {
         'FORCE_MARKER': local_remote+'/hooks/force_marker',
         'api_version': api_version, 'name': name}
-    cret = _state_exec(sfile, 'managed',
-                       name=os.path.join(local_remote, 'hooks/pre-receive'),
-                       source=(
-                           'salt://makina-states/files/projects/2/'
-                           'hooks/pre-receive'),
-                       defaults=params,
-                       user=user, group=group, mode='750', template='jinja')
-    cret = _state_exec(sfile, 'managed',
-                       name=os.path.join(local_remote, 'hooks/post-receive'),
-                       source=(
-                           'salt://makina-states/files/projects/2/'
-                           'hooks/post-receive'),
-                       defaults=params,
-                       user=user, group=group, mode='750', template='jinja')
-    cret = _state_exec(sfile, 'managed',
-                       name=os.path.join(local_remote, 'hooks/deploy_hook.py'),
-                       source=(
-                           'salt://makina-states/files/projects/2/'
-                           'hooks/deploy_hook.py'),
-                       defaults=params,
-                       user=user, group=group, mode='750')
-    cret = _state_exec(sfile, 'managed',
-                       name=os.path.join(project_git, 'hooks/pre-push'),
-                       source=(
-                           'salt://makina-states/files/projects/2/'
-                           'hooks/pre-push'),
-                       template='jinja',
-                       defaults=params,
-                       user=user, group=group, mode='750')
-    if not cret['result']:
-        raise projects_api.ProjectInitException(
-            'Can\'t set git hooks for {0}\n{1}'.format(name, cret['comment']))
-    else:
-        _append_comment(
-            ret, summary='Git Hooks for {0}'.format(name))
+    if not cfg.get('remote_less', False):
+        cret = _state_exec(
+            sfile, 'managed',
+            name=os.path.join(local_remote, 'hooks/pre-receive'),
+            source=(
+                'salt://makina-states/files/projects/2/'
+                'hooks/pre-receive'),
+            defaults=params,
+            user=user, group=group, mode='750', template='jinja')
+        cret = _state_exec(
+            sfile, 'managed',
+            name=os.path.join(local_remote, 'hooks/post-receive'),
+            source=(
+                'salt://makina-states/files/projects/2/'
+                'hooks/post-receive'),
+            defaults=params,
+            user=user, group=group, mode='750', template='jinja')
+        cret = _state_exec(
+            sfile, 'managed',
+            name=os.path.join(local_remote, 'hooks/deploy_hook.py'),
+            source=(
+                'salt://makina-states/files/projects/2/'
+                'hooks/deploy_hook.py'),
+            defaults=params,
+            user=user, group=group, mode='750')
+        cret = _state_exec(
+            sfile, 'managed',
+            name=os.path.join(project_git, 'hooks/pre-push'),
+            source=(
+                'salt://makina-states/files/projects/2/'
+                'hooks/pre-push'),
+            template='jinja',
+            defaults=params,
+            user=user, group=group, mode='750')
+        if not cret['result']:
+            raise projects_api.ProjectInitException(
+                'Can\'t set git hooks for {0}\n{1}'.format(name, cret['comment']))
+        else:
+            _append_comment(
+                ret, summary='Git Hooks for {0}'.format(name))
     return ret
 
 
