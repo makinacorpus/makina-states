@@ -20,6 +20,7 @@ import traceback
 import salt.client
 import salt.payload
 import salt.utils
+import time
 import salt.output
 import salt.minion
 from salt.utils.odict import OrderedDict
@@ -333,7 +334,11 @@ def vm_spawn(vm, ret=None, output=True, force=False):
     return ret
 
 
-def vm_reconfigure(vm, ret=None, output=True, force=False):
+def vm_reconfigure(vm,
+                   ret=None,
+                   output=True,
+                   rootfs=None,
+                   force=False):
     '''
     Reconfigure the vm if neccessary
 
@@ -371,6 +376,10 @@ def vm_reconfigure(vm, ret=None, output=True, force=False):
             args = cli(
                 LXC_IMPLEMENTATION + '.cloud_init_interface',
                 vm, pdt, salt_target=cn)
+            kw['utsname'] = vm
+            kw['rootfs'] = (rootfs or
+                            '{0}/{1}/rootfs'.format(
+                                '/var/lib/lxc', vm))
             for i in [
                 'cpu',
                 'cpuset',
@@ -518,10 +527,185 @@ def remove(vm, destroy=False, only_stop=False, **kwargs):
             ret = cli(LXC_IMPLEMENTATION + '.reconfigure', vm,
                       autostart=False, salt_target=tgt)
             if not only_stop:
-                ret = cli(LXC_IMPLEMENTATION + '.destroy', vm, salt_target=tgt)['result']
+                ret = cli(LXC_IMPLEMENTATION + '.destroy', vm,
+                          salt_target=tgt)['result']
                 if ret:
                     log.info('{0}/{1} destroyed'.format(tgt, vm))
     return ret
+
+
+RESET_TEMPLATE = '''
+
+
+
+
+'''
+
+
+class MoveError(Exception):
+    '''.'''
+
+
+def copy(destination,
+         origin,
+         controller=True,
+         sync=True,
+         reset=True,
+         cn_config=True,
+         lxc_config=None,
+         cn_wire=None,
+         stop_old=False,
+         reset_files=None,
+         reset_salt=None,
+         reset_ssh=None,
+         output=True,
+         reboot=True,
+         autoaccept=True,
+         timeout=60,
+         ret=None):
+    _s = __salt__
+    fname = 'mc_cloud_lxc.move'
+    _s['mc_api.time_log']('start', fname, origin, destination)
+    if not ret:
+        ret = result()
+    if reset_salt is None:
+        reset_salt = reset
+    if reset_files is None:
+        reset_files = reset
+    if reset_ssh is None:
+        reset_ssh = reset
+    if cn_wire is None:
+        cn_wire = cn_config
+    if lxc_config is None:
+        lxc_config = cn_config
+    vm_data = _s['mc_api.get_vm'](destination)
+    old_vm_data = _s['mc_api.get_vm'](origin)
+    p = 'makina-states.cloud.lxc.controller'
+    cn = vm_data['target']
+    old_cn = old_vm_data['target']
+    if controller:
+        _s['mc_api.time_log']('controller', fname, origin, destination)
+        scret = _s['mc_api.apply_sls'](
+            ['{0}.postdeploy'.format(p)], **{'ret': ret})
+        check_point(scret, __opts__, output=output)
+        ret['controller'] = scret
+    if sync:
+        _s['mc_api.time_log']('sync', fname, origin, destination)
+        sshkey = cli('cmd.run', 'cat /root/.ssh/id_rsa.pub', salt_target=cn)
+        sshkeyp = sshkey.split()
+        status = cli('ssh.check_key', user='root', enc=sshkeyp[0],
+                     key=sshkeyp[1], comment=sshkeyp[2], options=[],
+                     salt_target=old_cn)
+        nstatus = 'no change'
+        try:
+            if status == 'add':
+                nstatus = cli('ssh.set_auth_key', user='root', enc=sshkeyp[0],
+                              key=sshkeyp[1], comment=sshkeyp[2], options=[],
+                              salt_target=old_cn)
+                if nstatus not in ['new', 'no change']:
+                    raise MoveError(
+                        'SSH KEY WONT ADD: {0} {1} {2}'
+                        ''.format(old_cn, sshkey, status))
+            ret['rsync'] = cli('cmd.run_all',
+                               'rsync -aAz --delete'
+                               ' {0}:/var/lib/lxc/{1}/'
+                               '     /var/lib/lxc/{2}/'
+                               ''.format(old_cn, origin, destination),
+                               salt_target=cn)
+            if ret['rsync']['retcode']:
+                ret['result'] = False
+            check_point(ret, __opts__, output=output)
+        finally:
+            if nstatus != 'new':
+                status = cli('ssh.rm_auth_key', user='root',
+                             key=sshkeyp[1], salt_target=old_cn)
+    if cn_config:
+        if lxc_config:
+            _s['mc_api.time_log']('lxc_config', fname, origin, destination)
+            cret = vm_reconfigure(destination, force=True)
+            check_point(cret, __opts__, output=output)
+            ret['lxc_config'] = cret
+        if reset_files or reset_salt or reset_ssh:
+            _s['mc_api.time_log']('reset', fname, origin, destination)
+            cmd = ('chroot /var/lib/lxc/{destination}/rootfs'
+                   ' python /tmp/reset-name.py'
+                   ' --destination="{destination}" --origin="{origin}"'
+                   '').format(origin=origin, destination=destination)
+            if reset_files:
+                cmd += ' --reset-files'
+            if reset_ssh:
+                cmd += ' --reset-ssh'
+            if reset_salt:
+                cmd += ' --reset-salt'
+            cret = cli(
+                'cp.get_file',
+                'salt://makina-states/files/usr/bin/reset-name.py',
+                '/var/lib/lxc/{0}/rootfs/tmp/reset-name.py'
+                ''.format(destination),
+                salt_target=cn)
+            ret['rename'] = cli('cmd.run_all', cmd, salt_target=cn)
+            if ret['rename']['retcode']:
+                ret['result'] = False
+            check_point(ret, __opts__, output=output)
+        if cn_wire:
+            _s['mc_api.time_log']('cn_wire', fname, origin, destination)
+            for sls in [
+                'makina-states.cloud.generic.compute_node.host',
+                'makina-states.services.virt.lxc'
+            ]:
+                cret = _s['mc_api.apply_sls'](sls, salt_target=cn)
+                check_point(cret, __opts__, output=output)
+                ret['cn_{0}'.format(sls)] = cret
+        if reboot:
+            _s['mc_api.time_log']('lxc_reboot', fname, origin, destination)
+            ret['stop'] = cli('lxc.state', destination, salt_target=cn)
+            if ret['stop'].lower() == 'running':
+                ret['stop'] = cli('lxc.stop', destination,
+                                  kill=True, salt_target=cn)
+                ret['stop'] = cli('lxc.state', destination, salt_target=cn)
+            if ret['stop'].lower() == 'running':
+                ret['result'] = False
+            else:
+                ret['start'] = cli('lxc.start', destination, salt_target=cn)
+                ret['start'] = cli('lxc.state', destination, salt_target=cn)
+                if ret['start'].lower() != 'running':
+                    ret['result'] = False
+    if (
+        ret['result'] and autoaccept and
+        'running' == cli('lxc.state', destination, salt_target=cn)
+    ):
+        now = time.time()
+        found = False
+        while (not found) and time.time() < now + timeout:
+            if not cli(
+                'cmd.run_all',
+                'test -e'
+                ' /etc/mastersalt/pki/master'
+                '/minions_pre/{0}'.format(destination)
+            )['retcode']:
+                found = True
+        if not found:
+            raise Exception('Key challenge failed')
+        else:
+            ret['challenge'] = cli(
+                'cmd.run_all',
+                'mastersalt-key -y -a {0}'.format(destination))
+            if ret['challenge']['retcode']:
+                ret['result'] = False
+            check_point(ret, __opts__, output=output)
+    if ret['result'] and stop_old:
+        ret['old_reconfig'] = cli(
+            'lxc.reconfigure', origin, autostart=False, salt_target=old_cn)
+        if 'running' == cli('lxc.state', origin, salt_target=old_cn):
+            ret['old_stop'] = cli(
+                'lxc.stop', origin, kill=True, salt_target=old_cn)
+    _s['mc_api.time_log']('end', fname, origin, destination)
+    return ret
+
+
+def move(*args, **kwargs):
+    kwargs['stop_old'] = True
+    return copy(*args, **kwargs)
 
 
 def destroy(vm, **kwargs):
