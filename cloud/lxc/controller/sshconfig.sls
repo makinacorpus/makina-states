@@ -2,6 +2,9 @@
 {% set settings = salt['mc_cloud_controller.settings']() %}
 {% for host, hdata in settings.compute_nodes.items() %}
 {% for vm, vmdata in hdata.get('vms', {}).items() %}
+{% set extpillar = salt['mc_cloud_vm.vm_extpillar'](vm) %}
+{% set port = salt['mc_cloud_compute_node.get_ssh_port'](vm, target=host) %}
+{% if extpillar.get('additional_ips', None) %}{% set port = '22' %}{% endif %}
 {% if 'lxc' == vmdata.vt %}
 prepend-mccloud-{{host}}{{vm}}-sshconfig:
   file.accumulated:
@@ -10,9 +13,10 @@ prepend-mccloud-{{host}}{{vm}}-sshconfig:
     - filename: {{f}}
     - text: |
             Host {{vm}}
-            Port {{salt['mc_cloud_compute_node.get_ssh_port'](vm, target=host)}}
+            Port {{port}}
             User root
             ServerAliveInterval 5
+            # {{vmdata}}
 
 mclcoud-{{host}}{{vm}}-sshconfig:
   file.blockreplace:
