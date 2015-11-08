@@ -1,4 +1,4 @@
-{{ salt['mc_macros.register']('localsettings', 'ssystemd') }}
+{{ salt['mc_macros.register']('localsettings', 'systemd') }}
 #
 # special localsettings
 # no autoregister please !!!
