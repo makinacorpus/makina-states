@@ -87,8 +87,8 @@ def is_travis():
 
 
 def is_nt(nodetype):
-    if nodetype == DEFAULT_NT:
-        return True
+    # if nodetype == DEFAULT_NT:
+    #     return True
     is_nodetype = None
     if nodetype == 'travis':
         is_nodetype = is_travis()
@@ -108,7 +108,8 @@ def registry():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _registry():
         reg_nt = {
-            'server': {'active': True},
+            'scratch': {'active': False},
+            'server': {'active': False},
             'kvm': {'active': False},
             'vm': {'active': False},
             'devhost': {'active': False},
@@ -117,7 +118,12 @@ def registry():
             'lxccontainer': {'active': False},
             'laptop': {'active': False},
             'dockercontainer': {'active': False}}
-        reg_nt[DEFAULT_NT] = {'active': True}
+        nt = makina_grains._nodetype()
+        if nt:
+            if nt in reg_nt:
+                reg_nt[nt] = {'active': True}
+            else:
+                log.error('{0}: invalid nodetype'.format(nt))
         for nt in [a for a in reg_nt]:
             reg_nt[nt]['active'] = is_nt(nt)
         reg = __salt__[
@@ -125,6 +131,16 @@ def registry():
         ](__name, defaults=reg_nt)
         return reg
     return _registry()
+
+
+def is_scratch():
+    reg = registry()
+    if 'scratch' in reg['actives']:
+        for item in reg['actives']:
+            if item != 'scratch':
+                return False
+        return True
+    return False
 
 
 def is_devhost():

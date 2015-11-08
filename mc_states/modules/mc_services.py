@@ -66,19 +66,25 @@ def registry():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _registry():
         # only some services will be fully done  on mastersalt side if any
+        # in scratch mode, deactivating all default configuration for services
+        true = True
+        if __salt__['mc_nodetypes.is_scratch']():
+            true = False
         mastersalt_mode = __salt__['mc_controllers.mastersalt_mode']()
         is_docker = __salt__['mc_nodetypes.is_container']()
         ids = __salt__['mc_nodetypes.is_docker_service']()
-        sshen = ids or (mastersalt_mode and not is_docker)
-        ntpen = _ntpEn(__salt__)
-        binden = _bindEn(__salt__)
-        rsyslogen = _rsyslogEn(__grains__)
-        ulogden = _ulogdEn(__salt__)
+        sshen = true and (ids or (mastersalt_mode and not is_docker))
+        ntpen = _ntpEn(__salt__) and true
+        binden = _bindEn(__salt__) and true
+        rsyslogen = _rsyslogEn(__grains__) and true
+        ulogden = _ulogdEn(__salt__) and true
         ntp_u = False
         if __salt__['mc_nodetypes.is_container']():
             ntp_u = True
         if ntp_u:
             ntpen = False
+        ntp_u = ntp_u and true
+        ntpen = ntpen and true
         data = {'backup.bacula-fd': {'active': False},
                 'backup.burp.server': {'active': False},
                 'backup.burp.client': {'active': False},
@@ -89,7 +95,7 @@ def registry():
                 'base.ntp.uninstall': {'active': ntp_u},
                 'base.dbus': {'force': True, 'active': not is_docker},
                 'base.ssh': {'force': True, 'active': sshen},
-                'base.cron': {'force': True, 'active': True},
+                'base.cron': {'force': True, 'active': true},
                 'dns.dhcpd': {'active': False},
                 'dns.bind': {'force': True, 'active': binden},
                 'dns.slapd': {'active': False},
@@ -142,11 +148,11 @@ def registry():
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
         if 'laptop' in nodetypes_registry['actives']:
             data.update({
-                'backup.burp.client': {'active': True},
-                'virt.virtualbox': {'active': True},
-                'virt.docker': {'active': True},
-                'virt.lxc': {'active': True},
-                'virt.kvm': {'active': True}})
+                'backup.burp.client': {'active': true},
+                'virt.virtualbox': {'active': true},
+                'virt.docker': {'active': true},
+                'virt.lxc': {'active': true},
+                'virt.kvm': {'active': true}})
         data = __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults=data)

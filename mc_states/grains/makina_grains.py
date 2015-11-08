@@ -176,7 +176,7 @@ def _nodetype():
     f = '/etc/makina-states/nodetype'
     if os.path.exists(f):
         with open(f) as fic:
-            return fic.read()
+            return fic.read().strip()
     return 'unknown'
 
 
