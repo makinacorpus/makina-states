@@ -172,12 +172,14 @@ def _is_devhost():
     return _devhost_num() != ''
 
 
-def _get_msconf(k):
-    f = os.path.join('/etc/makina-states', k)
-    content ='unknown'
-    if os.path.exists(f):
-        with open(f) as fic:
+def _get_msconf(param):
+    try:
+        with open(
+            os.path.join('/etc/makina-states', param)
+        ) as fic:
             content = fic.read().strip()
+    except (OSError, IOError):
+        content = ''
     return content
 
 

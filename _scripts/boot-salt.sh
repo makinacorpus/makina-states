@@ -399,6 +399,20 @@ get_salt_url() {
     echo "${setting_url}"
 }
 
+get_salt_branch() {
+    setting="salt_branch"
+    conf_url="$(get_conf ${setting})"
+    param_url="${SALT_BRANCH}"
+    setting_url="${SALT_BRANCH:-"develop"}"
+    if [ "x${param_url}" != "x" ];then
+        setting_url="${param_url}"
+    elif [ "x${conf_url}" != "x" ];then
+        setting_url="${conf_url}"
+    fi
+    store_conf ${setting} "${setting_url}"
+    echo "${setting_url}"
+}
+
 get_ms_url() {
     setting="ms_url"
     conf_url="$(get_conf ${setting})"
@@ -2205,6 +2219,7 @@ setup_virtualenv() {
     if [ "x${will_do_pip}" != "x" ];then
         pip install -U --download-cache "${PIP_CACHE}" -r requirements/requirements.txt
         if [ "x${install_git}" != "x" ];then
+            pip install -U --download-cache "${PIP_CACHE}" -e "git+$(get_salt_url)@$(get_salt_branch)#egg=salt"
             pip install -U --download-cache "${PIP_CACHE}" -r requirements/git_requirements.txt
         else
             cwd="${PWD}"
@@ -4128,6 +4143,7 @@ usage() {
     bs_log "  Actions settings"
     bs_help "    -g|--makina-states-url <url>" "makina-states git url" "$(get_ms_url)" y
     bs_help "    --salt-url <url>" "saltstack fork git url" "$(get_salt_url)" y
+    bs_help "    --salt-branch <branch>" "saltstack fork git branch" "$(get_salt_branch)" y
     bs_help "    --reattach-dir" "for --reattach, the directory to grab salt master/minion new keys & conf from" "${SALT_REATTACH_DIR}" y
     if [ "x${SALT_LONG_HELP}" != "x" ];then
         bs_help "    -r|--root <path>" "/ path" "${ROOT}"
@@ -4437,6 +4453,9 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--salt-url" ];then
             SALT_URL="${2}";sh="2";argmatch="1"
+        fi
+        if [ "x${1}" = "x--salt-branch" ];then
+            SALT_BRANCH="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x-g" ] || [ "x${1}" = "x--makina-states-url" ];then
             MAKINASTATES_URL="${2}";sh="2";argmatch="1"

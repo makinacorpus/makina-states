@@ -13,6 +13,7 @@ import mc_states.api
 import random
 import json
 import os
+from mc_states.grains import makina_grains
 
 
 __name = 'salt'
@@ -24,14 +25,8 @@ loglevelfmt = (
 
 
 def get_local_param(param):
-    try:
-        with open(
-            '/etc/makina-states/{0}'.format(param)
-        ) as fic:
-            paramv = fic.read().strip()
-    except (OSError, IOError):
-        paramv = ''
-    return paramv
+    param = makina_grains._get_msconf(param)
+    return param
 
 
 def get_ms_url():
@@ -47,6 +42,12 @@ def get_salt_url():
         val = 'https://github.com/makinacorpus/salt.git'
     return val
 
+
+def get_salt_branch():
+    val = get_local_param('salt_branch')
+    if not val:
+        val = 'develop'
+    return val
 
 def get_local_salt_mode():
     local_salt_mode = get_local_param('local_salt_mode')
@@ -104,7 +105,7 @@ def settings():
                 'target': '{venv_path}/src/docker-py'},
             'salt-git': {
                 'name': get_salt_url(),
-                'rev': 'develop',
+                'rev': get_salt_branch(),
                 'target': '{venv_path}/src/salt'},
             'salttesting-git': {
                 'name': 'https://github.com/saltstack/salt-testing.git',
