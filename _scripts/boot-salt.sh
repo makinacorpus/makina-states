@@ -636,7 +636,7 @@ validate_nodetype() {
         fi
         if [ ! -e "${saltms}/nodetypes/${n}.sls" ];then
             # invalid nodetype, use default
-            if ! echo "${n}" | egrep -q "devhost|dockercontainer|kvm|laptop|lxccontainer|server|travis|vagrantvm|vm";then
+            if ! echo "${n}" | egrep -q "devhost|dockercontainer|kvm|laptop|lxccontainer|server|scratch|travis|vagrantvm|vm";then
                n=""
             fi
         fi
@@ -646,7 +646,7 @@ validate_nodetype() {
 
 get_default_nodetype() {
     saved_nt="$(validate_nodetype $(get_conf nodetype))"
-    fallback_nt="server"
+    fallback_nt="scratch"
     DEFAULT_NT="${saved_nt}"
     if [ "x${saved_nt}" = "x" ] || [ "x${saved_nt}" = "x${fallback_nt}" ];then
         DEFAULT_NT=""
