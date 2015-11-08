@@ -135,12 +135,16 @@ def registry():
 
 def is_scratch():
     reg = registry()
-    if 'scratch' in reg['actives']:
-        for item in reg['actives']:
-            if item != 'scratch':
-                return False
-        return True
-    return False
+    true = False
+    for k in [
+        'server', 'vm',
+        'kvm',
+        'container', 'dockercontainer', 'lxccontainer',
+    ]:
+        if k in reg['actives']:
+            true = True
+            break
+    return not true
 
 
 def is_devhost():

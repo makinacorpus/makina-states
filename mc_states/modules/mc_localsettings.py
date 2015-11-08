@@ -117,9 +117,7 @@ def registry(ttl=15*60):
         is_docker = __salt__['mc_nodetypes.is_docker']()
         # only some services will be fully done  on mastersalt side if any
         # in scratch mode, deactivating all default configuration for services
-        true = True
-        if __salt__['mc_nodetypes.is_scratch']():
-            true = False
+        true = not __salt__['mc_nodetypes.is_scratch']()
         reg = {
             'env': {'active': true},
             'systemd': {'active': true},
