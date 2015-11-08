@@ -26,19 +26,23 @@ def metadata():
 
 def has_mastersalt():
     has_mastersalt = False
+    bootsalt_mode = makina_grains._bootsalt_mode()
+    if bootsalt_mode == 'mastersalt':
+        has_mastersalt = True
     try:
         with open('/etc/makina-states/mode') as fic:
             has_mastersalt = 'mastersalt' in fic.read()
     except Exception:
         pass
     for i in [
-        '/etc/mastersalt/minion',
+        '/usr/bin/mastersalt-call',
         '/usr/bin/mastersalt',
+        '/etc/mastersalt/minion',
         '/etc/mastersalt/master'
     ]:
-        has_mastersalt = os.path.exists(i)
         if has_mastersalt:
             break
+        has_mastersalt = os.path.exists(i)
     return has_mastersalt
 
 
@@ -94,8 +98,7 @@ def allow_lowlevel_states():
     this will return 'unkown' also ensuring that in this case
     we can apply the states (no complete makina-states installs)
     '''
-    bootsalt_mode = makina_grains._bootsalt_mode()
-    if bootsalt_mode == 'mastersalt':
+    if has_mastersalt():
         return mastersalt_mode()
     return True
 
