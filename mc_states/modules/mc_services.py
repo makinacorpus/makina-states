@@ -68,10 +68,10 @@ def registry():
         # only some services will be fully done  on mastersalt side if any
         # in scratch mode, deactivating all default configuration for services
         true = not __salt__['mc_nodetypes.is_scratch']()
-        mastersalt_mode = __salt__['mc_controllers.mastersalt_mode']()
+        allow_lowlevel_states = __salt__['mc_controllers.allow_lowlevel_states']()
         is_docker = __salt__['mc_nodetypes.is_container']()
         ids = __salt__['mc_nodetypes.is_docker_service']()
-        sshen = true and (ids or (mastersalt_mode and not is_docker))
+        sshen = true and (ids or (allow_lowlevel_states and not is_docker))
         ntpen = _ntpEn(__salt__) and true
         binden = _bindEn(__salt__) and true
         rsyslogen = _rsyslogEn(__grains__) and true
