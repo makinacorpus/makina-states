@@ -10,6 +10,7 @@ mc_controllers / controllers related variables
 # Import salt libs
 import os
 import mc_states.api
+from mc_states.grains import makina_grains
 
 __name = 'controllers'
 
@@ -81,6 +82,12 @@ def mastersalt_mode():
             has_mastersalt()
             and 'mastersalt' in __salt__['mc_utils.get']('config_dir')
         ))
+
+
+def allow_lowlevel_states():
+    bootsalt_mode = makina_grains._bootsalt_mode()
+    return (mastersalt_mode() or
+            (bootsalt_mode == 'salt'))
 
 
 def masterless():

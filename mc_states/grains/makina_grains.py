@@ -172,12 +172,21 @@ def _is_devhost():
     return _devhost_num() != ''
 
 
-def _nodetype():
-    f = '/etc/makina-states/nodetype'
+def _get_msconf(k):
+    f = os.path.join('/etc/makina-states', k)
+    content ='unknown'
     if os.path.exists(f):
         with open(f) as fic:
-            return fic.read().strip()
-    return 'unknown'
+            content = fic.read().strip()
+    return content
+
+
+def _nodetype():
+    return _get_msconf('nodetype')
+
+
+def _bootsalt_mode():
+    return _get_msconf('bootsalt_mode')
 
 
 def _is_upstart():
@@ -238,6 +247,7 @@ def get_makina_grains():
               'makina.vm': _is_vm(),
               'makina.lxc': _is_lxc(),
               'makina.nodetype': _nodetype(),
+              'makina.bootsalt_mode': _bootsalt_mode(),
               'makina.systemd': _is_systemd(),
               'makina.pgsql_vers': _pgsql_vers(),
               'makina.docker': _is_docker(),
