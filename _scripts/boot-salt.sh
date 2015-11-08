@@ -28,6 +28,11 @@ EOF
     fi
 }
 
+#mkdir() {
+#    echo "$@" >> /foo
+#    /bin/mkdir $@
+#}
+
 get_curgitpackid() {
     python << EOF
 try:
@@ -1979,8 +1984,10 @@ setup_and_maybe_update_code() {
                         fi
                         if [ "x${i}" = "x${ms}" ];then
                             store_conf branch "${pref}${co_branch}"
-                            find "${SALT_PILLAR}" "${MASTERSALT_PILLAR}" -type f | while read i;do
-                                sed -i -re "s/makina-states.rev: .*/makina-states.rev: ${co_branch}/g" "${i}"
+                            for pillardir in "${SALT_PILLAR}" "${MASTERSALT_PILLAR}";do
+                                find "${pillardir}" -type f | while read i;do
+                                    sed -i -re "s/makina-states.rev: .*/makina-states.rev: ${co_branch}/g" "${i}"
+                                done
                             done
                         fi
                     fi
@@ -4709,22 +4716,32 @@ synchronize_code() {
     fi
 }
 
+
+set_dns_minionid() {
+    totest=$1
+    shift
+    eprefix=$@
+    if [ "x${totest}" != "x" ];then
+        if [ "x$(cat "${eprefix}/minion_id" 2>/dev/null|${SED} -e "s/ //")" != "x$(echo "${HOST}"|${SED} -e "s/ //g")" ];then
+            if [ ! -d "${eprefix}" ];then
+                mkdir -p "${eprefix}"
+            fi
+            echo "${HOST}" > "${eprefix}"/minion_id
+        fi
+    fi
+}
+
+
 set_dns() {
     if [ "${NICKNAME_FQDN}" != "x" ];then
-        if [ "x$(cat /etc/hostname 2>/dev/null|${SED} -e "s/ //")" != "x$(echo "${HOST}"|${SED} -e "s/ //g")" ]\
+        if [ "x$(cat /etc/hostname 2>/dev/null|${SED} -e "s/ //")" != "x$(echo "${HOST}"|${SED} -e "s/ //g")"  ]\
             && [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
             bs_log "Resetting hostname file to ${HOST}"
             echo "${HOST}" > /etc/hostname
 
         fi
-        for prefix in "${MCONF_PREFIX}" "${CONF_PREFIX}";do
-            if [ "x$(cat "${prefix}/minion_id" 2>/dev/null|${SED} -e "s/ //")" != "x$(echo "${HOST}"|${SED} -e "s/ //g")" ];then
-                if [ ! -d "${prefix}" ];then
-                    mkdir -p "${prefix}"
-                fi
-                echo "${HOST}" > "${prefix}"/minion_id
-            fi
-        done
+        set_dns_minionid "${IS_SALT}" "${CONF_PREFIX}"
+        set_dns_minionid "${IS_MASTERSALT}" "${MCONF_PREFIX}"
         if [ -e "$(which domainname 2>/dev/null)" ]\
             && [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
             if [ "x$(domainname)" != "x$(echo "${DOMAINNAME}"|${SED} -e "s/ //g")" ];then
