@@ -87,7 +87,12 @@ def mastersalt_mode():
 def allow_lowlevel_states():
     bootsalt_mode = makina_grains._bootsalt_mode()
     return (mastersalt_mode() or
-            (bootsalt_mode == 'salt'))
+            # in dual stack saltstack installs, only allow low level states
+            # on the mastersalt side
+            # in other cases, without the presence of the conf flag
+            # this will return 'unkown' also ensuring that in this case
+            # we can apply the states (no complete makina-states installs)
+            (bootsalt_mode != 'mastersalt'))
 
 
 def masterless():
