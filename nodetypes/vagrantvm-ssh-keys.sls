@@ -1,5 +1,5 @@
 {% import "makina-states/services/base/ssh/rootkey.sls" as base with context %}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 include:
   - makina-states.services.base.ssh.rootkey
 {{base.user_keys('vagrant')}}

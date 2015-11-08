@@ -5,7 +5,7 @@ include:
   - makina-states.localsettings.pkgs.basepackages
   {% endif %}
   - makina-states.nodetypes.container
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 makina-mark-as-lxc:
   cmd.run:
     - name: echo docker > /run/container_type
