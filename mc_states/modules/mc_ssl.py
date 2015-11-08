@@ -866,7 +866,7 @@ def search_matching_certificate(domain, as_text=False, selfsigned=True):
     # try to see if someone has installed a full certificate containing
     # at least the cert and key but also the auth chain in
     # the well known install dir
-    if not __salt__['mc_controllers.mastersalt_mode']():
+    if not __salt__['mc_controllers.allow_lowlevel_states']():
         try:
             certp, certk = get_installed_cert_for(domain)
         except CertificateNotFoundError:
@@ -950,7 +950,7 @@ def search_matching_selfsigned_certificate(domain, gen=False, as_text=False):
     # try to see if someone has installed a full certificate containing
     # at least the cert and key but also the auth chain in
     # the well known install dir
-    if not __salt__['mc_controllers.mastersalt_mode']():
+    if not __salt__['mc_controllers.allow_lowlevel_states']():
         try:
             certp, certk = get_installed_cert_for(domain)
         except CertificateNotFoundError:
