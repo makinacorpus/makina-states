@@ -749,6 +749,7 @@ set_vars() {
     SALT_BOOT_INITIAL_HIGHSTATE="${SALT_BOOT_INITIAL_HIGHSTATE:-}"
     IS_SALT_UPGRADING="${IS_SALT_UPGRADING:-}"
     IS_SALT="${IS_SALT:-y}"
+    NO_MS_VENV_CACHE="${NO_MS_VENV_CACHE:-}"
     IS_SALT_MASTER="${IS_SALT_MASTER:-y}"
     IS_SALT_MINION="${IS_SALT_MINION:-y}"
     IS_MASTERSALT="${IS_MASTERSALT:-}"
@@ -1098,7 +1099,7 @@ set_vars() {
     VENV_MD5=${VENV_MD5:-${VENV_URLS_MD5[${VENV_URL}]}}
     # export variables to support a restart
 
-    export VENV_URL VENV_MD5 VENV_URLS_MD5
+    export VENV_URL VENV_MD5 VENV_URLS_MD5 NO_MS_VENV_CACHE
     export SALT_BOOT_ONLY_PREREQS SALT_BOOT_ONLY_INSTALL_SALT
     export BS_MS_ASSOCIATION_RESTART_MINION BS_MS_ASSOCIATION_RESTART_MASTER
     export BS_ASSOCIATION_RESTART_MASTER BS_ASSOCIATION_RESTART_MINION
@@ -2115,7 +2116,9 @@ setup_virtualenvs() {
     if [ ! -e "${VENV_PATH}/salt/bin/salt" ];then
         tmparc="${TMPDIR:-/tmp}/salt.tar.xz"
         # only download if exists
-        if curl -kfI ${VENV_URL} >/dev/null 2>&1;then
+        if [ "x${NO_MS_VENV_CACHE}" != "x" ];then
+            bs_log "Warn: virtualenv cache forced-off, will rebuild"
+        elif curl -kfI ${VENV_URL} >/dev/null 2>&1;then
             if ! download_file "${VENV_URL}" "${tmparc}" "${VENV_MD5}";then
                 bs_log "Archive error, aborting"
                 exit 1
@@ -4158,6 +4161,7 @@ usage() {
     bs_help "    --only-pack" "Do run git pack (gc) if necessary and skip any further step" "" y
     bs_help "    --only-prereqs" "Do only pre install steps" "" y
     bs_help "    --only-install-saltenvs" "Do not go further than installing salt envs" "" y
+    bs_help "    --no-ms-venv-cache" "Do not try to download prebuilt virtualenvs" "" y
     if [ "x${SALT_LONG_HELP}" != "x" ];then
         bs_help "    -M|--salt-master" "install a salt master" "${IS_SALT_MASTER}" y
         bs_help "    -N|--salt-minion" "install a salt minion" "${IS_SALT_MINION}" y
@@ -4255,6 +4259,9 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x-C" ] || [ "x${1}" = "x--no-confirm" ];then
             SALT_BOOT_NOCONFIRM="y";argmatch="1"
+        fi
+        if [ "x${1}" = "x--no-ms-venv-cache" ];then
+            NO_MS_VENV_CACHE="y";argmatch="1"
         fi
         if [ "x${1}" = "x-M" ] || [ "x${1}" = "x--salt-master" ];then
             IS_SALT_MASTER="y";argmatch="1"
