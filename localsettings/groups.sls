@@ -1,4 +1,4 @@
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set ugs = salt['mc_usergroup.settings']() %}
 include:
   - makina-states.localsettings.users.hooks

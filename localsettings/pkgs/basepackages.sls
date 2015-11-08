@@ -143,7 +143,7 @@ ubuntu-pkgs:
 sys-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
-      {% if salt['mc_controllers.mastersalt_mode']() %}
+      {% if salt['mc_controllers.allow_lowlevel_states']() %}
       - lvm2
       - pv
       - bridge-utils
@@ -212,7 +212,7 @@ net-pkgs:
       - rsync
       - telnet
       - tcpdump
-      {% if salt['mc_controllers.mastersalt_mode']() %}
+      {% if salt['mc_controllers.allow_lowlevel_states']() %}
       - openssh-client
       - ntp
       - vlan

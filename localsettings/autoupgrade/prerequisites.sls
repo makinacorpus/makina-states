@@ -1,7 +1,7 @@
 include:
   - makina-states.localsettings.autoupgrade.hooks
 {% if grains['os_family'] in ['Debian'] %}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {%- set data = salt['mc_autoupgrade.settings']() %}
 unattended-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:

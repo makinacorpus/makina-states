@@ -3,7 +3,7 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/localrc.rst
 #}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {{ salt['mc_macros.register']('localsettings', 'localrc') }}
 {%- set locs = salt['mc_locations.settings']() %}
 rc-local:

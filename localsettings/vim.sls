@@ -5,7 +5,7 @@
 #}
 
 {{ salt['mc_macros.register']('localsettings', 'vim') }}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set ugs = salt['mc_usergroup.settings']() %}
 {% set vim = salt['mc_vim.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}

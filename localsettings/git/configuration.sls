@@ -4,7 +4,7 @@
 #   - makina-states/doc/ref/formulaes/localsettings/git.rst
 #}
 {% set usersettings = salt['mc_usergroup.settings']() %}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {{ salt['mc_macros.register']('localsettings', 'git') }}
 {%- set locs = salt['mc_locations.settings']() %}
 include:

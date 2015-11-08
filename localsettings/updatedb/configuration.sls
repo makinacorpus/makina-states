@@ -1,7 +1,7 @@
 include:
   - makina-states.localsettings.updatedb.hooks
 
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set data = salt['mc_updatedb.settings']() %}
 {% for f in ['/etc/updatedb.conf'] %}
 etc-update-{{f}}:

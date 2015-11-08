@@ -15,7 +15,7 @@ sudo-pkgs:
     - require_in:
       - mc_proxy: users-ready-hook
 
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set sudo=True %}
 {% if grains['os'] in ['Debian']  %}
 {% if grains.get('osrelease', '7') < '6' %}

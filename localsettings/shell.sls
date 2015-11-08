@@ -4,7 +4,7 @@
 #   - makina-states/doc/ref/formulaes/localsettings/shell.rst
 #}
 {{ salt['mc_macros.register']('localsettings', 'shell') }}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 etc-profile-d:
   file.directory:

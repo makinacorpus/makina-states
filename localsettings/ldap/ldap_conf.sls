@@ -1,7 +1,7 @@
 include:
   - makina-states.localsettings.ldap.hooks
 
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 
 localldap-dirs:

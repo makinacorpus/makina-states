@@ -2,7 +2,7 @@ include:
   - makina-states.localsettings.pkgs.basepackages
   - makina-states.localsettings.desktoptools.hooks
 
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% if grains['os'] in ['Ubuntu'] %}
 chrome-base:
   pkgrepo.managed:

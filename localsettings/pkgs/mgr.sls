@@ -8,7 +8,7 @@
 include:
   - makina-states.localsettings.pkgs.hooks
 {{ salt['mc_macros.register']('localsettings', 'pkgs.mgr') }}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% set data = pkgssettings %}
 {%- set locs = salt['mc_locations.settings']() %}

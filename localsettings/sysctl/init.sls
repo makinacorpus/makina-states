@@ -7,7 +7,7 @@ include:
   - makina-states.localsettings.sysctl.hooks
 
 {{ salt['mc_macros.register']('localsettings', 'sysctl') }}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set kernel = salt['mc_kernel.settings']() %}
 {% set isTravis = salt['mc_nodetypes.is_travis']() %}
 {% if not (isTravis or salt['mc_nodetypes.is_container']()) %}

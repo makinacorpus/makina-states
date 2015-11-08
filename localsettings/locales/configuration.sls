@@ -3,7 +3,7 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/locales.rst
 #}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set locals = salt['mc_locales.settings']() %}
 include:
   - makina-states.localsettings.locales.hooks

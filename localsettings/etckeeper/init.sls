@@ -1,6 +1,6 @@
 {% set locs=salt['mc_locations.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'etckeeper') }}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 include:
   - makina-states.localsettings.etckeeper.hooks
   - makina-states.localsettings.git
