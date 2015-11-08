@@ -1985,9 +1985,11 @@ setup_and_maybe_update_code() {
                         if [ "x${i}" = "x${ms}" ];then
                             store_conf branch "${pref}${co_branch}"
                             for pillardir in "${SALT_PILLAR}" "${MASTERSALT_PILLAR}";do
-                                find "${pillardir}" -type f | while read i;do
-                                    sed -i -re "s/makina-states.rev: .*/makina-states.rev: ${co_branch}/g" "${i}"
-                                done
+                                if [ -e "${pillardir}" ];then
+                                    find "${pillardir}" -type f | while read i;do
+                                        sed -i -re "s/makina-states.rev: .*/makina-states.rev: ${co_branch}/g" "${i}"
+                                    done
+                                fi
                             done
                         fi
                     fi
@@ -4734,7 +4736,7 @@ set_dns_minionid() {
 
 set_dns() {
     if [ "${NICKNAME_FQDN}" != "x" ];then
-        if [ "x$(cat /etc/hostname 2>/dev/null|${SED} -e "s/ //")" != "x$(echo "${HOST}"|${SED} -e "s/ //g")"  ]\
+        if [ "x$(cat /etc/hostname 2>/dev/null|${SED} -e "s/ //")" != "x$(echo "${HOST}"|${SED} -e "s/ //g")" ]\
             && [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
             bs_log "Resetting hostname file to ${HOST}"
             echo "${HOST}" > /etc/hostname
