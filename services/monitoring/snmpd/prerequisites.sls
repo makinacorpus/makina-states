@@ -1,6 +1,6 @@
 include:
   - makina-states.services.monitoring.snmpd.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set dodl=True %}
 {% if grains['os'] in ['Debian'] %}
 {% if grains["osrelease"][0] < "6" %}

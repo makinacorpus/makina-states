@@ -3,7 +3,7 @@ include:
   - makina-states.services.backup.burp.hooks
   - makina-states.services.backup.burp.server.sync
   - makina-states.services.backup.burp.server.cleanup
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 burp-svc:
   service.running:
     - name:  burp-server

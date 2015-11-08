@@ -3,7 +3,7 @@ include:
   - makina-states.services.firewall.shorewall.disable
   - makina-states.services.firewall.firewalld.hooks
   - makina-states.services.firewall.firewall.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.localsettings.network
   - makina-states.services.firewall.firewall.configuration
 firewalld-conflicting-services:

@@ -1,7 +1,7 @@
 {% set settings = salt['mc_slapd.settings']() %}
 include:
   - makina-states.services.dns.slapd.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set aclf = settings.SLAPD_CONF + "/cn=config/olcDatabase={-1}frontend.ldif" %}
 gen-slapd-d-acls-schema:
   file.managed:

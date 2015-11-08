@@ -45,7 +45,7 @@ signed-{{file}}:
 #}
 {% endmacro %}
 
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 include:
   - makina-states.services.dns.bind.hooks
   - makina-states.services.dns.bind.services

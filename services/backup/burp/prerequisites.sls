@@ -1,6 +1,6 @@
 include:
   - makina-states.services.backup.burp.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set pkgs = salt['mc_pkgs.settings']() %}
 {%- set burp = salt['mc_burp.settings']() %}

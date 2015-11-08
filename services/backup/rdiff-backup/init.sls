@@ -1,7 +1,7 @@
 {#- Integration of rdiff-backup, a file backup software #}
 {%- set locs = salt['mc_locations.settings']() %}
 {{ salt['mc_macros.register']('services', 'backup.rdiff-backup') }}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {%- set data=salt['mc_rdiffbackup.settings']() %}
 {%- set settings = salt['mc_utils.json_dump'](salt['mc_rdiffbackup.settings']()) %}
 remove-rdiff-backup-pkgs:

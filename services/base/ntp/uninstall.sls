@@ -1,7 +1,7 @@
 {% set data = salt['mc_ntp.settings']() %}
 include:
   - makina-states.services.base.ntp.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% if not salt['mc_nodetypes.is_docker']() %}
 ntpd-uninstall-svc:
   service.dead:

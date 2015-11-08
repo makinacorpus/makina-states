@@ -1,5 +1,5 @@
 {% set settings = salt['mc_memcached.settings']() %}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 include:
   - makina-states.services.cache.memcached.hooks
   - makina-states.services.cache.memcached.services

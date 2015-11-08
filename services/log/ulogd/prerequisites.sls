@@ -1,7 +1,7 @@
 {% set ulogdSettings = salt['mc_ulogd.settings']() %}
 include:
   - makina-states.services.log.ulogd.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 ulogd-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:

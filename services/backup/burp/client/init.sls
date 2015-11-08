@@ -2,7 +2,7 @@
 {{ salt['mc_macros.register']('services', 'backup.burp.client') }}
 include:
   - makina-states.services.backup.burp.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.backup.burp.server.prerequisites
 {% endif %}
 

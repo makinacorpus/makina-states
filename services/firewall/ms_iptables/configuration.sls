@@ -2,7 +2,7 @@
 {% set data = salt['mc_ms_iptables.settings']() %}
 include:
   - makina-states.services.firewall.ms_iptables.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.firewall.ms_iptables.service
   - makina-states.localsettings.network
 {% macro rmacro() %}

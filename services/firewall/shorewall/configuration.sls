@@ -7,7 +7,7 @@
 {% set reg = salt['mc_services.registry']() %}
 include:
   - makina-states.services.firewall.shorewall.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.firewall.shorewall.service
 
 shorewall-config:

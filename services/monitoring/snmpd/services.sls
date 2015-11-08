@@ -1,6 +1,6 @@
 include:
   - makina-states.services.monitoring.snmpd.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 snmpd-start:
   service.running:
     - name: snmpd

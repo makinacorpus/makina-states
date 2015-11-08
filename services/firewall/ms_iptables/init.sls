@@ -2,7 +2,7 @@ include:
   - makina-states.services.virt.lxc.hooks
   - makina-states.services.virt.docker.hooks
   - makina-states.services.firewall.ms_iptables.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% if salt['mc_services.registry']()['has'].get('virt.lxc') %}
 # restart bridge upon install
   - makina-states.services.virt.lxc.services

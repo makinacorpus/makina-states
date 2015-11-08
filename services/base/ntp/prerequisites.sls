@@ -1,6 +1,6 @@
 include:
   - makina-states.services.base.ntp.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}  
+{% if salt['mc_controllers.allow_lowlevel_states']() %}  
 ntp-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:

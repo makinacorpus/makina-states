@@ -3,7 +3,7 @@
 {% set data = salt['mc_snmpd.settings']() %}
 include:
   - makina-states.services.monitoring.snmpd.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.monitoring.snmpd.services
 {#- Configuration #}
 {% for f in [

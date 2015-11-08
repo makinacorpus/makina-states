@@ -4,7 +4,7 @@ include:
 {%- set data = salt['mc_ntp.settings']() %}
 {%- set sdata = salt['mc_utils.json_dump'](data) %}
 {%- set locs = salt['mc_locations.settings']() %}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% for cfg, cdata in data.configs.items() %}
 {{cfg}}:
   file.managed:

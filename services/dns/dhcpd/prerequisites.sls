@@ -1,4 +1,4 @@
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set settings = salt['mc_dhcpd.settings']() %}
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 include:

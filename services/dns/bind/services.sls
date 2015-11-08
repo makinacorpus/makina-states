@@ -1,6 +1,6 @@
 {% import "makina-states/localsettings/dns/macros.sls" as dns with context %}
 {% set settings = salt['mc_bind.settings']() %}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 include:
   - makina-states.services.dns.bind.hooks
 

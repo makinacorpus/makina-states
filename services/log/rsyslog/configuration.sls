@@ -1,7 +1,7 @@
 {% set data = salt['mc_rsyslog.settings']() %}
 include:
   - makina-states.services.log.rsyslog.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.log.rsyslog.services
 
 makina-rsyslog-configuration-check:

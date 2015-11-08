@@ -2,7 +2,7 @@
 {% set data = salt['mc_firewalld.settings']() %}
 include:
   - makina-states.services.firewall.firewalld.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.firewall.firewalld.service
   - makina-states.localsettings.network
 {% macro rmacro() %}

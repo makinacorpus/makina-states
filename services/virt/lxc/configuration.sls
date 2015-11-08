@@ -7,7 +7,7 @@ include:
   - makina-states.localsettings.apparmor
   - makina-states.services.virt.lxc.services
 
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% if grains['os'] in ['Ubuntu'] -%}
 {% set extra_confs = {'/etc/init/lxc-net-makina.conf': {}} %}
 

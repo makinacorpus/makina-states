@@ -2,7 +2,7 @@ include:
   - makina-states.services.firewall.ms_iptables.hooks
   - makina-states.services.virt.lxc.hooks
   - makina-states.services.virt.cgroups
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 lxc-other-svc:
   service.running:
     - names:

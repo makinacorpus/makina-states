@@ -1,6 +1,6 @@
 include:
   - makina-states.services.backup.burp.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.backup.burp.server.services
 {% set data = salt['mc_burp.settings']() %}
 {% set ssdata = data.server_conf %}

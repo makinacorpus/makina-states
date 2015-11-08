@@ -2,7 +2,7 @@
 {% set data = salt['mc_dbus.settings']() %}
 include:
   - makina-states.services.base.dbus.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.base.dbus.service
 {% macro rmacro() %}
     - watch:

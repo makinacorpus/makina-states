@@ -5,7 +5,7 @@ include:
   {% endif %}
   - makina-states.services.firewall.shorewall.hooks
 
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 shorewall-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:

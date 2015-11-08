@@ -1,7 +1,7 @@
 {%- set locs = salt['mc_locations.settings']() %}
 include:
   - makina-states.services.firewall.shorewall.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 shorewall-e:
   service.dead:
     - names:

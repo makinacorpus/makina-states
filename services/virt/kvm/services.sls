@@ -1,6 +1,6 @@
 include:
   - makina-states.services.virt.kvm.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 kvm-services-enabling:
   service.running:
     - reload: true

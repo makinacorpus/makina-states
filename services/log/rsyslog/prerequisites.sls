@@ -1,7 +1,7 @@
 {% set rsyslogSettings = salt['mc_rsyslog.settings']() %}
 include:
   - makina-states.services.log.rsyslog.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 rsyslog-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:

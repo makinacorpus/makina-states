@@ -12,7 +12,7 @@
 #--- DEV SERVER: ALL EMAILS ARE IN A LOCAL vagrant MAILBOX
 include:
   - makina-states.services.mail.dovecot.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
 makina-dovecot-dev-imap-conf:
   file.managed:

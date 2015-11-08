@@ -1,4 +1,4 @@
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 include:
   - makina-states.services.firewall.shorewall.hooks
   - makina-states.services.firewall.firewall.hooks

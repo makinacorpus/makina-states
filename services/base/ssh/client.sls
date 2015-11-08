@@ -2,7 +2,7 @@ include:
   - makina-states.services.base.ssh.hooks
 {%- set locs = salt['mc_locations.settings']() %}
 {% set openssh = salt['mc_ssh.settings']() %}
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 openssh-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:

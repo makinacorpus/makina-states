@@ -1,7 +1,7 @@
 {% set data = salt['mc_burp.settings']() %}
 include:
   - makina-states.services.backup.burp.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 install-burp-configuration-sync:
   file.managed:
     - source: salt://makina-states/files/etc/burp/clients/sync.py

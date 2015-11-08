@@ -1,7 +1,7 @@
 {%- set pkgssettings = salt['mc_pkgs.settings']() %}
 include:
   - makina-states.services.virt.lxc.hooks
-{% if salt['mc_controllers.mastersalt_mode']() %}
+{% if salt['mc_controllers.allow_lowlevel_states']() %}
 
 {% set locs = salt['mc_locations.settings']() %}
 lxc-repo:
