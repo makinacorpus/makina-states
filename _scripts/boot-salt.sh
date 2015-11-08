@@ -1480,14 +1480,14 @@ get_saltcall_args() {
     if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
         LOCAL="--local"
     fi
-    echo "${LOCAL} $(get_module_args "${SALT_ROOT}" "${SALT_MS}")"
+    echo "${LOCAL}"
 }
 
 get_mastersaltcall_args() {
     if [ "x$(get_local_mastersalt_mode)" = "xmasterless" ];then
         LOCAL="--local"
     fi
-    echo "${LOCAL} $(get_module_args "${MASTERSALT_ROOT}" "${MASTERSALT_MS}")"
+    echo "${LOCAL}"
 }
 
 salt_call_wrapper_() {
@@ -3547,6 +3547,7 @@ make_association() {
     if [ "x$(get_local_salt_mode)" = "xmasterless" ];then
         registered="1"
         minion_id="$(get_minion_id)"
+        return;
     fi
     minion_keys="$(find ${CONF_PREFIX}/pki/master/minions -type f 2>/dev/null|wc -l|grep -v ${SED}|${SED} -e "s/ //g")"
     minion_id="$(get_minion_id)"
