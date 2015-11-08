@@ -140,8 +140,9 @@ def is_active(registry, name):
 def get_registry_paths(name, registry_format='pack'):
     locs = __salt__['mc_locations.settings']()
     etc = locs['conf_dir']
-    confs = {'mastersalt': '{0}/{1}/makina-states/{2}.{3}'.format(
-        etc, 'mastersalt',  name, registry_format),
+    confs = {
+        'mastersalt': '{0}/{1}/makina-states/{2}.{3}'.format(
+            etc, 'mastersalt',  name, registry_format),
         'salt': '{0}/{1}/makina-states/{2}.{3}'.format(
             etc, 'salt',  name, registry_format),
         'global': '{0}/{1}/{2}.{3}'.format(
@@ -214,8 +215,6 @@ def encode_local_registry(name, registry, registry_format='yaml'):
     registryf = get_registry_path(
         name, registry_format=registry_format)
     dregistry = os.path.dirname(registryf)
-    if not os.path.exists(dregistry):
-        os.makedirs(dregistry)
     content = __salt__[
         'mc_macros.{0}_dump_local_registry'.format(
             registry_format)](registry)
@@ -228,6 +227,8 @@ def encode_local_registry(name, registry, registry_format='yaml'):
     else:
         sync = True
     if sync:
+        if not os.path.exists(dregistry):
+            os.makedirs(dregistry)
         with open(registryf, 'w') as fic:
             fic.write(content)
     os.chmod(registryf, 0700)
@@ -254,7 +255,7 @@ def _get_local_registry(name,
     # cache local registries one minute
     key = '{0}_{1}'.format('mcreg', name)
     if name not in NOT_SHARED:
-        to_load = ['global', 'context', 'mastersalt', 'salt']
+        to_load = ['global', 'context']
     else:
         to_load = ['context']
 
@@ -264,15 +265,15 @@ def _get_local_registry(name,
         registry = OrderedDict()
         for prefix in to_load:
             registryf = registryfs[prefix]
-            dregistry = os.path.dirname(registryf)
-            if not os.path.exists(dregistry):
-                os.makedirs(dregistry)
+            # dregistry = os.path.dirname(registryf)
+            # if not os.path.exists(dregistry):
+            #     os.makedirs(dregistry)
             if os.path.exists(registryf):
                 data = __salt__[
                     'mc_macros.{0}_load_local_registry'.format(
                         registry_format)](name, registryf)
                 registry = __salt__['mc_utils.dictupdate'](registry, data)
-            _unprefix(registry, name)
+                _unprefix(registry, name)
         return registry
     cache_key = RKEY.format(key, registry_format)
     force_run = not cached
