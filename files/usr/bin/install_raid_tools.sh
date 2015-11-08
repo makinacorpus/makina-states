@@ -7,7 +7,6 @@ packages="$packages megacli megaide-status mpt-status lsiutil sas2ircu sas2ircu-
 #if [ "x$(lsb_release --id 2>/dev/null|grep -q Ubuntu;echo $?)" = "x0" ];then
 #    RELEASE="precise"
 #fi
-
 do_aptget() {
     export UCF_FORCE_CONFFOLD=1
     export DEBIAN_FRONTEND=noninteractive
@@ -16,24 +15,23 @@ do_aptget() {
         #adaptec-universal-storage-mib\
         #adaptec-storage-manager-agent\
         #adaptec-storage-manager-common\
-
 }
 install_debian() {
     if [ "x$(grep -q "hwraid.le-vert.net" $(find /etc/apt/sources.list* -type f);echo ${?})" != "x0" ];then
-        if [ ! -e /etc/apt/sources.list.d/ ];then
-            mkfir /etc/apt/sources.list.d/
-        fi
-        echo "deb http://hwraid.le-vert.net/debian ${RELEASE} main" >> /etc/apt/sources.list.d/hwraid.list
+        if [ ! -e /etc/apt/sources.list.d/ ];then mkdir /etc/apt/sources.list.d;fi
+        echo "deb http://hwraid.le-vert.net/debian ${RELEASE} main" > /etc/apt/sources.list.d/hwraid.list
     fi
-    if [ "x$(apt-key list|grep -q le-ver;echo $?)" = "x0" ];then
-        wget -O - http://hwraid.le-vert.net/debian/hwraid.le-vert.net.gpg.key | sudo apt-key add -
+    key="http://hwraid.le-vert.net/debian/hwraid.le-vert.net.gpg.key"
+    if [ "x$(apt-key list|grep -qi le-ver;echo $?)" != "x0" ];then
+        wget -O - $key | sudo apt-key add -
     fi
     do_aptget
     if [ "x$?" != "x0" ];then
         apt-get update > /dev/null
         do_aptget
     fi
-    for i in /etc/default/sas2ircu-statusd\
+    for i in\
+         /etc/default/sas2ircu-statusd\
          /etc/default/aacraid-statusd\
          /etc/default/3ware-statusd\
          /etc/default/cciss-vol-statusd\
@@ -52,12 +50,10 @@ EOF
         fi
         ${i//default/init.d} stop
         update-rc.d -f $(basename $i) remove
+        systemctl disable $i || /bin/true
     done
-    ps aux|grep init.d|grep statusd|grep check_|awk '{print $2}'|xargs kill -9 || /bin/true
-
+    for i in $(ps aux|grep init.d|grep statusd|grep check_|awk '{print $2}');do kill -9 $i;done
 }
-
 if test -e /etc/debian_version;then
     install_debian
 fi
-

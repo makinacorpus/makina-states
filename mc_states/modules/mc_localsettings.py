@@ -143,6 +143,7 @@ def registry(ttl=15*60):
             'python': {'active': False},
             'pkgs.basepackages': {'active': True},
             'repository_dotdeb': {'active': False},
+            'check_raid': {'active': False},
             'shell': {'active': True},
             'sudo': {'active': True},
             'groups': {'active': True},

@@ -1,9 +1,27 @@
 {% set settings = salt['mc_dns.settings']() %}
-{% macro switch_dns(suf='localsettings',
+{% macro switch_dns(suf,
+                    search=None,
+                    dnsservers=None,
                     require=None,
                     require_in=None,
                     watch=None,
                     watch_in=None) %}
+{% if not dnsservers %}{% set dnsservers = settings.default_dnses %}{%endif%}
+{% if not search %}{% set search = settings.search %}{%endif%}
+{% if not require %}{% set require = [] %}{% endif %}
+{% if not require_in %}{% set require_in = [] %}{% endif %}
+{% if not require %}{% set watch = [] %}{% endif %}
+{% if not watch_in %}{% set watch_in = [] %}{% endif %}
+{% if search %}
+{%  set search = ' '.join(salt['mc_utils.uniquify'](search)) %}
+{% else %}
+{%  set search = '' %}
+{% endif %}
+{% if dnsservers %}
+{%  set dnsservers = ' '.join(salt['mc_utils.uniquify'](dnsservers)) %}
+{% else %}
+{%  set dnsservers = '' %}
+{%endif %}
 
 {# hooks for dns orchestration #}
 ms-dns-pre-{{suf}}:
@@ -13,32 +31,7 @@ ms-dns-pre-{{suf}}:
 
 ms-dns-post-{{suf}}:
   mc_proxy.hook: []
-
 {% if salt['mc_controllers.mastersalt_mode']() %}
-{% if not require %}
-{% set require = [] %}
-{% endif %}
-{% if not require_in %}
-{% set require_in = [] %}
-{% endif %}
-{% if not require %}
-{% set watch = [] %}
-{% endif %}
-{% if not watch_in %}
-{% set watch_in = [] %}
-{% endif %}
-{% set search = settings.search %}
-{% set dnsservers = settings.default_dnses %}
-{% if search %}
-{% set search = ' '.join(salt['mc_utils.uniquify'](search)) %}
-{% else %}
-{% set search = '' %}
-{% endif %}
-{% if dnsservers %}
-{% set dnsservers = ' '.join(salt['mc_utils.uniquify'](dnsservers)) %}
-{% else %}
-{% set dnsservers = '' %}
-{%endif %}
 bind-set-defaultdns-{{suf}}-1:
   file.managed:
     - name: /usr/bin/ms-resolv-conf.sh

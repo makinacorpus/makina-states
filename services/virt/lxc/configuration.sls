@@ -38,6 +38,5 @@ include:
     - watch_in:
       - mc_proxy: lxc-post-conf
 {% endmacro %}
-{{ h.deliver_config_files(
-     extra_confs, after_macro=rmacro, prefix='lxc-conf-')}}
+{{ h.deliver_config_files(extra_confs, after_macro=rmacro, prefix='lxc-conf-')}}
  {%  endif %}

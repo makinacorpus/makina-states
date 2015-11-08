@@ -1,6 +1,5 @@
-install-raid:
-  mc_proxy.hook: []
-{% if pillar.get('makina-states.nodetypes.check_raid', False) %}
+{{ salt['mc_macros.register']('localsettings', 'check_raid') }}
+ms-localsettings-install-raid:
   file.managed:
     - source: salt://makina-states/files/usr/bin/install_raid_tools.sh
     - name: /usr/bin/install_raid_tools.sh
@@ -11,5 +10,4 @@ install-raid:
     - name: su -c "/usr/bin/install_raid_tools.sh"
     - use_vt: true
     - require:
-      - file: install-raid
-{% endif %}
+      - file: ms-localsettings-install-raid

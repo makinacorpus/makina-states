@@ -3050,7 +3050,7 @@ def get_check_raid_conf(id_, ttl=PILLAR_TTL):
             return {}
         rdata = {}
         maps = __salt__[__name + '.get_db_infrastructure_maps']()
-        pref = "makina-states.nodetypes.check_raid"
+        pref = "makina-states.localsettings.check_raid"
         if id_ in maps['bms']:
             rdata.update({pref: True})
         return rdata

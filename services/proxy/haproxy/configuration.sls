@@ -17,10 +17,7 @@ makina-haproxy-configuration-check:
 makina-haproxy-default-cfg:
   file.managed:
     - names:
-    {% for i in ['backends',
-                 'dispatchers',
-                 'listeners',
-                 'extra'] %}
+    {% for i in ['backends', 'dispatchers', 'listeners', 'extra'] %}
       - {{data.config_dir}}/{{i}}/donotremoveme.cfg
     {% endfor %}
     - user: root
