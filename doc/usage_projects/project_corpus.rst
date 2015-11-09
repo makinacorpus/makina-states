@@ -376,6 +376,7 @@ Project install procedure
 We run all slses in the project **.salt** directory which is not tied to any
 default procedure.
 
+
 .. _project_spec_proc_fixperms
 
 Project fixperms  procedure
