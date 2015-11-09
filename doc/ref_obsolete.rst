@@ -11,4 +11,5 @@ Misc & Obsolete
    ref_macros/controllers.rst
    ref_macros/localsettings.rst
    ref_macros/nodetypes.rst
-   ref_macros/services.rst 
+   ref_macros/services.rst
+
