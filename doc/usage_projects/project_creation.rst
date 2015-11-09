@@ -186,8 +186,8 @@ In makina-states, we use by default:
 As you see, the project layout seems not integration on those following folders, but in fact, the project
 initialisation routines made symlinks to integrate it which look like::
 
-    /srv/salt/makina-projects/<project_name>>  -> /srv/projects/<your_project_name>/project§/.salt
-    /srv/pillar/makina-projects/<project_name> -> /srv/projects/<your_project_name>/pillar
+    /srv/salt/makina-projects/<project_name>>  -> /srv/projects/<project_name>/project§/.salt
+    /srv/pillar/makina-projects/<project_name> -> /srv/projects/<project_name>/pillar
 
 - The pillar is auto included in the **pillar top** (``/srv/pîllar/top.sls``).
 - The project salt files are not and **must not** be included in the salt **top** for further highstates unless
