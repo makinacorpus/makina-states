@@ -35,11 +35,11 @@ Initialization
 - By default the project procedure is done via a `masterless salt call <http://docs.saltstack.com/en/latest/topics/tutorials/quickstart.html>`_.
 - The first thing to do is to create a **nest** from such a project, **IF IT IS NOT ALREADY DONE** (just ls /srv/projects to check)::
 
-    salt-call --local mc_project.deploy <your_project_name> # dont be long, dont use - & _
+    salt-call --local mc_project.deploy <project_name> # dont be long, dont use - & _
 
 - This empty structure respects the aforementioned corpus reactor anatomy, and is just an useless helloword project which should look like::
 
-    /srv/projects/<your_project_name>
+    /srv/projects/<project_name>
         |
         |- pillar/init.sls: override values in PILLAR.sample and define
         |                   any other arbitrary pillar DATA.
@@ -99,7 +99,7 @@ git foo
   if you do it directly on your server will look like::
 
       # go inside your project repo folder
-      cd /srv/projects/<your_project_name>/project
+      cd /srv/projects/<project_name>/project
       # download your project codebase from your forge
       git remote add g https://github.com/foo/foo.git
       git fetch --all
@@ -195,11 +195,11 @@ initialisation routines made symlinks to integrate it which look like::
 
 You can unlink your project from salt with::
 
-    salt-call --local -ldebug mc_project.unlink <your_project_name>
+    salt-call --local -ldebug mc_project.unlink <project_name>
 
 You can link project from salt with::
 
-    salt-call --local -ldebug mc_project.link <your_project_name>
+    salt-call --local -ldebug mc_project.link <project_name>
 
 Configuration variables
 ++++++++++++++++++++++++++
@@ -234,7 +234,7 @@ So, we have a data structure with at least 2 levels, the second level is only st
 
 You can get and consult the result of the configuration assemblage like this::
 
-    salt-call --local -ldebug mc_project.get_configuration <your_project_name>
+    salt-call --local -ldebug mc_project.get_configuration <project_name>
 
 
 Example
