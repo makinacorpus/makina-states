@@ -103,9 +103,10 @@ def settings(ttl=15*60):
 
 def apparmor_en():
     ret = False
+    is_docker = __salt__['mc_nodetypes.is_docker']()
     if __grains__['os'] in ['Ubuntu']:
         ret = True
-    return ret
+    return ret and not is_docker
 
 
 def registry(ttl=15*60):
@@ -113,49 +114,55 @@ def registry(ttl=15*60):
     def _do():
         has_nodejs = __salt__['mc_utils.get'](
             'makina-states.localsettings.nodejs', False)
+        is_docker = __salt__['mc_nodetypes.is_docker']()
+        # only some services will be fully done  on mastersalt side if any
+        # in scratch mode, deactivating all default configuration for services
+        true = not __salt__['mc_nodetypes.is_scratch']()
         reg = {
-            'systemd': {'active': True},
-            'autoupgrade': {'active': True},
-            'apparmor': {'active': apparmor_en()},
-            'updatedb': {'active': True},
-            'nscd': {'active': _ldapEn(__salt__)},
-            'ldap': {'active': _ldapEn(__salt__)},
+            'env': {'active': true},
+            'systemd': {'active': true},
+            'autoupgrade': {'active': true and not is_docker},
+            'apparmor': {'active': true and apparmor_en()},
+            'updatedb': {'active': true},
+            'nscd': {'active': true and _ldapEn(__salt__)},
+            'ldap': {'active': true and _ldapEn(__salt__)},
             'grub': {'active': False},
-            'git': {'active': True},
+            'git': {'active': true},
             'dns': {'active': False},
-            'hosts': {'active': True},
+            'hosts': {'active': true and not is_docker},
             'jdk': {'active': False},
-            'etckeeper': {'active': True},
-            'locales': {'active': True},
-            'localrc': {'active': True},
+            'etckeeper': {'active': true and not is_docker},
+            'locales': {'active': true},
+            'localrc': {'active': true},
             'desktoptools': {'active': False},
             'mvn': {'active': False},
-            'timezone': {'active': True},
-            'network': {'active': True},
+            'timezone': {'active': true},
+            'network': {'active': true and not is_docker},
             'nodejs': {'active': False},
             'npm': {'active': has_nodejs},
-            'pkgs.mgr': {'active': True},
+            'pkgs.mgr': {'active': true},
             'casperjs': {'active': False},
             'phantomjs': {'active': False},
             'python': {'active': False},
-            'pkgs.basepackages': {'active': True},
+            'pkgs.basepackages': {'active': true},
             'repository_dotdeb': {'active': False},
-            'shell': {'active': True},
-            'sudo': {'active': True},
-            'groups': {'active': True},
-            'sysctl': {'active': True},
-            'ssl': {'active': True},
-            'users': {'active': True},
-            'screen': {'active': True},
-            'vim': {'active': True},
+            'check_raid': {'active': False},
+            'shell': {'active': true},
+            'sudo': {'active': true},
+            'groups': {'active': true},
+            'sysctl': {'active': true},
+            'ssl': {'active': true},
+            'users': {'active': true},
+            'screen': {'active': true},
+            'vim': {'active': true},
             'rvm': {'active': False}}
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
         if 'laptop' in nodetypes_registry['actives']:
-            reg.update({'desktoptools': {'active': True},
-                        'npm': {'active': True},
-                        'nodejs': {'active': True},
-                        'jdk': {'active': True},
-                        'rvm': {'active': True}})
+            reg.update({'desktoptools': {'active': true},
+                        'npm': {'active': true},
+                        'nodejs': {'active': true},
+                        'jdk': {'active': true},
+                        'rvm': {'active': true}})
         reg = __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults=reg)

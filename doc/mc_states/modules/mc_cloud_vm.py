@@ -540,14 +540,19 @@ def vm_host_and_port(ttl=600):
         res = __grains__['id'], 22
 
         def fdo():
-            ret = __salt__['mc_remote.local_mastersalt_call']('mc_cloud.is_vm')
-            if ret['result']:
-                ret = __salt__['mc_remote.local_mastersalt_call']('mc_cloud_vm.vm_settings')
-                res = ret['result']
-                if 'target' in res and 'ssh_reverse_proxy_port' in res:
-                    host = ret['result']['target']
-                    port = ret['result']['ssh_reverse_proxy_port']
+            try:
+                ret = __salt__['mc_remote.local_mastersalt_call']('mc_cloud.is_vm')
+                if ret['result']:
+                    ret = __salt__['mc_remote.local_mastersalt_call']('mc_cloud_vm.vm_settings')
+                    res = ret['result']
+                    if 'target' in res and 'ssh_reverse_proxy_port' in res:
+                        host = ret['result']['target']
+                        port = ret['result']['ssh_reverse_proxy_port']
                     return host, port
+            except saltapi.MastersaltNotInstalled:
+                log.debug('vm_host_and_port: Mastersalt not installed')
+            except saltapi.MastersaltNotRunning:
+                log.debug('vm_host_and_port: Mastersalt not running')
             raise ValueError('no conf found, inconsistent, use default')
         try:
             return __salt__['mc_macros.filecache_fun'](

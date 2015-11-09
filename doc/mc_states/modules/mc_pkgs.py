@@ -97,7 +97,11 @@ def settings():
         if grains['os'] in ['Ubuntu']:
             lts_dist = ubuntu_lts
             if grains['osrelease'] >= '15.04':
+                # umirror = mirrors['dist']
+                umirror = mirrors['ovh']
+            elif __salt__['mc_nodetypes.is_travis']():
                 umirror = mirrors['dist']
+
         if grains['os'] in ['Debian']:
             ddist = _s['mc_utils.get'](
                 'lsb_distrib_codename', debian_stable)
@@ -132,6 +136,7 @@ def settings():
             extra_confs.update({
                 # '/etc/apt/apt.conf.d/99release': {'mode': '644'},
                 '/etc/apt/apt.conf.d/99clean': {'mode': '644'},
+                '/etc/apt/apt.conf.d/99confhold': {'mode': '644'},
                 '/etc/apt/apt.conf.d/99gzip': {'mode': '644'},
                 '/etc/apt/apt.conf.d/99notrad': {'mode': '644'},
                 '/etc/apt/preferences.d/00_proposed.pref': {'mode': '644'},

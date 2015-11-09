@@ -28,12 +28,13 @@ def _rsyslogEn(__grains__):
 
 def _ulogdEn(__salt__):
     is_container = __salt__['mc_nodetypes.is_container']()
+    is_docker = __salt__['mc_nodetypes.is_docker']()
     ret = False
     if (
         __grains__['os'].lower() in ['ubuntu'] and
         __grains__.get('osrelease') >= '13.10'
     ):
-        ret = is_container
+        ret = is_container and not is_docker
     return ret
 
 
@@ -65,16 +66,23 @@ def registry():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _registry():
         # only some services will be fully done  on mastersalt side if any
-        sshen = True
-        ntpen = _ntpEn(__salt__)
-        binden = _bindEn(__salt__)
-        rsyslogen = _rsyslogEn(__grains__)
-        ulogden = _ulogdEn(__salt__)
+        # in scratch mode, deactivating all default configuration for services
+        true = not __salt__['mc_nodetypes.is_scratch']()
+        allow_lowlevel_states = __salt__['mc_controllers.allow_lowlevel_states']()
+        is_docker = __salt__['mc_nodetypes.is_container']()
+        ids = __salt__['mc_nodetypes.is_docker_service']()
+        sshen = true and (ids or (allow_lowlevel_states and not is_docker))
+        ntpen = _ntpEn(__salt__) and true
+        binden = _bindEn(__salt__) and true
+        rsyslogen = _rsyslogEn(__grains__) and true
+        ulogden = _ulogdEn(__salt__) and true
         ntp_u = False
         if __salt__['mc_nodetypes.is_container']():
             ntp_u = True
         if ntp_u:
             ntpen = False
+        ntp_u = ntp_u and true
+        ntpen = ntpen and true
         data = {'backup.bacula-fd': {'active': False},
                 'backup.burp.server': {'active': False},
                 'backup.burp.client': {'active': False},
@@ -83,17 +91,19 @@ def registry():
                 'log.ulogd': {'force': True, 'active': ulogden},
                 'base.ntp': {'force': True, 'active': ntpen},
                 'base.ntp.uninstall': {'active': ntp_u},
-                'base.dbus': {'force': True, 'active': True},
+                'base.dbus': {'force': True, 'active': not is_docker},
                 'base.ssh': {'force': True, 'active': sshen},
+                'base.cron': {'force': True, 'active': true},
                 'dns.dhcpd': {'active': False},
                 'dns.bind': {'force': True, 'active': binden},
                 'dns.slapd': {'active': False},
                 'db.mongodb': {'active': False},
                 'db.mysql': {'active': False},
                 'db.postgresql': {'active': False},
-                'firewall.fail2ban': {'active': False},
+                'firewall.fail2ban': {'active': sshen},
                 'firewall.shorewall': {'active': False},
                 'firewall.firewalld': {'active': False},
+                'firewall.ms_iptables': {'active': False},
                 'firewall.firewall': {'active': False},
                 'firewall.psad': {'active': False},
                 'ftp.pureftpd': {'active': False},
@@ -136,11 +146,11 @@ def registry():
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
         if 'laptop' in nodetypes_registry['actives']:
             data.update({
-                'backup.burp.client': {'active': True},
-                'virt.virtualbox': {'active': True},
-                'virt.docker': {'active': True},
-                'virt.lxc': {'active': True},
-                'virt.kvm': {'active': True}})
+                'backup.burp.client': {'active': true},
+                'virt.virtualbox': {'active': true},
+                'virt.docker': {'active': true},
+                'virt.lxc': {'active': true},
+                'virt.kvm': {'active': true}})
         data = __salt__[
             'mc_macros.construct_registry_configuration'
         ](__name, defaults=data)

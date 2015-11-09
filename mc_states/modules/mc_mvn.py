@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 '''
 
-.. _module_mc_nodejs:
+.. _module_mc_mvn:
 
-mc_nodejs / nodejs/npm registry
+mc_mvn / mvn registry
 ============================================
 
 '''

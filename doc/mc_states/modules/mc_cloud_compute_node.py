@@ -705,12 +705,15 @@ def _configure_http_reverses(reversep, domain, ip):
     backend_name = 'bck_{0}'.format(dom_id)
     sbackend_name = 'securebck_{0}'.format(dom_id)
     if domain.startswith('*.'):
-        rule = 'acl host_{0} hdr_end(host) -i {1}'.format(dom_id, domain[2:])
+        rule = ('acl host_{0} hdr_reg(host)'
+                ' -i ^*.{1}(:80)?$').format(dom_id, domain[2:])
     else:
-        rule = 'acl host_{0} hdr(host) -i {0}'.format(dom_id)
+        rule = ('acl host_{0} hdr_reg(host)'
+                ' -i ^{0}(:80)?$').format(dom_id)
+    rule.replace('.', '\\.')
     if rule not in http_proxy['raw_opts']:
         http_proxy['raw_opts'].insert(0, rule)
-        https_proxy['raw_opts'].insert(0, rule)
+        https_proxy['raw_opts'].insert(0, rule.replace(':80', ':443'))
     rule = 'use_backend {1} if host_{0}'.format(dom_id, backend_name)
     if rule not in http_proxy['raw_opts']:
         http_proxy['raw_opts'].append(rule)

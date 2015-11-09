@@ -13,23 +13,20 @@ import mc_states.api
 import random
 import json
 import os
+from mc_states.grains import makina_grains
+
 
 __name = 'salt'
 
+J = os.path.join
 loglevelfmt = (
     "'%(asctime)s,%(msecs)03.0f "
     "[%(name)-17s][%(levelname)-8s] %(message)s'")
 
 
 def get_local_param(param):
-    try:
-        with open(
-            '/etc/makina-states/{0}'.format(param)
-        ) as fic:
-            paramv = fic.read().strip()
-    except (OSError, IOError):
-        paramv = ''
-    return paramv
+    param = makina_grains._get_msconf(param)
+    return param
 
 
 def get_ms_url():
@@ -42,9 +39,15 @@ def get_ms_url():
 def get_salt_url():
     val = get_local_param('salt_url')
     if not val:
-        val = 'http://github.com/makinacorpus/salt.git'
+        val = 'https://github.com/makinacorpus/salt.git'
     return val
 
+
+def get_salt_branch():
+    val = get_local_param('salt_branch')
+    if not val:
+        val = 'develop'
+    return val
 
 def get_local_salt_mode():
     local_salt_mode = get_local_param('local_salt_mode')
@@ -97,13 +100,15 @@ def settings():
             # attention, see requirements/git_requirements.txt
             'docker-py-git': {
                 'name': 'https://github.com/dotcloud/docker-py.git',
+                'force_reset': True,  # dockerpy always do shit (push -f...)
+                'force_fetch': True,
                 'target': '{venv_path}/src/docker-py'},
             'salt-git': {
                 'name': get_salt_url(),
-                'rev': 'develop',
+                'rev': get_salt_branch(),
                 'target': '{venv_path}/src/salt'},
             'salttesting-git': {
-                'name': 'http://github.com/saltstack/salt-testing.git',
+                'name': 'https://github.com/saltstack/salt-testing.git',
                 'rev': 'develop',
                 'target': '{venv_path}/src/salttesting'},
             'm2crypto': {
@@ -586,5 +591,4 @@ def has_mastersalt():
 def has_mastersalt_running():
     return __salt__['mc_controllers.has_mastersalt_running']()
 
-
-#
+# vim:set et sts=4 ts=4 tw=80:

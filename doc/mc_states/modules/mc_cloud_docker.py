@@ -67,7 +67,9 @@ def vt_default_settings(cloudSettings, imgSettings):
                 # retrocompatible generation alias
                 '/etc/default/docker-net-makina': {
                     'source':
-                    'salt://makina-states/files/etc/default/magicbridge_docker1'},
+                    'salt://makina-states/files/etc/default'
+                    '/magicbridge_docker1'},
+                '/etc/init/docker.conf': {},
                 '/etc/dnsmasq.d/docker0': {},
                 '/etc/dnsmasq.d/docker1': {},
                 '/etc/reset-net-bridges': {},
@@ -81,6 +83,14 @@ def vt_default_settings(cloudSettings, imgSettings):
                 '/usr/bin/docker-service.sh': {}},
             'cli': '/usr/bin/docker',
             'cli_opts': '-d -b {bridge}',
+            'binary_url': 'https://github.com/makinacorpus/docker/releases'
+                          '/download/mc_1/docker-1.8.2.xz',
+            'hashes': {
+                'docker-1.8.2.xz': {
+                    'hash': '9e1e3e624847fa1a6d7a9dd6d48a7d0e',
+                    'dhash': '1f72779d67eda6c4f704c35edf144e7b',
+                }
+            },
             'defaults': {'gateway': '10.7.0.1',
                          'network': '10.7.0.0',
                          'bridge': '{bridge}',

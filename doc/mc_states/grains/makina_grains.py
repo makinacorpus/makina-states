@@ -19,6 +19,32 @@ import copy
 import subprocess
 
 
+_cache = {}
+
+
+def init_environ():
+    key = 'init_environ'
+    try:
+        return _cache[key]
+    except KeyError:
+        try:
+            with open('/proc/1/environ') as fic:
+                _cache[key] = fic.read()
+        except (IOError, OSError):
+            _cache[key] = ''
+    return _cache[key]
+
+
+def _is_travis():
+    is_nodetype = None
+    val = "{0}".format(os.environ.get('TRAVIS', 'false')).lower()
+    if val in ['y', 't', 'o', 'true', '1']:
+        is_nodetype = True
+    elif val:
+        is_nodetype = False
+    return is_nodetype
+
+
 def _is_docker():
     """
     Return true if we find a system or grain flag
@@ -30,13 +56,11 @@ def _is_docker():
     except (ValueError, NameError, IndexError):
         pass
     if not docker:
-        try:
-            docker = 'docker' in open('/proc/1/environ').read()
-        except (IOError, OSError):
-            docker = False
+        docker = 'docker' in init_environ()
     if not docker:
-        if os.path.exists('.dockerinit'):
-            docker = True
+        for i in ['.dockerinit', '/.dockerinit']:
+            if os.path.exists(i):
+                docker = True
     return docker
 
 
@@ -148,12 +172,23 @@ def _is_devhost():
     return _devhost_num() != ''
 
 
+def _get_msconf(param):
+    try:
+        with open(
+            os.path.join('/etc/makina-states', param)
+        ) as fic:
+            content = fic.read().strip()
+    except (OSError, IOError):
+        content = ''
+    return content
+
+
 def _nodetype():
-    f = '/etc/makina-states/nodetype'
-    if os.path.exists(f):
-        with open(f) as fic:
-            return fic.read()
-    return 'unknown'
+    return _get_msconf('nodetype')
+
+
+def _bootsalt_mode():
+    return _get_msconf('bootsalt_mode')
 
 
 def _is_upstart():
@@ -214,6 +249,7 @@ def get_makina_grains():
               'makina.vm': _is_vm(),
               'makina.lxc': _is_lxc(),
               'makina.nodetype': _nodetype(),
+              'makina.bootsalt_mode': _bootsalt_mode(),
               'makina.systemd': _is_systemd(),
               'makina.pgsql_vers': _pgsql_vers(),
               'makina.docker': _is_docker(),

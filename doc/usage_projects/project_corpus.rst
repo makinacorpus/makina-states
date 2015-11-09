@@ -369,7 +369,7 @@ Project Release-sync procedure
 - Fetch the last commits inside the **deploy** directory
 
 
-.. _project_spec_proc_install
+.. _project_spec_proc_install:
 
 Project install procedure
 ++++++++++++++++++++++++++
@@ -377,7 +377,7 @@ We run all slses in the project **.salt** directory which is not tied to any
 default procedure.
 
 
-.. _project_spec_proc_fixperms
+.. _project_spec_proc_fixperms:
 
 Project fixperms  procedure
 ++++++++++++++++++++++++++++
@@ -394,7 +394,7 @@ Rollback procedure
 Workflows
 ---------
 
-.. _project_spec_deploy_proc
+.. _project_spec_deploy_proc:
 
 Full procedure
 +++++++++++++++++

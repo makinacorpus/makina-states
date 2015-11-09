@@ -194,6 +194,7 @@ def settings():
                 'mailname': '{domain}',
                 'hashtables': ['virtual_alias_maps', 'networks',
                                'sasl_passwd', 'relay_domains',
+                               'recipient_access',
                                'transport', 'destinations'],
                 'extra_confs': {
                     '/usr/bin/ms_resetpostfixperms.sh': {
@@ -204,6 +205,13 @@ def settings():
                         'mode': '640'},
                     '/etc/postfix/networks': {
                         'user': 'root', 'group': 'postfix',
+                        'mode': '640'},
+                    '/etc/postfix/recipient_access': {
+                        'user': 'root', 'group': 'postfix',
+                        'mode': '640'},
+                    '/etc/postfix/recipient_access.local': {
+                        'user': 'root', 'group': 'postfix',
+                        'source': '',
                         'mode': '640'},
                     '/etc/postfix/sasl_passwd': {
                         'user': 'root', 'group': 'postfix',
@@ -256,6 +264,7 @@ def settings():
                 'inet_interfaces': [],
                 'inet_protocols': ['ipv4'],
                 'mode': None,
+                'recipient_access': None,
                 'virtual_mailbox_base': '/var/mail/virtual',
                 'mailbox_size_limit': 0,
                 'local_networks': ['127.0.0.0/8'],
@@ -267,6 +276,8 @@ def settings():
                 'transport': [],
                 'virtual_map': [],
                 'catchall': None})
+        if data['recipient_access'] is None:
+            data['recipient_access'] = {'/.*/': 'smtpd_permissive'}
         data = select_mode(data)
         data = select_catchall(data)
         data = select_networks(data)

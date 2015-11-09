@@ -48,7 +48,8 @@ ONE_DAY = mc_states.api.ONE_DAY
 HALF_DAY = mc_states.api.HALF_DAY
 ONE_MONTH = mc_states.api.ONE_MONTH
 ONE_YEAR = ONE_MONTH * 12
-FIREWALLD_MANAGED = True
+FIREWALLD_MANAGED = False
+MS_IPTABLES_MANAGED = True
 
 # pillar cache is never expired, only if we detect a change on the database file
 PILLAR_TTL = ONE_YEAR
@@ -1773,11 +1774,41 @@ def get_snmpd_settings(id_=None, ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
+def get_ms_iptables_conf(id_, ttl=PILLAR_TTL):
+
+    def _do(id_):
+        _s = __salt__
+        qry = _s[__name + '.query']
+        gconf = get_configuration(id_)
+        ms_iptables_overrides = qry('ms_iptables_overrides', {})
+        if gconf.get('manage_ms_iptables', MS_IPTABLES_MANAGED):
+            # configure
+            pass
+        elif id_ not in ms_iptables_overrides:
+            return {}
+        is_ldap = is_ldap_master(id_) or is_ldap_slave(id_)
+        is_dns = is_dns_master(id_) or is_dns_slave(id_)
+        p = 'makina-states.services.firewall.ms_iptables'
+        rdata = OrderedDict([(p, True)])
+        if is_ldap:
+            rdata[p + '.no_slapd'] = False
+        if is_dns:
+            rdata[p + '.no_bind'] = False
+        prefix = p + '.'
+        for param, value in ms_iptables_overrides.get(id_, {}).items():
+            rdata[prefix + param] = value
+        return rdata
+    cache_key = __name + '.get_ms_iptables_conf5{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+
+
 def get_firewalld_conf(id_, ttl=PILLAR_TTL):
 
     def _do(id_):
         _s = __salt__
         gconf = get_configuration(id_)
+        if get_ms_iptables_conf(id_):
+            return {}
         if not gconf.get('manage_firewalld', FIREWALLD_MANAGED):
             return {}
         p = 'makina-states.services.firewall.firewalld'
@@ -2356,7 +2387,9 @@ def get_supervision_conf_kind(id_, kind, ttl=PILLAR_TTL):
                     nginx = rdata.setdefault('nginx', {})
                     domain = rdata.get('nginx', {}).get('domain', id_)
                     cert, key = __salt__[
-                        'mc_ssl.selfsigned_ssl_certs'](domain, True)[0]
+                        'mc_ssl.selfsigned_ssl_certs'](domain,
+                                                       gen=True,
+                                                       as_text=True)[0]
                     # unknown ca signed certs do not work in nginx
                     # cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
                     # nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
@@ -3017,7 +3050,7 @@ def get_check_raid_conf(id_, ttl=PILLAR_TTL):
             return {}
         rdata = {}
         maps = __salt__[__name + '.get_db_infrastructure_maps']()
-        pref = "makina-states.nodetypes.check_raid"
+        pref = "makina-states.localsettings.check_raid"
         if id_ in maps['bms']:
             rdata.update({pref: True})
         return rdata
@@ -3614,6 +3647,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         __name + '.get_packages_conf': {'only_managed': False},
         __name + '.get_pkgmgr_conf': {'only_managed': False},
         __name + '.get_firewalld_conf': {'only_managed': False},
+        __name + '.get_ms_iptables_conf': {'only_managed': False},
         __name + '.get_shorewall_conf': {'only_managed': False},
         __name + '.get_snmpd_conf': {'only_known': False},
         __name + '.get_burp_server_conf': {},
@@ -3732,6 +3766,8 @@ def get_cloud_conf(ttl=PILLAR_TTL):
             if vt not in supported_vts:
                 continue
             for cn, vms in targets.items():
+                if vms is None:
+                    vms = {}
                 if cn in _s[__name + '.query']('non_managed_hosts', {}):
                     continue
                 dcn = dcns.setdefault(cn, OrderedDict())

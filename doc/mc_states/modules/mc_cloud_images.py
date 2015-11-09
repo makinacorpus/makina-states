@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, print_function
 # pylint: disable=W0105
 '''
 .. _module_mc_cloud_images:
@@ -33,7 +32,12 @@ from distutils.version import LooseVersion
 from mc_states.runners import mc_lxc
 from mc_states.modules.mc_lxc import (
     is_lxc)
-from salt.utils.odict import OrderedDict
+try:
+    from salt.utils.odict import OrderedDict
+    # hack for readthedoc monkeypatch
+    OrderedDict([('a', 'b')])
+except TypeError:
+    from collections import OrderedDict
 from mc_states.modules.mc_pillar import PILLAR_TTL
 __name = 'mc_cloud_images'
 

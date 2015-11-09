@@ -35,6 +35,14 @@ LOCAL_NETS = ['10.0.0.0/8',
               '172.16.0.0/12']
 
 
+def prefered_ips(ips, ttl=60, *args, **kw):
+    def _do(*a, **k):
+            return mc_states.api.prefered_ips(*a, **k)
+    cache_key = __name + '.prefered_ips{0}'.format(ips)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [ips], {}, cache_key, ttl)
+
+
 def is_allow_local():
     _s = __salt__
     data_net = _s['mc_network.default_net']()
@@ -1254,23 +1262,23 @@ def settings():
         zones
             mapping of zones definitions
 
-    PER ZONE SETTINGS:
+    PER ZONE SETTINGS
 
-    You can configure zone settings via via entries in the zone pillar:
+    You can configure zone settings via via entries in the zone pillar
+
         default_policy
-          enforce policy, attention in firewalld world, everything
-          is dropped if no match, so no need to force reject.
-          Its even harmful as it wont cut any further rich rules
-          to have a change to apply !
+            enforce policy, attention in firewalld world, everything
+            is dropped if no match, so no need to force reject.
+            Its even harmful as it wont cut any further rich rules
+            to have a change to apply !
         interfaces
             interfaces to add to the zone
-
         XXX-rules
             rich rules
 
     For exmeple, to Add some rich rules in pillar to a zone, all
     ``makina-states.services.firewall.firewalld.zones.public.rules<id>``
-    are merged ::
+    are merged
 
     .. code-block:: yaml
 
@@ -1290,29 +1298,30 @@ def settings():
               port=22, destinations=['not address="127.0.0.2"'],  action='drop'
           )- {{i}} {% endfor %}
 
+
+    Whitelist some services:
+
+        .. code-block:: yaml
+
+            makina-states.services.firewall.firewalld.public_services-append:
+                - smtp
+
+    Change whitelisted services:
+
+        .. code-block:: yaml
+
+            makina-states.services.firewall.firewalld.public_services: [http]
+
+    Define a new service:
+
+        .. code-block:: yaml
+
+            makina-states.services.firewall.firewalld.services.foo:
+                port: [{protocol: tcp, port: 2222}]
+
     NOTE
        **DO NOT ACTIVATE MASQUERADING, IT IS TOO MUCH CATCHY**
         PLEASE USE APPROPRIATE RESTRICTIVES RICH MASQUERADE RULES
-
-    Whitelist some services
-
-    .. code-block:: yaml
-
-        makina-states.services.firewall.firewalld.public_services-append:
-            - smtp
-
-    Change whitelisted services
-
-    .. code-block:: yaml
-
-        makina-states.services.firewall.firewalld.public_services: [http]
-
-    Define a new service
-
-    .. code-block:: yaml
-
-        makina-states.services.firewall.firewalld.services.foo:
-            port: [{protocol: tcp, port: 2222}]
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():

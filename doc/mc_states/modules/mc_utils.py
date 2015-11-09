@@ -22,6 +22,8 @@ import os
 import pstats
 import re
 
+
+import salt.loader
 from salt.config import master_config, minion_config
 from salt.exceptions import SaltException
 import salt.utils
@@ -29,7 +31,6 @@ import salt.utils.dictupdate
 import salt.utils.network
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
-import salt.loader
 from salt.ext import six as six
 from mc_states import api
 import mc_states.api
@@ -38,6 +39,17 @@ _CACHE = {'mid': None}
 _default_marker = object()
 _marker = object()
 log = logging.getLogger(__name__)
+
+
+def assert_good_grains(grains):
+     ''''
+     no time to search/debug why,
+     but sometimes grains dict is empty depending on the call context
+     grains loading bug retriggered (i fixed once, do not remember where, FU SALT ...
+     '''
+     if not grains:
+         grains = salt.loader.grains(__opts__)
+     return grains
 
 
 def hash(string, typ='md5', func='hexdigest'):
@@ -1014,6 +1026,12 @@ def get_container(pid):
                 lxc = content.split('\n')[0].split(':')[-1]
     if '/lxc' in lxc:
         lxc = lxc.split('/lxc/', 1)[1]
+    if '/' in lxc and (
+        '.service' in lxc or
+        '.slice' in lxc or
+        '.target' in lxc
+    ):
+        lxc = lxc.split('/')[0]
     return lxc
 
 

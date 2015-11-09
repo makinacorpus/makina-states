@@ -10,6 +10,7 @@ mc_controllers / controllers related variables
 # Import salt libs
 import os
 import mc_states.api
+from mc_states.grains import makina_grains
 
 __name = 'controllers'
 
@@ -25,19 +26,23 @@ def metadata():
 
 def has_mastersalt():
     has_mastersalt = False
+    bootsalt_mode = makina_grains._bootsalt_mode()
+    if bootsalt_mode == 'mastersalt':
+        has_mastersalt = True
     try:
         with open('/etc/makina-states/mode') as fic:
             has_mastersalt = 'mastersalt' in fic.read()
     except Exception:
         pass
     for i in [
-        '/etc/mastersalt/minion',
+        '/usr/bin/mastersalt-call',
         '/usr/bin/mastersalt',
+        '/etc/mastersalt/minion',
         '/etc/mastersalt/master'
     ]:
-        has_mastersalt = os.path.exists(i)
         if has_mastersalt:
             break
+        has_mastersalt = os.path.exists(i)
     return has_mastersalt
 
 
@@ -81,6 +86,21 @@ def mastersalt_mode():
             has_mastersalt()
             and 'mastersalt' in __salt__['mc_utils.get']('config_dir')
         ))
+
+
+def allow_lowlevel_states():
+    '''
+    Do we allow low level states
+
+    in dual stack saltstack installs, only allow low level states
+    on the mastersalt side
+    in other cases, without the presence of the conf flag
+    this will return 'unkown' also ensuring that in this case
+    we can apply the states (no complete makina-states installs)
+    '''
+    if has_mastersalt():
+        return mastersalt_mode()
+    return True
 
 
 def masterless():

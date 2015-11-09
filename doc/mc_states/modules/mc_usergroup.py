@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 
 def get_default_groups():
     saltmods = __salt__
-    data= {}
+    data = {}
     # Editor group to have write permission on salt controlled files
     # but also on project related files
     grainsPref = 'makina-states.localsettings.'
@@ -124,7 +124,7 @@ def settings():
         # default  sysadmin settings
         if _s['mc_macros.is_item_active']('nodetypes', 'vagrantvm'):
             sysadmins_keys.append('salt://makina-states/files/ssh/vagrant.pub')
-        if _s['mc_macros.is_item_active']('nodetypes', 'travis'):
+        if _s['mc_nodetypes.is_travis']():
             sudoers.append('travis')
         data['admin'] = _s['mc_utils.defaults'](
             'makina-states.localsettings.admin', {
@@ -136,13 +136,13 @@ def settings():
         data['admin']['sudoers'] = _s['mc_project.uniquify'](
             data['admin']['sudoers'])
         if (
-            data['admin']['root_password']
-            and not data['admin']['sysadmin_password']
+            data['admin']['root_password'] and
+            not data['admin']['sysadmin_password']
         ):
             data['admin']['sysadmin_password'] = data['admin']['root_password']
         if (
-            data['admin']['sysadmin_password']
-            and not data['admin']['root_password']
+            data['admin']['sysadmin_password'] and
+            not data['admin']['root_password']
         ):
             data['admin']['root_password'] = data['admin']['sysadmin_password']
         root_data = {'admin': True,
@@ -195,9 +195,9 @@ def settings():
             udata['ssh_keys'] = []
             for k in ssh_keys:
                 if (
-                    '://' not in k
-                    and k.endswith('.pub')
-                    and '/files/' in k
+                    '://' not in k and
+                    k.endswith('.pub') and
+                    '/files/' in k
                 ):
                     k = 'salt://files/ssh/' + k
                 if k not in udata['ssh_keys']:

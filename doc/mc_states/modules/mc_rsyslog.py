@@ -54,7 +54,8 @@ def settings():
         nt_reg = __salt__['mc_nodetypes.registry']()
         locs = __salt__['mc_locations.settings']()
         listen_addr = '0.0.0.0'
-        if nt_reg['is']['vm']:
+        is_docker = __salt__['mc_nodetypes.is_docker']()
+        if nt_reg['is']['vm'] or is_docker:
             listen_addr = '127.0.0.1'
         xconsole = True
         kernel_log = True

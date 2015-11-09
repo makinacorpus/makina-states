@@ -55,6 +55,8 @@ import mc_states.project as projects_api
 log = logger = logging.getLogger(__name__)
 
 _MARKER = object()
+J = os.path.join
+D = os.path.dirname
 API_VERSION = '2'
 ENVS = projects_api.ENVS
 KEEP_ARCHIVES = projects_api.KEEP_ARCHIVES
@@ -66,6 +68,7 @@ DEFAULT_AUTHOR = 'makina-states'
 DEFAULT_EMAIL = '{0}@paas.tld'.format(DEFAULT_AUTHOR)
 DEFAULT_CONFIGURATION = {
     'name': None,
+    'remote_less': None,
     'minion_id': None,
     'fqdn': None,
     'remote_host': '{fqdn}',
@@ -131,6 +134,19 @@ SPECIAL_SLSES = ["{0}.sls".format(a)
                               'rotate_archives',
                               'install']]
 
+CUSTOM = '''
+custom: bar
+'''
+TOP = '''
+#
+# This is the top pillar configuration file, link here all your
+# environment configurations files to their respective minions
+#
+base:
+  '*':
+    - custom
+'''
+
 
 for step in STEPS:
     DEFAULT_CONFIGURATION['skip_{0}'.format(step)] = None
@@ -182,17 +198,17 @@ def set_makina_states_author(directory,
     user, _ = get_default_user_group(**kw)
     force = kw.get('force', False)
     try:
-        cemail = __salt__['git.config_get'](directory, 'user.email', user=user)
+        cemail = __salt__['git.config_get'](cwd=directory, key='user.email', user=user)
     except salt.exceptions.CommandExecutionError:
         cemail = None
     try:
-        cname = __salt__['git.config_get'](directory, 'user.name', user=user)
+        cname = __salt__['git.config_get'](cwd=directory, key='user.name', user=user)
     except salt.exceptions.CommandExecutionError:
         cname = None
     if force or not cemail:
-        __salt__['git.config_set'](directory, 'user.email', email, user=user)
+        __salt__['git.config_set'](cwd=directory, key='user.email', value=email, user=user)
     if force or not cname:
-        __salt__['git.config_set'](directory, 'user.name', name, user=user)
+        __salt__['git.config_set'](cwd=directory, key='user.name', value=name, user=user)
 
 
 def remove_path(path):
@@ -413,23 +429,24 @@ def _prepare_configuration(name, *args, **kwargs):
         # - makina-projects.fooproject.default_env
         # - fooproject.default_env
         # - default_env
-        denv = 'dev'
-        for midstart in ['prod', 'staging']:
-            if _g['id'].startswith('{0}-'.format(midstart)):
-                denv = midstart
+        default_env = __salt__['mc_env.settings']()['env']
         cfg['default_env'] = _s['mc_utils.get'](
             'makina-projects.{0}.{1}'.format(name, 'default_env'),
-            _s['mc_utils.get'](
-                '{0}.{1}'.format(name, 'default_env'),
-                _s['mc_utils.get']('default_env', denv)))
+            _s['mc_utils.get']('{0}.{1}'.format(name, 'default_env'),
+                               default_env))
 
     # set default skippped steps on a specific environment
     # to let them maybe be overriden in pillar
     skipped = {}
     for step in STEPS:
+        defaultskip = {
+            'notify': True,
+            'default': False
+        }
         ignored_keys.append('skip_{0}'.format(step))
         skipped['skip_{0}'.format(step)] = kwargs.get(
-            'skip_{0}'.format(step), False)
+            'skip_{0}'.format(step),
+            defaultskip.get(step, defaultskip['default']))
     only = kwargs.get('only', cfg.get('only', None))
     if only:
         if isinstance(only, basestring):
@@ -457,14 +474,11 @@ def _prepare_configuration(name, *args, **kwargs):
                              'no_user',
                              'no_default_includes']
 
-    # we can override many of default values via pillar/localreg
+    # we can override many of default values via pillar
     for k in overridable_variables:
         if k in ignored_keys:
             continue
-        cfg[k] = _s['mc_utils.get'](
-            '{0}:{1}'.format(name, k), cfg[k],
-            local_registry='makina_projects',
-            registry_format='pack')
+        cfg[k] = _s['mc_utils.get']('{0}:{1}'.format(name, k), cfg[k])
     try:
         cfg['keep_archives'] = int(cfg['keep_archives'])
     except (TypeError, ValueError, KeyError):
@@ -714,6 +728,14 @@ def get_configuration(name, *args, **kwargs):
 
     name
         name of the project
+    remote_less
+        Does the project use local remotes (via git hooks) for users
+        to push code inside remotes and have the local working copy
+        synchronized with those remotes before deploy.
+        Default to False, set to True to not use local remotes
+        If the project directory .git folder exists, and there
+        is no local remote created, the local remotes feature
+        will also be disabled
     fqdn
         fqdn of the box
     minion_id
@@ -851,6 +873,9 @@ def get_configuration(name, *args, **kwargs):
     cfg.update(_s['mc_utils.format_resolve'](cfg))
     cfg.update(_s['mc_utils.format_resolve'](cfg, cfg['data']))
 
+    if cfg['remote_less'] is None:
+        cfg['remote_less'] = is_remote_less(cfg)
+
     now = datetime.datetime.now()
     cfg['chrono'] = '{0}_{1}'.format(
         datetime.datetime.strftime(now, '%Y-%m-%d_%H_%M-%S'),
@@ -902,8 +927,9 @@ def set_configuration(name, cfg=None, *args, **kwargs):
     local_conf = __salt__['mc_macros.get_local_registry'](
         'makina_projects', registry_format='pack')
     local_conf[name] = _get_filtered_cfg(cfg)
-    __salt__['mc_macros.update_local_registry'](
-        'makina_projects', local_conf, registry_format='pack')
+    # saved registry is now deactivated to simplify things
+    # __salt__['mc_macros.update_local_registry'](
+    #     'makina_projects', local_conf, registry_format='pack')
     return get_configuration(name)
 
 
@@ -934,6 +960,22 @@ def get_configuration_item(project, item=_MARKER, **kw):
             if not os.path.exists(val):
                 val = False
     return {'item': val, 'cfg': cfg, 'key': key}
+
+
+def is_pillar_remote_less(cfg):
+    no_remote = (
+        (os.path.exists(J(cfg['pillar_root'], '.git')) or
+         os.path.exists(J(cfg['pillar_root'], 'init.sls')))and
+        not os.path.exists(cfg['pillar_git_root']))
+    return no_remote
+
+
+def is_remote_less(cfg):
+    no_remote = cfg.get('remote_less', False) or (
+        (os.path.exists(J(cfg['project_root'], '.git')) or
+         os.path.exists(J(cfg['project_root'], '.salt'))) and
+        not os.path.exists(cfg['project_git_root']))
+    return no_remote
 
 
 def init_user_groups(user, groups=None, ret=None):
@@ -981,13 +1023,13 @@ def init_project_dirs(cfg, ret=None):
         'Initialize or verify core '
         'project layout for {0}').format(cfg['name']))
     # create various directories
-    for dr, mode in [
-        (cfg['git_root'], '770'),
-        (cfg['archives_root'], '770'),
-        (os.path.dirname(cfg['wired_pillar_root']), '770'),
-        (os.path.dirname(cfg['wired_salt_root']), '770'),
-        (cfg['data_root'], '770'),
-    ]:
+    dirs = [(cfg['archives_root'], '770'),
+            (os.path.dirname(cfg['wired_pillar_root']), '770'),
+            (os.path.dirname(cfg['wired_salt_root']), '770'),
+            (cfg['data_root'], '770')]
+    if not cfg['remote_less']:
+        dirs.insert(0, (cfg['git_root'], '770'))
+    for dr, mode in dirs:
         cret = _state_exec(sfile,
                            'directory',
                            dr,
@@ -1069,41 +1111,46 @@ def sync_hooks(name, ret=None, api_version=API_VERSION, *args, **kwargs):
     params = {
         'FORCE_MARKER': local_remote+'/hooks/force_marker',
         'api_version': api_version, 'name': name}
-    cret = _state_exec(sfile, 'managed',
-                       name=os.path.join(local_remote, 'hooks/pre-receive'),
-                       source=(
-                           'salt://makina-states/files/projects/2/'
-                           'hooks/pre-receive'),
-                       defaults=params,
-                       user=user, group=group, mode='750', template='jinja')
-    cret = _state_exec(sfile, 'managed',
-                       name=os.path.join(local_remote, 'hooks/post-receive'),
-                       source=(
-                           'salt://makina-states/files/projects/2/'
-                           'hooks/post-receive'),
-                       defaults=params,
-                       user=user, group=group, mode='750', template='jinja')
-    cret = _state_exec(sfile, 'managed',
-                       name=os.path.join(local_remote, 'hooks/deploy_hook.py'),
-                       source=(
-                           'salt://makina-states/files/projects/2/'
-                           'hooks/deploy_hook.py'),
-                       defaults=params,
-                       user=user, group=group, mode='750')
-    cret = _state_exec(sfile, 'managed',
-                       name=os.path.join(project_git, 'hooks/pre-push'),
-                       source=(
-                           'salt://makina-states/files/projects/2/'
-                           'hooks/pre-push'),
-                       template='jinja',
-                       defaults=params,
-                       user=user, group=group, mode='750')
-    if not cret['result']:
-        raise projects_api.ProjectInitException(
-            'Can\'t set git hooks for {0}\n{1}'.format(name, cret['comment']))
-    else:
-        _append_comment(
-            ret, summary='Git Hooks for {0}'.format(name))
+    if not cfg.get('remote_less', False):
+        cret = _state_exec(
+            sfile, 'managed',
+            name=os.path.join(local_remote, 'hooks/pre-receive'),
+            source=(
+                'salt://makina-states/files/projects/2/'
+                'hooks/pre-receive'),
+            defaults=params,
+            user=user, group=group, mode='750', template='jinja')
+        cret = _state_exec(
+            sfile, 'managed',
+            name=os.path.join(local_remote, 'hooks/post-receive'),
+            source=(
+                'salt://makina-states/files/projects/2/'
+                'hooks/post-receive'),
+            defaults=params,
+            user=user, group=group, mode='750', template='jinja')
+        cret = _state_exec(
+            sfile, 'managed',
+            name=os.path.join(local_remote, 'hooks/deploy_hook.py'),
+            source=(
+                'salt://makina-states/files/projects/2/'
+                'hooks/deploy_hook.py'),
+            defaults=params,
+            user=user, group=group, mode='750')
+        cret = _state_exec(
+            sfile, 'managed',
+            name=os.path.join(project_git, 'hooks/pre-push'),
+            source=(
+                'salt://makina-states/files/projects/2/'
+                'hooks/pre-push'),
+            template='jinja',
+            defaults=params,
+            user=user, group=group, mode='750')
+        if not cret['result']:
+            raise projects_api.ProjectInitException(
+                'Can\'t set git hooks for {0}\n{1}'.format(name, cret['comment']))
+        else:
+            _append_comment(
+                ret, summary='Git Hooks for {0}'.format(name))
     return ret
 
 
@@ -1136,6 +1183,7 @@ def init_repo(working_copy,
               project=None,
               remote_host=None,
               cfg=None,
+              remote_less=False,
               api_version=API_VERSION):
     '''
     Initialize an empty git repository, either bare or a working copy
@@ -1218,6 +1266,8 @@ def init_repo(working_copy,
         igit = working_copy
         if bare:
             igit += '.tmp'
+        if remote_less:
+            igit = lgit
         try:
             parent = os.path.dirname(igit)
             if not os.path.exists(parent):
@@ -1225,14 +1275,14 @@ def init_repo(working_copy,
                     parent, user=user, group=group, mode=0750)
             _s['file.set_mode'](parent, 0750)
             _s['file.chown'](parent, user=user, group=group)
-            if not os.path.exists(
-                os.path.join(igit, '.git')
-            ):
+            if not os.path.exists(os.path.join(igit, '.git')):
                 _s['git.init'](igit, user=user)
             _s['file.set_mode'](igit, 0750)
             _s['file.chown'](igit, user=user, group=group)
             empty = os.path.join(igit, '.empty')
-            _s['git.remote_set'](igit, 'origin', working_copy, user=user)
+            if not remote_less:
+                _s['git.remote_set'](
+                    igit, remote='origin', url=working_copy, user=user)
             if bare:
                 set_makina_states_author(igit, user=user)
             if init_salt:
@@ -1244,6 +1294,7 @@ def init_repo(working_copy,
                                               force=True,
                                               commit_all=False,
                                               do_push=False,
+                                              remote_less=remote_less,
                                               api_version=api_version)
             elif init_pillar:
                 init_pillar_dir(
@@ -1255,6 +1306,7 @@ def init_repo(working_copy,
                     bare=bare,
                     do_push=False,
                     api_version=api_version,
+                    remote_less=remote_less,
                     ret=ret)
             else:
                 if not os.path.exists(empty):
@@ -1263,16 +1315,16 @@ def init_repo(working_copy,
             set_makina_states_author(igit, user=user)
             git_commit(igit, message=INITIAL_COMMIT_MESSAGE,
                        commit_all=True, opts='-f', user=user)
-            if bare:
+            if bare and not remote_less:
                 _s['git.push'](
-                    igit, 'origin', branch='master:master',
+                    cwd=igit, remote='origin', ref='master:master',
                     opts='--force -u', user=user)
         except Exception:
             log.error(traceback.format_exc())
             raise projects_api.ProjectInitException(
                 'Can\'t create init layout in {0}'.format(working_copy))
         finally:
-            if bare:
+            if bare and (igit != lgit) and (igit != working_copy):
                 cret = _s['cmd.run_all']('rm -rf "{0}"'.format(igit),
                                          runas=user)
     return ret
@@ -1307,9 +1359,9 @@ def push_changesets_in(directory,
     user, group = get_default_user_group(**kw)
     try:
         return __salt__['git.push'](
-            directory,
-            remote,
-            branch=branch,
+            cwd=directory,
+            remote=remote,
+            ref=branch,
             opts=opts,
             user=user
         )
@@ -1335,7 +1387,7 @@ def git_commit(git,
     cret = None
     try:
         if commit_all:
-            _s['git.add'](git, '.', opts=opts, user=user)
+            _s['git.add'](cwd=git, filename='.', opts=opts, user=user)
         status = _s['cmd.run']('git status',
                                env={'LANG': 'C', 'LC_ALL': 'C'},
                                runas=user,
@@ -1387,7 +1439,7 @@ def set_git_remote(wc, user, localgit, remote='origin', ret=None):
     if not ret:
         ret = _get_ret(user)
     # add the local and distant remotes
-    cret = _s['git.remote_set'](localgit, remote, wc, user=user)
+    cret = _s['git.remote_set'](localgit, remote=remote, url=wc, user=user)
     if not cret:
         raise projects_api.ProjectInitException(
             'Can\'t initialize git local remote '
@@ -1535,18 +1587,19 @@ def sync_working_copy(wc,
     nocommits = "fatal: bad default revision 'HEAD'" in _s['cmd.run'](
         'git log', env={'LANG': 'C', 'LC_ALL': 'C'},
         cwd=wc, runas=user)
+    force_sync = False
+    set_target='{1}/{0}'.format(rev, origin)
     # the local copy is not yet synchronnized with any repo
     if (
-        initial
-        or reset
-        or nocommits
-        or (
-            [a for a in os.listdir(wc) if a not in ['.git']]
-            == ['.empty']
+        initial or
+        reset or
+        nocommits or (
+            [a for a in os.listdir(wc)
+             if a not in ['.git']] == ['.empty']
         )
     ):
         cret = _s['git.reset'](
-            wc, '--hard {1}/{0}'.format(rev, origin),
+            wc, opts='--hard {1}/{0}'.format(rev, origin),
             user=user)
         # in dev mode, no local repo, but we sync it anyway
         # to avoid bugs
@@ -1558,19 +1611,38 @@ def sync_working_copy(wc,
         cret = _s['cmd.run_all']('git pull {1} {0}'.format(rev, origin),
                                  cwd=wc, python_shell=True, runas=user)
         if cret['retcode']:
-            # finally try to reset hard
+            force_sync = True
+        corigin_log = __salt__['cmd.run_all'](
+            'git log {0}/{1}'.format(origin, rev),
+            python_shell=True, cwd=wc, user=kw['user'])
+        if corigin_log['retcode'] != 0:
+            raise projects_api.ProjectInitException(
+                'Can not get origin log from {0}/{1} in {2}'.format(
+                    origin, rev, wc))
+        loc_sha1 = __salt__['git.revision'](wc, user=kw['user'])
+        origin_sha1 = corigin_log['stdout'].splitlines()[0].split()[1]
+        if loc_sha1 != origin_sha1:
+            _append_comment(
+                ret, summary=(
+                    'Synchronise working copy {0}'
+                    ' from upstream {2}/{1}@{3}'.format(
+                        wc, rev, origin, origin_sha1)))
+            set_target = origin_sha1
+            force_sync = True
+    if force_sync:
+        # finally try to reset hard
+        cret = _s['cmd.run_all'](
+            'git reset --hard {0}'.format(set_target),
+            cwd=wc, user=user)
+        if cret['retcode']:
+            # try to merge a bit but only what's mergeable
             cret = _s['cmd.run_all'](
-                'git reset --hard {1}/{0}'.format(rev, origin),
-                cwd=wc, user=user)
+                'git merge --ff-only {1}/{0}'.format(rev, origin),
+                cwd=wc, python_shell=True, runas=user)
             if cret['retcode']:
-                # try to merge a bit but only what's mergeable
-                cret = _s['cmd.run_all'](
-                    'git merge --ff-only {1}/{0}'.format(rev, origin),
-                    cwd=wc, python_shell=True, runas=user)
-                if cret['retcode']:
-                    raise projects_api.ProjectInitException(
-                        'Can not sync from {0}/{1} in {2}'.format(
-                            origin, rev, wc))
+                raise projects_api.ProjectInitException(
+                    'Can not sync from {0}/{1} in {2}'.format(
+                        origin, rev, wc))
     return ret
 
 
@@ -1594,6 +1666,7 @@ def init_pillar_dir(directory,
                     project=None,
                     commit_all=False,
                     do_push=False,
+                    remote_less=False,
                     **kw):
     '''
     Initialize a basic versionned pillar directory
@@ -1662,8 +1735,9 @@ def init_pillar_dir(directory,
                 'Can\'t create default {0}\n{1}'.format(fil, cret['comment']))
     if os.path.join(directory, '.git'):
         if commit_all:
+            set_makina_states_author(directory, user=user)
             git_commit(directory, commit_all=commit_all, user=user)
-        if do_push:
+        if do_push and not remote_less:
             push_changesets_in(directory, opts='-u', user=user)
 
 
@@ -1677,6 +1751,7 @@ def refresh_files_in_working_copy(project_root,
                                   commit_all=False,
                                   do_push=False,
                                   remote_host=None,
+                                  remote_less=False,
                                   *args,
                                   **kwargs):
     if not api_version:
@@ -1703,6 +1778,7 @@ def refresh_files_in_working_copy(project_root,
                                 project=project,
                                 do_push=do_push,
                                 commit_all=commit_all,
+                                remote_less=remote_less,
                                 ret=ret)
     set_project(init_data)
     for fil in ['PILLAR.sample']:
@@ -1722,7 +1798,7 @@ def refresh_files_in_working_copy(project_root,
             raise projects_api.ProjectInitException(
                 'Can\'t create default {0}\n{1}'.format(
                     fil, cret['comment']))
-    if os.path.join(project_root, '.git'):
+    if os.path.join(project_root, '.git') and not remote_less:
         if commit_all:
             git_commit(project_root, commit_all=commit_all, user=user)
         if do_push:
@@ -1737,6 +1813,7 @@ def init_salt_dir(directory,
                   do_push=False,
                   project=None,
                   init_data=None,
+                  remote_less=False,
                   **kw):
     '''
     Initialize a basic corpus project directory
@@ -1796,7 +1873,7 @@ def init_salt_dir(directory,
                 raise projects_api.ProjectInitException(
                     'Can\'t create default {0}\n{1}'.format(
                         fil, cret['comment']))
-    if os.path.join(directory, '.git'):
+    if os.path.join(directory, '.git') and not remote_less:
         if commit_all:
             git_commit(directory, commit_all=commit_all, user=user)
         if do_push:
@@ -1828,6 +1905,8 @@ def init_project(name, *args, **kwargs):
         init_project_dirs(cfg, ret=ret)
         project_git_root = cfg['project_git_root']
         pillar_git_root = cfg['pillar_git_root']
+        remote_less = is_remote_less(cfg)
+        pillar_remote_less = remote_less or is_pillar_remote_less(cfg)
         repos = [
             (
                 cfg['pillar_root'],
@@ -1836,6 +1915,7 @@ def init_project(name, *args, **kwargs):
                 False,
                 False,
                 True,
+                pillar_remote_less
             ),
             (
                 cfg['project_root'],
@@ -1844,29 +1924,50 @@ def init_project(name, *args, **kwargs):
                 True,
                 True,
                 False,
+                remote_less
             ),
         ]
-        for wc, rev, localgit, hook, init_salt, init_pillar in repos:
-            init_repo(localgit, user=user, group=group,
-                      ret=ret,
-                      init_salt=init_salt, init_pillar=init_pillar,
-                      bare=True, init_data=cfg)
-            init_repo(wc, user=user, group=group, cfg=cfg,
-                      ret=ret, bare=False, init_data=cfg)
-            for working_copy, remote in [(localgit, wc),
-                                         (wc, localgit)]:
-                set_git_remote(working_copy, user, remote, ret=ret)
-            fetch_last_commits(wc, user, ret=ret)
+
+        for (wc, rev, localgit, hook,
+             init_salt, init_pillar, lremote_less) in repos:
+            # allow to have projects without remote
+            if not lremote_less:
+                init_repo(localgit, user=user, group=group, ret=ret,
+                          init_salt=init_salt, init_pillar=init_pillar,
+                          bare=True, init_data=cfg, remote_less=lremote_less)
+            init_repo(wc, user=user, group=group, cfg=cfg, ret=ret,
+                      bare=False, init_data=cfg, remote_less=lremote_less)
+            if not lremote_less:
+                for (working_copy, remote) in [
+                    (localgit, wc), (wc, localgit)
+                ]:
+                    set_git_remote(working_copy, user, remote, ret=ret)
+                fetch_last_commits(wc, user, ret=ret)
         sync_hooks(name, ret=ret, api_version=cfg['api_version'])
         # to mutally sync remotes, all repos must be created
         # first, so we need to cut off and reiterate over
         # the same iterables, but in 2 times
-        for wc, rev, localgit, hook, init_salt, init_pillar in repos:
-            set_upstream(wc, rev, user, ret=ret)
-            sync_working_copy(wc, user=user, rev=rev, ret=ret)
+        for (wc, rev, localgit, hook, init_salt,
+             init_pillar, lremote_less) in repos:
+            if not lremote_less:
+                set_upstream(wc, rev, user, ret=ret)
+                sync_working_copy(wc, user=user, rev=rev, ret=ret)
         link(name, *args, **kwargs)
         refresh_files_in_working_copy_kwargs = copy.deepcopy(kwargs)
+        refresh_files_in_working_copy_kwargs.pop('remote_less', None)
         refresh_files_in_working_copy_kwargs['commit_all'] = commit_all
+        pillar = os.path.join(cfg['pillar_root'], 'init.sls')
+        if not os.path.exists(pillar):
+            init_pillar_dir(
+                cfg['pillar_root'],
+                init_data=cfg,
+                project=cfg['name'],
+                user=user,
+                commit_all=False,
+                bare=False,
+                do_push=False,
+                remote_less=pillar_remote_less,
+                ret=ret)
         refresh_files_in_working_copy(cfg['project_root'],
                                       user=user,
                                       group=group,
@@ -1874,9 +1975,14 @@ def init_project(name, *args, **kwargs):
                                       init_data=cfg,
                                       force=True,
                                       do_push=True,
+                                      remote_less=remote_less,
                                       api_version=cfg['api_version'],
                                       *args,
                                       **refresh_files_in_working_copy_kwargs)
+        # in case of remoteless the .salt folder may have just been created
+        # in working dir, so link must be redone here
+        if remote_less or pillar_remote_less:
+            link(name, *args, **kwargs)
         # remove if found, the force marker
         fm = os.path.join(cfg['project_git_root'], 'hooks', 'force_marker')
         if os.path.exists(fm):
@@ -1890,7 +1996,7 @@ def init_project(name, *args, **kwargs):
                         body="{0}{1}{2}".format(
                             _colors('RED'), trace, _colors('ENDC')
                         ))
-    if ret['result']:
+    if ret['result'] and not remote_less:
         set_configuration(cfg['name'], cfg)
         _append_comment(ret, summary="You can now push to",
                         color='RED',
@@ -2280,12 +2386,18 @@ def link_pillar(names, *args, **kwargs):
         cfg = get_configuration(name, nodata=True, *args, **kwargs)
         salt_settings = __salt__['mc_salt.settings']()
         pillar_root = os.path.join(salt_settings['pillarRoot'])
+        upillar_top = 'makina-projects.{name}'.format(**cfg)
         pillarf = os.path.join(pillar_root, 'top.sls')
+        customf = os.path.join(pillar_root, 'custom.sls')
         pillar_top = 'makina-projects.{name}'.format(**cfg)
         link_into_root(
             name, ret,
             cfg['wired_pillar_root'], cfg['pillar_root'], do_link=True)
         added = '    - {0}'.format(pillar_top)
+        for f, content in six.iteritems({pillarf: TOP, customf: CUSTOM}):
+            if not os.path.exists(f):
+                with open(f, 'w') as fic:
+                    fic.write(content)
         with open(pillarf) as fpillarf:
             pillars = fpillarf.read().splitlines()
             found = False
@@ -2364,9 +2476,9 @@ def link_into_root(name, ret, link, target, do_link=True):
     if os.path.islink(link):
         if (
             # target changed
-            os.path.abspath(os.readlink(link)) != ftarget
+            os.path.abspath(os.readlink(link)) != ftarget or
             # dangling symlink
-            or not os.path.exists(link)
+            not os.path.exists(link)
         ):
             remove = True
         if (
@@ -2374,9 +2486,8 @@ def link_into_root(name, ret, link, target, do_link=True):
         ):
             do_link = False
     if (
-        remove
-        and (os.path.islink(link)
-             or os.path.exists(link))
+        remove and (os.path.islink(link) or
+                    os.path.exists(link))
     ):
         _append_comment(
             ret, body=indent(
@@ -2606,7 +2717,7 @@ def sync_git_directory(directory,
         user, _ = get_default_user_group(**kw)
         cret['clean'] = clean_salt_git_commit(directory)
         if origin:
-            _s['git.remote_set'](directory, sync_remote, origin, user=user)
+            _s['git.remote_set'](directory, remote=sync_remote, url=origin, user=user)
         try:
             remotes = _s['git.remotes'](directory, user=user)
         except Exception:
@@ -2615,7 +2726,7 @@ def sync_git_directory(directory,
             local_branch = 'master'
         if refresh and (sync_remote in remotes):
             cret['fetch'] = _s['git.fetch'](
-                directory, sync_remote, user=user)
+                directory, remote=sync_remote, user=user)
             cret['stash_local_changes'] = _s['git.stash'](
                 directory,
                 user=user)
@@ -2625,7 +2736,7 @@ def sync_git_directory(directory,
                 user=user)
             cret['sync'] = _s['git.reset'](
                 directory,
-                '--hard {0}/{1}'.format(sync_remote, rev),
+                opts='--hard {0}/{1}'.format(sync_remote, rev),
                 user=user)
     except (
         OSError,
@@ -2843,7 +2954,7 @@ def _init_local_remote_directory(host,
         maybe_sync = not empty_directory
         if origin:
             if empty_directory:
-                cret['clone'] = _s['git.clone'](directory, origin, user=user)
+                cret['clone'] = _s['git.clone'](directory, url=origin, user=user)
                 cret['st'] = clean_salt_git_commit(directory)['st']
         else:
             if empty_directory:
@@ -3058,13 +3169,13 @@ def sync_remote_working_copy(host,
         clean_salt_git_commit(directory)
         if not os.path.exists(tmpbare):
             cret['clone'] = _s['git.clone'](tmpbare,
-                                            directory,
+                                            url=directory,
                                             opts='--bare',
                                             user=user)
         cret['remote'] = _s['git.remote_set'](
-            directory, lremote, tmpbare, user=user)
+            directory, remote=lremote, url=tmpbare, user=user)
         cret['push'] = _s['git.push'](
-            directory, lremote, branch='', opts=gforce, user=user)
+            directory, remote=lremote, ref='', opts=gforce, user=user)
     except (Exception,) as exc:
         trace = traceback.format_exc()
         failed, original = True, exc

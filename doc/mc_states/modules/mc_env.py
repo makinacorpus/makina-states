@@ -19,6 +19,7 @@ Documentation of this module is available with::
 '''
 # Import python libs
 import logging
+import os
 import mc_states.api
 from mc_states.modules.mc_pillar import PILLAR_TTL
 
@@ -43,12 +44,44 @@ def settings():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         _s = __salt__
-        env = _s['mc_utils.get']('default_env', 'dev')
+        default_env = _s['mc_utils.get']('default_env', None)
+        # ATTENTION: DO NOT USE 'env' to detect when we configure
+        # over when we inherit between salt modes
+        local_conf = __salt__['mc_macros.get_local_registry'](
+            'default_env', registry_format='pack')
+        # in makina-states, only salt mode,
+        # try to get the mastersalt mode if any via the shared local registry
+        # this would work only if mc_env.settings has been called from
+        # mastersalt side, once.
+        if default_env is None:
+            default_env = local_conf.get('default_env', None)
+        mid = __opts__['id']
+        if default_env is None:
+            for pattern in ['prod', 'staging', 'dev']:
+                if pattern in mid:
+                    default_env = pattern
+        if default_env is None:
+            default_env = 'dev'
+        # rely mainly on pillar:
+        # - makina-states.localsettings.env.env
+        # but retro compat and shortcut on pillar
+        # - default_env
         data = _s['mc_utils.defaults'](
             'makina-states.localsettings.env', {
-                'env': env})
+                'env': None})
+        save = False
+        # detect when we configure over default value
+        if data['env'] is None:
+            data['env'] = default_env
+        else:
+            save = True
         # retro compat
         data['default_env'] = data['env']
+        # only write to the shared registry if we are in mastersalt mode
+        if save:
+            local_conf['default_env'] = data['env']
+            __salt__['mc_macros.update_registry_params'](
+                'default_env', local_conf, registry_format='pack')
         return data
     return _settings()
 
