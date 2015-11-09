@@ -74,7 +74,7 @@ Initialization
 - **WELL Understand** what is :
 
     - a `salt SLS <http://docs.saltstack.com/en/latest/topics/tutorials/starting_states.html#moving-beyond-a-single-sls>`_ , it is the nerve of the war.
-    - the `Pillar of salt <http://docs.saltstack.com/en/latest/topics/tutorials/pillar.html>`.
+    - the `Pillar of salt <http://docs.saltstack.com/en/latest/topics/tutorials/pillar.html>`_.
 
 - **be ware**, on the production server the ``.git/config`` is linked with the
   makina-states machinery and you cannot replace it blindly, you must use :ref:`git foo` to
