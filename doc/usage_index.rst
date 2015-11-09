@@ -40,8 +40,6 @@ Additionnal docs
    usage_lxc/index.rst
    usage_write/index.rst
 
-Original spec of the project deployment procedure
----------------------------------------------------
 .. toctree::
    :maxdepth: 1
 
