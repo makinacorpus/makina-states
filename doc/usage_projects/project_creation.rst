@@ -48,18 +48,18 @@ Initialization
         |         gems cache, sqlite files, static files, docroots, etc.
         |
         |- project/ <- a checkout or your project
-        |    |-  .git
-        |    |-  codebase
-        |    |-  .salt
-        |        |- _modules : custom salt python exec modules
-        |        |- _states  : custom salt python states modules
-        |        |- _runners : custom salt python runners modules
-        |        |- _sdb     : custom salt python sdb modules
-        |        |- _...
-        |        |
-        |        |- PILLAR.sample
-        |        |- task_foo.sls
-        |        |- 00_deploy.sls
+        |   |-  .git
+        |   |-  codebase
+        |   |-  .salt
+        |       |- _modules : custom salt python exec modules
+        |       |- _states  : custom salt python states modules
+        |       |- _runners : custom salt python runners modules
+        |       |- _sdb     : custom salt python sdb modules
+        |       |- _...
+        |       |
+        |       |- PILLAR.sample
+        |       |- task_foo.sls
+        |       |- 00_deploy.sls
         |
         |- git/project.git: bare git repos synchronnized (bi-directional)
         |                   with project/ used by git push style deployment
