@@ -7,6 +7,7 @@
 Makina-States, a consistent collection of saltstack formulaes and modules
 =================================================================================
 Please note that the documentation is far from complete, more over on the usage front.
+
 Please have more a look on the reference chapters.
 
 Usage
