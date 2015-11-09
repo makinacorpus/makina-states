@@ -5,7 +5,7 @@ We will take the circus implementation as exemple.
 
 Integration of service needs:
 
-    - A salt execution module to store special service parameters and configuration
+    - A :ref:`salt execution module <ref_registries>` to store special service parameters and configuration
     - An entry in mc_services.py:registry method to autoinstall it when needed
     - A line incorporating the module parameters in mc_services.py:settings
 

@@ -1,3 +1,6 @@
+
+.. _ref_registries:
+
 Design
 ========
 .. toctree::
@@ -6,7 +9,7 @@ Design
    layout.rst
    organization.rst
    registries.rst
-   macros.rst
+   formulaes.rst
    hooks.rst
 
 
@@ -15,6 +18,6 @@ Obsolete
 .. toctree::
    :maxdepth: 1
 
-   formulaes.rst
    modes.rst
+   macros.rst
 
