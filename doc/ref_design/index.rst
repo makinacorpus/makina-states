@@ -8,7 +8,6 @@ Design
    registries.rst
    macros.rst
    hooks.rst
-   modes.rst
 
 
 Obsolete
@@ -17,4 +16,5 @@ Obsolete
    :maxdepth: 1
 
    formulaes.rst
+   modes.rst
 
