@@ -380,7 +380,7 @@ default procedure.
 
 Project fixperms  procedure
 ++++++++++++++++++++++++++++
-- Set & **reset** needed user accesses to the filesystem
+- Set & **reset (enforce)** needed user accesses to the filesystem
 
 Rollback procedure
 +++++++++++++++++++++
