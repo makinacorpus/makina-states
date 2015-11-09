@@ -62,6 +62,7 @@ Initialization
         |     |- task_foo.sls
         |     |- 00_deploy.sls
         |
+        [ If "remote_less" is False (default)
         |- git/project.git: bare git repos synchronnized (bi-directional)
         |                   with project/ used by git push style deployment
         |- git/pillar.git:  bare git repos synchronnized (bi-directional)
@@ -92,7 +93,8 @@ Initialization
 
 git foo
 +++++++++
-
+- **WARNING**: you can use it only if you provisionned your project with
+  attached remotes (the default)
 - The git foo that you will have do to replace the git folder and initialize your project
   if you do it directly on your server will look like::
 
@@ -113,6 +115,7 @@ Sumup
 To sum all that up, when beginning project you will:
 
 - Initialize if not done a project structure with ``salt-call --local mc_project.deploy project``
+- If you do not want git remotes, you can alternativly use ``salt-call --local mc_project.deploy project remote_less=True``.
 - add a **.salt** folder alongside your project codebase (in it's git repo).
 - deploy it, either by:
 
@@ -137,7 +140,7 @@ To sum all that up, when beginning project you will:
 - reiterate
 
 Deploying, two ways of doing things
-------------------------------------------
+------------------------------------
 To build and deploy your project we provide two styles of doing style that should be appropriate for most use cases.
 
 Either directly from the deployment host as root::
@@ -151,6 +154,8 @@ Either directly from the deployment host as root::
 
 Or only by pushing well placed git changesets, from your local box,
 
+    - **WARNING**: you can use it only if you provisionned your project with
+        attached remotes (the default) 
     - If needed on the pillar, it does not trigger a deploy
     - And on the project remote, it triggers here the deploy::
 
