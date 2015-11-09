@@ -12,6 +12,17 @@ Projects Exemples
 - `django <https://github.com/makinacorpus/corpus-django>`_
 - `drupal <https://github.com/makinacorpus/corpus-drupal>`_
 - `flask <https://github.com/makinacorpus/corpus-flask>`_
+- `fusiondirectory <https://github.com/makinacorpus/corpus-fusiondirectory>`_
+- `fusiondirectory <https://github.com/makinacorpus/corpus-fusiondirectory>`_
+- `vaultier <https://github.com/makinacorpus/corpus-vaultier>`_
+- `jenkins <https://github.com/makinacorpus/corpus-jenkins>`_
+- `jenkins-slave <https://github.com/makinacorpus/corpus-jenkins-slave>`_
+- `vaultier <https://github.com/makinacorpus/corpus-vaultier>`_
+- `tilestream <https://github.com/makinacorpus/corpus-tilestream>`_
+- `odoo <https://github.com/makinacorpus/corpus-odoo>`_
+- `gitlab <https://github.com/makinacorpus/corpus-gitlab>`_
+- `seafile <https://github.com/makinacorpus/corpus-seafile>`_
+- `php <https://github.com/makinacorpus/corpus-php>`_
 
 Helpers & resource projects
 ++++++++++++++++++++++++++++++
@@ -22,3 +33,5 @@ Helpers & resource projects
 - `osmdb <https://github.com/makinacorpus/corpus-osmdb>`_
 - `rabbitmq <https://github.com/makinacorpus/corpus-rabbitmq>`_
 - `mongodb <https://github.com/makinacorpus/corpus-mongodb>`_
+- `dockerregistry <https://github.com/makinacorpus/corpus-dockerregistry>`_
+- `svn <https://github.com/makinacorpus/corpus-svn>`_
