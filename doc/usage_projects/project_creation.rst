@@ -155,7 +155,7 @@ Either directly from the deployment host as root::
 Or only by pushing well placed git changesets, from your local box,
 
     - **WARNING**: you can use it only if you provisionned your project with
-        attached remotes (the default) 
+        attached remotes (the default)
     - If needed on the pillar, it does not trigger a deploy
     - And on the project remote, it triggers here the deploy::
 
@@ -186,8 +186,8 @@ In makina-states, we use by default:
 As you see, the project layout seems not integration on those following folders, but in fact, the project
 initialisation routines made symlinks to integrate it which look like::
 
-    /srv/salt/makina-projects/<your_project_name>>  -> /srv/projects/<your_project_name>/project§/.salt
-    /srv/pillar/makina-projects/<your_project_name> -> /srv/projects/<your_project_name>/pillar
+    /srv/salt/makina-projects/<project_name>>  -> /srv/projects/<your_project_name>/project§/.salt
+    /srv/pillar/makina-projects/<project_name> -> /srv/projects/<your_project_name>/pillar
 
 - The pillar is auto included in the **pillar top** (``/srv/pîllar/top.sls``).
 - The project salt files are not and **must not** be included in the salt **top** for further highstates unless
@@ -272,6 +272,9 @@ in ``pillar/init.sls``, you have:
     # project/.salt/files/etc/foo
     {% set cfg = opts.ms_project %}
     My Super Template of {{cfg.name}} will run {{cfg.data.start_cmd}}
+
+What's happen when there is a deploy ?
+---------------------------------------
 
 Filesystem considerations
 --------------------------
