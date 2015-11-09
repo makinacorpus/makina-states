@@ -22,6 +22,7 @@ Projects Exemples
 - `seafile <https://github.com/makinacorpus/corpus-seafile>`_
 - `php <https://github.com/makinacorpus/corpus-php>`_
 - `staticwww <https://github.com/makinacorpus/corpus-staticwww>`_
+- `redmine <https://github.com/makinacorpus/corpus-redmine>`_
 
 Helpers & resource projects
 ++++++++++++++++++++++++++++++
