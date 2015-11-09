@@ -1,5 +1,5 @@
-Makina-States, overview
-=============================================
+Makina-States usage
+===================
 
 .. toctree::
    :maxdepth: 1
