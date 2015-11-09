@@ -28,7 +28,7 @@ This covers those parts:
     - LDAP (openldap)
     - Baremetal and VM network configuration (this include setuping ip faiover
       aliases on baremetal servers)
-    - Firewall configuration (ms_iptables (simple iptable frontend configured
+    - Firewall configuration (`ms_iptables <https://github.com/makinacorpus/makina-states/blob/master/files/usr/bin/ms_iptables.py>`_ (simple iptables frontend configured
       via json))
     - repositories managment (APT)
     - locales managment
