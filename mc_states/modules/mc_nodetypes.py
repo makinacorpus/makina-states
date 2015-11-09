@@ -10,12 +10,14 @@ mc_nodetypes / nodetypes registry
 
 import os
 import copy
+import logging
 import mc_states.api
 from mc_states.grains import makina_grains
 
 
 __name = 'nodetypes'
 DEFAULT_NT = 'server'
+log = logging.getLogger(__name__)
 
 
 def environ():
@@ -59,14 +61,12 @@ def settings():
 
 
 def is_fs_nodetype(nodetype):
-    tflag = '/etc/makina-states/nodetype'
-    is_nodetype = None
-    if os.path.exists(tflag):
-        with open(tflag) as f:
-            try:
-                is_nodetype = f.read().strip().lower() == nodetype
-            except Exception:
-                is_nodetype = None
+    try:
+        is_nodetype = (
+            makina_grains._get_msconf(
+                'nodetype').lower() == nodetype)
+    except Exception:
+        is_nodetype = None
     return is_nodetype
 
 
@@ -87,8 +87,6 @@ def is_travis():
 
 
 def is_nt(nodetype):
-    # if nodetype == DEFAULT_NT:
-    #     return True
     is_nodetype = None
     if nodetype == 'travis':
         is_nodetype = is_travis()
@@ -96,8 +94,8 @@ def is_nt(nodetype):
         'makina-states.nodetypes.{0}'.format(nodetype), None)
     if is_nodetype is None:
         is_nodetype = is_fs_nodetype(nodetype)
-    if is_nodetype is None:
-        is_nodetype = is_container_nodetype(nodetype)
+    # if is_nodetype is None:
+    #     is_nodetype = is_container_nodetype(nodetype)
     if is_nodetype is None:
         is_nodetype = False
     return is_nodetype

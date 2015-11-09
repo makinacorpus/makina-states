@@ -33,7 +33,7 @@ MS_BASEIMAGE_DIR="${MS_BASEIMAGE_DIR:-"${W}"}"
 MS_BASEIMAGE_PATH="${MS_BASEIMAGE_DIR}/${MS_BASEIMAGE}"
 # newer makina-states allow to use a nonmasterssalt mode with ability to use low level states
 #MS_BOOTSTRAP_ARGS="${MS_BOOTSTRAP_ARGS:-"-C -n ${MS_NODETYPE} -b changeset:${MS_CHANGESET} --local-mastersalt-mode masterless --local-salt-mode masterless -MM"}"
-MS_BOOTSTRAP_ARGS="${MS_BOOTSTRAP_ARGS:-"-C -n ${MS_NODETYPE} -b changeset:${MS_CHANGESET} --no-mastersalt --local-salt-mode masterless"}"
+MS_BOOTSTRAP_ARGS="${MS_BOOTSTRAP_ARGS:-"-C -n ${MS_NODETYPE} -b changeset:${MS_CHANGESET} --no-mastersalt --local-salt-mode masterless -n dockercontainer"}"
 
 MS_DOCKERF_S0="${W}/Dockerfile.${MS_OS}-${MS_OS_RELEASE}-${MS_CHANGESET}.stage0"
 MS_DOCKERF_S1="${W}/Dockerfile.${MS_OS}-${MS_OS_RELEASE}-${MS_CHANGESET}.stage1"

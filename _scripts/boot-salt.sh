@@ -665,7 +665,7 @@ validate_nodetype() {
 
 get_default_nodetype() {
     saved_nt="$(validate_nodetype $(get_conf nodetype))"
-    fallback_nt="scratch"
+    fallback_nt="server"
     DEFAULT_NT="${saved_nt}"
     if [ "x${saved_nt}" = "x" ] || [ "x${saved_nt}" = "x${fallback_nt}" ];then
         DEFAULT_NT=""
@@ -2224,6 +2224,7 @@ setup_virtualenv() {
         if [ "x${install_git}" != "x" ];then
             pip install -U --download-cache "${PIP_CACHE}" -e "git+$(get_salt_url)@$(get_salt_branch)#egg=salt"
             pip install -U --download-cache "${PIP_CACHE}" -r requirements/git_requirements.txt
+            pip install -U --download-cache "${PIP_CACHE}" -r requirements/git_salt_requirements.txt
         else
             cwd="${PWD}"
             for i in docker-py salttesting salt m2crypto;do
