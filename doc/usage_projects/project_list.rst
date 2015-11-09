@@ -12,17 +12,20 @@ Projects Exemples
 - `django <https://github.com/makinacorpus/corpus-django>`_
 - `drupal <https://github.com/makinacorpus/corpus-drupal>`_
 - `flask <https://github.com/makinacorpus/corpus-flask>`_
-- `fusiondirectory <https://github.com/makinacorpus/corpus-fusiondirectory>`_
-- `vaultier <https://github.com/makinacorpus/corpus-vaultier>`_
-- `jenkins <https://github.com/makinacorpus/corpus-jenkins>`_
-- `jenkins-slave <https://github.com/makinacorpus/corpus-jenkins-slave>`_
+- `php <https://github.com/makinacorpus/corpus-php>`_
+- `staticwww <https://github.com/makinacorpus/corpus-staticwww>`_
+
+App deployements exemples
+++++++++++++++++++++++++++++
 - `tilestream <https://github.com/makinacorpus/corpus-tilestream>`_
 - `odoo <https://github.com/makinacorpus/corpus-odoo>`_
 - `gitlab <https://github.com/makinacorpus/corpus-gitlab>`_
 - `seafile <https://github.com/makinacorpus/corpus-seafile>`_
-- `php <https://github.com/makinacorpus/corpus-php>`_
-- `staticwww <https://github.com/makinacorpus/corpus-staticwww>`_
 - `redmine <https://github.com/makinacorpus/corpus-redmine>`_
+- `fusiondirectory <https://github.com/makinacorpus/corpus-fusiondirectory>`_
+- `vaultier <https://github.com/makinacorpus/corpus-vaultier>`_
+- `jenkins <https://github.com/makinacorpus/corpus-jenkins>`_
+- `jenkins-slave <https://github.com/makinacorpus/corpus-jenkins-slave>`_
 
 Helpers & resource projects
 ++++++++++++++++++++++++++++++
