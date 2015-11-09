@@ -31,7 +31,6 @@ import salt.utils.dictupdate
 import salt.utils.network
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
-import salt.loader
 from salt.ext import six as six
 from mc_states import api
 import mc_states.api
