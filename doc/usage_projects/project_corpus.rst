@@ -404,8 +404,7 @@ Full procedure
 - project **release-sync** procedure
 - project **xfixperms** procedure
 - project **install** procedure
-  not a global sls
-- project **fixperms** procedure
+- project **fixperms** procedure (yes again)
 - In error: **rollback** procedure
 
 IMPLEMENTATION: How a project is built and deployed
