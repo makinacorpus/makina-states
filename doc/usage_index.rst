@@ -7,8 +7,8 @@ Makina-States usage
    usage_about.rst
 
 
-Setup
------
+Setup & usage
+-------------
 
 .. toctree::
    :maxdepth: 1
