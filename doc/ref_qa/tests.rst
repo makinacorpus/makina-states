@@ -6,12 +6,7 @@ This will run:
     - linters
     - install all states
 
-For this reason, run those states only a box that you ll trash afterwards
 
-On a provisionned box, run::
-
-    ./boot-salt.sh -C -s -S --tests
-
-It will run all the sls found in ``makina-states.tests``.
-
+See `travis test helper <https://github.com/makinacorpus/makina-states/blob/master/_scripts/travis_test.sh>`_
+as an entry point to launch the tests on your environment.
 

@@ -9,7 +9,6 @@ Implementation design & details
 
    ref_design/index.rst
    ref_qa/index.rst
-   ref_packaging/index.rst
 
 
 States & modules reference
@@ -32,12 +31,12 @@ Formulaes & macros helpers reference
    ref_macros/index.rst
 
 
-
-Obsolete
-----------
+Misc & Obsolete
+----------------
 .. toctree::
    :maxdepth: 1
 
+   ref_packaging/index.rst
    ref_design/modes.rst
    ref_design/macros.rst
 
