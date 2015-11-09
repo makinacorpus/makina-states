@@ -27,9 +27,8 @@ Projects for developers
 .. toctree::
    :maxdepth: 1
 
-   usage_projects/project_list.rst
    usage_projects/project_creation.rst
-   usage_projects/project_corpus.rst
+   usage_projects/project_list.rst
 
 Additionnal docs
 ------------------
@@ -37,11 +36,8 @@ Additionnal docs
 .. toctree::
    :maxdepth: 2
 
+   usage_projects/project_corpus.rst
    usage_misc/index.rst
    usage_lxc/index.rst
    usage_write/index.rst
 
-
-
-OLDDOC (obsolete)
---------------------------
