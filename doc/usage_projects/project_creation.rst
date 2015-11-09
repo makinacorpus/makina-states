@@ -51,10 +51,10 @@ Initialization
         |    |-  .git
         |    |-  codebase
         |    |-  .salt
-        |        |- _modules : optional custom salt python exec modules to install
-        |        |- _states  : optional custom salt python states modules to install
-        |        |- _runners : optional custom salt python runners modules to install
-        |        |- _sdb     : optional custom salt python sdbmodules to install
+        |        |- _modules : custom salt python exec modules
+        |        |- _states  : custom salt python states modules
+        |        |- _runners : custom salt python runners modules
+        |        |- _sdb     : custom salt python sdb modules
         |        |- _...
         |        |
         |        |- PILLAR.sample
