@@ -13,12 +13,13 @@ and extend it. It is simple python and yaml.
 
 See python exemples:
 
-    - `the modules <https://github.com/makinacorpus/makina-states/tree/master/mc_states/modules>`_
-    - `the states <https://github.com/makinacorpus/makina-states/tree/master/mc_states/states>`_
-    - `the runners <https://github.com/makinacorpus/makina-states/tree/master/mc_states/runners>`_
+    - `the modules <https://github.com/makinacorpus/makina-states/tree/master/mc_states/modules>`_ (`saltstack doc about modules <https://docs.saltstack.com/en/latest/ref/modules/>`_)
+    - `the states <https://github.com/makinacorpus/makina-states/tree/master/mc_states/states>`_ (`saltstack doc about states <https://docs.saltstack.com/en/latest/ref/states/>`_)
+    - `the runners <https://github.com/makinacorpus/makina-states/tree/master/mc_states/runners>`_ (`saltstack doc about runners <https://docs.saltstack.com/en/latest/ref/runners/>`_)
 
 See formulaes exemples:
-
+    - `saltstack doc about states formulaes <https://docs.saltstack.com/en/latest/ref/states/>`_
+    - `saltstack doc about states formulaes2 <https://docs.saltstack.com/en/latest/topics/tutorials/states_pt1.html>`_
     - `the localsettings <https://github.com/makinacorpus/makina-states/tree/master/localsettings>`_
     - `the services <https://github.com/makinacorpus/makina-states/tree/master/services>`_
 
