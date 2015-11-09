@@ -12,7 +12,7 @@ The regular modes via boot-salt.sh:
     - The special "scratch" mode manages only the saltstack + makina-states
       configuration by default, and it's up to you to apply any other state
 
-The light mode via install_makina-states.sh:
+The light mode via install_makina_states.sh:
 
     - The "light" mode goal is to use makina-states where salt is already
       installed and where it's install has not to have to be done via
