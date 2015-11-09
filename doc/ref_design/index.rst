@@ -6,7 +6,15 @@ Design
    layout.rst
    organization.rst
    registries.rst
-   formulaes.rst
    macros.rst
    hooks.rst
    modes.rst
+
+
+Obsolete
+=========
+.. toctree::
+   :maxdepth: 1
+
+   formulaes.rst
+
