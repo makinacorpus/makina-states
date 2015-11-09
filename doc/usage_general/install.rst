@@ -3,19 +3,22 @@ Installation & basic usage
 Briefing
 ----------
 
-For now, use Ubuntu >= 14.04.
+**For now, use Ubuntu >= 14.04.**.
+Makina-States can be ported to any linux based OS,
+but we here use ubuntu server and this is the only supported system for now.
+It can be used in any flavor, lxc, docker, baremetal, kvm, etc.
 
 To install our base salt installation, you have to choose between 3 main mode of operations:
 
-The regular modes via boot-salt.sh:
+The :ref:`regular modes <project_regular_modes>` light mode via boot-salt.sh:
 
     - The regular preset modes manages the system configuration from end to end, from
       the system, to makina-states, including the saltstack/salt installation
       itself.
-    - The special "scratch" mode manages only the saltstack + makina-states
+    - The special ``scratch`` mode manages only the saltstack + makina-states
       configuration by default, and it's up to you to apply any other state
 
-The light mode via install_makina_states.sh:
+The :ref:`light mode <project_light_mode>` light mode via install_makina_states.sh:
 
     - The "light" mode goal is to use makina-states where salt is already
       installed and where it's install has not to have to be done via
@@ -84,6 +87,8 @@ Please read next paragraphs before running any command.
     - **\-\-mastersalt**: is the mastersalt hostname (FQDN) to link to
     - **\-\-mastersalt-master-port**: overrides the port for the distant mastersalt server which is 4606 usually (read the script)
 
+.. _project_regular_modes:
+
 Regular modes (via boot-salt.sh)
 --------------------------------
 boot-salt.sh will try to remember how you configured makina-states on each run.
@@ -91,6 +96,13 @@ It stores configs in :
 
     - /etc/salt/makina-states & if available /etc/mastersalt
     - /etc/makina-states
+
+Indeedn while running, the script try to find enougth information (nodetype, salt installs, branch),
+and will automaticly guess & store the parameters by itself.
+
+In other words, you will just have to type **boot-salt.sh**, and verify settings the next time you ll use it.
+
+**REMEMBER THAT FOR NOW YOU HAVE TO USE UBUNTU >= 14.04.**
 
 Download
 ~~~~~~~~~
@@ -106,12 +118,13 @@ Detailed overview::
 
     ./boot-salt.sh --long-help
 
-Install
-~~~~~~~
+CLI Exemples
+~~~~~~~~~~~~~
 If you want to install only a minion which will be connected to a remote
 mastersalt master::
 
-    ./boot-salt.sh --mastersalt <MASTERSALT_FQDN> [--mastersaltsalt-master-port "PORT OF MASTER  IF NOT 4506"]
+    ./boot-salt.sh --mastersalt <MASTERSALT_FQDN> \\
+        [--mastersaltsalt-master-port "PORT OF MASTER  IF NOT 4506"]
 
 If you want to install salt on a bare server, without mastersalt::
 
@@ -125,13 +138,11 @@ If you want to install and test test mastersalt system locally to your box::
 
     ./boot-salt.sh --mastersalt-master --mastersalt $(hostname -f)
 
-If you want to manage from end to end your server, select also the "laptop" preset
+If you want to manage from end to end your server, select also the ``laptop`` preset
 nodetype::
 
-    ./boot-salt.sh --mastersalt <MASTERSALT_FQDN> [--mastersaltsalt-master-port "PORT OF MASTER  IF NOT 4506"] -n laptop
-
-Useful switches
-++++++++++++++++
+    ./boot-salt.sh --mastersalt <MASTERSALT_FQDN> \\
+        [--mastersaltsalt-master-port "PORT OF MASTER  IF NOT 4506"] -n laptop
 
 To skip the automatic code update/upgrade::
 
@@ -141,8 +152,7 @@ To switch on a makina-states branch, like the **stable** branch in production::
 
     ./boot-salt.sh -b stable
 
-If it suceeds to find enougth information (nodetype, salt installs, branch), it will automaticly guess the parameters by itself.
-In other words, you will just have to type **boot-salt.sh** and verify settings the next time you ll use it.
+
 
 Upgrade
 +++++++
@@ -158,6 +168,9 @@ Upgrade will:
 ::
 
     boot-salt.sh -C --upgrade
+
+
+.. _project_light_mode:
 
 Integrate makina-states with a pre-existing salt infrastructure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -179,7 +192,8 @@ To enable it into your salt infrastructure:
 
 We provide a convenient helper for this purpose called **_scripts/install_makina_states.sh**::
 
-    wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/install_makina_states.sh
+    wget \\
+     http://raw.github.com/makinacorpus/makina-states/master/_scripts/install_makina_states.sh
     export SALT_ROOT="/srv/salt" # whereever it is
     ./install_makina_states.sh
 
