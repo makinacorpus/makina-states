@@ -1,8 +1,8 @@
 
 .. _project_corpus:
 
-corpus, embedded project configuration with salt - RFC VERSION - 2
-==================================================================
+RFC: corpus, embedded project configuration with salt
+=====================================================
 
 The origin
 ------------
