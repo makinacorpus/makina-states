@@ -8,6 +8,20 @@ Intro
 --------------------------------
 This page is the most important thing you ll have to read about makina-states as a **developer consumer**, take the time it needs and deserves.
 
+Never be afraid to go read makina-states code, it will show you how to configure
+and extend it. It is simple python and yaml.
+
+See python exemples:
+
+    - `the modules <https://github.com/makinacorpus/makina-states/tree/master/mc_states/modules>`_
+    - `the states <https://github.com/makinacorpus/makina-states/tree/master/mc_states/states>`_
+    - `the runners <https://github.com/makinacorpus/makina-states/tree/master/mc_states/runners>`_
+
+See formulaes exemples:
+
+    - `the localsettings <https://github.com/makinacorpus/makina-states/tree/master/localsettings>`_
+    - `the services <https://github.com/makinacorpus/makina-states/tree/master/services>`_
+
 Specifications
 ------------------
 See the original spec on :ref:`project_corpus` .
