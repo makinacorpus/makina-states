@@ -94,7 +94,7 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
+        grains = __salt__['mc_utils.assert_good_grains'](__grains__)
         shorewall = __salt__['mc_shorewall.settings']()
         services_registry = __salt__['mc_services.registry']()
         firewalld = __salt__['mc_firewalld.settings']()
@@ -131,10 +131,13 @@ def settings():
         ):
             banaction = 'firewallcmd-ipset'
         locs = __salt__['mc_locations.settings']()
+        destmail = 'root@localhost'
+        if 'fqdn' in grains:
+            destmail = 'root@{0}'.format(grains['fqdn'])
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.firewall.fail2ban', {
                 'location': locs['conf_dir'] + '/fail2ban',
-                'destemail': 'root@{fqdn}'.format(**grains),
+                'destemail': destmail,
                 'loglevel': '3',
                 'logtarget': '/var/log/fail2ban.log',
                 'mail_from': 'fail2ban@makina-corpus.com',

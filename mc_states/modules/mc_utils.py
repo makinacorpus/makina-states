@@ -22,6 +22,8 @@ import os
 import pstats
 import re
 
+
+import salt.loader
 from salt.config import master_config, minion_config
 from salt.exceptions import SaltException
 import salt.utils
@@ -38,6 +40,17 @@ _CACHE = {'mid': None}
 _default_marker = object()
 _marker = object()
 log = logging.getLogger(__name__)
+
+
+def assert_good_grains(grains):
+     ''''
+     no time to search/debug why,
+     but sometimes grains dict is empty depending on the call context
+     grains loading bug retriggered (i fixed once, do not remember where, FU SALT ...
+     '''
+     if not grains:
+         grains = salt.loader.grains(__opts__)
+     return grains
 
 
 def hash(string, typ='md5', func='hexdigest'):

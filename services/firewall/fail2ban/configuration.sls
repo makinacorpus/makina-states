@@ -24,6 +24,7 @@ makina-etc-{{j}}-{{i}}:
     - template: jinja
     - user: root
     - group: root
+    - makedirs: true
     - mode: "0700"
     - defaults:
         name: "{{i}}"
