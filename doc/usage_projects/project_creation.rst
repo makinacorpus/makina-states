@@ -55,7 +55,6 @@ Initialization
         |        |- PILLAR.sample
         |        |- task_foo.sls
         |        |- 00_deploy.sls
-        |        |- archive.sls fixperms.sls notify.sls rollback.sls
         |
         |- git/project.git: bare git repos synchronnized (bi-directional)
         |                   with project/ used by git push style deployment
@@ -77,7 +76,6 @@ Initialization
 
     - ``.salt/archive.sls``: archive step
     - ``.salt/fixperms.sls``: fixperm step
-    - ``.salt/notify.sls``: notify step
     - ``.salt/PILLAR.sample``: configuration default values to use in SLSes
     - ``.salt/rollback.sls``: rollback step
 
