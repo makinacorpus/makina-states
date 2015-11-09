@@ -51,7 +51,12 @@ Initialization
         |    |-  .git
         |    |-  codebase
         |    |-  .salt
-        |        |- _{_modules,_states,_runners,_sdb, ...}: optional custom salt python modules to install
+        |        |- _modules : optional custom salt python exec modules to install
+        |        |- _states  : optional custom salt python states modules to install
+        |        |- _runners : optional custom salt python runners modules to install
+        |        |- _sdb     : optional custom salt python sdbmodules to install
+        |        |- _...
+        |        |
         |        |- PILLAR.sample
         |        |- task_foo.sls
         |        |- 00_deploy.sls
