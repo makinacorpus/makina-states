@@ -276,10 +276,7 @@ in ``pillar/init.sls``, you have:
 What's happen when there is a deploy ?
 ---------------------------------------
 - When you do a git push, you have the full procedure, see :ref:`spec doc <project_spec_deploy_proc>`
-- When you use ``only=install,fixperms`` it only do some the **install** & **fixperms** subparts.
-
-    - See :ref:`install <project_spec_proc_install>`
-    - See :ref:`fixperms <project_spec_proc_fixperms>`
+- When you use ``only=install,fixperms`` it only do some the :ref:`install <project_spec_proc_install>` & :ref:`fixperms <project_spec_proc_fixperms>` procedures.
 
 Filesystem considerations
 --------------------------
