@@ -33,7 +33,8 @@ First, create **as root** this upstart job ``/etc/init/lxc-net-makina.conf`` & h
       "https://raw.githubusercontent.com/makinacorpus/makina-states/stable/files${i}" \
       > "${i}"
     done
-    chmod 644 /etc/init/lxc-net-makina;chmod 755 /usr/bin/magicbridge.sh /etc/reset-net-bridges
+    chmod 644 /etc/init/lxc-net-makina
+    chmod 755 /usr/bin/magicbridge.sh /etc/reset-net-bridges
     cp /usr/bin/magicbridge.sh /usr/bin/lxc-net-makina.sh
 
 Don't forget that you can read the upstart job but basically, it creates the bridge and then masquerade the outband traffic.
