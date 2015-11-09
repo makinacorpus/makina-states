@@ -48,16 +48,15 @@ Please read next paragraphs before running any command.
   salt configurations will be available for use in this mode.
 
 - As a sole developer, You will nearly never have to handle much with the **mastersalt** part unless you are going to be very low-level.
-- The two instances will have to know where they run to first make the system ready for them.
 - All the behavior of the script can be controlled via environment variables or command line arguments switches.
-- That's why you will need to tell which daemons you want (minion/master) and on what kind of machine you are installing on (vm/vagrant/baremetal).
+- That's why you will need to tell which daemons you want (minion/master) and on what kind of machine you are installing on (the nodetype).
 - You'll also have to set the **minion id**. The default choice for **--minion-id** is the current machine hostname.
   You should keep this naming scheme unless you have a good reason to change it.
 
 - Default salt install is **masterless (standalone)**.
 - Default mastersalt install is **remote (connected)**.
 
-- You choice for **--nodetype** is certainly one of **scratch**, **server**, **vm**, **lxccontainer**, **dockercontainer**, **vagranvm** or **devhost**.
+- You choice for **--nodetype** is certainly one of:
 
     - **scratch** (default) manages by default only the salt installation and configuration.
     - **server** matches a baremetal server, and manage it from end to end (base
@@ -67,8 +66,8 @@ Please read next paragraphs before running any command.
     - **laptop** is like server but also install packages for working on a
       developement machine (prebacking a laptop for a dev)
     - **dockercontainer** matches a VM (not baremetal), this is mostly like **server**, but install & preconfigure circus to manage daemons.
-    - **devhost**  marks the machine as a development machine enabling states to act on that, by example installation of a test local-loop mailer.
-    - **vagrantvmt**  marks the machine as a vagrant virtualbox.
+    - **devhost** marks the machine as a development machine enabling states to act on that, by example installation of a test local-loop mailer.
+    - **vagrantvm** marks the machine as a vagrant virtualbox.
 
 - For configuring all salt daemons, you have some extra parameters (here are the environment variables, but you have also
   command line switches to set them
@@ -78,8 +77,8 @@ Please read next paragraphs before running any command.
     - **\-\-mastersalt**: is the mastersalt hostname (FQDN) to link to
     - **\-\-mastersalt-master-port**: overrides the port for the distant mastersalt server which is 4606 usually (read the script)
 
-Usage
------
+Regular modes (via boot-salt.sh)
+--------------------------------
 boot-salt.sh will try to remember how you configured makina-states on each run.
 It stores configs in :
 
@@ -135,8 +134,8 @@ To switch on a makina-states branch, like the **stable** branch in production::
 
     ./boot-salt.sh -b stable
 
-If it suceeds to find enougth information (nodetype, salt installs, branch), it will automaticly guess the parameters by it self.
-In other words, you will just have to type **boot-salt.sh** and verify settings next time you ll use it.
+If it suceeds to find enougth information (nodetype, salt installs, branch), it will automaticly guess the parameters by itself.
+In other words, you will just have to type **boot-salt.sh** and verify settings the next time you ll use it.
 
 Upgrade
 +++++++
@@ -156,28 +155,29 @@ Upgrade will:
 Integrate makina-states with a pre-existing salt infrastructure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Basically makina states is:
+Basically makina states contains:
 
     - a python egg
-    - a container for custom salt modules
+    - a lot of custom salt modules of different types (execution, grains,
+      states, cloud, etc.)
     - a collection of formulaes
 
-To install it:
+To enable it into your salt infrastructure:
 
-    - you have to put it in your salt_root to activate the formulaes:
-    - you have to install python dependencies (see the script) and the mc_states
+    - You have to put it in your salt_root to activate the formulaes:
+    - You have to install python dependencies (see the script) and the mc_states
       python package (included in makina-states)
-    - you have to link all custom salt modules to your salt root and
+    - You have to link all custom salt modules to your salt root and
       synchronnise your minions caches.
 
-This is the purpose of the **install_makina_states.sh** script::
+We provide a convenient helper for this purpose called **_scripts/install_makina_states.sh**::
 
     wget http://raw.github.com/makinacorpus/makina-states/master/_scripts/install_makina_states.sh
     export SALT_ROOT="/srv/salt" # whereever it is
     ./install_makina_states.sh
 
 The script can safely be recalled after each makina-states "git pull" to relink the
-modules.
+updated modules.
 
 
 Activating another nodetype preset after installation
