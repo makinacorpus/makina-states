@@ -123,7 +123,7 @@ CLI Exemples
 If you want to install only a minion which will be connected to a remote
 mastersalt master::
 
-    ./boot-salt.sh --mastersalt <MASTERSALT_FQDN> \\
+    ./boot-salt.sh --mastersalt <MASTERSALT_FQDN> \
         [--mastersaltsalt-master-port "PORT OF MASTER  IF NOT 4506"]
 
 If you want to install salt on a bare server, without mastersalt::
@@ -141,7 +141,7 @@ If you want to install and test test mastersalt system locally to your box::
 If you want to manage from end to end your server, select also the ``laptop`` preset
 nodetype::
 
-    ./boot-salt.sh --mastersalt <MASTERSALT_FQDN> \\
+    ./boot-salt.sh --mastersalt <MASTERSALT_FQDN> \
         [--mastersaltsalt-master-port "PORT OF MASTER  IF NOT 4506"] -n laptop
 
 To skip the automatic code update/upgrade::
@@ -192,7 +192,7 @@ To enable it into your salt infrastructure:
 
 We provide a convenient helper for this purpose called **_scripts/install_makina_states.sh**::
 
-    wget \\
+    wget \
      http://raw.github.com/makinacorpus/makina-states/master/_scripts/install_makina_states.sh
     export SALT_ROOT="/srv/salt" # whereever it is
     ./install_makina_states.sh

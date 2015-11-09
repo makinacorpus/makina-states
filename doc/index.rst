@@ -32,7 +32,7 @@ Reference
 .. .. toctree::
 ..    :maxdepth: 20
 ..    :hidden:
-.. 
+..
 ..    usage_projects/project_creation.rst
 ..    usage_projects/project_list.rst
 ..    usage_quickstart/install_systemd.rst
