@@ -13,7 +13,6 @@ Projects Exemples
 - `drupal <https://github.com/makinacorpus/corpus-drupal>`_
 - `flask <https://github.com/makinacorpus/corpus-flask>`_
 - `fusiondirectory <https://github.com/makinacorpus/corpus-fusiondirectory>`_
-- `fusiondirectory <https://github.com/makinacorpus/corpus-fusiondirectory>`_
 - `vaultier <https://github.com/makinacorpus/corpus-vaultier>`_
 - `jenkins <https://github.com/makinacorpus/corpus-jenkins>`_
 - `jenkins-slave <https://github.com/makinacorpus/corpus-jenkins-slave>`_
