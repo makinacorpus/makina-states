@@ -13,7 +13,8 @@ Installation and basic usage
 .. toctree::
    :maxdepth: 1
 
-   usage_general/index.rst
+   usage_general/install.rst
+   usage_general/configure.rst
    usage_quickstart/index.rst
    usage_docker/index.rst
    usage_mastersalt/index.rst

@@ -9,7 +9,7 @@ To install our base salt installation, you have to choose between 3 main mode of
 
 The regular modes via boot-salt.sh:
 
-    - The regular preset modes manages the machine configuration from end to end, from
+    - The regular preset modes manages the system configuration from end to end, from
       the system, to makina-states, including the saltstack/salt installation
       itself.
     - The special "scratch" mode manages only the saltstack + makina-states
@@ -26,7 +26,7 @@ Reminder
 Always remember:
 
     - Makina-states is based on "nodetypes presets" that are prebundled
-      collections of makina-states states to apply to a machine.
+      collections of makina-states states to apply to the system.
     - On those nodetypes, we may manage "controllers", aka the salt daemons.
     - On those nodetypes, we may configure "localsettings" like vim, git, &
       basepackages or network configurations
@@ -42,14 +42,14 @@ Please read next paragraphs before running any command.
 
 - In most cases, all our production installs run 2 instances of salt: **mastersalt** and **salt** which can be be in **asterless** or **remote** mode.
   In this mode, certains states are only reachable from the mastersalt daemons
-  (the low levels which will can break the machine and have to be done via
+  (the low levels which will can break the system and have to be done via
   sysadmin).
 - In some case, you can install only the **salt** side, and both mastersalt &
   salt configurations will be available for use in this mode.
 
 - As a sole developer, You will nearly never have to handle much with the **mastersalt** part unless you are going to be very low-level.
 - All the behavior of the script can be controlled via environment variables or command line arguments switches.
-- That's why you will need to tell which daemons you want (minion/master) and on what kind of machine you are installing on (the nodetype).
+- That's why you will need to tell which daemons you want (minion/master) and on what kind of environment you are installing on (the nodetype).
 - You'll also have to set the **minion id**. The default choice for **--minion-id** is the current machine hostname.
   You should keep this naming scheme unless you have a good reason to change it.
 
@@ -59,6 +59,8 @@ Please read next paragraphs before running any command.
 - You choice for **--nodetype** is certainly one of:
 
     - **scratch** (default) manages by default only the salt installation and configuration.
+      You ll want to activate this mode if you want to apply explicitly your
+      states without relying of default nodetypes configuration.
     - **server** matches a baremetal server, and manage it from end to end (base
       packages, network, locales, sshd, crond, logrotate, etc, by default)
     - **vm** matches a VM (not baremetal), this is mostly like **server**.
@@ -66,8 +68,10 @@ Please read next paragraphs before running any command.
     - **laptop** is like server but also install packages for working on a
       developement machine (prebacking a laptop for a dev)
     - **dockercontainer** matches a VM (not baremetal), this is mostly like **server**, but install & preconfigure circus to manage daemons.
-    - **devhost** marks the machine as a development machine enabling states to act on that, by example installation of a test local-loop mailer.
-    - **vagrantvm** marks the machine as a vagrant virtualbox.
+    - **devhost** is suitable for a development machine enabling states to act on that,
+      by example installation of a test local-loop mailer.
+    - **vagrantvm** is suitable to flag vagrant boxes and is a subtype of
+      devhost
 
 - For configuring all salt daemons, you have some extra parameters (here are the environment variables, but you have also
   command line switches to set them
