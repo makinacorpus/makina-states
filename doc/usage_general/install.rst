@@ -23,16 +23,19 @@ The light mode via install_makina_states.sh:
 
 Reminder
 ---------
-Always remember:
-
-    - Makina-states is based on "nodetypes presets" that are prebundled
-      collections of makina-states states to apply to the system.
-    - On those nodetypes, we may manage "controllers", aka the salt daemons.
-    - On those nodetypes, we may configure "localsettings" like vim, git, &
-      basepackages or network configurations
-    - After all of the previous steps, we may configure services like sshd,
-      crond, or databases
-    - Eventually, we may install projects.
+- Makina-states is based on "nodetypes presets" that are prebundled
+  collections of makina-states states to apply to the system.
+- On those nodetypes, we may manage "controllers", aka the salt daemons.
+- On those nodetypes, we may configure "localsettings" like vim, git, &
+  basepackages or network configurations. If any other preset than **scratch**
+  has been activated, many localsettings will be applied (see
+  mc_states/modules/localsettings.py:registry)
+- After all of the previous steps, we may configure services like sshd,
+  crond, or databases. If we are on the **scratch** mode, no services
+  are configured by default.
+- Eventually, we may by able to install projects via mc_project.
+  A project is just a classical code repository which has a ".salt" folder
+  commited with enougth information on how to deploy it.
 
 Details
 --------

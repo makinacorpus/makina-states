@@ -42,3 +42,6 @@ Additionnal docs
    usage_write/index.rst
 
 
+
+OLDDOC (obsolete)
+--------------------------
