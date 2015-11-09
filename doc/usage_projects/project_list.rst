@@ -15,6 +15,16 @@ Projects Exemples
 - `php <https://github.com/makinacorpus/corpus-php>`_
 - `staticwww <https://github.com/makinacorpus/corpus-staticwww>`_
 
+Helpers & resource projects
+++++++++++++++++++++++++++++++
+- `pgsql <https://github.com/makinacorpus/corpus-pgsql>`_
+- `mysql <https://github.com/makinacorpus/corpus-mysql>`_
+- `elasticsearch <https://github.com/makinacorpus/corpus-elasticsearch>`_
+- `solr <https://github.com/makinacorpus/corpus-solr>`_
+- `osmdb <https://github.com/makinacorpus/corpus-osmdb>`_
+- `rabbitmq <https://github.com/makinacorpus/corpus-rabbitmq>`_
+- `mongodb <https://github.com/makinacorpus/corpus-mongodb>`_
+
 App deployements exemples
 ++++++++++++++++++++++++++++
 - `tilestream <https://github.com/makinacorpus/corpus-tilestream>`_
@@ -26,15 +36,7 @@ App deployements exemples
 - `vaultier <https://github.com/makinacorpus/corpus-vaultier>`_
 - `jenkins <https://github.com/makinacorpus/corpus-jenkins>`_
 - `jenkins-slave <https://github.com/makinacorpus/corpus-jenkins-slave>`_
-
-Helpers & resource projects
-++++++++++++++++++++++++++++++
-- `pgsql <https://github.com/makinacorpus/corpus-pgsql>`_
-- `mysql <https://github.com/makinacorpus/corpus-mysql>`_
-- `elasticsearch <https://github.com/makinacorpus/corpus-elasticsearch>`_
-- `solr <https://github.com/makinacorpus/corpus-solr>`_
-- `osmdb <https://github.com/makinacorpus/corpus-osmdb>`_
-- `rabbitmq <https://github.com/makinacorpus/corpus-rabbitmq>`_
-- `mongodb <https://github.com/makinacorpus/corpus-mongodb>`_
 - `dockerregistry <https://github.com/makinacorpus/corpus-dockerregistry>`_
 - `svn <https://github.com/makinacorpus/corpus-svn>`_
+
+
