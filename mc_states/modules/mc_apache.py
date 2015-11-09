@@ -175,7 +175,7 @@ def settings():
         apacheStepOne = __salt__['mc_utils.dictupdate'](
             {
                 'apacheConfCheck': (
-                    "salt://makina-states/_scripts/"
+                    "salt://makina-states/files/usr/bin/"
                     "apacheConfCheck.sh"),
                 'httpd_user': 'www-data',
                 'mpm': 'worker',

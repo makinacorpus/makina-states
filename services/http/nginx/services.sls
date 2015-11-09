@@ -11,7 +11,7 @@ include:
 {% set settings = salt['mc_nginx.settings']() %}
 makina-nginx-conf-syntax-check:
   cmd.run:
-    - name: {{ salt['mc_salt.settings']().msr }}/_scripts/nginxConfCheck.sh
+    - name: {{ salt['mc_salt.settings']().msr }}/files/usr/bin/nginxConfCheck.sh
     - stateful: True
     - watch:
       - mc_proxy: nginx-pre-restart-hook
