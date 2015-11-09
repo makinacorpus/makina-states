@@ -15,7 +15,6 @@ container-container-pkgs:
       - mc_proxy: makina-lxc-proxy-pkgs
       - cmd: container-install-non-harmful-packages
       - cmd: container-do-cleanup
-      - cmd: container-do-setup-services
 
 {% set extra_confs = {
   '/usr/bin/ms-lxc-setup.sh': {"mode": "755"},
@@ -91,6 +90,7 @@ container-do-setup-services:
     - name: "systemctl enable lxc-setup;systemctl enable lxc-stop"
     - require:
       - mc_proxy: makina-lxc-proxy-cleanup
+      - pkg: container-container-pkgs
     - require_in:
       - mc_proxy: makina-lxc-proxy-end
 {% endif %}
