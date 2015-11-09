@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--origin', required=True)
 parser.add_argument('--destination', required=True)
 parser.add_argument('--same-ssh-for-all', action='store_true')
-for i in ('salt', 'files', 'ssh'):
+for i in ('salt', 'files', 'ssh', 'postfix'):
     parser.add_argument(
         '--reset-{0}'.format(i),
         dest='reset_{0}'.format(i),
@@ -161,7 +161,8 @@ def main(argv=None):
                                     ficw.write(ficr.read())
             finally:
                 shutil.rmtree(tmpdir)
-    os.system('newaliases')
+    if opts.reset_postfix:
+        os.system('newaliases')
     for kind, files in RESET_FILES.items():
         for fg in files:
             for fp in glob.glob(fg):
@@ -169,7 +170,7 @@ def main(argv=None):
                     continue
                 if opts.reset_files:
                     rewrite(fp, opts.origin, opts.destination)
-                if kind == 'postfix':
+                if opts.reset_postfix and (kind == 'postfix'):
                     os.system('postmap {0}'.format(fp))
 
 

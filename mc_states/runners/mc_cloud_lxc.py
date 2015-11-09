@@ -558,6 +558,7 @@ def copy(destination,
          reset_files=None,
          reset_salt=None,
          reset_ssh=None,
+         reset_postfix=None,
          output=True,
          reboot=True,
          autoaccept=True,
@@ -574,6 +575,8 @@ def copy(destination,
         reset_files = reset
     if reset_ssh is None:
         reset_ssh = reset
+    if reset_postfix is None:
+        reset_postfix = reset
     if cn_wire is None:
         cn_wire = cn_config
     if lxc_config is None:
@@ -628,9 +631,11 @@ def copy(destination,
         if reset_files or reset_salt or reset_ssh:
             _s['mc_api.time_log']('reset', fname, origin, destination)
             cmd = ('chroot /var/lib/lxc/{destination}/rootfs'
-                   ' python /tmp/reset-name.py'
+                   ' python /tmp/reset-host.py'
                    ' --destination="{destination}" --origin="{origin}"'
                    '').format(origin=origin, destination=destination)
+            if reset_postfix:
+                cmd += ' --reset-postfix'
             if reset_files:
                 cmd += ' --reset-files'
             if reset_ssh:
