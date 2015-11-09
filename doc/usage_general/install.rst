@@ -2,6 +2,9 @@ Installation & basic usage
 ==========================
 Briefing
 ----------
+
+For now, use Ubuntu >= 14.04.
+
 To install our base salt installation, you have to choose between 3 main mode of operations:
 
 The regular modes via boot-salt.sh:
@@ -102,7 +105,7 @@ Install
 If you want to install only a minion which will be connected to a remote
 mastersalt master::
 
-    ./boot-salt.sh --mastersalt <MASTERSALT_FQDN> [--mastersaltsalt-master-port "PORT OF MASTER  IF NOT 4506"] -n server
+    ./boot-salt.sh --mastersalt <MASTERSALT_FQDN> [--mastersaltsalt-master-port "PORT OF MASTER  IF NOT 4506"]
 
 If you want to install salt on a bare server, without mastersalt::
 
@@ -116,10 +119,10 @@ If you want to install and test test mastersalt system locally to your box::
 
     ./boot-salt.sh --mastersalt-master --mastersalt $(hostname -f)
 
-If you want to manage from end to end your server, select also the "server" preset
+If you want to manage from end to end your server, select also the "laptop" preset
 nodetype::
 
-    ./boot-salt.sh --mastersalt <MASTERSALT_FQDN> [--mastersaltsalt-master-port "PORT OF MASTER  IF NOT 4506"] -n server
+    ./boot-salt.sh --mastersalt <MASTERSALT_FQDN> [--mastersaltsalt-master-port "PORT OF MASTER  IF NOT 4506"] -n laptop
 
 Useful switches
 ++++++++++++++++
