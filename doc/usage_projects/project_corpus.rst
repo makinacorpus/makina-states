@@ -213,7 +213,7 @@ The layout and projects implementation must allow us to
 - Make the staging environment a production battletest server
 - Production can deploy from non complex builds, and the less possible dependant of external services
 
-For this, we inspired ouselves a lot from openshift_ and dheroku_ (custom buildpacks) models.
+For this, we inspired ouselves a lot from openshift_ and `heroku <https://devcenter.heroku.com/articles/buildpack-api>`_ (custom buildpacks) models.
 
 
 .. _project_spec_layout:
