@@ -23,6 +23,7 @@ Projects Exemples
 - `gitlab <https://github.com/makinacorpus/corpus-gitlab>`_
 - `seafile <https://github.com/makinacorpus/corpus-seafile>`_
 - `php <https://github.com/makinacorpus/corpus-php>`_
+- `staticwww <https://github.com/makinacorpus/corpus-staticwww>`_
 
 Helpers & resource projects
 ++++++++++++++++++++++++++++++
