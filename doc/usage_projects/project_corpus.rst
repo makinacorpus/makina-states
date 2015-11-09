@@ -215,6 +215,9 @@ The layout and projects implementation must allow us to
 
 For this, we inspired ouselves a lot from openshift_ and dheroku_ (custom buildpacks) models.
 
+
+.. _spec_project_layout:
+
 Actual layout
 -------------
 Overview of the project source code repositories

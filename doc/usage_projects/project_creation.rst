@@ -25,7 +25,7 @@ See formulaes exemples:
 
 Specifications
 ------------------
-See the original spec on :ref:`project_corpus` .
+See the original :ref:`specification <project_corpus>`, and specially :ref:`this section <spec_project_layout>`.
 
 Initialization
 ++++++++++++++++
