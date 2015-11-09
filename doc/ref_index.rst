@@ -34,7 +34,6 @@ Formulaes & macros helpers reference
 
    ref_macros/index.rst
 
-
 Misc & Obsolete
 ----------------
 .. toctree::
