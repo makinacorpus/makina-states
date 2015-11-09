@@ -25,10 +25,7 @@ See formulaes exemples:
 
 Specifications
 ------------------
-See the original :ref:`specification <project_corpus>`, and specially:
-    - :ref:`this section <project_spec_layout>`
-    - :ref:`this section <project_spec_proc_install>`
-    - :ref:`this section <project_spec_proc_fixperms>`
+See the original :ref:`specification <project_corpus>`, and specially the :ref:`layout <project_spec_layout>`, the :ref:`install <project_spec_proc_install>` procedure, and the :ref:`fixperms<project_spec_proc_fixperms>` procedure.
 
 Initialization
 ++++++++++++++++
