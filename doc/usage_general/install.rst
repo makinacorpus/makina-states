@@ -172,8 +172,11 @@ Upgrade will:
 
 .. _project_light_mode:
 
-Integrate makina-states with a pre-existing salt infrastructure
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Light mode (via install_makina_states.sh)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This is mainly needed to integrate Makina-States within a pre-existing
+salt infrastructure (via install_makina_states.sh).
+
 
 Basically makina states contains:
 
