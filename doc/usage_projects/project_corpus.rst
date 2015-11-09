@@ -349,11 +349,11 @@ Project initialization/sync procedure
 - Clone local copies inside the project, pillar and salt directories
 - If the salt folder does not exists, create it
 - If any of default slses procedures are not yet present, create them
-- If we are in editable mode, clone from origin remote
 - Wire the pillar configuration inside the pillar root
 - Wire the pillar init.sls file to the global pillar top file
 - Wire the salt configuration inside the salt root
 - Echo the git remotes to push the new deployement on.
+- Wire any salt modules in .salt/{_modules,runners,etc}
 
 Project archive procedure
 ++++++++++++++++++++++++++
@@ -403,7 +403,7 @@ Full procedure
 - project **archive** procedure
 - project **initialization/sync** procedure
 - project **release-sync** procedure
-- project **xfixperms** procedure
+- project **fixperms** procedure
 - project **install** procedure
 - project **fixperms** procedure (yes again)
 - In error: **rollback** procedure
