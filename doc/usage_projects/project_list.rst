@@ -17,7 +17,6 @@ Projects Exemples
 - `vaultier <https://github.com/makinacorpus/corpus-vaultier>`_
 - `jenkins <https://github.com/makinacorpus/corpus-jenkins>`_
 - `jenkins-slave <https://github.com/makinacorpus/corpus-jenkins-slave>`_
-- `vaultier <https://github.com/makinacorpus/corpus-vaultier>`_
 - `tilestream <https://github.com/makinacorpus/corpus-tilestream>`_
 - `odoo <https://github.com/makinacorpus/corpus-odoo>`_
 - `gitlab <https://github.com/makinacorpus/corpus-gitlab>`_
