@@ -1,4 +1,3 @@
-
 .. _ref_registries:
 
 Design
