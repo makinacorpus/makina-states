@@ -20,8 +20,8 @@ The :ref:`regular modes <project_regular_modes>` light mode via boot-salt.sh:
 
 The :ref:`light mode <project_light_mode>` light mode via install_makina_states.sh:
 
-    - The "light" mode goal is to use makina-states where salt is already
-      installed and where it's install has not to have to be done via
+    - Use makina-states where salt is already installed 
+      and where it's install has not to have to be done via
       makina-states itself.
 
 Reminder
