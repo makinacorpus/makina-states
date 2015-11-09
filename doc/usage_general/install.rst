@@ -61,10 +61,10 @@ Please read next paragraphs before running any command.
 
 - You choice for **--nodetype** is certainly one of:
 
-    - **scratch** (default) manages by default only the salt installation and configuration.
+    - **scratch** manages by default only the salt installation and configuration.
       You ll want to activate this mode if you want to apply explicitly your
       states without relying of default nodetypes configuration.
-    - **server** matches a baremetal server, and manage it from end to end (base
+    - **server (default)** matches a baremetal server, and manage it from end to end (base
       packages, network, locales, sshd, crond, logrotate, etc, by default)
     - **vm** matches a VM (not baremetal), this is mostly like **server**.
     - **lxccontainer** matches a VM (not baremetal), this is mostly like **server**.

@@ -31,7 +31,7 @@ Here is how we separate things between the two environments:
 
         - installing consumed services like a reverse proxy, a database server
         - installing the application
-        - isntall project maintainance related stuff like restarts crons, databases backups
+        - install project maintainance related stuff like restarts crons, databases backups
         - etc
 
 Recently, we added back support for a "mixed" mode which can operate both **mastersalt** and **salt** side states at a same time when mastersalt is not installed at all.
