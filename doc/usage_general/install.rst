@@ -59,7 +59,7 @@ Please read next paragraphs before running any command.
 - Default salt install is **masterless (standalone)**.
 - Default mastersalt install is **remote (connected)**.
 
-- You choice for **--nodetype** is certainly one of:
+- You choice for **\-\-nodetype** is certainly one of:
 
     - **scratch** manages by default only the salt installation and configuration.
       You ll want to activate this mode if you want to apply explicitly your
