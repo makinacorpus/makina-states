@@ -12,12 +12,3 @@ Design
    formulaes.rst
    hooks.rst
 
-
-Obsolete
-=========
-.. toctree::
-   :maxdepth: 1
-
-   modes.rst
-   macros.rst
-

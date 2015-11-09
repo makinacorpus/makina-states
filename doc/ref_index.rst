@@ -30,3 +30,14 @@ Formulaes & macros helpers reference
    :maxdepth: 2
 
    ref_macros/index.rst
+
+
+
+Obsolete
+----------
+.. toctree::
+   :maxdepth: 1
+
+   ref_design/modes.rst
+   ref_design/macros.rst
+
