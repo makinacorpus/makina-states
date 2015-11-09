@@ -3,6 +3,10 @@ Reference
 
 Implementation design & details
 -------------------------------
+.. toctree::
+   :maxdepth: 1
+
+   usage_projects/project_corpus.rst
 
 .. toctree::
    :maxdepth: 2

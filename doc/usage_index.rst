@@ -40,9 +40,3 @@ Additionnal docs
    usage_lxc/index.rst
    usage_write/index.rst
 
-.. toctree::
-   :maxdepth: 1
-
-   usage_projects/project_corpus.rst
-
-
