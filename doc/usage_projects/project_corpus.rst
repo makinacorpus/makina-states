@@ -216,7 +216,7 @@ The layout and projects implementation must allow us to
 For this, we inspired ouselves a lot from openshift_ and dheroku_ (custom buildpacks) models.
 
 
-.. _spec_project_layout:
+.. _project_spec_layout:
 
 Actual layout
 -------------
@@ -234,8 +234,6 @@ This repository master branch consequently has the minimal following structure::
     master
         |- what/ever/files/you/want
         |- .salt -> the salt deployment structure
-        |- .salt/notify.sls        -> notification code run at the end of the
-        |                            deployment
         |- .salt/PILLAR.sample     -> default pillar used in the project, this
         |                             file will be loaded inside your
         |                             configuration
@@ -370,19 +368,19 @@ Project Release-sync procedure
 - Be sure to sync the last git deploy hook from makina-states
 - Fetch the last commits inside the **deploy** directory
 
+
+.. _project_spec_proc_install
+
 Project install procedure
 ++++++++++++++++++++++++++
 We run all slses in the project **.salt** directory which is not tied to any
 default procedure.
 
+.. _project_spec_proc_fixperms
+
 Project fixperms  procedure
 ++++++++++++++++++++++++++++
 - Set & **reset** needed user accesses to the filesystem
-
-Project notification procedure
-+++++++++++++++++++++++++++++++
-- We  echo by default on the stdout the status of the deployment but it can be
-  overidden by editing the **notify.sls** file.
 
 Rollback procedure
 +++++++++++++++++++++
@@ -394,15 +392,21 @@ Rollback procedure
 
 Workflows
 ---------
+
+.. _project_spec_deploy_proc
+
 Full procedure
 +++++++++++++++++
-- project deployment trigger procedure
-- project archive procedure
-- project initialization/sync procedure
-- project release-sync procedure
-- project install procedure
-- In error: rollback procedure
-- In any cases (error, success):  project notification procedure
+
+- project **deployment** is triggered
+- project **archive** procedure
+- project **initialization/sync** procedure
+- project **release-sync** procedure
+- project **xfixperms** procedure
+- project **install** procedure
+  not a global sls
+- project **fixperms** procedure
+- In error: **rollback** procedure
 
 IMPLEMENTATION: How a project is built and deployed
 ----------------------------------------------------
@@ -471,7 +475,7 @@ This will in order:
     - dns
     - firewall rules
 
-- Run the mastersalt highstate.
+- Run the mastersalt highstate
 
 Initialisation of a project
 ++++++++++++++++++++++++++++++++++++++
@@ -484,17 +488,15 @@ Initialisation of a project
 
 - User create the project
 - Project directories are initialised
-- User receive an email with the git url to push on
 
 upgrade  of a project
 +++++++++++++++++++++
 The code is not pull by production server it will be pushed with git to the environment ssh endpoint:
 
 - Triggered either by an automatted bot (jenkins)
-- By the user itself, hence he as enought access
+- By the user itself, hence he as enougth access
 
 In either way, the trigger is a git push.
-
 
 The nerve of the war: jinja macros and states, and execution modules
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -567,14 +569,7 @@ project configuration and without we can't deploy correctly.
 The installer set is then included by default at the first generation of the
 user installer set at the creation of the project.
 
-EG: in .salt/notify.sls we will have something that looks to::
-
-    include:
-      - makina-states.projects.2.generic.notify
-
-- Some installers example: :ref:`projects_project_list`
-
 Project initialisation & installation
 ----------------------------------------
-Refer to :ref:`project_creation`
-
+- Refer to :ref:`project_creation`
+- Some installers example: :ref:`projects_project_list`

@@ -25,7 +25,10 @@ See formulaes exemples:
 
 Specifications
 ------------------
-See the original :ref:`specification <project_corpus>`, and specially :ref:`this section <spec_project_layout>`.
+See the original :ref:`specification <project_corpus>`, and specially:
+    - :ref:`this section <project_spec_layout>`
+    - :ref:`this section <project_spec_proc_install>`
+    - :ref:`this section <project_spec_proc_fixperms>`
 
 Initialization
 ++++++++++++++++
@@ -275,6 +278,11 @@ in ``pillar/init.sls``, you have:
 
 What's happen when there is a deploy ?
 ---------------------------------------
+- When you do a git push, you have the full procedure, see :ref:`spec doc <project_spec_deploy_proc>`
+- When you use ``only=install,fixperms`` it only do some the **install** & **fixperms** subparts.
+
+    - :ref:`install <project_spec_proc_install>`
+    - :ref:`fixperms <project_spec_proc_fixperms>`
 
 Filesystem considerations
 --------------------------
