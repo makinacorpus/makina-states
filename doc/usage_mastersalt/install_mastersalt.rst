@@ -28,7 +28,8 @@ This covers those parts:
     - LDAP (openldap)
     - Baremetal and VM network configuration (this include setuping ip faiover
       aliases on baremetal servers)
-    - Firewall configuration (firewalld)
+    - Firewall configuration (ms_iptables (simple iptable frontend configured
+      via json))
     - repositories managment (APT)
     - locales managment
     - Cloud Controller orchestration
