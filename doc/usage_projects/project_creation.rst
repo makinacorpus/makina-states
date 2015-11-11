@@ -185,7 +185,7 @@ Sumup
 To sum all that up, when beginning project you will:
 
 - Initialize if not done a project structure with ``salt-call --local mc_project.init_project project``
-- If you do not want git remotes, you can alternativly use ``salt-call --local mc_project.init_ptoject project``
+- If you do not want git remotes, you can alternativly use ``salt-call --local mc_project.init_ptoject project remote_less=False``
 - add a **.salt** folder alongside your project codebase (in it's git repo).
 - deploy it, either by:
 
