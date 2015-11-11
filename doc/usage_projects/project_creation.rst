@@ -209,37 +209,6 @@ To sum all that up, when beginning project you will:
 
 - Wash, Rince, Repeat
 
-
-SaltStack integration
---------------------------
-As you know in makina-states, there are 2 concurrent salt installs, one for **salt**, the one that you use,
-and one for **mastersalt** for the devil ops.
-In makina-states, we use by default:
-
-- a virtualenv inside ``/salt-venv/salt``
-- `salt from a fork <https://github.com/makina-corpus/salt.git>`_ installed inside ``/salt-venv/salt/src/salt``
-- the salt file root resides, as usual, in ``/srv/salt``
-- the salt pillar root resides, as usual, in ``/srv/pillar``
-- the salt configuration root resides, as usual, in ``/etc/salt``
-
-As you see, the project layout seems not integration on those following folders, but in fact, the project
-initialisation routines made symlinks to integrate it which look like::
-
-    /srv/salt/makina-projects/<project_name>>  -> /srv/projects/<project_name>/project§/.salt
-    /srv/pillar/makina-projects/<project_name> -> /srv/projects/<project_name>/pillar
-
-- The pillar is auto included in the **pillar top** (``/srv/pîllar/top.sls``).
-- The project salt files are not and **must not** be included in the salt **top** for further highstates unless
-  you know what you are doing.
-
-You can unlink your project from salt with::
-
-    salt-call --local -ldebug mc_project.unlink <project_name>
-
-You can link project from salt with::
-
-    salt-call --local -ldebug mc_project.link <project_name>
-
 .. _project_configuration_pillar::
 
 Configuration pillar &  variables
@@ -336,6 +305,36 @@ We use `POSIX Acls <http://en.wikipedia.org/wiki/Access_control_list#Filesystem_
 various places on your project folders.
 At first, it feels a bit complicated, but it will enable you to smoothlessly edit your files or run
 your programs with appropriate users without loosing security.
+
+SaltStack integration
+--------------------------
+As you know in makina-states, there are 2 concurrent salt installs, one for **salt**, the one that you use,
+and one for **mastersalt** for the devil ops.
+In makina-states, we use by default:
+
+- a virtualenv inside ``/salt-venv/salt``
+- `salt from a fork <https://github.com/makina-corpus/salt.git>`_ installed inside ``/salt-venv/salt/src/salt``
+- the salt file root resides, as usual, in ``/srv/salt``
+- the salt pillar root resides, as usual, in ``/srv/pillar``
+- the salt configuration root resides, as usual, in ``/etc/salt``
+
+As you see, the project layout seems not integration on those following folders, but in fact, the project
+initialisation routines made symlinks to integrate it which look like::
+
+    /srv/salt/makina-projects/<project_name>>  -> /srv/projects/<project_name>/project§/.salt
+    /srv/pillar/makina-projects/<project_name> -> /srv/projects/<project_name>/pillar
+
+- The pillar is auto included in the **pillar top** (``/srv/pîllar/top.sls``).
+- The project salt files are not and **must not** be included in the salt **top** for further highstates unless
+  you know what you are doing.
+
+You can unlink your project from salt with::
+
+    salt-call --local -ldebug mc_project.unlink <project_name>
+
+You can link project from salt with::
+
+    salt-call --local -ldebug mc_project.link <project_name>
 
 Related topics
 ---------------------
