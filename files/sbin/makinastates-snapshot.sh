@@ -52,14 +52,9 @@ if [ "x${is_docker}" != "x" ];then
 /salt-venv/mastersalt/src/salt/pkg
 /salt-venv/salt/src/salt/pkg
 "
-# removing .git strip 100mo but really leave a gap when it comes to debug
-#$(find \
-#    /salt-venv\
-#    /srv/*salt/makina-states/\
-#    -name .git)
-#"
 fi
 set -e
+# directories to empty out or files to wipe content from
 WIPE="
 /etc/mastersalt/makina-states/
 /etc/salt/makina-states/
@@ -70,15 +65,6 @@ WIPE="
 /etc/salt/makina-states
 /usr/local/share/ca-certificates/
 
-/var/cache/salt/minion
-/var/cache/salt/salt-master
-/var/cache/salt/salt-minion
-
-/var/cache/mastersalt/mastersalt-master
-/var/cache/mastersalt/mastersalt-minion
-/var/cache/mastersalt/minion
-/var/cache/mastersalt/master-master
-
 /tmp
 
 /etc/ssh/ssh_host*key
@@ -88,14 +74,15 @@ WIPE="
 /etc/ssl/cloud
 /etc/ssl/nginx
 
-/srv/salt/makina-states/.bootlogs/*
-/srv/mastersalt/makina-states/.bootlogs/*
+/srv/salt/makina-states/.bootlogs/
+/srv/mastersalt/makina-states/.bootlogs/
 
-/var/log/unattended-upgrades/*
+/var/log/unattended-upgrades/
 /var/log/*.1
 /var/log/*.0
 /var/log/*.gz
 "
+# files to delete
 FILE_REMOVE="
 /srv/mastersalt-pillar/
 /srv/pillar/
@@ -107,10 +94,35 @@ FILE_REMOVE="
 FILE_WIPE="
 /var/log
 "
+# salt cache is relying on semi hardlinks, deleting files from their orig
+# just delete/create the caches is sufficient
+TO_RECREATE="
+/var/cache/salt/minion
+/var/cache/salt/salt-minion
+/var/cache/salt/salt-master
+/var/cache/mastersalt/mastersalt-master
+/var/cache/mastersalt/mastersalt-minion
+/var/cache/mastersalt/minion
+/var/cache/mastersalt/master-master
+"
 # we already have clean checkouts, now, we do not upgrade
 # if [ "x${is_docker}" != "x" ];then
 #     /srv/mastersalt/makina-states/_scripts/boot-salt.sh -C -s -S --only-pack || /bin/true
 # fi
+
+echo "${TO_RECREATE}" | while read i;do
+    if [ "x${i}" != "x" ];then
+        if [ ! -h "${i}" ];then
+            if [ -f "${i}" ];then
+                rm -fv "${i}" || /bin/true
+                touch "${i}" || /bin/true
+            elif [ -d "${i}" ];then
+                rm -rv "${i}" || /bin/true
+                mkdir -v "${i}" || /bin/true
+            fi
+        fi
+    fi
+done
 for i in ${REMOVE};do
     if [ -d "${i}" ];then rm -vrf "${i}" || /bin/true;fi
     if [ -h "${i}" ] || [ -f "${i}" ];then rm -vf "${i}" || /bin/true;fi
