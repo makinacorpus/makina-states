@@ -5,32 +5,41 @@ Install a makina-states docker environement
 
 Intro and history
 ------------------------------
-luster based on LXC/kvm and mastersalt-pillar was the first experiment we had,
-it's not what you ll have to use to spawn a kubernetes based cluster, as we want
-things to be a lot more dynamic.
+Cluster based on LXC/kvm and mastersalt-pillar was the first thing we had,
+This allowed us to have a git/push/deploy to environment workflow.
+It's not what you ll have to use to spawn a kubernetes based cluster, as we want
+things to be a lot more immutable.
 
 We still reuse bits from the past, but we ll input the settings differently as
 it was a bit too hard from end users to use that.
 
-Basic development  installation
+Idea is to deploy pre-backed containers onto production and do not do heavy configuration at runtime.
+In other words, we just edit some configuration file to wire the container to server the app request, but we do not
+reconfigure it from end to end.
+
+Basic development installation
 -------------------------------
 - For ubuntu, you best bet is to use something >= Ubuntu 14.04 with a recent kernel (from enablement stack)
 - Install docker by reading your distribution guidelines for that purpose
 
-    - Eg on ubuntu::
+    - Eg on ubuntu:
 
-        apt-get install lxc docker rsync
+      .. code-block:: bash
 
-    - Replace docker by makina-corpus version (1.7+), we have modified it to allow to use a custom
+            apt-get install lxc docker rsync
+
+    - Replace docker by makina-corpus version (1.9+), we have modified it to allow to use a custom
       apparmor profile instead of inject it's own and broken one.
 
         - The sources are `here@github <https://github.com/makinacorpus/docker.git>`_.
-        - We provide a `prebuilt binary for linux <https://github.com/makinacorpus/docker/releases/download/mc_2/docker>`_.::
+        - We provide a `prebuilt binary for linux <https://github.com/makinacorpus/docker/releases/download/mc_2/docker>`_.:
 
-            cp /usr/bin/docker /usr/bin/docker.dist
-            curl -L --insecure -s https://github.com/makinacorpus/docker/releases/download/mc_1/docker -o /usr/bin/docker
-            # or wget https://github.com/makinacorpus/docker/releases/download/mc_1/docker -O /usr/bin/docker
-            chmod +x /usr/bin/docker
+          .. code-block:: bash
+
+                cp /usr/bin/docker /usr/bin/docker.dist
+                curl -L --insecure -s https://github.com/makinacorpus/docker/releases/download/mc_1/docker -o /usr/bin/docker
+                # or wget https://github.com/makinacorpus/docker/releases/download/mc_1/docker -O /usr/bin/docker
+                chmod +x /usr/bin/docker
 
 - If you are on Ubuntu or any system protected by **apparmor**, you ll have to tweak your apparmor installation.
   If you are not configuring your system via makina-states, you can however bring back the profile quite easily
@@ -64,16 +73,6 @@ Basic development  installation
  ./docker/stage.py
  docker tag makinacorpus/makina-states-ubuntu-vivid:candidate makinacorpus/makina-states-ubuntu-vivid:latest
 
-Run & test a makina-states based docker container
------------------------------------------------------
-As those dockers are always better run with systemd, you ll have to launch them
-with the **CAP_SYS_ADMIN**
-
-.. code-block:: bash
-
-    docker run --name=mycontainer --cap-add SYS_ADMIN makinacorpus/makina-states-ubuntu-vivid
-    docker exec -ti mycontainer bash
-    # <play>
 
 Build a kubernetes cluster
 --------------------------
