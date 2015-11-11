@@ -28,6 +28,31 @@ Specifications
 ------------------
 See the original :ref:`specification <project_corpus>`, and specially the :ref:`layout <project_spec_layout>`, the :ref:`install <project_spec_proc_install>` procedure, and the :ref:`fixperms<project_spec_proc_fixperms>` procedure.
 
+Sumup; but please read the spec at least once...:
+
+    - There is a separate repo distributed along the project named **pillar** to
+      store configuration variables, passwords and so on.
+    - Projects are deployed via instructions based on saltstack which are
+      contained into the **.salt** folder inside the codebase.
+
+The deployment includes global phases in this order:
+
+    - archive ``archive.sls``
+    - sync code from remotes if there are remotes
+    - sync/install custom salt modules (exec, states, etc) from the codebase if any
+    - fixperms (``fixperms.sls``)
+    - install  (``install.sls``)
+    - fixperms
+    - rollback (``rollback.sls``)if error
+
+Some of those phases can be edited via the user, and some other not (install, & sync steps).
+
+That will explain that in your **.salt** folder, you have at least ``install.sls``,
+``fixperms.sls``, ``rollback.sls``, and for old projects ``notify.sls``.
+
+All other sls found at **toplevel** which are not those ones are executed in
+lexogaphycal order (alphanum) and the convention is to name them ``\d\d\d_NAME.sls```
+
 Initialization
 ++++++++++++++++
 - a project in corpus / makina-states is a git repository checkout which contains the code
