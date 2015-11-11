@@ -28,7 +28,7 @@ Specifications
 ------------------
 See the original :ref:`specification <project_corpus>`, and specially the :ref:`layout <project_spec_layout>`, the :ref:`install <project_spec_proc_install>` procedure, and the :ref:`fixperms<project_spec_proc_fixperms>` procedure.
 
-Sumup; but please read the spec at least once...:
+A good sumup of the spec is as follow, but please read it once...
 
     - There is a separate repo distributed along the project named **pillar** to
       store configuration variables, passwords and so on.
@@ -51,7 +51,10 @@ That will explain that in your **.salt** folder, you have at least ``install.sls
 ``fixperms.sls``, ``rollback.sls``, and for old projects ``notify.sls``.
 
 All other sls found at **toplevel** which are not those ones are executed in
-lexogaphycal order (alphanum) and the convention is to name them ``\d\d\d_NAME.sls```
+lexogaphycal order (alphanum) and the convention is to name them ``\d\d\d_NAME.sls``
+
+The ``PILLAR.sample`` file contains default configuration variable for your
+project and helps you to know what variable to override in your custom pillar.
 
 Initialization
 ++++++++++++++++
