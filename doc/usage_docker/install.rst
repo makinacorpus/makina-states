@@ -65,6 +65,9 @@ Install docker
 - If you are on Ubuntu or any system protected by **apparmor**, you ll have to tweak your apparmor installation.
   If you are not configuring your system via makina-states, you can however bring back the profile quite easily
 
+Configure apparmor
++++++++++++++++++++++
+
 .. code-block:: bash
 
     mkdir -pv /etc/apparmor.d/abstractions/lxc
@@ -79,17 +82,17 @@ Install docker
     patch -Np2 < /tmp/usr.sbin.ntpd.perms.patch
     service apparmor restart
 
-- Clone makina-states, even if not installing it on you host
 
 Install the base image
 ++++++++++++++++++++++++++++
+Clone makina-states, even if not installing it on you host
 
 .. code-block:: bash
 
     mkdir /srv/mastersalt && cd /srv/mastersalt
     git clone http://github.com/makinacorpus/makina-states.git
 
-- Create the base makinacorpus/makina-states image
+Create the base makinacorpus/makina-states image
 
 .. code-block:: bash
 
