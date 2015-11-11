@@ -112,9 +112,9 @@ Initialization
   do it.
 - Ensure to to have at least in your project git folder:
 
+    - ``.salt/PILLAR.sample``: configuration default values to use in SLSes
     - ``.salt/archive.sls``: archive step
     - ``.salt/fixperms.sls``: fixperm step
-    - ``.salt/PILLAR.sample``: configuration default values to use in SLSes
     - ``.salt/rollback.sls``: rollback step
 
 - You can then add as many SLSes as you want, and the ones directly in **.salt** will be executed in alphabetical order except the ones beginning with **task_** (task_foo.sls). Indeed the ones beginning with **task_** are different beasts and are intended to be either included by your other slses to factor code out or to be executed manually via the ``mc_project.run_task`` command.
@@ -123,6 +123,15 @@ Initialization
 Deploying, two ways of doing things
 ------------------------------------
 To build and deploy your project we provide two styles of doing style that should be appropriate for most use cases.
+
+The common workflow is:
+
+    - use ``mc_project.init_project`` to create the structure to host your project
+    - use ``mc_project.report`` to verify things are in place
+    - git push/or edit then push the pillar ``/srv/projects/<project>/pillar`` to configure the project
+    - git push/or edit then push the code inside ``/srv/projects/<project>/project``
+    - launch the deploy
+    - Wash, Rince, Repeat
 
 mc_project.deploy, the main entry point
 +++++++++++++++++++++++++++++++++++++++++
