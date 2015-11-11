@@ -12,37 +12,39 @@ Run time
 ++++++++++
 The app is launched an managed via a ``bin/launch.sh`` (`Example <https://github.com/makinacorpus/corpus-dockerregistry/blob/master/bin/launch.sh>`_) script, which should ideally:
 
-      - Replace the default pillar by the **configuration/pillar.sls** if it
-        existsa. This is the only thing we need to do before launching a salt
-        module script that does the rest.
-      - Execute a salt **mc_launcher.py** (`Example <https://github.com/makinacorpus/corpus-dockerregistry/blob/master/.salt/_modules/mc_launcher.py>`_) module which runs our app after maybe
-        having reconfigured it.
+  - Replace the default pillar by the **configuration/pillar.sls** if it
+    existsa. This is the only thing we need to do before launching a salt
+    module script that does the rest.
+  - Execute a salt **mc_launcher.py** (`Example <https://github.com/makinacorpus/corpus-dockerregistry/blob/master/.salt/_modules/mc_launcher.py>`_) module which runs our app after maybe
+    having reconfigured it.
 
-          - allow inbound ssh connections for allowed keys
-          - reconfigure (ideally by exec'ing a subset of the sls in **.salt**)
-            the container to serve the app (eg: update domain to server,
-            ip of the database, registration to autodiscovery service)
-          - spawn a circus daemon at the end of the configuration.
-          - The module should have at least implements this interface:
+      - allow inbound ssh connections for allowed keys
+      - reconfigure (ideally by exec'ing a subset of the sls in **.salt**)
+        the container to serve the app (eg: update domain to server,
+        ip of the database, registration to autodiscovery service)
+      - spawn a circus daemon at the end of the configuration.
+      - The module should have at least implements this interface:
 
-            .. code-block:: python
+        .. code-block:: python
 
-                def sshconfig(name=PROJECT):
-                    '''code to allow ssh_keys to connect'''
-                    pass
-                def reconfigure(name=PROJECT):
-                    '''code to reconfigure the app to serve requests
-                      in this specific context'''
-                    pass
-                def launch(name=PROJECT, ssh_config=False, re_configure=False):
-                    if ssh_config:
-                        ssh_config(name=name)
-                    if re_configure
-                        re_configure(name=name)
-                    # code to launch the app in foreground
+            def sshconfig(name=PROJECT):
+                '''code to allow ssh_keys to connect'''
+                pass
+            def reconfigure(name=PROJECT):
+                '''code to reconfigure the app to serve requests
+                  in this specific context'''
+                pass
+            def launch(name=PROJECT, ssh_config=False, re_configure=False):
+                if ssh_config:
+                    ssh_config(name=name)
+                if re_configure
+                    re_configure(name=name)
+                # code to launch the app in foreground
 
 - Indeed, the app is lightly reconfigured via salt and may be given an
   overriden pillar file via a filesystem volume to help to reconfigure it.
+  **Think to rename the pillar configuration key along with the name of your project**
+  See :ref:`mc_project configuration pillar file <mc_project_pillar>`
 - Volumes and files that need to be prepolulated should be filled by the
   launcher if and only if it is not already data placed into them.
 - A Control-C or quit signal must inhibit any launched process more or less
