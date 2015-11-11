@@ -5,11 +5,15 @@ Makina-States based docker Images
 
 Rules
 -----
-- Docker images are just :ref:`mc_project <project_creation>` based application wrapped into a docker container.
-- Those images are remote_less and should not rely on a full system running, we are in a docker.
-- They must share a common layout, and inherit from the makina-states base image.
-- Build is done via saltstack/mc_project.
-- Runtime include an initial pre-re-configure step before launching the app
+- Docker images share a common layout, and inherit from the ``makina-states`` base images from docker-hub.
+- Applications are deployed into those containers via :ref:`mc_project <project_creation>`.
+- Those images use **mc_project** in ``remote_less`` mode and should not rely on a full
+  system running, we are in a docker. For long living processes, use circus.
+- Runtime include an ``initial pre-re-configure step`` before launching the app
+  and the entry point lives into ``$project_root/bin/launch.sh``
+
+    - Ideally, there is a ``mc_launcher.py`` saltstack module to orchestrate the whole reconfigure step.
+
 - Images include at least 2 mountpoints for the ``logs`` and the ``data`` folders.
 
 Run time
