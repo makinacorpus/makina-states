@@ -37,8 +37,12 @@ Basic development installation
           .. code-block:: bash
 
                 cp /usr/bin/docker /usr/bin/docker.dist
-                curl -L --insecure -s https://github.com/makinacorpus/docker/releases/download/mc_1/docker -o /usr/bin/docker
-                # or wget https://github.com/makinacorpus/docker/releases/download/mc_1/docker -O /usr/bin/docker
+                curl -L --insecure -s \
+                    https://github.com/makinacorpus/docker/releases/download/mc_1/docker \
+                    -o /usr/bin/docker
+                # or wget \
+                #  https://github.com/makinacorpus/docker/releases/download/mc_1/docker \
+                #  -O /usr/bin/docker
                 chmod +x /usr/bin/docker
 
 - If you are on Ubuntu or any system protected by **apparmor**, you ll have to tweak your apparmor installation.
