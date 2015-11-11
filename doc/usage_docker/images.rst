@@ -126,7 +126,7 @@ You need to add a volume that will contains those subdirs:
         Dockerfile to build your app
     ${PROJECT}/.salt
         mc_project configuration to configure your app
-    ${DATA}/volume/ (Alias **${VOLUME}**)
+    ${DATA}/volume/ / Alias **${VOLUME}**
         mounted as the persistent data folder inside the container
         (/srv/projects/<name>/data)
     ${DATA}/volume/configuration
