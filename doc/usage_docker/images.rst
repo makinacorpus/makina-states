@@ -62,12 +62,12 @@ This is of course an example but it reflects what we need to respect::
     /srv/projects/<project>
        |
        |- project/ <- application code
-       |     |- Dockerfile       <- Each app needs to have a basic Dockerfile
-       |     |- bin/launch.sh    <- launcher that:
-       |     |                      - copy $data/application/pillar.sls -> $pillar/init.sls and trigger
-       |     |                        - reconfigure (via salt) the app
-       |     |                        - launch the app in foreground
-       |     |- .salt            <- deployment and reconfigure code
+       |     |- Dockerfile     <- Each app needs to have a basic Dockerfile
+       |     |- bin/launch.sh  <- launcher that:
+       |     |                    - copy $data/application/pillar.sls -> $pillar/init.sls and trigger
+       |     |                      - reconfigure (via salt) the app
+       |     |                      - launch the app in foreground
+       |     |- .salt          <- deployment and reconfigure code
        |     |- .salt/100_dirs_and_prerequisites.sls
        |     |- .salt/200_reconfigure.sls
        |     |- .salt/300_nginx.sls
