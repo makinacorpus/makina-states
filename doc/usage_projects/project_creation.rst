@@ -33,7 +33,9 @@ Initialization
   and a well known saltstack based procedure to deploy it
   from end to end in the **.salt** folder.
 - By default the project procedure is done via a `masterless salt call <http://docs.saltstack.com/en/latest/topics/tutorials/quickstart.html>`_.
-- The first thing to do is to create a **nest** from such a project, **IF IT IS NOT ALREADY DONE** (just ls /srv/projects to check)::
+- The first thing to do is to create a **nest** from such a project, **IF IT IS NOT ALREADY DONE** (just ls /srv/projects to check):
+
+  .. code-block:: bash
 
     salt-call --local mc_project.deploy <project_name> # dont be long, dont use - & _
 
@@ -93,33 +95,44 @@ Deploying, two ways of doing things
 ------------------------------------
 To build and deploy your project we provide two styles of doing style that should be appropriate for most use cases.
 
-Either directly from the deployment host as root::
+Directly on the remote server, by hand
++++++++++++++++++++++++++++++++++++++++
+Either directly from the deployment host as root:
 
-    # maybe you want to edit before deploy
-    # vim pillar/init.sls
-    # cd pillar;git comit -m foo;git push;cd ..
-    # vim project/foo
-    # cd project;git comit -m foo;git push;cd ..
-    salt-call --local -ldebug mc_project.deploy <name> only=install,fixperms
 
-Or only by pushing well placed git changesets, from your local box,
+Edit the pillar
 
-    - **WARNING**: you can use it only if you provisionned your project with
-        attached remotes (the default)
-    - If needed on the pillar, it does not trigger a deploy
-    - And on the project remote, it triggers here the deploy::
+.. code-block:: bash
 
-        git clone host:/srv/projects/project/git/pillar.git
-        vim init.sls
-        git commit -am up;git push
-        git clone git@github.com/makinacorpus/myawsomeproject.git
-        git remote add prod /srv/projects/project/git/project.git
-        git fetch --all
-        git push prod <mybranch>:master
-        eg: git push prod <mybranch>:master
-        eg: git push prod awsome_feature:master
+    ssh root@remoteserver
+    export project="foo"
+    cd /srv/projects/$project
+    # maybe you want to edit before pillar deploy
+    $ÊDITOR pillar/init.sls
+    cd pillar;git commit -m foo;git push;cd ..
 
-The ``<branchname>:master`` is really important as everything in the production git repositories is wired on the master branch. You can push any branch you want from your original repository, but in production, there is only **master**.
+Udate the project code base from git
+
+.. code-block:: bash
+
+    ssh root@remoteserver
+    export project="foo"
+    cd /srv/projects/$project/project
+    # if not already done, add your project repo remote
+    git remote add g https://github.com/o/myproject.git
+    # in any cases, update your code
+    git fetch --all
+    git reset --hard remotes/o/<the branch to deploy>
+    git push --force origin HEAD:master
+
+Launch deploy
+
+.. code-block:: bash
+
+    ssh root@remoteserver
+    # launch the deployment
+    export project="foo"
+    salt-call --local -ldebug mc_project.deploy $project only=install,fixperms
 
 .. _git foo:
 
@@ -127,20 +140,44 @@ Deploy with git instructions
 ++++++++++++++++++++++++++++++
 - **WARNING**: you can use it only if you provisionned your project with
   attached remotes (the default)
+- If needed on the pillar, it does not trigger a deploy
+- And on the project remote, it triggers here the deploy::
 - The git foo that you will have do to replace the git folder and initialize your project
   if you do it directly on your server will look like::
 
-      # go inside your project repo folder
-      cd /srv/projects/<project_name>/project
-      # download your project codebase from your forge
-      git remote add g https://github.com/foo/foo.git
-      git fetch --all
-      # force checkout/reset the force code inside the local copy
-      git reset --hard g/master
-      # make the LOCAL remote counterpart in sync with the localcopy
-      git push --force origin HEAD:master
+The following lines edit the pillar, and push it, this does not trigger a deploy
 
-- **REMINDER**: DONT MESS WITH THE **ORIGIN** REMOTE
+.. code-block:: bash
+
+    cd $WORKSPACE/myproject
+    git clone host:/srv/projects/project/git/pillar.git
+    $EDITOR pillar/init.sls
+    cd pillar;git commit -am up;git push;cd ..
+
+The following lines prepare a clone of your project codebase to be able to be
+deployed onto production or staging servers
+
+.. code-block:: bash
+
+    cd $WORKSPACE/myproject
+    git clone git@github.com/makinacorpus/myawsomeproject.git
+    git remote add prod /srv/projects/project/git/project.git
+    git fetch --all
+
+To trigger a remote deployment, now you can do:
+
+.. code-block:: bash
+
+    git push [--force] prod <mybranch>:master
+    eg: git push [--force] prod <mybranch>:master
+    eg: git push [--force] prod awsome_feature:master
+
+- **REMINDER**:
+    - DONT MESS WITH THE **ORIGIN** REMOTE
+    - The ``<branchname>:master`` is really important as everything in the production
+      git repositories is wired on the master branch.
+      You can push any branch you want from your original
+      repository, but in production, there is only **master**.
 
 Sumup
 ++++++++
@@ -170,7 +207,7 @@ To sum all that up, when beginning project you will:
       - git push /srv/projects/$project/project to the local remote (git push origin HEAD:master)
 
 - Wash, Rince, Repeat
- 
+
 
 SaltStack integration
 --------------------------
