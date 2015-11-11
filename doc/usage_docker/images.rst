@@ -5,8 +5,9 @@ Makina-States based docker Images
 
 Idea
 -----
-Docker images are just :ref:`mc_project <project_creation>` based application wrapped into a docker container.
-Those images are remote_less and should not rely on a full system running, we are in a docker.
+- Docker images are just :ref:`mc_project <project_creation>` based application wrapped into a docker container.
+- Those images are remote_less and should not rely on a full system running, we are in a docker.
+- They must share a common layout, and inherit from the makina-states base image.
 
 Run time
 ++++++++++
