@@ -249,12 +249,16 @@ Example
 
 in ``project/.salt/PILLAR.sample``, you have:
 
+.. code-block:: yaml
+
     makina-projects.projectname:
       data:
         start_cmd: 'myprog'
 
 
 in ``pillar/init.sls``, you have:
+
+.. code-block:: yaml
 
     makina-projects.foo:
       data:
