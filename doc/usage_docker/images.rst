@@ -84,6 +84,9 @@ This is of course an example but it reflects what we need to respect::
              |- configuration/   <- deploy time pillar that is used at reconfigure
                                      time (startup of a pre-built image)
 
+
+Initialise your dev environment
+----------------------------------------
 We separate the project codebase from any persistent data that is needed to be created along any container.
  - one dedicated for the clone of the codebase: **${PROJECT}**
  - one dedicated for the persistent data & configuration: **${DATA}**
@@ -130,8 +133,6 @@ Project_data in details:
     ${VOLUME}/data/
         top data dir
 
-Initialise your [dev/prod] environment
-----------------------------------------
 Download and initialize the layout
 +++++++++++++++++++++++++++++++++++
 
