@@ -102,9 +102,10 @@ Initialise your dev environment
 ----------------------------------------
 We separate the project codebase from any persistent data that is needed to be created along any container.
 Those folders will be mounted inside the running container as docker volumes.
- - one dedicated for the clone of the codebase: **${PROJECT}**
- - one dedicated for the persistent data & configuration: **${DATA}**
- - a subdirectory of data is exposed as a docker volume: **${VOLUME}**
+
+    - one dedicated for the clone of the codebase: **${PROJECT}**
+    - one dedicated for the persistent data & configuration: **${DATA}**
+    - a subdirectory of data is exposed as a docker volume: **${VOLUME}**
 
 If you run a prebuilt image, you may not need the project codebase folder.
 
