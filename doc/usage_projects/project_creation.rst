@@ -255,24 +255,19 @@ To sum all that up, when beginning project you will:
 - add a **.salt** folder alongside your project codebase (in it's git repo).
 - deploy it, either by:
 
-    - git push your **pillar** files to ``host:/srv/projects/project/git/pillar.git``
-    - git push your **project code** to ``host:/srv/projects/project/git/project.git``
+    - git push your **pillar** files to ``host:/srv/projects/<project>/git/pillar.git``
+    - git push your **project code** to ``host:/srv/projects/<project>/git/project.git``
       (this last push triggers a deploy on the remote server)
 
     - Your can use ``--force`` as the deploy system only await the ``.salt`` folder.
       As long as the folder is present of the working copy you are sending, the
       deploy system will be happy.
 
-- or
+- or connected to the remote host to deploy onto
 
-    - edit/commit directly in ``host:/srv/projects/project/pillar``
-    - edit/commit directly in ``host:/srv/projects/project``
+    - edit/commit/push in ``host:/srv/projects/<project>/pillar``
+    - edit/commit/push/push to force in ``host:/srv/projects/<project>``
     - Launch the ``salt-call --local mc_project.deploy <name> only=install,fixperms`` dance
-    - When done:
-
-      - git push /srv/projects/$project/pillar to the local remote (git push origin HEAD:master)
-      - git push your project to your code repository forge
-      - git push /srv/projects/$project/project to the local remote (git push origin HEAD:master)
 
 - Wash, Rince, Repeat
 
