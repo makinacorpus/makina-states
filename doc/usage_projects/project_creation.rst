@@ -89,6 +89,38 @@ Initialization
 - You can then add as many SLSes as you want, and the ones directly in **.salt** will be executed in alphabetical order except the ones beginning with **task_** (task_foo.sls). Indeed the ones beginning with **task_** are different beasts and are intended to be either included by your other slses to factor code out or to be executed manually via the ``mc_project.run_task`` command.
 - You can and must have a look for inspiration on :ref:`projects_project_list`
 
+Deploying, two ways of doing things
+------------------------------------
+To build and deploy your project we provide two styles of doing style that should be appropriate for most use cases.
+
+Either directly from the deployment host as root::
+
+    # maybe you want to edit before deploy
+    # vim pillar/init.sls
+    # cd pillar;git comit -m foo;git push;cd ..
+    # vim project/foo
+    # cd project;git comit -m foo;git push;cd ..
+    salt-call --local -ldebug mc_project.deploy <name> only=install,fixperms
+
+Or only by pushing well placed git changesets, from your local box,
+
+    - **WARNING**: you can use it only if you provisionned your project with
+        attached remotes (the default)
+    - If needed on the pillar, it does not trigger a deploy
+    - And on the project remote, it triggers here the deploy::
+
+        git clone host:/srv/projects/project/git/pillar.git
+        vim init.sls
+        git commit -am up;git push
+        git clone git@github.com/makinacorpus/myawsomeproject.git
+        git remote add prod /srv/projects/project/git/project.git
+        git fetch --all
+        git push prod <mybranch>:master
+        eg: git push prod <mybranch>:master
+        eg: git push prod awsome_feature:master
+
+The ``<branchname>:master`` is really important as everything in the production git repositories is wired on the master branch. You can push any branch you want from your original repository, but in production, there is only **master**.
+
 .. _git foo:
 
 Deploy with git instructions
@@ -138,38 +170,7 @@ To sum all that up, when beginning project you will:
       - git push /srv/projects/$project/project to the local remote (git push origin HEAD:master)
 
 - Wash, Rince, Repeat
-
-Deploying, two ways of doing things
-------------------------------------
-To build and deploy your project we provide two styles of doing style that should be appropriate for most use cases.
-
-Either directly from the deployment host as root::
-
-    # maybe you want to edit before deploy
-    # vim pillar/init.sls
-    # cd pillar;git comit -m foo;git push;cd ..
-    # vim project/foo
-    # cd project;git comit -m foo;git push;cd ..
-    salt-call --local -ldebug mc_project.deploy <name> only=install,fixperms
-
-Or only by pushing well placed git changesets, from your local box,
-
-    - **WARNING**: you can use it only if you provisionned your project with
-        attached remotes (the default)
-    - If needed on the pillar, it does not trigger a deploy
-    - And on the project remote, it triggers here the deploy::
-
-        git clone host:/srv/projects/project/git/pillar.git
-        vim init.sls
-        git commit -am up;git push
-        git clone git@github.com/makinacorpus/myawsomeproject.git
-        git remote add prod /srv/projects/project/git/project.git
-        git fetch --all
-        git push prod <mybranch>:master
-        eg: git push prod <mybranch>:master
-        eg: git push prod awsome_feature:master
-
-The ``<branchname>:master`` is really important as everything in the production git repositories is wired on the master branch. You can push any branch you want from your original repository, but in production, there is only **master**.
+ 
 
 SaltStack integration
 --------------------------
