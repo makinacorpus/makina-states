@@ -84,13 +84,11 @@ This is of course an example but it reflects what we need to respect::
              |- configuration/   <- deploy time pillar that is used at reconfigure
                                      time (startup of a pre-built image)
 
-We separate the project codebase from any persistent data that is needed to be created along any container.<br/>
+We separate the project codebase from any persistent data that is needed to be created along any container.
+ - one dedicated for the clone of the codebase: **${PROJECT}**
+ - one dedicated for the persistent data & configuration: **${DATA}**
 
-For this we use two root separates folders:
- - one for the clone of the codebase: **${PROJECT}**
- - and one for the persistent data: **${DATA}**
-
-By convention, the name of the persistant data holding directory is the name of the clone folder suffixed by ``_data``.<br/>
+By convention, the name of the persistant data holding directory is the name of the clone folder suffixed by ``_data``.
 Eg if you clone your project inside ``~/project``, the data folder will be ``~/project_data``.<br/>
 The data folder can't and must not be inside the project folder as we drastically play with
 unix permissions to enforce proper security and the two of those folders do not have at all the same policies.<br/>
