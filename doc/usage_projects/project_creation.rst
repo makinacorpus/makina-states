@@ -131,10 +131,14 @@ The following command is the nerve of the war::
     salt-call \
         --local -lall \
         mc_project.deploy $project\
-         [only=step2[,step1]] [only_steps=step2[,step1]]
+         [only=step2[,step1]] \
+         [only_steps=step2[,step1]]
 
 - ``--local -lall`` instructs to run in masterless mode and extra verbosity
 - ``mc_project.deploy $project`` instructs to deploy the name ``$project`` project living into ``/srv/projects/$project/project``
+- ``only`` instructs to execute only the named global phases, and when deploying directly onto a machine, you will certainly have to use ``only=install,fixperms``
+  to avoid the archive/sync/rollback steps.
+- ``only_steps`` instruct to execute only a specific or multiple specific sls from the **.salt** folder during the **install** phase.
 
 Directly on the remote server, by hand
 +++++++++++++++++++++++++++++++++++++++
