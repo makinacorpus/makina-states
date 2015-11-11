@@ -5,3 +5,4 @@ Use makina-states in docker
    :maxdepth: 2
 
    install.rst
+   images.rst
