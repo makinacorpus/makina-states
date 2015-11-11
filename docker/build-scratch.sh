@@ -164,8 +164,9 @@ function build_image() {
     dockerfile="${MS_DOCKERF_S1}"
     # install a basic makina-states docker compatible environment
     # inspired from https://github.com/tianon/docker-brew-ubuntu-core/blob/master/vivid/Dockerfile
+    # NO MORE DISTRIBUTING MASTERSALT IN DOCKER IMAGE -> MIXED MODE
     tar cf "$W/makina-states.tar" --xform="s|^|/srv/salt/makina-states/|g" -C "${MS_ROOT}" .git _scripts\
-      && tar rf "$W/makina-states.tar" --xform="s|^|/srv/mastersalt/makina-states/|g" -C "${MS_ROOT}" .git _scripts\
+      && echo 'disabled tar rf "$W/makina-states.tar" --xform="s|^|/srv/mastersalt/makina-states/|g" -C "${MS_ROOT}" .git _scripts'\
       && xz -fk9 "$W/makina-states.tar"
     die_in_error "Cant compress makina-states"
     cd "${W}"
