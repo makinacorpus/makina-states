@@ -1,5 +1,8 @@
 Makina-States based docker Images
 =====================================
+
+.. contents::
+
 Idea
 -----
 Docker images are just :ref:`mc_project <project_creation>` based application wrapped into a docker container.
