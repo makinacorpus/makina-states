@@ -192,6 +192,8 @@ Launch deploy
     salt-call --local -ldebug \
         mc_project.deploy $project \
         only=install,fixperms only_steps=000_foo.sls
+    git push o HEAD:<master> # replace master by the branch you want to push
+                             # onto your forge
 
 .. _git foo:
 
