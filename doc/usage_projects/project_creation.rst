@@ -136,14 +136,13 @@ The following command is the nerve of the war::
 
 - ``--local -lall`` instructs to run in masterless mode and extra verbosity
 - ``mc_project.deploy $project`` instructs to deploy the name ``$project`` project living into ``/srv/projects/$project/project``
-- ``only`` instructs to execute only the named global phases, and when deploying directly onto a machine, you will certainly have to use ``only=install,fixperms``
+- (opt) ``only`` instructs to execute only the named global phases, and when deploying directly onto a machine, you will certainly have to use ``only=install,fixperms``
   to avoid the archive/sync/rollback steps.
-- ``only_steps`` instruct to execute only a specific or multiple specific sls from the **.salt** folder during the **install** phase.
+- (opt) ``only_steps`` instruct to execute only a specific or multiple specific sls from the **.salt** folder during the **install** phase.
 
 Directly on the remote server, by hand
 +++++++++++++++++++++++++++++++++++++++
 Either directly from the deployment host as root:
-
 
 Edit the pillar
 
@@ -178,17 +177,31 @@ Launch deploy
     # launch the deployment
     export project="foo"
     salt-call --local -ldebug mc_project.deploy $project only=install,fixperms
+    # or to deploy only a specific sls
+    salt-call --local -ldebug mc_project.deploy $project only=install,fixperms only_steps=000_foo.sls
 
 .. _git foo:
 
 Deploy with git instructions
 ++++++++++++++++++++++++++++++
+Reminder
+~~~~~~~~~~~
 - **WARNING**: you can use it only if you provisionned your project with
   attached remotes (the default)
-- If needed on the pillar, it does not trigger a deploy
-- And on the project remote, it triggers here the deploy::
-- The git foo that you will have do to replace the git folder and initialize your project
-  if you do it directly on your server will look like::
+- Remember use the remotes inside **/srv/projects/<project>/git and not directly the
+  working copies
+- If you push on the pillar, it does not trigger a deploy
+- If you push on the project,  it triggers the full deploy procedure
+  including archive/sync/rollback.
+- To get useful push informations, on the remote server to deploy to, just do
+
+.. code-block:: bash
+
+    salt-call --local -lall mc_project.report
+
+
+Deploy
+~~~~~~~
 
 The following lines edit the pillar, and push it, this does not trigger a deploy
 
