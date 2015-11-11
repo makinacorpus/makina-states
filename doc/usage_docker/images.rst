@@ -229,7 +229,7 @@ Assuming that you configured the container to respond to **${DOMAIN}**.
     EOF
 
 List of example images
-++++++++++++++++++++++++++++++++++++++++++++++
+---------------------------
 - `docker registry <https://github.com/makinacorpus/corpus-dockerregistry>`_
 
 
