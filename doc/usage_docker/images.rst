@@ -104,6 +104,7 @@ We separate the project codebase from any persistent data that is needed to be c
 Those folders will be mounted inside the running container as docker volumes.
  - one dedicated for the clone of the codebase: **${PROJECT}**
  - one dedicated for the persistent data & configuration: **${DATA}**
+ - a subdirectory of data is exposed as a docker volume: **${VOLUME}**
 
 If you run a prebuilt image, you may not need the project codebase folder.
 
@@ -124,11 +125,9 @@ You need to add a volume that will contains those subdirs:
         Dockerfile to build your app
     ${PROJECT}/.salt
         mc_project configuration to configure your app
-    ${DATA}/volume/
+    ${DATA}/volume/ (Alias **${VOLUME}**)
         mounted as the persistent data folder inside the container
         (/srv/projects/<name>/data)
-
-        Alias **${VOLUME}**
     ${DATA}/volume/configuration
         directory holding configuration bits for the running container
         that need to be edited or accessible from the host & the user
