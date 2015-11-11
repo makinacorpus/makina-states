@@ -223,14 +223,16 @@ This means that you can set some default values for, eg a domain name or a passw
     - ``pillar_root``: absolute path to the pillar
     - ``fqdn``: machine FQDN
 
-- The enly variables that you can edit at the first level are:
+- The only variables that you can edit at the first level are:
 
+    - **remote_less**: is this project using git remotes for triggering
+                       deployments
     - **default_env**: environement (valid values are staging/dev/prod)
     - **env_defaults**: indexed by **env** dict that overloads data (pillar will still have the priority)
     - **os_defaults**: indexed by **os** dict that overloads data (pillar will still have the priority)
 
 - The other variables, members of the **data** sub entry are free for you to add/edit.
-- Any thing in the pillar (``pillar/init.sls``) overloads what is in ``project/.salt/PILLAR.sample``.
+- Any thing in the pillar ``pillar/init.sls`` overloads what is in ``project/.salt/PILLAR.sample``.
 
 You can get and consult the result of the configuration assemblage like this::
 
