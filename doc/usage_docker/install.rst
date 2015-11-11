@@ -19,7 +19,22 @@ reconfigure it from end to end.
 
 Basic development installation
 -------------------------------
-- For ubuntu, you best bet is to use **something >= Ubuntu 14.04** with a **recent kernel** (**>=3.19** from enablement stack)
+- If you system is not supported, you can try to run it, but it just untested. you need at least docker, with aufs support.
+- If you do not run ubuntu, run it intro your virtualisation software (Virtualbox, parallell, etc)
+- For ubuntu, you best bet is to use **something >= Ubuntu 14.04** with a **recent kernel extras image**
+  (**>=3.19** from enablement stack).
+  Verify with
+
+  .. code-block:: bash
+
+          uname -ar
+
+- At this time of writing, you can upgrade your kernel by issuing the following command
+
+  .. code-block:: bash
+
+          apt-get install linux-image-extra-3.19.0-33-generic # vivid / trusty
+
 - Install docker by reading your distribution guidelines for that purpose
 
     - Eg on ubuntu:
