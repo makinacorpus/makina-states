@@ -95,6 +95,8 @@ Those folders will be mounted inside the running container as docker volumes.
  - one dedicated for the clone of the codebase: **${PROJECT}**
  - one dedicated for the persistent data & configuration: **${DATA}**
 
+If you run a prebuilt image, you may not need the project codebase folder.
+
 By convention, the name of the persistant data holding directory is the name of the clone folder suffixed by ``_data``.
 Eg if you clone your project inside ``~/project``, the data folder will be ``~/project_data``.
 The data folder can't and must not be inside the project folder as we drastically play with
