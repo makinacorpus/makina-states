@@ -218,8 +218,7 @@ Run
 
 .. code-block:: bash
 
-    docker run -ti\
-      -v "${DATA}/volume":/srv/projects/registry/data <orga>/<image>
+    docker run -ti -v "${VOLUME}":/srv/projects/<project>/data <orga>/<image>
 
 DNS configuration
 ++++++++++++++++++
