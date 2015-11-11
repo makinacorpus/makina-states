@@ -51,7 +51,7 @@ That will explain that in your **.salt** folder, you have at least ``install.sls
 ``fixperms.sls``, ``rollback.sls``, and for old projects ``notify.sls``.
 
 All other sls found at **toplevel** which are not those ones are executed in
-lexogaphycal order (alphanum) and the convention is to name them ``\d\d\d_NAME.sls``
+lexicographocal order (alphanum) and the convention is to name them ``\d\d\d_NAME.sls``
 
 The ``PILLAR.sample`` file contains default configuration variable for your
 project and helps you to know what variable to override in your custom pillar.
