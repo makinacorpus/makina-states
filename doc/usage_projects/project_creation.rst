@@ -114,16 +114,16 @@ Sumup
 ++++++++
 To sum all that up, when beginning project you will:
 
-- Initialize if not done a project structure with ``salt-call --local mc_project.deploy project``
-- If you do not want git remotes, you can alternativly use ``salt-call --local mc_project.deploy project remote_less=True``.
+- Initialize if not done a project structure with ``salt-call --local mc_project.init_project project``
+- If you do not want git remotes, you can alternativly use ``salt-call --local mc_project.init_ptoject project``
 - add a **.salt** folder alongside your project codebase (in it's git repo).
 - deploy it, either by:
 
     - git push your **pillar** files to ``host:/srv/projects/project/git/pillar.git``
     - git push your **project code** to ``host:/srv/projects/project/git/project.git``
-      (this last push triggers a deploy)
+      (this last push triggers a deploy on the remote server)
 
-- Your can use ``--force`` as the deploy system only await the **.salt** folder.
+- Your can use ``--force`` as the deploy system only await the ``.salt`` folder.
   As long as the folder is present of the working copy you are sending, the
   deploy system will be happy.
 
