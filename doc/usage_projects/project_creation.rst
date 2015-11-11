@@ -185,9 +185,13 @@ Launch deploy
     ssh root@remoteserver
     # launch the deployment
     export project="foo"
-    salt-call --local -ldebug mc_project.deploy $project only=install,fixperms
+    salt-call --local -ldebug\
+        mc_project.deploy $project\
+        only=install,fixperms
     # or to deploy only a specific sls
-    salt-call --local -ldebug mc_project.deploy $project only=install,fixperms only_steps=000_foo.sls
+    salt-call --local -ldebug\
+        mc_project.deploy $project\
+        only=install,fixperms only_steps=000_foo.sls
 
 .. _git foo:
 
