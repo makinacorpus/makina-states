@@ -193,7 +193,7 @@ Launch deploy
         mc_project.deploy $project \
         only=install,fixperms only_steps=000_foo.sls
     git push o HEAD:<master> # replace master by the branch you want to push
-                             # onto your forge
+                             # back onto your forge
 
 .. _git foo:
 
