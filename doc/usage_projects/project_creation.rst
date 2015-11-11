@@ -91,8 +91,8 @@ Initialization
 
 .. _git foo:
 
-git foo
-+++++++++
+Deploy with git instructions
+++++++++++++++++++++++++++++++
 - **WARNING**: you can use it only if you provisionned your project with
   attached remotes (the default)
 - The git foo that you will have do to replace the git folder and initialize your project
