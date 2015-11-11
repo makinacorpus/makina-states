@@ -36,10 +36,7 @@ The app is launched an managed via a ``bin/launch.sh`` (`Example <https://github
                         ssh_config(name=name)
                     if re_configure
                         re_configure(name=name)
-                        # code to launch the app in foreground
-
-
-
+                    # code to launch the app in foreground
 
 - Indeed, the app is lightly reconfigured via salt and may be given an
   overriden pillar file via a filesystem volume to help to reconfigure it.
