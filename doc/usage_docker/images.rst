@@ -64,16 +64,17 @@ This is of course an example but it reflects what we need to respect::
        |- project/ <- application code
        |     |- Dockerfile     <- Each app needs to have a basic Dockerfile
        |     |- bin/launch.sh  <- launcher that:
-       |     |                    - copy $data/application/pillar.sls -> $pillar/init.sls and trigger
-       |     |                      - reconfigure (via salt) the app
-       |     |                      - launch the app in foreground
+       |     |                   - copy $data/configuration/pillar.sls -> $pillar/init.sls and trigger
+       |     |                   - reconfigure (via salt) the app
+       |     |                   - launch the app in foreground
        |     |- .salt          <- deployment and reconfigure code
        |     |- .salt/100_dirs_and_prerequisites.sls
        |     |- .salt/200_reconfigure.sls
        |     |- .salt/300_nginx.sls
        |     |- .salt/400_circus.sls
-       |     |- .salt/_modules/mc_launcher.py <- code that is used to
-       |                                         reconfigure the image at launch time (via launch.sh)
+       |     |- .salt/_modules/mc_launcher.py
+       |                code that is used to reconfigure the image
+       |                at launch time (via launch.sh)
        |
        |- pillar/  <- salt extra pillar that overrides PILLAR.sample (itself
        |              overriden by data/configuration/pillar.sls)
