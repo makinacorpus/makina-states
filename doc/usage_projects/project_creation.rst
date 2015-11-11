@@ -225,8 +225,7 @@ This means that you can set some default values for, eg a domain name or a passw
 
 - The only variables that you can edit at the first level are:
 
-    - **remote_less**: is this project using git remotes for triggering
-                       deployments
+    - **remote_less**: is this project using git remotes for triggering deployments
     - **default_env**: environement (valid values are staging/dev/prod)
     - **env_defaults**: indexed by **env** dict that overloads data (pillar will still have the priority)
     - **os_defaults**: indexed by **os** dict that overloads data (pillar will still have the priority)
