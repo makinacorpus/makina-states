@@ -228,9 +228,9 @@ Assuming that you configured the container to respond to **${DOMAIN}**.
     echo $IP ${DOMAIN}>>/etc/hosts
     EOF
 
-Get further in the development of an image
+List of example images
 ++++++++++++++++++++++++++++++++++++++++++++++
-- [doc/Hack.md](doc/Hack.md)
-- [doc/Registry.md](doc/Registry.md)
+- `docker registry <https://github.com/makinacorpus/corpus-dockerregistry>`_
+
 
 
