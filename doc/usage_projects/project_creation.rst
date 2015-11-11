@@ -1,6 +1,7 @@
 Project management
 =====================
 
+.. contents::
 
 .. _project_creation:
 
