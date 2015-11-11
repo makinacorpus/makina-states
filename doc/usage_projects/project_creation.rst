@@ -197,7 +197,7 @@ Reminder
 ~~~~~~~~~~~
 - **WARNING**: you can use it only if you provisionned your project with
   attached remotes (the default)
-- Remember use the remotes inside **/srv/projects/<project>/git and not directly the
+- Remember use the remotes inside ``/srv/projects/<project>/git`` and not directly the
   working copies
 - If you push on the pillar, it does not trigger a deploy
 - If you push on the project,  it triggers the full deploy procedure
