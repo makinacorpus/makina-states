@@ -127,6 +127,7 @@ You need to add a volume that will contains those subdirs:
     ${DATA}/volume/
         mounted as the persistent data folder inside the container
         (/srv/projects/<name>/data)
+
         Alias **${VOLUME}**
     ${DATA}/volume/configuration
         directory holding configuration bits for the running container
