@@ -124,6 +124,15 @@ Deploying, two ways of doing things
 ------------------------------------
 To build and deploy your project we provide two styles of doing style that should be appropriate for most use cases.
 
+mc_project.deploy, the main entry point
++++++++++++++++++++++++++++++++++++++++++
+The following command is the nerve of the war::
+
+    salt-call --local -lall mc_project.deploy name [only=step2[,step1]] [only_steps=step2[,step1]]
+
+- ``--local -lall`` instructs to run in masterless mode and extra verbosity
+- ``mc_project.deploy $project`` instructs to deploy the name ``$project`` project living into ``/srv/projects/$project/project``
+
 Directly on the remote server, by hand
 +++++++++++++++++++++++++++++++++++++++
 Either directly from the deployment host as root:
