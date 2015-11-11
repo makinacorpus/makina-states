@@ -64,7 +64,7 @@ This is of course an example but it reflects what we need to respect::
        |- project/ <- application code
        |     |- Dockerfile     <- Each app needs to have a basic Dockerfile
        |     |- bin/launch.sh  <- launcher that:
-       |     |                   - copy $data/configuration/pillar.sls -> $pillar/init.sls and trigger
+       |     |                   - copy $data/configuration/pillar.sls -> $pillar/init.sls
        |     |                   - reconfigure (via salt) the app
        |     |                   - launch the app in foreground
        |     |- .salt          <- deployment and reconfigure code
