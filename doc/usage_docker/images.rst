@@ -89,9 +89,9 @@ We separate the project codebase from any persistent data that is needed to be c
  - one dedicated for the persistent data & configuration: **${DATA}**
 
 By convention, the name of the persistant data holding directory is the name of the clone folder suffixed by ``_data``.
-Eg if you clone your project inside ``~/project``, the data folder will be ``~/project_data``.<br/>
+Eg if you clone your project inside ``~/project``, the data folder will be ``~/project_data``.
 The data folder can't and must not be inside the project folder as we drastically play with
-unix permissions to enforce proper security and the two of those folders do not have at all the same policies.<br/>
+unix permissions to enforce proper security and the two of those folders do not have at all the same policies.
 The special folder **project_data/volume** is mounted as a docker voume inside the container at the project data directory location. We refer it as **${VOLUME}**.
 
 You need to add a volume that will contains those subdirs:
