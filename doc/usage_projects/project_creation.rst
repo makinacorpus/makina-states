@@ -201,8 +201,10 @@ You can link project from salt with::
 
     salt-call --local -ldebug mc_project.link <project_name>
 
-Configuration variables
-++++++++++++++++++++++++++
+.. _project_configuration_pillar::
+
+Configuration pillar &  variables
++++++++++++++++++++++++++++++++++
 We provide in **mc_project** a powerfull mecanism to define default variables used in your deployments.
 hat you can safely override in the salt pillar files.
 This means that you can set some default values for, eg a domain name or a password, and input the production values that you won't commit along side your project codebase.
@@ -230,12 +232,17 @@ This means that you can set some default values for, eg a domain name or a passw
 - The other variables, members of the **data** sub entry are free for you to add/edit.
 - Any thing in the pillar (``pillar/init.sls``) overloads what is in ``project/.salt/PILLAR.sample``.
 
-So, we have a data structure with at least 2 levels, the second level is only starting from the **data** key.
-
 You can get and consult the result of the configuration assemblage like this::
 
     salt-call --local -ldebug mc_project.get_configuration <project_name>
 
+.. _project_configuration_key::
+
+- Remember that projects have a name, and the pillar key to configure and
+  overload your project configuration is based on this key.
+
+  If your project is name **foo**, you ll have to use **makina-projects.foo** in
+  place of **makina-projects.example**.
 
 Example
 
@@ -248,11 +255,12 @@ in ``project/.salt/PILLAR.sample``, you have:
 
 in ``pillar/init.sls``, you have:
 
-    makina-projects.projectname:
+    makina-projects.foo:
       data:
         start_cmd: 'myprog2'
 
-- In your states files, you can access the configuration via the magic ``opts.ms_project`` variable.
+- In your states files, you can access the configuration via the magic
+  ``opts.ms_project`` variable.
 - In your modules or file templates, you can access the configuration via ``salt['mc_project.get_configuration'(name)``.
 - A tip for loading the configuration from a template is doing something like that:
 
