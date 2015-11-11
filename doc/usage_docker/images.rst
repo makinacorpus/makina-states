@@ -3,11 +3,14 @@ Makina-States based docker Images
 
 .. contents::
 
-Idea
+Rules
 -----
 - Docker images are just :ref:`mc_project <project_creation>` based application wrapped into a docker container.
 - Those images are remote_less and should not rely on a full system running, we are in a docker.
 - They must share a common layout, and inherit from the makina-states base image.
+- Build is done via saltstack/mc_project.
+- Runtime include an initial pre-re-configure step before launching the app
+- Images include at least 2 mountpoints for the ``logs`` and the ``data`` folders.
 
 Run time
 ++++++++++
