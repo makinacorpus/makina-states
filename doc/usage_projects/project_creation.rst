@@ -137,7 +137,7 @@ To sum all that up, when beginning project you will:
       - git push your project to your code repository forge
       - git push /srv/projects/$project/project to the local remote (git push origin HEAD:master)
 
-- reiterate, wash, rince, repeat
+- Wash, Rince, Repeat
 
 Deploying, two ways of doing things
 ------------------------------------
