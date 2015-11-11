@@ -91,6 +91,7 @@ This is of course an example but it reflects what we need to respect::
 Initialise your dev environment
 ----------------------------------------
 We separate the project codebase from any persistent data that is needed to be created along any container.
+Those folders will be mounted inside the running container as docker volumes.
  - one dedicated for the clone of the codebase: **${PROJECT}**
  - one dedicated for the persistent data & configuration: **${DATA}**
 
