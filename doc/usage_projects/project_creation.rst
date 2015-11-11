@@ -248,19 +248,19 @@ You can get and consult the result of the configuration assemblage like this::
 Example
 
 in ``project/.salt/PILLAR.sample``, you have:
-.. code-block:: yaml
 
-    makina-projects.projectname:
-      data:
-        start_cmd: 'myprog'
+.. code-block:: yaml
+        makina-projects.projectname:
+          data:
+            start_cmd: 'myprog'
 
 
 in ``pillar/init.sls``, you have:
-.. code-block:: yaml
 
-    makina-projects.foo:
-      data:
-        start_cmd: 'myprog2'
+.. code-block:: yaml
+        makina-projects.foo:
+           data:
+             start_cmd: 'myprog2'
 
 - In your states files, you can access the configuration via the magic
   ``opts.ms_project`` variable.
