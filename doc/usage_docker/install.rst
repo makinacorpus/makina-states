@@ -19,6 +19,8 @@ reconfigure it from end to end.
 
 Basic development installation
 -------------------------------
+Install docker
+++++++++++++++++
 - If you system is not supported, you can try to run it, but it just untested. you need at least docker, with aufs support.
 - If you do not run ubuntu, run it intro your virtualisation software (Virtualbox, parallell, etc)
 - For ubuntu, you best bet is to use **something >= Ubuntu 14.04** with a **recent kernel extras image**
@@ -35,7 +37,7 @@ Basic development installation
 
           apt-get install linux-image-extra-3.19.0-33-generic # vivid / trusty
 
-- Install docker by reading your distribution guidelines for that purpose
+- Install lxc-utils & docker by reading your distribution guidelines for that purpose
 
     - Eg on ubuntu:
 
@@ -79,6 +81,9 @@ Basic development installation
 
 - Clone makina-states, even if not installing it on you host
 
+Install the base image
+++++++++++++++++++++++++++++
+
 .. code-block:: bash
 
     mkdir /srv/mastersalt && cd /srv/mastersalt
@@ -88,41 +93,9 @@ Basic development installation
 
 .. code-block:: bash
 
- cd /srv/mastersalt/makina-states
- ./docker/stage.py
- docker tag makinacorpus/makina-states-ubuntu-vivid:candidate makinacorpus/makina-states-ubuntu-vivid:latest
+    cd /srv/mastersalt/makina-states
+    ./docker/build-scratch.sh
+    # at the end of the script, this will output the base image tag
 
 
-Build a kubernetes cluster
---------------------------
-Behind the scenes a kubernetes cluster involve those following services all run
-inside containers:
 
-    * docker/distribution
-    * redis
-    * etcd
-    * kubemaster
-    * kubeproxy
-
-To build something more powerfull that the basic makina-states images and stop
-playing by hand, you ll want to build a kubernetes cluster.
-
-Either do this on a VM based on ubuntu 14-04 and onwards or on baremetal if you
-know makina-states.
-
-Amongst others:
-
-    * Be aware that this will install and configure firewalld, a by-default
-      restrictive firewall.
-    * This will install and configure lot of prerequisites needed by
-      makina-states
-
-* Install makina-states and initialize mastersalt
-* Install docker via makina-states
-
-Adapt your /srv/mastersalt-pillar/database.sls
-
-    mastersalt-run -lall mc_cloud_compute_node.orchestrate node=$(hostname -f)
-
-* Install etcd
-* Install
