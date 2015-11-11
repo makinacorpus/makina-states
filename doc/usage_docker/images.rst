@@ -126,7 +126,8 @@ You need to add a volume that will contains those subdirs:
         mc_project configuration to configure your app
     ${DATA}/volume/
         mounted as the persistent data folder inside the container
-        (/srv/projects/<name>/data), Alias ${VOLUME}
+        (/srv/projects/<name>/data)
+        Alias **${VOLUME}**
     ${DATA}/volume/configuration
         directory holding configuration bits for the running container
         that need to be edited or accessible from the host & the user
