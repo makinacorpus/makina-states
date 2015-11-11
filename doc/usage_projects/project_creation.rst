@@ -248,7 +248,6 @@ You can get and consult the result of the configuration assemblage like this::
 Example
 
 in ``project/.salt/PILLAR.sample``, you have:
-
 .. code-block:: yaml
 
     makina-projects.projectname:
@@ -257,7 +256,6 @@ in ``project/.salt/PILLAR.sample``, you have:
 
 
 in ``pillar/init.sls``, you have:
-
 .. code-block:: yaml
 
     makina-projects.foo:
