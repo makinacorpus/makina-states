@@ -123,9 +123,9 @@ To sum all that up, when beginning project you will:
     - git push your **project code** to ``host:/srv/projects/project/git/project.git``
       (this last push triggers a deploy on the remote server)
 
-- Your can use ``--force`` as the deploy system only await the ``.salt`` folder.
-  As long as the folder is present of the working copy you are sending, the
-  deploy system will be happy.
+    - Your can use ``--force`` as the deploy system only await the ``.salt`` folder.
+      As long as the folder is present of the working copy you are sending, the
+      deploy system will be happy.
 
 - or
 
