@@ -269,6 +269,7 @@ To sum all that up, when beginning project you will:
     - edit/commit directly in ``host:/srv/projects/project``
     - Launch the ``salt-call --local mc_project.deploy <name> only=install,fixperms`` dance
     - When done:
+
       - git push /srv/projects/$project/pillar to the local remote (git push origin HEAD:master)
       - git push your project to your code repository forge
       - git push /srv/projects/$project/project to the local remote (git push origin HEAD:master)
