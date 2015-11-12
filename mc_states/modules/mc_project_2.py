@@ -1954,7 +1954,11 @@ def init_project(name, *args, **kwargs):
                 sync_working_copy(wc, user=user, rev=rev, ret=ret)
         link(name, *args, **kwargs)
         refresh_files_in_working_copy_kwargs = copy.deepcopy(kwargs)
-        refresh_files_in_working_copy_kwargs.pop('remote_less', None)
+        for k in [
+            'user', 'group', 'project', 'init_data', 'force', 'do_push',
+            'remote_less', 'api_version', 'remote_less'
+        ]:
+            refresh_files_in_working_copy_kwargs.pop(k, None)
         refresh_files_in_working_copy_kwargs['commit_all'] = commit_all
         pillar = os.path.join(cfg['pillar_root'], 'init.sls')
         if not os.path.exists(pillar):
