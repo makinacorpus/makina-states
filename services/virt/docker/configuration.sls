@@ -53,6 +53,7 @@ docker-remove-symlinks1:
     - watch_in:
       - mc_proxy: docker-post-conf
 
+{# as we wont run anymore systemd in docker, this is not needed anymore
 docker-replace-dist-binary:
   cmd.run:
     - name: |
@@ -112,17 +113,17 @@ docker-replace-dist-binaryb:
     - mode: 755
     - watch:
       - cmd: docker-replace-dist-binaryb
+      - service: docker-services-net
     - watch_in:
       - mc_proxy: docker-post-conf
       - mc_proxy: docker-pre-hardrestart
+#}
 {# net service should not be restarted if running
    not to disrupt any connected docker #}
 docker-services-net:
   service.running:
     - name: docker-net-makina
     - enable: True
-    - require:
-      - file: docker-replace-dist-binaryb
     - watch:
       - file: docker-conf-/etc/default/magicbridge_docker1
       - file: docker-conf-/etc/dnsmasq.d/docker1
