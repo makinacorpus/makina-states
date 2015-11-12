@@ -42,30 +42,6 @@ makina-parent-prepend-etc.computenode.accumulated-virt-{{vmname}}{{domain}}:
     - name: parent-hosts-prepend-accumulator-virt-{{vmname}}{{domain}}-entries
     - text: |
             {{ data.ip }} {{domain}}
-{%      if salt['mc_nodetypes.registry']()['is']['devhost'] %}
-avirt-{{vmname}}{{domain}}-makina-append-parent-etc.computenode.management-devhost-touch:
-  file.touch:
-    - name: /etc/devhosts.{{domain}}
-virt-{{vmname}}{{domain}}-makina-prepend-parent-etc.computenode.management-devhost:
-  file.blockreplace:
-    - name: /etc/devhosts.{{domain}}
-    - marker_start: '#-- start devhost -- bstart virt dns {{domain}}:: DO NOT EDIT --'
-    - marker_end: '#-- end devhost -- bend virt dns {{domain}}:: DO NOT EDIT --'
-    - content: '# bVagrant vm: {{domain}} added this entry via local mount:'
-    - prepend_if_not_found: True
-    - backup: '.bak'
-    - show_changes: True
-    - watch:
-      - file: avirt-{{vmname}}{{domain}}-makina-append-parent-etc.computenode.management-devhost-touch
-makina-parent-prepend-etc.computenode.accumulated-virt-{{vmname}}{{domain}}-devhost:
-  file.accumulated:
-    - watch_in:
-       - file: virt-{{vmname}}{{domain}}-makina-prepend-parent-etc.computenode.management-devhost
-    - filename: /etc/devhosts.{{domain}}
-    - name: parent-hosts-prepend-accumulator-virt-{{vmname}}{{domain}}-entries
-    - text: |
-            {{ salt['mc_network.settings']().devhost_ip }} {{domain}}
-{%      endif %}
 {%    endif %}
 {%  endfor %}
 {% endfor %}

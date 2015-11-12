@@ -5,7 +5,4 @@ include:
 {% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.virt.lxc.prerequisites
   - makina-states.services.virt.lxc.configuration
-{% if nt_reg['is']['devhost'] %}
-  - makina-states.services.virt.lxc.devhost
-{% endif %}
 {% endif %}
