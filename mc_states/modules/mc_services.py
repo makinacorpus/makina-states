@@ -69,9 +69,10 @@ def registry():
         # in scratch mode, deactivating all default configuration for services
         true = not __salt__['mc_nodetypes.is_scratch']()
         allow_lowlevel_states = __salt__['mc_controllers.allow_lowlevel_states']()
-        is_docker = __salt__['mc_nodetypes.is_container']()
+        is_docker = __salt__['mc_nodetypes.is_docker']()
         ids = __salt__['mc_nodetypes.is_docker_service']()
-        sshen = true and (ids or (allow_lowlevel_states and not is_docker))
+        # sshen = true and (ids or (allow_lowlevel_states and not is_docker))
+        sshen = true and ((is_docker and ids) or allow_lowlevel_states)
         ntpen = _ntpEn(__salt__) and true
         binden = _bindEn(__salt__) and true
         rsyslogen = _rsyslogEn(__grains__) and true
