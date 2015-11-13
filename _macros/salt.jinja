@@ -679,7 +679,7 @@ salt-{{ data.daemon_name }}-conf-global:
                 MAILTO="{{data.mailto}}"
                 {% if data.cron_auto_restart %}
                 # salt {{data.service_name}} auto restart job
-                #{{data['cron_{0}_restart_minute'.format(data['service_name'])]}} {{data['cron_{0}_restart_hour'.format(data['service_name'])]}} * * * root {{settings.c.o.msr}}/_scripts/boot-salt.sh --restart-{{data.service_name}}s -C --no-colors
+                {{data['cron_{0}_restart_minute'.format(data['service_name'])]}} {{data['cron_{0}_restart_hour'.format(data['service_name'])]}} * * * root {{settings.c.o.msr}}/_scripts/boot-salt.sh --restart-{{data.service_name}}s -C --no-colors
                 {% endif %}
 #}
 {% endif %}
