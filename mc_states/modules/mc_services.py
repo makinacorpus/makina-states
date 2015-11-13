@@ -77,6 +77,7 @@ def registry():
         rsyslogen = _rsyslogEn(__grains__) and true
         ulogden = _ulogdEn(__salt__) and true
         ntp_u = False
+        vagrantvm = __salt__['mc_nodetypes.is_vagrantvm']() and true
         if __salt__['mc_nodetypes.is_container']():
             ntp_u = True
         if ntp_u:
@@ -130,12 +131,12 @@ def registry():
                 'php.modphp': {'active': False},
                 'php.phpfpm': {'active': False},
                 'php.phpfpm_with_apache': {'active': False},
-                'virt.docker': {'active': False},
                 'cache.memcached': {'active': False},
                 'virt.docker-shorewall': {'active': False},
                 'virt.virtualbox': {'active': False},
-                'virt.kvm': {'active': False},
-                'virt.lxc': {'active': False},
+                'virt.kvm': {'active': vagrantvm},
+                'virt.lxc': {'active': vagrantvm},
+                'virt.docker': {'active': vagrantvm},
                 'virt.lxc-shorewall': {'active': False},
                 'mastersalt_minion': {'active': False},
                 'mastersalt_master': {'active': False},
