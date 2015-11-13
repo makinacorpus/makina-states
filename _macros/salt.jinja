@@ -658,6 +658,14 @@ salt-{{ data.daemon_name }}-conf-global:
     - names:
       - /etc/cron.d/saltrestart-{{data.service_name}}.sh
 {{data.name}}-{{data.service_name}}-restart-crons:
+  file.absent:
+    - require:
+      - mc_proxy: dummy-{{data.name}}-layout
+    - require_in:
+      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
+    - name: /etc/cron.d/saltrestart-{{data.service_name}}
+{# deactivated for now as now the daemons are stables and checked via check alive
+   we do not need to reload them everyday which can cause mass reconnect issues
   file.managed:
     - require:
       - mc_proxy: dummy-{{data.name}}-layout
@@ -671,8 +679,9 @@ salt-{{ data.daemon_name }}-conf-global:
                 MAILTO="{{data.mailto}}"
                 {% if data.cron_auto_restart %}
                 # salt {{data.service_name}} auto restart job
-                {{data['cron_{0}_restart_minute'.format(data['service_name'])]}} {{data['cron_{0}_restart_hour'.format(data['service_name'])]}} * * * root {{settings.c.o.msr}}/_scripts/boot-salt.sh --restart-{{data.service_name}}s -C --no-colors
+                #{{data['cron_{0}_restart_minute'.format(data['service_name'])]}} {{data['cron_{0}_restart_hour'.format(data['service_name'])]}} * * * root {{settings.c.o.msr}}/_scripts/boot-salt.sh --restart-{{data.service_name}}s -C --no-colors
                 {% endif %}
+#}
 {% endif %}
 
 salt-{{ data.daemon_name }}-conf:
