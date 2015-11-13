@@ -133,12 +133,12 @@ def is_docker():
     return makina_grains._is_docker()
 
 
-def is_container():
-    return makina_grains._is_container()
-
-
 def is_lxc():
     return makina_grains._is_lxc()
+
+
+def is_container():
+    return is_lxc() or is_docker()
 
 
 def is_vagrantvm():
