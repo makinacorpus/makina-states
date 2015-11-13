@@ -5,16 +5,16 @@
 #}
 
 {{ salt['mc_macros.register']('localsettings', 'pkgs.basepackages') }}
+{% set light = salt['mc_nodetypes.is_docker']() or salt['mc_nodetypes.is_devhost']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 include:
   - makina-states.localsettings.pkgs.hooks
-  {% if not salt['mc_nodetypes.is_container']() %}
+  {% if not light %}
   - makina-states.localsettings.pkgs.tools
   {% endif %}
 
 {% set pkgs = salt['mc_pkgs.settings']() %}
 
-{% set light = salt['mc_nodetypes.is_docker']() or salt['mc_nodetypes.is_devhost']() %}
 
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}
 before-ubuntu-pkg-install-proxy:
