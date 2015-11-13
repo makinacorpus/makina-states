@@ -277,7 +277,7 @@ def settings():
                 'virtual_map': [],
                 'catchall': None})
         if data['recipient_access'] is None:
-            data['recipient_access'] = {'/.*/': 'smtpd_permissive'}
+            data['recipient_access'] = [{'/.*/': 'smtpd_permissive'}]
         data = select_mode(data)
         data = select_catchall(data)
         data = select_networks(data)
