@@ -14,6 +14,8 @@ include:
 
 {% set pkgs = salt['mc_pkgs.settings']() %}
 
+{% set light = salt['mc_nodetypes.is_docker']() or salt['mc_nodetypes.is_devhost']() %}
+
 {%- if grains['os'] in ['Ubuntu', 'Debian'] %}
 before-ubuntu-pkg-install-proxy:
   mc_proxy.hook:
@@ -69,7 +71,7 @@ ubuntu-pkgs:
       # - kbd
       # - kmod
       # - ureadahead
-      {% if not salt['mc_nodetypes.is_docker']() %}
+      {% if not light %}
       - update-manager-core
       - mtr-tiny
       {% endif %}
@@ -101,7 +103,7 @@ ubuntu-pkgs:
       - vim-tiny
       {% endif %}
       # light version of ubuntu-standard
-      {% if not salt['mc_nodetypes.is_container']() %}
+      {% if not light %}
       - ubuntu-standard
       {% else %}
       # those are harmful packages in a generic container context
@@ -212,8 +214,8 @@ net-pkgs:
       - rsync
       - telnet
       - tcpdump
-      {% if salt['mc_controllers.allow_lowlevel_states']() %}
       - openssh-client
+      {% if not light %}
       - ntp
       - vlan
       {% endif %}
