@@ -151,7 +151,7 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
                 'ssh_gateway_port': cloudSettings['ssh_gateway_port'],
                 #
-                'master': cloudSettings['master'],
+                'master': cloudSettings.get('master', __opts__['id']),
                 'mode': cloudSettings['mode'],
                 'master_port': cloudSettings['master_port'],
                 'bootsalt_branch': cloudSettings['bootsalt_branch'],
