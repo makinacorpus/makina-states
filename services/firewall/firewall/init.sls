@@ -8,7 +8,7 @@
 {% elif salt['mc_services.registry']()['is'].get('firewall.shorewall') %}
 {% do incs.append('makina-states.services.firewall.shorewall') %}
 {% elif install %}
-{% do incs.append('makina-states.services.firewall.firewalld') %}
+{% do incs.append('makina-states.services.firewall.ms_iptables') %}
 {% endif %}
 {% if incs %}
 include:
