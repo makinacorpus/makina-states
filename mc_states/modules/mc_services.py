@@ -17,16 +17,16 @@ import mc_states.api
 __name = 'services'
 
 
-def _bindEn(__salt__):
+def _bindEn(**kwargs):
     is_container = __salt__['mc_nodetypes.is_container']()
     return not is_container
 
 
-def _rsyslogEn(__grains__):
+def _rsyslogEn(**kwargs):
     return __grains__.get('os', '').lower() in ['ubuntu']
 
 
-def _ulogdEn(__salt__):
+def _ulogdEn(**kwargs):
     is_container = __salt__['mc_nodetypes.is_container']()
     is_docker = __salt__['mc_nodetypes.is_docker']()
     ret = False
@@ -38,7 +38,7 @@ def _ulogdEn(__salt__):
     return ret
 
 
-def _ntpEn(__salt__):
+def _ntpEn(**kwargs):
     is_container = __salt__['mc_nodetypes.is_container']()
     return not is_container
 
@@ -73,10 +73,10 @@ def registry():
         ids = __salt__['mc_nodetypes.is_docker_service']()
         # sshen = true and (ids or (allow_lowlevel_states and not is_docker))
         sshen = true and ((is_docker and ids) or allow_lowlevel_states)
-        ntpen = _ntpEn(__salt__) and true
-        binden = _bindEn(__salt__) and true
-        rsyslogen = _rsyslogEn(__grains__) and true
-        ulogden = _ulogdEn(__salt__) and true
+        ntpen = _ntpEn() and true
+        binden = _bindEn() and true
+        rsyslogen = _rsyslogEn() and true
+        ulogden = _ulogdEn() and true
         ntp_u = False
         vagrantvm = __salt__['mc_nodetypes.is_vagrantvm']() and true
         if __salt__['mc_nodetypes.is_container']():
