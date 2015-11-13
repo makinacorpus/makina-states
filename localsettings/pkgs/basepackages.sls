@@ -127,9 +127,6 @@ ubuntu-pkgs:
       - language-selector-common
       - logrotate
       - mime-support
-      {% if grains.get('osrelease', '') >= '15.04' %}
-      - systemd-sysv
-      {% endif %}
       - time
       - apt-transport-https
       - iputils-tracepath
