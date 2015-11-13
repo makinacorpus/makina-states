@@ -878,7 +878,7 @@ salt-{{ data.name }}-{{cur_name}}-bin:
 {% endfor %}
 
 # specific vagrant vm settings
-{% if 'devhost' in nodetypes_registry['actives'] -%}
+{% if salt['mc_nodetypes.is_devhost']() %}
 salt-{{ data.daemon_name }}-conf-devhost-global:
   file.managed:
     - name: {{ data.conf_prefix }}/{{ data.service_name }}.d/10_devhost.conf

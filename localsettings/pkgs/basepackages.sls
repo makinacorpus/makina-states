@@ -189,7 +189,7 @@ sys-pkgs:
 #      - atop
 #      - vnstat
 
-{% if 'devhost' in salt['mc_localsettings.registry']()['actives'] -%}
+{% if salt['mc_nodetypes.is_devhost']() %}
 devhost-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:

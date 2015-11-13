@@ -103,7 +103,7 @@ makina-apache-settings:
         event_AsyncRequestWorkerFactor: "{{ apacheSettings.event.AsyncRequestWorkerFactor }}"
         log_level: "{{ apacheSettings.log_level }}"
         ssl_session_cache: "{{ apacheSettings.ssl_session_cache }}"
-{% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
+{% if salt['mc_nodetypes.is_devhost']() %}
     - context:
         mode: "dev"
 {% endif %}
@@ -237,7 +237,7 @@ makina-apache-mod-status-settings:
         mode: "production"
         MonitoringServers: "{{ apacheSettings.monitoring.allowed_servers }}"
         ExtendedStatus: "{{ apacheSettings.monitoring.extended_status }}"
-{% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
+{% if salt['mc_nodetypes.is_devhost']() %}
     - context:
         mode: "dev"
 {% endif %}

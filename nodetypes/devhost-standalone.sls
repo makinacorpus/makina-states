@@ -6,7 +6,7 @@
 {% macro do(full=True) %}
 {{ salt['mc_macros.register']('nodetypes', 'devhost') }}
 include:
-  {% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
+  {% if salt['mc_nodetypes.is_devhost']() %}
   - makina-states.services.mail.postfix
   - makina-states.services.mail.dovecot
   {% endif %}

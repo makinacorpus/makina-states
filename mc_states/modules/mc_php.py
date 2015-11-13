@@ -495,7 +495,7 @@ def fpmpool_settings(domain, doc_root, **kw):
     '''
     www_reg = copy.deepcopy(__salt__['mc_www.settings']())
     default_mode = 'production'
-    if __salt__['mc_nodetypes.registry']()['is']['devhost']:
+    if __salt__['mc_nodetypes.is_devhost']():
         default_mode = 'dev'
     kw['domain'] = domain
     kw['docroot'] = kw['doc_root'] = doc_root

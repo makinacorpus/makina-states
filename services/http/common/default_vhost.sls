@@ -37,7 +37,7 @@ makina-apache-default-vhost-index:
     - template: jinja
     - defaults:
         mode: "production"
-{% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
+{% if salt['mc_nodetypes.is_devhost']() %}
     - context:
         mode: "dev"
 {% endif %}

@@ -13,7 +13,7 @@
 include:
   - makina-states.services.mail.dovecot.hooks
 {% if salt['mc_controllers.allow_lowlevel_states']() %}
-{% if salt['mc_nodetypes.registry']()['is']['devhost'] %}
+{% if salt['mc_nodetypes.is_devhost']() %}
 makina-dovecot-dev-imap-conf:
   file.managed:
     - name: {{ locs.conf_dir }}/dovecot/local.conf

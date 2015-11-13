@@ -146,7 +146,10 @@ def is_scratch():
 
 
 def is_devhost():
-    return makina_grains._is_devhost()
+    return (
+	makina_grains._is_devhost() or
+	is_fs_nodetype('vagrantvm') or
+	registry()['is'].get('devhost'))
 
 
 def is_docker():
