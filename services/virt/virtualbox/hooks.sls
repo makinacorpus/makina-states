@@ -1,4 +1,6 @@
 {# virtualbox orchestration hooks #}
+include:
+  - makina-states.localsettings.desktoptools.hooks
 virtualbox-pre-install:
   mc_proxy.hook:
     - watch_in:

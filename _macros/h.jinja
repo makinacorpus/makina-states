@@ -26,3 +26,35 @@
 {% if after_macro %}{{ after_macro() }}{% endif %}
 {% endfor %}
 {% endmacro %}
+
+{% macro repomanaged(name,
+                     file,
+                     dist=none,
+                     key=none,
+                     key_url=none,
+                     cleanup_pattern=none,
+                     suf=none,
+                     before_macro=none,
+                     after_macro=none) %}
+{% if not cleanup_pattern %}{% set cleanup_pattern = name.split()[1] %}{% endif%}
+{% if not suf %}{% set suf='repomanaged-{0}-{1}'.format(name, file).replace(':', '-') %}{% endif %}
+"repomanaged-{{suf}}":
+{% if cleanup_pattern %}
+  cmd.run:
+{# remove old urls #}
+{% if before_macro %}{{before_macro()}}{% endif %}
+    - watch_in:
+      - pkgrepo: "repomanaged-{{suf}}"
+    - name: sed -i -re "\#{{cleanup_pattern}}# d" "{{file}}" && echo changed=false
+    - onlyif: test  -e "{{file}}"
+    - stateful: true
+{% endif %}
+  pkgrepo.managed:
+    - name: "{{name}}"
+    - file: "{{file}}"
+    {% if dist %}- dist: "{{dist}}"{% endif %}
+    {% if key_url %}- key_url: "{{key_url}}"{% endif %}
+    {% if key %}- key: "{{key}}"{% endif %}
+{% if after_macro %}{{after_macro()}}{% endif %}
+{% endmacro %}
+ 
