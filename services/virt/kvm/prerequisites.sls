@@ -27,7 +27,6 @@ kvm-pkgs:
       - libguestfs-tools
       - kpartx
       - ovmf
-      - ubuntu-vm-builder
       - bridge-utils
     - watch_in:
       - mc_proxy: kvm-post-pkg
