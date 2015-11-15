@@ -5,6 +5,7 @@ useful-pkgs:
     - pkgs:
       - ifenslave-2.6
       - iptraf
+      - dialog
       - nmap
       - sipcalc
       - whois

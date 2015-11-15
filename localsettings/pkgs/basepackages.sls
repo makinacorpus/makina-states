@@ -153,7 +153,6 @@ sys-pkgs:
       - bash-completion
       - bzip2
       - cron
-      - dialog
       - findutils
       - locales
       - man-db
