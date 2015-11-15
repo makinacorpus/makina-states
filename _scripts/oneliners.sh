@@ -11,11 +11,11 @@ cd $(dirname $0)
 # sed -re "s/(\{% set [^=]*)=\s*\{%\s*(.*)/\1 = \2/g"  $(cat locfiles) -i
 
 # regenerate a list to grep / sed into
-# find *sls cloud tests projects bootstraps controllers/ mc_states/ files/ localsettings/ _macros/ nodetypes/ services/ top.sls  -type f>locfiles
+# find *sls cloud tests projects bootstraps controllers mc_states files localsettings _macros nodetypes services top.sls common-type f>locfiles
 
 # sync the only needed in makina-states for mastersalt
 # (quickier in virtualbox)
-# for i in doc src/salt/ files/ _scripts/ bootstraps/ top.sls buildout.cfg _modules/ _states/ services/ localsettings/ controllers/ nodetypes/ _macros/;do rsync -vPa --exclude=*pyc --exclude=*pyo --exclude=.installed.cfg --exclude=.mr.developer.cfg --exclude=.bootlogs --exclude=.git /srv/salt/makina-states/$i /srv/mastersalt/makina-states/$i;done
+# for i in doc src/salt/ files/ _scripts/ bootstraps/ top.sls buildout.cfg _modules/ _states/ services/ localsettings/ controllers/ nodetypes/ _macros/ common/ cloud/;do rsync -vPa --exclude=*pyc --exclude=*pyo --exclude=.installed.cfg --exclude=.mr.developer.cfg --exclude=.bootlogs --exclude=.git /srv/salt/makina-states/$i /srv/mastersalt/makina-states/$i;done
 
 #bin/nosetests --nologcapture --exe -e mc_test -v -s --with-doctest mc_states.tests.unit.modules.firewalld_tests
 

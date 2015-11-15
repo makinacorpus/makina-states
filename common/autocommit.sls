@@ -1,4 +1,4 @@
-{% set locations = salt['mc_localsettings.settings']()['locations'] %}
+{% set locations = salt['mc_locations.settings']()%}
 {# be sure to run at the end of provisionning to commit
 {# be sure to run at the end of provisionning to commit
 # /etc changes #}
