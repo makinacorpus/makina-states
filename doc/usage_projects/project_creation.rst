@@ -220,7 +220,7 @@ Launch deploy
 
 VARIANT: Deploy by hand, on a vagrant VM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-In our setup, on devellopment, we use a vagrant box in which we can't and dont
+In our setup, on development, we use a vagrant box in which we can't and dont
 want to pull directly from our private git repositories.
 The localhost on which the virtualbox is running, is on the contrary controller
 by the user and the worklow is to push the code inside the VM from the HOST.
