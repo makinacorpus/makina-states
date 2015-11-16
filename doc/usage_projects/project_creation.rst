@@ -361,9 +361,10 @@ To trigger a remote deployment, now you can do:
     eg: git push [--force] prod awsome_feature:master
 
 - **REMINDER**:
-    - DONT MESS WITH THE **ORIGIN** REMOTE
+    - DONT MESS WITH THE **ORIGIN** REMOTE when your are connected to your
+      server in any of the ``pillar`` or ``project`` directory..
     - The ``<branchname>:master`` is really important as everything in the production
-      git repositories is wired on the master branch.
+      git repositories is wired on the ``master`` branch.
       You can push any branch you want from your original
       repository, but in production, there is only **master**.
 
