@@ -228,6 +228,8 @@ Launch deploy
 
 VARIANT: Deploy by hand, on a vagrant VM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+We generally setup envionments based on `makina-states/vms <https://github.com/makinacorpus/vms>`_ that we share amongst our developers.
+
 In development, our best practises are not to pull from our private git repositories
 directly from inside the VM.
 
