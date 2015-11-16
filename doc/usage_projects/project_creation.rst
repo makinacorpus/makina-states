@@ -285,9 +285,7 @@ On the former shell ssh-connected to the vagrant box, launch deploy
 
 .. code-block:: bash
 
-    salt-call --local -ldebug \
-        mc_project.deploy $project \
-        only=install,fixperms,sync_modules
+    salt-call --local -ldebug mc_project.deploy $project only=install,fixperms,sync_modules
     # or to deploy only a specific sls
     salt-call --local -ldebug \
         mc_project.deploy $project \
