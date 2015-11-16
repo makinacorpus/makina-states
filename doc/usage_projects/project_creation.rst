@@ -149,6 +149,9 @@ The following command is the nerve of the war::
       able to push to git remotes to deploy your project (you ll have to do it
       directly on the server, by the :ref:`hand procedure <project_hand_procedure>`.
 
+    - If ``remote_less=false``, you ll also be able to use the
+      :ref:`push to prod feature <project_git_push_procedure>`.
+
 mc_project.deploy, the main entry point
 +++++++++++++++++++++++++++++++++++++++++
 The following command is the nerve of the war::
@@ -325,6 +328,7 @@ Reminder
 
     salt-call --local -lall mc_project.report
 
+.. _project_git_push_procedure:
 
 Deploy
 ~~~~~~~
