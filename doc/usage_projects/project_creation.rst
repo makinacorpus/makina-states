@@ -133,6 +133,20 @@ The common workflow is:
     - launch the deploy
     - Wash, Rince, Repeat
 
+mc_project.init_project: initialize the layout
+++++++++++++++++++++++++++++++++++++++++++++++++
+The following command is the nerve of the war::
+
+    salt-call \
+        --local -lall \
+        mc_project.init_project $project [remote_less=false/true]
+
+- ``--local -lall`` instructs to run in masterless mode and extra verbosity
+- ``mc_project.init_project $project`` instructs to xcreate the layout of the name ``$project`` project living into ``/srv/projects/$project/project``
+- (opt) ``remote_less`` instructs to deploy with or without the git repos that allow users to use a **git push to prod to deploy** workflow.
+
+    - If ``remote_less=false``, the git repos wont be created.
+
 mc_project.deploy, the main entry point
 +++++++++++++++++++++++++++++++++++++++++
 The following command is the nerve of the war::
@@ -257,7 +271,7 @@ Sumup
 To sum all that up, when beginning project you will:
 
 - Initialize if not done a project structure with ``salt-call --local mc_project.init_project project``
-- If you do not want git remotes, you can alternativly use ``salt-call --local mc_project.init_ptoject project remote_less=False``
+- If you do not want git remotes, you can alternativly use ``salt-call --local mc_project.init_project project remote_less=False``
 - add a **.salt** folder alongside your project codebase (in it's git repo).
 - deploy it, either by:
 
