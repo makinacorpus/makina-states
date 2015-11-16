@@ -225,6 +225,9 @@ want to pull directly from our private git repositories.
 The localhost on which the virtualbox is running, is on the contrary controlled
 by the user and the workflow is to push the code inside the VM from the HOST.
 
+IN OTHER WORDS, ANY **GIT PUSH/PULL** OPERATION HAS TO BE DONE **FROM THE LOCALHOST**
+AND NOT THE VM.
+
 Indeed, the HOST can access any of the VM files with the help of a shared **sshfs** mountpoint ``./VM``.
 
 Initialise/launch a `makina-states/vms <https://github.com/makinacorpus/vms>`_ box (this will take some time, specially
