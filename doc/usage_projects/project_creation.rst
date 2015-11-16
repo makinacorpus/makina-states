@@ -159,7 +159,7 @@ The following command is the nerve of the war::
 
 - ``--local -lall`` instructs to run in masterless mode and extra verbosity
 - ``mc_project.deploy $project`` instructs to deploy the name ``$project`` project living into ``/srv/projects/$project/project``
-- (opt) ``only`` instructs to execute only the named global phases, and when deploying directly onto a machine, you will certainly have to use ``only=install,fixperms``
+- (opt) ``only`` instructs to execute only the named global phases, and when deploying directly onto a machine, you will certainly have to use ``only=install,fixperms,sync_modules``
   to avoid the archive/sync/rollback steps.
 - (opt) ``only_steps`` instruct to execute only a specific or multiple specific sls from the **.salt** folder during the **install** phase.
 
@@ -189,7 +189,7 @@ Udate the project code base from git
     git remote add g https://github.com/o/myproject.git
     # in any cases, update your code
     git fetch --all
-    git reset --hard remotes/o/<the branch to deploy>
+    git reset --hard remotes/g/<the branch to deploy>
     git push --force origin HEAD:master
 
 Launch deploy
@@ -201,11 +201,11 @@ Launch deploy
     export project="foo"
     salt-call --local -ldebug \
         mc_project.deploy $project \
-        only=install,fixperms
+        only=install,fixperms,sync_modules
     # or to deploy only a specific sls
     salt-call --local -ldebug \
         mc_project.deploy $project \
-        only=install,fixperms only_steps=000_foo.sls
+        only=install,fixperms,sync_modules only_steps=000_foo.sls
     git push o HEAD:<master> # replace master by the branch you want to push
                              # back onto your forge
 
@@ -287,7 +287,7 @@ To sum all that up, when beginning project you will:
 
     - edit/commit/push in ``host:/srv/projects/<project>/pillar``
     - edit/commit/push/push to force in ``host:/srv/projects/<project>``
-    - Launch the ``salt-call --local mc_project.deploy <name> only=install,fixperms`` dance
+    - Launch the ``salt-call --local mc_project.deploy <name> only=install,fixperms,sync_modules`` dance
 
 - Wash, Rince, Repeat
 
@@ -379,7 +379,7 @@ in ``pillar/init.sls``, you have:
 What's happen when there is a deploy ?
 ---------------------------------------
 - When you do a git push, you have the full procedure, see :ref:`spec doc <project_spec_deploy_proc>`
-- When you use ``only=install,fixperms`` it only do some the :ref:`install <project_spec_proc_install>` & :ref:`fixperms <project_spec_proc_fixperms>` procedures.
+- When you use ``only=install,fixperms,sync_modules`` it only do some the :ref:`install <project_spec_proc_install>` & :ref:`fixperms <project_spec_proc_fixperms>` procedures.
 
 Filesystem considerations
 --------------------------
