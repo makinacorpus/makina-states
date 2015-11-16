@@ -142,7 +142,7 @@ The following command is the nerve of the war::
         mc_project.init_project $project [remote_less=false/true]
 
 - ``--local -lall`` instructs to run in masterless mode and extra verbosity
-- ``mc_project.init_project $project`` instructs to xcreate the layout of the name ``$project`` project living into ``/srv/projects/$project/project``
+- ``mc_project.init_project $project`` instructs to create the layout of the name ``$project`` project living into ``/srv/projects/$project/project``
 - (opt) ``remote_less`` instructs to deploy with or without the git repos that allow users to use a **git push to prod to deploy** workflow.
 
     - If ``remote_less=false``, the git repos wont be created.
