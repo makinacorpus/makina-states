@@ -222,6 +222,7 @@ VARIANT: Deploy by hand, on a vagrant VM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 In our setup, on development, we use a vagrant box in which we can't and dont
 want to pull directly from our private git repositories.
+This setup involves using the ``remote_less`` feature of ``mc_project``.
 The localhost on which the virtualbox is running, is on the contrary controlled
 by the user and the workflow is to push the code inside the VM from the HOST.
 
