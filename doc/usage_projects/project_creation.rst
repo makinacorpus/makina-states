@@ -167,6 +167,15 @@ Directly on the remote server, by hand
 +++++++++++++++++++++++++++++++++++++++
 Either directly from the deployment host as root:
 
+Initialise the layout (only the first time)
+
+.. code-block:: bash
+
+    ssh root@remoteserver
+    export project="foo"
+    salt-call --local -ldebug mc_project.init_project $project
+
+
 Edit the pillar
 
 .. code-block:: bash
@@ -178,7 +187,7 @@ Edit the pillar
     $ÊDITOR pillar/init.sls
     cd pillar;git commit -m foo;git push;cd ..
 
-Udate the project code base from git
+Update the project code base from git
 
 .. code-block:: bash
 
@@ -206,6 +215,82 @@ Launch deploy
     salt-call --local -ldebug \
         mc_project.deploy $project \
         only=install,fixperms,sync_modules only_steps=000_foo.sls
+    git push o HEAD:<master> # replace master by the branch you want to push
+                             # back onto your forge
+
+VARIANT: Deploy by hand, on a vagrant VM
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In our setup, on devellopment, we use a vagrant box in which we can't and dont
+want to pull directly from our private git repositories.
+The localhost on which the virtualbox is running, is on the contrary controller
+by the user and the worklow is to push the code inside the VM from the HOST.
+
+Indeed, the HOST can access any of the VM files with the help of a shared **sshfs** mountpoint ``./VM``.
+
+Initialise/launch a `makina-states/vms <https://github.com/makinacorpus/vms>`_ box (this will take some time, specially
+the first time)
+
+.. code-block:: bash
+
+    git clone https://github.com/makinacorpus/vms;
+    cd vms
+    ./manage.sh init
+
+Open one console connected to the VM as **root**
+
+.. code-block:: bash
+
+    ./manage.sh ssh
+    sudo su # (default password: vagrant)
+
+Initialise the layout (only the first time)
+
+.. code-block:: bash
+
+    ssh root@remoteserver
+    export project="foo"
+    salt-call --local -ldebug mc_project.init_project $project remote_less=true
+
+Edit the pillar
+
+.. code-block:: bash
+
+    cd /srv/projects/$project/pillar
+    $EDITOR init.sls
+    git commit -am up
+
+Open a second shell, on your local machine (**not on the VM **)
+where you ll update the project code base from git.
+
+.. code-block:: bash
+
+    export project="foo"
+    cd vms/VM/srv/projects/$project/project
+    # if not already done, add your project repo remote
+    git remote add o https://github.com/o/myproject.git
+    # in any cases, update your code
+    git fetch --all
+    git reset --hard remotes/o/<the branch to deploy>
+
+On the former shell ssh-connected to the vagrant box, launch deploy
+
+.. code-block:: bash
+
+    salt-call --local -ldebug \
+        mc_project.deploy $project \
+        only=install,fixperms,sync_modules
+    # or to deploy only a specific sls
+    salt-call --local -ldebug \
+        mc_project.deploy $project \
+        only=install,fixperms,sync_modules only_steps=000_foo.sls
+
+When you want to commit your changes, return to the second shell, on your local
+machine
+
+.. code-block:: bash
+
+    export project="foo"
+    cd vms/VM/srv/$project/project
     git push o HEAD:<master> # replace master by the branch you want to push
                              # back onto your forge
 
