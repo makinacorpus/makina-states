@@ -259,7 +259,7 @@ Edit the pillar
     $EDITOR init.sls
     git commit -am up
 
-Open a second shell, on your local machine (**not on the VM **)
+Open a second shell, on your local machine ( **not on the VM ** )
 where you ll update the project code base from git.
 
 .. code-block:: bash
