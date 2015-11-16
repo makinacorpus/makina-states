@@ -220,17 +220,21 @@ Launch deploy
 
 VARIANT: Deploy by hand, on a vagrant VM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-In our setup, on development, we use a vagrant box in which we can't and dont
-want to pull directly from our private git repositories.
-The localhost on which the virtualbox is running, is on the contrary controlled
-by the user and the workflow is to push the code inside the VM from the HOST.
+In development, our best practises are not to pull from our private git repositories
+directly from inside the VM.
+
+The HOST on which the virtualbox is running, is on the contrary controlled
+by the developer and it's more safe to pull/push the code from here.
+
+To sum up, any **git push/pull** operation has to be done **from the localhost**
+and not the vm.
+
+In other words, the HOST can access any of the VM files with the help of a shared **sshfs** mountpoint ``./VM``.
+And the HOST can also access the outside repositories.
+So the host in the interface that will push code inside the VM.
+
 This setup involves using the ``remote_less`` feature of ``mc_project`` where
 we do not deploy via a ``git push`` nor use ``archive/rollback`` mechanims.
-
-IN OTHER WORDS, ANY **GIT PUSH/PULL** OPERATION HAS TO BE DONE **FROM THE LOCALHOST**
-AND NOT THE VM.
-
-Indeed, the HOST can access any of the VM files with the help of a shared **sshfs** mountpoint ``./VM``.
 
 Initialise/launch a `makina-states/vms <https://github.com/makinacorpus/vms>`_ box (this will take some time, specially
 the first time)
