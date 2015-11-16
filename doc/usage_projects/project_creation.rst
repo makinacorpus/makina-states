@@ -241,7 +241,7 @@ the first time)
 
 .. code-block:: bash
 
-    git clone https://github.com/makinacorpus/vms;
+    git clone https://github.com/makinacorpus/vms
     cd vms
     ./manage.sh init
 
