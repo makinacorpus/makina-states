@@ -145,7 +145,9 @@ The following command is the nerve of the war::
 - ``mc_project.init_project $project`` instructs to create the layout of the name ``$project`` project living into ``/srv/projects/$project/project``
 - (opt) ``remote_less`` instructs to deploy with or without the git repos that allow users to use a **git push to prod to deploy** workflow.
 
-    - If ``remote_less=false``, the git repos wont be created.
+    - If ``remote_less=true``, the git repos wont be created, and you wont be
+      able to push to git remotes to deploy your project (you ll have to do it
+      directly on the server, by the :ref:`hand procedure <project_hand_procedure>`.
 
 mc_project.deploy, the main entry point
 +++++++++++++++++++++++++++++++++++++++++
@@ -162,6 +164,9 @@ The following command is the nerve of the war::
 - (opt) ``only`` instructs to execute only the named global phases, and when deploying directly onto a machine, you will certainly have to use ``only=install,fixperms,sync_modules``
   to avoid the archive/sync/rollback steps.
 - (opt) ``only_steps`` instruct to execute only a specific or multiple specific sls from the **.salt** folder during the **install** phase.
+
+
+.. _project_hand_procedure:
 
 Directly on the remote server, by hand
 +++++++++++++++++++++++++++++++++++++++
