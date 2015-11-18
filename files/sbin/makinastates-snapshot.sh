@@ -45,12 +45,8 @@ if [ "x${is_docker}" != "x" ];then
     REMOVE="${REMOVE}
 /salt-venv/salt/src/m2crypto/build
 /salt-venv/mastersalt/src/m2crypto/build
-/salt-venv/mastersalt/src/salt/doc
-/salt-venv/salt/src/salt/doc
 /salt-venv/mastersalt/lib/python2.7/site-packages/libcloud/test/compute/fixtures
 /salt-venv/salt/lib/python2.7/site-packages/libcloud/test/compute/fixtures
-/salt-venv/mastersalt/src/salt/pkg
-/salt-venv/salt/src/salt/pkg
 "
 fi
 set -e
