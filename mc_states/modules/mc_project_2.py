@@ -2082,15 +2082,27 @@ def execute_garded_step(name,
 
 
 def sync_modules(name, *args, **kwargs):
+    '''
+    Install custom modules to the salt modules directory
+    in the global module dir,
+
+    Note: we install two symlinks to provide room for overlapping modules
+    eg: project1/project/.salt/_modules/foo.py:bar can be called::
+
+          salt-call foo.bar()
+          salt-call foo_foo.bar()
+
+    '''
     cfg = get_configuration(name, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
     _s = __salt__
     salt_root = cfg['salt_root']
     system_salt = __opts__['file_roots']['base'][0]
     if _s['mc_controllers.mastersalt_mode']():
-       k = 'mastersalt'
+        k = 'mastersalt'
     else:
-       k = 'salt'
+        k = 'salt'
+
     saltsettings = __salt__['mc_salt.settings']()[
         'data_mappings']['minion'][k]
     for config_opt, dirs in saltsettings['saltmods'].items():
@@ -2098,24 +2110,26 @@ def sync_modules(name, *args, **kwargs):
         _d = os.path.basename(dest)
         orig = os.path.join(salt_root, _d)
         if os.path.isdir(orig):
-            for i in [
+            for module in [
                 a for a in os.listdir(orig)
                 if a.endswith('.py')
             ]:
-                lnk = os.path.join(orig,  i)
-                lnkdst = os.path.join(dest, i)
-                if os.path.exists(lnkdst):
-                    if os.path.islink(lnkdst):
-                        if os.readlink(lnkdst) == lnk:
-                            continue
-                    _s['file.remove'](lnkdst)
-                if os.path.isfile(lnk):
-                    if not os.path.exists(dest):
-                        os.makedirs(dest)
-                    _append_comment(
-                        ret, summary=(
-                            'Linking {0} <- {1}'.format(lnkdst, lnk)))
-                    _s['file.symlink'](lnk, lnkdst)
+                lnk = os.path.join(orig,  module)
+                for j in ['{module}', '{name}_{module}']:
+                    i = j.format(**locals())
+                    lnkdst = os.path.join(dest, i)
+                    if os.path.exists(lnkdst):
+                        if os.path.islink(lnkdst):
+                            if os.readlink(lnkdst) == lnk:
+                                continue
+                        _s['file.remove'](lnkdst)
+                    if os.path.isfile(lnk):
+                        if not os.path.exists(dest):
+                            os.makedirs(dest)
+                        _append_comment(
+                            ret, summary=(
+                                'Linking {0} <- {1}'.format(lnkdst, lnk)))
+                        _s['file.symlink'](lnk, lnkdst)
     return ret
 
 
@@ -2129,12 +2143,14 @@ def deploy(name, *args, **kwargs):
 
     Run only one or certain install step::
 
-        salt-call --local -ldebug mc_project.deploy <name> only=install only_steps=00_foo
-        salt-call --local -ldebug mc_project.deploy <name> only=install only_steps=00_foo,02_bar
+        salt-call --local -ldebug mc_project.deploy\\
+                <name> only=install only_steps=00_foo
+        salt-call --local -ldebug mc_project.deploy\\
+                <name> only=install only_steps=00_foo,02_bar
 
     Only run install & fixperms step::
 
-        salt-call --local -ldebug mc_project.deploy <name> only=install,fixperms
+        salt-call --local -ldebug mc_project.deploy <n> only=install,fixperms
 
     Deploy entirely (this is what is run whithin the git hook)::
 
@@ -2142,8 +2158,8 @@ def deploy(name, *args, **kwargs):
 
     Skip a particular step::
 
-        salt-call --local -ldebug mc_project.deploy <name> skip_release_sync=True \\
-                skip_archive=True skip_notify=True
+        salt-call --local -ldebug mc_project.deploy <name>\\
+                skip_release_sync=True skip_archive=True skip_notify=True
 
     '''
     ret = _get_ret(name, *args, **kwargs)
