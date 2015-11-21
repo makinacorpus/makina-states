@@ -16,6 +16,15 @@ include:
       - service: pure-ftpd-service
 {% endmacro %}
 
+{{ locs.conf_dir }}/pure-ftpd/auth/50puredb:
+  file.symlink:
+    - target: "/etc/pure-ftpd/conf/PureDB"
+    - makedirs: true
+    - watch:
+      - mc_proxy: ftpd-pre-configuration-hook
+    - watch_in:
+      - mc_proxy: ftpd-post-configuration-hook
+
 {{ locs.conf_dir }}/default/pure-ftpd-common-makina-pure-ftpd:
   file.managed:
     - name: {{ locs.conf_dir }}/default/pure-ftpd-common
@@ -118,3 +127,23 @@ makina-pureftpd-shell-block:
       - mc_proxy: ftpd-post-configuration-hook
 
 {% endif %}
+makina-pureftpd-mkdb:
+  file.managed:
+    - name: {{ locs.conf_dir }}/pure-ftpd/pureftpd.passwd
+    - source: ''
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 644
+    - watch:
+      - mc_proxy: ftpd-post-configuration-hook
+    - watch_in:
+      - mc_proxy: ftpd-pre-restart-hook
+  cmd.run:
+    - name: pure-pw mkdb
+    - watch:
+      - file: makina-pureftpd-mkdb
+      - mc_proxy: ftpd-post-configuration-hook
+    - watch_in:
+      - mc_proxy: ftpd-pre-restart-hook
+
