@@ -2,6 +2,7 @@
 . /etc/profile
 LOG="/var/log/burpcron.log"
 lock="${0}.lock"
+find "${lock}" -type f -mmin +15 -delete 1>/dev/null 2>&1
 if [ -e "${lock}" ];then
   echo "Locked ${0}";exit 1
 fi
