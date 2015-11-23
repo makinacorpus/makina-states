@@ -685,6 +685,20 @@ def set_project(cfg):
     return cfg
 
 
+def uncache_project(name):
+    '''Uncache a configuration after an initial load
+    either by it's name or by its structure'''
+    if isinstance(name, dict):
+        name = name['name']
+    __opts__.get('ms_projects', {}).pop(name, None)
+    __opts__.pop('ms_project_name', None)
+    for cfg, remote_host in [
+        a for a in __opts__.get('ms_projects', {})
+    ]:
+        if cfg == name:
+            __opts__.pop((cfg, remote_host), None)
+
+
 def get_project(name, *args, **kwargs):
     '''
     Alias of get_configuration for convenience
@@ -712,7 +726,7 @@ def _get_contextual_cached_project(name, remote_host=None):
 
 def refresh_cached_configuration(name, *args, **kwargs):
     '''
-    To inter operate with external tools, we will
+    to inter operate with external tools, we will
     cache a serialized configuration inside the project root
     '''
     get_configuration(name *args, **kwargs)
@@ -822,11 +836,15 @@ def get_configuration(name, *args, **kwargs):
 
     '''
     cfg = _prepare_configuration(name, *args, **kwargs)
-    if not (
-        cfg.get('force_reload', True) or
-        kwargs.get('force_reload', False)
-    ) and cfg.get('cfg_is_loaded'):
-        return cfg
+    to_reload = (cfg.get('force_reload', None) or
+                 kwargs.get('force_reload', None))
+    if cfg.get('cfg_is_loaded'):
+        if to_reload:
+            uncache_project(cfg['name'])
+            cfg = _prepare_configuration(name, *args, **kwargs)
+            cfg['force_reload'] = True
+        else:
+            return cfg
     _s = __salt__
     salt_settings = _s['mc_salt.settings']()
     salt_root = salt_settings['saltRoot']
@@ -2011,6 +2029,12 @@ def init_project(name, *args, **kwargs):
     return _filter_ret(ret, cfg['raw_console_return'])
 
 
+def reload_cfg(cfg, *args, **kwargs):
+    kwargs['force_reload'] = True
+    cfg = get_configuration(cfg['name'], *args, **kwargs)
+    return cfg
+
+
 def guarded_step(cfg,
                  step_or_steps,
                  inner_step=False,
@@ -2178,6 +2202,8 @@ def deploy(name, *args, **kwargs):
     # okay, if backups are now done and in OK status
     # hand tights for the deployment
 
+    only_steps = kwargs.get('only_steps', None)
+    # be sure to have modules pre-synced
     if ret['result']:
         guarded_step(cfg,
                      ['sync_modules'],
@@ -2185,14 +2211,12 @@ def deploy(name, *args, **kwargs):
                      inner_step=True,
                      ret=ret)
 
-    only_steps = kwargs.get('only_steps', None)
     if ret['result']:
         guarded_step(cfg,
                      ['release_sync'],
                      rollback=True,
                      inner_step=True,
                      ret=ret)
-        cfg['force_reload'] = True
         cfg = get_configuration(name, *args, **kwargs)
 
     if ret['result']:
@@ -2278,6 +2302,7 @@ def archive(name, *args, **kwargs):
 def release_sync(name, *args, **kwargs):
     cfg = get_configuration(name, *args, **kwargs)
     iret = init_project(name, *args, **kwargs)
+    cfg = reload_cfg(cfg)
     return iret
 
 
