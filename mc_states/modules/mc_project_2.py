@@ -823,8 +823,8 @@ def get_configuration(name, *args, **kwargs):
     '''
     cfg = _prepare_configuration(name, *args, **kwargs)
     if not (
-        cfg.get('force_reload', None) or
-        kwargs.get('force_reload', None)
+        cfg.get('force_reload', True) or
+        kwargs.get('force_reload', False)
     ) and cfg.get('cfg_is_loaded'):
         return cfg
     _s = __salt__
@@ -2011,16 +2011,6 @@ def init_project(name, *args, **kwargs):
     return _filter_ret(ret, cfg['raw_console_return'])
 
 
-def reload_cfg(cfg, *args, **kwargs):
-    kw = copy.deepcopy(kwargs)
-    cfg['force_reload'] = True
-    kw['force_reload'] = True
-    cfg = get_configuration(cfg['name'], *args, **kw)
-    cfg['force_reload'] = False
-    kw['force_reload'] = False
-    return cfg
-
-
 def guarded_step(cfg,
                  step_or_steps,
                  inner_step=False,
@@ -2188,7 +2178,6 @@ def deploy(name, *args, **kwargs):
     # okay, if backups are now done and in OK status
     # hand tights for the deployment
 
-    # be sure to have modules pre-synced
     if ret['result']:
         guarded_step(cfg,
                      ['sync_modules'],
@@ -2203,15 +2192,8 @@ def deploy(name, *args, **kwargs):
                      rollback=True,
                      inner_step=True,
                      ret=ret)
-        cfg = reload_cfg(cfg)
-
-    # be sure to have new modules after a release sync
-    if ret['result']:
-        guarded_step(cfg,
-                     ['sync_modules'],
-                     rollback=True,
-                     inner_step=True,
-                     ret=ret)
+        cfg['force_reload'] = True
+        cfg = get_configuration(name, *args, **kwargs)
 
     if ret['result']:
         guarded_step(cfg,
