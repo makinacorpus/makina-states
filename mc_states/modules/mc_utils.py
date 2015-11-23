@@ -16,6 +16,7 @@ import cProfile
 import crypt
 import collections
 import datetime
+import traceback
 import hashlib
 import logging
 import os
@@ -24,6 +25,7 @@ import re
 
 
 import salt.loader
+import salt.template
 from salt.config import master_config, minion_config
 from salt.exceptions import SaltException
 import salt.utils
@@ -830,13 +832,21 @@ def add_stuff_to_opts(__opts):
 def sls_load(sls, get_inner=False):
     if not os.path.exists(sls):
         raise OSError('does not exists: {0}'.format(sls))
+    # if we do not deepcopy _opts__ it may fail with
+    # AttributeError: 'ContextDict' object has no attribute 'global_data'
+    # on dunders, later on executions, i do not know why
+    # see: https://github.com/saltstack/salt/issues/29123
+    __opts = copy.deepcopy(__opts__)
     try:
-        add_stuff_to_opts(__opts__)
-        jinjarend = salt.loader.render(__opts__, __salt__)
+        add_stuff_to_opts(__opts)
+        jinjarend = salt.loader.render(__opts, __salt__)
         data_l = salt.template.compile_template(
-            sls, jinjarend, __opts__['renderer'], 'base')
+            sls, jinjarend, __opts['renderer'], 'base')
+    except Exception:
+        trace = traceback.format_exc()
+        log.error(trace)
     finally:
-        remove_stuff_from_opts(__opts__)
+        remove_stuff_from_opts(__opts)
     if isinstance(data_l, (dict, list, set)) and get_inner:
         if len(data_l) == 1:
             if isinstance(data_l, dict):
