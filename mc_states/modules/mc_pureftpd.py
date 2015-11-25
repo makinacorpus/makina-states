@@ -156,6 +156,9 @@ def settings():
             ),
             'conf': __salt__['mc_utils.defaults'](
                 'makina-states.services.ftp.pureftp', {
+                    'configs': {
+                        '/etc/init.d/pure-ftpd': {},
+                    },
                     'AllowAnonymousFXP': 'no',
                     'AllowDotFiles': '',
                     'AllowUserFXP': '',
