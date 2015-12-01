@@ -166,22 +166,48 @@ Download and initialize the layout
 OPTIONNAL: Generate a a certificate with a custom authority for testing purposes
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+This script will generate a CA and sign a wildcard certificate for CN="${DOMAIN}" with it
 .. code-block:: bash
 
-    cd "${DATA}"
-    DOMAIN="registryh.docker.tld"
-    mkdir -p ca
-    openssl genrsa -des3 -out ca/sca-key.pem
-    openssl genrsa -des3 -out ca/s${DOMAIN}-key.pem
-    openssl rsa -in ca/sca-key.pem -out ca/ca-key.pem
-    openssl rsa -in ca/s${DOMAIN}-key.pem -out ca/${DOMAIN}-key.pem
-    openssl req -new -x509 -days $((365*30)) -key ca/ca-key.pem -out ca/ca.pem\
-      -subj "/C=FR/ST=dockerca/L=dockerca/O=dockerca/CN=dockerca/"
-    openssl req -new -key ca/${DOMAIN}-key.pem -out ca/${DOMAIN}.csr\
-      -subj "/C=FR/ST=dockerca/L=dockerca/O=dockerca/CN=*.${DOMAIN}/"
-    openssl x509 -CAcreateserial -req -days $((365*30)) -in ca/${DOMAIN}.csr\
-      -CA ca/ca.pem -CAkey ca-key.pem -out ca/${DOMAIN}.crt
-    cat ca/${DOMAIN}.crt ca.pem > ca/${DOMAIN}.bundle.crt
+    gen_password() { < /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-32};echo; }
+    DATA="${DATA:-$(pwd)}"
+    CA_PATH="${CA_PATH:-${DATA}/ca}"
+    C="${C:-FR}"
+    L="${L:-Paris}"
+    ST="${ST:-IleDeFrance}"
+    CA="${CA:-"dockerca"}"
+    EXPIRY="${EXPIRY:-$((365*100))}"
+    DOMAIN="${DOMAIN:-"registryh.docker.tld"}"
+    mkdir -p "${CA_PATH}"
+    cd "${CA_PATH}"
+    CA_PASSWD="$(cat ca_passwd 2>/dev/null)"
+    DOMAIN_PASSWD="$(cat "${DOMAIN}_passwd" 2>/dev/null)"
+    CA_PASSWD="${CA_PASSWD:-$(gen_password)}"
+    DOMAIN_PASSWD="${DOMAIN_PASSWD:-$(gen_password)}"
+    echo "$CA_PASSWD" > ca_passwd
+    echo "$DOMAIN_PASSWD" > "${DOMAIN}_passwd"
+    if ! test -f ca_key.pem;then
+        openssl genrsa -des3 -passout file:ca_passwd -out sca_key.pem
+        openssl rsa -in sca_key.pem -passin file:ca_passwd -out ca_key.pem
+    fi
+    if ! test -f ca.crt;then
+        openssl req -new -x509 -days ${EXPIRY} -key ca_key.pem -out ca.crt\
+          -subj "/C=${C}/ST=${ST}/L=${L}/O=${CA}/CN=${CA}/"
+    fi
+    if ! test -f "${DOMAIN}_key.pem";then
+        openssl genrsa -des3 -passout "file:${DOMAIN}_passwd" -out "s${DOMAIN}_key.pem"
+        openssl rsa -in "s${DOMAIN}_key.pem" -passin "file:${DOMAIN}_passwd" -out "${DOMAIN}_key.pem"
+    fi
+    if ! test -f "${DOMAIN}.crt";then
+        openssl req -new -key "${DOMAIN}_key.pem" -out "${DOMAIN}.csr"\
+          -subj "/C=${C}/ST=${ST}/L=${L}/O=${CA}/CN=*.${DOMAIN}/"
+        openssl x509 -CAcreateserial -req -days ${EXPIRY} -in ${DOMAIN}.csr\
+          -CA ca.crt -CAkey ca_key.pem -out "${DOMAIN}.crt"
+    fi
+    cat "${DOMAIN}.crt" "ca.crt"                     > "${DOMAIN}.bundle.crt"
+    cat "${DOMAIN}.crt" "ca.crt" "${DOMAIN}_key.pem" > "${DOMAIN}.full.crt"
+    chmod 644 *crt*
+    chmod 640 *key* *full.crt *_passwd
 
 Register the certificate to the host openssl configuration
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
