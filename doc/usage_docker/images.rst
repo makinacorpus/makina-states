@@ -209,6 +209,7 @@ This script will generate a CA and sign a wildcard certificate for CN="${DOMAIN}
     chmod 644 *crt*
     chmod 640 *key* *full.crt *_passwd
 
+
 Register the certificate to the host openssl configuration
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 .. code-block:: bash
