@@ -169,7 +169,7 @@ OPTIONNAL: Generate a a certificate with a custom authority for testing purposes
 This script will generate a CA and sign a wildcard certificate for CN="${DOMAIN}" with it
 .. code-block:: bash
 
-    gen_password() { < /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-32};echo; }
+    gen_password() { < /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-64};echo; }
     DATA="${DATA:-$(pwd)}"
     CA_PATH="${CA_PATH:-${DATA}/ca}"
     C="${C:-FR}"
