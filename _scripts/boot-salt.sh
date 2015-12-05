@@ -3389,10 +3389,9 @@ make_association() {
     # only accept key on fresh install (no keys stored)
     if [ "x$(salt_ping_test)" = "x0" ];\
     then
-        debug_msg "Salt minion \"${minion_id}\" already registered on master"
+        bs_log "Salt minion \"${minion_id}\" already registered on master"
         minion_id="$(get_minion_id)"
         registered="1"
-        salt_echo "changed=false comment='salt minion already registered'"
     else
         if [ "x${SALT_MASTER_DNS}" = "xlocalhost" ];then
             debug_msg "Forcing salt master restart"
@@ -3431,7 +3430,6 @@ make_association() {
             # sleep 15 seconds giving time for the minion to wake up
             bs_log "Salt minion \"${minion_id}\" registered on master"
             registered="1"
-            salt_echo "changed=yes comment='salt minion already registered'"
         else
             minion_challenge
             if [ "x${challenged_ms}" = "x" ];then
@@ -3441,7 +3439,7 @@ make_association() {
             fi
             minion_id="$(get_minion_id)"
             registered="1"
-            salt_echo "changed=yes comment='salt minion already registered'"
+            bs_log "salt minion already registered"
         fi
         if [ "x${registered}" = "x" ];then
             bs_log "Failed accepting salt key on ${SALT_MASTER_IP} for ${minion_id}"
@@ -3458,12 +3456,6 @@ challenge_mastersalt_message() {
         bs_log "    GO ACCEPT THE KEY ON MASTERSALT ($(get_mastersalt)) !!! "
         bs_log "    You need on this box to run mastersalt-key -y -a ${minion_id}"
         bs_log "****************************************************************"
-    fi
-}
-
-salt_echo() {
-    if [ "x${QUIET}" = "x" ];then
-        echo "${@}"
     fi
 }
 
@@ -3491,8 +3483,7 @@ make_mastersalt_association() {
         fi
     fi
     if mastersalt_ping_test;then
-        debug_msg "Mastersalt minion \"${minion_id}\" already registered on $(get_mastersalt)"
-        salt_echo "changed=false comment='mastersalt minion already registered'"
+        bs_log "Mastersalt minion \"${minion_id}\" already registered on $(get_mastersalt)"
     else
         if [ "x$(mastersalt_master_processes)" = "x0" ] && [ "x${IS_MASTERSALT_MASTER}" != "x" ];then
             restart_local_mastersalt_masters
@@ -3532,10 +3523,8 @@ make_mastersalt_association() {
         bs_log "Waiting for mastersalt minion key hand-shake"
         minion_id="$(get_minion_id)"
         if mastersalt_ping_test;then
-            salt_echo "changed=yes comment='mastersalt minion registered'"
             bs_log "Mastersalt minion \"${minion_id}\" registered on master"
             registered="1"
-            salt_echo "changed=yes comment='salt minion registered'"
         else
             mastersalt_minion_challenge
             if [ "x${challenged_ms}" = "x" ];then
@@ -3545,7 +3534,7 @@ make_mastersalt_association() {
             fi
             minion_id="$(get_minion_id)"
             registered="1"
-            salt_echo "changed=yes comment='salt minion registered'"
+            bs_log "salt minion registered"
         fi
         if [ "x${registered}" = "x" ];then
             bs_log "Failed accepting mastersalt key on $(get_mastersalt) for ${minion_id}"
@@ -3737,10 +3726,6 @@ install_salt_env() {
     install_salt_daemons
     lazy_start_salt_daemons
     make_association
-    # --------- stateful state return: mark as already installed
-    if [ "x${ds}" = "x" ];then
-        salt_echo 'changed=false comment="already bootstrapped"'
-    fi
 }
 
 # --------- HIGH-STATES
@@ -3764,9 +3749,8 @@ highstate_in_mastersalt_env() {
             bs_log "Failed highstate for mastersalt"
             exit 1
         fi
-        salt_echo "changed=yes comment='mastersalt highstate run'"
     else
-        salt_echo "changed=false comment='mastersalt highstate skipped'"
+        bs_log "mastersalt highstate skipped"
     fi
 }
 
@@ -3788,14 +3772,9 @@ highstate_in_salt_env() {
             bs_log "Failed highstate"
             exit 1
         fi
-        salt_echo "changed=yes comment='salt highstate run'"
     else
-        salt_echo "changed=false comment='salt highstate skipped'"
+        bs_log "salt highstate skipped"
     fi
-    if [ "x${SALT_BOOT_NOW_INSTALLED}" != "x" ];then
-        salt_echo "changed=yes comment='salt installed and configured'"
-    fi
-
 }
 
 run_highstates() {
