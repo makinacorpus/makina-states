@@ -679,9 +679,10 @@ set_vars() {
     ONLY_BUILDOUT_REBOOTSTRAP="${ONLY_BUILDOUT_REBOOTSTRAP:-}"
     BUILDOUT_REBOOTSTRAP="${BUILDOUT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
     SALT_REBOOTSTRAP="${SALT_REBOOTSTRAP:-${VENV_REBOOTSTRAP}}"
-    BASE_PACKAGES=""
-    BASE_PACKAGES="$BASE_PACKAGES libmemcached-dev acl build-essential m4 libtool pkg-config autoconf gettext bzip2"
-    BASE_PACKAGES="$BASE_PACKAGES groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
+    BASE_PACKAGES="python-software-properties curl python-virtualenv git rsync"
+    BASE_PACKAGES="${BASE_PACKAGES} libmemcached-dev acl build-essential m4 libtool pkg-config autoconf gettext bzip2"
+    BASE_PACKAGES="${BASE_PACKAGES} groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
+    BASE_PACKAGES="${BASE_PACKAGES} debconf-utils swig libssl-dev libgmp3-dev libffi-dev"
     DO_SALT="${DO_SALT:-"y"}"
     DO_MASTERSALT="${DO_MASTERSALT:-"y"}"
     if [ "x$(get_do_mastersalt)" != "xy" ];then
@@ -690,10 +691,6 @@ set_vars() {
     if [ "x${DO_SALT}" != "xy" ];then
         DO_SALT="no"
     fi
-    BASE_PACKAGES="${BASE_PACKAGES} swig libssl-dev debconf-utils python-virtualenv"
-    BASE_PACKAGES="${BASE_PACKAGES} git rsync"
-    BASE_PACKAGES="${BASE_PACKAGES} libgmp3-dev"
-    BASE_PACKAGES="${BASE_PACKAGES} libffi-dev"
     BRANCH_PILLAR_ID="makina-states.salt.makina-states.rev"
     MAKINASTATES_TEST=${MAKINASTATES_TEST:-}
     SALT_BOOT_INITIAL_HIGHSTATE="${SALT_BOOT_INITIAL_HIGHSTATE:-}"
@@ -1383,7 +1380,6 @@ install_prerequisites() {
     if [ "x${QUIET}" = "x" ];then
         bs_log "Check package dependencies"
     fi
-    lazy_apt_get_install python-software-properties curl
     for i in ${BASE_PACKAGES};do
         if [ "x$(dpkg-query -s ${i} 2>/dev/null|egrep "^Status:"|grep installed|wc -l|${SED} -e "s/ //g")" = "x0" ];then
             to_install="${to_install} ${i}"
