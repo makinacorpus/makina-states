@@ -186,19 +186,19 @@ This script will generate a CA and sign a wildcard certificate for CN="${DOMAIN}
     DOMAIN_PASSWD="${DOMAIN_PASSWD:-$(gen_password)}"
     echo "$CA_PASSWD" > ca_passwd
     echo "$DOMAIN_PASSWD" > "${DOMAIN}_passwd"
-    if ! test -f ca_key.pem;then
+    if ! test -e ca_key.pem;then
         openssl genrsa -des3 -passout file:ca_passwd -out sca_key.pem
         openssl rsa -in sca_key.pem -passin file:ca_passwd -out ca_key.pem
     fi
-    if ! test -f ca.crt;then
+    if ! test -e ca.crt;then
         openssl req -new -x509 -days ${EXPIRY} -key ca_key.pem -out ca.crt\
           -subj "/C=${C}/ST=${ST}/L=${L}/O=${CA}/CN=${CA}/"
     fi
-    if ! test -f "${DOMAIN}_key.pem";then
+    if ! test -e "${DOMAIN}_key.pem";then
         openssl genrsa -des3 -passout "file:${DOMAIN}_passwd" -out "s${DOMAIN}_key.pem"
         openssl rsa -in "s${DOMAIN}_key.pem" -passin "file:${DOMAIN}_passwd" -out "${DOMAIN}_key.pem"
     fi
-    if ! test -f "${DOMAIN}.crt";then
+    if ! test -e "${DOMAIN}.crt";then
         openssl req -new -key "${DOMAIN}_key.pem" -out "${DOMAIN}.csr"\
           -subj "/C=${C}/ST=${ST}/L=${L}/O=${CA}/CN=*.${DOMAIN}/"
         openssl x509 -CAcreateserial -req -days ${EXPIRY} -in ${DOMAIN}.csr\
