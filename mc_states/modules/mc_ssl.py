@@ -1190,8 +1190,11 @@ def settings():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         data = reload_settings()
+        is_travis = __salt__['mc_nodetypes.is_travis']()
         # even if we make a doublon here, it will be filtered by CN indexing
         for domain in data['domains']:
+            if is_travis:
+                continue
             data['certificates'][domain] = get_configured_cert(
                 domain, gen=True)
         return reload_settings(data)
