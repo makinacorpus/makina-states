@@ -96,8 +96,8 @@ def toggle_service(pm='system'):
 
 
 def toggle_enable(pm='system'):
-    is_running = toggle_service(pm)
-    return is_running == 'running' and True or False
+    service_function = toggle_service(pm)
+    return service_function == 'running' and True or False
 
 
 def registry():
