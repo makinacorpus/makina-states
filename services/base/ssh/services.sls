@@ -1,19 +1,19 @@
 {% import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
 {% import "makina-states/services/monitoring/supervisor/macros.jinja" as supervisor with context %}
-{% set openssh = salt['mc_ssh.settings']() %}
-{% set pm = salt['mc_services.get_processes_manager'](openssh) %}
+{% set settings = salt['mc_ssh.settings']() %}
+{% set pm = salt['mc_services.get_processes_manager'](settings) %}
 include:
   - makina-states.services.base.ssh.hooks
   {% if pm in ['circus', 'supervisor'] %}
   - makina-states.services.monitoring.{{pm}}.hooks
   {% endif %}
 {% if salt['mc_nodetypes.activate_sysadmin_states']() %}
-{% set toggle_service = salt['mc_services.toggle_service'](pm) %}
-{% if toggle_service %}
+{% set service_function = salt['mc_services.get_service_function'](pm) %}
+{% if service_function %}
 openssh-svc:
-  service.{{toggle_service}}:
-    - name: {{openssh.service}}
-    - enable: {{salt['mc_services.toggle_enable'](toggle_service)}}
+  {{service_function}}:
+    - name: {{settings.service}}
+    - enable: {{salt['mc_services.get_service_enabled_state'](service_function)}}
     - watch:
       - mc_proxy: ssh-service-prerestart
     - watch_in:

@@ -14,6 +14,8 @@ mc_services / servives registries & functions
 import os
 import logging
 import mc_states.api
+from salt.ext import six as six
+
 
 __name = 'services'
 six = mc_states.api.six
@@ -87,17 +89,67 @@ def get_processes_manager(data=None):
                     settings()['processes_manager'])
 
 
-def toggle_service(pm='system'):
-    # pm is the service function
-    if pm in ['running', 'dead', 'absent']:
-        return pm
-    if pm == 'system' or not __salt__['mc_nodetypes.is_docker']():
-        return (pm == 'system') and 'running' or 'dead'
+def get_service_function(pm=None,
+                         enable_toggle=None,
+                         has_system_services_manager=None,
+                         activate_function='service.running',
+                         deactivate_function='service.dead'):
+    '''
+    Return the appropriate service function for the activated process manager
+    For the API conveniance, we reflect back any service.function.
+    If pm is system, or manually forced, we want to return the appropriate
+    service function (one of: activate_function/deactivate_function).
+    We take care to check not to return any function when we are in a docker
+    hence we do not have any system level function, nor the access to the service
+    module
+
+        pm
+            the processes manager
+            (one of none|forced|system|circus|supervisor|service.{running,dead})
+            system or forced means to return a function between activate or deactivate
+        enable_toggle
+            choose if we are in system mode either to return the 'activate' or 'deactivate'
+            function, by default we return the activate function
+        activate_function
+            salt module function to activate a service (api compatible with service.*)
+        deactivate_function
+            salt module function to deactivate a service (api compatible with service.*)
+        has_system_services_manager
+            overrides the makina-states detection of the presence of a system services
+            manager
+
+    '''
+    _s = __salt__
+    # pm is the service function, early return
+    if isinstance(pm, six.string_types):
+        for func in ['running', 'dead', 'absent']:
+            if pm.endswith(func):
+                return pm
+    if pm is None:
+        pm = 'system'
+    if has_system_services_manager is None:
+        has_system_services_manager = _s['mc_nodetypes.has_system_services_manager']()
+    if enable_toggle is None:
+        enable_toggle = True
+    if not has_system_services_manager:
+        return
+    if pm not in ['system', 'forced']:
+        return
+    return enable_toggle and activate_function or deactivate_function
 
 
-def toggle_enable(pm='system'):
-    service_function = toggle_service(pm)
-    return service_function == 'running' and True or False
+def get_service_enabled_state(pm=None, enable_toggle=None):
+    '''
+    Return if a service should be enabled at boot or not
+    depending on the service function.
+
+    if service func is 'running' -> enabled
+    if service func is 'dead' -> disaabled
+    '''
+    service_function = get_service_function(pm, enable_toggle=enable_toggle)
+    if not isinstance(service_function, six.string_types):
+        service_function = ''
+    return 'running'in service_function and True or False
 
 
 def registry():

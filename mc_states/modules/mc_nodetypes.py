@@ -195,6 +195,14 @@ def is_vm():
     return False
 
 
+def has_system_services_manager():
+    '''
+    Does the actual host has a system level services manager
+    aka a PIDEINS
+    '''
+    return not is_docker()
+
+
 def activate_sysadmin_states():
     if (
         __salt__['mc_controllers.mastersalt_mode']() and
