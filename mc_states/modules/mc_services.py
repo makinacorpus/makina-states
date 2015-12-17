@@ -129,12 +129,10 @@ def get_service_function(pm=None,
         pm = 'system'
     if has_system_services_manager is None:
         has_system_services_manager = _s['mc_nodetypes.has_system_services_manager']()
+    if not (has_system_services_manager or pm not in ['system', 'forced']):
+        return
     if enable_toggle is None:
         enable_toggle = True
-    if not has_system_services_manager:
-        return
-    if pm not in ['system', 'forced']:
-        return
     return enable_toggle and activate_function or deactivate_function
 
 
