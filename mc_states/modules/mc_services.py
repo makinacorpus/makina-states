@@ -88,6 +88,9 @@ def get_processes_manager(data=None):
 
 
 def toggle_service(pm='system'):
+    # pm is the service function
+    if pm in ['running', 'dead', 'absent']:
+        return pm
     if pm == 'system' or not __salt__['mc_nodetypes.is_docker']():
         return (pm == 'system') and 'running' or 'dead'
 
