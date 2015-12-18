@@ -242,7 +242,7 @@ def settings():
             'opcache_revalidate_freq': 2,
             'opcache_revalidate_path': 0,
             'opcache_use_cwd': 1,
-            'opcache_save_comments': 0,
+            'opcache_save_comments': 1,
             'opcache_load_comments': 0,
             'opcache_fast_shutdown': 0,
             'opcache_enable_file_override': 1,
