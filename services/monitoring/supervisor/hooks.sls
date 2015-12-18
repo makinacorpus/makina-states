@@ -1,4 +1,4 @@
-{# Circus orchestration hooks #}
+{# supervisor orchestration hooks #}
 supervisor-pre-install:
   mc_proxy.hook:
     - watch_in:
@@ -52,4 +52,12 @@ supervisor-post-restart:
     - watch_in:
       - mc_proxy: supervisor-post-end
 supervisor-post-end:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: supervisor-pre-disable
+supervisor-pre-disable:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: supervisor-post-disable
+supervisor-post-disable:
   mc_proxy.hook: []
