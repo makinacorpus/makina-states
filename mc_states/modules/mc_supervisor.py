@@ -49,6 +49,7 @@ def settings():
                     '/etc/supervisor.d/*.conf',
                     '/etc/supervisor.d/*.ini',
                 ]),
+                'services': ['ms_supervisor'],
                 'configs': {
                     '/etc/supervisord.conf': {"mode": "644"},
                     '/etc/logrotate.d/supervisor.conf': {"mode": "644"},

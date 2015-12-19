@@ -4,8 +4,13 @@ Description=ms_supervisor
 After=syslog.target network.target
 
 [Service]
-ExecStart=/etc/init.d/ms_supervisor start --nodaemon
-ExecStop=/etc/init.d/ms_supervisor stop
+Environment="DAEMONIZED=--nodaemon"
+Type=simple
+ExecStart=/etc/init.d/ms_supervisor start
 ExecReload=/etc/init.d/ms_supervisor reload
+ExecStop=/etc/init.d/ms_supervisor stop
+Restart=always
+RestartSec=5
+
 [Install]
 WantedBy=multi-user.target

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source /etc/profile || /bin/true
-{% set data = salt['mc_supervisor.settings']() %}
+# {%- set data = salt['mc_supervisor.settings']() %}
 # MANAGED VIA SALT -- DO NOT EDIT
 # RedHat startup script for a supervisor instance
 # chkconfig: - 90 15
@@ -16,18 +16,32 @@ source /etc/profile || /bin/true
 # Short-Description: ms_supervisor
 # Description:       ms_supervisor
 ### END INIT INFO
-. {{data.venv}}/bin/activate
+[ -e "{{data.venv}}/bin/activate" ] && . "{{data.venv}}/bin/activate"
 TMPDIR="{{data.supervisord.tmpdir}}"
+NAME=ms_supervisor
+SCRIPTNAME=/etc/init.d/$NAME
+DESC=ms_supervisor
 EFFECTIVE_USER="{{data.supervisord.user}}"
 FORCE_STOP="1"
-supervisorctl="$(which ms_supervisorctl)"
-supervisord="$(which supervisord)"
-lock="/var/run/${name}.lock"
+DAEMON="$(which supervisord)"
+DAEMONCTL="$(which ms_supervisorctl)"
+PIDFILE=/var/run/$NAME.pid
+LOGFILE={{data.supervisord.logfile}}
+CONFIG="{{data.conf}}"
+DAEMON_ARGS="--logfile $LOGFILE --pidfile $PIDFILE -c $CONFIG"
+DAEMONIZED="${DAEMONIZED:-""}"
+GRACE_TIME={{data.program.stopwaitsecs|int+1}}
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
 export TMPDIR
-[ "x$supervisord" != "x" ] || exit 1
-[ "x$supervisorctl" != "x" ] || exit 1
-[ -f $supervisord ] || exit 1
-[ -f $supervisorctl ] || exit 1
+
+. /lib/init/vars.sh
+. /lib/lsb/init-functions
+[ "x$DAEMON" != "x" ] || exit 1
+[ "x$DAEMONCTL" != "x" ] || exit 1
+[ -f $DAEMON ] || exit 1
+[ -f $DAEMONCTL ] || exit 1
+if [ "x${DEBUG}" != "x" ];then set -x;fi
 
 is_lxc() {
     echo  "$(cat -e /proc/1/environ |grep container=lxc|wc -l|sed -e "s/ //g")"
@@ -45,84 +59,124 @@ filter_host_pids() {
     fi
 }
 
-
-supervisord_pids() {
+daemon_pids() {
     filter_host_pids $(\
-        ps aux|grep supervisord|grep -v grep|grep -v supervisorctl|awk '{print $2}')
+        ps aux|egrep "$(basename $DAEMON)" \
+        | grep -v grep | grep -v $(basename $DAEMONCTL) | awk '{print $2}')
 }
 
-RETVAL=0
-start() {
-    echo "Starting ${supervisord}"
-    "${supervisord}" -c '{{data.conf}}' "${@}"
-    RETVAL="${?}"
-    if [ "x${RETVAL}" = "x0" ];then
-        touch "${lock}"
-    fi
-    if [ -e "${lock}" ];then
-        chown "${EFFECTIVE_USER}" "${lock}"
-    fi
-    return ${RETVAL}
-}
-stop() {
-    echo "Stopping ${supervisord}"
-    pids="$(supervisord_pids)"
+do_start() {
+    pids="$(daemon_pids)"
     if [ "x$(echo ${pids}|wc -w|sed -e "s/  //g")" != "x0" ];then
-        "${supervisorctl}" shutdown
+        log_begin_msg "$DESC already running."
+        log_end_msg 0
+        RC=0
+        return $RC
+    fi
+    log_daemon_msg "Starting $NAME daemon: "
+    start-stop-daemon --start --quiet --exec $DAEMON -- $DAEMONIZED $DAEMON_ARGS ${@}
+    RC=${?}
+    log_end_msg $RC
+    return ${RC}
+}
+
+do_stop() {
+    echo "Stopping ${DAEMON}"
+    pids="$(daemon_pids)"
+    if [ "x$(echo ${pids}|wc -w|sed -e "s/  //g")" != "x0" ];then
+        "${DAEMONCTL}" shutdown
         if [ "x${FORCE_STOP}" = "x" ];then
-            echo "Waiting {{data.program.stopwaitsecs|int+1}}sec for exit"
-            sleep "{{data.program.stopwaitsecs|int+1}}"
+            echo "Waiting $(($GRACE_TIME+1))sec for exit"
+            sleep $(($GRACE_TIME+1))
         fi
     fi
-    pids="$(supervisord_pids)"
+    pids="$(daemon_pids)"
     if [ "x$(echo ${pids}|wc -w|sed -e "s/  //g")" != "x0" ];then
-        for pid in ${pids};do
-            kill -9 $pid || /bin/true
-        done
+        for pid in ${pids};do kill -9 $pid || /bin/true;done
     fi
-    RETVAL=${?}
-    if [ -e "${lock}" ] &&  [ "x${RETVAL}" = "x0" ];then
-        rm -f "${lock}"
-    fi
-    return ${RETVAL}
+    test "x$(daemon_pids|wc -w|sed -e "s/  //g")" = "x0"
+    RC=${?}
+    [ $RC -eq 0 ] && rm -f $PIDFILE
+    log_end_msg $RC
+    return ${RC}
 }
-reload() {
-    echo "Reloading ${supervisord}"
-    pids="$(supervisord_pids)"
+
+do_reload() {
+    echo "Reloading ${DAEMON}"
+    pids="$(daemon_pids)"
     if [ "x$(echo ${pids}|wc -w|sed -e "s/  //g")" != "x0" ];then
-        "${supervisorctl}" reread && "${supervisorctl}" update
+        "${DAEMONCTL}" reread && "${DAEMONCTL}" update
     else
-        start "${@}"
+        do_start "${@}"
     fi
-    RETVAL=$?
-    return ${RETVAL}
+    RC=$?
+    return ${RC}
 }
+
+RC=0
 case "${1}" in
     start)
         shift
-        start "$@"
+        [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+        do_start ${@}
+        RC=$?
+        case "$RC" in
+            0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+              2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+        esac
         ;;
     stop)
         shift
-        stop "$@"
+        [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+        do_stop
+        RC=$?
+        case "$RC" in
+            0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+              2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+        esac
         ;;
     graceful-stop)
         FORCE_STOP=""
         shift
-        stop "$@"
+        do_stop "$@"
+        RC=$?
+        case "$RC" in
+            0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+              2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+        esac
         ;;
-    restart)
-        shift
-        stop
-        start "$@"
+    status)
+        status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
         ;;
     reload)
         shift
-        reload "$@"
+        do_reload "$@"
+        ;;
+    restart|force-reload)
+        shift
+        log_daemon_msg "Restarting $DESC" "$NAME"
+        do_stop
+        RC=$?
+        case "$RC" in
+          0|1)
+              do_start ${@}
+              RC=$?
+              case "$RC" in
+                  0) log_end_msg 0 ;;
+                  1) log_end_msg 1 ;; # Old process is still running
+                  *) log_end_msg 1 ;; # Failed to start
+              esac
+              ;;
+          *)
+              # Failed to stop
+              log_end_msg 1
+              ;;
+        esac
         ;;
     *)
-        echo "${0} start|stop|restart|reload|graceful-stop"
+        echo "Usage: $SCRIPTNAME {start|stop|status|restart|reload|graceful-stop}" >&2
+        RC=3
         ;;
 esac
-exit $REVAL
+exit $RC
 # vim:set ft=sh:

@@ -6,7 +6,7 @@ include:
 {% if not salt['mc_nodetypes.is_docker']() %}
 supervisor-stop-supervisor:
   service.dead:
-    - names: [supervisor]
+    - names: {{settings.services}}
     - watch:
       - mc_proxy: supervisor-pre-disable
     - watch_in:
@@ -18,6 +18,7 @@ supervisor-disable-makinastates-supervisor:
     - names:
       - {{settings.venv}}
       - /etc/supervisor.d
+      - /etc/logrotate.d/supervisor.conf
       - /etc/init/ms_supervisor.conf
       - /etc/supervisor
       - /var/log/supervisord.log
