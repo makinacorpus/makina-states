@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#{%- set defaults = salt['mc_circus.settings']() %}
+. {{defaults.venv}}/bin/activate
+circusctl "$@"

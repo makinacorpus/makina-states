@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env bash
+source /etc/profile || /bin/true
+# {%- set data = salt['mc_circus.settings']() %}
 ### BEGIN INIT INFO
 # Provides:          circusd
 # Required-Start:    $remote_fs $network
@@ -9,64 +11,142 @@
 # Description:       This is a daemon that controls the circus minions
 ### END INIT INFO
 # MANAGED VIA SALT, DO NOT EDIT
-
 # Author: Roman Imankulov <roman.imankulov@gmail.com>
 
-{% set data = salt['mc_circus.settings']() %}
+[ -e "{{data.venv}}/bin/activate" ] && . "{{data.venv}}/bin/activate"
+TMPDIR="{{data.tmpdir}}"
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
-DESC="circus daemon"
 NAME=circusd
-DAEMON=/usr/bin/circusd
-PIDFILE=/var/run/$NAME.pid
-LOG="--log-output {{data.log}}"
-DAEMON_ARGS="${LOG} --daemon --pidfile $PIDFILE {{data.conf}}"
 SCRIPTNAME=/etc/init.d/$NAME
-
+DESC="$NAME daemon"
+DAEMON=$(which $NAME)
+DAEMONCTL="$(which ms_circusctl)"
+PIDFILE=/var/run/$NAME.pid
+LOGFILE={{data.log}}
+CONFIG="{{data.conf}}"
+DAEMON_ARGS="--log-output $LOGFILE --pidfile $PIDFILE $CONFIG"
+DAEMONIZED="${DAEMONIZED:-"--daemon"}"
+GRACE_TIME={{data.circusd.check_delay}}
 # Read configuration variable file if it is present
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
-
-# Exit if the package is not installed
-[ -x "$DAEMON" ] || exit 0
-if [ "x${DEBUG}" != "x" ];then set -x;fi
+export TMPDIR
 
 . /lib/init/vars.sh
 . /lib/lsb/init-functions
-. {{data.venv}}/bin/activate
+
+[ "x$DAEMON" != "x" ] || exit 1
+[ "x$DAEMONCTL" != "x" ] || exit 1
+[ -f $DAEMON ] || exit 1
+[ -f $DAEMONCTL ] || exit 1
+if [ "x${DEBUG}" != "x" ];then set -x;fi
+
+is_container() {
+    cat -e /proc/1/environ 2>/dev/null|grep -q container=
+    echo "${?}"
+}
+
+filter_host_pids() {
+    pids=""
+    if [ "x$(is_container)" = "x0" ];then
+        pids="${pids} $(echo "${@}")"
+    else
+        for pid in ${@};do
+            if [ "x$(grep -q /lxc/ /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
+                pids="${pids} $(echo "${pid}")"
+            fi
+         done
+    fi
+    echo "${pids}" | sed -e "s/\(^ \+\)\|\( \+$\)//g"
+}
+
+daemon_pids() {
+    filter_host_pids $(\
+        ps aux|egrep "bin/circusd|circusweb|from circus import import stats" \
+        | egrep -v 'grep|vim' | grep -v $(basename $DAEMONCTL) | awk '{print $2}')
+        #ps aux|egrep "$(basename $DAEMON)|circusweb|from circus import import stats" \
+}
 
 do_start() {
-    pid=$(pidofproc -p $PIDFILE $DAEMON)
-    if [ -n "$pid" ] ; then
+    pids="$(daemon_pids)"
+    if [ "x$(echo ${pids}|wc -w|sed -e "s/  //g")" != "x0" ];then
         log_begin_msg "$DESC already running."
         log_end_msg 0
         exit 0
     fi
-
-    log_daemon_msg "Starting circusd daemon: "
-    start-stop-daemon --start --quiet --exec $DAEMON -- $DAEMON_ARGS --pidfile $PIDFILE 
-    log_end_msg $?
+    log_daemon_msg "Starting $NAME daemon: "
+    daemonflag="--daemon"
+    if [ "x${DAEMONIZED}" = "x--nodaemon" ];then
+        daemonflag=""
+    fi
+    if [ -e "$PIDFILE" ];then
+        rm -f "$PIDFILE"
+    fi
+    start-stop-daemon --start --quiet --exec $DAEMON -- ${daemonflag} $DAEMON_ARGS ${@}
+    RC=${?}
+    log_end_msg $RC
+    return ${RC}
 }
 
 do_stop() {
     log_begin_msg "Stopping $DESC ..."
-    start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
-    RC=$?
+    if [ "x$(echo ${pids}|wc -w|sed -e "s/  //g")" != "x0" ];then
+        "${DAEMONCTL}" shutdown
+        if [ "x${FORCE_STOP}" = "x" ];then
+            echo "Waiting $(($GRACE_TIME+1))sec for exit"
+            sleep $(($GRACE_TIME+1))
+       fi
+    fi
+    pids="$(daemon_pids)"
+    if [ "x$(echo ${pids}|wc -w|sed -e "s/  //g")" != "x0" ];then
+        for pid in ${pids};do kill -9 $pid || /bin/true;done
+    fi
+    test "x$(daemon_pids|wc -w|sed -e "s/  //g")" = "x0"
+    RC=${?}
     [ $RC -eq 0 ] && rm -f $PIDFILE
     log_end_msg $RC
+    return ${RC}
 }
 
-case "$1" in
+do_reload() {
+    echo "Reloading ${DAEMON}"
+    pids="$(daemon_pids)"
+    if [ "x$(echo ${pids}|wc -w|sed -e "s/  //g")" != "x0" ];then
+        "${DAEMONCTL}" reload
+    else
+        do_start "${@}"
+    fi
+    RC=$?
+    return ${RC}
+}
+
+RC=0
+case "${1}" in
     start)
+        shift
         [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
-        do_start
-        case "$?" in
+        do_start ${@}
+        RC=$?
+        case "$RC" in
             0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
               2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
         esac
         ;;
     stop)
+        shift
         [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
         do_stop
-        case "$?" in
+        RC=$?
+        case "$RC" in
+            0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+              2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+        esac
+        ;;
+    graceful-stop)
+        FORCE_STOP=""
+        shift
+        do_stop "$@"
+        RC=$?
+        case "$RC" in
             0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
               2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
         esac
@@ -74,16 +154,20 @@ case "$1" in
     status)
         status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
         ;;
-    #reload)
-        # not implemented
-        #;;
+    reload)
+        shift
+        do_reload "$@"
+        ;;
     restart|force-reload)
+        shift
         log_daemon_msg "Restarting $DESC" "$NAME"
         do_stop
-        case "$?" in
+        RC=$?
+        case "$RC" in
           0|1)
-              do_start
-              case "$?" in
+              do_start ${@}
+              RC=$?
+              case "$RC" in
                   0) log_end_msg 0 ;;
                   1) log_end_msg 1 ;; # Old process is still running
                   *) log_end_msg 1 ;; # Failed to start
@@ -96,9 +180,8 @@ case "$1" in
         esac
         ;;
     *)
-        echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
-        exit 3
+        echo "Usage: $SCRIPTNAME {start|stop|status|restart|reload|graceful-stop}" >&2
+        RC=3
         ;;
 esac
-
-exit 0
+exit $RC

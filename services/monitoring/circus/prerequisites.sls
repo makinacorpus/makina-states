@@ -1,5 +1,5 @@
-{%- set circusSettings = salt['mc_circus.settings']() %}
-{%- set venv = circusSettings['location'] + "/venv" %}
+{%- set settings = salt['mc_circus.settings']() %}
+{%- set venv = settings['location'] + "/venv" %}
 include:
   - makina-states.services.monitoring.circus.hooks
 
@@ -9,7 +9,7 @@ circus-install-pkg:
     - makedirs: true
     - source: ''
     - contents: |
-                {{'\n                 '.join(circusSettings['requirements'])}}
+                {{'\n'.join(settings['requirements'])|indent(18)}}
     - user: root
     - group: root
     - mode: 750

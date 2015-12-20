@@ -4,10 +4,11 @@ Description=circusd
 After=syslog.target network.target nss-lookup.target
 
 [Service]
+Environment="DAEMONIZED=--nodaemon"
 Type=simple
-ExecStart=-/usr/bin/circus.sh start
-ExecStop=-/usr/bin/circus.sh stop && sleep 2
-ExecStop=-/usr/bin/circus.sh stop
+ExecStart=/etc/init.d/circusd start
+ExecReload=/etc/init.d/circusd reload
+ExecStop=/etc/init.d/circusd stop
 Restart=always
 RestartSec=5
 
