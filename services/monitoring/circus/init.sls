@@ -1,5 +1,3 @@
-{{- salt['mc_macros.register']('services', 'monitoring.circus') }}
+{#retrocompat#}
 include:
-  - makina-states.services.monitoring.circus.prerequisites
-  - makina-states.services.monitoring.circus.configuration
-  - makina-states.services.monitoring.circus.services
+  - makina-states.services_managers.circus

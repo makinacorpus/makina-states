@@ -85,11 +85,11 @@
 #  ldap, nscd, profile     service tree        |      lxc
 #  vim git sudo localrc      |                java     |
 #  pkgs pkgmgr shell         |   bacula        |       |
-#  user (...)                |    |            |     virt
+#  user (...)                |    |            |     virt           ---------- SERVICES MANAGERS
 #                            |    |   ntp      |       |
-#     _______________________|____|____|_______|_______|_
-#      | |    |   |     |       | |  |                   \
-#      | ldap | salt/mastersalt | |  |    .-- nginx      |
+#     _______________________|____|____|_______|_______|_                   - system
+#      | |    |   |     |       | |  |                   \                  - circus
+#      | ldap | salt/mastersalt | |  |    .-- nginx      |                  - supervisor
 #      |  |   |                 | |  |   /__ apache      |
 #      | nscd |                ssh|  http               php____ phpfpm
 #      |      |                   |                         |

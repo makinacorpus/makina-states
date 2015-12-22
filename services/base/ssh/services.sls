@@ -4,7 +4,7 @@
 {% set pm = salt['mc_services.get_processes_manager'](settings) %}
 include:
   - makina-states.services.base.ssh.hooks
-  {% if pm in ['circus', 'supervisor'] %}
+  {% if pm in salt['services.process_managers']() %}
   - makina-states.services.monitoring.{{pm}}.hooks
   {% endif %}
 {% if salt['mc_nodetypes.activate_sysadmin_states']() %}

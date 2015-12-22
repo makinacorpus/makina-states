@@ -28,10 +28,6 @@ def _bindEn(**kwargs):
     return not is_container
 
 
-def _rsyslogEn(**kwargs):
-    return __grains__.get('os', '').lower() in ['ubuntu']
-
-
 def _ulogdEn(**kwargs):
     is_container = __salt__['mc_nodetypes.is_container']()
     is_docker = __salt__['mc_nodetypes.is_docker']()
@@ -64,90 +60,10 @@ def settings():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         _s = __salt__
-        processes_manager = None
-        is_docker = _s['mc_nodetypes.is_docker']()
-        is_docker_service = _s['mc_nodetypes.is_docker_service']()
-        if not is_docker:
-            if not is_docker_service:
-                processes_manager = 'system'
-        if is_docker_service:
-            processes_manager = 'circus'
-        DEFAULTS = {
-            #  one of None | system | circus | supervisor
-            #  None means no service
-            'processes_manager': processes_manager
-        }
+        DEFAULTS = {}
         data = _s['mc_utils.defaults'](PREFIX, DEFAULTS)
         return data
     return _settings()
-
-
-def get_processes_manager(data=None):
-    if not data:
-        data = {}
-    return data.get('processes_manager',
-                    settings()['processes_manager'])
-
-
-def get_service_function(pm=None,
-                         enable_toggle=None,
-                         has_system_services_manager=None,
-                         activate_function='service.running',
-                         deactivate_function='service.dead'):
-    '''
-    Return the appropriate service function for the activated process manager
-    For the API conveniance, we reflect back any service.function.
-    If pm is system, or manually forced, we want to return the appropriate
-    service function (one of: activate_function/deactivate_function).
-    We take care to check not to return any function when we are in a docker
-    hence we do not have any system level function, nor the access to the service
-    module
-
-        pm
-            the processes manager
-            (one of none|forced|system|circus|supervisor|service.{running,dead})
-            system or forced means to return a function between activate or deactivate
-        enable_toggle
-            choose if we are in system mode either to return the 'activate' or 'deactivate'
-            function, by default we return the activate function
-        activate_function
-            salt module function to activate a service (api compatible with service.*)
-        deactivate_function
-            salt module function to deactivate a service (api compatible with service.*)
-        has_system_services_manager
-            overrides the makina-states detection of the presence of a system services
-            manager
-
-    '''
-    _s = __salt__
-    # pm is the service function, early return
-    if isinstance(pm, six.string_types):
-        for func in ['running', 'dead', 'absent']:
-            if pm.endswith(func):
-                return pm
-    if pm is None:
-        pm = 'system'
-    if has_system_services_manager is None:
-        has_system_services_manager = _s['mc_nodetypes.has_system_services_manager']()
-    if not (has_system_services_manager or pm not in ['system', 'forced']):
-        return
-    if enable_toggle is None:
-        enable_toggle = True
-    return enable_toggle and activate_function or deactivate_function
-
-
-def get_service_enabled_state(pm=None, enable_toggle=None):
-    '''
-    Return if a service should be enabled at boot or not
-    depending on the service function.
-
-    if service func is 'running' -> enabled
-    if service func is 'dead' -> disaabled
-    '''
-    service_function = get_service_function(pm, enable_toggle=enable_toggle)
-    if not isinstance(service_function, six.string_types):
-        service_function = ''
-    return 'running'in service_function and True or False
 
 
 def registry():
@@ -161,10 +77,10 @@ def registry():
         is_travis = __salt__['mc_nodetypes.is_travis']()
         ids = __salt__['mc_nodetypes.is_docker_service']()
         # sshen = true and (ids or (allow_lowlevel_states and not is_docker))
-        sshen = true and ((is_docker and ids) or allow_lowlevel_states)
+        core_en = true and ((is_docker and ids) or allow_lowlevel_states)
+        ssh_en = core_en
         ntpen = _ntpEn() and true
         binden = _bindEn() and true and not is_travis
-        rsyslogen = _rsyslogEn() and true
         ulogden = _ulogdEn() and true
         ntp_u = False
         vagrantvm = __salt__['mc_nodetypes.is_vagrantvm']() and true
@@ -178,20 +94,21 @@ def registry():
                 'backup.burp.server': {'active': False},
                 'backup.burp.client': {'active': False},
                 'backup.dbsmartbackup': {'active': False},
-                'log.rsyslog': {'force': True, 'active': rsyslogen},
+                'log.rsyslog': {'force': True, 'active': core_en},
                 'log.ulogd': {'force': True, 'active': ulogden},
                 'base.ntp': {'force': True, 'active': ntpen},
                 'base.ntp.uninstall': {'active': ntp_u},
-                'base.dbus': {'force': True, 'active': not (is_travis or is_docker)},
-                'base.ssh': {'force': True, 'active': sshen},
-                'base.cron': {'force': True, 'active': true},
+                'base.dbus': {'force': True, 'active': not (
+                    is_travis or is_docker)},
+                'base.ssh': {'force': True, 'active': core_en},
+                'base.cron': {'force': True, 'active': core_en},
                 'dns.dhcpd': {'active': False},
                 'dns.bind': {'force': True, 'active': binden},
                 'dns.slapd': {'active': False},
                 'db.mongodb': {'active': False},
                 'db.mysql': {'active': False},
                 'db.postgresql': {'active': False},
-                'firewall.fail2ban': {'active': sshen},
+                'firewall.fail2ban': {'active': core_en},
                 'firewall.shorewall': {'active': False},
                 'firewall.firewalld': {'active': False},
                 'firewall.ms_iptables': {'active': False},
@@ -210,8 +127,10 @@ def registry():
                 'java.tomcat7': {'active': False},
                 'mail.dovecot': {'active': False},
                 'mail.postfix': {'active': False},
+                # moved to process_managers, retrocompat
                 'monitoring.supervisor': {'active': False},
                 'monitoring.circus': {'active': False},
+                #
                 'monitoring.snmpd': {'active': False},
                 'monitoring.client': {'active': False},
                 # 'php.common': {'active': False},

@@ -1,21 +1,5 @@
-{# supervisor macro helpers #}
-{% set data = salt['mc_supervisor.settings']() %}
-{% set locs = salt['mc_locations.settings']() %}
-{% macro supervisorAddProgram(name, command=None) %}
-{% do kwargs.update({'name': name, 'command': command}) %}
-{% set conf_priority = kwargs.pop('conf_priority', '100') %}
-supervisor-add-program-{{ name }}:
-  file.managed:
-    - name: {{ locs['conf_dir'] }}/supervisor.d/{{conf_priority}}_{{ name }}.ini
-    - makedirs: true
-    - mode: 700
-    - source: salt://makina-states/files/etc/supervisor.d/program.ini
-    - template: jinja
-    - defaults:
-        extras: |
-                {{salt['mc_utils.json_dump'](kwargs)}}
-    - watch:
-      - mc_proxy: supervisor-pre-conf
-    - watch_in:
-      - mc_proxy: supervisor-post-conf
-{% endmacro %}
+{#retrocompat#}
+{% import "makina-states/services_managers/supervisor/macros.jinja" as m with context %}
+{% set data = m.data %}
+{% set locs = m.locs %}
+{% set supervisorAddWatcher = m.supervisorAddProgram %}

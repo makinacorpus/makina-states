@@ -1,1 +1,3 @@
-{{ salt['mc_macros.unregister']('services', 'monitoring.supervisor') }}
+{#retrocompat#}
+include:
+  - makina-states.services_managers.supervisor.unregister

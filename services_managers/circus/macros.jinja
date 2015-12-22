@@ -1,0 +1,55 @@
+{# circus macro helpers #}
+{% set data = salt['mc_circus.settings']() %}
+{% set locs = salt['mc_locations.settings']() %}
+{% macro circusAddWatcher(name, cmd) %}
+{% set args = kwargs.pop('args', []) %}
+{% set conf_priority = kwargs.get('priority', kwargs.get('conf_priority', '100')) %}
+circus-add-watcher-{{ name }}-parents:
+  file.directory:
+    - mode: 755
+    - names:
+      - {{ locs['conf_dir'] }}
+      - {{ locs['conf_dir'] }}/circus/
+      - {{ locs['conf_dir'] }}/circus/circusd.conf.d
+    - makedirs: true
+    - watch:
+      - mc_proxy: circus-pre-conf
+    - watch_in:
+      - mc_proxy: circus-post-conf
+circus-add-watcher-{{ name }}:
+  file.managed:
+    - name: {{ locs['conf_dir'] }}/circus/circusd.conf.d/{{conf_priority}}_watcher-{{ name }}.ini
+    - source: salt://makina-states/files/etc/circus/circusd.conf.d/watcher.ini
+    - template: jinja
+    - mode: 755
+    - defaults:
+        name: {{ name }}
+        cmd: {{ cmd }}
+        args: {{ args }}
+        data: |
+              {{salt['mc_utils.json_dump'](data)}}
+        extras: |
+                {{salt['mc_utils.json_dump'](kwargs)}}
+    - watch:
+      - mc_proxy: circus-pre-conf
+      - file: circus-add-watcher-{{ name }}-parents
+    - watch_in:
+      - mc_proxy: circus-post-conf
+{% endmacro %}
+{% macro circusRemoveWatcher(name, cmd) %}
+{% set conf_priority = kwargs.get('priority', kwargs.get('conf_priority', '100')) %}
+circus-remove-watcher-{{ name }}:
+  file.absent:
+    - name: {{ locs['conf_dir'] }}/circus/circusd.conf.d/{{conf_priority}}_watcher-{{ name }}.ini
+    - watch:
+      - mc_proxy: circus-pre-conf
+    - watch_in:
+      - mc_proxy: circus-post-conf
+{% endmacro %}
+{% macro circusToggleWatcher(toggle, name) %}
+{%  if toggle %}
+{{    circusAddWatcher(name, **kwargs) }}
+{%  else %}
+{{    circusRemoveWatcher(name, **kwargs) }}
+{%  endif %}
+{% endmacro %}

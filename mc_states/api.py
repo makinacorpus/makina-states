@@ -61,6 +61,7 @@ _MC_SERVERS = {'cache': {}, 'error': {}}
 _CACHE_PREFIX = {'key': 'mcstates_api_cache_'}
 _GLOBAL_KINDS = ['localsettings',
                  'services',
+                 'services_managers',
                  'controllers',
                  'nodetypes',
                  'cloud']
