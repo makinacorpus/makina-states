@@ -51,6 +51,25 @@ circus-post-restart:
   mc_proxy.hook:
     - watch_in:
       - mc_proxy: circus-post-end
+circus-pre-watchers:
+  mc_proxy.hook:
+    - require:
+      - mc_proxy: circus-post-hard-restart
+      - mc_proxy: circus-post-restart
+    - watch_in:
+      - mc_proxy: circus-pre-conf-watchers
+circus-pre-conf-watchers:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: circus-post-conf-watchers
+circus-post-conf-watchers:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: circus-post-watchers
+circus-post-watchers:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: circus-post-end
 circus-post-end:
   mc_proxy.hook:
     - watch_in:

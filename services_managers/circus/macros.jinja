@@ -8,14 +8,35 @@ circus-add-watcher-{{ name }}-parents:
   file.directory:
     - mode: 755
     - names:
-      - {{ locs['conf_dir'] }}
-      - {{ locs['conf_dir'] }}/circus/
-      - {{ locs['conf_dir'] }}/circus/circusd.conf.d
+      - /etc/circus/circusd.conf.d
     - makedirs: true
     - watch:
-      - mc_proxy: circus-pre-conf
+      - mc_proxy: circus-pre-conf-watchers
     - watch_in:
-      - mc_proxy: circus-post-conf
+      - mc_proxy: circus-post-conf-watchers
+circus-manager-{{ name }}-manager:
+  file.managed:
+    - name: /etc/circus/manager.sh
+    - source: salt://makina-states/files/etc/circus/manager.sh
+    - template: jinja
+    - mode: 755
+    - watch:
+      - mc_proxy: circus-pre-conf-watchers
+      - file: circus-add-watcher-{{ name }}-parents
+    - watch_in:
+      - mc_proxy: circus-post-conf-watchers
+circus-manager-{{ name }}-manager-wrapper:
+  file.managed:
+    - name: /etc/circus/manager_{{name}}.sh
+    - source: salt://makina-states/files/etc/circus/manager_wrapper.sh
+    - template: jinja
+    - mode: 755
+    - defaults: {name: {{ name }}}
+    - watch:
+      - mc_proxy: circus-pre-conf-watchers
+      - file: circus-add-watcher-{{ name }}-parents
+    - watch_in:
+      - mc_proxy: circus-post-conf-watchers
 circus-add-watcher-{{ name }}:
   file.managed:
     - name: {{ locs['conf_dir'] }}/circus/circusd.conf.d/{{conf_priority}}_watcher-{{ name }}.ini
@@ -31,10 +52,49 @@ circus-add-watcher-{{ name }}:
         extras: |
                 {{salt['mc_utils.json_dump'](kwargs)}}
     - watch:
-      - mc_proxy: circus-pre-conf
+      - mc_proxy: circus-pre-conf-watchers
       - file: circus-add-watcher-{{ name }}-parents
     - watch_in:
-      - mc_proxy: circus-post-conf
+      - mc_proxy: circus-post-conf-watchers
+
+circus-pre-hard-restart-watcher-{{ name }}:
+  mc_proxy.hook:
+    - require: {# do not restart, by default, only reload #}
+      - mc_proxy: circus-post-conf-watchers
+circus-pre-hard-restart-watcher-{{ name }}-manage:
+  cmd.wait:
+    - name: /etc/circus/manager_{{name}}.sh restart
+    - watch:
+      - mc_proxy: circus-pre-hard-restart-watcher-{{ name }}
+    - watch_in:
+      - mc_proxy: circus-post-hard-restart-watcher-{{ name }}
+circus-post-hard-restart-watcher-{{ name }}:
+  mc_proxy.hook:
+    - require:
+      - mc_proxy: circus-pre-hard-restart-watcher-{{ name }}
+    - watch_in:
+      - mc_proxy: circus-post-watchers
+
+circus-pre-restart-watcher-{{ name }}:
+  mc_proxy.hook:
+    - require:
+      - mc_proxy: circus-post-hard-restart-watcher-{{ name }}
+    - watch:
+      - mc_proxy: circus-post-conf-watchers
+circus-pre-restart-watcher-{{ name }}-manage:
+  cmd.wait:
+    - name: /etc/circus/manager_{{name}}.sh reload
+    - watch:
+      - mc_proxy: circus-pre-restart-watcher-{{ name }}
+    - watch_in:
+      - mc_proxy: circus-post-restart-watcher-{{ name }}
+circus-post-restart-watcher-{{ name }}:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: circus-pre-restart-watcher-{{ name }}
+    - watch_in:
+      - mc_proxy: circus-post-watchers
+
 {% endmacro %}
 {% macro circusRemoveWatcher(name, cmd) %}
 {% set conf_priority = kwargs.get('priority', kwargs.get('conf_priority', '100')) %}
