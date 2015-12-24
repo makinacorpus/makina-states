@@ -1,20 +1,20 @@
 {% import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
 {% import "makina-states/services/monitoring/supervisor/macros.jinja" as supervisor with context %}
 {% set settings = salt['mc_ssh.settings']() %}
-{% set pm = salt['mc_services.get_processes_manager'](settings) %}
+{% set pm = salt['mc_services_managers.get_processes_manager'](settings) %}
+{% set service_function = salt['mc_services_managers.get_service_function'](pm) %}
 include:
   - makina-states.services.base.ssh.hooks
-  {% if pm in salt['services.process_managers']() %}
-  - makina-states.services.monitoring.{{pm}}.hooks
+  {% if pm in salt['mc_services_managers.processes_managers']() %}
+  - makina-states.services_managers.{{pm}}.hooks
   {% endif %}
 {% if salt['mc_nodetypes.activate_sysadmin_states']() %}
-{% set service_function = salt['mc_services.get_service_function'](pm) %}
-
 {% if service_function %}
 openssh-svc:
   {{service_function}}:
     - name: {{settings.service}}
-    - enable: {{salt['mc_services.get_service_enabled_state'](service_function)}}
+    - reload: true
+    - enable: {{salt['mc_services_managers.get_service_enabled_state'](service_function)}}
     - watch:
       - mc_proxy: ssh-service-prerestart
     - watch_in:
@@ -30,6 +30,7 @@ openssh-svc:
   'gid': 'root',
   'copy_env': True,
   'stop_signal': 'INT',
+  'send_hup': 'true',
   'conf_priority': '11',
   'working_dir': '/',
   'warmup_delay': "4"} %}
