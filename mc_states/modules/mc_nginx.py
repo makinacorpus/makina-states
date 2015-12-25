@@ -181,22 +181,21 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
+        _g = __grains__
         local_conf = __salt__['mc_macros.get_local_registry'](
             'nginx', registry_format='pack')
         naxsi_ui_pass = local_conf.setdefault('naxsi_ui_pass',
                                               secure_password(32))
         locations = __salt__['mc_locations.settings']()
-        nbcpus = __grains__.get('num_cpus', '4')
+        nbcpus = _g.get('num_cpus', '4')
         epoll = False
-        if 'linux' in __grains__.get('kernel', '').lower():
+        if 'linux' in _g.get('kernel', '').lower():
             epoll = True
         ulimit = "65536"
         is_rp = is_reverse_proxied()
         reverse_proxy_addresses = []
         if is_rp:
-            gw = grains.get('makina.default_route', {}).get('gateway', '').strip()
+            gw = _g.get('makina.default_route', {}).get('gateway', '').strip()
             if gw and gw not in reverse_proxy_addresses:
                 reverse_proxy_addresses.append(gw)
 
@@ -239,6 +238,33 @@ def settings():
                     'upload_max_filesize'],
                 'open_file_cache': 'max=200000 inactive=5m',
                 'open_file_cache_valid': '6m',
+                'configs': {
+                    '/etc/nginx/drupal_cron_allowed_hosts.conf': {},
+                    '/etc/nginx/fastcgi_fpm_drupal.conf': {},
+                    '/etc/nginx/fastcgi_fpm_drupal_params.conf': {},
+                    '/etc/nginx/fastcgi_fpm_drupal_private_files.conf': {},
+                    '/etc/nginx/fastcgi_microcache_zone.conf': {},
+                    '/etc/nginx/fastcgi_params': {},
+                    '/etc/nginx/fastcgi_params_common': {},
+                    '/etc/nginx/koi-utf': {},
+                    '/etc/nginx/koi-win': {},
+                    '/etc/nginx/map_cache.conf': {},
+                    '/etc/nginx/microcache_fcgi.conf': {},
+                    '/etc/nginx/mime.types': {},
+                    '/etc/nginx/naxsi_core.rules': {},
+                    '/etc/nginx/nginx.conf': {},
+                    '/etc/nginx/php_fpm_status_vhost.conf': {},
+                    '/etc/nginx/php_fpm_status_allowed_hosts.conf': {},
+                    '/etc/nginx/proxy_params': {},
+                    '/etc/nginx/scgi_params': {},
+                    '/etc/nginx/status_allowed_hosts.conf': {},
+                    '/etc/nginx/status_vhost.conf': {},
+                    '/etc/nginx/uwsgi_params': {},
+                    '/etc/nginx/win-utf': {},
+                    "/etc/logrotate.d/nginx": {},
+                    '/etc/default/nginx': {},
+                    '/etc/init.d/nginx': {"mode": "755"},
+                },
                 'open_file_cache_min_uses': '2',
                 'open_file_cache_errors': 'off',
                 'epoll': epoll,
@@ -365,7 +391,7 @@ def vhost_settings(domain, doc_root, **kwargs):
     if nginxSettings.get('ssl_cert', None) != '':
         ssldomain = domain
         if ssldomain in ['default']:
-            ssldomain = __grains__['fqdn']
+            ssldomain = _g['fqdn']
         lcert, lkey, lchain = __salt__[
             'mc_ssl.get_configured_cert'](ssldomain, gen=True)
         if not nginxSettings.get('ssl_cert'):

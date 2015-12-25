@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 include:
   - makina-states.services.http.nginx.hooks
   - makina-states.services.http.nginx.services
@@ -16,8 +17,6 @@ nginx-vhost-dirs:
       - mc_proxy: nginx-pre-conf-hook
     - watch_in:
       - mc_proxy: nginx-post-conf-hook
-
-
 makina-nginx-helman:
   cmd.run:
     - unless: test -e /etc/ssl/certs/nginxdhparam.pem
@@ -31,78 +30,13 @@ makina-nginx-helman:
       - mc_proxy: nginx-pre-conf-hook
     - watch_in:
       - mc_proxy: nginx-post-conf-hook
-
-{% set modes = {
-  '/etc/init.d/nginx-naxsi-ui': 755,
-  '/etc/init.d/nginx': 755,
-} %}
-
-{% for f in [
-    '/etc/logrotate.d/nginx',
-] %}
-makina-nginx-minimal-{{f}}:
-  file.managed:
-    - name: {{f}}
-    - source: salt://makina-states/files/{{f}}
-    - template: jinja
-    - user: root
-    - mode: 644
-    - group: root
-    - makedirs: true
-    - mode: {{modes.get(f, 644)}}
-    - template: jinja
-    - watch_in:
+{% macro rmacro() %}
+    - watch:
       - mc_proxy: nginx-pre-conf-hook
     - watch_in:
       - mc_proxy: nginx-post-conf-hook
-{% endfor %}
-
-{# disable naxsi
-'/usr/share/nginx-naxsi-ui/naxsi-ui/nx_extract.py',
-'/etc/init.d/nginx-naxsi-ui',
-'/etc/default/nginx-naxsi-ui',
-settings['basedir'] + '/naxsi.conf',
-settings['basedir'] + '/naxsi-ui.conf',
-#}
-{% for f in [
-    settings['basedir'] + '/drupal_cron_allowed_hosts.conf',
-    settings['basedir'] + '/fastcgi_fpm_drupal.conf',
-    settings['basedir'] + '/fastcgi_fpm_drupal_params.conf',
-    settings['basedir'] + '/fastcgi_fpm_drupal_private_files.conf',
-    settings['basedir'] + '/fastcgi_microcache_zone.conf',
-    settings['basedir'] + '/fastcgi_params',
-    settings['basedir'] + '/fastcgi_params_common',
-    settings['basedir'] + '/koi-utf',
-    settings['basedir'] + '/koi-win',
-    settings['basedir'] + '/map_cache.conf',
-    settings['basedir'] + '/microcache_fcgi.conf',
-    settings['basedir'] + '/mime.types',
-    settings['basedir'] + '/naxsi_core.rules',
-    settings['basedir'] + '/nginx.conf',
-    settings['basedir'] + '/php_fpm_status_vhost.conf',
-    settings['basedir'] + '/php_fpm_status_allowed_hosts.conf',
-    settings['basedir'] + '/proxy_params',
-    settings['basedir'] + '/scgi_params',
-    settings['basedir'] + '/status_allowed_hosts.conf',
-    settings['basedir'] + '/status_vhost.conf',
-    settings['basedir'] + '/uwsgi_params',
-    settings['basedir'] + '/win-utf',
-    '/etc/default/nginx',
-    '/etc/init.d/nginx',
-] %}
-makina-nginx-minimal-{{f}}:
-  file.managed:
-    - name: {{f}}
-    - source: salt://makina-states/files/{{f}}
-    - template: jinja
-    - user: root
-    - group: root
-    - makedirs: true
-    - mode: {{modes.get(f, 644)}}
-    - template: jinja
-    - watch_in:
-      - mc_proxy: nginx-pre-conf-hook
-    - watch_in:
-      - mc_proxy: nginx-post-conf-hook
-{% endfor %}
-
+{% endmacro %}
+{{ h.deliver_config_files(
+     settings.get('configs', {}),
+     mode='644',
+     after_macro=rmacro, prefix='nginx-')}}

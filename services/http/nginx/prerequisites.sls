@@ -2,7 +2,23 @@ include:
   - makina-states.services.http.nginx.hooks
 
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
-
+nginx-clean:
+  cmd.run:
+    - name: sed -i -e "/nginx/d" /etc/apt/sources.list.d/nginx.list && echo "changed=false"
+    - stateful: true
+    - onlyif: |
+              if test -e /etc/apt/sources.list.d/nginx.list;then
+                grep -q nginx /etc/apt/sources.list.d/nginx.list;exit ${?};
+              fi
+              exit 1
+    - watch:
+      - mc_proxy: nginx-pre-install-hook
+    - watch_in:
+      - pkgrepo: nginx-base
+      - mc_proxy: nginx-post-install-hook
+      - mc_proxy: nginx-pre-hardrestart-hook
+      - mc_proxy: nginx-pre-restart-hook
+{# clean typo in old confs #}
 nginx-base:
   pkgrepo.managed:
     - humanname: nginx ppa
@@ -13,22 +29,6 @@ nginx-base:
     - keyserver: keyserver.ubuntu.com
     - watch:
       - mc_proxy: nginx-pre-install-hook
-
-# clean typo in old confs
-nginx-clean:
-  cmd.run:
-    - name: sed -i -e "/nginx/d" /etc/apt/sources.list.d/nginx.list
-    - onlyif: |
-              if test -e /etc/apt/sources.list.d/nginx.list;then grep -q nginx /etc/apt/sources.list.d/nginx.list;exit ${?};fi
-              exit 1
-    - watch:
-      - mc_proxy: nginx-pre-install-hook
-    - watch_in:
-      - pkgrepo: nginx-base
-      - mc_proxy: nginx-post-install-hook
-      - mc_proxy: nginx-pre-hardrestart-hook
-      - mc_proxy: nginx-pre-restart-hook
-
 makina-nginx-pkgs:
   pkg.latest:
     - pkgs:
