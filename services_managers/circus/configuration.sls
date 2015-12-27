@@ -12,10 +12,10 @@ include:
   - makina-states.services_managers.circus.hooks
   - makina-states.services_managers.circus.services
 
-
+{% if grains['oscodename'] in ['trusty'] %}
 {# deliver initd & default twice, as we should early stop circus
    when we are in upstart mode #}
-{% macro rmacro() %}
+{% macro urmacro() %}
     - require:
       - mc_proxy: circus-post-install
     - require_in:
@@ -23,26 +23,12 @@ include:
 {% endmacro %}
 {% set upstartcfg = {} %}
 {% for a, cfg in defaults.configs.items() %}
-{% if a in ['/etc/default/circusd',
-            '/etc/init.d/circusd',
-            ]%}
+{% if a in ['/etc/default/circusd', '/etc/init.d/circusd', ]%}
 {% do upstartcfg.update({a: cfg}) %}
 {% endif %}
 {% endfor %}
 {{ h.deliver_config_files(
-     upstartcfg, after_macro=rmacro, prefix='circus-upstart-conf-')}}
-
-{% macro rmacro() %}
-    - watch:
-      - file: circus-setup-conf-directories
-      - mc_proxy: circus-pre-conf
-    - watch_in:
-      - mc_proxy: circus-post-conf
-{% endmacro %}
-{{ h.deliver_config_files(
-     defaults.configs, after_macro=rmacro, prefix='circus-conf-')}}
-
-{% if grains['oscodename'] in ['trusty'] %}
+     upstartcfg, after_macro=urmacro, prefix='circus-upstart-conf-')}}
 circusd-upstart-cleanup:
   cmd.run:
     - name: service circusd stop
@@ -57,6 +43,16 @@ circusd-upstart-cleanup:
     - require_in:
       - mc_proxy: circus-pre-conf
 {% endif %}
+
+{% macro rmacro() %}
+    - watch:
+      - file: circus-setup-conf-directories
+      - mc_proxy: circus-pre-conf
+    - watch_in:
+      - mc_proxy: circus-post-conf
+{% endmacro %}
+{{ h.deliver_config_files(
+     defaults.configs, after_macro=rmacro, prefix='circus-conf-')}}
 
 circus-setup-conf-directories:
   file.directory:
