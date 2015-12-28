@@ -1,5 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+'''
+
+.. _module_mc_pillar:
+
+mc_pillar / makinastates ext-pillar
+===============================================
+
+Transform the informations contained in database.sls to a whole infrastructure
+mapping.
+
+
+'''
+
 import re
 import inspect
 import os
