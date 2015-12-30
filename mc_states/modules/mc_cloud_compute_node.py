@@ -168,7 +168,8 @@ def get_targets(vt=None, ttl=PILLAR_TTL):
     '''
     def _do(vt=None):
         data = OrderedDict()
-        cloudSettings = __salt__['mc_cloud.extpillar_settings']()
+        # cache warming
+        __salt__['mc_cloud.extpillar_settings']()
         vm_confs = __salt__['mc_pillar.get_cloud_conf_by_vts']()
         dvts = [a for a in VIRT_TYPES if a in vm_confs]
         for cvt in dvts:
