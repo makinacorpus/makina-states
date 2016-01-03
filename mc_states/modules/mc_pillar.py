@@ -3183,15 +3183,23 @@ def get_sudoers_conf(id_, ttl=PILLAR_TTL):
 def get_packages_conf(id_, ttl=PILLAR_TTL):
     def _do(id_):
         gconf = get_configuration(id_)
-        rdata = {}
-        pref = "makina-states.localsettings.pkgs.apt"
         if not gconf.get('manage_packages', True):
             return {}
-        rdata.update({
-            pref + ".ubuntu.mirror": "http://mirror.ovh.net/ftp.ubuntu.com/",
-            pref + ".debian.mirror": (
+        msconf = __salt__[__name + '.query']('pkgmgr_conf', {})
+        conf = msconf.get(id_, msconf.get('default', OrderedDict()))
+        if not isinstance(conf, dict):
+            conf = {}
+        pref = "makina-states.localsettings.pkgs."
+        rdata = OrderedDict()
+        for item, val in conf.items():
+            rdata[pref + item] = val
+        for item, val in {
+            pref + "apt.ubuntu.mirror": (
+                "http://mirror.ovh.net/ftp.ubuntu.com/"),
+            pref + "apt.debian.mirror": (
                 "http://mirror.ovh.net/ftp.debian.org/debian/")
-        })
+        }.items():
+            rdata.setdefault(item, val)
         return rdata
     cache_key = __name + '.get_packages_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3514,26 +3522,6 @@ def get_dhcpd_conf(id_, ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
-def get_pkgmgr_conf(id_, ttl=PILLAR_TTL):
-    def _do(id_):
-        rdata = {}
-        gconf = get_configuration(id_)
-        if not gconf.get('manage_packages', True):
-            return {}
-        conf = __salt__[__name + '.query']('pkgmgr_conf', {})
-        conf = conf.get(
-            id_,
-            conf.get('default', OrderedDict()))
-        if not isinstance(conf, dict):
-            conf = {}
-        p = 'makina-states.localsettings.pkgs.'
-        for item, val in conf.items():
-            rdata[p + item] = val
-        return rdata
-    cache_key = __name + '.get_pkgmgr_conf{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
-
-
 def get_dns_resolvers(id_, ttl=PILLAR_TTL):
     def _do(id_):
         gconf = get_configuration(id_)
@@ -3662,7 +3650,6 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         __name + '.get_etc_hosts_conf': {'only_managed': False},
         __name + '.get_mail_conf': {'only_managed': False},
         __name + '.get_packages_conf': {'only_managed': False},
-        __name + '.get_pkgmgr_conf': {'only_managed': False},
         __name + '.get_firewalld_conf': {'only_managed': False},
         __name + '.get_ms_iptables_conf': {'only_managed': False},
         __name + '.get_shorewall_conf': {'only_managed': False},
