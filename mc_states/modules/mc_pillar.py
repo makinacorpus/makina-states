@@ -3423,15 +3423,20 @@ def get_etc_hosts_conf(id_, ttl=PILLAR_TTL):
         gconf = get_configuration(id_)
         if not gconf.get('manage_hosts', True):
             return {}
+        pref = 'makina-states.localsettings.network.'
         rdata = {}
+        rhosts = rdata.setdefault(pref + 'hosts_list', [])
         hosts = __salt__[__name + '.query']('hosts', {}).get(id_, [])
-        if hosts:
-            dhosts = rdata.setdefault('makina-bosts', [])
-            for entry in hosts:
-                ip = entry.get('ip', __salt__[__name + '.ip_for'](id_))
-                dhosts.append({'ip': ip, 'hosts': entry['hosts']})
+        if not hosts:
+            hosts = []
+        for entry in hosts:
+            ahosts = entry['hosts']
+            if isinstance(ahosts, list):
+                ahosts = ' '.join(ahosts)
+            ip = entry.get('ip', __salt__[__name + '.ip_for'](id_))
+            rhosts.append("{0} {1}".format(ip, ahosts))
         return rdata
-    cache_key = __name + '.get_etc_hosts_conf{0}'.format(id_)
+    cache_key = __name + '.get_etc_hosts_conf7{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
