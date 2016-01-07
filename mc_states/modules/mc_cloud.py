@@ -76,6 +76,10 @@ def default_settings():
     '''
     root = '/srv/mastersalt'
     prefix = '/etc/mastersalt'
+    try:
+        id_ = __grains__['id']
+    except (TypeError, KeyError):
+        id_ = __opts__['id']
     data = {
         'root': root,
         'all_pillar_dir': (
@@ -84,7 +88,7 @@ def default_settings():
         'ssl': {
             'cert_days': 365*1000,
             'ca': {
-                'ca_name': __grains__['id'],
+                'ca_name': id_,
                 'bits': 2048,
                 'days': 365*1000,
                 'CN': 'makina-states-cloud-controller',
