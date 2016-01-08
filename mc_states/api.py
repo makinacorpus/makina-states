@@ -614,29 +614,6 @@ def memoize_cache(func,
     # run the function
     if force_run or (ret is _default):
         # remove logging, impact too much perfs
-        # try:
-        #     logger = log.garbage
-        # except AttributeError:
-        #     logger = log.debug
-        # try:
-        #     logger(
-        #         "memoizecache: Calling {0}".format(
-        #             _CACHE_KEYS[key][1]))
-        # except Exception:
-        #     try:
-        #         logger(
-        #             "memoizecache: Calling {0}({3}): "
-        #             "args: {1} kwargs: {2}".format(func, args, kwargs))
-        #     except Exception:
-        #         try:
-        #             logger(
-        #                 "memoizecache: Calling {0} args: {1}".format(
-        #                     func, args))
-        #         except Exception:
-        #             try:
-        #                 logger("memoizecache: Calling {0}".format(func))
-        #             except Exception:
-        #                 pass
         ret = func(*args, **kwargs)
 
     # after the run, try to cache on any cache server
