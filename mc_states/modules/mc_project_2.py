@@ -20,6 +20,7 @@ This can either:
 import yaml.error
 import datetime
 import os
+import grp
 import pipes
 import socket
 import pprint
@@ -465,8 +466,18 @@ def _prepare_configuration(name, *args, **kwargs):
     #
     if not cfg['user']:
         cfg['user'] = '{name}-user'
-    if not cfg['groups']:
-        cfg['groups'].append(_s['mc_usergroup.settings']()['group'])
+    # retro compat, let default_group beeing editor on old prods
+    default_group = _s['mc_usergroup.settings']()['group']
+    ddir = '/srv/projects/{0}'.format(name)
+    try:
+        st = os.stat(ddir)
+        uses_editor = 'editor' == grp.getgrgid(st.st_gid).gr_name
+    except (OSError, TypeError, KeyError):
+        uses_editor = False
+    if not uses_editor:
+        default_group = '{name}-grp'
+    if default_group not in cfg['groups']:
+        cfg['groups'].append(default_group)
     cfg['groups'] = uniquify(cfg['groups'])
     # those variables are overridable via pillar/grains
     overridable_variables = ['default_env',
@@ -895,6 +906,9 @@ def get_configuration(name, *args, **kwargs):
     # the default pillar will also recursively be resolved here
     cfg.update(_s['mc_utils.format_resolve'](cfg))
     cfg.update(_s['mc_utils.format_resolve'](cfg, cfg['data']))
+
+    if cfg['group'] not in cfg['groups']:
+        cfg['groups'].insert(0, cfg['group'])
 
     if cfg['remote_less'] is None:
         cfg['remote_less'] = is_remote_less(cfg)
