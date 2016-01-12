@@ -2095,8 +2095,8 @@ def guarded_step(cfg,
         error_msg = (
             'Deployment error: {3}\n'
             'Project {0} failed to deploy and triggered a non managed '
-            'exception in step {2}.\n'
-            '{1}').format(name, ex, step.capitalize(), step)
+            'exception in step: "{2}".\n'
+            '{1}').format(name, ex, step, step)
         # if we have a non scheduled exception, we leave the system
         # in place for further inspection
         trace = traceback.format_exc()
