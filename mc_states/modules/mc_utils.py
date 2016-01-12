@@ -801,32 +801,39 @@ def msr():
 
 
 def remove_stuff_from_opts(__opts):
-    opts = __context__.setdefault('mc_opts', __opts)
-    if opts is not __opts:
-        for k in [a for a in __opts]:
-            if k not in opts:
-                __opts.pop(k, None)
-            elif opts[k] != __opts[k]:
-                __opts[k] = opts[k]
-    __context__.pop('mc_opts', None)
-    return __opts
+    if 'mc_opts' in __opts:
+        globals().update({'__opts__': __opts['mc_opts']})
+    return globals()['__opts__']
+
+
+def copy_dunder(dunder):
+    ndunder = OrderedDict()
+    if isinstance(dunder, dict) or 'dict' in dunder.__class__.__name__.lower():
+        for k in dunder:
+            val = dunder[k]
+            ndunder[k] = copy_dunder(val)
+    else:
+        ndunder = copy.deepcopy(dunder)
+    return ndunder
 
 
 def add_stuff_to_opts(__opts):
-    opts = __context__.setdefault('mc_opts', __opts)
-    if opts is __opts:
+    if 'mc_opts' not in __opts:
         # UGLY HACK for the lazyloader
-        old_opts = copy.deepcopy(__opts)
+        # that may fail deepcopying NamespacedDictWrapper
+        # in recent salt versions
+        nopts = copy_dunder(__opts)
+        nopts['mc_opts'] = __opts
         try:
-            __opts['grains'] = __grains__
+            nopts['grains'] = __grains__
         except Exception:
             pass
         try:
-            __opts['pillar'] = __pillar__
+            nopts['pillar'] = __pillar__
         except Exception:
             pass
-        __context__['mc_opts'] = old_opts
-    return __opts
+        globals().update({'__opts__': nopts})
+    return globals()['__opts__']
 
 
 def sls_load(sls, get_inner=False):
@@ -836,7 +843,7 @@ def sls_load(sls, get_inner=False):
     # AttributeError: 'ContextDict' object has no attribute 'global_data'
     # on dunders, later on executions, i do not know why
     # see: https://github.com/saltstack/salt/issues/29123
-    __opts = copy.deepcopy(__opts__)
+    __opts = copy_dunder(__opts__)
     try:
         add_stuff_to_opts(__opts)
         jinjarend = salt.loader.render(__opts, __salt__)

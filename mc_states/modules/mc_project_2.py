@@ -238,8 +238,8 @@ def _sls_exec(name, cfg, sls):
     old_retcode = __context__.get('retcode', 0)
     pillar = __salt__['mc_utils.dictupdate'](
         copy.deepcopy(cfg['sls_default_pillar']),
-        copy.deepcopy(__pillar__))
-    # UGLY HACK for the lazyloader
+        __salt__['mc_utils.copy_dunder'](__pillar__))
+    # load an inner execer for our custom slses
     try:
         __salt__['mc_utils.add_stuff_to_opts'](__opts__)
         cret = __salt__['state.sls'](sls.format(**cfg),
