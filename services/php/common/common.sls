@@ -84,6 +84,22 @@ makina-php-composer:
 
 {{ macros.toggle_ext('xdebug', phpSettings.xdebug_install and phpSettings.xdebug_enabled) }}
 
+{% if phpSettings.opcache_install %}
+makina-php-opcache:
+  file.managed:
+    - user: root
+    - makedirs: true
+    - group: root
+    - mode: 664
+    - name: {{ phpSettings.confdir }}/opcache.ini
+    - source: salt://makina-states/files{{ phpSettings.confdir }}/opcache.ini
+    - template: 'jinja'
+    - require:
+      - mc_proxy: makina-php-post-inst
+    - watch_in:
+      - mc_proxy: makina-php-pre-conf
+{% endif %}
+
 #--------------------- APC (mostly deprecated)
 {% if phpSettings.apc_install %}
 makina-php-apc:
