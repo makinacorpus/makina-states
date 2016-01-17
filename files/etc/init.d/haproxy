@@ -35,6 +35,11 @@ fi
 [ -f /etc/default/rcS ] && . /etc/default/rcS
 . /lib/lsb/init-functions
 
+haproxy_check_perms() {
+	[ -d "$RUNDIR" ] || mkdir "$RUNDIR"
+	chown haproxy:haproxy "$RUNDIR"
+	chmod 2775 "$RUNDIR"
+}
 
 check_haproxy_config()
 {
@@ -103,6 +108,7 @@ haproxy_status()
 }
 
 
+haproxy_check_perms
 case "$1" in
 checkconfig)
     check_haproxy_config
