@@ -2,7 +2,9 @@
 {% set haproxySettings = salt['mc_haproxy.settings']() %}
 include:
   - makina-states.services.proxy.haproxy.hooks
+
 {% set f = salt['mc_locations.settings']().conf_dir + '/apt/sources.list.d/haproxy.list' %}
+
 haproxy-base:
   cmd.run:
     - name: sed -i "/makinacorpus/ d" "{{f}}" && echo changed='false'
@@ -39,7 +41,6 @@ haproxy-pkgs:
 group-haproxy:
   group.present:
     - name: {{haproxySettings.group}}
-
 user-haproxy:
   user.present:
     - name: {{haproxySettings.user}}

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-if [ "x${DEBUD}" = "x" ];then
+if [ "x${DEBUG}" = "x" ];then
     set -x
 fi
 if [ -f /etc/default/haproxy ];then

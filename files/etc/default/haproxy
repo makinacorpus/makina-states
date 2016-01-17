@@ -6,30 +6,23 @@ PIDFILE="/var/run/haproxy.pid"
 CONFIG="${CONFIG:-"/etc/haproxy/haproxy.cfg"}"
 HAPROXY="/usr/sbin/haproxy"
 RUNDIR="${RUNDIR:-"/run/haproxy"}"
- 
 ENABLED="{{data.defaults.enabled}}"
+#EXTRAOPTS="-de -m 16"
 EXTRAOPTS="{% if data.defaults.extra_opts %} {{data.defaults.extra_opts}}{%endif%}"
 # Add extra flags here.
 
-#EXTRAOPTS="-de -m 16"
-CONFIGDIR=/etc/haproxy
-get_opts() {
-    opts=""
-    for j in backends dispatchers listeners extra;do
-        idir="${CONFIGDIR}/${j}"
-        if [ -e ${idir} ];then
-            for f in $(find "${idir}" -name "*cfg"|sort -nk2);do
-                opts="${opts} -f ${f}"
-            done
-        fi
-    done
+CONFIGDIR="${CONFIGDIR:-"{{data.location}}"}"
+
+# search recursivly in the configuration directory for extra config
+# files to load after the global config
+get_cfgs() {
+    local opts=""
+    if [ -e "${CONFIGDIR}/cfg.d" ];then
+        for f in $(find "${CONFIGDIR}/cfg.d" -name "*cfg" 2>/dev/null|sort -nk2);do
+            opts="${opts} -f ${f}"
+        done
+    fi
     echo "${opts}"
 }
 
-haproxy_check_perms() {
-	[ -d "$RUNDIR" ] || mkdir "$RUNDIR"
-	chown haproxy:haproxy "$RUNDIR"
-	chmod 2775 "$RUNDIR"
-}
-
-EXTRAOPTS="${EXTRAOPTS} $(get_opts)"
+EXTRAOPTS="${EXTRAOPTS} $(get_cfgs)"
