@@ -370,7 +370,7 @@ get_salt_url() {
 }
 
 get_salt_branch() {
-    get_default_knob salt_branch "${SALT_BRANCH}" "develop"
+    get_default_knob salt_branch "${SALT_BRANCH}" "2015.8"
 }
 
 get_ms_url() {

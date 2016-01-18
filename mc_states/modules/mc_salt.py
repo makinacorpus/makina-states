@@ -46,7 +46,7 @@ def get_salt_url():
 def get_salt_branch():
     val = get_local_param('salt_branch')
     if not val:
-        val = 'develop'
+        val = '2015.8'
     return val
 
 def get_local_salt_mode():
