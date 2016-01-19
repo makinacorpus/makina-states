@@ -3664,6 +3664,38 @@ def get_ssh_hosts(ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
+def get_masterless_makinastates_hosts(ttl=PILLAR_TTL):
+    '''
+    Expose on mastersalt metadatas on how to connect
+    on each part of the infra using ssh
+    '''
+    _o = __opts__
+    _s = __salt__
+    def _do():
+        data = OrderedDict()
+        db = _s['mc_pillar.get_db_infrastructure_maps']()
+        for kind in ('bms', 'vms'):
+            for id_, idata in six.iteritems(db[kind]):
+                kind_pillar = _s[{
+                    'bms': 'mc_cloud_compute_node.cn_extpillar_settings',
+                    'vms': 'mc_cloud_vm.vm_extpillar_settings',
+                }[kind]](id_)
+                data[id_] = _s['mc_cloud.ssh_host_settings'](
+                    id_, defaults=kind_pillar)
+        return data
+    cache_key = __name + '.get_masterless_makinastates_hosts1'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+def get_masterless_makinastates_hosts_conf(ttl=PILLAR_TTL):
+    _o = __opts__
+    _s = __salt__
+    controller = _s['mc_cloud.is_a_controller'](_o['id'])
+    if not controller:
+        return {}
+    pref = 'makina-states.cloud.masterless_hosts'
+    return {pref: get_masterless_makinastates_hosts()}
+
 
 def get_db_md5(ttl=10):
     def _do():
@@ -3769,6 +3801,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         __name + '.get_ntp_server_conf': {},
         __name + '.get_passwords_conf': {},
         __name + '.get_slapd_conf': {},
+        __name + '.get_masterless_makinastates_hosts_conf': {},
         __name + '.get_ssh_groups_conf': {},
         __name + '.get_ssh_keys_conf': {},
         __name + '.get_ssl_conf': {},
