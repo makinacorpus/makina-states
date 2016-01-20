@@ -468,12 +468,22 @@ def _prepare_configuration(name, *args, **kwargs):
         cfg['user'] = '{name}-user'
     # retro compat, let default_group beeing editor on old prods
     default_group = _s['mc_usergroup.settings']()['group']
-    ddir = '/srv/projects/{0}'.format(name)
-    try:
-        st = os.stat(ddir)
-        uses_editor = 'editor' == grp.getgrgid(st.st_gid).gr_name
-    except (OSError, TypeError, KeyError):
-        uses_editor = False
+    tddir = '/srv/projects/{0}'.format(name)
+    search_editor_dirs = [
+        tddir,
+        os.path.join(tddir, 'archives'),
+        os.path.join(tddir, 'git'),
+        os.path.join(tddir, 'data'),
+        os.path.join(tddir, 'project')
+    ]
+    for ddir in search_editor_dirs:
+        try:
+            st = os.stat(ddir)
+            uses_editor = 'editor' == grp.getgrgid(st.st_gid).gr_name
+        except (OSError, TypeError, KeyError):
+            uses_editor = False
+        if uses_editor:
+            break
     if not uses_editor:
         default_group = '{name}-grp'
     if default_group not in cfg['groups']:

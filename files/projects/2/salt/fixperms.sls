@@ -53,4 +53,18 @@
     - user: root
     - watch:
       - file: {{cfg.name}}-restricted-perms
+
+{% if cfg.data.get('fixperms_cron_periodicity', '') %}
+{{cfg.name}}-fixperms:
+  file.managed:
+    - name: /etc/cron.d/{{cfg.name.replace('.', '_')}}-fixperms
+    - user: root
+    - mode: 744
+    - contents: |
+                {{cfg.data.fixperms_cron_periodicity}} root {{cfg.project_dir}}/global-reset-perms.sh
+{%else %}
+{{cfg.name}}-fixperms:
+  file.absent:
+    - name: /etc/cron.d/{{cfg.name.replace('.', '_')}}-fixperms
+{% endif %}- file: {{cfg.name}}-restricted-perms
 {% endraw %}

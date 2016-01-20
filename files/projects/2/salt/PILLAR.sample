@@ -18,6 +18,7 @@ makina-projects.projectname:
   data:
     opt: value
     password: SecretToBeChangedInsidePillar
+    fixperms_cron_periodicity: "0 */2 * * *"
   env_defaults:
     dev:
       opt: value2
