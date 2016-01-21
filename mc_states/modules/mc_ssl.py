@@ -778,11 +778,19 @@ def load_certs(path):
             continue
         certp = os.path.join(path, cert)
         certk = os.path.join(path, "{0}.key".format(cert[:-4]))
-        certo = OpenSSL.crypto.load_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, open(certp).read())
+        try:
+            certo = OpenSSL.crypto.load_certificate(
+                OpenSSL.crypto.FILETYPE_PEM, open(certp).read())
+        except:
+            log.error('problem with {0}'.format(certp))
+            continue
         for i in ("{0}".format(certo.get_subject())).split('/'):
             data = {'key': certk, 'cert': certp}
-            certo = M2Crypto.X509.load_cert(certp)
+            try:
+                certo = M2Crypto.X509.load_cert(certp)
+            except:
+                log.error('problem with {0}'.format(certp))
+                continue
             if i.startswith('CN='):
                 cn = i.split('CN=')[1]
                 if cn not in exacts:
