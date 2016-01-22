@@ -343,6 +343,14 @@ get_salt_branch() {
     get_default_knob salt_branch "${SALT_BRANCH}" "2015.8"
 }
 
+get_ansible_url() {
+    get_default_knob ansible_url "${ANSIBLE_URL}" "https://github.com/makinacorpus/ansible.git"
+}
+
+get_ansible_branch() {
+    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.0.0.1"
+}
+
 get_ms_url() {
     get_default_knob ms_url "${MAKINASTATES_URL}" "https://github.com/makinacorpus/makina-states.git"
 }
@@ -621,7 +629,7 @@ set_vars() {
     MASTERSALT_MS="${MASTERSALT_ROOT}/makina-states"
     TMPDIR="${TMPDIR:-"/tmp"}"
     VENV_PATH="${VENV_PATH:-"/salt-venv"}"
-    EGGS_GIT_DIRS="salt salttesting"
+    EGGS_GIT_DIRS="ansible salt salttesting"
     PIP_CACHE="${VENV_PATH}/cache"
     SALT_VENV_PATH="${VENV_PATH}/salt"
     MASTERSALT_VENV_PATH="${VENV_PATH}/mastersalt"
@@ -1002,6 +1010,7 @@ check_py_modules() {
     kind="${1:-"salt"}"
     bin="${VENV_PATH}/${kind}/bin/python"
     "${bin}" << EOF
+import ansible
 import dns
 import docker
 import salt
@@ -1582,6 +1591,9 @@ setup_and_maybe_update_code() {
                          || [ "x${i}" = "x${ms}/src/SaltTesting" ];then
                             co_branch="develop"
                         fi
+                        if [ "x${i}" = "x${ms}/src/ansible" ];then
+                            co_branch="$(get_ansible_branch)"
+                        fi
                         if [ "x${i}" = "x${ms}/src/salt" ];then
                             co_branch="$(get_salt_branch)"
                         fi
@@ -1634,6 +1646,10 @@ setup_and_maybe_update_code() {
                                 fi
                                 SALT_BOOT_NEEDS_RESTART=1
                             fi
+                        fi
+                        if echo "${i}" |grep -q ansible; then
+                            bs_log "Upgrading ansible submodules"
+                            git submodule update --init --recursive
                         fi
                         if [ "x${?}" = "x0" ];then
                             increment_gitpack_id
@@ -1861,6 +1877,8 @@ setup_virtualenv() {
         if [ "x${install_git}" != "x" ];then
             pip install -U $copt "${PIP_CACHE}" --no-deps -e "git+$(get_salt_url)@$(get_salt_branch)#egg=salt"
             die_in_error "salt develop doesnt install"
+            pip install -U $copt "${PIP_CACHE}" --no-deps -e "git+$(get_ansible_url)@$(get_ansible_branch)#egg=ansible"
+            die_in_error "ansible develop doesnt install"
             pip install -U $copt "${PIP_CACHE}" --no-deps -r requirements/git_salt_requirements.txt
             die_in_error "requirements/git_salt_requirements.txt doesnt install"
         else
@@ -4010,6 +4028,12 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x--salt-branch" ];then
             SALT_BRANCH="${2}";sh="2";argmatch="1"
+        fi
+        if [ "x${1}" = "x--ansible-url" ];then
+            ANSIBLE_URL="${2}";sh="2";argmatch="1"
+        fi
+        if [ "x${1}" = "x--ansible-branch" ];then
+            ANSIBLE_BRANCH="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x-g" ] || [ "x${1}" = "x--makina-states-url" ];then
             MAKINASTATES_URL="${2}";sh="2";argmatch="1"
