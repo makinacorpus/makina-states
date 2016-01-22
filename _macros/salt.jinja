@@ -448,7 +448,8 @@ update-makinastates-{{ data.name }}-reqs:
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
-{% for i in ['docker-py',
+{% for i in ['ansible',
+             'docker-py',
              'm2crypto',
              'salt',
              'salttesting'] %}

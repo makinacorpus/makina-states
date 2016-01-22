@@ -43,11 +43,26 @@ def get_salt_url():
     return val
 
 
+def get_ansible_url():
+    val = get_local_param('ansible_url')
+    if not val:
+        val = 'https://github.com/makinacorpus/ansible.git'
+    return val
+
+
 def get_salt_branch():
     val = get_local_param('salt_branch')
     if not val:
         val = '2015.8'
     return val
+
+
+def get_ansible_branch():
+    val = get_local_param('ansible_branch')
+    if not val:
+        val = 'stable-2.0.0.1'
+    return val
+
 
 def get_local_salt_mode():
     local_salt_mode = get_local_param('local_salt_mode')
@@ -103,6 +118,11 @@ def settings():
                 'force_reset': True,  # dockerpy always do shit (push -f...)
                 'force_fetch': True,
                 'target': '{venv_path}/src/docker-py'},
+            'ansible-git': {
+                'name': get_ansible_url(),
+                'submodules': True,
+                'rev': get_ansible_branch(),
+                'target': '{venv_path}/src/ansible'},
             'salt-git': {
                 'name': get_salt_url(),
                 'rev': get_salt_branch(),
