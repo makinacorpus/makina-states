@@ -473,7 +473,7 @@ def ssh_kwargs(first_argument_kwargs=None, **kw):
 
     All kwargs will be lookup in the form ssh_param and then param.
 
-    Eg: ssh_user, if no value, user, if not value, default.
+    Eg: ssh_username, if no value, user, if not value, default.
 
     This supports for now:
 
@@ -984,7 +984,7 @@ def ssh_transfer_file(host, orig, dest=None, **kwargs):
 
     host
         host to tranfer to
-    ssh_user/user (first win)
+    ssh_username/user (first win)
         user to connect as
     ssh_port/port (first win)
         Port to connect onto
@@ -1011,7 +1011,7 @@ def ssh_transfer_file(host, orig, dest=None, **kwargs):
     '''
     kwargs.setdefault('ssh_display_content_on_error', False)
     kw = ssh_kwargs(kwargs)
-    user = kw['ssh_user']
+    user = mc_states.saltapi.get_ssh_username(kw)
     port = kw['ssh_port']
     progress = kw['ssh_progress']
     makedirs = kw['ssh_makedirs']
@@ -1098,7 +1098,7 @@ def ssh_transfer_dir(host, orig, dest=None, **kwargs):
 
     host
         host to tranfer to
-    ssh_user/user (first win)
+    ssh_username/user (first win)
         user to connect as
     ssh_port/port (first win)
         Port to connect onto
@@ -1125,7 +1125,7 @@ def ssh_transfer_dir(host, orig, dest=None, **kwargs):
         'ssh_display_content_on_error', False)
     kw = ssh_kwargs(kwargs)
     makedirs = kw['ssh_makedirs']
-    user = kw['ssh_user']
+    user = mc_states.saltapi.get_ssh_username(kw)
     port = kw['ssh_port']
     progress = kw.get('progress', False)
     if asbool(makedirs):
@@ -1210,7 +1210,7 @@ def ssh(host, script, **kwargs):
 
     host
         host to execute the script on
-    ssh_user/user (first win)
+    ssh_username/user (first win)
         user to connect as (default: root)
     ssh_port/port (first win)
         Port to connect onto (default: 22)
@@ -1255,7 +1255,7 @@ def ssh(host, script, **kwargs):
     rand = _LETTERSDIGITS_RE.sub('_', salt.utils.pycrypto.secure_password(64))
     tmpdir = kw['ssh_tmpdir']
     dest = os.path.join(tmpdir, '{0}.sh'.format(rand))
-    user = kw['ssh_user']
+    user = mc_states.saltapi.get_ssh_username(kw)
     port = kw['ssh_port']
     script_p, inline_script = script, False
     cret = _get_ret()
@@ -1622,7 +1622,7 @@ def run_salt_call(host,
                     script = salt_call_script.format(**skwargs)
                     ret = __salt__['cmd.run_all'](script,
                                                   python_shell=True,
-                                                  runas=kw['ssh_user'],
+                                                  runas=saltapi.get_ssh_username(kw),
                                                   use_vt=use_vt)
                 finally:
                     if os.path.exists(skwargs['quoted_outfile']):
@@ -1781,7 +1781,7 @@ def salt_call(host,
 
     host
         host to execute on
-    ssh_user/user (first win)
+    ssh_username/user (first win)
         user to connect as (default: root)
     ssh_port/port (first win)
         Port to connect onto (default: 22)
@@ -2002,7 +2002,7 @@ def sls_(host,
 
     host
         host to connect onto
-    ssh_user/user (first win)
+    ssh_username/user (first win)
         user to connect as (default: root)
     ssh_port/port (first win)
         Port to connect onto (default: 22)
@@ -2034,7 +2034,7 @@ def highstate(host,
 
     host
         host to connect onto
-    ssh_user/user (first win)
+    ssh_username/user (first win)
         user to connect as (default: root)
     ssh_port/port (first win)
         Port to connect onto (default: 22)
