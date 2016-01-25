@@ -728,7 +728,10 @@ def defaults(prefix,
         # special key to completly override the dictionnary
         avalue = _default_marker
         value = __salt__['mc_utils.get'](
-            value_key + "-overrides", _default_marker)
+            value_key + "-override",
+            __salt__['mc_utils.get'](
+                value_key + "-overrides", _default_marker)
+            )
         if isinstance(default_value, list):
             avalue = __salt__['mc_utils.get'](
                 value_key + "-append", _default_marker)
