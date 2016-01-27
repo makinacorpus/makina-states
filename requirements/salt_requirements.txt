@@ -1,3 +1,0 @@
-# attention, see mc_states/modules/mc_salt.py
-# develop
--e git+https://github.com/makinacorpus/salt.git@develop#egg=salt
