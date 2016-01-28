@@ -176,9 +176,9 @@ def extpillar_settings(id_=None, ttl=PILLAR_TTL, *args, **kw):
             ), extdata)
         if not data['bootsalt_branch']:
             data['bootsalt_branch'] = {'dev': 'master',
-                                       'prod': 'stable',
-                                       'preprod': 'stable'}.get(
-                                           default_env, 'stable')
+                                       'prod': '2',
+                                       'preprod': '2'}.get(
+                                           default_env, '2')
         data = _s['mc_utils.format_resolve'](data)
         return data
     limited = kw.get('limited', False)
@@ -640,8 +640,8 @@ def settings(ttl=60):
                 }))
         if not data['bootsalt_branch']:
             data['bootsalt_branch'] = {
-                'prod': 'stable',
-                'preprod': 'stable',
+                'prod': '2',
+                'preprod': '2',
             }.get(_s['mc_env.settings']()['default_env'], None)
         if not data['bootsalt_branch']:
             if data['mode'] == 'mastersalt':
