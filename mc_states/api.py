@@ -164,13 +164,14 @@ def get_mc_server(key=None,
     if not addrs:
         addrs = ['127.0.0.1']
     # log.error('addrs: {0}'.format(addrs))
-    error, error_key = False, (key, tuple(addrs))
+    cache_key = (os.getpid(), key)
+    error, error_key = False, (os.getpid(), key, tuple(addrs))
     if HAS_PYLIBMC and key not in _MC_SERVERS['cache']:
         try:
             mcs = pylibmc.Client(
                 addrs, binary=binary, behaviors=behaviors)
             # threadsafe pools
-            _MC_SERVERS['cache'][key] = pylibmc.ThreadMappedPool(mcs)
+            _MC_SERVERS['cache'][cache_key] = pylibmc.ThreadMappedPool(mcs)
         except (pylibmc.WriteError,):
             error = True
         except (Exception,):
@@ -186,7 +187,8 @@ def get_mc_server(key=None,
     pinguable = False
     if HAS_PYLIBMC and ping_test:
         try:
-            cache_set(_MC_SERVERS['cache'][key], 'mc_states_ping', 'ping')
+            cache_set(_MC_SERVERS['cache'][cache_key],
+                      'mc_states_ping', 'ping')
             pinguable = True
         except (pylibmc.WriteError,):
             error = True
@@ -197,8 +199,8 @@ def get_mc_server(key=None,
         if error:
             _MC_SERVERS['error'][error_key] = time.time()
     if pinguable and (error_key in _MC_SERVERS['error']):
-        _MC_SERVERS['cache'].pop(key, None)
-    return _MC_SERVERS['cache'].get(key, None)
+        _MC_SERVERS['cache'].pop(cache_key, None)
+    return _MC_SERVERS['cache'].get(cache_key, None)
 
 
 def strip_colors(line):
