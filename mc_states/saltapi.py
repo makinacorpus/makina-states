@@ -42,6 +42,7 @@ from mc_states.api import asbool
 from mc_states.api import STRIPPED_RES
 from mc_states.api import strip_colors
 from mc_states.api import magicstring
+from mc_states.api import get_ssh_username
 
 
 log = logging.getLogger(__name__)

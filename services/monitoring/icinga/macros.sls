@@ -105,7 +105,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 #         true if you want define a hostgroup instead of a host
 #     attrs
 #         a dictionary in which each key corresponds to a directive in host definition
-#     ssh_user
+#     ssh_username
 #         user which is used to perform check_by_ssh
 #     ssh_addr
 #         address used to do the ssh connection in order to perform check_by_ssh
@@ -123,7 +123,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% macro configuration_add_auto_host(hostname,
                                      hostgroup=False,
                                      attrs={},
-                                     ssh_user='root',
+                                     ssh_username='root',
                                      ssh_addr='',
                                      ssh_port=22,
                                      ssh_timeout=30,
@@ -199,7 +199,7 @@ icinga-configuration-{{data.state_name_salt}}-attribute-{{data.attr}}-{{value_sp
 {% set data = salt['mc_icinga.add_auto_configuration_host'](hostname=hostname,
                                                             hostgroup=hostgroup,
                                                             attrs=attrs,
-                                                            ssh_user=ssh_user,
+                                                            ssh_username=ssh_username,
                                                             ssh_addr=ssh_addr,
                                                             ssh_port=ssh_port,
                                                             ssh_timeout=ssh_timeout,
