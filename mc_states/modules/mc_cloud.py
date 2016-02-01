@@ -194,6 +194,7 @@ def is_a_vm(id_=None, ttl=PILLAR_TTL):
     cache_key = 'mc_cloud.is_a_vm{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
+
 def is_a_compute_node(id_=None, ttl=PILLAR_TTL):
     def _do(id_=None):
         if id_ is None:
@@ -672,9 +673,9 @@ def get_cloud_settings():
     if from_extpillar:
         reg = _s['mc_controllers.registry']()
         if (
-            reg['is']['salt_master']
-            or reg['is']['salt_minion']
-            or not _s['mc_pillar.has_db']()
+            reg['is']['salt_master'] or
+            reg['is']['salt_minion'] or
+            not _s['mc_pillar.has_db']()
         ):
             from_extpillar = False
     if from_extpillar:
