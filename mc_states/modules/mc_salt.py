@@ -132,11 +132,12 @@ def settings():
                 'target': '{salt_root}/makina-states'},
         }
         for i, data in confRepos.items():
-            for k in ['rev', 'target', 'name']:
+            default_conf = {'update_checkout': True}
+            for k in ['submodules', 'rev', 'target', 'name', 'update_checkout']:
                 data.update({
-                    'rev': saltmods['mc_utils.get']
-                    ('makina-states.salt.' + i + '.rev',
-                     data.get('rev', False))})
+                    k: saltmods['mc_utils.get']
+                    ('makina-states.salt.' + i + '.{0}'.format(k),
+                     data.get(k, default_conf.get(k, False)))})
         data = {}
         has_filelimit = True
         init_debug = False
