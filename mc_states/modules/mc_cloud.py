@@ -28,6 +28,93 @@ log = logging.getLogger(__name__)
 PREFIX = 'makina-states.cloud'
 
 
+def proxy_command(**data):
+    if not data:
+        data = {}
+    if not data.get('ssh_gateway'):
+        return ''
+    cmd = 'ProxyCommand ssh'
+    if data.get('ssh_gateway_key'):
+        cmd += ' -i {0}'.format(data['ssh_gateway_key'])
+    if data.get('ssh_gateway_port'):
+        cmd += ' -p {0}'.format(data['ssh_gateway_port'])
+    if data.get('ssh_gateway_user'):
+        cmd += ' -l {0}'.format(data['ssh_gateway_user'])
+    cmd += ' {0}'.format(data['ssh_gateway'])
+    cmd += ' nc %h %p'
+    return cmd
+
+
+def get_user():
+    try:
+        return os.getlogin()
+    except OSError:
+        return 'root'
+
+
+def ssh_key_path(key='id_dsa', user='root', folder=None):
+    homes = '/home'
+    if folder is None:
+        if user in ['root', 'toor']:
+            folder = '/root/.ssh'
+        else:
+            folder = os.path.join(homes, user, '.ssh')
+    return os.path.join(folder, key)
+
+
+def ssh_settings(user=None,
+                 key=None,
+                 ssh_host=None,
+                 ssh_gateway=None,
+                 ssh_gateway_password=None,
+                 ssh_password=None,
+                 ssh_user='root',
+                 ssh_gateway_user='root',
+                 ssh_gateway_port=22,
+                 ssh_port=22,
+                 ssh_ip=None,
+                 ssh_name=None):
+    if ssh_host and not name:
+        ssh_name = ssh_host
+    if not user:
+        user = get_user()
+    if key and not key.startswith(os.path.sep):
+        key = ssh_key_path(key=key, user=user)
+    data = OrderedDict([
+        ('ssh_name', ssh_name),
+        ('ssh_host', ssh_host),
+        ('ssh_ip', ssh_ip),
+        ('ssh_username', 'root'),
+        ('ssh_key', key),
+        ('ssh_password', ssh_password),
+        ('ssh_port', ssh_port),
+        ('ssh_gateway', ssh_gateway),
+        ('ssh_gateway_user', 'root'),
+        ('ssh_gateway_key', key),
+        ('ssh_gateway_port', ssh_gateway_port),
+        ('ssh_gateway_password', ssh_gateway_password),
+    ])
+    return data
+
+
+def ssh_host_settings(id_, defaults=None):
+    ssh_hosts = __salt__['mc_pillar.get_ssh_hosts']()
+    data = __salt__['mc_cloud.ssh_settings']()
+    if isinstance(defaults, dict):
+        data = __salt__['mc_utils.dictupdate'](
+            data,
+            dict([(a, defaults[a]) for a in defaults
+                  if a in data]))
+    if id_ in ssh_hosts:
+        data = __salt__['mc_utils.dictupdate'](
+            data, copy.deepcopy(ssh_hosts[id_]))
+    if not data['ssh_host']:
+        data['ssh_host'] = id_
+    if not data['ssh_name']:
+        data['ssh_name'] = data['ssh_host']
+    return data
+
+
 def default_settings():
     '''
     makina-states cloud global configuration options
@@ -125,11 +212,6 @@ def default_settings():
 
         'pvdir': prefix + "/cloud.providers.d",
         'pfdir': prefix + "/cloud.profiles.d",
-        'ssh_gateway_password': None,
-        'ssh_gateway': None,
-        'ssh_gateway_user': 'root',
-        'ssh_gateway_key': '/root/.ssh/id_dsa',
-        'ssh_gateway_port': 22,
         # states registry settings
         'generic': True,
         'saltify': True,
@@ -140,6 +222,8 @@ def default_settings():
                'controller': False},
         'lxc.defaults.backing': 'dir',
     }
+    # retrocompat
+    data.update(ssh_settings())
     return data
 
 
