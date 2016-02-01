@@ -170,23 +170,24 @@ def get_targets(vt=None, ttl=PILLAR_TTL):
         data = OrderedDict()
         # cache warming
         __salt__['mc_cloud.extpillar_settings']()
-        vm_confs = __salt__['mc_pillar.get_cloud_conf_by_vts']()
-        dvts = [a for a in VIRT_TYPES if a in vm_confs]
-        for cvt in dvts:
-            all_vt_infos = vm_confs.get(cvt, {})
-            for t in all_vt_infos:
-                target = data.setdefault(t, {})
-                vts = target.setdefault('vts', [])
-                vms = target.setdefault('vms', {})
+        cloud_conf = __salt__['mc_pillar.get_cloud_conf_by_cns']()
+        for t in cloud_conf:
+            tdata = cloud_conf[t]
+            target = data.setdefault(t, {})
+            vts = target.setdefault('vts', [])
+            vms = target.setdefault('vms', {})
+            for cvt in tdata.get('vts'):
+                if cvt not in VIRT_TYPES:
+                    continue
                 if cvt not in vts:
                     vts.append(cvt)
                 if vt and (vt != cvt):
                     continue
-
-                for vmname in all_vt_infos[t]['vms']:
-                    vms.setdefault(vmname, {'vt': cvt, 'target': t})
+            for vmname in tdata.get('vms', []):
+                vm = vms.setdefault(vmname, OrderedDict())
+                vm.update({'vt': cvt, 'target': t})
         return data
-    cache_key = 'mc_cloud_cn.get_targets{0}'.format(vt)
+    cache_key = 'mc_cloud_cn.get_targets3{0}'.format(vt)
     return copy.deepcopy(__salt__['mc_utils.memoize_cache'](_do, [vt], {}, cache_key, ttl))
 
 
@@ -204,7 +205,7 @@ def get_vms(vt=None, vm=None, ttl=PILLAR_TTL):
             rdata = rdata[vm]
         _targets = get_targets(vt=vt)
         return rdata
-    cache_key = 'mc_cloud_cn.get_vm{0}{1}'.format(vt, vm)
+    cache_key = 'mc_cloud_cn.get_vm{0}{1}3'.format(vt, vm)
     return __salt__['mc_utils.memoize_cache'](_do, [vt, vm], {}, cache_key, ttl)
 
 
@@ -214,7 +215,7 @@ def get_vm(vm, ttl=PILLAR_TTL):
             return get_vms(vm=vm)
         except KeyError:
             raise KeyError('{0} vm not found'.format(vm))
-    cache_key = 'mc_cloud_cn.get_vm{0}'.format(vm)
+    cache_key = 'mc_cloud_cn.get_vm{0}3'.format(vm)
     return __salt__['mc_utils.memoize_cache'](_do, [vm], {}, cache_key, ttl)
 
 
