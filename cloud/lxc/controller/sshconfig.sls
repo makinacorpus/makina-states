@@ -16,7 +16,6 @@ prepend-mccloud-{{host}}{{vm}}-sshconfig:
             Port {{port}}
             User root
             ServerAliveInterval 5
-            # {{vmdata}}
 
 mclcoud-{{host}}{{vm}}-sshconfig:
   file.blockreplace:
