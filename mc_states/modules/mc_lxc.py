@@ -120,6 +120,6 @@ def test(name="thisisatest"):
           "ssh_gateway_user": "root",
           "script_args": ("-C --reattach "
                           "--mastersalt-minion "
-                          "-b 2 --reattach-dir {0}"),
+                          "-b v2 --reattach-dir {0}"),
           "ssh_gateway_port": 22}
     return __salt__['lxc.cloud_init'](name, vm_=vm)

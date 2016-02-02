@@ -45,7 +45,7 @@ def settings():
 
 def _get_img(img, ms_os, release):
     if not img:
-        img = 'makinacorpus/makina-states-{0}-{1}-2'.format(
+        img = 'makinacorpus/makina-states-{0}-{1}-v2'.format(
             ms_os.capitalize(), release)
     return img
 
