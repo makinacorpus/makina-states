@@ -151,7 +151,7 @@ def post_post_deploy_compute_node(target, output=True):
     msg = 'Post installation: {0}\n'
     if ret['result']:
         clr = green
-        status = 'sucess'
+        status = 'success'
     else:
         clr = red
         status = 'failure'

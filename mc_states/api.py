@@ -89,6 +89,7 @@ STRIPPED_RES = [
 _USE_MEMCACHE_FIRST = OrderedDict()
 _USE_MEMOIZE_FIRST = OrderedDict()
 log = logging.getLogger('mc_states.api')
+OKEYS = {}
 
 
 def get_local_cache(key=None):
@@ -111,6 +112,40 @@ def register_memoize_first(pattern):
         _USE_MEMOIZE_FIRST[pattern] = re.compile(pattern, RE_FLAGS)
 
 
+def cache_pop(cache, key, default=None):
+    if isinstance(cache, pylibmc.ThreadMappedPool):
+        with cache.reserve() as cs:
+            return cs.delete(key)
+    else:
+        return cache.pop(key, default)
+
+
+def default_get(mapping, key, default=_default):
+    try:
+        return mapping[key]
+    except KeyError:
+        if default is not _default:
+            return default
+        raise
+
+
+def cache_get(cache, key, default=_default):
+    if isinstance(cache, pylibmc.ThreadMappedPool):
+        with cache.reserve() as cs:
+            return default_get(cs, key, default)
+    else:
+        return default_get(cache, key, default)
+
+
+def cache_set(cache, key, val=None):
+    if isinstance(cache, pylibmc.ThreadMappedPool):
+        with cache.reserve() as cs:
+            cs.set(key, val)
+    else:
+        cache[key] = val
+    return cache_get(cache, key)
+
+
 def get_mc_server(key=None,
                   addrs=None,
                   ping_test=True,
@@ -129,11 +164,14 @@ def get_mc_server(key=None,
     if not addrs:
         addrs = ['127.0.0.1']
     # log.error('addrs: {0}'.format(addrs))
-    error, error_key = False, (key, tuple(addrs))
+    cache_key = (os.getpid(), key)
+    error, error_key = False, (os.getpid(), key, tuple(addrs))
     if HAS_PYLIBMC and key not in _MC_SERVERS['cache']:
         try:
-            _MC_SERVERS['cache'][key] = pylibmc.Client(
+            mcs = pylibmc.Client(
                 addrs, binary=binary, behaviors=behaviors)
+            # threadsafe pools
+            _MC_SERVERS['cache'][cache_key] = pylibmc.ThreadMappedPool(mcs)
         except (pylibmc.WriteError,):
             error = True
         except (Exception,):
@@ -146,9 +184,12 @@ def get_mc_server(key=None,
         # retry failed memcache server in ten minutes
         if time.time() < (_MC_SERVERS['error'][error_key] + (10 * 60)):
             ping_test = False
+    pinguable = False
     if HAS_PYLIBMC and ping_test:
         try:
-            _MC_SERVERS['cache'][key].set('mc_states_ping', 'ping')
+            cache_set(_MC_SERVERS['cache'][cache_key],
+                      'mc_states_ping', 'ping')
+            pinguable = True
         except (pylibmc.WriteError,):
             error = True
         except (Exception,):
@@ -157,9 +198,9 @@ def get_mc_server(key=None,
             log.error('Memcached error:\n{0}'.format(trace))
         if error:
             _MC_SERVERS['error'][error_key] = time.time()
-    if error_key in _MC_SERVERS['error']:
-        _MC_SERVERS['cache'].pop(key, None)
-    return _MC_SERVERS['cache'].get(key, None)
+    if pinguable and (error_key in _MC_SERVERS['error']):
+        _MC_SERVERS['cache'].pop(cache_key, None)
+    return _MC_SERVERS['cache'].get(cache_key, None)
 
 
 def strip_colors(line):
@@ -276,6 +317,7 @@ def lazy_subregistry_get(__salt__, registry):
             force_run = False
             if kw:
                 force_run = True
+
             ttl = 5 * 60
 
             def _do(func, a, kw):
@@ -332,7 +374,7 @@ def is_valid_ip(ip_or_name):
 
 def is_memcache(cache):
     if HAS_PYLIBMC:
-        if isinstance(cache, pylibmc.client.Client):
+        if isinstance(cache, (pylibmc.ThreadMappedPool)):
             return True
     return False
 
@@ -373,7 +415,9 @@ def get_cache_key(key, __opts__=None, *args, **kw):
     '''
     ckey = None
     # if we have a sha key, use that
-    if key in six.iterkeys(_CACHE_KEYS):
+    # use viewkeys => threadsafe, no iterator on
+    # continelously mutating dict
+    if key in six.viewkeys(_CACHE_KEYS):
         ckey = key
     if key.startswith(_CACHE_PREFIX['key']):
         ckey = key
@@ -453,7 +497,7 @@ def get_cache_servers(cache=None,
         (use_memcache is not False) and
         not explicit_local_cache
     ):
-        if isinstance(memcache, pylibmc.Client):
+        if isinstance(memcache, (pylibmc.Client, pylibmc.ThreadMappedPool)):
             mc_server = memcache
         else:
             mc_server = get_mc_server(memcache)
@@ -486,7 +530,7 @@ def cache_check(key,
     key = get_cache_key(key, __opts__=__opts__, **kwargs)
     for cache in get_cache_servers(cache, memcache, key=key):
         try:
-            entry = cache[key]
+            entry = cache_get(cache, key)
         except (IndexError, KeyError):
             continue
         now = time.time()
@@ -574,6 +618,7 @@ def memoize_cache(func,
 
     # get the sha'ed key only after having ordered the cache
     # servers depending on the clear cache key
+    okey = key
     key = get_cache_key(
         key, __opts__=__opts__, fun=func, arg=args, kwarg=kwargs)
 
@@ -582,66 +627,46 @@ def memoize_cache(func,
         cache, memcache, use_memcache=use_memcache, key=key)
     ret = _default
     put_in_cache = True
-    for cache in caches:
-        now = time.time()
-        if 'last_access' not in cache:
-            cache['last_access'] = now
-        last_access = cache['last_access']
-        # global cleanup each 2 minutes
-        if last_access > (now + (2 * 60)):
-            for k in [a for a in cache if a not in ['last_access']]:
-                cache_check(k, cache=cache, __opts__=__opts__)
-        cache['last_access'] = now
-        # if the cache value is expired, this call will cleanup
-        # the cache from the expired value, and thus invalidating
-        # the cache result
-        cache_check(key, cache=cache, __opts__=__opts__)
-        try:
-            # memcached has not get(k, default)
-            entry = cache[key]
-        except (KeyError, IndexError):
-            entry = {}
-        if not isinstance(entry, dict):
-            entry = {}
-        ret = entry.get('value', _default)
-        # if we found a value that seems to be a cached result,
-        # we are set, break the cache servers resultsget loop
-        if ret is not _default:
-            put_in_cache = False
-            break
+    if put_in_cache:
+        for cache in caches:
+            now = time.time()
+            last_access = cache_get(cache, 'last_access', None)
+            if last_access is None:
+                cache_set(cache, 'last_access', now)
+                last_access = cache_get(cache, 'last_access')
+            # global cleanup each 2 minutes
+            if last_access and (last_access > (now + (2 * 60))):
+                for k in [a for a in cache if a not in ['last_access']]:
+                    cache_check(k, cache=cache, __opts__=__opts__)
+            cache_set(cache, 'last_access', now)
+            # if the cache value is expired, this call will cleanup
+            # the cache from the expired value, and thus invalidating
+            # the cache result
+            cache_check(key, cache=cache, __opts__=__opts__)
+            try:
+                entry = cache_get(cache, key)
+            except (KeyError, IndexError):
+                entry = {}
+            if not isinstance(entry, dict):
+                entry = {}
+            ret = entry.get('value', _default)
+            # if we found a value that seems to be a cached result,
+            # we are set, break the cache servers resultsget loop
+            if ret is not _default:
+                put_in_cache = False
+                break
 
     # if either we force the run or the cached value is expired
     # run the function
-    if force_run or (ret is _default):
-        # remove logging, impact too much perfs
-        # try:
-        #     logger = log.garbage
-        # except AttributeError:
-        #     logger = log.debug
-        # try:
-        #     logger(
-        #         "memoizecache: Calling {0}".format(
-        #             _CACHE_KEYS[key][1]))
-        # except Exception:
-        #     try:
-        #         logger(
-        #             "memoizecache: Calling {0}({3}): "
-        #             "args: {1} kwargs: {2}".format(func, args, kwargs))
-        #     except Exception:
-        #         try:
-        #             logger(
-        #                 "memoizecache: Calling {0} args: {1}".format(
-        #                     func, args))
-        #         except Exception:
-        #             try:
-        #                 logger("memoizecache: Calling {0}".format(func))
-        #             except Exception:
-        #                 pass
+
+    OKEYS.setdefault(okey, 0)
+    if force_run or (put_in_cache and ret is _default):
+        OKEYS[okey] = OKEYS[okey] + 1
         ret = func(*args, **kwargs)
 
     # after the run, try to cache on any cache server
     # and fallback on next server in case of failures
-    if put_in_cache and (ret is not _default):
+    if not force_run and put_in_cache and (ret is not _default):
         cached = False
         for ix, cache in enumerate(caches):
             try:
@@ -652,12 +677,12 @@ def memoize_cache(func,
                             seconds = 60
                     except (ValueError, TypeError):
                         seconds = 60
-                cache[key] = {'value': ret,
-                              'time': time.time(),
-                              'ttl': seconds}
+                val = {'value': ret, 'time': time.time(), 'ttl': seconds}
+                cache_set(cache, key, val)
                 cached = True
             except Exception:
                 cached = False
+                trace = traceback.format_exc()
                 log.error('error while settings cache {0}'.format(trace))
             if cached:
                 break
@@ -673,18 +698,23 @@ def list_cache_keys(*args, **kwargs):
     return keys
 
 
-def _lazy_delete_error(cache, ctry, tries, exc):
-    if ctry >= (tries - 1):
-        raise exc
-    else:
-        for i in [a for a in _MC_SERVERS['cache']]:
-            mcache = _MC_SERVERS['cache'][i]
-            if cache.addresses == mcache.addresses:
-                _MC_SERVERS['cache'].pop(i, None)
-                cache = get_mc_server(
-                    i, addrs=cache.addresses, binary=cache.binary)
-        time.sleep(0.0001)
-    return cache
+def small_sleep(*a, **kw):
+    time.small_sleep(0.0001)
+
+
+def _grace_retry(callback, tries, exceptions=None,
+                 grace_callback=None, grace_args=None, grace_kw=None,
+                 *args, **kw):
+    if not exceptions:
+        exceptions = (Exception,)
+    for ctry in range(tries):
+        try:
+            return callback(*args, **kw)
+        except exceptions as exc:
+            if ctry >= (tries - 1):
+                raise exc
+            elif grace_callback:
+                callback(ctry, tries, exc, *grace_args, **grace_kw)
 
 
 def remove_cache_entry(key=_DEFAULT_KEY,
@@ -698,19 +728,10 @@ def remove_cache_entry(key=_DEFAULT_KEY,
     caches = get_cache_servers(cache=cache, memcache=memcache, key=key)
     for cache in caches:
         # do not garbage collector now, so not del !
-        try:
-            if is_memcache(cache):
-                tries = 200
-                for i in range(tries):
-                    try:
-                        cache.delete(key)
-                        break
-                    except (pylibmc.Error, pylibmc.NoServers) as exc:
-                        cache = _lazy_delete_error(cache, i, tries, exc)
-            else:
-                cache.pop(key, None)
-        except KeyError:
-            pass
+        def pop(*a, **kw):
+            cache_pop(cache, key)
+        _grace_retry(pop, 200, exceptions=(pylibmc.NoServers,),
+                     grace_callback=small_sleep)
 
 
 def remove_entry(cache, key, *args, **kw):
@@ -745,13 +766,12 @@ def invalidate_memoize_cache(key=_DEFAULT_KEY,
             if a not in caches])
         for c in caches:
             if is_memcache(c):
-                tries = 200
-                for i in range(tries):
-                    try:
-                        c.flush_all()
-                        break
-                    except (pylibmc.Error, pylibmc.NoServers) as exc:
-                        c = _lazy_delete_error(c, i, tries, exc)
+                with c.reserve() as cs:
+                    def flush(*a, **kw):
+                        cs.flush_all()
+                    _grace_retry(flush, 200,
+                                 exceptions=(pylibmc.NoServers,),
+                                 grace_callback=small_sleep)
             else:
                 for i in [a for a in c]:
                     remove_cache_entry(i, **kw)

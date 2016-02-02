@@ -1,5 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+'''
+
+.. _module_mc_pillar:
+
+mc_pillar / makinastates ext-pillar
+===============================================
+
+Transform the informations contained in database.sls to a whole infrastructure
+mapping.
+
+
+'''
+
 import re
 import inspect
 import os
@@ -3166,15 +3183,23 @@ def get_sudoers_conf(id_, ttl=PILLAR_TTL):
 def get_packages_conf(id_, ttl=PILLAR_TTL):
     def _do(id_):
         gconf = get_configuration(id_)
-        rdata = {}
-        pref = "makina-states.localsettings.pkgs.apt"
         if not gconf.get('manage_packages', True):
             return {}
-        rdata.update({
-            pref + ".ubuntu.mirror": "http://mirror.ovh.net/ftp.ubuntu.com/",
-            pref + ".debian.mirror": (
+        msconf = __salt__[__name + '.query']('pkgmgr_conf', {})
+        conf = msconf.get(id_, msconf.get('default', OrderedDict()))
+        if not isinstance(conf, dict):
+            conf = {}
+        pref = "makina-states.localsettings.pkgs."
+        rdata = OrderedDict()
+        for item, val in conf.items():
+            rdata[pref + item] = val
+        for item, val in {
+            pref + "apt.ubuntu.mirror": (
+                "http://mirror.ovh.net/ftp.ubuntu.com/"),
+            pref + "apt.debian.mirror": (
                 "http://mirror.ovh.net/ftp.debian.org/debian/")
-        })
+        }.items():
+            rdata.setdefault(item, val)
         return rdata
     cache_key = __name + '.get_packages_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3398,15 +3423,20 @@ def get_etc_hosts_conf(id_, ttl=PILLAR_TTL):
         gconf = get_configuration(id_)
         if not gconf.get('manage_hosts', True):
             return {}
+        pref = 'makina-states.localsettings.network.'
         rdata = {}
+        rhosts = rdata.setdefault(pref + 'hosts_list', [])
         hosts = __salt__[__name + '.query']('hosts', {}).get(id_, [])
-        if hosts:
-            dhosts = rdata.setdefault('makina-bosts', [])
-            for entry in hosts:
-                ip = entry.get('ip', __salt__[__name + '.ip_for'](id_))
-                dhosts.append({'ip': ip, 'hosts': entry['hosts']})
+        if not hosts:
+            hosts = []
+        for entry in hosts:
+            ahosts = entry['hosts']
+            if isinstance(ahosts, list):
+                ahosts = ' '.join(ahosts)
+            ip = entry.get('ip', __salt__[__name + '.ip_for'](id_))
+            rhosts.append("{0} {1}".format(ip, ahosts))
         return rdata
-    cache_key = __name + '.get_etc_hosts_conf{0}'.format(id_)
+    cache_key = __name + '.get_etc_hosts_conf7{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
@@ -3494,26 +3524,6 @@ def get_dhcpd_conf(id_, ttl=PILLAR_TTL):
         p = 'makina-states.services.dns.dhcpd'
         return {p: conf}
     cache_key = __name + '.get_dhcpd_conf{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
-
-
-def get_pkgmgr_conf(id_, ttl=PILLAR_TTL):
-    def _do(id_):
-        rdata = {}
-        gconf = get_configuration(id_)
-        if not gconf.get('manage_packages', True):
-            return {}
-        conf = __salt__[__name + '.query']('pkgmgr_conf', {})
-        conf = conf.get(
-            id_,
-            conf.get('default', OrderedDict()))
-        if not isinstance(conf, dict):
-            conf = {}
-        p = 'makina-states.localsettings.pkgs.'
-        for item, val in conf.items():
-            rdata[p + item] = val
-        return rdata
-    cache_key = __name + '.get_pkgmgr_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
@@ -3637,19 +3647,18 @@ def ext_pillar(id_, pillar=None, *args, **kw):
     is_this_managed = is_managed(id_)
     for callback, copts in {
         'mc_env.ext_pillar': {'only_managed': False},
-        __name + '.get_autoupgrade_conf': {'only_managed': False},
-        __name + '.get_backup_client_conf': {'only_managed': False},
+        __name + '.get_snmpd_conf': {'only_known': False},
         __name + '.get_custom_pillar_conf': {'only_managed': False},
         __name + '.get_dhcpd_conf': {'only_managed': False},
-        __name + '.get_dns_resolvers': {'only_managed': False},
         __name + '.get_etc_hosts_conf': {'only_managed': False},
-        __name + '.get_mail_conf': {'only_managed': False},
         __name + '.get_packages_conf': {'only_managed': False},
-        __name + '.get_pkgmgr_conf': {'only_managed': False},
-        __name + '.get_firewalld_conf': {'only_managed': False},
-        __name + '.get_ms_iptables_conf': {'only_managed': False},
-        __name + '.get_shorewall_conf': {'only_managed': False},
-        __name + '.get_snmpd_conf': {'only_known': False},
+        __name + '.get_autoupgrade_conf': {'only_managed': False},
+        __name + '.get_backup_client_conf': {},
+        __name + '.get_dns_resolvers': {},
+        __name + '.get_mail_conf': {},
+        __name + '.get_firewalld_conf': {},
+        __name + '.get_ms_iptables_conf': {},
+        __name + '.get_shorewall_conf': {},
         __name + '.get_burp_server_conf': {},
         __name + '.get_check_raid_conf': {},
         __name + '.get_dns_master_conf': {},
