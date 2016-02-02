@@ -429,7 +429,7 @@ set_valid_upstreams() {
         return
     fi
     if [ ! -e "$(which git 2>/dev/null)" ];then
-        VALID_BRANCHES="master stable 2"
+        VALID_BRANCHES="stable v2"
     fi
     if [ "x${VALID_BRANCHES}" = "x" ];then
         if [ "x${SALT_BOOT_LIGHT_VARS}" = "x" ];then
