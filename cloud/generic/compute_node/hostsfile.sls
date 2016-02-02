@@ -13,7 +13,6 @@ avirt-{{vmname}}{{domain}}-makina-append-parent-etc.computenode.management:
     - name: /etc/hosts
     - marker_start: '#-- start virt dns {{domain}}:: DO NOT EDIT --'
     - marker_end: '#-- end virt dns {{domain}}:: DO NOT EDIT --'
-    - content: '# Vagrant vm: {{domain}} added this entry via local mount:'
     - append_if_not_found: True
     - backup: '.bak'
     - show_changes: True
@@ -30,7 +29,6 @@ virt-{{vmname}}{{domain}}-makina-prepend-parent-etc.computenode.management:
     - name: /etc/hosts
     - marker_start: '#-- bstart virt dns {{domain}}:: DO NOT EDIT --'
     - marker_end: '#-- bend virt dns {{domain}}:: DO NOT EDIT --'
-    - content: '# bVagrant vm: {{domain}} added this entry via local mount:'
     - prepend_if_not_found: True
     - backup: '.bak'
     - show_changes: True
