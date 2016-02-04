@@ -198,6 +198,7 @@ def get_mc_server(key=None,
             log.error('Memcached error:\n{0}'.format(trace))
         if error:
             _MC_SERVERS['error'][error_key] = time.time()
+            _MC_SERVERS['cache'].pop(cache_key, None)
     if pinguable and (error_key in _MC_SERVERS['error']):
         _MC_SERVERS['cache'].pop(cache_key, None)
     return _MC_SERVERS['cache'].get(cache_key, None)
