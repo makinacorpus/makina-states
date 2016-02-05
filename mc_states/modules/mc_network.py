@@ -561,6 +561,11 @@ def is_ovh(ip):
     return data.get('is_ovh', False)
 
 
+def is_sys(ip):
+    data = whois_data(ip)
+    return data.get('is_sys', data.get('is_ovh', False))
+
+
 def providers():
     return ['online', 'ovh', 'phpnet', 'sys']
 
