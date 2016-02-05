@@ -3,23 +3,27 @@
                               dir='makina-states/files',
                               after_macro=None,
                               user='root',
+                              target_prefix="",
                               group='root',
                               mode=750,
                               makedirs=True,
                               template='jinja') %}
+{# retrocompatible kwargs access, either from direct in the template or from the "data" variable #}
+{% set inline_jkwargs = salt['mc_utils.deepcopy'](kwargs) %}
+{% do inline_jkwargs.pop('data', None) %}
+{% do inline_jkwargs.update({'data': kwargs}) %}
+
 {% for f, fdata in confs.items() %}
 {% set templated = fdata.get('template', template) %}
 {{prefix}}{{f}}:
   file.managed:
-    - name: "{{fdata.get('target', f)}}"
+    - name: "{{fdata.get('target', "{0}{1}".format(target_prefix, f))}}"
     - source: "{{fdata.get('source', 'salt://{0}{1}'.format(dir, f))}}"
     - mode: "{{fdata.get('mode', mode)}}"
     - user: "{{fdata.get('user', user)}}"
     - group:  "{{fdata.get('group', group)}}"
     {% if kwargs %}
-    - context:
-        data: |
-              {{ kwargs | json }}
+    - context: {{inline_jkwargs | json }}
     {% endif %}
     {% if fdata.get('makedirs', makedirs) %}
     - makedirs: true

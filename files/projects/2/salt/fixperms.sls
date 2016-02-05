@@ -61,7 +61,7 @@
     - user: root
     - mode: 744
     - contents: |
-                {{cfg.data.fixperms_cron_periodicity}} root {{cfg.project_dir}}/global-reset-perms.sh
+                {{cfg.data.fixperms_cron_periodicity}} root {{cfg.project_dir}}/global-reset-perms.sh >/dev/null 2>&1
 {%else%}
   file.absent:
     - name: /etc/cron.d/{{cfg.name.replace('.', '_')}}-fixperms
