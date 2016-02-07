@@ -596,6 +596,7 @@ backup_configurations:
       - /var/www
       - /var/makina
     exclude_regex:
+      - ".*usr.*src.*linux-headers.*"
       - ".*var.*lib.*libvirt.*images.*"
       - ".*data.*burp.*"
       - ".*nobackup.*"
@@ -651,6 +652,7 @@ backup_configurations:
       - /var/www
       - /var/makina
     exclude_regex:
+      - ".*usr.*src.*linux-headers.*"
       - ".*data.*burp.*"
       - ".*nobackup.*"
       - ".*lost.found.*"
