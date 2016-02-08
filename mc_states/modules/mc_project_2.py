@@ -421,9 +421,9 @@ def _prepare_configuration(name, *args, **kwargs):
     salt_settings = _s['mc_salt.settings']()
     # special symlinks inside salt wiring
     cfg['wired_salt_root'] = os.path.join(
-        salt_settings['saltRoot'], 'makina-projects', cfg['name'])
+        salt_settings['salt_root'], 'makina-projects', cfg['name'])
     cfg['wired_pillar_root'] = os.path.join(
-        salt_settings['pillarRoot'], 'makina-projects', cfg['name'])
+        salt_settings['pillar_root'], 'makina-projects', cfg['name'])
     # check if the specified sls installer files container
     if not cfg['default_env']:
         # one of:
@@ -874,7 +874,7 @@ def get_configuration(name, *args, **kwargs):
             return cfg
     _s = __salt__
     salt_settings = _s['mc_salt.settings']()
-    salt_root = salt_settings['saltRoot']
+    salt_root = salt_settings['salt_root']
     nodata = kwargs.pop('nodata', False)
     ignored_keys = cfg['ignored_keys']
     if nodata:
@@ -1156,7 +1156,9 @@ def sync_hooks(name, ret=None, api_version=API_VERSION, *args, **kwargs):
         ret = _get_ret(cfg['name'])
     local_remote = cfg['project_git_root']
     project_git = os.path.join(cfg['project_root'], '.git')
+    ps = _s['mc_locations']()['ms']
     params = {
+        'WC': ms,
         'FORCE_MARKER': local_remote+'/hooks/force_marker',
         'api_version': api_version, 'name': name}
     if not cfg.get('remote_less', False):
@@ -2152,11 +2154,7 @@ def sync_modules(name, *args, **kwargs):
     _s = __salt__
     salt_root = cfg['salt_root']
     system_salt = __opts__['file_roots']['base'][0]
-    if _s['mc_controllers.mastersalt_mode']():
-        k = 'mastersalt'
-    else:
-        k = 'salt'
-
+    k = 'salt'
     saltsettings = __salt__['mc_salt.settings']()[
         'data_mappings']['minion'][k]
     for config_opt, dirs in saltsettings['saltmods'].items():
@@ -2460,7 +2458,7 @@ def link_pillar(names, *args, **kwargs):
     for name in names:
         cfg = get_configuration(name, nodata=True, *args, **kwargs)
         salt_settings = __salt__['mc_salt.settings']()
-        pillar_root = os.path.join(salt_settings['pillarRoot'])
+        pillar_root = os.path.join(salt_settings['pillar_root'])
         upillar_top = 'makina-projects.{name}'.format(**cfg)
         pillarf = os.path.join(pillar_root, 'top.sls')
         customf = os.path.join(pillar_root, 'custom.sls')
@@ -2513,7 +2511,7 @@ def unlink_pillar(names, *args, **kwargs):
         cfg = get_configuration(name, nodata=True,  *args, **kwargs)
         kwargs.pop('ret', None)
         salt_settings = __salt__['mc_salt.settings']()
-        pillar_root = os.path.join(salt_settings['pillarRoot'])
+        pillar_root = os.path.join(salt_settings['pillar_root'])
         pillarf = os.path.join(pillar_root, 'top.sls')
         pillar_top = 'makina-projects.{name}'.format(**cfg)
         with open(pillarf) as fpillarf:

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-MSR="/srv/salt/makina-states"
 API_VERSION="{{api_version}}"
 HERE="${PWD}"
 PROJECT_NAME="{{name}}"
 FORCE_MARKER="{{FORCE_MARKER}}"
+export PATH="{{WC}}/bin:${PATH}"
 ret="1"
 unset GIT_DIR
 unset GIT_PREFIX
