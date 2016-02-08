@@ -61,7 +61,7 @@ fix-snmpd-user-packaging:
     - unless: test -e /usr/bin/net-snmp-create-v3-user
     - name: >
             cp -v
-            {{sdata.c.minion.msr}}/files/usr/bin/net-snmp-create-v3-user
+            {{sdata.msr}}/files/usr/bin/net-snmp-create-v3-user
             /usr/bin/net-snmp-create-v3-user;
             chmod +x /usr/bin/net-snmp-create-v3-user
 {% endif %}
