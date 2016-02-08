@@ -40,27 +40,6 @@ class TestCase(base.ModuleCase):
                 with mock.patch('__builtin__.open', gopen):
                     self.assertTrue(fun('laptop'))
 
-    def test_is_cnt(self):
-        mc_states.api.invalidate_memoize_cache('localreg_nodetypes_registry')
-        fun = self.salt['mc_nodetypes.is_container_nodetype']
-        self.assertFalse(fun('laptop'))
-        with mock.patch.dict(self.salt, {
-            'mc_nodetypes.is_docker': mock.MagicMock(return_value=True)
-        }):
-            self.assertTrue(fun('dockercontainer'))
-        with mock.patch.dict(self.salt, {
-            'mc_nodetypes.is_docker': mock.MagicMock(return_value=False)
-        }):
-            self.assertFalse(fun('dockercontainer'))
-        with mock.patch.dict(self.salt, {
-            'mc_nodetypes.is_lxc': mock.MagicMock(return_value=False)
-        }):
-            self.assertFalse(fun('lxccontainer'))
-        with mock.patch.dict(self.salt, {
-            'mc_nodetypes.is_lxc': mock.MagicMock(return_value=True)
-        }):
-            self.assertTrue(fun('lxccontainer'))
-
     def test_is_vm(self):
         mc_states.api.invalidate_memoize_cache('localreg_nodetypes_registry')
         fun = self.salt['mc_nodetypes.is_vm']

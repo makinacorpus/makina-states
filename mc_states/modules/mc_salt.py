@@ -25,7 +25,7 @@ loglevelfmt = (
 
 
 def get_local_param(param):
-    param = makina_grains._get_msconf(param)
+    param = makina_grains._get_msconf(param, _o=__opts__)
     return param
 
 

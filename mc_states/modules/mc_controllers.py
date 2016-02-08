@@ -10,7 +10,7 @@ mc_controllers / controllers related variables
 # Import salt libs
 import os
 import mc_states.api
-from mc_states.grains import makina_grains
+import logging
 
 __name = 'controllers'
 
