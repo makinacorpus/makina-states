@@ -22,7 +22,7 @@ container-container-pkgs:
   '/etc/init/lxc-stop.conf': {"mode": "644"},
   '/sbin/build_lxccorepackages.sh': {
     "mode": "755",
-    "source": "salt://makina-states/_scripts/build_lxccorepackages.sh"},
+    "source": "salt://makina-states/files/sbin/build_lxccorepackages.sh"},
   '/sbin/makinastates-snapshot.sh': {"mode": "755"},
   '/sbin/lxc-cleanup.sh': {"mode": "755"},
   '/sbin/reset-passwords.sh': {"mode": "755"},
