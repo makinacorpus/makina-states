@@ -3,23 +3,29 @@ circus-pre-install:
   mc_proxy.hook:
     - watch_in:
       - mc_proxy: circus-post-install
-      - mc_proxy: circus-pre-conf
+      - mc_proxy: circus-pre-conf2
       - mc_proxy: circus-post-conf
       - mc_proxy: circus-pre-restart
       - mc_proxy: circus-post-restart
 circus-post-install:
   mc_proxy.hook:
     - watch_in:
-      - mc_proxy: circus-pre-conf
+      - mc_proxy: circus-pre-conf2
       - mc_proxy: circus-post-conf
       - mc_proxy: circus-pre-restart
       - mc_proxy: circus-post-restart
-circus-pre-conf:
+circus-pre-conf2:
   mc_proxy.hook:
     - watch_in:
       - mc_proxy: circus-post-conf
       - mc_proxy: circus-pre-restart
       - mc_proxy: circus-post-restart
+{# retrocompatible hard restarter #}
+circus-pre-conf:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: circus-post-conf
+      - mc_proxy: circus-pre-hard-restart
 circus-post-conf:
   mc_proxy.hook:
     - require_in:

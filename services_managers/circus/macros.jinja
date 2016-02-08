@@ -120,7 +120,7 @@ circus-remove-watcher-{{ name }}:
   file.absent:
     - name: {{ locs['conf_dir'] }}/circus/circusd.conf.d/{{conf_priority}}_watcher-{{ name }}.ini
     - watch:
-      - mc_proxy: circus-pre-conf
+      - mc_proxy: circus-pre-conf2
     - watch_in:
       - mc_proxy: circus-post-conf
 {% endmacro %}

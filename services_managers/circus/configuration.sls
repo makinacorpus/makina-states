@@ -41,13 +41,13 @@ circusd-upstart-cleanup:
     - require:
       - cmd: circusd-upstart-cleanup
     - require_in:
-      - mc_proxy: circus-pre-conf
+      - mc_proxy: circus-pre-conf2
 {% endif %}
 
 {% macro rmacro() %}
     - watch:
       - file: circus-setup-conf-directories
-      - mc_proxy: circus-pre-conf
+      - mc_proxy: circus-pre-conf2
     - watch_in:
       - mc_proxy: circus-post-conf
 {% endmacro %}
@@ -61,7 +61,7 @@ circus-setup-conf-directories:
       - {{ defaults.logdir }}
     - mode: 755
     - watch:
-      - mc_proxy: circus-pre-conf
+      - mc_proxy: circus-pre-conf2
     - watch_in:
       - mc_proxy: circus-post-conf
 
@@ -71,7 +71,7 @@ file-symlink-{{i}}:
     - target: {{defaults.venv}}/bin/{{i}}
     - name: /usr/local/bin/{{i}}
     - watch:
-      - mc_proxy: circus-pre-conf
+      - mc_proxy: circus-pre-conf2
     - watch_in:
       - mc_proxy: circus-pre-restart
 {% endfor %}
