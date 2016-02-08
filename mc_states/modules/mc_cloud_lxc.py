@@ -36,7 +36,7 @@ def is_lxc():
     Return true if we find a system or grain flag
     that explicitly shows us we are in a LXC context
     """
-    return _is_lxc()
+    return _is_lxc(_o=__opts__)
 
 
 def vt_default_settings(cloudSettings, imgSettings):

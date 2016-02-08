@@ -66,7 +66,7 @@ def is_lxc():
         '3:cpu:/',
         '2:cpuset:/']
     """
-    return _is_lxc()
+    return _is_lxc(_o=__opts__)
 
 
 def is_this_lxc():
