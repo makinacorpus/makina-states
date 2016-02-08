@@ -4,6 +4,8 @@
 {% macro circusAddWatcher(name, cmd) %}
 {% set args = kwargs.pop('args', []) %}
 {% set conf_priority = kwargs.get('priority', kwargs.get('conf_priority', '100')) %}
+{% set force_reload = kwargs.pop('manager_force_reload', False) %}
+{% set force_restart = kwargs.pop('manager_force_restart', False) %}
 circus-add-watcher-{{ name }}-parents:
   file.directory:
     - mode: 755
@@ -56,7 +58,15 @@ circus-add-watcher-{{ name }}:
       - file: circus-add-watcher-{{ name }}-parents
     - watch_in:
       - mc_proxy: circus-post-conf-watchers
-
+{% if force_restart %}
+circus-force-hard-restart-watcher-{{ name }}:
+  cmd.run:
+    - name: echo restart
+    - watch:
+      - mc_proxy: circus-post-conf-watchers
+    - watch_in:
+      - mc_proxy: circus-pre-hard-restart-watcher-{{ name }}
+{% endif %}
 circus-pre-hard-restart-watcher-{{ name }}:
   mc_proxy.hook:
     - require: {# do not restart, by default, only reload #}
@@ -74,7 +84,15 @@ circus-post-hard-restart-watcher-{{ name }}:
       - mc_proxy: circus-pre-hard-restart-watcher-{{ name }}
     - watch_in:
       - mc_proxy: circus-post-watchers
-
+{% if force_reload %}
+circus-force-restart-watcher-{{ name }}:
+  cmd.run:
+    - name: echo reload
+    - watch:
+      - mc_proxy: circus-post-conf-watchers
+    - watch_in:
+      - mc_proxy: circus-pre-restart-watcher-{{ name }}
+{% endif %}
 circus-pre-restart-watcher-{{ name }}:
   mc_proxy.hook:
     - require:
