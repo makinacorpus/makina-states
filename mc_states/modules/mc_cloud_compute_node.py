@@ -925,7 +925,7 @@ def cn_extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
     def _do(id_=None, limited=False):
         _s = __salt__
         if id_ is None:
-            id_ = _s['mc_pillar.mastersalt_minion_id']()
+            id_ = _s['mc_pillar.minion_id']()
         conf = _s['mc_pillar.get_cloud_entry_for_cn'](id_)
         dconf = _s['mc_pillar.get_cloud_conf_for_cn']('default')
         data = _s['mc_utils.dictupdate'](

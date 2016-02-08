@@ -54,8 +54,6 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
 
         LXC API:
 
-        mode
-            (salt (default) or mastersalt)
         ssh_gateway
             ssh gateway info
         ssh_gateway_port
@@ -149,7 +147,7 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 'bootsalt_branch': cloudSettings['bootsalt_branch'],
                 'bootstrap_shell': cloudSettings['bootstrap_shell'],
                 'script': cloudSettings['script'],
-                'script_args': cloudSettings['bootsalt_mastersalt_args'],
+                'script_args': ' -C --no-colors',
                 #
                 'ssh_reverse_proxy_port': None,
                 'snmp_reverse_proxy_port': None,
@@ -244,7 +242,7 @@ def vm_default_settings(vm,
     master = vtsettings['defaults']['master']
     if extpillar:
         # if it is not a distant minion, use private gateway ip
-        if _s['mc_pillar.mastersalt_minion_id']() == target:
+        if _s['mc_pillar.minion_id']() == target:
             master = vtsettings['defaults']['gateway']
     data = _s['mc_utils.dictupdate'](
         copy.deepcopy(vtsettings['defaults']),
@@ -488,7 +486,6 @@ def vts_settings(ttl=60):
     def _do():
         data = raw_settings()
         _s = __salt__
-        # allow non mastersalt mode to work, use default settings
         svts = data.setdefault('vts', OrderedDict())
         cloudSettings = _s['mc_cloud.settings']()
         imgSettings = _s['mc_cloud_images.settings']()
@@ -542,24 +539,18 @@ def vm_host_and_port(ttl=600):
         res = __grains__['id'], 22
 
         def fdo():
-            try:
-                ret = __salt__['mc_remote.local_mastersalt_call']('mc_cloud.is_vm')
-                if ret['result']:
-                    ret = __salt__['mc_remote.local_mastersalt_call']('mc_cloud_vm.vm_settings')
-                    res = ret['result']
-                    if 'target' in res and 'ssh_reverse_proxy_port' in res:
-                        host = ret['result']['target']
-                        port = ret['result']['ssh_reverse_proxy_port']
-                    return host, port
-            except saltapi.MastersaltNotInstalled:
-                log.debug('vm_host_and_port: Mastersalt not installed')
-            except saltapi.MastersaltNotRunning:
-                log.debug('vm_host_and_port: Mastersalt not running')
+            aret = __salt__['mc_cloud.is_vm']()
+            if aret:
+                res = __salt__['mc_cloud_vm.vm_settings']()
+                if 'target' in res and 'ssh_reverse_proxy_port' in res:
+                    host = res['target']
+                    port = res['ssh_reverse_proxy_port']
+                return host, port
             raise ValueError('no conf found, inconsistent, use default')
         try:
             return __salt__['mc_macros.filecache_fun'](
                 fdo,
-                prefix='mastersalt_cloud_vm_host_port_{0}'.format(__grains__['id']),
+                prefix='salt_cloud_vm_host_port_{0}'.format(__grains__['id']),
                 ttl=5 * 24 * 60 * 60)
         except ValueError:
             return res
