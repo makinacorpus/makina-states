@@ -108,7 +108,7 @@ def get_ver(ver=DEFAULT_VER,
             print(trace)
         raise ValueError('No default version')
     return res
- 
+
 
 def get_md5(md5=DEFAULT_MD5,
             ver=DEFAULT_VER,
@@ -151,10 +151,10 @@ def restore_acls(adir, ftar=None, force=False):
     tar = os.path.basename(ftar)
     aclflag = os.path.join(adir, ".{0}aclsdone".format(tar))
     if (
-        (not os.path.exists(aclflag)
-         and os.path.exists(os.path.join(adir, 'acls.txt'))
-         and os.path.exists(adir))
-        or force
+        (not os.path.exists(aclflag) and
+         os.path.exists(os.path.join(adir, 'acls.txt')) and
+         os.path.exists(adir)) or
+        force
     ):
         print('Restoring acls in {0}'.format(adir))
         ret, ps = popen(
@@ -249,9 +249,8 @@ def unpack_template(adir, ftar, md5=None, force=False):
         os.makedirs('/etc/makina-states')
     unflag = os.path.join("/etc/makina-states/prebuilt.{0}".format(tar))
     if force or (
-        not os.path.exists(unflag)
-        and not os.path.exists("/srv/salt/makina-states/")
-        and not os.path.exists("/srv/mastersalt/makina-states/")
+        not os.path.exists(unflag) and
+        not os.path.exists("/srv/makina-states/")
     ):
         if os.path.exists(adirtmp):
             shutil.rmtree(adirtmp)
@@ -280,33 +279,24 @@ def unpack_template(adir, ftar, md5=None, force=False):
 
 
 def install_salt(fqdn,
-                 mastersalt=None,
-                 local_salt_mode='masterless',
-                 local_mastersalt_mode='masterless',
                  offline=None,
                  update=None,
                  branch=DEFAULT_BRANCH):
     if update is None:
         update = False
-    if not mastersalt:
-        mastersalt = fqdn
     cmd = (
-        'test -e /srv/mastersalt/makina-states/_scripts/boot-salt.sh'
+        'test -e /srv/makina-states/_scripts/boot-salt.sh'
     )
     ret, ps = popen(cmd)
     if ps.returncode:
         return
     cmd = (
-        '/srv/mastersalt/makina-states/_scripts/boot-salt.sh'
+        '/srv/makina-states/_scripts/boot-salt.sh'
         ' -C'
-        ' --local-salt-mode {1}'
-        ' --local-mastersalt-mode {2}'
-        ' -b {4}'
+        ' -b {1}'
         ' -m {0}'
-        ' --mastersalt {3}'
-        ' --salt-master-dns {0}'
     ).format(
-        fqdn, local_salt_mode, local_mastersalt_mode, mastersalt, branch)
+        fqdn, branch)
     if update:
         cmd2 = cmd + ' --refresh-modules'
         if not offline:
@@ -439,8 +429,8 @@ def main():
         flavor=opts['flavor'],
         offline=opts['offline'])
     if (
-        opts['md5']
-        and opts['md5'].lower().strip().replace(
+        opts['md5'] and
+        opts['md5'].lower().strip().replace(
             '"', '').replace("'", '') == 'no'
     ):
         opts['md5'] = None
@@ -459,14 +449,10 @@ def main():
         raise ValueError('Must be run either as root or via sudo')
     if (
         (
-            os.path.exists('/srv/salt/makina-states')
-            or os.path.exists('/srv/mastersalt/makina-states')
-        )
-        and
-        (
-            os.path.exists('/usr/bin/salt')
-            and os.path.exists('/usr/bin/salt-call')
-            and os.path.exists('/etc/makina-states')
+            os.path.exists('/srv/makina-states')
+        ) and (
+            os.path.exists('/usr/bin/salt-call') and
+            os.path.exists('/etc/makina-states')
         )
     ) and not opts['force']:
         raise ValueError('Makina-States is already installed')

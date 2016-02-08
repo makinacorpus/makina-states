@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -ex
+cd "$(dirname $0)/.."
+WC=$(pwd)
+MS=$(pwd)/salt/makina-states
+cd /
+find \
+     $WC/etc \
+     $WC/files  \
+     $WC/hacking \
+     $WC/library \
+     $WC/mc_states/  \
+     $WC/_scripts \
+     $WC/tests \
+     $WC/salt/modules/ \
+     $MS/_macros \
+     $MS/bootstraps \
+     $MS/cloud \
+     $MS/controllers \
+     $MS/localsettings \
+     $MS/nodetypes \
+     $MS/projects \
+     $MS/services \
+     $MS/services_managers \
+     $MS/*sls \
+     -type f>$WC/locfiles
+# vim:set et sts=4 ts=4 tw=80:

@@ -1,13 +1,11 @@
 #!/usr/bin/env python
-from __future__ import absolute_import, division,  print_function
-__docformat__ = 'restructuredtext en'
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import glob
-import shutil
 import time
 import os
-import time
-import urllib2
 import hashlib
 import difflib
 import sys
@@ -20,7 +18,7 @@ socket.setdefaulttimeout(2)
 
 DEFAULT_BR = 'lxcbr1'
 DEFAULT_CONTAINER = 'makina-states-trusty'
-DEFAULT_BRANCH = 'stable'
+DEFAULT_BRANCH = 'v2'
 DESCRIPTION = '''
 Create a container from another container
 If the IP address or the MAC address is not specified, it will be generated.
@@ -316,38 +314,27 @@ def allow_user_and_root(container):
 
 def install_salt(container,
                  fqdn,
-                 mastersalt=None,
-                 local_salt_mode='masterless',
-                 local_mastersalt_mode='masterless',
                  offline=None,
                  update=None,
                  branch=DEFAULT_BRANCH):
-    if not mastersalt:
-        mastersalt = fqdn
     if update is None:
         update = False
     cmd = (
         "lxc-attach -n '{0}' --"
-        ' test -e /srv/mastersalt/makina-states/_scripts/boot-salt.sh'
+        ' test -e /srv/makina-states/_scripts/boot-salt.sh'
     ).format(container)
     ret, ps = popen(cmd)
     if ps.returncode:
         return
+    # keep old opts for retro compat
     cmd = (
-        "lxc-attach -n '{3}' --"
-        ' /srv/mastersalt/makina-states/_scripts/boot-salt.sh'
+        "lxc-attach -n '{1}' --"
+        ' /srv/makina-states/_scripts/boot-salt.sh'
         ' -C'
-        ' --local-salt-mode {1}'
-        ' --local-mastersalt-mode {2}'
         ' -m {0}'
-        ' -b {5}'
-        ' --mastersalt {4}'
-        ' --salt-master-dns {0}'
+        ' -b {2}'
         '').format(fqdn,
-                   local_salt_mode,
-                   local_mastersalt_mode,
                    container,
-                   mastersalt,
                    branch)
     if update:
         cmd2 = cmd + ' --refresh-modules'

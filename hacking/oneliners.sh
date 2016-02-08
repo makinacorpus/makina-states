@@ -11,7 +11,7 @@ cd $(dirname $0)
 # sed -re "s/(\{% set [^=]*)=\s*\{%\s*(.*)/\1 = \2/g"  $(cat locfiles) -i
 
 # regenerate a list to grep / sed into
-# find *sls _scripts cloud services_managers tests projects bootstraps controllers mc_states files localsettings _macros nodetypes services top.sls -type f>locfiles
+# cd salt/makina-states;find *sls cloud services_managers tests projects ../../_scripts bootstraps controllers ../../mc_states files localsettings _macros nodetypes services top.sls -type f>locfiles;cd ../..
 
 # sync the only needed in makina-states for salt
 # (quickier in virtualbox)
