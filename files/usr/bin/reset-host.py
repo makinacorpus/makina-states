@@ -15,8 +15,9 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--origin', required=True)
 parser.add_argument('--destination')
+parser.add_argument('--makina-states', default='/srv/makina-states')
 parser.add_argument('--same-ssh-for-all', action='store_true')
-for i in ('salt', 'files', 'ssh', 'postfix', 'sshd_keys'):
+for i in ('files', 'ssh', 'postfix', 'sshd_keys'):
     parser.add_argument(
         '--reset-{0}'.format(i),
         dest='reset_{0}'.format(i),
@@ -31,18 +32,12 @@ RESET_FILES = {
         '/etc/hostname',
         '/etc/hosts',
         '/etc/mailname',
-        '/etc/mastersalt/grains',
-        '/etc/mastersalt/minion.d/*.conf',
-        '/etc/mastersalt/minion',
-        '/etc/mastersalt/master',
         '/etc/nginx/sites-available/*.conf',
         '/etc/postfix/main.cf',
-        '/etc/salt/grains',
-        '/etc/salt/master',
-        '/etc/salt/minion',
-        '/etc/salt/minion.d/*.conf',
-        '/srv/mastersalt-pillar/mastersalt.sls',
-        '/srv/pillar/salt.sls',
+        '__MAKINA_STATES__/etc/salt/grains',
+        '__MAKINA_STATES__/etc/salt/master',
+        '__MAKINA_STATES__/etc/salt/minion',
+        '__MAKINA_STATES__/etc/salt/minion.d/*.conf',
         '/var/spool/postfix/etc/hosts',
         '/etc/aliases',
     ],
@@ -109,7 +104,10 @@ def main(argv=None):
                     ):
                         with open(ukey) as ef:
                             ucontent = ef.read()
-                        if (ucontent.strip() == content.strip()) or opts.same_ssh_for_all:
+                        if (
+                            (ucontent.strip() == content.strip()) or
+                            opts.same_ssh_for_all
+                        ):
                             copies.add(ukey)
             sshargs = {'rsa': '-t rsa -b 4096', 'dsa': '-t dsa -b 1024'}
             for k in [cdt, '{0}.pub'.format(cdt)]:
@@ -139,35 +137,12 @@ def main(argv=None):
         opts.reset_sshd_keys = True
     if opts.reset_sshd_keys:
         systemwide_sshkeys()
-    if opts.reset_salt:
-        for binary in ['mastersalt-key', 'salt-key', None]:
-            if not binary:
-                break
-            if not os.system('which {0} >/dev/null 2>&1'.format(binary)):
-                break
-        if binary:
-            try:
-                tmpdir = tempfile.mkdtemp()
-                for kind in ['minion']:
-                    os.system('{0} --gen-keys={1} --gen-keys-dir={2}'
-                              ''.format(binary, kind, tmpdir))
-                for saltkind in ['mastersalt', 'salt']:
-                    for kind in ['minion']:
-                        for ext in ['pem', 'pub']:
-                            fp = ('/etc/{0}/pki/{1}/{1}.{2}'
-                                  '').format(saltkind, kind, ext)
-                            print('Writing {0}'.format(fp))
-                            content = '{0}/{1}.{2}'.format(tmpdir, kind, ext)
-                            with open(content, 'r') as ficr:
-                                with open(fp, 'w') as ficw:
-                                    ficw.write(ficr.read())
-            finally:
-                shutil.rmtree(tmpdir)
     if opts.reset_postfix:
         os.system('newaliases')
     if opts.reset_files or opts.reset_postfix:
         for kind, files in RESET_FILES.items():
-            for fg in files:
+            for ofg in files:
+                fg = ofg.replace('__MAKINA_STATES__', opts.makina_states)
                 for fp in glob.glob(fg):
                     if not os.path.exists(fp):
                         continue
