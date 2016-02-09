@@ -28,13 +28,7 @@ log = logging.getLogger(__name__)
 
 
 def is_reverse_proxied():
-    is_vm = False
-    try:
-        with open('/etc/mastersalt/makina-states/cloud.yaml') as fic:
-            is_vm = 'is.vm' in fic.read()
-    except Exception:
-        pass
-    return __salt__['mc_cloud.is_vm']() or is_vm
+    return __salt__['mc_cloud.is_vm']()
 
 
 def settings():
