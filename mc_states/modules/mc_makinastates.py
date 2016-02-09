@@ -69,7 +69,7 @@ def virtualenv_release(ms_os=DEFAULT_OS,
             __salt__['docker.remove_container'](dname, force=True)
         cmd = ('docker run --rm --name="{dname}" -v "{ms_root}":/makina-states'
                ' -e XZ_OPTS="-9e" {img}'
-               ' tar cJf "/makina-states/{dest}" /salt-venv'
+               ' tar cJf "/makina-states/{dest}" /srv/makina-states/venv'
                '').format(img=img, dname=dname, dest=dest, ms_root=ms_root)
         ret = __salt__['cmd.run_all'](cmd, cwd=ms_root, python_shell=True)
         if ret['retcode'] != 0:
@@ -78,9 +78,8 @@ def virtualenv_release(ms_os=DEFAULT_OS,
             raise Exception('Extraction failed')
     if not upload:
         return
-    ssettings = __salt__['mc_salt.settings']()
-    orga = ssettings['c']['minion']['confRepos']['makina-states'][
-        'name'].replace('.git', '').split('github.com/')[1]
+    orga = __salt__['mc_salt.get_ms_url']().replace(
+        '.git', '').split('github.com/')[1]
     u = "https://api.github.com/repos/" + orga
     tok = HTTPBasicAuth(data['github_user'], data['github_password'])
     releases = requests.get("{0}/releases".format(u), auth=tok)
