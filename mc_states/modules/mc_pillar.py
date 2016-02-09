@@ -72,7 +72,7 @@ MS_IPTABLES_MANAGED = True
 PILLAR_TTL = ONE_YEAR
 
 
-def mastersalt_minion_id():
+def minion_id():
     return __salt__['mc_utils.local_minion_id']()
 
 
@@ -80,7 +80,7 @@ def mmid():
     '''
     Alias
     '''
-    return mastersalt_minion_id()
+    return minion_id()
 
 
 def yaml_load(*args, **kw3):
@@ -141,10 +141,11 @@ def get_fqdn_domains(fqdn):
 
 def get_db():
     dbpath = None
+    base = os.path.join(
+        os.path.dirname(os.path.abspath(__opts__['config_dir'])),
+        'makina-states')
     for i in SUPPORTED_DB_FORMATS:
-        dbpath = os.path.join(
-            __opts__['pillar_roots']['base'][0],
-            'database.{0}'.format(i))
+        dbpath = os.path.join( base, 'database.{0}'.format(i))
         if os.path.exists(dbpath):
             break
     return dbpath
@@ -1856,14 +1857,11 @@ def get_configuration(id_=None, ttl=PILLAR_TTL):
             mdn = ['local']
         mdn = '.'.join(mdn)
         data.setdefault('default_env', 'prod')
-        data.setdefault('mastersalt_port', 4606)
-        data.setdefault('mastersalt', mid)
-        data.setdefault('mastersaltdn', mid)
         data.setdefault('master', mid == id_)
         data.setdefault('domain', mdn)
         return data
     cache_key = __name + '.get_configuration_{0}'.format(id_)
-    mid = mastersalt_minion_id()
+    mid = minion_id()
     return __salt__['mc_utils.memoize_cache'](
         _do, [id_, mid], {}, cache_key, ttl)
 
@@ -3663,7 +3661,7 @@ def get_ssh_hosts(ttl=PILLAR_TTL):
 
 def get_masterless_makinastates_hosts(ttl=PILLAR_TTL):
     '''
-    Expose on mastersalt metadatas on how to connect
+    Expose on salt metadatas on how to connect
     on each part of the infra using ssh
     '''
     _o = __opts__
@@ -3753,7 +3751,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
             'MC_PILLAR not loader:\n'
             'DATABASE DOES NOT EXISTS: ' + dbpath
         ).replace('.json', '.{json,sls,yaml}')
-        if 'mastersalt' in dbpath:
+        if 'salt' in dbpath:
             log.error(msg)
         return {}
     if isinstance(kw, dict):
@@ -3849,8 +3847,9 @@ def ext_pillar(id_, pillar=None, *args, **kw):
             pr.dump_stats(ficp)
             with open(ficn, 'w') as fic:
                 pstats.Stats(pr, stream=fic).sort_stats('cumulative')
+        msr = __salt__['mc_locations.msr']()
         __salt__['cmd.run'](
-            '/srv/mastersalt/makina-states/bin/pyprof2calltree '
+            msr + '/bin/pyprof2calltree '
             '-i "{0}" -o "{1}"'.format(ficp, fico), python_shell=True)
     return data
 
