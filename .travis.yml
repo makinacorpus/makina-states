@@ -13,9 +13,9 @@ env:
 # - install the standalone image (test the release artifacts & flags are in place)
 # - smoke test the basic mastersalt/salt highstate
 # - install the environment for further unit/integration tests
-install: [sudo -E ./_scripts/travis_install.sh]
-script: sudo -E ./_scripts/travis_test.sh
-after_success: [/usr/bin/sudo -E /srv/mastersalt/makina-states/_scripts/travis_aftersuccess.sh]
+install: [sudo -E ./.travis/travis_install.sh]
+script: sudo -E ./.travis/travis_test.sh
+after_success: [/usr/bin/sudo -E /srv/makina-states/.travis/travis_aftersuccess.sh]
 
 #too noisy
 #notifications:
