@@ -891,4 +891,12 @@ def compat_kwarg(kw, new, olds=None):
 
 def get_ssh_username(kw):
     return compat_kwarg(kw, 'ssh_username', 'ssh_user')
+
+
+def no_more_mastersalt(fun, **kwargs):
+
+    def __no_ms(*a, **kw):
+        log.error('mastersalt has been eradicated')
+        return fun(*a, **kw)
+    return __no_ms
 # vim:set et sts=4 ts=4 tw=80:
