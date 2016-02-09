@@ -182,7 +182,6 @@ def settings():
                 'no_mongodb': False,
                 'no_mysql': False,
                 'no_salt': False,
-                'no_mastersalt': False,
                 'no_postgresql': False,
                 'have_docker': None,
                 'have_vpn': None,
@@ -634,25 +633,10 @@ def settings():
                 except:
                     log.error("ERROR IN CLOUD SHOREWALL RULES")
                     log.error(traceback.format_exc())
-            # enable mastersalt traffic if any
-            if (
-                controllers_registry['is']['mastersalt_master']
-                and not data['no_mastersalt']
-            ):
-                data['default_rules'].append({'comment': 'mastersalt'})
-                for proto in protos:
-                    append_rules_for_zones(
-                        data['default_rules'],
-                        {'action': 'ACCEPT',
-                         'source': 'all', 'dest': 'fw',
-                         'proto': proto,
-                         'dport': '4605,4606'},
-                        zones=data['internal_zones'])
             # enable salt traffic if any
             if (
-                (controllers_registry['is']['salt_master']
-                 or controllers_registry['is']['mastersalt_master'])
-                and not data['no_salt']
+                controllers_registry['is']['salt_master'] and
+                not data['no_salt']
             ):
                     data['default_rules'].append({'comment': 'salt'})
                     for proto in protos:
