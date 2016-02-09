@@ -292,7 +292,7 @@ def domain_registrar(domain):
 def register_dns_masters(only_domains=None, only_providers=None):
     '''
     Use registrar apis to switch the nameservers to the ones
-    we manage on mastersalt
+    we manage on salt
 
     only_domains
         list of domains to act on, if empty all managed domains
@@ -303,9 +303,9 @@ def register_dns_masters(only_domains=None, only_providers=None):
 
     CLI Examples::
 
-        mastersalt-call mc_dns.register_dns_masters only_providers=ovh
-        mastersalt-call mc_dns.register_dns_masters only_providers=gandi
-        mastersalt-call mc_dns.register_dns_masters foo.net
+        salt-call mc_dns.register_dns_masters only_providers=ovh
+        salt-call mc_dns.register_dns_masters only_providers=gandi
+        salt-call mc_dns.register_dns_masters foo.net
 
     '''
     register_checks()
