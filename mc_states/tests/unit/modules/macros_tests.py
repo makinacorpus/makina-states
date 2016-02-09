@@ -30,33 +30,6 @@ class TestCase(base.ModuleCase):
                 '{root_dir}etc/makina-states/myreg.pack'.format(**locs)
             )
             self.assertEqual(
-                ret['mastersalt'],
-                '{root_dir}etc/mastersalt/'
-                'makina-states/myreg.pack'.format(**locs))
-            self.assertEqual(
-                ret['salt'],
-                '{root_dir}etc/salt/'
-                'makina-states/myreg.pack'.format(**locs))
-        with self.patch(
-            opts={'config_dir': 'mastersalt'},
-            filtered=['mc.*'],
-            kinds=['modules']
-        ):
-            ret = self._('mc_macros.get_registry_paths')('myreg')
-            self.assertEqual(
-                ret['context'],
-                'mastersalt'
-                '/makina-states/myreg.pack'.format(**locs)
-            )
-            self.assertEqual(
-                ret['global'],
-                '{root_dir}etc/makina-states/myreg.pack'.format(**locs)
-            )
-            self.assertEqual(
-                ret['mastersalt'],
-                '{root_dir}etc/mastersalt/'
-                'makina-states/myreg.pack'.format(**locs))
-            self.assertEqual(
                 ret['salt'],
                 '{root_dir}etc/salt/'
                 'makina-states/myreg.pack'.format(**locs))
