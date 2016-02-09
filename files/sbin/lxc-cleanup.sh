@@ -216,9 +216,9 @@ if [ -e /etc/sysctl.d ];then
     syscfgs="${syscfgs} $(ls /etc/sysctl.d/*conf)"
 fi
 for syscfg in ${syscfgs};do
-    if [ "x$(grep -q mastersalt-cleanup "${syscfg}";echo ${?})" != "x0" ];then
+    if [ "x$(grep -q salt-cleanup "${syscfg}";echo ${?})" != "x0" ];then
         sed -i -e "s/^/#/g" "${syscfg}" ||/bin/true
-        echo "# mastersalt-cleanup" >> "${syscfg}" ||/bin/true
+        echo "# salt-cleanup" >> "${syscfg}" ||/bin/true
     fi
     for i in \
         vm.mmap_min_addr\
