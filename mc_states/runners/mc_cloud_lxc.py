@@ -267,7 +267,7 @@ def vm_spawn(vm, ret=None, output=True, force=False):
 
     ::
 
-        mastersalt-run -lall mc_cloud_lxc.vm_spawn foo.domain.tld
+        salt-run -lall mc_cloud_lxc.vm_spawn foo.domain.tld
 
     '''
     _s = __salt__
@@ -328,7 +328,7 @@ def vm_spawn(vm, ret=None, output=True, force=False):
         reg = cli('mc_macros.update_local_registry', lreg, reg)
     if not ret['result'] and not ret['comment']:
         ret['comment'] = ('Failed to provision lxc {0},'
-                          ' see {1}, see mastersalt-minion log').format(vm, cn)
+                          ' see {1}, see salt-minion log').format(vm, cn)
     _s['mc_api.out'](ret, __opts__, output=output)
     _s['mc_api.time_log']('end', fname)
     return ret
@@ -344,7 +344,7 @@ def vm_reconfigure(vm,
 
     ::
 
-        mastersalt-run -lall mc_cloud_lxc.vm_reconfigure_net foo.domain.tld
+        salt-run -lall mc_cloud_lxc.vm_reconfigure_net foo.domain.tld
 
     '''
     fname = 'mc_cloud_lxc.vm_spawn'
@@ -417,7 +417,7 @@ def vm_reconfigure(vm,
                   'mc_cloud_lxc_containers', reg)
     if not ret['result'] and not ret['comment']:
         ret['comment'] = ('Failed to reconfigure lxc {0},'
-                          ' see {1} mastersalt-minion log').format(vm, cn)
+                          ' see {1} salt-minion log').format(vm, cn)
     _s['mc_api.out'](ret, __opts__, output=output)
     _s['mc_api.time_log']('end', fname)
     return ret
@@ -477,7 +477,7 @@ def vm_initial_setup(vm, ret=None, output=True):
 
     ::
 
-        mastersalt-run -lall mc_cloud_lxc.vm_initial_setup foo.domain.tld
+        salt-run -lall mc_cloud_lxc.vm_initial_setup foo.domain.tld
 
 
     '''
@@ -490,7 +490,7 @@ def vm_hostsfile(vm, ret=None, output=True):
 
     ::
 
-        mastersalt-run -lall mc_cloud_lxc.vm_hostsfile foo.domain.tld
+        salt-run -lall mc_cloud_lxc.vm_hostsfile foo.domain.tld
 
     '''
     return vm_configure('hostsfile', vm, ret=ret, output=output)
@@ -502,7 +502,7 @@ def vm_preprovision(vm, ret=None, output=True):
 
     ::
 
-        mastersalt-run -lall mc_cloud_lxc.vm_grains foo.domain.tld
+        salt-run -lall mc_cloud_lxc.vm_grains foo.domain.tld
 
     '''
     return vm_configure('preprovision', vm, ret=ret, output=output)
@@ -685,7 +685,7 @@ def copy(destination,
             if not cli(
                 'cmd.run_all',
                 'test -e'
-                ' /etc/mastersalt/pki/master'
+                ' /etc/salt/pki/master'
                 '/minions_pre/{0}'.format(destination)
             )['retcode']:
                 found = True
@@ -694,7 +694,7 @@ def copy(destination,
         else:
             ret['challenge'] = cli(
                 'cmd.run_all',
-                'mastersalt-key -y -a {0}'.format(destination))
+                'salt-key -y -a {0}'.format(destination))
             if ret['challenge']['retcode']:
                 ret['result'] = False
             check_point(ret, __opts__, output=output)

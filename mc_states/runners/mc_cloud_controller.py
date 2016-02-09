@@ -395,7 +395,7 @@ def remove(node_name,
 
         - disabling crons
         - disabling services
-        - unlinking the key from mastersalt
+        - unlinking the key from salt
 
     '''
     _s = __salt__

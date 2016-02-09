@@ -358,8 +358,7 @@ def remove(id_,
            'sed -re "s/^#*/#/g" -i /etc/cron.d/*salt*'
            '').format(sshhost, sshport)
     cli('cmd.run', cmd, python_shell=True)
-    services = ['salt-master', 'salt-minion',
-                'mastersalt-master', 'mastersalt-minion']
+    services = ['salt-master', 'salt-minion']
     cmd = ('ssh {0} -p {1} "for i in {2};do'
            ' if [ -e "/etc/init/\${{i}}.conf" ];then'
            ' echo manual>/etc/init/\${{i}}.override;'
