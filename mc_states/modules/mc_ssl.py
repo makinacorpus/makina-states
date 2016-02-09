@@ -871,15 +871,6 @@ def search_matching_certificate(domain, as_text=False, selfsigned=True):
     if not HAS_SSL:
         raise Exception('Missing pyopenssl')
     certp, certk = None, None
-    # if we are not running in mastersalt mode,
-    # try to see if someone has installed a full certificate containing
-    # at least the cert and key but also the auth chain in
-    # the well known install dir
-    if not __salt__['mc_controllers.allow_lowlevel_states']():
-        try:
-            certp, certk = get_installed_cert_for(domain)
-        except CertificateNotFoundError:
-            pass
     # try to get a exact-matching filename<->domain
     if not certp:
         try:
@@ -897,6 +888,13 @@ def search_matching_certificate(domain, as_text=False, selfsigned=True):
     if not certp:
         try:
             certp, certk = get_cert_for(domain)
+        except CertificateNotFoundError:
+            pass
+    # try to see if someone has installed a full certificate containing
+    # at least the cert and key but also the auth chain in
+    # the well known install dir
+        try:
+            certp, certk = get_installed_cert_for(domain)
         except CertificateNotFoundError:
             pass
     # parse certificates to see if we can find an exactly but misnamed cert
@@ -955,15 +953,6 @@ def search_matching_selfsigned_certificate(domain, gen=False, as_text=False):
         raise Exception('Missing pyopenssl')
     certs_dir = get_selfsigned_certs_dir()
     certp, certk = None, None
-    # if we are not running in mastersalt mode,
-    # try to see if someone has installed a full certificate containing
-    # at least the cert and key but also the auth chain in
-    # the well known install dir
-    if not __salt__['mc_controllers.allow_lowlevel_states']():
-        try:
-            certp, certk = get_installed_cert_for(domain)
-        except CertificateNotFoundError:
-            pass
     # try to get a exact-matching filename<->domain
     if not certp:
         try:
@@ -986,6 +975,14 @@ def search_matching_selfsigned_certificate(domain, gen=False, as_text=False):
                 data = alts[cert_domain]
                 certp, certk = data['cert'], data['key']
                 break
+    # try to see if someone has installed a full certificate containing
+    # at least the cert and key but also the auth chain in
+    # the well known install dir
+    if not __salt__['mc_controllers.allow_lowlevel_states']():
+        try:
+            certp, certk = get_installed_cert_for(domain)
+        except CertificateNotFoundError:
+            pass
     # last resort, try to generate a certificate throught our CA
     if not certp:
         certp, certk = get_selfsigned_cert_for(domain, gen=gen)
