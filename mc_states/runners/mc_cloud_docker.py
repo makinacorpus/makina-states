@@ -224,7 +224,7 @@ def vm_spawn(vm, ret=None, output=True, force=False):
 
     ::
 
-        mastersalt-run -lall mc_cloud_docker.vm_spawn foo.domain.tld
+        salt-run -lall mc_cloud_docker.vm_spawn foo.domain.tld
 
     '''
     _s = __salt__
@@ -285,7 +285,7 @@ def vm_spawn(vm, ret=None, output=True, force=False):
         reg = cli('mc_macros.update_local_registry', lreg, reg)
     if not ret['result'] and not ret['comment']:
         ret['comment'] = ('Failed to provision docker {0},'
-                          ' see {1}, see mastersalt-minion log').format(vm, cn)
+                          ' see {1}, see salt-minion log').format(vm, cn)
     _s['mc_api.out'](ret, __opts__, output=output)
     _s['mc_api.time_log']('end', fname)
     return ret
@@ -297,7 +297,7 @@ def vm_reconfigure(vm, ret=None, output=True, force=False):
 
     ::
 
-        mastersalt-run -lall mc_cloud_docker.vm_reconfigure_net foo.domain.tld
+        salt-run -lall mc_cloud_docker.vm_reconfigure_net foo.domain.tld
 
     '''
     fname = 'mc_cloud_docker.vm_spawn'
@@ -367,7 +367,7 @@ def vm_reconfigure(vm, ret=None, output=True, force=False):
     #               'mc_cloud_docker_containers', reg)
     # if not ret['result'] and not ret['comment']:
     #     ret['comment'] = ('Failed to reconfigure docker {0},'
-    #                       ' see {1} mastersalt-minion log').format(vm, cn)
+    #                       ' see {1} salt-minion log').format(vm, cn)
     _s['mc_api.out'](ret, __opts__, output=output)
     _s['mc_api.time_log']('end', fname)
     return ret
@@ -388,7 +388,7 @@ def vm_initial_setup(vm, ret=None, output=True):
 
     ::
 
-        mastersalt-run -lall mc_cloud_docker.vm_initial_setup foo.domain.tld
+        salt-run -lall mc_cloud_docker.vm_initial_setup foo.domain.tld
 
 
     '''
@@ -401,7 +401,7 @@ def vm_hostsfile(vm, ret=None, output=True):
 
     ::
 
-        mastersalt-run -lall mc_cloud_docker.vm_hostsfile foo.domain.tld
+        salt-run -lall mc_cloud_docker.vm_hostsfile foo.domain.tld
 
     '''
     return vm_configure('hostsfile', vm, ret=ret, output=output)
@@ -413,7 +413,7 @@ def vm_preprovision(vm, ret=None, output=True):
 
     ::
 
-        mastersalt-run -lall mc_cloud_docker.vm_grains foo.domain.tld
+        salt-run -lall mc_cloud_docker.vm_grains foo.domain.tld
 
     '''
     return vm_configure('preprovision', vm, ret=ret, output=output)
