@@ -13,9 +13,9 @@ cd $(dirname $0)
 # regenerate a list to grep / sed into
 # find *sls _scripts cloud services_managers tests projects bootstraps controllers mc_states files localsettings _macros nodetypes services top.sls -type f>locfiles
 
-# sync the only needed in makina-states for mastersalt
+# sync the only needed in makina-states for salt
 # (quickier in virtualbox)
-# for i in doc src/salt/ files/ _scripts/ bootstraps/ top.sls buildout.cfg _modules/ _states/ services/ localsettings/ controllers/ nodetypes/ _macros/ common/ cloud/;do rsync -vPa --exclude=*pyc --exclude=*pyo --exclude=.installed.cfg --exclude=.mr.developer.cfg --exclude=.bootlogs --exclude=.git /srv/salt/makina-states/$i /srv/mastersalt/makina-states/$i;done
+# for i in doc src/salt/ files/ _scripts/ bootstraps/ top.sls buildout.cfg _modules/ _states/ services/ localsettings/ controllers/ nodetypes/ _macros/ common/ cloud/;do rsync -vPa --exclude=*pyc --exclude=*pyo --exclude=.installed.cfg --exclude=.mr.developer.cfg --exclude=.bootlogs --exclude=.git /srv/salt/makina-states/$i /srv/other/makina-states/$i;done
 
 #bin/nosetests --nologcapture --exe -e mc_test -v -s --with-doctest mc_states.tests.unit.modules.firewalld_tests
 

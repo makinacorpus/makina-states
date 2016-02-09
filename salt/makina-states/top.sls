@@ -49,13 +49,9 @@
 #
 # Tree of different configuration flavors inheritance
 #
-#  Controllers +--> salt-minion <------------------+
+#  Controllers +--> salt        <------------------+
 #     |        |                                   |
-#     |        +--> salt-master --controlling------+
 #     |        |
-#     |        +--> mastersalt-minion <------------+
-#     |        |                                   |
-#     |        +--> mastersalt-master -controlling-+
 #  controllers                                     _________________
 #  controlling             NODETYPES - INHERITANCE                  |
 #   nodetypes             |       server                            |
@@ -88,8 +84,8 @@
 #  user (...)                |    |            |     virt           ---------- SERVICES MANAGERS
 #                            |    |   ntp      |       |
 #     _______________________|____|____|_______|_______|_                   - system
-#      | |    |   |     |       | |  |                   \                  - circus
-#      | ldap | salt/mastersalt | |  |    .-- nginx      |                  - supervisor
+#      | |    |   |             | |  |                   \                  - circus
+#      | ldap | salt            | |  |    .-- nginx      |                  - supervisor
 #      |  |   |                 | |  |   /__ apache      |
 #      | nscd |                ssh|  http               php____ phpfpm
 #      |      |                   |                         |
@@ -103,9 +99,8 @@
 #
 # You may have already note that there are some main kind of tags
 #   - server nodetypes: which server do I run on?
-#   - 2 kinds of salt controllers (salt/mastersalt)
+#   - 2 kinds of salt controllers (salt)
 #       * salt is a local project salt master
-#       * mastersalt is the salt master of the admin guys
 #   - services
 #
 # Some rules to write makina-states states:

@@ -384,10 +384,9 @@ def get_registry(registry_configuration):
             'kind': 'foo',
             'bases': ['localsettings'],
             'defaults': {
-               'mastersalt_minion': {'active': False},
-               'mastersalt_master': {'active': False},
-               'salt_minion': {'active': False},
-               'salt_master': {'active': True}
+               'foo': {'active': False},
+               'bar': {'active': False},
+               'moo': {'active': True}
               }
             }
         }
@@ -414,15 +413,15 @@ def get_registry(registry_configuration):
             'grains_pref': 'makina-states.foo',
             'activated': {'salt_master': {'active': True}},
             'unactivated': {
-               'mastersalt_minion': {'active': False},
-               'mastersalt_master': {'active': False},
-               'salt_minion': {'active': False},
+               'foo': {'active': False},
+               'bar': {'active': False},
+               'moo': {'active': False},
             },
             'defaults': {
-               'mastersalt_minion': {'active': False},
-               'mastersalt_master': {'active': False},
-               'salt_minion': {'active': False},
-               'salt_master': {'active': True}
+               'foo': {'active': False},
+               'bar': {'active': False},
+               'moo': {'active': False},
+               'boo': {'active': True}
               }
             }
         }
