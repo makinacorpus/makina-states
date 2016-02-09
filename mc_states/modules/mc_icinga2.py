@@ -136,9 +136,10 @@ def load_objects(core=True, ttl=120):
     def _do(core):
         core_objects = {}
         if core:
+            msr = __salt__['mc_locations.msr']()
             core_objects = __salt__['mc_utils.cyaml_load'](
-                '/srv/mastersalt/makina-states/'
-                'files/icinga2_core_objects.conf')
+                msr +
+                '/files/icinga2_core_objects.conf')
         data = __salt__['mc_utils.defaults'](
             'icinga2_definitions', {
                 'objects': core_objects,
