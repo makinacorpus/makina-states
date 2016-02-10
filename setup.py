@@ -47,7 +47,11 @@ if HAS_PIP:
         if os.path.exists(req_folder):
             for freq in os.listdir(req_folder):
                 req = os.path.join(req_folder, freq)
-                if reqs_files_re.match(freq) and req not in reqs_files:
+                if (
+                    reqs_files_re.match(freq) and
+                    not req.endswith('.in') and
+                    req not in reqs_files
+                ):
                     reqs_files.append(req)
     for reqs_file in reqs_files:
         if os.path.isfile(reqs_file):
