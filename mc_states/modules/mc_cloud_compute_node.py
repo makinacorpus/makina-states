@@ -707,7 +707,7 @@ def _configure_http_reverses(reversep, domain, ip):
     sbackend_name = 'securebck_{0}'.format(dom_id)
     if domain.startswith('*.'):
         rule = ('acl host_{0} hdr_reg(host)'
-                ' -i ^*.{1}(:80)?$').format(dom_id, domain[2:])
+                ' -i ^.*.{1}(:80)?$').format(dom_id, domain[2:])
     else:
         rule = ('acl host_{0} hdr_reg(host)'
                 ' -i ^{0}(:80)?$').format(dom_id)
