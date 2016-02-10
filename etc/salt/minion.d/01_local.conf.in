@@ -1,0 +1,123 @@
+makina-states.nodetypes.server: true
+id: __MS_MINIONID__
+file_roots:
+  base:
+    - /srv/makina-states/salt/overrides
+    - /srv/makina-states/salt
+    - /srv/salt
+    - /srv/salt
+pillar_roots:
+  base:
+    - /srv/makina-states/pillar/overrides/pillar.d
+    - /srv/makina-states/pillar/overrides
+    - /srv/makina-states/pillar/pillar.d
+    - /srv/makina-states/pillar
+    - /srv/pillar
+    - /srv/pillar
+pidfile: /srv/makina-states/var/run/salt-minion.pid
+log_file: /srv/makina-states/var/log/salt-minion
+key_logfile: /srv/makina-states/var/log/salt-minion-key
+pki_dir: /srv/makina-states/etc/salt/pki/minion
+cachedir: /srv/makina-states/var/cache/salt-minion
+sock_dir: /srv/makina-states/var/run/salt-minion
+search_dirs:
+  - /srv/makina-states/salt/_search
+  - /srv/makina-states/mc_states/search
+  - /srv/makina-states/modules/search
+grains_dirs:
+  - /srv/makina-states/salt/_grains
+  - /srv/makina-states/mc_states/grains
+  - /srv/makina-states/modules/grains
+pillar_dirs:
+  - /srv/makina-states/salt/_pillar
+  - /srv/makina-states/mc_states/pillar
+  - /srv/makina-states/modules/pillar
+sdb_dirs:
+  - /srv/makina-states/salt/_sdb
+  - /srv/makina-states/mc_states/sdb
+  - /srv/makina-states/modules/sdb
+queue_dirs:
+  - /srv/makina-states/salt/_queues
+  - /srv/makina-states/mc_states/queues
+  - /srv/makina-states/modules/queues
+returner_dirs:
+  - /srv/makina-states/salt/_returners
+  - /srv/makina-states/mc_states/returners
+  - /srv/makina-states/modules/returners
+beacons_dirs:
+  - /srv/makina-states/salt/_beacons
+  - /srv/makina-states/mc_states/beacons
+  - /srv/makina-states/modules/beacons
+engines_dirs:
+  - /srv/makina-states/salt/_engines
+  - /srv/makina-states/mc_states/engines
+  - /srv/makina-states/modules/engines
+runner_dirs:
+  - /srv/makina-states/salt/_runners
+  - /srv/makina-states/mc_states/runners
+  - /srv/makina-states/modules/runners
+top_dirs:
+  - /srv/makina-states/salt/_tops
+  - /srv/makina-states/mc_states/tops
+  - /srv/makina-states/modules/tops
+wrapper_dirs:
+  - /srv/makina-states/salt/_wrapper
+  - /srv/makina-states/mc_states/wrapper
+  - /srv/makina-states/modules/wrapper
+states_dirs:
+  - /srv/makina-states/salt/_states
+  - /srv/makina-states/mc_states/states
+  - /srv/makina-states/modules/states
+grain_dirs:
+  - /srv/makina-states/salt/_grains
+  - /srv/makina-states/mc_states/grains
+  - /srv/makina-states/modules/grains
+render_dirs:
+  - /srv/makina-states/salt/_renderers
+  - /srv/makina-states/mc_states/renderers
+  - /srv/makina-states/modules/renderers
+netapi_dirs:
+  - /srv/makina-states/salt/_netapi
+  - /srv/makina-states/mc_states/netapi
+  - /srv/makina-states/modules/netapi
+outputter_dirs:
+  - /srv/makina-states/salt/_output
+  - /srv/makina-states/mc_states/output
+  - /srv/makina-states/modules/output
+cloud_dirs:
+  - /srv/makina-states/salt/_clouds
+  - /srv/makina-states/mc_states/clouds
+  - /srv/makina-states/modules/clouds
+module_dirs:
+  - /srv/makina-states/salt/_modules
+  - /srv/makina-states/mc_states/modules
+  - /srv/makina-states/modules/modules
+auth_dirs:
+  - /srv/makina-states/salt/_auth
+  - /srv/makina-states/mc_states/auth
+  - /srv/makina-states/modules/auth
+roster_dirs:
+  - /srv/makina-states/salt/_roster
+  - /srv/makina-states/mc_states/roster
+  - /srv/makina-states/modules/roster
+wheel_dirs:
+  - /srv/makina-states/salt/_wheel
+  - /srv/makina-states/mc_states/wheel
+  - /srv/makina-states/modules/wheel
+log_handlers_dirs:
+  - /srv/makina-states/salt/_log_handlers
+  - /srv/makina-states/mc_states/log_handlers
+  - /srv/makina-states/modules/log_handlers
+utils_dirs:
+  - /srv/makina-states/salt/_utils
+  - /srv/makina-states/mc_states.api
+  - /srv/makina-states/modules/utils
+fileserver_dirs:
+  - /srv/makina-states/salt/_fileserver
+  - /srv/makina-states/mc_states/fileserver
+  - /srv/makina-states/modules/fileserver
+proxy_dirs:
+  - /srv/makina-states/salt/_proxy
+  - /srv/makina-states/mc_states/proxy
+  - /srv/makina-states/modules/proxy
+# vim:set ft=sls:
