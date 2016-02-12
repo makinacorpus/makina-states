@@ -48,6 +48,17 @@ makina-postgresql-{{version}}-fix-{{db}}:
                 update pg_database set datistemplate = TRUE where datname = 'template1';
                 update pg_database set datallowconn = FALSE where datname = 'template0';
                 {% endif %}
+    {% if db in ['template0', 'template1'] %}
+    - require:
+      - mc_proxy: {{orchestrate['base']['presetup']}}
+    - require_in:
+      - mc_proxy: {{orchestrate['base']['postbase']}}
+    {%else%}
+    - require:
+      - mc_proxy: {{orchestrate[version]['postdb']}}
+    - require_in:
+      - mc_proxy: {{orchestrate[version]['preuser']}}
+    {%endif%}
   cmd.run:
     - user: {{default_user}}
     - name: psql-{{version}} {{db}} -f {{tmpf}}
