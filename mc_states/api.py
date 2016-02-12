@@ -177,7 +177,8 @@ def get_mc_server(key=None,
         except (Exception,):
             error = True
             trace = traceback.format_exc()
-            log.error('Memcached error:\n{0}'.format(trace))
+            log.warn('Local memcached server is not reachable')
+            log.trace('Memcached error:\n{0}'.format(trace))
         if error:
             _MC_SERVERS['error'][error_key] = time.time()
     if error_key in _MC_SERVERS['error']:
@@ -195,7 +196,8 @@ def get_mc_server(key=None,
         except (Exception,):
             error = True
             trace = traceback.format_exc()
-            log.error('Memcached error:\n{0}'.format(trace))
+            log.warn('Local memcached server is not usable')
+            log.trace('Memcached error:\n{0}'.format(trace))
         if error:
             _MC_SERVERS['error'][error_key] = time.time()
             _MC_SERVERS['cache'].pop(cache_key, None)
