@@ -1,5 +1,4 @@
 {% set settings = salt['mc_memcached.settings']() %}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 include:
   - makina-states.services.cache.memcached.hooks
   - makina-states.services.cache.memcached.services
@@ -18,4 +17,3 @@ memcached_config_{{tp}}:
     - watch_in:
       - mc_proxy: memcached-post-conf
 {% endfor %}
-{% endif%}

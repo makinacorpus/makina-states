@@ -6,7 +6,6 @@ include:
 {% set data = salt['mc_grub.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'grub') }}
-{%  if salt['mc_controllers.allow_lowlevel_states']() %}
 {%- if grains['os_family'] in ['Debian'] %}
 
 # disable ifnames & biosdename to avoir interface name twists
@@ -25,5 +24,4 @@ grub-cfg{{i}}:
     - name: {{i}}
     - source: salt://makina-states/files{{i}}
 {% endfor %}
-{% endif %}
 {% endif %}

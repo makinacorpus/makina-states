@@ -5,7 +5,6 @@ include:
   {% endif %}
   - makina-states.services.firewall.shorewall.hooks
 
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 shorewall-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
@@ -15,4 +14,3 @@ shorewall-pkgs:
       - shorewall
     - require_in:
       - mc_proxy: shorewall-postinstall
-{% endif %}

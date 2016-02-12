@@ -3,7 +3,6 @@
 {% set locs = salt['mc_locations.settings']()%}
 include:
   - makina-states.services.mail.postfix.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.mail.postfix.services
   - makina-states.localsettings.ssl
 
@@ -188,4 +187,3 @@ makina-postfix-postmap-{{f}}:
     - watch_in:
       - cmd: makina-postfix-configuration-check
 {%endfor %}
-{%endif %}

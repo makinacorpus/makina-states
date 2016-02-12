@@ -1,4 +1,3 @@
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set vmdata = salt['mc_cloud_vm.settings']() %}
 {%- set data = vmdata.vts.docker %}
@@ -36,5 +35,3 @@ ms-dockerviz:
       - mc_proxy: docker-pre-install
     - watch_in:
       - mc_proxy: docker-post-install
-{% endif %}
-

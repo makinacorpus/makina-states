@@ -5,7 +5,6 @@
 #}
 
 {{ salt['mc_macros.register']('localsettings', 'vim') }}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set ugs = salt['mc_usergroup.settings']() %}
 {% set vim = salt['mc_vim.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
@@ -131,4 +130,3 @@ vimrc-config-block-global:
     - append_if_not_found: True
     - backup: '.bak'
     - show_changes: True
-{% endif %}

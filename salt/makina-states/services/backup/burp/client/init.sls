@@ -2,9 +2,7 @@
 {{ salt['mc_macros.register']('services', 'backup.burp.client') }}
 include:
   - makina-states.services.backup.burp.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.backup.burp.server.prerequisites
-{% endif %}
 
 {# install on an unmanaged box
 git clone https://github.com/grke/burp.git 

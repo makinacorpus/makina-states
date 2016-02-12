@@ -1,4 +1,3 @@
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 include:
   - makina-states.services.firewall.shorewall.hooks
   - makina-states.services.firewall.firewall.hooks
@@ -59,4 +58,3 @@ shorewall-uninstall-shorewall:
       - mc_proxy: shorewall-predisable
     - watch_in:
       - mc_proxy: shorewall-postdisable
-{%endif %}

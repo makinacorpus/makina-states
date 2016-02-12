@@ -75,7 +75,6 @@ cpt-cert-{{cert}}-{{paths.domaincert}}-{{flav}}{{suf}}:
 {{install_cert(cert)}}
 {% endfor %}
 
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set f='/tmp/cloudcerts.py' %}
 cpt-certs-cleanup:
   file.managed:
@@ -103,7 +102,6 @@ cpt-certs-cleanup:
       - mc_proxy: cloud-sslcerts
       - mc_proxy: ssl-certs-post-hook
       - cmd: cpt-certs-install-openssl
-{% endif %}
 {#
 cpt-certs-cleanup-openssl-cloud:
   cmd.run:

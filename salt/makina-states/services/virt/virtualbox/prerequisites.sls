@@ -1,5 +1,4 @@
 {% import "makina-states/_macros/h.jinja" as h with context %}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {% set pkgs = salt['mc_pkgs.settings']() %}
 {% set settings = salt['mc_virtualbox.settings']() %}
@@ -29,4 +28,3 @@ virtualbox-pkgs:
     - watch_in:
       - mc_proxy: virtualbox-post-install
     - pkgs: {{settings.packages}}
-{% endif %}

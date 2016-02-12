@@ -5,7 +5,6 @@
 #}
 
 {{ salt['mc_macros.register']('localsettings', 'ldap') }}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 
 include:
@@ -167,7 +166,6 @@ ldap-cacerts-cert:
     - mode: '0644'
     - template: jinja
     - source: salt://makina-states/files{{ locs.conf_dir }}/ssl/cacerts/cacert.pem
-{% endif %}
     - watch:
       - mc_proxy: localldap-pre-conf
     - watch_in:

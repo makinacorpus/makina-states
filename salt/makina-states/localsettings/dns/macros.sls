@@ -31,7 +31,6 @@ ms-dns-pre-{{suf}}:
 
 ms-dns-post-{{suf}}:
   mc_proxy.hook: []
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 bind-set-defaultdns-{{suf}}-1:
   file.managed:
     - name: /usr/bin/ms-resolv-conf.sh
@@ -107,5 +106,4 @@ bind-set-defaultdns-{{suf}}-2:
       - {{w}}
       {% endfor %}
       {% endif %}
-{% endif %}
 {% endmacro %}

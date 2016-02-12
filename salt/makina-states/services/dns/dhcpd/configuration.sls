@@ -1,6 +1,5 @@
 {% set settings = salt['mc_dhcpd.settings']() %}
 {% set yameld_data = salt['mc_utils.json_dump'](settings) %}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 include:
   - makina-states.services.dns.dhcpd.hooks
   - makina-states.services.dns.dhcpd.services
@@ -22,4 +21,3 @@ dhcpd_config_{{tp}}:
     - watch_in:
       - mc_proxy: dhcpd-post-conf
 {% endfor %}
-{% endif%}

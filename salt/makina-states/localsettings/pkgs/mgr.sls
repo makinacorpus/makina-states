@@ -8,7 +8,6 @@
 include:
   - makina-states.localsettings.pkgs.hooks
 {{ salt['mc_macros.register']('localsettings', 'pkgs.mgr') }}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% set data = pkgssettings %}
 {%- set locs = salt['mc_locations.settings']() %}
@@ -68,6 +67,5 @@ apt-update-after:
       - mc_proxy: after-base-pkgmgr-config-proxy
     - watch_in:
       - mc_proxy: after-pkgmgr-config-proxy
-{% endif %}
 {% endif %}
 # vim:set nofoldenable:

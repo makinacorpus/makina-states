@@ -1,4 +1,3 @@
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set settings = salt['mc_bind.settings']() %}
 {% set pkgssettings = salt['mc_pkgs.settings']() %} 
 include:
@@ -10,4 +9,3 @@ bind-pkgs:
       - mc_proxy: bind-pre-install
     - watch_in:
       - mc_proxy: bind-post-install
-{% endif %}

@@ -1,7 +1,6 @@
 {% set data = salt['mc_burp.settings']() %}
 include:
   - makina-states.services.backup.burp.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 #
 # cleanup the configuration directories from stale clients configuration
 # data cleanup as it is backups is left to manually done by
@@ -21,4 +20,3 @@ install-burp-configuration-cleanup:
     - use_vt: true
     - watch:
       - mc_proxy: burp-post-restart-hook
-{%endif %}

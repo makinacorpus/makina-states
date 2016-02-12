@@ -1,6 +1,5 @@
 include:
   - makina-states.services_managers.supervisor.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services_managers.supervisor.unregister
 
 {%  set settings = salt['mc_supervisor.settings']() %}
@@ -32,4 +31,3 @@ supervisor-disable-makinastates-supervisor:
       - mc_proxy: supervisor-pre-disable
     - watch_in:
       - mc_proxy: supervisor-post-disable
-{% endif %}

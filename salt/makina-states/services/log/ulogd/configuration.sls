@@ -5,7 +5,6 @@
 {% set data = salt['mc_ulogd.settings']() %}
 include:
   - makina-states.services.log.ulogd.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.log.ulogd.services
 
 makina-ulogd-configuration-check:
@@ -37,4 +36,3 @@ makina-ulogd-{{f}}:
     - watch_in:
       - mc_proxy: ulogd-post-conf-hook
 {%endfor %}
-{%endif %}

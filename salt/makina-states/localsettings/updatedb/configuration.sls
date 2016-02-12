@@ -1,7 +1,6 @@
 include:
   - makina-states.localsettings.updatedb.hooks
 
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set data = salt['mc_updatedb.settings']() %}
 {% for f in ['/etc/updatedb.conf'] %}
 etc-update-{{f}}:
@@ -16,4 +15,3 @@ etc-update-{{f}}:
     - makedirs: true
     - group: root
 {% endfor %}
-{% endif %}

@@ -2,7 +2,6 @@
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 include:
   - makina-states.services.firewall.firewalld.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 firewalld-repo:
   pkgrepo.managed:
     - humanname: firewalld ppa
@@ -21,4 +20,3 @@ firewalld-pkgs:
       - pkgrepo: firewalld-repo
     - require_in:
       - mc_proxy: firewalld-postinstall
-{% endif %}

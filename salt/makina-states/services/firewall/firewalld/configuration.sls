@@ -2,7 +2,6 @@
 {% set data = salt['mc_firewalld.settings']() %}
 include:
   - makina-states.services.firewall.firewalld.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.firewall.firewalld.services
   - makina-states.localsettings.network
 {% macro rmacro() %}
@@ -19,4 +18,3 @@ firewalld-forward:
     - name: net.ipv4.ip_forward
     - value: 1
     {{rmacro()}}
-{% endif %}

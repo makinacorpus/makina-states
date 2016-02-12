@@ -6,7 +6,6 @@ include:
   - makina-states.services.virt.lxc.hooks
   - makina-states.services.virt.docker.hooks
   - makina-states.services.firewall.shorewall.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% if firewalld %}
   - makina-states.services.firewall.shorewall.disable
 {% else %}
@@ -14,7 +13,6 @@ include:
   - makina-states.services.firewall.shorewall.prerequisites
   - makina-states.services.firewall.shorewall.configuration
   - makina-states.services.firewall.shorewall.services
-{% endif %}
 {% endif %}
 shorewall-orchestrate:
   mc_proxy.hook:

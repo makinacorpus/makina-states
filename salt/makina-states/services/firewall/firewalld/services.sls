@@ -3,7 +3,6 @@ include:
   - makina-states.services.firewall.shorewall.disable
   - makina-states.services.firewall.firewalld.hooks
   - makina-states.services.firewall.firewall.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.localsettings.network
   - makina-states.services.firewall.firewall.configuration
 firewalld-conflicting-services:
@@ -102,5 +101,4 @@ firewalld-reapply:
       - mc_proxy: firewalld-prerestart
     - watch_in:
       - mc_proxy: firewalld-postrestart
-{%endif %}
 {%endif %}

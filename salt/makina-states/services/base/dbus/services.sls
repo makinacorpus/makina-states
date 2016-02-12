@@ -1,6 +1,6 @@
 include:
   - makina-states.services.base.dbus.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() and not salt['mc_nodetypes.is_container']() %}
+{% if not salt['mc_nodetypes.is_container']() %}
 makina-dbus-service:
   service.running:
     - name: dbus

@@ -2,7 +2,6 @@
 {% set settings = salt['mc_virtualbox.settings']() %}
 include:
   - makina-states.services.virt.virtualbox.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.virt.virtualbox.services
 {% macro rmacro() %}
     - watch:
@@ -11,4 +10,3 @@ include:
       - mc_proxy: virtualbox-post-install
 {% endmacro %}
 {{ h.deliver_config_files(settings.get('extra_confs', {}), after_macro=rmacro, prefix='vb-conf-')}}
-{%  endif %} 
