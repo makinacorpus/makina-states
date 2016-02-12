@@ -1,7 +1,6 @@
 include:
   - makina-states.services.mail.postfix.hooks
 {% set locs = salt['mc_locations.settings']()%}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 
 makina-postfix-configuration-check:
   cmd.run:
@@ -30,4 +29,3 @@ makina-postfix-cli-client:
       - mc_proxy: postfix-postrestart
     - watch:
       - mc_proxy: postfix-prerestart 
-{% endif %}

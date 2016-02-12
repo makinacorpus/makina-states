@@ -45,7 +45,6 @@ signed-{{file}}:
 #}
 {% endmacro %}
 
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 include:
   - makina-states.services.dns.bind.hooks
   - makina-states.services.dns.bind.services
@@ -199,5 +198,3 @@ bind-checkconf-zones:
       - mc_proxy: bind-post-conf
     - watch_in:
       - mc_proxy: bind-check-conf
-{% endif %}
-

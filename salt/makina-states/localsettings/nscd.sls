@@ -4,7 +4,6 @@
 #   - makina-states/doc/ref/formulaes/localsettings/nscd.rst
 #}
 {{ salt['mc_macros.register']('localsettings', 'nscd') }}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set nscd = salt['mc_nscd.settings']() %}
 nscd-pkgs:
@@ -58,7 +57,6 @@ nscd:
       - file: touch-etc-nsswitch-conf
     - watch_in:
       - mc_proxy: nscd-end-hook
-{% endif %}
 {% endif %}
 
 nscd-end-hook:

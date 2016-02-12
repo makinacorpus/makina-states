@@ -1,8 +1,6 @@
 {%- set pkgSettings = salt['mc_pkgs.settings']() %}
 include:
   - makina-states.services.virt.kvm.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
-
 {% if grains['os'] in ['Ubuntu'] %}
 {% set dist = pkgSettings.apt.ubuntu.dist %}
 {% else %}
@@ -32,4 +30,3 @@ kvm-pkgs:
       - mc_proxy: kvm-post-pkg
     - watch:
       - mc_proxy: kvm-pre-pkg
-{%endif %}

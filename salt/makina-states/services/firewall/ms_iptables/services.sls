@@ -4,7 +4,6 @@ include:
   - makina-states.services.firewall.firewalld.disable
   - makina-states.services.firewall.ms_iptables.hooks
   - makina-states.services.firewall.firewall.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.localsettings.network
   - makina-states.services.firewall.firewall.configuration
 ms_iptables-conflicting-services:
@@ -68,5 +67,4 @@ ms_iptables-reapply:
       - mc_proxy: ms_iptables-prerestart
     - watch_in:
       - mc_proxy: ms_iptables-postrestart
-{%endif %}
 {%endif %}

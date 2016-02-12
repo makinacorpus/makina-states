@@ -1,6 +1,5 @@
 {% set locs=salt['mc_locations.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'etckeeper') }}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 include:
   - makina-states.localsettings.etckeeper.hooks
   - makina-states.localsettings.git
@@ -62,16 +61,3 @@ etckeeper-perms:
     - contents: |
                 #!/usr/bin/env bash
                 exec {{locs.resetperms }} --dmode 0700 --fmode 0700 --user "root" --group "root" --paths {{locs.conf_dir}}/.git
-{# deactivated as soon or later it will be autocommited from
-   makina-states.commin.autocommit
-etckeeper-run:
-  cmd.run:
-    - name: {{locs.conf_dir}}/cron.daily/etckeeper "commit from salt"
-    - watch:
-      - mc_proxy: etckeeper-run-hook
-      - cmd: etckeeper-initial
-      - file: etckeeper-perms
-    - watch_in:
-      - mc_proxy: etckeeper-post-run-hook
-#}
-{% endif %}

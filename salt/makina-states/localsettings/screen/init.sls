@@ -5,7 +5,6 @@
 #}
 
 {{ salt['mc_macros.register']('localsettings', 'screen') }}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set ugs = salt['mc_usergroup.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set settings = salt['mc_screen.settings']() %}
@@ -21,4 +20,3 @@ screen-{{i}}:
     - group: root
     - template: jinja
 {% endfor %}
-{% endif %}

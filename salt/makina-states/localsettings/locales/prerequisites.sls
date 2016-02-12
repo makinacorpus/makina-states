@@ -1,5 +1,3 @@
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
-
 include:
   - makina-states.localsettings.locales.hooks
 
@@ -9,4 +7,3 @@ locales-pkg:
       - locales
     - watch_in:
       - mc_proxy: locales-post-inst
-{% endif %}

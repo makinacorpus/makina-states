@@ -6,7 +6,6 @@
 
 {% set tzs = salt['mc_timezone.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'timezone') }}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set defaults = tzs %}
 tz-pkgs:
@@ -21,4 +20,3 @@ tz-conf:
     - user: root
     - group: root
     - template: jinja
-{% endif %}

@@ -1,5 +1,4 @@
 {% set data = salt['mc_burp.settings']() %}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 burp-cron-cmd:
   file.managed:
     - source: salt://makina-states/files/usr/bin/burp-cron.sh
@@ -25,5 +24,4 @@ burp-cron:
 burp-cron:
   file.absent:
     - name: "/etc/cron.d/burpsynccron"
-{% endif %}
 {% endif %}

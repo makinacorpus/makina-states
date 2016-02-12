@@ -7,7 +7,6 @@ include:
   - makina-states.localsettings.sysctl.hooks
 
 {{ salt['mc_macros.register']('localsettings', 'sysctl') }}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set kernel = salt['mc_kernel.settings']() %}
 {% set isTravis = salt['mc_nodetypes.is_travis']() %}
 {% if not (isTravis or salt['mc_nodetypes.is_container']()) %}
@@ -161,6 +160,5 @@ sysctl-{{s}}:
       - mc_proxy: sysctl-post-hook
 {% endif %}
 {% endfor %}
-{% endif %}
 {% endif %}
 # vim: set nofoldenable:

@@ -1,6 +1,5 @@
 {% import "makina-states/localsettings/dns/macros.sls" as dns with context %}
 {% set settings = salt['mc_bind.settings']() %}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 include:
   - makina-states.services.dns.bind.hooks
 
@@ -75,4 +74,3 @@ bind-service-reload:
 {{ dns.switch_dns(suf='postbindrestart',
                   require_in=['mc_proxy: bind-post-end'],
                   require=['mc_proxy: bind-post-restart']) }}
-{% endif %}

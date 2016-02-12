@@ -1,11 +1,9 @@
 {%- set data = salt['mc_monitoring.settings']() %}
 {%- set locs = mc_locations.settings']() %}
 {% set dodl=True %}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% if grains['os'] in ['Debian'] %}
 {% if grains["osrelease"][0] < "6" %}
 {% set dodl=False %}
-{% endif %}
 {% endif %}
 {% endif %}
 

@@ -1,4 +1,3 @@
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 include:
   - makina-states.services.virt.docker.hooks
   - makina-states.services.virt.cgroups
@@ -31,4 +30,3 @@ docker-preload-images-{{i.replace(':', '-')}}:
     - require_in:
       - mc_proxy: docker-post-inst
 {% endfor %}
-{% endif %}

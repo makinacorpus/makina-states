@@ -71,7 +71,6 @@ def registry():
     def _registry():
         # in scratch mode, deactivating all default configuration for services
         true = not __salt__['mc_nodetypes.is_scratch']()
-        allow_lowlevel_states = __salt__['mc_controllers.allow_lowlevel_states']()
         is_docker = __salt__['mc_nodetypes.is_docker']()
         is_travis = __salt__['mc_nodetypes.is_travis']()
         ids = __salt__['mc_nodetypes.is_docker_service']()

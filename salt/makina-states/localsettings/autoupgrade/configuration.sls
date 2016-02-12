@@ -1,7 +1,6 @@
 {% if grains['os_family'] in ['Debian'] %}
 include:
   - makina-states.localsettings.autoupgrade.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {%- set data = salt['mc_autoupgrade.settings']() %}
 {% for f in [
   '/etc/apt/apt.conf.d/50unattended-upgrades',
@@ -23,5 +22,4 @@ autoupgrade-conf-{{f}}:
 
 {% endfor %}
 
-{%endif %}
 {%endif %}

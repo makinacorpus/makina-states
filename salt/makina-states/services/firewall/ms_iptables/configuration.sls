@@ -2,7 +2,6 @@
 {% set data = salt['mc_ms_iptables.settings']() %}
 include:
   - makina-states.services.firewall.ms_iptables.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.firewall.ms_iptables.services
   - makina-states.localsettings.network
 {% macro rmacro() %}
@@ -19,4 +18,3 @@ ms_iptables-forward:
     - name: net.ipv4.ip_forward
     - value: 1
     {{rmacro()}}
-{% endif %}

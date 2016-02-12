@@ -1,7 +1,6 @@
 {%- set locs = salt['mc_locations.settings']() %}
 include:
   - makina-states.services.firewall.shorewall.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 shorewall-e:
   service.dead:
     - names:
@@ -45,4 +44,3 @@ shorewall-restart:
 #     - watch:
 #       - file: shorewall-test-cfg
 #}
-{%endif %}

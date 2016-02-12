@@ -1,7 +1,5 @@
 include:
   - makina-states.services_managers.circus.hooks
-
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services_managers.circus.unregister
 
 {%  set settings = salt['mc_circus.settings']() %}
@@ -33,4 +31,3 @@ circus-disable-makinastates-circus:
       - mc_proxy: circus-pre-disable
     - watch_in:
       - mc_proxy: circus-post-disable
-{% endif %}

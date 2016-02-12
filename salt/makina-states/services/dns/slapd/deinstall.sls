@@ -1,4 +1,3 @@
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set settings = salt['mc_slapd.settings']() %}
 include:
   - makina-states.services.dns.slapd.hooks
@@ -36,4 +35,3 @@ remove-slapd-d-acls-schema:
       - mc_proxy: slapd-pre-install
     - watch_in:
       - mc_proxy: slapd-post-install  
-{%endif%}

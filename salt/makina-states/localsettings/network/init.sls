@@ -3,16 +3,12 @@ include:
   - makina-states.localsettings.network.hooks
 # be sure to reconfigure firewall on network
 # reconfiguration
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.firewall.firewall.noinstall
   - makina-states.localsettings.grub
-{% endif %}
-
 
 {% set mcnet = salt['mc_network.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'network') }}
-{%  if salt['mc_controllers.allow_lowlevel_states']() %}
 {%- if mcnet.networkManaged %}
 {%- if grains['os_family'] in ['Debian'] %}
 
@@ -112,6 +108,5 @@ network-services-{{ifc}}-2nd:
       - mc_proxy: network-last-hook
 {%endfor %}
 
-{% endif %}
 {% endif %}
 {% endif %}

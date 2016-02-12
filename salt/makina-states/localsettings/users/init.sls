@@ -328,7 +328,6 @@ include:
   - makina-states.localsettings.groups
   - makina-states.localsettings.sudo
 {{ salt['mc_macros.register']('localsettings', 'users') }}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% for id, udata in usergroup.users.items() %}
 {{ create_user(id, udata) }}
 {% endfor %}
@@ -345,5 +344,3 @@ ms-add-user-{{i}}-to-sudoers:
       - sudo
 {% endfor %}
 #}
-{% endif %}
-

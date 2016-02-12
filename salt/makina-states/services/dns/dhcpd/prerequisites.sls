@@ -1,4 +1,3 @@
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set settings = salt['mc_dhcpd.settings']() %}
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 include:
@@ -10,5 +9,3 @@ dhcpd-pkgs:
       - mc_proxy: dhcpd-pre-install
     - watch_in:
       - mc_proxy: dhcpd-post-install
-{% endif %}
-

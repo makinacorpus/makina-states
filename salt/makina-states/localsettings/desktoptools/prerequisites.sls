@@ -1,8 +1,6 @@
 include:
   - makina-states.localsettings.pkgs.basepackages
   - makina-states.localsettings.desktoptools.hooks
-
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% if grains['os'] in ['Ubuntu'] %}
 chrome-base:
   pkgrepo.managed:
@@ -42,5 +40,4 @@ desktop-pkgs:
       - mc_proxy: ms-desktoptools-pkg-pre
     - watch_in:
       - mc_proxy: ms-desktoptools-pkg-post
-{% endif %}
 {% endif %}

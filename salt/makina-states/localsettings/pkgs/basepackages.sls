@@ -116,10 +116,8 @@ sys-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
       - vim
-      {% if salt['mc_controllers.allow_lowlevel_states']() %}
       - lvm2
       - bridge-utils
-      {% endif %}
       - acl
       - bzip2
       - cron

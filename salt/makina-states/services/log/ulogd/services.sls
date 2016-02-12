@@ -1,4 +1,3 @@
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% set data = salt['mc_ulogd.settings']() %}
 include:
   - makina-states.services.log.ulogd.hooks
@@ -22,4 +21,3 @@ makina-ulogd-restart-service:
     - watch_in:
       - mc_proxy: ulogd-post-hardrestart-hook
 {% endif %}
-{%endif%}

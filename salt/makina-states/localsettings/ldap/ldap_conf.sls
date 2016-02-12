@@ -1,7 +1,5 @@
 include:
   - makina-states.localsettings.ldap.hooks
-
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 
 localldap-dirs:
@@ -15,7 +13,6 @@ localldap-dirs:
       - mc_proxy: localldap-post-install
     - watch_in:
       - mc_proxy: localldap-pre-conf
-
 
 {{ locs.conf_dir }}-ldap-ldap.conf:
   file.managed:
@@ -31,4 +28,3 @@ localldap-dirs:
     - watch_in:
       - mc_proxy: users-pre-hook
       - mc_proxy: localldap-post-conf
-{% endif %}

@@ -1,4 +1,3 @@
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 include:
   - makina-states.services.firewall.firewalld.hooks
   - makina-states.services.firewall.firewall.hooks
@@ -38,4 +37,3 @@ firewalld-uninstall-firewalld:
       - mc_proxy: firewalld-predisable
     - watch_in:
       - mc_proxy: firewalld-postdisable
-{%endif %}

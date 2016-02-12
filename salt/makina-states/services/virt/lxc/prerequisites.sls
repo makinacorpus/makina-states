@@ -1,8 +1,6 @@
 {%- set pkgssettings = salt['mc_pkgs.settings']() %}
 include:
   - makina-states.services.virt.lxc.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
-
 {% set locs = salt['mc_locations.settings']() %}
 lxc-repo:
   {# 04/06/2015: lxcfs & lxc are utterly bugged in stable #}
@@ -65,4 +63,3 @@ lxc-pkgs:
       - mc_proxy: lxc-pre-pkg
       - pkgrepo: lxc-repo
       - file: mclxc-repo
-{%endif %}

@@ -5,7 +5,6 @@
 #}
 {% set mcn = salt['mc_network.settings']() %}
 {{ salt['mc_macros.register']('localsettings', 'hosts') }}
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {# atomic file is not supported for /etc/hosts on a readonly layer (docker)
  # where the file can be written but not moved #}
 {% if not salt['mc_nodetypes.is_docker']() %}
@@ -70,6 +69,4 @@ makina-append-etc-hosts-management:
             hostname {{mcn.hostname}}
     - user: root
     - unless: test "x$(cat /etc/hostname)" = "x{{mcn.hostname}}"
-
-{% endif %}
 {% endif %}

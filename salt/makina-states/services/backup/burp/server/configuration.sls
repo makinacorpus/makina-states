@@ -1,6 +1,5 @@
 include:
   - makina-states.services.backup.burp.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
   - makina-states.services.backup.burp.server.services
 {% set data = salt['mc_burp.settings']() %}
 {% set ssdata = data.server_conf %}
@@ -311,4 +310,3 @@ burp-{{client}}-cronjob-{{i}}:
       - mc_proxy: burp-post-restart-hook
       - mc_proxy: burp-post-gen-sync
 {% endfor %}
-{% endif %}

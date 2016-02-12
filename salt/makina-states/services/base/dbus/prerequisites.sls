@@ -2,7 +2,6 @@
 {% set settings = salt['mc_dbus.settings']() %}
 include:
   - makina-states.services.base.dbus.hooks
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 dbus-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs: {{settings.packages}}
@@ -10,4 +9,3 @@ dbus-pkgs:
       - mc_proxy: dbus-preinstall
     - watch_in:
       - mc_proxy: dbus-postinstall
-{% endif %}

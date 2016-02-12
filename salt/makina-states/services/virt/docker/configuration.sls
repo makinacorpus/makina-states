@@ -7,7 +7,6 @@ include:
   - makina-states.localsettings.apparmor
   - makina-states.services.virt.docker.services
 
-{% if salt['mc_controllers.allow_lowlevel_states']() %}
 {% if grains['os'] in ['Ubuntu'] -%}
 {% set extra_confs = {'/etc/init/docker-net-makina.conf': {}} %}
 {% elif grains['os'] in ['Debian'] -%}
@@ -132,4 +131,3 @@ docker-services-net:
       - file: docker-conf-/usr/bin/docker-net-makina.sh
     - watch_in:
       - mc_proxy: docker-post-conf
-{%endif %}

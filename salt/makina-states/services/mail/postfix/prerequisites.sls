@@ -1,7 +1,6 @@
 {#- Postfix SMTP Server managment #}
 include:
   - makina-states.services.mail.postfix.hooks
-  {% if salt['mc_controllers.allow_lowlevel_states']() %}
 postfix-preseed_nointeractive:
   debconf.set:
     - name: postfix
@@ -26,4 +25,3 @@ postfix-pkgs:
       - mc_proxy: postfix-preinstall
     - watch_in:
       - mc_proxy: postfix-postinstall
-{%endif %}
