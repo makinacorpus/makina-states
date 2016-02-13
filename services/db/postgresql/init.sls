@@ -9,6 +9,7 @@
 {%- set default_user = settings.user %}
 {#- MAIN #}
 include:
+  - makina-states.localsettings.ssl
   - makina-states.localsettings.locales
   - makina-states.services.db.postgresql.hooks
   - makina-states.services.db.postgresql.wrappers
