@@ -15,8 +15,18 @@ makina-mysql-service-reload:
   service.running:
     - name: {{ mysqlData.service }}
     - enable: True
-    - reload: True
-    - watch:
+    - require:
       - mc_proxy: mysql-pre-restart-hook
-    - watch_in:
+    - require:
+      - mc_proxy: mysql-post-restart-hook
+  cmd.wait:
+    - name: service mysql reload
+    {# workaround for Failed to reload mysql.service: Job type reload is not applicable for unit mysql.service.
+     systemctl reload mysql wont work
+     service mysql reload works
+   #}
+    - watch:
+      - service: makina-mysql-service-reload
+      - mc_proxy: mysql-pre-restart-hook
+    - watch:
       - mc_proxy: mysql-post-restart-hook
