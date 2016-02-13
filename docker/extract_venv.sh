@@ -8,7 +8,7 @@ docker rm -f "${dname}" || /bin/true
 set -e -x
 docker run --rm --name="${dname}" -v "${W}/..":/makina-states \
     -e XZ_OPTS="-9e" ${MS_IMAGE}\
-    tar cJf "/makina-states/docker/virtualenv-${img}.tar.xz" /salt-venv
+    tar cJf "/makina-states/docker/virtualenv-${img}.tar.xz" /srv/makina-states/venv
 ret=$?
 exit $?
 # vim:set et sts=4 ts=4 tw=80:

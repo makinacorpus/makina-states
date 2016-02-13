@@ -16,6 +16,8 @@ __name = 'locations'
 
 log = logging.getLogger(__name__)
 default_locs = {
+    'srv_dir': '{root_dir}srv',
+    'ms': '{srv_dir}/makina-states',
     'apps_dir': '{srv_dir}/apps',
     'bin_dir': '{usr_dir}/bin',
     'conf_dir': '{root_dir}etc',
@@ -23,7 +25,6 @@ default_locs = {
     'home_dir': '{root_dir}home',
     'initd_dir': '{conf_dir}/init.d',
     'lxc_root': '',
-    'prefix': '{srv_dir}',
     'projects_dir': '{srv_dir}/projects',
     'remote_projects_dir': '{srv_dir}/remote_projects',
     'root_dir': '/',
@@ -33,7 +34,6 @@ default_locs = {
     'rvm': '{rvm_path}/bin/rvm',
     'sbin_dir': '{usr_dir}/sbin',
     'share_dir': '{usr_dir}/share',
-    'srv_dir': '{root_dir}srv',
     'sysadmins_home_dir': '{home_dir}',
     'tmp_dir': '{root_dir}tmp',
     'upstart_dir': '{conf_dir}/init',
@@ -45,10 +45,12 @@ default_locs = {
     'var_run_dir': '{var_dir}/run',
     'var_spool_dir': '{var_dir}/spool',
     'var_tmp_dir': '{var_dir}/tmp',
-    'venv': '{root_dir}salt-venv',
+    'venv':  (
+        '{ms}/venv'
+    ),
     'vms_docker_root': '{srv_dir}/docker',
     'resetperms': (
-        '{prefix}/salt/makina-states/_scripts/reset-perms.py'
+        '{ms}/_scripts/reset-perms.py'
     )}
 
 

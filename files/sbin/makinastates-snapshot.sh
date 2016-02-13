@@ -45,6 +45,7 @@ if [ "x${is_docker}" != "x" ];then
     REMOVE="${REMOVE}
 /salt-venv/mastersalt/lib/python2.7/site-packages/libcloud/test/compute/fixtures
 /salt-venv/salt/lib/python2.7/site-packages/libcloud/test/compute/fixtures
+/srv/makina-states/salt/lib/python2.7/site-packages/libcloud/test/compute/fixtures
 "
 fi
 set -e

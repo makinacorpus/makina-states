@@ -43,6 +43,6 @@ RUN echo DOCKERFILE_ID=4\
     && /srv/salt/makina-states/_scripts/boot-salt.sh __MS_BOOTSTRAP_ARGS__ \
     && rm -f /tmp/boot-salt.sh /tmp/makina-states.tar.xz \
     && /sbin/makinastates-snapshot.sh \
-    && rm -rf /salt-venv/mastersalt \
+    && rm -rf /srv/makina-states/venv \
     && echo dockercontainer > /etc/makina-states/nodetype
 # vim:set ft=Dockerfile:
