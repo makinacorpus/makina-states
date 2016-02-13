@@ -17,7 +17,7 @@ makina-mysql-service-reload:
     - enable: True
     - require:
       - mc_proxy: mysql-pre-restart-hook
-    - require:
+    - require_in:
       - mc_proxy: mysql-post-restart-hook
   cmd.wait:
     - name: service mysql reload
@@ -28,5 +28,5 @@ makina-mysql-service-reload:
     - watch:
       - service: makina-mysql-service-reload
       - mc_proxy: mysql-pre-restart-hook
-    - watch:
+    - watch_in:
       - mc_proxy: mysql-post-restart-hook
