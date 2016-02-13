@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 gmark="/root/.salt_lxc_core_packages"
-ms="/srv/salt/makina-states"
+ms="${MS:-/srv/salt/makina-states}"
 ntp_postinst="$ms/files/root/debbuild/ntp_postinst"
 apt_update=""
 #for i in resolvconf fuse ntp;do

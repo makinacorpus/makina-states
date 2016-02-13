@@ -39,7 +39,7 @@ container-container-pkgs:
 
 container-install-non-harmful-packages:
   cmd.run:
-    - name: /sbin/build_lxccorepackages.sh
+    - name: MS="{{salt['mc_locations.msr']()}}" /sbin/build_lxccorepackages.sh
     - watch:
       - mc_proxy: makina-lxc-proxy-build
     - watch_in:
