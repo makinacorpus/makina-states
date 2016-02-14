@@ -123,7 +123,7 @@ def settings():
         - cron_cmd
         - restore_client
         - ssh_port (default 22)
-        - ssh_user (default root)
+        - ssh_username (default root)
 
     For each client you can define a ssh gateway
     (eg: for VMs with a private ip)
@@ -310,9 +310,9 @@ def settings():
                 '-oPreferredAuthentications=publickey'
             )
             cl['rsh_dst'] = '{1}@{0}'.format(cname,
-                                             cl.get('ssh_user', 'root'))
+                                             cl.get('ssh_username', 'root'))
             cl['ssh_cmd'] = cl['rsh_cmd'] + '{1}@{0}'.format(
-                cname, cl.get('ssh_user', 'root'))
+                cname, cl.get('ssh_username', 'root'))
             if 'ssh_gateway' in cl:
                 ssh_gateway_key = ''
                 if 'ssh_gateway_key' in cl:
