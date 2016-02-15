@@ -1,3 +1,9 @@
-{#- Install in full mode, see the standalone file !  #}
-{% import  "makina-states/controllers/salt_master-standalone.sls" as base with context %}
-{{base.do(full=True)}}
+{#- # Base server which acts also as a salt master #}
+{%- import "makina-states/_macros/salt.jinja" as saltmac with context %}
+
+{{ salt['mc_macros.register']('controllers', 'salt_master') }}
+
+include:
+  - makina-states.controllers.salt
+
+{{ saltmac.install_master('salt') }}

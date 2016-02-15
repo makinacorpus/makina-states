@@ -85,49 +85,75 @@
 {#- mappings #}
 {% set data_mappings = settings.data_mappings %}
 
-{% macro salt_dummies(name) %}
+{#- # dummies  states for orchestration #}
+{% macro hooks() %}
 {#- only here for orchestration purposes #}
-dummy-pre-{{ name }}-service-restart:
+dummy-pre-salt-checkouts:
   mc_proxy.hook: []
-dummy-post-{{ name }}-service-restart:
+dummy-pre-salt-service-restart:
   mc_proxy.hook: []
-dummy-pre-{{ name }}-checkouts:
+dummy-post-salt-service-restart:
   mc_proxy.hook: []
-dummy-{{ name }}-layout:
+dummy-salt-layout:
   mc_proxy.hook: []
-{% endmacro %}
-{#-
-# dummies daemon states for orchestration
-#}
-{% macro daemon_dummies(mode) %}
-{% for service_name in data_mappings %}
-{% if service_name not in ['common'] %}
-{% set data = data_mappings[service_name][mode] %}
-# salt master/minion state will attach to this for the minion to be configured
-# before being really restarted
-dummy-pre-{{ data.service_name }}-service-restart:
+
+{# salt master/minion state will attach to this for the minion to be configured
+ # before being really restarted #}
+dummy-pre-minion-service-restart:
   mc_proxy.hook:
     - require:
-      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
-      {# deactivated for now, seems useless with recent salt fixes toward
-         restarts
-      {%- if data.service_name == 'minion' %}
-      - mc_proxy: dummy-post-{{ data.name }}-master-service-restart
-      {%- endif %}
-      #}
-
-dummy-pre-{{ data.daemon_name }}-service-restart:
-  mc_proxy.hook: []
-dummy-post-{{ data.daemon_name }}-service-restart:
-   mc_proxy.hook:
-    - require_in:
-      - mc_proxy: dummy-post-{{ data.name }}-service-restart
-dummy-post-{{ data.service_name }}-service-restart:
+      - mc_proxy: dummy-pre-salt-service-restart
+      - mc_proxy: dummy-pre-mastersalt-service-restart
+dummy-post-minion-service-restart:
    mc_proxy.hook:
     - require:
-      - mc_proxy: dummy-post-{{ data.daemon_name }}-service-restart
-{% endif %}
-{% endfor %}
+      - mc_proxy: dummy-post-salt-service-restart
+      - mc_proxy: dummy-post-mastersalt-service-restart
+dummy-pre-master-service-restart:
+  mc_proxy.hook:
+    - require:
+      - mc_proxy: dummy-pre-salt-service-restart
+      - mc_proxy: dummy-pre-mastersalt-service-restart
+dummy-post-master-service-restart:
+   mc_proxy.hook:
+    - require:
+      - mc_proxy: dummy-post-salt-service-restart
+      - mc_proxy: dummy-post-mastersalt-service-restart
+
+dummy-pre-salt-minion-service-restart:
+  mc_proxy.hook: []
+dummy-pre-salt-master-service-restart:
+  mc_proxy.hook: []
+
+dummy-post-salt-minion-service-restart:
+   mc_proxy.hook:
+    - require_in:
+      - mc_proxy: dummy-post-salt-service-restart
+dummy-post-salt-master-service-restart:
+   mc_proxy.hook:
+    - require_in:
+      - mc_proxy: dummy-post-salt-service-restart
+
+dummy-pre-mastersalt-minion-service-restart:
+  mc_proxy.hook: []
+dummy-pre-mastersalt-master-service-restart:
+  mc_proxy.hook: []
+dummy-post-mastersalt-minion-service-restart:
+   mc_proxy.hook:
+    - require_in:
+      - mc_proxy: dummy-post-mastersalt-service-restart
+dummy-post-mastersalt-master-service-restart:
+   mc_proxy.hook:
+    - require_in:
+      - mc_proxy: dummy-post-mastersalt-service-restart
+dummy-pre-mastersalt-service-restart:
+  mc_proxy.hook: []
+dummy-post-mastersalt-service-restart:
+  mc_proxy.hook: []
+dummy-pre-mastersalt-checkouts:
+  mc_proxy.hook: []
+dummy-mastersalt-layout:
+  mc_proxy.hook: []
 {% endmacro %}
 
 {#-
@@ -135,7 +161,7 @@ dummy-post-{{ data.service_name }}-service-restart:
 # Common installation stuff
 ###############################
 #}
-{% macro install_makina_states(mode='salt', adata=None, full=True) %}
+{% macro install_makina_states(mode='salt', adata=None) %}
 {% if not adata %}
 {%-   if mode=='salt'%}
 {%-     set data = resolver(saltCommonData) %}
@@ -337,8 +363,10 @@ salt-{{ data.name }}-{{ i }}:
     - onlyif: ls -d "{{ git }}"
     - unless: if [ -d "{{ git }}" ];then cd "{{ rdata['target'] }}" && grep -q "filemode = false" .git/config;fi
   {# on each run, update the code -#}
+  {% if rdata.get('update_checkout', False) %}
   git.latest:
     - name: {{ rdata['name'] }}
+    - submodules: {{rdata['submodules']}}
     - target: {{ rdata['target'] }}
     - force_fetch: {{rdata.get('force_fetch', False)}}
     - force_reset: {{rdata.get('force_reset', False)}}
@@ -348,12 +376,14 @@ salt-{{ data.name }}-{{ i }}:
     - require:
       - cmd: salt-{{ data.name }}-{{ i }}
       - mc_proxy: install-recent-git-post
+    - require_in:
+      - file: salt-{{ data.name }}-{{ i }}
+      - cmd: salt-{{ data.name }}-buildout-bootstrap
+  {% endif %}
   {% if link %}
   file.symlink:
     - target:  {{link.target}}
     - name:  {{link.name}}
-    - require:
-      - git: salt-{{ data.name }}-{{ i }}
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
   {% endif %}
@@ -385,8 +415,6 @@ salt-{{ data.name }}-buildout-bootstrap:
     - unless: test "$(cat buildout.cfg|md5sum|awk '{print $1}')" = "$(cat .saltchk)"
     - require_in:
       - cmd: update-makinastates-{{ data.name }}
-    - require:
-      - git: salt-{{ data.name }}-makina-states
 
 update-makinastates-{{ data.name }}-venv:
   virtualenv.managed:
@@ -420,25 +448,10 @@ update-makinastates-{{ data.name }}-reqs:
     - require_in:
       - mc_proxy: dummy-pre-{{ data.name }}-service-restart
 
-update-makinastates-{{ data.name }}-git-reqs:
-  pip.installed:
-    - require:
-      - virtualenv: update-makinastates-{{ data.name }}-venv
-    - require_in:
-      - mc_proxy: dummy-pre-{{ data.name }}-service-restart
-    - onlyif: |
-              for i in $(egrep -e "^-e" "{{data.msr}}/requirements/git_requirements.txt"|awk -F "#egg=" '{print $2}');do
-                if [ ! -d "{{data.msr}}/src/${i}" ];then
-                  exit 0
-                fi
-              done
-              exit 1
-    - requirements: "{{data.msr}}/requirements/git_requirements.txt"
-    - bin_env: "{{data.venv_path}}"
-    - use_vt: true
-    - upgrade: true
-
-{% for i in ['docker-py',  'm2crypto', 'salt', 'salttesting'] %}
+{% for i in ['docker-py',
+             'm2crypto',
+             'salt',
+             'salttesting'] %}
 update-makinastates-{{ data.name }}-git-reqs-{{i}}:
   cmd.run:
     - name: |
@@ -455,7 +468,6 @@ update-makinastates-{{ data.name }}-git-reqs-{{i}}:
     - user: root
     - cwd: "{{data.msr}}/src/{{i}}"
 {% endfor %}
-
 
 {% for i in ['lib', 'include', 'local', 'man', 'share', 'bin', 'src'] %}
 {% set ldir = "{0}/{1}".format(data.msr, i) %}
@@ -478,7 +490,6 @@ moveold-makinastates-{{ data.name }}-links{{i}}:
     - require:
       - virtualenv: update-makinastates-{{ data.name }}-venv
       - pip: update-makinastates-{{ data.name }}-reqs
-      - pip: update-makinastates-{{ data.name }}-git-reqs
 update-makinastates-{{ data.name }}-links{{i}}:
   file.symlink:
     - name: "{{data.msr}}/{{i}}"
@@ -489,7 +500,6 @@ update-makinastates-{{ data.name }}-links{{i}}:
       - cmd: moveold-makinastates-{{ data.name }}-links{{i}}
       - virtualenv: update-makinastates-{{ data.name }}-venv
       - pip: update-makinastates-{{ data.name }}-reqs
-      - pip: update-makinastates-{{ data.name }}-git-reqs
 {% endfor %}
 
 update-makinastates-{{ data.name }}:
@@ -619,7 +629,7 @@ etc-{{data.name}}-dirs-perms:
 {#-
 # SALT DAEMON MACRO
 #}
-{% macro install_salt_common_daemon(adata, full=True) %}
+{% macro install_salt_common_daemon(adata) %}
 {% set data = resolver(adata) %}
 {%- set localRoot = resolver('{salt_root}', data) %}
 {%- set prefix = resolver('{prefix}', data) %}
@@ -851,12 +861,12 @@ salt-{{ data.daemon_name }}-remove-minionid:
 # Install a salt master
 ########################
 #}
-{% macro install_master(mode='salt', data=None, service_name='master', full=True) %}
+{% macro install_master(mode='salt', data=None, service_name='master') %}
 {% if not data -%}
 {%- set data = data_mappings[service_name].get(
   mode,  data_mappings[service_name]['salt']) %}
 {%- endif %}
-{{ install_salt_common_daemon(adata=data, full=full) }}
+{{ install_salt_common_daemon(adata=data) }}
 
 salt-{{ data.name }}-remove-minionid:
   file.absent:
@@ -909,11 +919,11 @@ salt-{{ data.daemon_name }}-conf-devhost-global:
 # install a salt minion
 ########################
 #}
-{% macro install_minion(mode='salt', data=None, service_name='minion', full=True) %}
+{% macro install_minion(mode='salt', data=None, service_name='minion') %}
 {% if not data %}
 {%- set data = data_mappings[service_name].get(
   mode,  data_mappings[service_name]['salt']) %}
 {%- endif %}
-{{ install_salt_common_daemon(adata=data, full=full) }}
+{{ install_salt_common_daemon(adata=data) }}
 {% endmacro %}
 # vim: set nofoldenable:

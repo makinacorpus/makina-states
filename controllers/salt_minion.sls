@@ -1,3 +1,9 @@
-{#- Install in full mode, see the standalone file !  #}
-{% import  "makina-states/controllers/salt_minion-standalone.sls" as base with context %}
-{{base.do(full=True)}}
+{#- # Salt Minion installation #}
+{%- import "makina-states/_macros/salt.jinja" as saltmac with context %}
+
+{{ salt['mc_macros.register']('controllers', 'salt_minion') }}
+
+include:
+  - makina-states.controllers.salt
+
+{{ saltmac.install_minion('salt') }}
