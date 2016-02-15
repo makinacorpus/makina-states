@@ -1622,7 +1622,7 @@ def run_salt_call(host,
                     script = salt_call_script.format(**skwargs)
                     ret = __salt__['cmd.run_all'](script,
                                                   python_shell=True,
-                                                  runas=saltapi.get_ssh_username(kw),
+                                                  runas=mc_states.saltapi.get_ssh_username(kw),
                                                   use_vt=use_vt)
                 finally:
                     if os.path.exists(skwargs['quoted_outfile']):
