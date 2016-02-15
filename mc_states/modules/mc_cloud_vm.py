@@ -354,7 +354,7 @@ def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
             ipinfos.setdefault('netmask', '32')
             ipinfos.setdefault('link', 'br0')
         return data
-    cache_key = 'mc_cloud_vm.extpillar_settings{0}{1}'.format(vm, limited)
+    cache_key = 'mc_cloud_vm.extpillar_settings{0}{1}3'.format(vm, limited)
     return __salt__['mc_utils.memoize_cache'](_do, [vm, limited], {}, cache_key, ttl)
 
 
@@ -401,7 +401,7 @@ def vm_extpillar(id_, limited=False, ttl=60):
                 id_, data['domains'], data['ssl_certs'])
             _s['mc_cloud.add_ms_ssl_certs'](data)
         return data
-    cache_key = 'mc_cloud_vm.vm_extpillar{0}{1}'.format(id_, limited)
+    cache_key = 'mc_cloud_vm.vm_extpillar{0}{1}2'.format(id_, limited)
     return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
 
 
@@ -531,7 +531,7 @@ def vms_settings(ttl=60):
                                 extdata=data),
                         data)
         return svms
-    cache_key = '{0}.{1}'.format(__name, 'vms_settings')
+    cache_key = '{0}.{1}2'.format(__name, 'vms_settings')
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 

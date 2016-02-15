@@ -236,6 +236,116 @@ def _load_network(*a, **kw):
     return load_network(**kw)
 
 
+def get_global_clouf_conf(entry, ttl=PILLAR_TTL):
+    def _do(entry):
+        return get_global_conf('cloud_settings', entry)
+    cache_key = __name + '.get_global_cloudconf{0}'.format(entry)
+    return __salt__['mc_utils.memoize_cache'](_do, [entry], {}, cache_key, ttl)
+
+
+def get_cloud_conf(ttl=PILLAR_TTL):
+    def _do():
+        rdata = OrderedDict()
+        dvms = rdata.setdefault('vms', OrderedDict())
+        dcns = rdata.setdefault('cns', OrderedDict())
+        _s = __salt__
+        # warm datastructs
+        _s['mc_cloud.extpillar_settings']()
+        nmh = _s[__name + '.query']('non_managed_hosts', {})
+        cloud_cn_attrs = _s[__name + '.query']('cloud_cn_attrs', {})
+        cloud_vm_attrs = _s[__name + '.query']('cloud_vm_attrs', {})
+        supported_vts = _s['mc_cloud_compute_node.get_vts']()
+        for vt, targets in _s[__name + '.query']('vms', {}).items():
+            if vt not in supported_vts:
+                continue
+            for cn, vms in targets.items():
+                if vms is None:
+                    vms = {}
+                if cn in nmh:
+                    continue
+                dcn = dcns.setdefault(cn, OrderedDict())
+                dcns[cn] = dcn
+                dcn.setdefault('conf', cloud_cn_attrs.get(cn, OrderedDict()))
+                cn_vms = dcn.setdefault('vms', OrderedDict())
+                vts = dcn.setdefault('vts', [])
+                if vt not in vts:
+                    vts.append(vt)
+                for vm in vms:
+                    if vm in nmh:
+                        continue
+                    vmdata = dvms.setdefault(vm, OrderedDict())
+                    cvmdata = cloud_vm_attrs.get(vm, OrderedDict())
+                    vmdata = _s['mc_utils.dictupdate'](vmdata, cvmdata)
+                    vmdata['vt'] = vt
+                    vmdata['target'] = cn
+                    dvms[vm] = cn_vms[vm] = vmdata
+
+        for cn in _s[__name + '.query']('baremetal_hosts'):
+            if cn in nmh:
+                continue
+            dcn = dcns.setdefault(cn, OrderedDict())
+            dcn.setdefault('conf', cloud_cn_attrs.get(cn, OrderedDict()))
+            dcn.setdefault('vms', OrderedDict())
+            dcn.setdefault('vts', [])
+        return rdata
+    cache_key = __name + '.get_cloud_conf8'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+def get_cloud_conf_by_cns():
+    return copy.deepcopy(get_cloud_conf()['cns'])
+
+
+def get_cloud_conf_by_vts(ttl=PILLAR_TTL):
+    def _do():
+        data = OrderedDict()
+        for cn, cdata in get_cloud_conf_by_cns().items():
+            cvms = cdata.pop('vms')
+            for vt in cdata['vts']:
+                vtdata = data.setdefault(vt, OrderedDict())
+                vcndata = vtdata.setdefault(cn, OrderedDict())
+                vcnvms = vcndata.setdefault('vms', OrderedDict())
+            for vm, vmdata in cvms.items():
+                vt = vmdata['vt']
+                vtdata = data.setdefault(vt, OrderedDict())
+                vcndata = vtdata.setdefault(cn, copy.deepcopy(cdata))
+                vcnvms = vcndata.setdefault('vms', OrderedDict())
+                vcnvms[vm] = vmdata
+        return data
+    cache_key = __name + '.get_cloud_conf_by_vts'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+def get_cloud_conf_by_vms(ttl=PILLAR_TTL):
+    def _do():
+        return copy.deepcopy(get_cloud_conf()['vms'])
+    cache_key = __name + '.get_cloud_conf_by_vms'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+def get_cloud_entry_for_cn(id_, default=None):
+    if not default:
+        default = {}
+    return get_cloud_conf_by_cns().get(id_, default)
+
+
+def get_cloud_conf_for_cn(id_, default=None):
+    return get_cloud_entry_for_cn(id_, default=default).get('conf', {})
+
+
+def get_cloud_conf_for_vt(id_, default=None):
+    if not default:
+        default = {}
+    return get_cloud_conf_by_vts().get(id_, default)
+
+
+def get_cloud_conf_for_vm(id_, default=None):
+    if not default:
+        default = {}
+    return copy.deepcopy(get_cloud_conf_by_vms().get(id_, default))
+
+
+
 def get_db_infrastructure_maps(ttl=PILLAR_TTL):
     '''
     Return a struct::
@@ -248,57 +358,34 @@ def get_db_infrastructure_maps(ttl=PILLAR_TTL):
                                 'vt': 'kvm'},}}
     '''
     def _do():
-        lbms = __salt__[__name + '.query']('baremetal_hosts', {})
-        bms = OrderedDict()
-        vms = OrderedDict()
         non_managed_hosts = __salt__[
             __name + '.query']('non_managed_hosts', {})
-        cloud_compute_nodes = []
-        cloud_vms = []
-        for lbm in lbms:
-            bms.setdefault(lbm, [])
-        for vt, targets in __salt__[__name + '.query']('vms', {}).items():
-            for target, lvms in targets.items():
-                if (
-                    target not in non_managed_hosts and
-                    target not in cloud_compute_nodes
-                ):
-                    cloud_compute_nodes.append(target)
-                vts = bms.setdefault(target, [])
-                if vt not in vts:
-                    vts.append(vt)
-                if target not in bms:
-                    bms[target] = []
-                if lvms is None:
-                    log.error('No vms for {0}, error?'.format(target))
-                    continue
-                for vm in lvms:
-                    if vm not in non_managed_hosts:
-                        cloud_vms.append(vm)
-                    vms.update({vm: {'target': target, 'vt': vt}})
-        standalone_hosts = {}
-        for i in bms:
-            if (
-                i not in cloud_compute_nodes and
-                i not in non_managed_hosts
-            ):
+        cloud_conf = get_cloud_conf()
+        bms = copy.deepcopy(cloud_conf['cns'])
+        vms = copy.deepcopy(cloud_conf['vms'])
+        cloud_compute_nodes = set()
+        cloud_vms = set()
+        standalone_hosts = OrderedDict()
+        for i, idata in six.iteritems(bms):
+            cloud_compute_nodes.add(i)
+            for v, vdata in six.iteritems(idata.get('vms', {})):
+                cloud_vms.add(v)
+            if not (idata['vms'] or idata['vts']):
                 standalone_hosts.setdefault(i, {})
         data = {'bms': bms,
+                'vms': vms,
                 'hosts': sorted(
                     __salt__['mc_utils.uniquify'](
                         [a for a in bms] +
                         [a for a in vms] +
                         [a for a in non_managed_hosts] +
-                        [a for a in cloud_compute_nodes] +
-                        [a for a in standalone_hosts]
-                    )),
+                        [a for a in cloud_compute_nodes])),
                 'standalone_hosts': standalone_hosts,
-                'cloud_compute_nodes': cloud_compute_nodes,
-                'cloud_vms': cloud_vms,
-                'vms': vms}
+                'cloud_compute_nodes': [a for a in cloud_compute_nodes],
+                'cloud_vms': [a for a in cloud_vms]}
         return data
     # no memcached, relies on memoize !
-    cache_key = __name + '.get_db_infrastructure_maps'
+    cache_key = __name + '.get_db_infrastructure_maps5'
     return __salt__['mc_utils.memoize_cache'](
         _do, [], {}, cache=_cache, key=cache_key, seconds=ttl)
 
@@ -1768,7 +1855,7 @@ def get_configuration(id_=None, ttl=PILLAR_TTL):
         data.setdefault('mastersalt_port', 4606)
         data.setdefault('mastersalt', mid)
         data.setdefault('mastersaltdn', mid)
-        data.setdefault('mastersalt_master', mid == id_)
+        data.setdefault('master', mid == id_)
         data.setdefault('domain', mdn)
         return data
     cache_key = __name + '.get_configuration_{0}'.format(id_)
@@ -3752,104 +3839,6 @@ def get_global_conf(section, entry=10, ttl=PILLAR_TTL):
     cache_key = __name + '.get_global_conf{0}{1}'.format(section, entry)
     return __salt__['mc_utils.memoize_cache'](
         _do, [section, entry], {}, cache_key, ttl)
-
-
-def get_global_clouf_conf(entry, ttl=PILLAR_TTL):
-    def _do(entry):
-        return get_global_conf('cloud_settings', entry)
-    cache_key = __name + '.get_global_cloudconf{0}'.format(entry)
-    return __salt__['mc_utils.memoize_cache'](_do, [entry], {}, cache_key, ttl)
-
-
-def get_cloud_conf(ttl=PILLAR_TTL):
-    def _do():
-        rdata = OrderedDict()
-        dvms = rdata.setdefault('vms', OrderedDict())
-        dcns = rdata.setdefault('cns', OrderedDict())
-        _s = __salt__
-        _s['mc_cloud.extpillar_settings']()
-        cloud_cn_attrs = _s[__name + '.query']('cloud_cn_attrs', {})
-        cloud_vm_attrs = _s[__name + '.query']('cloud_vm_attrs', {})
-        supported_vts = _s['mc_cloud_compute_node.get_vts']()
-        for vt, targets in _s[__name + '.query']('vms', {}).items():
-            if vt not in supported_vts:
-                continue
-            for cn, vms in targets.items():
-                if vms is None:
-                    vms = {}
-                if cn in _s[__name + '.query']('non_managed_hosts', {}):
-                    continue
-                dcn = dcns.setdefault(cn, OrderedDict())
-                dcns[cn] = dcn
-                dcn.setdefault('conf', cloud_cn_attrs.get(cn, OrderedDict()))
-                cn_vms = dcn.setdefault('vms', OrderedDict())
-                vts = dcn.setdefault('vts', [])
-                if vt not in vts:
-                    vts.append(vt)
-                for vm in vms:
-                    if vm in _s[__name + '.query']('non_managed_hosts', {}):
-                        continue
-                    vmdata = dvms.setdefault(vm, OrderedDict())
-                    cvmdata = cloud_vm_attrs.get(vm, OrderedDict())
-                    vmdata = _s['mc_utils.dictupdate'](vmdata, cvmdata)
-                    vmdata['vt'] = vt
-                    dvms[vm] = cn_vms[vm] = vmdata
-        return rdata
-    cache_key = __name + '.get_cloud_conf'
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
-
-
-def get_cloud_conf_by_cns():
-    return copy.deepcopy(get_cloud_conf()['cns'])
-
-
-def get_cloud_conf_by_vts(ttl=PILLAR_TTL):
-    def _do():
-        data = OrderedDict()
-        for cn, cdata in get_cloud_conf_by_cns().items():
-            cvms = cdata.pop('vms')
-            for vt in cdata['vts']:
-                vtdata = data.setdefault(vt, OrderedDict())
-                vcndata = vtdata.setdefault(cn, OrderedDict())
-                vcnvms = vcndata.setdefault('vms', OrderedDict())
-            for vm, vmdata in cvms.items():
-                vt = vmdata['vt']
-                vtdata = data.setdefault(vt, OrderedDict())
-                vcndata = vtdata.setdefault(cn, copy.deepcopy(cdata))
-                vcnvms = vcndata.setdefault('vms', OrderedDict())
-                vcnvms[vm] = vmdata
-        return data
-    cache_key = __name + '.get_cloud_conf_by_vts'
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
-
-
-def get_cloud_conf_by_vms(ttl=PILLAR_TTL):
-    def _do():
-        return copy.deepcopy(get_cloud_conf()['vms'])
-    cache_key = __name + '.get_cloud_conf_by_vms'
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
-
-
-def get_cloud_entry_for_cn(id_, default=None):
-    if not default:
-        default = {}
-    return get_cloud_conf_by_cns().get(id_, default)
-
-
-def get_cloud_conf_for_cn(id_, default=None):
-    return get_cloud_entry_for_cn(id_, default=default).get('conf', {})
-
-
-def get_cloud_conf_for_vt(id_, default=None):
-    if not default:
-        default = {}
-    return get_cloud_conf_by_vts().get(id_, default)
-
-
-def get_cloud_conf_for_vm(id_, default=None):
-    if not default:
-        default = {}
-    return copy.deepcopy(get_cloud_conf_by_vms().get(id_, default))
 
 
 def get_domains_for(id_, ttl=PILLAR_TTL):
