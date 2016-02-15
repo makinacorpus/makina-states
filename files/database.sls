@@ -923,5 +923,5 @@ backup_configurations:
 #    # (opt) ssh_host: 10.5.0.2
 #    # (opt) ssh_gateway_port: 22
 #    # (opt) ssh_gateway_key: '/root/.ssh/id_rsa'
-#    # (opt) ssh_user: root
+#    # (opt) ssh_username: root
 # vim: set ft=yaml sts=2 ts=2 ai et:
