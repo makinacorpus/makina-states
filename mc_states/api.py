@@ -876,4 +876,19 @@ def param_as_list(data, param):
                        for a in data[param].split()
                        if a.strip()]
     return data
+
+
+def compat_kwarg(kw, new, olds=None):
+    if not olds:
+        olds = []
+    if not isinstance(olds, list):
+        olds = [olds]
+    for k in new + [olds]:
+        if k in kw:
+            return kw[k]
+    return kw[new]
+
+
+def get_ssh_username(kw):
+    return compat_kwarg(kw, 'ssh_username', 'ssh_user')
 # vim:set et sts=4 ts=4 tw=80:

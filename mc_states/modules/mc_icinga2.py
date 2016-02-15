@@ -769,7 +769,7 @@ def autoconfigure_host(host,
                        no_default_checks=False,
                        no_default_imports=False,
                        services_attrs=None,
-                       ssh_user='root',
+                       ssh_username='root',
                        ssh_addr='',
                        ssh_port=22,
                        snmp_port=161,
@@ -988,7 +988,7 @@ def autoconfigure_host(host,
     if isinstance(imports, six.string_types):
         imports = imports.split(',')  # pylint: disable=E1101
     attrs['import'] = imports
-    attrs.setdefault('vars.ssh_user', ssh_user)
+    attrs.setdefault('vars.ssh_username', ssh_username)
     attrs.setdefault('vars.ssh_addr', ssh_addr)
     attrs.setdefault('vars.ssh_port', ssh_port)
     attrs.setdefault('vars.ssh_timeout', ssh_timeout)
