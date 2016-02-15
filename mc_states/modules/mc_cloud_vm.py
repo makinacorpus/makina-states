@@ -143,14 +143,6 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                     {'name': 'snmp', 'port': 161, 'protocol': 'udp'},
                 ],
                 #
-                'ssh_gateway': cloudSettings['ssh_gateway'],
-                'ssh_username': 'ubuntu',
-                'ssh_gateway_password': cloudSettings[
-                    'ssh_gateway_password'],
-                'ssh_gateway_user': cloudSettings['ssh_gateway_user'],
-                'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
-                'ssh_gateway_port': cloudSettings['ssh_gateway_port'],
-                #
                 'master': cloudSettings.get('master', __opts__['id']),
                 'mode': cloudSettings['mode'],
                 'master_port': cloudSettings['master_port'],
@@ -311,6 +303,8 @@ def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
             vm_default_settings(
                 vme, cloudSettings, imgSettings, extpillar=True),
             data)
+        data.update(__salt__['mc_cloud.ssh_host_settings'](
+            data['name'], defaults=data))
         find_ip = 'mc_cloud_compute_node.find_ip_for_vm'
         data['ip'] = _s[find_ip](vme,
                                  network=data['network'],
@@ -332,12 +326,16 @@ def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
             data['script_args'] += ' -b {0}'.format(
                 data['bootsalt_branch'])
         # at this stage, only get already allocated ips
+        ssh_port = None
         for ix in range(len(data['ports'])):
             pdata = data['ports'][ix]
             if not pdata.get('hostPort', ''):
                 pdata['hostPort'] = __salt__[
                     'mc_cloud_compute_node.get_kind_port'
                 ](vm, data['target'], pdata['name'])
+            if pdata['name'] == 'ssh' or pdata['port'] in [22]:
+                ssh_port = pdata['hostPort']
+        ssh_host = data['target']
         for ix, ipinfos in enumerate(data['additional_ips']):
             k = '{0}_{1}_{2}_aip_fo'.format(data['target'], vme, ix)
             mac = ipinfos.setdefault('mac', None)
@@ -353,8 +351,12 @@ def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
                 data['gateway'] = None
             ipinfos.setdefault('netmask', '32')
             ipinfos.setdefault('link', 'br0')
+            # when using extra ip, force ip_port: 22
+            # and direct acces top lxc
+            ssh_port, ssh_host = 22, data['name']
+        data.update({'ssh_port': ssh_port, 'ssh_host': ssh_host})
         return data
-    cache_key = 'mc_cloud_vm.extpillar_settings{0}{1}3'.format(vm, limited)
+    cache_key = 'mc_cloud_vm.extpillar_settings{0}{1}8'.format(vm, limited)
     return __salt__['mc_utils.memoize_cache'](_do, [vm, limited], {}, cache_key, ttl)
 
 
@@ -368,7 +370,7 @@ def vt_extpillar(target, vt, limited=False, ttl=PILLAR_TTL):
         data = _s['mc_utils.dictupdate'](_s[fun](
             target, data, limited=limited), extdata)
         return data
-    cache_key = 'mc_cloud_vm.vt_extpillar{0}{1}{2}'.format(target, vt, limited)
+    cache_key = 'mc_cloud_vm.vt_extpillar{0}{1}{2}1'.format(target, vt, limited)
     return __salt__['mc_utils.memoize_cache'](_do, [target, vt, limited], {}, cache_key, ttl)
 
 
@@ -401,7 +403,7 @@ def vm_extpillar(id_, limited=False, ttl=60):
                 id_, data['domains'], data['ssl_certs'])
             _s['mc_cloud.add_ms_ssl_certs'](data)
         return data
-    cache_key = 'mc_cloud_vm.vm_extpillar{0}{1}2'.format(id_, limited)
+    cache_key = 'mc_cloud_vm.vm_extpillar{0}{1}4'.format(id_, limited)
     return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
 
 
@@ -458,7 +460,7 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
                     data, vme_settings)
         return data
     limited = kw.get('limited', False)
-    cache_key = 'mc_cloud_vm.ext_pillar{0}{1}{2}'.format(
+    cache_key = 'mc_cloud_vm.ext_pillar{0}{1}{2}2'.format(
         id_, prefixed, limited)
     return __salt__['mc_utils.memoize_cache'](
         _do, [id_, prefixed, limited], {}, cache_key, ttl)

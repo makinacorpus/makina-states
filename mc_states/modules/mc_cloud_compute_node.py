@@ -159,6 +159,7 @@ def default_settings():
             'excluded_ports': [],
             'port_range_start': 40000,
             'port_range_end': 60000}
+    data.update(__salt__['mc_cloud.ssh_settings']())
     return data
 
 
@@ -930,11 +931,14 @@ def cn_extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
         data = _s['mc_utils.dictupdate'](
             _s['mc_utils.dictupdate'](
                 _s['mc_utils.dictupdate'](default_settings(), dconf),
-                conf.get('conf', {})), {'target': id_,
-                                        'reverse_proxies': {'target': id_}})
+                conf.get('conf', {})),
+            {'target': id_,
+             'ssh_host': id_,
+             'reverse_proxies': {'target': id_}})
+        data.update(__salt__['mc_cloud.ssh_host_settings'](id_, defaults=data))
         data['vts'] = conf.get('vts', [])
         return data
-    cache_key = 'mc_cloud_cn.cn_extpillar_settings{0}{1}'.format(id_, limited)
+    cache_key = 'mc_cloud_cn.cn_extpillar_settings{0}{1}2'.format(id_, limited)
     return copy.deepcopy(__salt__['mc_utils.memoize_cache'](
         _do, [id_, limited], {}, cache_key, ttl))
 
