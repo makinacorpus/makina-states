@@ -60,7 +60,7 @@ THIS="$(get_abspath ${THIS})"
 export PATH
 
 is_container() {
-    if cat -e /proc/1/cgroups 2>/dev/null|egrep -q 'docker|lxc';then
+    if cat -e /proc/1/cgroup 2>/dev/null|egrep -q 'docker|lxc';then
         echo "0"
     else
         echo "1"
