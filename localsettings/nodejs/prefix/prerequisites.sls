@@ -3,18 +3,11 @@
 include:
   - makina-states.localsettings.nodejs.hooks
 {#- Install specific versions of nodejs/npm  #}
-{% macro install(version, dest=None, hash=None, suf='manual', source_install=False, manual_npm=False, npm_ver='master') %}
-{% if grains['cpuarch'] == "x86_64" %}
-{% set arch = "x64" %}
-{% else %}
-{% set arch = "x86" %}
-{% endif %}
+{% macro install(version, dest=None, hash=None, suf='manual', binary=True, arch=None,
+                 source_install=False, manual_npm=False, npm_ver='master') %}
 
-{% set base_url = "http://nodejs.org/dist/v{v}/{a}" %}
-
+{% if source_install %}{% set binary = False %}{% endif %}
 {% if version[:4] in ['0.1.', '0.2.', '0.3.', '0.4.', '0.5.'] %}
-{% set base_url= "http://nodejs.org/dist/{a}" %}
-{% set source_install=True %}
 {% set manual_npm = True %}
 {% set npm_ver='1.0.106' %}
 {% endif %}
@@ -26,15 +19,10 @@ include:
 {% set dest = dest[:-1] %}
 {% endif %}
 
-{% set bn = "node-v{0}-linux-{1}".format(version, arch) %}
-
-{% if source_install %}
-{% set archive = "node-v{v}.tar.gz".format(v=version)   %}
-{% else %}
-{% set archive = "{0}.tar.gz".format(bn)   %}
-{% endif %}
-
-{% set url = base_url.format(a=archive, v=version) %}
+{% set arch = salt['mc_nodejs.get_arch'](arch=arch) %}
+{% set url = salt['mc_nodejs.get_url'](version=version, binary=binary, arch=arch) %}
+{% set archive = url.split('/')[-1] %}
+{% set bn = archive.split('.tar')[0] %}
 
 npm-version-{{version.replace('.', '_') }}{{suf}}:
   file.directory:
@@ -49,6 +37,9 @@ npm-version-{{version.replace('.', '_') }}{{suf}}:
     - if_missing: {{dest}}/bin/.node_{{version}}
     - source: {{url}}
     - archive_format: tar
+    {% if "xz" in url %}
+    - tar_options: J
+    {% endif %}
     {% if archive in settings.shas %}
     {%  set hash = settings.shas[archive]%}
     {% endif %}
