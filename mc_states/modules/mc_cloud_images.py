@@ -222,7 +222,7 @@ def extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
         cloud_settings = _s['mc_cloud.extpillar_settings']()
         is_devhost = _s['mc_nodetypes.is_devhost']()
         cron_sync = True
-        if is_lxc() or is_devhost:
+        if is_lxc(_o=__opts__) or is_devhost:
             cron_sync = False
         data = _s['mc_utils.dictupdate'](
             _s['mc_utils.dictupdate'](

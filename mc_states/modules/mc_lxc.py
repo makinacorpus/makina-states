@@ -37,7 +37,7 @@ def gen_mac():
                                                random.randint(0x00, 0xFF)]))
 
 
-def is_lxc():
+def is_lxc(_o=None):
     """
     in case of a container, we have the container name in cgroups
     else, it is equal to /
@@ -66,7 +66,9 @@ def is_lxc():
         '3:cpu:/',
         '2:cpuset:/']
     """
-    return _is_lxc(_o=__opts__)
+    if _o is None:
+        _o = __opts__
+    return _is_lxc(_o=_o)
 
 
 def is_this_lxc():
