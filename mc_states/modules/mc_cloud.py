@@ -160,14 +160,14 @@ def default_settings():
     msr = __salt__['mc_locations.msr']()
     pr = __salt__['mc_locations.first_pillar_root']()
     root = msr
-    prefix = os.path.join(msr, 'etc/salt')
+    prefix = os.path.join(msr, 'etc')
     try:
         id_ = __grains__['id']
     except (TypeError, KeyError):
         id_ = __opts__['id']
     data = {
         'root': root,
-        'all_pillar_dir': pr + '/cloud-controller',
+        'all_pillar_dir': prefix + '/makina-states/cloud-controller',
         'ssl': {
             'cert_days': 365*1000,
             'ca': {
@@ -200,8 +200,8 @@ def default_settings():
         'bootstrap_shell': 'bash',
         'bootsalt_args': '-C --no-colors',
         'bootsalt_branch': 'v2',
-        'pvdir': prefix + "/cloud.providers.d",
-        'pfdir': prefix + "/cloud.profiles.d",
+        'pvdir': prefix + "/salt/cloud.providers.d",
+        'pfdir': prefix + "/salt/cloud.profiles.d",
         # states registry settings
         'generic': True,
         'saltify': True,
