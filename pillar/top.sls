@@ -20,7 +20,7 @@ order is not guarranteed, we need so to wrap that here
 base:
   {% if slss %}
   '*':
-    {% for sls in sls %}
+    {% for sls in slss %}
     - {{ sls }}
     {%endfor %}
   {% else %}
