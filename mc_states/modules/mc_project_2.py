@@ -2703,6 +2703,39 @@ def sync_hooks_for_all(*args, **kwargs):
     return ret
 
 
+def list_projects():
+    locs = __salt__['mc_locations.settings']()
+    cfgs = OrderedDict()
+    if os.path.exists(locs['projects_dir']):
+        projects = os.listdir(locs['projects_dir'])
+        if projects:
+            for pj in projects:
+                cfgs[pj] = get_configuration(pj)
+    for pj in [a for a in cfgs]:
+        cfg = cfgs[pj]
+        if (
+            not os.path.exists(
+                os.path.join(cfg['pillar_root'], 'init.sls')
+            ) or (
+                True in
+                [not os.path.exists(
+                    os.path.join(cfg['project_root'], '.salt', a)
+                ) for a in ['fixperms.sls', 'PILLAR.sample']]
+            )
+        ):
+            cfgs.pop(pj, None)
+    return cfgs
+
+
+def link_projects(projects=None):
+    rets = OrderedDict()
+    if not projects:
+        projects = list_projects()
+    for pj in projects:
+        rets[pj] = link(pj)
+    return rets
+
+
 def report():
     '''
     Get connection details & projects report
@@ -2711,7 +2744,8 @@ def report():
 
         salt-call --local mc_project.report
     '''
-    pt = get_configuration('project')['projects_dir']
+    locs = __salt__['mc_locations.settings']()
+    pt = locs['projects_dir']
     ret = ''
     target = __grains__['id']
     dconf = get_default_configuration()
