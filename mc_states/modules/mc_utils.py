@@ -711,7 +711,7 @@ def defaults(prefix,
         overridden[prefix] = OrderedDict()
     pkeys = OrderedDict()
     for a in datadict:
-        if a not in ignored_keys:
+        if a not in ignored_keys and isinstance(a, six.string_types):
             to_unicode = False
             for i in prefix, a:
                 if isinstance(i, unicode):
