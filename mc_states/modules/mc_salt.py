@@ -116,13 +116,19 @@ def settings():
             'cron_master_restart_minute': 0,
             'cron_master_restart_hour': 0,
             'cron_minion_restart_minute': 3,
+            'ignored_opts': [
+                'pillar',
+                'master',
+            ],
             'cron_minion_restart_hour': 0,
             'rotate': _s['mc_logrotate.settings']()['days'],
             'log_prefix': '{msr}/var/log',
             'name': 'salt',
             'pillar_root': '{prefix}/pillar'}
+        data = _s['mc_utils.defaults'](
+            'makina-states.controllers.salt', data)
         for k in _o:
-            if k not in data:
+            if k not in data and k not in data['ignored_opts']:
                 data[k] = copy.deepcopy(_o[k])
         #  default daemon overrides
         data = _s['mc_utils.defaults'](
