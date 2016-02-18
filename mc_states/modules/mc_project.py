@@ -28,6 +28,12 @@ APIS = {
     'sync_hooks_for_all': {
         '2': 'mc_project_2.sync_hooks_for_all',
     },
+    'list_projects': {
+        '2': 'mc_project_2.list_projects',
+    },
+    'link_projects': {
+        '2': 'mc_project_2.link_projects',
+    },
     'report': {
         '2': 'mc_project_2.report',
     },
@@ -160,6 +166,10 @@ def report(*args, **kwargs):
     return _api_switcher('report')
 
 
+def list_projects(*args, **kwargs):
+    return _api_switcher('list_projects')
+
+
 def get_configuration_item(name, *args, **kwargs):
     return _api_switcher('get_configuration_item', name, *args, **kwargs)
 
@@ -202,6 +212,10 @@ def sync_hooks(name, *args, **kwargs):
 
 def link(name, *args, **kwargs):
     return _api_switcher('link', name, *args, **kwargs)
+
+
+def link_projects(*args, **kwargs):
+    return _api_switcher('link_projects', *args, **kwargs)
 
 
 def run_task(name, *args, **kwargs):
