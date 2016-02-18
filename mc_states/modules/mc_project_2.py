@@ -746,21 +746,6 @@ def _get_contextual_cached_project(name, remote_host=None):
     return cfg
 
 
-'''
-Seems not be used
-Deactivate in a while ;)
-
-def refresh_cached_configuration(name, *args, **kwargs):
-    \'''
-    To inter operate with external tools, we will
-    cache a serialized configuration inside the project root
-    \'''
-    get_configuration(name *args, **kwargs)
-    json_cfg = __salt__['mc_utils.json_dump'](cfg)
-    pack_cfg = __salt__['mc_utils.json_dump'](cfg)
-'''
-
-
 def get_configuration(name, *args, **kwargs):
     '''
     Return a configuration data structure needed data for
