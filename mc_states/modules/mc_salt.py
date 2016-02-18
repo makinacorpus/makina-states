@@ -107,9 +107,9 @@ def settings():
         tcron3 = local_conf.setdefault('tcron_3', tcron3)
         # factorisation with bootsalt.sh
         data = {
-            'id': _s['config.option']('makina-states.minion_id',
-                                      _s['config.option']('id',
-                                                          None)),
+            'id': _s['config.option'](
+                'makina-states.minion_id',
+                _s['config.option']('id', None)),
             'cron_auto_sync': crons,
             'cron_sync_minute': cron_sync_minute,
             'cron_sync_hour': '*',
