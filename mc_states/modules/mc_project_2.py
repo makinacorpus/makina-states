@@ -30,6 +30,8 @@ import uuid
 import logging
 import yaml
 import copy
+from distutils.version import LooseVersion
+from mc_states.version import VERSION
 from salt.utils.odict import OrderedDict
 import salt.template
 from salt.states import group as sgroup
@@ -2462,6 +2464,8 @@ def link_pillar(names, *args, **kwargs):
         link_into_root(
             name, ret,
             cfg['wired_pillar_root'], cfg['pillar_root'], do_link=True)
+        if LooseVersion(VERSION) >= LooseVersion("2.0"):
+            continue
         added = '    - {0}'.format(pillar_top)
         for f, content in six.iteritems({pillarf: TOP, customf: CUSTOM}):
             if not os.path.exists(f):
@@ -2510,23 +2514,24 @@ def unlink_pillar(names, *args, **kwargs):
         pillar_root = os.path.join(salt_settings['pillar_root'])
         pillarf = os.path.join(pillar_root, 'top.sls')
         pillar_top = 'makina-projects.{name}'.format(**cfg)
-        with open(pillarf) as fpillarf:
-            pillar_top = '- makina-projects.{name}'.format(**cfg)
-            pillars = fpillarf.read()
-            if pillar_top in pillars:
-                lines = []
-                log = False
-                for line in pillars.splitlines():
-                    if line.endswith(pillar_top):
-                        log = True
-                        continue
-                    lines.append(line)
-                with open(pillarf, 'w') as wpillarf:
-                    wpillarf.write('\n'.join(lines))
-                if log:
-                    _append_comment(
-                        ret, body=indent(
-                            'Cleaned pillar top: {0}'.format(name)))
+        if not LooseVersion(VERSION) >= LooseVersion("2.0"):
+            with open(pillarf) as fpillarf:
+                pillar_top = '- makina-projects.{name}'.format(**cfg)
+                pillars = fpillarf.read()
+                if pillar_top in pillars:
+                    lines = []
+                    log = False
+                    for line in pillars.splitlines():
+                        if line.endswith(pillar_top):
+                            log = True
+                            continue
+                        lines.append(line)
+                    with open(pillarf, 'w') as wpillarf:
+                        wpillarf.write('\n'.join(lines))
+                    if log:
+                        _append_comment(
+                            ret, body=indent(
+                                'Cleaned pillar top: {0}'.format(name)))
         link_into_root(
             name, ret,
             cfg['wired_pillar_root'], cfg['pillar_root'], do_link=False)
