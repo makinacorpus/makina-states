@@ -390,7 +390,7 @@ def get_default_configuration(remote_host=None):
             this_host = fic.read().splitlines()[0].strip()
     if not remote_host:
         remote_host = __grains__['fqdn']
-    if __salt__['mc_cloud.is_vm']:
+    if __salt__['mc_cloud.is_vm']():
         this_host, this_port = __salt__['mc_cloud_vm.vm_host_and_port']()
     conf['remote_host'] = remote_host
     conf['this_host'] = this_host
