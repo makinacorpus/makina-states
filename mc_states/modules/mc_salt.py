@@ -126,7 +126,7 @@ def settings():
                 data[k] = copy.deepcopy(_o[k])
         #  default daemon overrides
         data = _s['mc_utils.defaults'](
-            'makina-states.controllers.salt.settings', data)
+            'makina-states.controllers.salt', data)
         # retrocompat access
         for i in {
             'venv_path',
