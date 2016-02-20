@@ -52,13 +52,14 @@ PREFIX = 'makina-states.cloud.images'
 IMG_URL = ('https://downloads.sourceforge.net/makinacorpus'
            '/makina-states/'
            '{img}-{flavor}-{ver}.tar.xz')
-LXC_IMAGES = OrderedDict([('makina-states-vivid', {}),
+LXC_IMAGES = OrderedDict([('makina-states-xenial', {}),
+                          ('makina-states-vivid', {}),
                           ('makina-states-trusty', {}),
                           ('makina-states-precise', {})])
 DEFAULT_OS = 'ubuntu'
 RELEASES = {
     'ubuntu': {
-        'default': 'vivid',
+        'default': 'xenial',
         'releases': ['wily', 'utopic', 'vivid', 'trusty', 'precise']
     }
 
@@ -66,6 +67,9 @@ RELEASES = {
 # THIS IS A NON FINISHEP WIP TO REFACTOR IMAGE SETTINGS
 IMAGES = OrderedDict([
     ('lxc', OrderedDict([
+        ('ubuntu-xenial', {
+            'create': '-t ubuntu -- -r xenial --mirror {mirror}'
+        }),
         ('ubuntu-vivid', {
             'create': '-t ubuntu -- -r vivid --mirror {mirror}'
         }),
@@ -74,10 +78,10 @@ IMAGES = OrderedDict([
             'bootsalt': True}),
     ])),
     ('docker', OrderedDict([
+        ('makina-states/ubuntu-xenial-raw', {
+            'from_lxc': 'makina-states-vivid'}),
         ('makina-states/ubuntu-vivid-raw', {
             'from_lxc': 'makina-states-vivid'}),
-        ('ubuntu-vivid-systemd-debug', {
-            'from': 'makina-states:ubuntu-vivid'})
     ]))
 ])
 DOCKERSCRIPT = textwrap.dedent(
@@ -320,7 +324,7 @@ def get_vars(**kwargs):
     if kwargs:
         data.update(copy.deepcopy(kwargs))
     data.setdefault('flavor', 'standalone')
-    data.setdefault('container', 'makina-states-vivid')
+    data.setdefault('container', 'makina-states-xenial')
     data['container'] = data['container'].replace('imgbuild-', '')
     data = _s['mc_utils.format_resolve'](data)
     try:

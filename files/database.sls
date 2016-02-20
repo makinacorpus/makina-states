@@ -214,6 +214,7 @@ configurations:
 #      - msr-lxc-ref.mydomain.tld
 #      - msr-lxc-ref-trusty.mydomain.tld
 #      - msr-lxc-ref-vivid.mydomain.tld
+#      - msr-lxc-ref-xenial.mydomain.tld
 
 #
 # cloud global settings
