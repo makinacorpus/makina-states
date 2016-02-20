@@ -107,6 +107,10 @@ class NoResultError(KeyError):
     ''''''
 
 
+class PillarError(Exception):
+    ''''''
+
+
 def dolog(msg):
     log.error("----------------")
     log.error(msg)
@@ -3740,7 +3744,7 @@ def invalidate_mc_pillar():
         log.error(traceback.format_exc())
 
 
-def ext_pillar(id_, pillar=None, *args, **kw):
+def ext_pillar(id_, pillar=None, raise_error=True, *args, **kw):
     _s = __salt__
     invalidate_mc_pillar()
     if pillar is None:
@@ -3772,6 +3776,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
 
     is_this_salt_managed = is_salt_managed(id_)
     is_this_managed = is_managed(id_)
+    raise_error = []
     for callback, copts in {
         'mc_env.ext_pillar': {'only_managed': False},
         __name + '.get_snmpd_conf': {'only_known': False},
@@ -3832,7 +3837,9 @@ def ext_pillar(id_, pillar=None, *args, **kw):
             data = dictupdate(data, subpillar)
         except Exception, ex:
             trace = traceback.format_exc()
-            log.error('ERROR in mc_pillar: {0}/{1}'.format(callback, id_))
+            msg = 'ERROR in mc_pillar: {0}/{1}'.format(callback, id_)
+            raise_error.append(msg)
+            log.error(msg)
             log.error(ex)
             log.error(trace)
     if profile_enabled:
@@ -3851,6 +3858,8 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         __salt__['cmd.run'](
             msr + '/bin/pyprof2calltree '
             '-i "{0}" -o "{1}"'.format(ficp, fico), python_shell=True)
+    if raise_error:
+        raise PillarError('\n    '+'\n    '.join(raise_error))
     return data
 
 
