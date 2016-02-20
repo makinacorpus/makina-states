@@ -200,6 +200,7 @@ def settings():
                                             saltmods['config.option']('id',
                                                                       None)),
             'mailto': 'root',
+            'pillar_cache': False,
             'cron_auto_clean': crons,
             'cron_auto_sync': crons,
             'cron_auto_restart': crons,
