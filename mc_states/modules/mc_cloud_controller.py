@@ -22,7 +22,6 @@ from salt.utils.odict import OrderedDict
 import copy
 import mc_states.api
 from salt.modules import tls as tlsm
-import M2Crypto
 
 from mc_states.modules.mc_pillar import PILLAR_TTL
 from mc_states.modules.mc_ssl import (
