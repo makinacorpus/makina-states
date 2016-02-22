@@ -621,7 +621,7 @@ set_vars() {
     MASTERSALT_MS="${MASTERSALT_ROOT}/makina-states"
     TMPDIR="${TMPDIR:-"/tmp"}"
     VENV_PATH="${VENV_PATH:-"/salt-venv"}"
-    EGGS_GIT_DIRS="salt salttesting"
+    EGGS_GIT_DIRS="m2crypto salt salttesting"
     PIP_CACHE="${VENV_PATH}/cache"
     SALT_VENV_PATH="${VENV_PATH}/salt"
     MASTERSALT_VENV_PATH="${VENV_PATH}/mastersalt"

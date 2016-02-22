@@ -26,6 +26,7 @@ from copy import deepcopy
 import os
 from salt.utils.odict import OrderedDict
 import mc_states.api
+import M2Crypto
 try:
     import OpenSSL
     HAS_SSL = True
@@ -786,8 +787,7 @@ def load_certs(path):
         for i in ("{0}".format(certo.get_subject())).split('/'):
             data = {'key': certk, 'cert': certp}
             try:
-                certo = OpenSSL.crypto.load_certificate(
-                    OpenSSL.crypto.FILETYPE_PEM, open(certp).read())
+                certo = M2Crypto.X509.load_cert(certp)
             except:
                 log.error('problem with {0}'.format(certp))
                 continue
@@ -829,8 +829,7 @@ def load_selfsigned_certs(path):
             OpenSSL.crypto.FILETYPE_PEM, open(certp).read())
         for i in ("{0}".format(certo.get_subject())).split('/'):
             data = {'key': certk, 'cert': certp}
-            certo = OpenSSL.crypto.load_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, open(certp).read())
+            certo = M2Crypto.X509.load_cert(certp)
             if i.startswith('CN='):
                 cn = i.split('CN=')[1]
                 if cn not in exacts:
