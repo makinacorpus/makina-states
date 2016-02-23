@@ -5,7 +5,6 @@ import sys
 try:
     import docker
     import mc_states
-    import M2Crypto
     import salttesting
     import salt
     import requests

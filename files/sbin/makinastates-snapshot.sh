@@ -43,8 +43,6 @@ if [ "x${is_docker}" != "x" ];then
         rm -rf "${i}" || /bin/true
     done
     REMOVE="${REMOVE}
-/salt-venv/salt/src/m2crypto/build
-/salt-venv/mastersalt/src/m2crypto/build
 /salt-venv/mastersalt/lib/python2.7/site-packages/libcloud/test/compute/fixtures
 /salt-venv/salt/lib/python2.7/site-packages/libcloud/test/compute/fixtures
 "
