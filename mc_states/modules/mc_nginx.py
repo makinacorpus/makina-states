@@ -110,6 +110,8 @@ def settings():
         IGH:!aNULL:!MD5
     user
         nginx user
+    group
+        nginx group
     server_names_hash_bucket_size
         raw setting for nginx (see nginx documentation)
     loglevel
@@ -273,6 +275,7 @@ def settings():
                 'worker_connections': '1024',
                 'multi_accept': True,
                 'user': 'www-data',
+                'group': 'www-data',
                 'server_names_hash_bucket_size': '64',
                 'loglevel': 'crit',
                 'ldap_cache': True,
