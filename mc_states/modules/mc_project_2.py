@@ -758,7 +758,7 @@ def get_configuration(name, *args, **kwargs):
         Does the project use local remotes (via git hooks) for users
         to push code inside remotes and have the local working copy
         synchronized with those remotes before deploy.
-        Default to False, set to True to not use local remotes
+        Default to True, set to False to use local remotes
         If the project directory .git folder exists, and there
         is no local remote created, the local remotes feature
         will also be disabled
@@ -1004,11 +1004,22 @@ def is_pillar_remote_less(cfg):
 
 
 def is_remote_less(cfg):
-    no_remote = cfg.get('remote_less', False) or (
+    # in makinastates v1 layouts, remoteless is False by default
+    remote_less = cfg.get('remote_less', None) or (
         (os.path.exists(J(cfg['project_root'], '.git')) or
          os.path.exists(J(cfg['project_root'], '.salt'))) and
         not os.path.exists(cfg['project_git_root']))
-    return no_remote
+    # if we found remote layout, deactivate remote less
+    if (
+        os.path.exists(cfg['project_git_root']) and
+        os.path.exists(cfg['pillar_git_root'])
+    ):
+        remote_less = False
+    # by default on v2 and later projects, remoteless is now the
+    # default
+    elif remote_less is None and LooseVersion(VERSION) >= LooseVersion("2.0"):
+        remote_less = True
+    return remote_less
 
 
 def init_user_groups(user, groups=None, ret=None):
