@@ -34,6 +34,7 @@ import socket
 import logging
 import time
 import mc_states.api
+from mc_states import saltapi
 import datetime
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
@@ -3663,6 +3664,21 @@ def get_ssh_hosts(ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
+def get_ssh_connection_infos(id_, ttl=PILLAR_TTL):
+    def _do():
+        infos = {
+            'host': id_,
+            'name': id_,
+            'port': 22,
+            'username': 'root',
+            'gateway': None}
+        pconf = copy.deepcopy(get_ssh_hosts().get(id_, {}))
+        infos.update(pconf)
+        return {saltapi.SSH_CON_PREFIX: infos}
+    cache_key = __name + '.get_ssh_connection_infos{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
 def get_masterless_makinastates_hosts(ttl=PILLAR_TTL):
     '''
     Expose on salt metadatas on how to connect
@@ -3793,6 +3809,7 @@ def ext_pillar(id_, pillar=None, raise_error=True, *args, **kw):
         __name + '.get_shorewall_conf': {},
         __name + '.get_burp_server_conf': {},
         __name + '.get_check_raid_conf': {},
+        __name + '.get_ssh_connection_infos': {},
         __name + '.get_dns_master_conf': {},
         __name + '.get_dns_slave_conf': {},
         __name + '.get_exposed_global_conf': {},
