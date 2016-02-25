@@ -47,6 +47,7 @@ from mc_states.api import no_more_mastersalt
 
 
 log = logging.getLogger(__name__)
+SSH_CON_PREFIX = 'makina-states.ssh_connection'
 _CLIENTS = {}
 _marker = object()
 _RUNNERS = {}
