@@ -258,6 +258,22 @@ class TransformError(RemoteResultProcessError):
     '''.'''
 
 
+class IPRetrievalError(KeyError):
+    ''''''
+
+
+class RRError(ValueError):
+    """."""
+
+
+class NoResultError(KeyError):
+    ''''''
+
+
+class PillarError(Exception):
+    ''''''
+
+
 def result(**kwargs):
     try:
         ret = kwargs.pop('ret', {})
@@ -791,9 +807,9 @@ def concat_res_or_rets(ret,
                 ret[k] = api.magicstring(val)
     for k in result_keys:
         if (
-            isinstance(cret, dict)
-            and isinstance(ret, dict)
-            and (k in cret)
+            isinstance(cret, dict) and
+            isinstance(ret, dict) and
+            (k in cret)
         ):
             if not cret.get(k):
                 ret[k] = False

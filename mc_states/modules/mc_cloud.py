@@ -22,10 +22,13 @@ from mc_states.saltapi import six
 from mc_states.modules.mc_pillar import PILLAR_TTL
 import mc_states.saltapi
 from salt.utils.odict import OrderedDict
+from mc_states.saltapi import (
+    IPRetrievalError, RRError, NoResultError, PillarError)
 
 __name = 'cloud'
 log = logging.getLogger(__name__)
 PREFIX = 'makina-states.cloud'
+_marker = object()
 
 
 def proxy_command(**data):
@@ -63,56 +66,80 @@ def ssh_key_path(key='id_dsa', user='root', folder=None):
 
 
 def ssh_settings(user=None,
-                 key=None,
+                 ssh_name=None,
                  ssh_host=None,
-                 ssh_gateway=None,
-                 ssh_gateway_password=None,
-                 ssh_password=None,
-                 ssh_user='root',
-                 ssh_gateway_user='root',
-                 ssh_gateway_port=22,
                  ssh_port=22,
-                 ssh_ip=None,
-                 ssh_name=None):
-    if ssh_host and not name:
+                 ssh_username='root',
+                 ssh_sudo=None,
+                 ssh_key=None,
+                 ssh_password=None,
+                 ssh_gateway=None,
+                 ssh_gateway_port=22,
+                 ssh_gateway_user='root',
+                 ssh_gateway_key=_marker,
+                 ssh_gateway_password=None):
+    if ssh_host and not ssh_name:
         ssh_name = ssh_host
     if not user:
         user = get_user()
-    if key and not key.startswith(os.path.sep):
-        key = ssh_key_path(key=key, user=user)
-    data = OrderedDict([
-        ('ssh_name', ssh_name),
-        ('ssh_host', ssh_host),
-        ('ssh_ip', ssh_ip),
-        ('ssh_username', 'root'),
-        ('ssh_key', key),
-        ('ssh_password', ssh_password),
-        ('ssh_port', ssh_port),
-        ('ssh_gateway', ssh_gateway),
-        ('ssh_gateway_user', 'root'),
-        ('ssh_gateway_key', key),
-        ('ssh_gateway_port', ssh_gateway_port),
-        ('ssh_gateway_password', ssh_gateway_password),
-    ])
+    if ssh_key and not ssh_key.startswith(os.path.sep):
+        ssh_key = ssh_key_path(key=ssh_key, user=user)
+    if ssh_gateway_key is _marker:
+        ssh_gateway_key = ssh_key
+    data = {'ssh_name': ssh_name,
+            'ssh_host': ssh_host,
+            'ssh_port': ssh_port,
+            'ssh_username': ssh_username,
+            'ssh_sudo': ssh_sudo,
+            'ssh_key': ssh_key,
+            'ssh_password': ssh_password,
+            'ssh_gateway': ssh_gateway,
+            'ssh_gateway_port': ssh_gateway_port,
+            'ssh_gateway_user': 'root',
+            'ssh_gateway_key': ssh_key,
+            'ssh_gateway_password': ssh_gateway_password}
     return data
 
 
-def ssh_host_settings(id_, defaults=None):
-    ssh_hosts = __salt__['mc_pillar.get_ssh_hosts']()
-    data = __salt__['mc_cloud.ssh_settings']()
-    if isinstance(defaults, dict):
-        data = __salt__['mc_utils.dictupdate'](
-            data,
-            dict([(a, defaults[a]) for a in defaults
-                  if a in data]))
-    if id_ in ssh_hosts:
-        data = __salt__['mc_utils.dictupdate'](
-            data, copy.deepcopy(ssh_hosts[id_]))
+def ssh_host_settings(id_, **defaults):
+    _s = __salt__
+    db = _s['mc_pillar.get_db_infrastructure_maps']()
+    ssh_hosts = _s['mc_pillar.get_ssh_hosts']()
+    data = _s['mc_cloud.ssh_settings'](ssh_name=id_)
+    if id_ in db['vms'] or id_ in db['bms']:
+        try:
+            ssh_host = _s['mc_pillar.ips_for'](id_)[0]
+        except IPRetrievalError:
+            ssh_host = id_
+    defaults.setdefault('ssh_name', id_)
+    defaults.setdefault('ssh_host', ssh_host)
+    data = _s['mc_utils.dictupdate'](
+        data,
+        dict([(a, defaults[a]) for a in defaults
+              if a in data]))
+    data = _s['mc_utils.dictupdate'](
+        data, copy.deepcopy(ssh_hosts.get(id_, {})))
+    if id_ in db['vms']:
+        try:
+            tip = _s['mc_pillar.ips_for'](db['vms'][id_]['target'])[0]
+        except IPRetrievalError:
+            pass
+        else:
+            if tip == ssh_host:
+                # vm is natted behind compute node, try to find out the port
+                data['ssh_port'] = _s['mc_cloud_compute_node.get_ssh_port'](
+                    id_, target=db['vms'][id_]['target'])
     if not data['ssh_host']:
-        data['ssh_host'] = id_
-    if not data['ssh_name']:
-        data['ssh_name'] = data['ssh_host']
+        data['ssh_host'] = ssh_host
     return data
+
+
+def exposed_ssh_settings(ttl=PILLAR_TTL):
+    def _do():
+        return __salt__['mc_utils.defaults'](
+            mc_states.saltapi.SSH_CON_PREFIX, {})
+    cache_key = __name + '.exposed_ssh_settings'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def default_settings():
