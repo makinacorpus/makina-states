@@ -39,6 +39,8 @@ import datetime
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 import traceback
+from mc_states.saltapi import (
+    IPRetrievalError, RRError, NoResultError, PillarError)
 six = mc_states.api.six
 
 socket_errors = (
@@ -94,22 +96,6 @@ def yaml_dump(*args, **kw4):
 
 def generate_password(length=None):
     return __salt__['mc_utils.generate_password'](length)
-
-
-class IPRetrievalError(KeyError):
-    ''''''
-
-
-class RRError(ValueError):
-    """."""
-
-
-class NoResultError(KeyError):
-    ''''''
-
-
-class PillarError(Exception):
-    ''''''
 
 
 def dolog(msg):
@@ -3655,27 +3641,21 @@ def get_dns_resolvers(id_, ttl=PILLAR_TTL):
 def get_ssh_hosts(ttl=PILLAR_TTL):
     def _do():
         try:
-            ssh_hosts = query('ssh_hosts')
+            ssh_hosts = copy.deepcopy(query('ssh_hosts'))
         except NoResultError:
             log.info('No ssh_hosts section in configuration')
             ssh_hosts = {}
         return ssh_hosts
-    cache_key = __name + '.get_ssh_hosts8'
+    cache_key = __name + '.get_ssh_hosts9'
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def get_ssh_connection_infos(id_, ttl=PILLAR_TTL):
     def _do():
-        infos = {
-            'host': id_,
-            'name': id_,
-            'port': 22,
-            'username': 'root',
-            'gateway': None}
-        pconf = copy.deepcopy(get_ssh_hosts().get(id_, {}))
-        infos.update(pconf)
+        _s = __salt__
+        infos = _s['mc_cloud.ssh_host_settings'](id_)
         return {saltapi.SSH_CON_PREFIX: infos}
-    cache_key = __name + '.get_ssh_connection_infos{0}'.format(id_)
+    cache_key = __name + '.get_ssh_connection_infos{0}5'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
@@ -3687,17 +3667,12 @@ def get_masterless_makinastates_hosts(ttl=PILLAR_TTL):
     _o = __opts__
     _s = __salt__
     def _do():
-        data = OrderedDict()
+        data = set()
         db = _s['mc_pillar.get_db_infrastructure_maps']()
         for kind in ('bms', 'vms'):
             for id_, idata in six.iteritems(db[kind]):
-                kind_pillar = _s[{
-                    'bms': 'mc_cloud_compute_node.cn_extpillar_settings',
-                    'vms': 'mc_cloud_vm.vm_extpillar_settings',
-                }[kind]](id_)
-                data[id_] = _s['mc_cloud.ssh_host_settings'](
-                    id_, defaults=kind_pillar)
-        return data
+                data.add(id_)
+        return list(data)
     cache_key = __name + '.get_masterless_makinastates_hosts1'
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
@@ -3989,6 +3964,5 @@ def loaded():
         if ret and not has_db():
             ret = False
     except Exception:
-        ret = False
+        ret = Falss
     return ret
-# vim:set et sts=4 ts=4 tw=80:

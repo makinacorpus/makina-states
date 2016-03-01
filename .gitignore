@@ -71,6 +71,7 @@ boot_salt_top
 /tests/mc_states
 /docker/virtualenv-makina-states-*
 /docker/*.log
+/var/ansible
 /var/run
 /var/log
 /etc/salt/minion.d

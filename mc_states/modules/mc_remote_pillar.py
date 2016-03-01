@@ -44,18 +44,17 @@ classical MQ salt or salt+ssh, so don't use pillar grains matching !
 '''
 
 import os
-import sys
 import copy
 import time
 import logging
 import Queue
+from multiprocessing import Queue as mQueue
 import multiprocessing
 import threading
 import traceback
 
 import salt.utils.minions
 import salt.config as config
-from salt.utils.odict import OrderedDict
 
 import mc_states.api
 from mc_states import saltcaller
@@ -66,7 +65,7 @@ six = mc_states.api.six
 
 log = logging.getLogger(__name__)
 __name = 'mc_remote_pillar'
-
+_marker = object()
 
 
 class AnsibleInventoryIncomplete(ValueError):
@@ -74,16 +73,17 @@ class AnsibleInventoryIncomplete(ValueError):
 
 
 def get_hosts(ids_=None):
-    data = OrderedDict()
+    data = set()
     if isinstance(ids_, basestring):
         ids_ = ids_.split(',')
     for f in __salt__:
         if f.endswith('.get_masterless_makinastates_hosts'):
-            data.update(__salt__[f]())
+            [data.add(a) for a in __salt__[f]()]
+    data = list(data)
     if ids_:
-        for i in [a for a in data]:
+        for i in data[:]:
             if i not in ids_:
-                data.pop(i, None)
+                data.pop(data.index(i))
     return data
 
 
@@ -156,7 +156,8 @@ def generate_masterless_pillar(id_, set_retcode=False, dump=False):
         with open(os.path.join(pid), 'w') as fic:
             log.info('Writing pillar {0}'.format(pid))
             fic.write(_s['mc_dumper.yaml_dump'](pillar))
-    return {'id': id_, 'pillar': pillar, 'errors': errors, 'pid': pid}
+    result = {'id': id_, 'pillar': pillar, 'errors': errors, 'pid': pid}
+    return result
 
 
 def handle_result(results, item):
@@ -166,20 +167,28 @@ def handle_result(results, item):
     return results
 
 
-def wait_processes_pool(workers, output_queue, results=None):
+def push_queue_to_results(output_queue, results):
+    try:
+        item = output_queue.get(False, 0.1)
+        if item is not None:
+            handle_result(results, item)
+    except Queue.Empty:
+        item = None
+    return item
+
+
+def wait_processes_pool(workers, output_queue, results):
     if results is None:
         results = {}
     msgs = []
     while len(workers):
-        try:
-            item = output_queue.get(False, 0.1)
-            if item is not None:
-                id_ = item[0]
-                th = workers.pop(id_, None)
-                th.join(1)
-                th.terminate()
-                handle_result(results, item)
-        except Queue.Empty:
+        item = push_queue_to_results(output_queue, results)
+        if item is not None:
+            id_ = item['salt_args'][0]
+            th = workers.pop(id_, None)
+            th.join(1)
+            th.terminate()
+        else:
             msg = ('Waiting for pillars pool(process) to finish {0}'
                    ''.format(' '.join([a for a in workers])))
             if msg not in msgs:
@@ -192,10 +201,12 @@ def wait_processes_pool(workers, output_queue, results=None):
                 th.terminate()
                 workers.pop(id_, None)
         time.sleep(0.1)
+    while push_queue_to_results(output_queue, results):
+        pass
     return results
 
 
-def wait_pool(workers, output_queue, results=None):
+def wait_pool(workers, output_queue, results):
     if results is None:
         results = {}
     msgs = []
@@ -219,12 +230,14 @@ def wait_pool(workers, output_queue, results=None):
             if not th.is_alive():
                 th.join(0.1)
                 workers.pop(id_, None)
+    while push_queue_to_results(output_queue, results):
+        pass
     return results
 
 
 def generate_masterless_pillars(ids_=None,
                                 skip=None,
-                                processes=4,
+                                processes=8,
                                 executable=None,
                                 threads=None,
                                 debug=False,
@@ -257,7 +270,10 @@ def generate_masterless_pillars(ids_=None,
         env = {}
     env = _s['mc_utils.dictupdate'](copy.deepcopy(dict(os.environ)), env)
     input_queue = Queue.Queue()
-    output_queue = Queue.Queue()
+    if processes:
+        output_queue = mQueue()
+    else:
+        output_queue = Queue.Queue()
     threads = int(threads)
     for ix, id_ in enumerate(ids_):
         if id_ in skip:
@@ -265,12 +281,14 @@ def generate_masterless_pillars(ids_=None,
             continue
         input_queue.put(id_)
         # for debug
-        # if ix >= 2:
-        #     break
+        # if ix >= 2: break
     workers = {}
     results = {}
     try:
+        size = input_queue.qsize()
+        i = 0
         while not input_queue.empty():
+            i += 1
             id_ = input_queue.get()
             fargs = [id_, 'set_retcode=True']
             pargs = {'executable': executable,
@@ -287,9 +305,10 @@ def generate_masterless_pillars(ids_=None,
             log.debug('Arguments: {0}'.format(pargs))
             pargs.update({'env': env,
                           'output_queue': output_queue})
+            log.info('ETA: {0}/{1}'.format(i, size))
             if threads:
                 if len(workers) >= threads:
-                    wait_pool(workers, results)
+                    wait_pool(workers, output_queue, results)
                 workers[id_] = (
                     threading.Thread(
                         target=saltcaller.call, kwargs=pargs))
@@ -307,7 +326,7 @@ def generate_masterless_pillars(ids_=None,
                     item = output_queue.get()
                     handle_result(results, item)
         if threads:
-            wait_pool(workers, results)
+            wait_pool(workers, output_queue, results)
         elif processes:
             wait_processes_pool(workers, output_queue, results)
     except (KeyboardInterrupt, Exception):
@@ -329,22 +348,52 @@ def generate_ansible_roster(ids_=None, **kwargs):
     hosts = {}
     masterless_hosts = generate_masterless_pillars(
         ids_=ids_, **kwargs)
-    for i, idata in six.iteritems(masterless_hosts):
+    for host, idata in six.iteritems(masterless_hosts):
         pillar = idata.get('salt_out', {}).get('pillar', {})
         if '_errors' in pillar:
             raise AnsibleInventoryIncomplete(
                 'Pillar for {0} has errors\n{1}'.format(
-                    i,
-                    '\n'.join(pillar['_errors'])
-                )
-            )
+                    host,
+                    '\n'.join(pillar['_errors'])))
         oinfos = pillar.get(saltapi.SSH_CON_PREFIX, {})
-        hosts[i] = {
-            'name': i,
-            'host': i,
-            'port': 22,
-            'gateway': None,
+        hosts[host] = {
+            'name': host,
+            'ansible_host': host,
+            'ansible_port': 22,
             'salt_pillar': pillar}
-        hosts[i].update(oinfos)
+        hosts[host].update(oinfos)
+        for i, aliases in six.iteritems({
+            'ssh_name': ['ansible_name'],
+            'ssh_host': ['ansible_host'],
+            'ssh_sudo': ['ansible_become'],
+            'ssh_port': ['ansible_port'],
+            'ssh_password': ['ansible_password'],
+            'ssh_key': ['ansible_ssh_private_key_file'],
+            'ssh_username': ['ansible_user'],
+            'ssh_gateway': [],
+            'ssh_gateway_port': [],
+            'ssh_gateway_user': [],
+            'ssh_gateway_key': [],
+            'ssh_gateway_password': []
+        }):
+            val = oinfos.get(i, None)
+            if val is None:
+                continue
+            for alias in aliases:
+                hosts[host][alias] = oinfos[i]
+        if hosts[host]['ssh_gateway']:
+            v = 'ansible_ssh_common_args'
+            hosts[host][v] = '-o ProxyCommand="ssh -W %h:%p'
+            if hosts[host]['ssh_gateway_key']:
+                hosts[host][v] += ' -i {0}'.format(
+                    hosts[host]['ssh_gateway_key'])
+            if hosts[host]['ssh_gateway_port']:
+                hosts[host][v] += ' -p {0}'.format(
+                    hosts[host]['ssh_gateway_port'])
+            if hosts[host]['ssh_gateway_user']:
+                hosts[host][v] += ' -l {0}'.format(
+                    hosts[host]['ssh_gateway_user'])
+            hosts[host][v] += ' {0}'.format(
+                hosts[host]['ssh_gateway'])
     return hosts
 # vim:set et sts=4 ts=4 tw=80:

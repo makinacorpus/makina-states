@@ -10,5 +10,6 @@ then
 else
     warn "virtualenv not found in ${MS_VENV_PATH}"
 fi
+ANSIBLE_HOSTS="${ANSIBLE_HOSTS:-"${WC}/mc_states/ansible/inventory.py"}"
 exec ${MS_VENV_PATH}/bin/${SCRIPT} "${@}"
 # vim:set et sts=4 ts=4 tw=80:
