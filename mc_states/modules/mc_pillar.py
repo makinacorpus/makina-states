@@ -981,10 +981,14 @@ def get_nss(ttl=PILLAR_TTL):
 
     '''
     def _do():
+        _s = __salt__
         dns_servers = {'all': [],
+                       'map': OrderedDict(),
                        'masters': OrderedDict(),
                        'slaves': OrderedDict()}
-        dbdns_zones = __salt__[__name + '.query']('managed_dns_zones', {})
+        dns_servers['map'] = _s[__name + '.query'](
+            'dns_servers', {}).get('map', {})
+        dbdns_zones = _s[__name + '.query']('managed_dns_zones', {})
         for domain in dbdns_zones:
             master = get_ns_master(domain)
             slaves = get_ns_slaves(domain)
@@ -1001,7 +1005,7 @@ def get_nss(ttl=PILLAR_TTL):
                     target_masters.append(master)
         dns_servers['all'].sort()
         return dns_servers
-    cache_key = __name + '.get_nss'
+    cache_key = __name + '.get_nss3'
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
@@ -2410,46 +2414,31 @@ def get_top_variables(ttl=ONE_MINUTE):
 def is_dns_slave(id_, ttl=PILLAR_TTL):
     def _do(id_):
         sips = []
-        candidates = __salt__[__name + '.get_nss']()['slaves']
+        nsses = __salt__[__name + '.get_nss']()
+        candidates = [a for a in nsses['slaves']]
+        for i in candidates[:]:
+            j = nsses['map'].get(i, None)
+            if j:
+                candidates.append(j)
         if id_ in candidates:
             return True
-        for a in candidates:
-            try:
-                sips.extend(resolve_ips(a, fail_over=True))
-            except Exception:
-                log.error(traceback.format_exc())
-        if sips:
-            try:
-                for ip in resolve_ips(id_, fail_over=True):
-                    if ip in sips:
-                        return True
-            except Exception:
-                log.error(traceback.format_exc())
         return False
-    cache_key = __name + '.is_dns_slave_{0}'.format(id_)
+    cache_key = __name + '.is_dns_slave_5{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def is_dns_master(id_, ttl=PILLAR_TTL):
     def _do(id_):
-        candidates = __salt__[__name + '.get_nss']()['masters']
-        sips = []
+        nsses = __salt__[__name + '.get_nss']()
+        candidates = [a for a in nsses['masters']]
+        for i in candidates[:]:
+            j = nsses['map'].get(i, None)
+            if j:
+                candidates.append(j)
         if id_ in candidates:
             return True
-        for a in candidates:
-            try:
-                sips.extend(resolve_ips(a, fail_over=True))
-            except Exception:
-                log.error(traceback.format_exc())
-        if sips:
-            try:
-                for ip in resolve_ips(id_, fail_over=True):
-                    if ip in sips:
-                        return True
-            except Exception:
-                log.error(traceback.format_exc())
         return False
-    cache_key = __name + '.is_dns_master_{0}'.format(id_)
+    cache_key = __name + '.is_dns_master_{0}4'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
