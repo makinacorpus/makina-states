@@ -539,6 +539,10 @@ ssh_groups:
 #       - provider25-2.mydomain.tld
 #       - provider1-dc1-4.mydomain.tld
 #       - provider1-dc1-3.mydomain.tld
+#   # map a ns name with a minion id (if the dns name of the nameserver is binded for example
+#   # on a failover ip
+#   map:
+#     ns.foo.net: provider25-2.mydomain.tld
 
 # Configurations for burp makina-states's integration
 # First level is the backup server itself fqdn
