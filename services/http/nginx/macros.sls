@@ -33,6 +33,17 @@
 {% set svhost_data =salt['mc_utils.json_dump'](data) %}
 {% set small_name = data.small_name %}
 
+
+{% if data.get('with_include', False) or data.get('includes', []) %}
+{% set incs = [] %}
+include:
+  {% for i in ['makina-states.services.http.nginx'] + data.get('includes', []) %}
+  {%  if i not in incs %}
+  - {{i}}
+  {%  endif %}
+  {%  do incs.append(i) %}
+  {% endfor %}
+{% endif %}
 # Virtualhost basic file
 makina-nginx-virtualhost-{{ small_name }}-top:
   file.managed:
@@ -105,6 +116,22 @@ makina-nginx-virtualhost-{{ small_name }}-content:
       - mc_proxy: nginx-pre-conf-hook
     - watch_in:
       - mc_proxy: nginx-post-conf-hook
+
+{# inconditionnaly reboot circus & nginx upon deployments #}
+{% if data.get('force_reload', False) %}
+makina-nginx-virtualhost-{{ small_name }}-reload:
+  cmd.run:
+    - name: echo true
+    - watch_in:
+      - mc_proxy: nginx-pre-restart-hook
+{% endif %}
+{% if data.get('force_restart', False) %}
+makina-nginx-virtualhost-{{ small_name }}-restart:
+  cmd.run:
+    - name: echo true
+    - watch_in:
+      - mc_proxy: nginx-pre-hardrestart-hook
+{% endif %}
 
 {{ toggle_vhost(data.vhost_basename, active=data.active) }}
 {% endmacro %}
