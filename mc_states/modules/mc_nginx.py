@@ -364,7 +364,7 @@ def vhost_settings(domain, doc_root, **kwargs):
     kwargs.setdefault(
         'vhost_top_file',
         nginxSettings['basedir'] + "/sites-available/" + vhost_basename + ".top.conf")
-    kwargs.setdefault('with_include', False)
+    kwargs.setdefault('with_include_sls_statement', False)
     kwargs.setdefault('redirect_aliases', True)
     kwargs.setdefault('force_reload', True)
     kwargs.setdefault('force_restart', False)
