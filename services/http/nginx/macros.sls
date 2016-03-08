@@ -34,7 +34,7 @@
 {% set small_name = data.small_name %}
 
 
-{% if data.get('with_include', False) or data.get('includes', []) %}
+{% if data.get('with_include_sls_statement', False) or data.get('includes', []) %}
 {% set incs = [] %}
 include:
   {% for i in ['makina-states.services.http.nginx'] + data.get('includes', []) %}
