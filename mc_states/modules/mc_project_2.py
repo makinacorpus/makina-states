@@ -30,6 +30,8 @@ import uuid
 import logging
 import yaml
 import copy
+from distutils.version import LooseVersion
+from mc_states.version import VERSION
 from salt.utils.odict import OrderedDict
 import salt.template
 from salt.states import group as sgroup
@@ -421,9 +423,9 @@ def _prepare_configuration(name, *args, **kwargs):
     salt_settings = _s['mc_salt.settings']()
     # special symlinks inside salt wiring
     cfg['wired_salt_root'] = os.path.join(
-        salt_settings['saltRoot'], 'makina-projects', cfg['name'])
+        salt_settings['salt_root'], 'makina-projects', cfg['name'])
     cfg['wired_pillar_root'] = os.path.join(
-        salt_settings['pillarRoot'], 'makina-projects', cfg['name'])
+        salt_settings['pillar_root'], 'makina-projects', cfg['name'])
     # check if the specified sls installer files container
     if not cfg['default_env']:
         # one of:
@@ -746,21 +748,6 @@ def _get_contextual_cached_project(name, remote_host=None):
     return cfg
 
 
-'''
-Seems not be used
-Deactivate in a while ;)
-
-def refresh_cached_configuration(name, *args, **kwargs):
-    \'''
-    To inter operate with external tools, we will
-    cache a serialized configuration inside the project root
-    \'''
-    get_configuration(name *args, **kwargs)
-    json_cfg = __salt__['mc_utils.json_dump'](cfg)
-    pack_cfg = __salt__['mc_utils.json_dump'](cfg)
-'''
-
-
 def get_configuration(name, *args, **kwargs):
     '''
     Return a configuration data structure needed data for
@@ -773,7 +760,7 @@ def get_configuration(name, *args, **kwargs):
         Does the project use local remotes (via git hooks) for users
         to push code inside remotes and have the local working copy
         synchronized with those remotes before deploy.
-        Default to False, set to True to not use local remotes
+        Default to True, set to False to use local remotes
         If the project directory .git folder exists, and there
         is no local remote created, the local remotes feature
         will also be disabled
@@ -874,7 +861,7 @@ def get_configuration(name, *args, **kwargs):
             return cfg
     _s = __salt__
     salt_settings = _s['mc_salt.settings']()
-    salt_root = salt_settings['saltRoot']
+    salt_root = salt_settings['salt_root']
     nodata = kwargs.pop('nodata', False)
     ignored_keys = cfg['ignored_keys']
     if nodata:
@@ -1019,11 +1006,22 @@ def is_pillar_remote_less(cfg):
 
 
 def is_remote_less(cfg):
-    no_remote = cfg.get('remote_less', False) or (
+    # in makinastates v1 layouts, remoteless is False by default
+    remote_less = cfg.get('remote_less', None) or (
         (os.path.exists(J(cfg['project_root'], '.git')) or
          os.path.exists(J(cfg['project_root'], '.salt'))) and
         not os.path.exists(cfg['project_git_root']))
-    return no_remote
+    # if we found remote layout, deactivate remote less
+    if (
+        os.path.exists(cfg['project_git_root']) and
+        os.path.exists(cfg['pillar_git_root'])
+    ):
+        remote_less = False
+    # by default on v2 and later projects, remoteless is now the
+    # default
+    elif remote_less is None and LooseVersion(VERSION) >= LooseVersion("2.0"):
+        remote_less = True
+    return remote_less
 
 
 def init_user_groups(user, groups=None, ret=None):
@@ -1156,7 +1154,9 @@ def sync_hooks(name, ret=None, api_version=API_VERSION, *args, **kwargs):
         ret = _get_ret(cfg['name'])
     local_remote = cfg['project_git_root']
     project_git = os.path.join(cfg['project_root'], '.git')
+    ps = _s['mc_locations']()['ms']
     params = {
+        'WC': ms,
         'FORCE_MARKER': local_remote+'/hooks/force_marker',
         'api_version': api_version, 'name': name}
     if not cfg.get('remote_less', False):
@@ -2152,11 +2152,7 @@ def sync_modules(name, *args, **kwargs):
     _s = __salt__
     salt_root = cfg['salt_root']
     system_salt = __opts__['file_roots']['base'][0]
-    if _s['mc_controllers.mastersalt_mode']():
-        k = 'mastersalt'
-    else:
-        k = 'salt'
-
+    k = 'salt'
     saltsettings = __salt__['mc_salt.settings']()[
         'data_mappings']['minion'][k]
     for config_opt, dirs in saltsettings['saltmods'].items():
@@ -2460,7 +2456,7 @@ def link_pillar(names, *args, **kwargs):
     for name in names:
         cfg = get_configuration(name, nodata=True, *args, **kwargs)
         salt_settings = __salt__['mc_salt.settings']()
-        pillar_root = os.path.join(salt_settings['pillarRoot'])
+        pillar_root = os.path.join(salt_settings['pillar_root'])
         upillar_top = 'makina-projects.{name}'.format(**cfg)
         pillarf = os.path.join(pillar_root, 'top.sls')
         customf = os.path.join(pillar_root, 'custom.sls')
@@ -2468,6 +2464,8 @@ def link_pillar(names, *args, **kwargs):
         link_into_root(
             name, ret,
             cfg['wired_pillar_root'], cfg['pillar_root'], do_link=True)
+        if LooseVersion(VERSION) >= LooseVersion("2.0"):
+            continue
         added = '    - {0}'.format(pillar_top)
         for f, content in six.iteritems({pillarf: TOP, customf: CUSTOM}):
             if not os.path.exists(f):
@@ -2513,26 +2511,27 @@ def unlink_pillar(names, *args, **kwargs):
         cfg = get_configuration(name, nodata=True,  *args, **kwargs)
         kwargs.pop('ret', None)
         salt_settings = __salt__['mc_salt.settings']()
-        pillar_root = os.path.join(salt_settings['pillarRoot'])
+        pillar_root = os.path.join(salt_settings['pillar_root'])
         pillarf = os.path.join(pillar_root, 'top.sls')
         pillar_top = 'makina-projects.{name}'.format(**cfg)
-        with open(pillarf) as fpillarf:
-            pillar_top = '- makina-projects.{name}'.format(**cfg)
-            pillars = fpillarf.read()
-            if pillar_top in pillars:
-                lines = []
-                log = False
-                for line in pillars.splitlines():
-                    if line.endswith(pillar_top):
-                        log = True
-                        continue
-                    lines.append(line)
-                with open(pillarf, 'w') as wpillarf:
-                    wpillarf.write('\n'.join(lines))
-                if log:
-                    _append_comment(
-                        ret, body=indent(
-                            'Cleaned pillar top: {0}'.format(name)))
+        if not LooseVersion(VERSION) >= LooseVersion("2.0"):
+            with open(pillarf) as fpillarf:
+                pillar_top = '- makina-projects.{name}'.format(**cfg)
+                pillars = fpillarf.read()
+                if pillar_top in pillars:
+                    lines = []
+                    log = False
+                    for line in pillars.splitlines():
+                        if line.endswith(pillar_top):
+                            log = True
+                            continue
+                        lines.append(line)
+                    with open(pillarf, 'w') as wpillarf:
+                        wpillarf.write('\n'.join(lines))
+                    if log:
+                        _append_comment(
+                            ret, body=indent(
+                                'Cleaned pillar top: {0}'.format(name)))
         link_into_root(
             name, ret,
             cfg['wired_pillar_root'], cfg['pillar_root'], do_link=False)
@@ -2704,6 +2703,39 @@ def sync_hooks_for_all(*args, **kwargs):
     return ret
 
 
+def list_projects():
+    locs = __salt__['mc_locations.settings']()
+    cfgs = OrderedDict()
+    if os.path.exists(locs['projects_dir']):
+        projects = os.listdir(locs['projects_dir'])
+        if projects:
+            for pj in projects:
+                cfgs[pj] = get_configuration(pj)
+    for pj in [a for a in cfgs]:
+        cfg = cfgs[pj]
+        if (
+            not os.path.exists(
+                os.path.join(cfg['pillar_root'], 'init.sls')
+            ) or (
+                True in
+                [not os.path.exists(
+                    os.path.join(cfg['project_root'], '.salt', a)
+                ) for a in ['fixperms.sls', 'PILLAR.sample']]
+            )
+        ):
+            cfgs.pop(pj, None)
+    return cfgs
+
+
+def link_projects(projects=None):
+    rets = OrderedDict()
+    if not projects:
+        projects = list_projects()
+    for pj in projects:
+        rets[pj] = link(pj)
+    return rets
+
+
 def report():
     '''
     Get connection details & projects report
@@ -2712,7 +2744,8 @@ def report():
 
         salt-call --local mc_project.report
     '''
-    pt = get_configuration('project')['projects_dir']
+    locs = __salt__['mc_locations.settings']()
+    pt = locs['projects_dir']
     ret = ''
     target = __grains__['id']
     dconf = get_default_configuration()

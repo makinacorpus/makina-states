@@ -81,17 +81,17 @@ mail_configurations:
     'configurations': '''
 configurations:
   foo.makina-corpus.net:
-    mastersalt_master: true
+    salt_master: true
     cloud_master: true
     cloud_images:
       makina-states.cloud.images.lxc.images.makina-states-precise:
         builder_ref: bar.makina-corpus.net
   default:
-    mastersalt: f.makina-corpus.net
-    mastersaltdn: m.makina-corpus.net
-    mastersalt_port: 4606
+    salt: f.makina-corpus.net
+    saltdn: m.makina-corpus.net
+    salt_port: 4606
     domain: makina-corpus.net
-    mastersalt_master: false
+    salt_master: false
     cloud_master: false
     manage_packages: true
     manage_mails: true
@@ -688,10 +688,10 @@ class TestCase(base.ModuleCase):
                               'manage_ssh_groups': True,
                               'manage_ssh_keys': True,
                               'manage_sudoers': True,
-                              'mastersalt': 'f.makina-corpus.net',
-                              'mastersalt_master': True,
-                              'mastersalt_port': 4606,
-                              'mastersaltdn': 'm.makina-corpus.net'})
+                              'salt': 'f.makina-corpus.net',
+                              'salt_master': True,
+                              'salt_port': 4606,
+                              'saltdn': 'm.makina-corpus.net'})
             self.assertEqual(res2, {
                              'backup_mode': 'burp',
                              'cloud_master': False,
@@ -712,10 +712,10 @@ class TestCase(base.ModuleCase):
                              'manage_ssh_groups': True,
                              'manage_ssh_keys': True,
                              'manage_sudoers': True,
-                             'mastersalt': 'f.makina-corpus.net',
-                             'mastersalt_master': False,
-                             'mastersalt_port': 4606,
-                             'mastersaltdn': 'm.makina-corpus.net'})
+                             'salt': 'f.makina-corpus.net',
+                             'salt_master': False,
+                             'salt_port': 4606,
+                             'saltdn': 'm.makina-corpus.net'})
 
     def test_get_passwords(self):
         data = {}

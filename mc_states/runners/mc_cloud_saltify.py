@@ -84,8 +84,8 @@ def saltify(name, output=True, ret=None):
                     if data.get(var):
                         if var == "script_args":
                             if "reattach" in data[var]:
-                                if " --mastersalt " not in data[var]:
-                                    data[var] += " --mastersalt {0}".format(
+                                if " --salt " not in data[var]:
+                                    data[var] += " --salt {0}".format(
                                         data.get('master', thisid))
                                 if " -m " not in data[var]:
                                     data[var] += " -m {0}".format(name)

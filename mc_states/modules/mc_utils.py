@@ -91,15 +91,13 @@ def odict(instance=True):
 def local_minion_id(force=False):
     '''
     search in running config root
-    then in well known config mastersalt root
     then in well known config salt root
     then use regular salt function
     '''
     mid = _CACHE['mid']
     if mid and not force:
         return mid
-    paths = api.uniquify([
-        __opts__['config_dir'], '/etc/mastersalt', '/etc/salt'])
+    paths = api.uniquify([__opts__['config_dir'], '/etc/salt'])
     for path in paths:
         for cfgn, fun in OrderedDict(
             [('master', master_config),
@@ -713,7 +711,7 @@ def defaults(prefix,
         overridden[prefix] = OrderedDict()
     pkeys = OrderedDict()
     for a in datadict:
-        if a not in ignored_keys:
+        if a not in ignored_keys and isinstance(a, six.string_types):
             to_unicode = False
             for i in prefix, a:
                 if isinstance(i, unicode):
@@ -794,13 +792,13 @@ def sanitize_kw(kw):
 def salt_root():
     '''get salt root from either pillar or opts (minion or master)'''
     salt = __salt__['mc_salt.settings']()
-    return salt['c']['o']['saltRoot']
+    return salt['salt_root']
 
 
 def msr():
     '''get salt root from either pillar or opts (minion or master)'''
     salt = __salt__['mc_salt.settings']()
-    return salt['c']['o']['msr']
+    return salt['msr']
 
 
 def remove_stuff_from_opts(__opts):
@@ -939,8 +937,9 @@ def profile(func, *args, **kw):
         ps = pstats.Stats(
             pr, stream=fic).sort_stats('tottime')
         ps.print_stats()
+    msr = __salt__['mc_locations.msr']()
     os.system(
-        '/srv/mastersalt/makina-states/bin/pyprof2calltree '
+        msr + '/bin/pyprof2calltree '
         '-i {0} -o {1}'.format(ficp, fico))
     return ret, ficp, fico, ficn, ficcl, fict
 
@@ -1084,7 +1083,7 @@ def memoize_cache(*args, **kw):
 
     CLI Examples::
 
-        mastersalt-call -lall mc_pillar.memoize_cache test.ping
+        salt-call -lall mc_pillar.memoize_cache test.ping
 
     '''
     return api.memoize_cache(*args, **cache_kwargs(*args, **kw))

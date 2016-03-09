@@ -2,11 +2,6 @@
 
 set -e
 if [ "x${DEBUG}" != "x" ];then set -x;fi
-if [ "x$1" = "xstop" ];then
-    for i in salt-master salt-minion mastersalt-master mastersalt-minion;do
-        service "${i}" stop
-    done
-fi
 is_docker=""
 from_systemd="y"
 for i in ${@};do
@@ -29,12 +24,8 @@ fi
 REMOVE="
 /tmp/.saltcloud
 /root/.cache
-/etc/makina-states/nodetype
+/srv/makina-states/etc/salt/makina-states/nodetype
 /home/*/.cache
-/etc/systemd/system/multi-user.target.wants/mastersalt-minion.service
-/etc/systemd/system/multi-user.target.wants/mastersalt-master.service
-/etc/systemd/system/multi-user.target.wants/salt-minion.service
-/etc/systemd/system/multi-user.target.wants/salt-master.service
 "
 if [ "x${is_docker}" != "x" ];then
     set +e
@@ -43,20 +34,14 @@ if [ "x${is_docker}" != "x" ];then
         rm -rf "${i}" || /bin/true
     done
     REMOVE="${REMOVE}
-/salt-venv/mastersalt/lib/python2.7/site-packages/libcloud/test/compute/fixtures
-/salt-venv/salt/lib/python2.7/site-packages/libcloud/test/compute/fixtures
+/srv/makina-states/venv/lib/python2.7/site-packages/libcloud/test/compute/fixtures
 "
 fi
 set -e
 # directories to empty out or files to wipe content from
 WIPE="
-/etc/mastersalt/makina-states/
-/etc/salt/makina-states/
-/etc/makina-states/*.pack
-/etc/makina-states/*.yaml
+/srv/makina-states/etc/makina-states
 
-/etc/mastersalt/makina-states
-/etc/salt/makina-states
 /usr/local/share/ca-certificates/
 
 /tmp
@@ -68,9 +53,6 @@ WIPE="
 /etc/ssl/cloud
 /etc/ssl/nginx
 
-/srv/salt/makina-states/.bootlogs/
-/srv/mastersalt/makina-states/.bootlogs/
-
 /var/log/unattended-upgrades/
 /var/log/*.1
 /var/log/*.0
@@ -78,12 +60,10 @@ WIPE="
 "
 # files to delete
 FILE_REMOVE="
-/srv/mastersalt-pillar/
-/srv/pillar/
 /var/cache/apt/archives/
 /var/lib/apt/lists
-/etc/salt/pki
-/etc/mastersalt/pki
+/srv/pillar/
+/srv/makina-states/etc/salt/pki
 "
 FILE_WIPE="
 /var/log
@@ -91,19 +71,8 @@ FILE_WIPE="
 # salt cache is relying on semi hardlinks, deleting files from their orig
 # just delete/create the caches is sufficient
 TO_RECREATE="
-/var/cache/salt/minion
-/var/cache/salt/salt-minion
-/var/cache/salt/salt-master
-/var/cache/mastersalt/mastersalt-master
-/var/cache/mastersalt/mastersalt-minion
-/var/cache/mastersalt/minion
-/var/cache/mastersalt/master-master
+/srv/makina-states/var/cache/salt/minion
 "
-# we already have clean checkouts, now, we do not upgrade
-# if [ "x${is_docker}" != "x" ];then
-#     /srv/mastersalt/makina-states/_scripts/boot-salt.sh -C -s -S --only-pack || /bin/true
-# fi
-
 echo "${TO_RECREATE}" | while read i;do
     if [ "x${i}" != "x" ];then
         if [ ! -h "${i}" ];then
@@ -154,7 +123,7 @@ echo "${FILE_WIPE}" | while read i;do
         find "${i}" -type f | while read f;do echo > "${f}" || /bin/true;done
     fi
 done
-find /srv/pillar /srv/mastersalt-pillar /etc/*salt/minion* -type f|while read i
+find /srv/pillar -type f|while read i
 do
     sed -i -re "s/master:.*/master: 0.0.0.1/g" "$i" || /bin/true
     sed -i -re "s/id:.*/id: localminion/g" "$i" || /bin/true
@@ -163,12 +132,10 @@ find /etc/shorewall/rules -type f|while read i
 do
     sed -i -re "s/ACCEPT.? +net:?.*fw +-/ACCEPT net fw/g" "$i" || /bin/true
 done
-for i in salt mastersalt;do
-    j="/etc/${i}/grains"
-    if [ -e "${j}" ];then
-        sed -i -re "/makina-states.nodetypes.*: (true|false)/ d" "${j}" || /bin/true
-    fi
-done
+j="/srv/makina-states/etc/salt/grains"
+if [ -e "${j}" ];then
+    sed -i -re "/makina-states.nodetypes.*: (true|false)/ d" "${j}" || /bin/true
+fi
 find / -name .ssh | while read i;do
 echo $i
     if [ -d "${i}" ];then
@@ -186,12 +153,6 @@ find /etc/init/*salt* | grep -v override | while read fic
     do
         echo manual > ${fic//.conf}.override
     done
-for i in\
-    /etc/makina-states/local_salt_mode \
-    /etc/makina-states/local_mastersalt_mode \
-;do
-    if [ -e "${i}" ];then echo masterless > "${i}";fi
-done
 if [ -e /etc/.git ] && [ -e /usr/bin/etckeeper ];then
     rm -rf /etc/.git
     # save space in image

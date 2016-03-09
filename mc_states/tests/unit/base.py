@@ -119,7 +119,7 @@ class _ModuleCase(unittest.TestCase):
                 'testroot': '{root}',
                 'ms_conf': '{root}/etc/makina-states',
                 'mms_conf': '{root}/etc/salt/makina-states',
-                'salt_ms_conf': '{root}/etc/mastersalt/makina-states',
+                'salt_ms_conf': '{root}/etc/salt/makina-states',
                 'salt_root': self.salt_root,
                 'config_dir': '{root}/etc/salt',
                 'conf_file': '{config_dir}/minion',

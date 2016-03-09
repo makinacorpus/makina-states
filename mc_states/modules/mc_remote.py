@@ -1616,7 +1616,6 @@ def run_salt_call(host,
             'sarg': sarg})
         if not remote:
             # use to call:
-            # or call mastersalt
             if new_shell:
                 try:
                     script = salt_call_script.format(**skwargs)
@@ -1821,9 +1820,6 @@ def salt_call(host,
              salt-call --local -lall mc_remote.salt_call fun=test.ping \\
                 host=127.0.0.1 new_shell=False ttl=60
 
-             salt-call --local mc_remote.mastersalt_call fun=mc_cl.settings \\
-                host=127.0.0.1 new_shell=False ttl=60
-
     use_vt
         When ran locally, use use_vt to stream output
     args
@@ -1908,15 +1904,6 @@ def salt_call(host,
     if not HAS_ARGS:
         raise OSError('Missing salt.utils.args')
     if host in get_localhost():
-        if 'mastersalt' in salt_call_bin:
-            if __salt__['mc_controllers.mastersalt_mode']():
-                new_shell = False
-            else:
-                new_shell = True
-                if not __salt__['mc_controllers.has_mastersalt']():
-                    raise mc_states.saltapi.MastersaltNotInstalled('Mastersalt is not installed')
-                if not __salt__['mc_controllers.has_mastersalt_running']():
-                    raise mc_states.saltapi.MastersaltNotRunning('Mastersalt is not running')
         if remote is None:
             remote = False
     if new_shell is None:
@@ -1929,11 +1916,7 @@ def salt_call(host,
         else:
             use_vt = False
     if masterless is None:
-        if 'mastersalt' in salt_call_bin:
-            fun_ = 'mc_controllers.local_mastersalt_mode'
-        else:
-            fun_ = 'mc_controllers.local_salt_mode'
-        masterless = __salt__[fun_]() == 'masterless'
+        masterless = True
     else:
         masterless = bool(masterless)
     # uglyness for caching a bit based on calling args
@@ -1957,30 +1940,13 @@ def salt_call(host,
     return _process_ret(ret, unparse, strip_out, hard_failure)
 
 
-def mastersalt_call(*a, **kw):
-    '''
-    Execute mastersalt-call remotely
-    see salt-call
-    '''
-    kw.setdefault('salt_call_bin', 'mastersalt-call')
-    return salt_call(*a, **kw)
-
-
-def local_mastersalt_call(*a, **kw):
-    '''
-    Execute mastersalt-call locally, maybe in another shell
-    see salt-call
-    '''
-    return mastersalt_call(None, *a, **kw)
-
-
 def local_salt_call(*a, **kw):
     '''
     Execute salt-call locally, in another shell
     see salt-call
     '''
     kw.setdefault('remote', False)
-    return mastersalt_call(None, *a, **kw)
+    return salt_call(None, *a, **kw)
 
 
 def hardstop_salt_call(*args, **kw):

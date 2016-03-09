@@ -16,8 +16,17 @@ from mc_states.grains import makina_grains
 
 
 __name = 'nodetypes'
-DEFAULT_NT = 'server'
+DEFAULT_NT = 'scratch'
 log = logging.getLogger(__name__)
+NODETYPES = ['lxccontainer',
+             'dockercontainer',
+             'vagrantvm',
+             'devhost',
+             'travis',
+             'kvm',
+             'laptop',
+             'vm',
+             'server']
 
 
 def environ():
@@ -28,15 +37,15 @@ def get_makina_grains():
     '''
     Expose real time grains
     '''
-    return makina_grains.get_makina_grains()
+    return makina_grains.get_makina_grains(_o=__opts__)
 
 
 def is_upstart():
-    return makina_grains._is_upstart()
+    return makina_grains._is_upstart(_o=__opts__)
 
 
 def is_systemd():
-    return makina_grains._is_systemd()
+    return makina_grains._is_systemd(_o=__opts__)
 
 
 def metadata():
@@ -96,7 +105,7 @@ def registry():
             'lxccontainer': {'active': False},
             'laptop': {'active': False},
             'dockercontainer': {'active': False}}
-        nt = makina_grains._nodetype()
+        nt = makina_grains._nodetype(_o=__opts__)
         if nt:
             if nt in reg_nt:
                 reg_nt[nt] = {'active': True}
@@ -126,15 +135,15 @@ def is_scratch():
 
 
 def is_travis():
-    return makina_grains._is_travis()
+    return makina_grains._is_travis(_o=__opts__)
 
 
 def is_docker():
-    return makina_grains._is_docker()
+    return makina_grains._is_docker(_o=__opts__)
 
 
 def is_lxc():
-    return makina_grains._is_lxc()
+    return makina_grains._is_lxc(_o=__opts__)
 
 
 def is_container():
@@ -142,42 +151,21 @@ def is_container():
 
 
 def is_vagrantvm():
-    return makina_grains._is_vagrantvm()
+    return makina_grains._is_vagrantvm(_o=__opts__)
 
 
 def is_devhost():
-    return makina_grains._is_devhost() or is_vagrantvm()
-
-
-def is_container_nodetype(nodetype):
-    is_nodetype = None
-    _s = __salt__
-    if nodetype in ['lxccontainer', 'dockercontainer']:
-        nt = nodetype.replace('container', '')
-        try:
-            is_nodetype = _s['mc_nodetypes.is_{0}'.format(nt)]()
-        except Exception:
-            is_nodetype = None
-    return is_nodetype
+    return (makina_grains._is_devhost(_o=__opts__) or
+            is_vagrantvm())
 
 
 def is_docker_service():
-    return (
-        is_docker() and
-        not __salt__['mc_controllers.mastersalt_mode']())
+    return is_docker()
 
 
 def is_vm():
     reg = registry()
-    for i in [
-        'lxccontainer',
-        'dockercontainer',
-        'vagrantvm',
-        'devhost',
-        'travis',
-        'kvm',
-        'vm',
-    ]:
+    for i in NODETYPES:
         if is_nt(i):
             return True
         elif reg['is'].get(i, False):
@@ -195,6 +183,17 @@ def is_vm():
     return False
 
 
+def get_nodetypes():
+    nodetypes = set()
+    if is_scratch():
+        nodetypes.add('scratch')
+    else:
+        for i in NODETYPES:
+            if is_nt(i):
+                nodetypes.add(i)
+    return [a for a in nodetypes]
+
+
 def has_system_services_manager():
     '''
     Does the actual host has a system level services manager
@@ -204,11 +203,5 @@ def has_system_services_manager():
 
 
 def activate_sysadmin_states():
-    if (
-        __salt__['mc_controllers.mastersalt_mode']() and
-        not is_docker_service()
-    ) or (
-        is_docker_service()
-    ):
-        return True
-    return False
+    '''retrocompat'''
+    return True

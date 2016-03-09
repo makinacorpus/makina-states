@@ -39,8 +39,7 @@ _LOCAL_REG_CACHE = {}
 
 
 
-NOT_SHARED = ['controllers', 'services', 'nodetypes',
-              'services_managers', 'localsettings', 'cloud']
+NOT_SHARED = []  # retrocompat
 log = logging.getLogger(__name__)
 DEFAULT_SUF = 'makina-states.local'
 DEFAULT_LOCAL_REG_NAME = '{0}.{{0}}'.format(DEFAULT_SUF)
@@ -137,36 +136,21 @@ def is_active(registry, name):
         return False
 
 
-def get_registry_paths(name, registry_format='pack'):
-    locs = __salt__['mc_locations.settings']()
-    etc = locs['conf_dir']
-    confs = {
-        'mastersalt': '{0}/{1}/makina-states/{2}.{3}'.format(
-            etc, 'mastersalt',  name, registry_format),
-        'salt': '{0}/{1}/makina-states/{2}.{3}'.format(
-            etc, 'salt',  name, registry_format),
-        'global': '{0}/{1}/{2}.{3}'.format(
-            etc, 'makina-states',  name, registry_format),
-        'context': '{0}/makina-states/{1}.{2}'.format(
-            __opts__['config_dir'],  name, registry_format)}
-    return confs
+def get_registry_paths(name=None, registry_format='pack'):
+    w = os.path.join(
+        os.path.dirname(os.path.abspath(__opts__['config_dir'])),
+        'makina-states')
+    confs = {'global': w, 'context': w}
+    return confs  # RETROCOMPAT
 
 
 def get_registry_path(name,
                       registry_format='yaml',
                       registryf=None,
                       context=None):
-    confs = get_registry_paths(
-        name, registry_format=registry_format)
-    if registryf and os.path.exists(registryf):
-        return registryf
-    if context is None or context not in confs:
-        if name in NOT_SHARED:
-            context = 'context'
-        else:
-            context = 'global'
-    registryf = confs[context]
-    return registryf
+    confs = get_registry_paths()
+    return os.path.join(
+        confs["global"], "{0}.{1}".format(name, registry_format))
 
 
 def yaml_load_local_registry(name, registryf=None):
@@ -250,30 +234,26 @@ def _get_local_registry(name,
         - cloud
 
     For backward compatibility, we take care to load and merge
-    shared registries in mastersalt & salt prefix if any is found.
+    shared registries in salt prefix if any is found.
     '''
     # cache local registries one minute
     key = '{0}_{1}'.format('mcreg', name)
-    if name not in NOT_SHARED:
-        to_load = ['global', 'context']
-    else:
-        to_load = ['context']
+    to_load = ['context']
 
     def _do(name, to_load, registry_format):
-        registryfs = get_registry_paths(
-            name, registry_format=registry_format)
+        registryfs = get_registry_paths()
         registry = OrderedDict()
         for prefix in to_load:
             registryf = registryfs[prefix]
-            # dregistry = os.path.dirname(registryf)
-            # if not os.path.exists(dregistry):
-            #     os.makedirs(dregistry)
-            if os.path.exists(registryf):
+            rp = get_registry_path(
+                name, registry_format=registry_format,
+                registryf=registryf)
+            if os.path.exists(rp):
                 data = __salt__[
                     'mc_macros.{0}_load_local_registry'.format(
                         registry_format)](name, registryf)
                 registry = __salt__['mc_utils.dictupdate'](registry, data)
-                _unprefix(registry, name)
+            _unprefix(registry, name)
         return registry
     cache_key = RKEY.format(key, registry_format)
     force_run = not cached
@@ -384,10 +364,9 @@ def get_registry(registry_configuration):
             'kind': 'foo',
             'bases': ['localsettings'],
             'defaults': {
-               'mastersalt_minion': {'active': False},
-               'mastersalt_master': {'active': False},
-               'salt_minion': {'active': False},
-               'salt_master': {'active': True}
+               'foo': {'active': False},
+               'bar': {'active': False},
+               'moo': {'active': True}
               }
             }
         }
@@ -414,15 +393,15 @@ def get_registry(registry_configuration):
             'grains_pref': 'makina-states.foo',
             'activated': {'salt_master': {'active': True}},
             'unactivated': {
-               'mastersalt_minion': {'active': False},
-               'mastersalt_master': {'active': False},
-               'salt_minion': {'active': False},
+               'foo': {'active': False},
+               'bar': {'active': False},
+               'moo': {'active': False},
             },
             'defaults': {
-               'mastersalt_minion': {'active': False},
-               'mastersalt_master': {'active': False},
-               'salt_minion': {'active': False},
-               'salt_master': {'active': True}
+               'foo': {'active': False},
+               'bar': {'active': False},
+               'moo': {'active': False},
+               'boo': {'active': True}
               }
             }
         }
@@ -732,4 +711,37 @@ def dump():
         return copy.deepcopy(_REGISTRY)
     except (TypeError, ValueError):
         return _REGISTRY
+
+
+def get_pillar_top_files(pillar_autoincludes=None,
+                         mc_projects=None,
+                         refresh_projects=None):
+    _s = __salt__
+    slss = set()
+    locs = _s['mc_locations.settings']()
+    pdir = os.path.join(locs['pillar_root'], 'makina-projects')
+    pillar_ds = [
+        os.path.join(locs['pillar_root'], 'overrides/pillar.d'),
+        os.path.join(locs['pillar_root'], 'pillar.d')]
+    for pillar_d in pillar_ds:
+        if not os.path.exists(pillar_d):
+            continue
+        for sf in os.listdir(pillar_d):
+            f = os.path.join(pillar_d, sf)
+            if (
+                f.endswith('.sls') and
+                (os.path.isfile(f) or
+                 (os.path.islink(f) and os.path.isfile(os.readlink(f))))
+            ):
+                slss.add(sf.split('.sls', 1)[0])
+    if refresh_projects is not False:
+        __salt__['mc_project.link_projects']()
+    if mc_projects is not False:
+        projects = __salt__['mc_project.list_projects']()
+        for pj, cfg in six.iteritems(projects):
+            pdir = cfg['wired_pillar_root']
+            initsls = os.path.join(pdir, 'init.sls')
+            if os.path.exists(initsls):
+                slss.add('makina-projects.{0}'.format(cfg['name']))
+    return [a for a in slss]
 # vim:set ai:

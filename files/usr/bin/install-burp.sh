@@ -8,7 +8,7 @@ if [ -e /etc/debian_version ];then
     DEBIAN_MAJOR="$(cut -c1 /etc/debian_version 2>/dev/null)"
 fi
 _BINP="makina-states/files/usr/sbin/${DEBIAN_MAJOR}/${VER}"
-SALT_ROOTS="/srv/mastersalt/ /srv/salt/"
+SALT_ROOTS="/srv/makina-states /srv/salt"
 _BINS="burp bedup burp_ca vss_strip"
 IPATH="${IPATH:-/srv/apps/burp}"
 if [ -e $(which burp 2>/dev/null) ];then

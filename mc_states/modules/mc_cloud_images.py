@@ -88,14 +88,10 @@ DOCKERSCRIPT = textwrap.dedent(
     '''\
     #!/usr/bin/env bash
     set -ex
-    /srv/mastersalt/makina-states/_scripts/boot-salt.sh\
+    /srv/makina-states/_scripts/boot-salt.sh\
         -C --refresh-modules
-    # mastersalt + salt highstates, & masterless mode
-    /srv/mastersalt/makina-states/_scripts/boot-salt.sh\
-         -C\
-         --local-mastersalt-mode masterless\
-         --local-salt-mode masterless\
-         --mastersalt 127.0.0.1
+    /srv/makina-states/_scripts/boot-salt.sh\
+        -C
     if test -e /srv/projects;then
         cd /srv/projects
         for i in *;do
@@ -199,7 +195,7 @@ def default_settings():
                 minute for the img synchronnizer
     '''
     _s = __salt__
-    data = {'root': '/srv/mastersalt/makina-states',
+    data = {'root': '/srv/makina-states',
             'kvm': {'images': OrderedDict()},
             'git_url': 'ssh://github.com/makinacorpus/makina-states',
             'sftp_url': SFTP_URL,
@@ -226,7 +222,7 @@ def extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
         cloud_settings = _s['mc_cloud.extpillar_settings']()
         is_devhost = _s['mc_nodetypes.is_devhost']()
         cron_sync = True
-        if is_lxc() or is_devhost:
+        if is_lxc(_o=__opts__) or is_devhost:
             cron_sync = False
         data = _s['mc_utils.dictupdate'](
             _s['mc_utils.dictupdate'](
@@ -451,22 +447,9 @@ def archive_standalone(container, *args, **kwargs):
             cmd = ('tar cJfp {absolute_tarball} '
                    ' etc/cron.d/*salt*'
                    ' etc/logrotate.d/*salt*'
-                   ' etc/init.d/mastersalt-*'
-                   ' etc/init.d/salt-*'
-                   ' etc/init/mastersalt-*'
-                   ' etc/systemd/system/mastersalt-*'
-                   ' etc/systemd/system/salt-*'
-                   ' etc/init/salt-*'
-                   ' etc/{{mastersalt,salt}}'
-                   ' srv/{{mastersalt-pillar,pillar}}'
-                   ' srv/{{salt,mastersalt}}'
-                   ' usr/bin/mastersalt-*'
-                   ' usr/bin/mastersalt'
+                   ' srv/pillar}}'
+                   ' srv/makina-states'
                    ' usr/bin/salt-*'
-                   ' salt-venv'
-                   ' usr/bin/salt'
-                   ' var/cache/{{mastersalt,salt}}'
-                   ' var/run/{{mastersalt,salt}}'
                    ' --ignore-failed-read --numeric-owner').format(**gvars)
             log.info('{container}/{flavor}: '
                      'archiving in {absolute_tarball}'.format(**gvars))
@@ -628,7 +611,7 @@ def sf_release(images=None, flavors=None, sync=True):
 
     Do a release::
 
-        mastersalt-call -all mc_lxc.sf_release makina-states-trusty\\
+        salt-call -all mc_lxc.sf_release makina-states-trusty\\
             [flavor=[lxc/standalone]] sync=True|False
     '''
     _s = __salt__
@@ -845,9 +828,6 @@ def build_from_lxc(name,
                 'lxc bootstrap script wont transfer in {0}'
                 ''.format(name), cret=ret)
         cargs = '-C'
-        cargs += ' --local-mastersalt-mode masterless'
-        cargs += ' --local-salt-mode masterless'
-        cargs += ' --mastersalt 127.0.0.1'
         cmd = ('{0} {2}/bootstrap.sh {1}'
                '').format(defaults['bootstrap_shell'],
                           cargs,
@@ -862,10 +842,6 @@ def build_from_lxc(name,
         if not ret['bootstrap']:
             raise _imgerror(
                 'lxc image build failed {0}'.format(name), cret=ret)
-        # shutil.copy2(
-        #     '/srv/mastersalt/makina-states/files'
-        #     '/sbin/makinastates-snapshot.sh',
-        #     rootfs + '/sbin/makinastates-snapshot.sh')
         ret['lxc_stop'] = _s['lxc.stop'](name, kill=True)
         _s['cmd.run_chroot'](
             rootfs,
@@ -1175,7 +1151,6 @@ def refresh_ms_docker(image,
 
             - Run a new container based from 'image'
             - Refresh makina-states trees
-            - Run mastersalt highstates
             - Run salt highstates
             - Build any if existing corpus based projects
             - Save acls

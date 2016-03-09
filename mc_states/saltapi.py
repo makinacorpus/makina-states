@@ -43,9 +43,11 @@ from mc_states.api import STRIPPED_RES
 from mc_states.api import strip_colors
 from mc_states.api import magicstring
 from mc_states.api import get_ssh_username
+from mc_states.api import no_more_mastersalt
 
 
 log = logging.getLogger(__name__)
+SSH_CON_PREFIX = 'makina-states.ssh_connection'
 _CLIENTS = {}
 _marker = object()
 _RUNNERS = {}
@@ -254,6 +256,22 @@ class RenderError(RemoteResultProcessError):
 
 class TransformError(RemoteResultProcessError):
     '''.'''
+
+
+class IPRetrievalError(KeyError):
+    ''''''
+
+
+class RRError(ValueError):
+    """."""
+
+
+class NoResultError(KeyError):
+    ''''''
+
+
+class PillarError(Exception):
+    ''''''
 
 
 def result(**kwargs):
@@ -789,9 +807,9 @@ def concat_res_or_rets(ret,
                 ret[k] = api.magicstring(val)
     for k in result_keys:
         if (
-            isinstance(cret, dict)
-            and isinstance(ret, dict)
-            and (k in cret)
+            isinstance(cret, dict) and
+            isinstance(ret, dict) and
+            (k in cret)
         ):
             if not cret.get(k):
                 ret[k] = False

@@ -34,10 +34,13 @@ import socket
 import logging
 import time
 import mc_states.api
+from mc_states import saltapi
 import datetime
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 import traceback
+from mc_states.saltapi import (
+    IPRetrievalError, RRError, NoResultError, PillarError)
 six = mc_states.api.six
 
 socket_errors = (
@@ -72,7 +75,7 @@ MS_IPTABLES_MANAGED = True
 PILLAR_TTL = ONE_YEAR
 
 
-def mastersalt_minion_id():
+def minion_id():
     return __salt__['mc_utils.local_minion_id']()
 
 
@@ -80,7 +83,7 @@ def mmid():
     '''
     Alias
     '''
-    return mastersalt_minion_id()
+    return minion_id()
 
 
 def yaml_load(*args, **kw3):
@@ -93,18 +96,6 @@ def yaml_dump(*args, **kw4):
 
 def generate_password(length=None):
     return __salt__['mc_utils.generate_password'](length)
-
-
-class IPRetrievalError(KeyError):
-    ''''''
-
-
-class RRError(ValueError):
-    """."""
-
-
-class NoResultError(KeyError):
-    ''''''
 
 
 def dolog(msg):
@@ -141,10 +132,11 @@ def get_fqdn_domains(fqdn):
 
 def get_db():
     dbpath = None
+    base = os.path.join(
+        os.path.dirname(os.path.abspath(__opts__['config_dir'])),
+        'makina-states')
     for i in SUPPORTED_DB_FORMATS:
-        dbpath = os.path.join(
-            __opts__['pillar_roots']['base'][0],
-            'database.{0}'.format(i))
+        dbpath = os.path.join( base, 'database.{0}'.format(i))
         if os.path.exists(dbpath):
             break
     return dbpath
@@ -1856,14 +1848,11 @@ def get_configuration(id_=None, ttl=PILLAR_TTL):
             mdn = ['local']
         mdn = '.'.join(mdn)
         data.setdefault('default_env', 'prod')
-        data.setdefault('mastersalt_port', 4606)
-        data.setdefault('mastersalt', mid)
-        data.setdefault('mastersaltdn', mid)
         data.setdefault('master', mid == id_)
         data.setdefault('domain', mdn)
         return data
     cache_key = __name + '.get_configuration_{0}'.format(id_)
-    mid = mastersalt_minion_id()
+    mid = minion_id()
     return __salt__['mc_utils.memoize_cache'](
         _do, [id_, mid], {}, cache_key, ttl)
 
@@ -3652,34 +3641,38 @@ def get_dns_resolvers(id_, ttl=PILLAR_TTL):
 def get_ssh_hosts(ttl=PILLAR_TTL):
     def _do():
         try:
-            ssh_hosts = query('ssh_hosts')
+            ssh_hosts = copy.deepcopy(query('ssh_hosts'))
         except NoResultError:
             log.info('No ssh_hosts section in configuration')
             ssh_hosts = {}
         return ssh_hosts
-    cache_key = __name + '.get_ssh_hosts8'
+    cache_key = __name + '.get_ssh_hosts9'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+def get_ssh_connection_infos(id_, ttl=PILLAR_TTL):
+    def _do():
+        _s = __salt__
+        infos = _s['mc_cloud.ssh_host_settings'](id_)
+        return {saltapi.SSH_CON_PREFIX: infos}
+    cache_key = __name + '.get_ssh_connection_infos{0}5'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
 def get_masterless_makinastates_hosts(ttl=PILLAR_TTL):
     '''
-    Expose on mastersalt metadatas on how to connect
+    Expose on salt metadatas on how to connect
     on each part of the infra using ssh
     '''
     _o = __opts__
     _s = __salt__
     def _do():
-        data = OrderedDict()
+        data = set()
         db = _s['mc_pillar.get_db_infrastructure_maps']()
         for kind in ('bms', 'vms'):
             for id_, idata in six.iteritems(db[kind]):
-                kind_pillar = _s[{
-                    'bms': 'mc_cloud_compute_node.cn_extpillar_settings',
-                    'vms': 'mc_cloud_vm.vm_extpillar_settings',
-                }[kind]](id_)
-                data[id_] = _s['mc_cloud.ssh_host_settings'](
-                    id_, defaults=kind_pillar)
-        return data
+                data.add(id_)
+        return list(data)
     cache_key = __name + '.get_masterless_makinastates_hosts1'
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
@@ -3742,7 +3735,7 @@ def invalidate_mc_pillar():
         log.error(traceback.format_exc())
 
 
-def ext_pillar(id_, pillar=None, *args, **kw):
+def ext_pillar(id_, pillar=None, raise_error=True, *args, **kw):
     _s = __salt__
     invalidate_mc_pillar()
     if pillar is None:
@@ -3753,7 +3746,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
             'MC_PILLAR not loader:\n'
             'DATABASE DOES NOT EXISTS: ' + dbpath
         ).replace('.json', '.{json,sls,yaml}')
-        if 'mastersalt' in dbpath:
+        if 'salt' in dbpath:
             log.error(msg)
         return {}
     if isinstance(kw, dict):
@@ -3774,6 +3767,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
 
     is_this_salt_managed = is_salt_managed(id_)
     is_this_managed = is_managed(id_)
+    raise_error = []
     for callback, copts in {
         'mc_env.ext_pillar': {'only_managed': False},
         __name + '.get_snmpd_conf': {'only_known': False},
@@ -3790,6 +3784,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         __name + '.get_shorewall_conf': {},
         __name + '.get_burp_server_conf': {},
         __name + '.get_check_raid_conf': {},
+        __name + '.get_ssh_connection_infos': {},
         __name + '.get_dns_master_conf': {},
         __name + '.get_dns_slave_conf': {},
         __name + '.get_exposed_global_conf': {},
@@ -3834,7 +3829,9 @@ def ext_pillar(id_, pillar=None, *args, **kw):
             data = dictupdate(data, subpillar)
         except Exception, ex:
             trace = traceback.format_exc()
-            log.error('ERROR in mc_pillar: {0}/{1}'.format(callback, id_))
+            msg = 'ERROR in mc_pillar: {0}/{1}'.format(callback, id_)
+            raise_error.append(msg)
+            log.error(msg)
             log.error(ex)
             log.error(trace)
     if profile_enabled:
@@ -3849,9 +3846,12 @@ def ext_pillar(id_, pillar=None, *args, **kw):
             pr.dump_stats(ficp)
             with open(ficn, 'w') as fic:
                 pstats.Stats(pr, stream=fic).sort_stats('cumulative')
+        msr = __salt__['mc_locations.msr']()
         __salt__['cmd.run'](
-            '/srv/mastersalt/makina-states/bin/pyprof2calltree '
+            msr + '/bin/pyprof2calltree '
             '-i "{0}" -o "{1}"'.format(ficp, fico), python_shell=True)
+    if raise_error:
+        raise PillarError('\n    '+'\n    '.join(raise_error))
     return data
 
 
@@ -3964,6 +3964,5 @@ def loaded():
         if ret and not has_db():
             ret = False
     except Exception:
-        ret = False
+        ret = Falss
     return ret
-# vim:set et sts=4 ts=4 tw=80:

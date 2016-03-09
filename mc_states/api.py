@@ -113,7 +113,7 @@ def register_memoize_first(pattern):
 
 
 def cache_pop(cache, key, default=None):
-    if isinstance(cache, pylibmc.ThreadMappedPool):
+    if HAS_PYLIBMC and isinstance(cache, pylibmc.ThreadMappedPool):
         with cache.reserve() as cs:
             return cs.delete(key)
     else:
@@ -130,7 +130,7 @@ def default_get(mapping, key, default=_default):
 
 
 def cache_get(cache, key, default=_default):
-    if isinstance(cache, pylibmc.ThreadMappedPool):
+    if HAS_PYLIBMC and isinstance(cache, pylibmc.ThreadMappedPool):
         with cache.reserve() as cs:
             return default_get(cs, key, default)
     else:
@@ -138,7 +138,7 @@ def cache_get(cache, key, default=_default):
 
 
 def cache_set(cache, key, val=None):
-    if isinstance(cache, pylibmc.ThreadMappedPool):
+    if HAS_PYLIBMC and isinstance(cache, pylibmc.ThreadMappedPool):
         with cache.reserve() as cs:
             cs.set(key, val)
     else:
@@ -177,7 +177,8 @@ def get_mc_server(key=None,
         except (Exception,):
             error = True
             trace = traceback.format_exc()
-            log.error('Memcached error:\n{0}'.format(trace))
+            log.warn('Local memcached server is not reachable')
+            log.trace('Memcached error:\n{0}'.format(trace))
         if error:
             _MC_SERVERS['error'][error_key] = time.time()
     if error_key in _MC_SERVERS['error']:
@@ -195,7 +196,8 @@ def get_mc_server(key=None,
         except (Exception,):
             error = True
             trace = traceback.format_exc()
-            log.error('Memcached error:\n{0}'.format(trace))
+            log.warn('Local memcached server is not usable')
+            log.trace('Memcached error:\n{0}'.format(trace))
         if error:
             _MC_SERVERS['error'][error_key] = time.time()
             _MC_SERVERS['cache'].pop(cache_key, None)
@@ -485,6 +487,24 @@ def get_cache_servers(cache=None,
                       key=None,
                       use_memcache=None,
                       debug=None):
+    '''
+    Returns a list of usable caches
+
+        cache
+            either a string to cache in a localthreaded memoize cache
+            or a dict mutable where to stock the cache
+        memcache
+            memcache pool instance
+        use_memcache
+            if memcache is available, use it amongst local cache
+
+        - if cache is set, we will not use memcache either first
+            but may fallback on it in case of error
+        - if cache is not set, we will use memcache
+        - unless use_memcache is True where absence of local memcached server
+          results in an exception, we always fallback on local python
+          dictionnary cache
+    '''
     caches = []
     if is_memcache(cache):
         memcache = cache
@@ -506,15 +526,19 @@ def get_cache_servers(cache=None,
             caches.append(mc_server)
         ckey = get_cache_key(key)
         fun_args = _CACHE_KEYS.get(ckey, ('', None))[1]
+        memcache_first = False
         for spattern, repattern in six.iteritems(_USE_MEMCACHE_FIRST):
             if spattern in fun_args:
-                use_memcache = True
+                memcache_first = True
                 break
             if repattern.search(fun_args):
-                use_memcache = True
+                memcache_first = True
                 break
-        if use_memcache:
+        if memcache_first:
             caches.reverse()
+    # explicit memcache use, fail if no memcache present
+    if caches and use_memcache is True:
+        caches = [caches[0]]
     return caches
 
 
@@ -731,7 +755,11 @@ def remove_cache_entry(key=_DEFAULT_KEY,
         # do not garbage collector now, so not del !
         def pop(*a, **kw):
             cache_pop(cache, key)
-        _grace_retry(pop, 200, exceptions=(pylibmc.NoServers,),
+        if HAS_PYLIBMC:
+            excs = (pylibmc.NoServers,)
+        else:
+            excs = tuple()
+        _grace_retry(pop, 200, exceptions=excs,
                      grace_callback=small_sleep)
 
 
@@ -891,4 +919,12 @@ def compat_kwarg(kw, new, olds=None):
 
 def get_ssh_username(kw):
     return compat_kwarg(kw, 'ssh_username', 'ssh_user')
+
+
+def no_more_mastersalt(fun, **kwargs):
+
+    def __no_ms(*a, **kw):
+        log.error('mastersalt has been eradicated')
+        return fun(*a, **kw)
+    return __no_ms
 # vim:set et sts=4 ts=4 tw=80:
