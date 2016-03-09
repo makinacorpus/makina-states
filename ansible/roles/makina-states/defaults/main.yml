@@ -1,0 +1,8 @@
+---
+# defaults file for makina-states
+#
+#
+makinastates:
+  dest: "/srv/makina-states"
+  version: "v2"
+  repo: "https://github.com/makinacorpus/makina-states.git"
