@@ -5,6 +5,7 @@
 - git: repo="{{makinastates.repo}}"
        dest="{{makinastates.dest}}"
        version="{{makinastates.version}}"
+
 # run setup
 - cmd: {{makinastates.path}}/bin/boot-salt.sh -b "{{makinastates.version}}"
 
@@ -15,5 +16,5 @@
     - salt
     - ansible
 
-include: pillar.yml
+- include: pillar.yml
 
