@@ -111,6 +111,7 @@ class MakinaStatesInventory(object):
         for host, data in six.iteritems(self.inventory['_meta']['hostvars']):
             pillar = data.get('salt_pillar', {})
             if pillar:
+                pillar['makinastates_from_ansible'] = True
                 is_ = pillar.get('makina-states.cloud', {}).get('is', {})
                 mpref = 'makina-states.services.backup.burp.server'
                 if pillar.get(mpref, False):

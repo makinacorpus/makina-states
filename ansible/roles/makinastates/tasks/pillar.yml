@@ -1,7 +1,7 @@
 ---
 # install local pillar
-- tags: [makinastates_pillar]
-  copy:
-    src=pillar.yml
-    dest={{makinastates.dest}}/pilllar/pillar.d/makinastates.sls
+- template:
+    src=./roles/makinastates/templates/pillar.yml
+    dest={{makinastates_dest}}/pillar/pillar.d/makinastates.sls
     mode=0600
+  tags: [makinastates_pillar]

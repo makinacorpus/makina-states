@@ -1,2 +1,2 @@
 ---
-{{salt_pillar|omit|to_json}}
+{{salt_pillar|default({})|to_yaml}}

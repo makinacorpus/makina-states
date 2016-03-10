@@ -1,0 +1,4 @@
+---
+- shell: "{{makinastates_dest}}/bin/salt-call --retcode-passthrough state.sls makina-states.top"
+  tags: [makinastates_highstate]
+

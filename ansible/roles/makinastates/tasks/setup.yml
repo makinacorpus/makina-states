@@ -7,21 +7,20 @@
   tags: [makinastates_setup]
 
 # download makina-states
-- git: repo="{{makinastates.repo}}"
-       dest="{{makinastates.dest}}"
-       version="{{makinastates.version}}"
+- git: repo="{{makinastates_repo}}"
+       dest="{{makinastates_dest}}"
+       version="{{makinastates_version}}"
   tags: [makinastates_setup]
 
 # run setup
-- shell: "{{makinastates.dest}}/bin/boot-salt.sh -b {{makinastates.version}}"
+- shell: "{{makinastates_dest}}/bin/boot-salt.sh -b {{makinastates_version}} -n {{makinastates_nodetype}}"
   tags: [makinastates_setup]
 
 # test salt & ansible
 - shell: bin/{{item}} --version
   args:
-    chdir: "{{makinastates.dest}}"
+    chdir: "{{makinastates_dest}}"
   with_items:
     - salt-call
     - ansible
-    - ansible-playbook
   tags: [makinastates_setup]
