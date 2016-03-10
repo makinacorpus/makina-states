@@ -1,3 +1,6 @@
 # attention, see mc_states/modules/mc_salt.py
 -e git+https://github.com/saltstack/salt-testing.git@develop#egg=salttesting
 -e git+https://github.com/makinacorpus/M2Crypto.git#egg=m2crypto
+
+# -e git+__SALT_URL__@__SALT_BRANCH__#egg=salt
+# -e git+__ANSIBLE_URL__@__ANSIBLE_BRANCH__#egg=ansible
