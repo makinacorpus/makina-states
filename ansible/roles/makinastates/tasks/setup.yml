@@ -1,0 +1,27 @@
+---
+- apt: name={{item}} update_cache=yes
+  with_items:
+    - python
+    - git
+    - curl
+  tags: [makinastates_setup]
+
+# download makina-states
+- git: repo="{{makinastates.repo}}"
+       dest="{{makinastates.dest}}"
+       version="{{makinastates.version}}"
+  tags: [makinastates_setup]
+
+# run setup
+- shell: "{{makinastates.dest}}/bin/boot-salt.sh -b {{makinastates.version}}"
+  tags: [makinastates_setup]
+
+# test salt & ansible
+- shell: bin/{{item}} --version
+  args:
+    chdir: "{{makinastates.dest}}"
+  with_items:
+    - salt-call
+    - ansible
+    - ansible-playbook
+  tags: [makinastates_setup]

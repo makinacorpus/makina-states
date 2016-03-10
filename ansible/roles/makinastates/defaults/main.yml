@@ -1,8 +1,8 @@
 ---
 # defaults file for makina-states
-#
-#
 makinastates:
   dest: "/srv/makina-states"
   version: "v2"
+  nodetype: "scratch"
   repo: "https://github.com/makinacorpus/makina-states.git"
+salt_pillar: {empty: false}

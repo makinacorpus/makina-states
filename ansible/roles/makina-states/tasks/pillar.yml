@@ -1,7 +1,0 @@
----
-# install local pillar
-
-- copy:
-    src=pillar.yml
-    dest={{makinastates.path}}/pilllar/pillar.d/makinastates.sls
-    mode=0644
