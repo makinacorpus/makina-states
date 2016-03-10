@@ -1144,10 +1144,6 @@ def add_services_policies(data=None):
     for i in ['public_services', 'restricted_services']:
         for s in data[i]:
             data['services'].setdefault(s, {})
-    if not data.get('no_salt', False):
-        if controllers_registry['is']['salt_master']:
-            if 'salt' not in data['public_services']:
-                data['public_services'].append('salt')
     for z in [a for a in data['zones'] if a != 'trusted']:
         zdata = data['zones'][z]
         services = zdata.setdefault('services', {})
