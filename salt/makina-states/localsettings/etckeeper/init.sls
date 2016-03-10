@@ -41,7 +41,7 @@ etckeeper-initial:
             git config user.email 'makinastates@paas.tld'
             git config user.name 'Makina-States'
             /usr/bin/etckeeper commit "Initial commit"
-    - unless: test -d {{locs.conf_dir}}/.git
+    - unless: test -d {{locs.conf_dir}}/.git && grep -q user.email /etc/.git/config
     - watch:
       - mc_proxy: etckeeper-run-pre
     - watch_in:
