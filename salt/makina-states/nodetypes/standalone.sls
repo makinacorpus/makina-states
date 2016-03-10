@@ -16,5 +16,5 @@
 
 include:
 {% for n in salt['mc_nodetypes.get_nodetypes']() %}
-  - makina_states.nodetypes.{{n}}
+  - makina-states.nodetypes.{{n}}
 {% endfor %}
