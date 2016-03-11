@@ -456,6 +456,7 @@ set_vars() {
     DO_ONLY_SYNC_CODE="${DO_ONLY_SYNC_CODE:-"no"}"
     DO_SYNC_CODE="${DO_SYNC_CODE:-"y"}"
     DO_GIT_PACK="${DO_GIT_PACK:-"no"}"
+    DO_HIGHSTATES="${DO_HIGHSTATES:-"no"}"
     DO_SETUP_VIRTUALENV="${DO_SETUP_VIRTUALENV:-"y"}"
     DO_INSTALL_NODETYPE="${DO_INSTALL_NODETYPE:-"y"}"
     DO_RECONFIGURE_SALT="${DO_RECONFIGURE_SALT:-"y"}"
@@ -499,7 +500,7 @@ set_vars() {
     #
     export DO_INSTALL_MAKINASTATES DO_INSTALL_NODETYPE DO_SKIP_HIGHSTATE
     export DO_NOCONFIRM DO_GIT_PACK DO_SYNC_CODE DO_SKIP_CHECKOUTS
-    export DO_INSTALL_PREREQUISITES DO_ONLY_SYNC_CODE DO_SETUP_VIRTUALENV
+    export DO_INSTALL_PREREQUISITES DO_ONLY_SYNC_CODE DO_SETUP_VIRTUALENV DO_HIGHSTATES
     #
     export TRAVIS_DEBUG TRAVIS QUIET
     #
@@ -1242,7 +1243,7 @@ usage() {
     bs_log "  Actions (no action means install)"
     bs_help "    --synchronize-code" "Only sync sourcecode" "${DO_ONLY_SYNC_CODE}" y
     bs_help "    --no-makina-states" "Do not do base makina-states setup" "${DO_INSTALL_MAKINASTATES}" y
-    bs_help "    --no-highstates" "Do not run highstates" "${DO_HIGHSTATES}" y
+    bs_help "    --highstates" "Do run highstates" "${DO_HIGHSTATES}" y
     bs_help "    --no-prereqs" "Skip prereqs install" "${DO_INSTALL_PREREQUISITES}" y
     bs_help "    --pack" "Do (only) run git pack (gc) if necessary" "${DO_GIT_PACK}" y
     bs_help "    --no-synchronize-code" "Skip sync sourcecode" "${DO_SYNC_CODE}" y
@@ -1324,8 +1325,8 @@ parse_cli_opts() {
             DO_INSTALL_MAKINASTATES="no"
             argmatch="1"
         fi
-        if [ "x${1}" = "x--no-highstates" ]; then
-            DO_HIGHSTATES="no"
+        if [ "x${1}" = "x--highstates" ]; then
+            DO_HIGHSTATES="y"
             argmatch="1"
         fi
         if [ "x${1}" = "x-m" ] || [ "x${1}" = "x--minion-id" ]; then
