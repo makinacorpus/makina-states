@@ -445,6 +445,11 @@ set_vars() {
     SALT_PILLAR="${SALT_MS}/pillar"
     CHRONO="$(get_chrono)"
     TRAVIS_DEBUG="${TRAVIS_DEBUG:-}"
+    DEFAULT_VERSION="2.0"
+    DO_VERSION="${DO_VERSION:-"no"}"
+    if [ "x${DO_VERSION}" != "xy" ];then
+        DO_VERSION="no"
+    fi
     TMPDIR="${TMPDIR:-"/tmp"}"
     BASE_PACKAGES="python-software-properties curl python-virtualenv git rsync bzip2"
     BASE_PACKAGES="${BASE_PACKAGES} acl build-essential m4 libtool pkg-config autoconf gettext"
@@ -501,6 +506,7 @@ set_vars() {
     export DO_INSTALL_MAKINASTATES DO_INSTALL_NODETYPE DO_SKIP_HIGHSTATE
     export DO_NOCONFIRM DO_GIT_PACK DO_SYNC_CODE DO_SKIP_CHECKOUTS
     export DO_INSTALL_PREREQUISITES DO_ONLY_SYNC_CODE DO_SETUP_VIRTUALENV DO_HIGHSTATES
+    export DO_VERSION
     #
     export TRAVIS_DEBUG TRAVIS QUIET
     #
@@ -1251,6 +1257,7 @@ usage() {
     bs_help "    --no-nodetype" "Do not run nodetype bootstrap" "${DO_INSTALL_NODETYPE}" y
     bs_help "    --no-venv" "Do not run the virtualenv setup"  "${DO_SETUP_VIRTUALENV}" y
     bs_help "    --no-reconfigure-salt" "Do not touch to salt configuration files" "${DO_RECONFIGURE_SALT}" y
+    bs_help "    --version" "show makina-states version & exit" "" "${DO_VERSION}"
 }
 
 parse_cli_opts() {
@@ -1266,6 +1273,9 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x-q" ] || [ "x${1}" = "x--quiet" ]; then
             QUIET="1";argmatch="1"
+        fi
+        if [ "x${1}" = "x--version" ];then
+            DO_VERSION="y";argmatch="1"
         fi
         if [ "x${1}" = "x-h" ] || [ "x${1}" = "x--help" ]; then
             USAGE="1";argmatch="1"
@@ -1457,6 +1467,11 @@ main() {
 
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ]; then
     setup
+    if [ "x${DO_VERSION}" = "xy" ];then
+        ver=$(grep VERSION "${SALT_MS}/mc_states/version.py"|cut -d'"' -f2 2>/dev/null)
+        echo "${ver:-"${DEFAULT_VERSION}"}"
+        exit
+    fi
     recap
     if [ "x$(dns_resolve localhost)" = "x${DNS_RESOLUTION_FAILED}" ]; then
         die "${DNS_RESOLUTION_FAILED}"

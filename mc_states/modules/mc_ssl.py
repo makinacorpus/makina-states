@@ -795,15 +795,15 @@ def load_certs(path):
                 cn = i.split('CN=')[1]
                 if cn not in exacts:
                     exacts[cn] = data
-        try:
-            ext = certo.get_ext('subjectAltName')
-            for ev in ext.get_value().split(','):
-                if ev.startswith('DNS:'):
-                    cn = ''.join(ev.split('DNS:')[1:])
-                    if cn not in alts:
-                        alts[cn] = data
-        except LookupError:
-            pass
+        #try:
+        #    ext = certo.get_ext('subjectAltName')
+        #    for ev in ext.get_value().split(','):
+        #        if ev.startswith('DNS:'):
+        #            cn = ''.join(ev.split('DNS:')[1:])
+        #            if cn not in alts:
+        #                alts[cn] = data
+        #except LookupError:
+        #    pass
     return exacts, alts
 
 
