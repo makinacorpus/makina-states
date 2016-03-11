@@ -583,11 +583,16 @@ set_vars() {
     BASE_PACKAGES="${BASE_PACKAGES} libmemcached-dev acl build-essential m4 libtool pkg-config autoconf gettext bzip2"
     BASE_PACKAGES="${BASE_PACKAGES} groff man-db automake libsigc++-2.0-dev tcl8.5 python-dev"
     BASE_PACKAGES="${BASE_PACKAGES} debconf-utils swig libssl-dev libgmp3-dev libffi-dev"
+    DEFAULT_VERSION="1.0"
+    DO_VERSION="${DO_VERSION:-"no"}"
     DO_NODETYPE="${DO_NODETYPE:-"y"}"
     DO_SALT="${DO_SALT:-"y"}"
     DO_MASTERSALT="${DO_MASTERSALT:-"y"}"
     if [ "x$(get_do_mastersalt)" != "xy" ];then
         DO_MASTERSALT="no"
+    fi
+    if [ "x${DO_VERSION}" != "xy" ];then
+        DO_VERSION="no"
     fi
     if [ "x${DO_NODETYPE}" != "xy" ];then
         DO_NODETYPE="no"
@@ -994,6 +999,7 @@ set_vars() {
     export salt_master_changed salt_minion_challenge
     export TRAVIS
     export FORCE_GIT_PACK ONLY_GIT_PACK
+    export DO_VERSION
 
 }
 
@@ -3661,6 +3667,7 @@ usage() {
     bs_help "    -m|--minion-id" "Minion id" "$(get_minion_id)" y
     bs_help "    --no-colors" "No terminal colors" "${NO_COLORS}" "y"
     bs_log "  Actions (no action means install)"
+    bs_help "    --version" "show makina-states version & exit" "" "${DO_VERSION}"
     bs_help "    --upgrade" "Run bootsalt upgrade code (primarely destinated to run as the highstate wrapper to use in crons)" "" "${IS_SALT_UPGRADING}"
     bs_help "    --refresh-modules" "refresh salt & mastersalt modules, grains & pillar (refresh all)" "" "y"
     bs_help "    --synchronize-code" "Only sync sourcecode" "${SALT_BOOT_SYNC_CODE}" y
@@ -3733,6 +3740,10 @@ parse_cli_opts() {
         argmatch=""
         if [ "x${1}" = "x${PARAM}" ];then
             break
+        fi
+        if [ "x${1}" = "x--version" ];then
+            DO_VERSION="y"
+            argmatch="1"
         fi
         if [ "x${1}" = "x--from-salt-cloud" ] || [ "x${1}" = "x--reattach" ];then
             SALT_REATTACH="1"
@@ -4337,7 +4348,11 @@ postinstall() {
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ];then
     setup
     MS_EXIT_STATUS=0
-
+    if [ "x${DO_VERSION}" = "xy" ];then
+        ver=$(grep VERSION "${SALT_MS}/mc_states/version.py"|cut -d'"' -f2 2>/dev/null)
+        echo "${ver:-"${DEFAULT_VERSION}"}"
+        exit
+    fi
     if [ "x$(dns_resolve localhost)" = "x${DNS_RESOLUTION_FAILED}" ];then
         die "${DNS_RESOLUTION_FAILED}"
     fi
