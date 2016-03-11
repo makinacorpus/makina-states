@@ -276,9 +276,6 @@ def add_services_policies(data=None):
     controllers_registry = _s['mc_controllers.registry']()
     services_registry = _s['mc_services.registry']()
     rules = data['config']['rules']
-    if not data.get('no_salt', False):
-        if controllers_registry['is']['salt_master']:
-            add_ports('4505,4506', rules=rules)
     if not data.get('no_slapd', False):
         if services_registry['is']['dns.slapd']:
             add_ports('389,636', rules=rules)

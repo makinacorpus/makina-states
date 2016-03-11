@@ -633,29 +633,6 @@ def settings():
                 except:
                     log.error("ERROR IN CLOUD SHOREWALL RULES")
                     log.error(traceback.format_exc())
-            # enable salt traffic if any
-            if (
-                controllers_registry['is']['salt_master'] and
-                not data['no_salt']
-            ):
-                    data['default_rules'].append({'comment': 'salt'})
-                    for proto in protos:
-                        append_rules_for_zones(
-                            data['default_rules'],
-                            {'action': 'ACCEPT',
-                             'source': '$SALT_RESTRICTED_SALT',
-                             'dest': 'fw',
-                             'proto': proto,
-                             'dport': '4605,4606'},
-                            zones=data['internal_zones'])
-                        append_rules_for_zones(
-                            data['default_rules'],
-                            {'action': 'ACCEPT',
-                             'source': '$SALT_RESTRICTED_SALT',
-                             'dest': 'fw',
-                             'proto': proto,
-                             'dport': '4505,4506'},
-                            zones=data['internal_zones'])
 
             data['default_rules'].append({'comment': 'dns'})
             if data['no_dns']:
