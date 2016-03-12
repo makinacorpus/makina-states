@@ -835,6 +835,9 @@ synchronize_code() {
         if [ -d src ] && [ ! -h  src ]; then
             die " [bs] pb with linking venv in ${ms} (2)"
         fi
+        if [ ! -e "${ms}" ]; then
+            touch "${SALT_MS}/.bootsalt_need_restart"
+        fi
         for i in "${ms}" "${ms}/src/"*;do
             is_changeset=""
             branch_pref=""
