@@ -1242,7 +1242,6 @@ usage() {
     bs_help "    --ansible-branch <branch>" "saltstack fork git branch" "$(get_ansible_branch)" y
     bs_help "    -C|--no-confirm" "Do not ask for start confirmation" "" y
     bs_help "    -S|--skip-checkouts" "Skip initial checkouts / updates" "" y
-    bs_help "    -s|--skip-highstate" "Skip highstate" "" y
     bs_help "    -d|--debug" "debug/verbose mode" "NOT SET" y
     bs_help "    --debug-level <level>" "debug level (quiet|all|info|error)" "NOT SET" y
     bs_help "    -n|--nodetype <nt>" "Nodetype to install into (devhost | server | dockercontainer | lxcontainer | vm | vagrantvm)" "$(get_nodetype)" "y"

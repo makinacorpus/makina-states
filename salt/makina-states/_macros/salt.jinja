@@ -115,7 +115,7 @@ update-makinastates-saltb:
   cmd.run:
     - name: |
             DO_SKIP_CHECKOUTS=y {{bootsalt}} -C \
-              --no-makina-states --no-highstates --no-nodetype
+              --no-makina-states --no-nodetype
     - require:
       - mc_proxy: dummy-pre-salt-checkouts
       - cmd: update-makinastates-salta
