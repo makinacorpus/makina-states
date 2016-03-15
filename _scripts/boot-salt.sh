@@ -327,9 +327,7 @@ set_valid_upstreams() {
     if [ "x${SETTED_VALID_UPSTREAM}" != "x" ]; then
         return
     fi
-    if [ ! -e "$(which git 2>/dev/null)" ]; then
-        VALID_BRANCHES="stable v2"
-    fi
+    VALID_BRANCHES="${VALID_BRANCHES:-"stable v2"}"
     if [ "x${VALID_BRANCHES}" = "x" ]; then
         if [ -e "${SALT_MS}/.git/config" ]; then
             SETTED_VALID_UPSTREAM="1"
