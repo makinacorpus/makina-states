@@ -224,7 +224,6 @@ class MakinaStatesInventory(object):
         """
         if os.path.isfile(self.cache_path_cache):
             self.load_inventory_from_cache()
-        import pdb;pdb.set_trace()  ## Breakpoint ##
         if (
             self.payload and
             (self.payload.get('time', 0) + self.cache_max_age) > time()
