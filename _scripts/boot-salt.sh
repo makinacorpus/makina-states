@@ -280,7 +280,9 @@ get_conf(){
 store_conf(){
     key="${1}"
     val="${2}"
-    echo "${val}">"${SALT_MS}/etc/makina-states/${key}"
+    if [ -e "${SALT_MS}/etc/makina-states" ]; then
+        echo "${val}">"${SALT_MS}/etc/makina-states/${key}"
+    fi
 }
 
 get_default_knob() {
