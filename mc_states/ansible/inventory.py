@@ -61,9 +61,9 @@ class MakinaStatesInventory(object):
             self.update_cache()
 
         if self.payload:
-            if self.payload.keys() == ['local']:
-                self.payload = self.payload['local']
-            self.inventory['_meta']['hostvars'].update(self.payload)
+            if self.payload['data'].keys() == ['local']:
+                self.payload['data'] = self.payload['data']['local']
+            self.inventory['_meta']['hostvars'].update(self.payload['data'])
 
         self.make_groups()
 
@@ -214,7 +214,8 @@ class MakinaStatesInventory(object):
         if self.debug:
             print('Computing global salt cache, please wait '
                   'it can take several minutes')
-        self.payload = self.get_ext_pillar()
+        self.payload = {'time': time(),
+                        'data': self.get_ext_pillar()}
         self.write_to_cache(self.payload, self.cache_path_cache)
 
     def is_cache_valid(self):
@@ -222,10 +223,13 @@ class MakinaStatesInventory(object):
         Determines if the cache files have expired, or if it is still valid
         """
         if os.path.isfile(self.cache_path_cache):
-            mod_time = os.path.getmtime(self.cache_path_cache)
-            current_time = time()
-            if (mod_time + self.cache_max_age) > current_time:
-                return True
+            self.load_inventory_from_cache()
+        import pdb;pdb.set_trace()  ## Breakpoint ##
+        if (
+            self.payload and
+            (self.payload.get('time', 0) + self.cache_max_age) > time()
+        ):
+            return True
         return False
 
     def read_cli_args(self):
