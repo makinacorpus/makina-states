@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# workaround as lxc are not more restarting on this box, somehow
+LXC_AUTO="false"
+BOOTGROUPS="onboot,"
+SHUTDOWNDELAY=5
+OPTIONS=
+. /etc/default/lxc
+/usr/lib/x86_64-linux-gnu/lxc/lxc-devsetup
+lxc-autostart -L $OPTIONS $BOOTGROUPS | while read line; do 
+    set -- $line; 
+    (start lxc-instance NAME=$1 && sleep $2) || true;
+done
