@@ -63,7 +63,6 @@
 [core]
         whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
         filemode=false
-        excludesfile = /home/kiorky/.gitignore
 
 [diff]
         renames = true
