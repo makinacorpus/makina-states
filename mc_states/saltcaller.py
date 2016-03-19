@@ -24,6 +24,8 @@ import subprocess
 import sys
 import time
 import traceback
+import logging
+import fcntl
 
 from salt.utils import vt
 
@@ -35,6 +37,7 @@ NO_RETURN = '__CALLER_NO_RETURN__'
 TIMEOUT_RETCODE = -666
 VT_ERROR_RETCODE = -667
 NO_RETCODE = -668
+log = logging.getLogger(__name__)
 
 
 def terminate(process):
@@ -70,28 +73,54 @@ def failed(ret, error=None):
     return ret
 
 
-def stream_io_to_console(process,
-                         stdout_pos=None,
-                         stderr_pos=None,
-                         stdout=sys.stdout,
-                         stderr=sys.stderr):
-    if stderr_pos is None:
-        stderr_pos = 0
-    if stdout_pos is None:
-        stderr_pos = 0
-    poss = {'o': stdout_pos, 'e': stderr_pos}
-    for k, stream, val in (
-        ('o', stdout, process.stream_stdout.getvalue()),
-        ('e', stderr, process.stream_stderr.getvalue()),
+def non_block_read(output):
+    try:
+        fd = output.fileno()
+    except ValueError:
+        return ""
+    else:
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+        try:
+            return output.read()
+        except Exception:
+            return ""
+
+
+def do_process_ios(process,
+                   verbose=False,
+                   output_out=sys.stdout,
+                   output_err=sys.stderr,
+                   stdout_pos=None,
+                   stderr_pos=None,
+                   stdout=None,
+                   stderr=None):
+    if stdout is None:
+        stdout = cStringIO.StringIO()
+    if stderr is None:
+        stderr = cStringIO.StringIO()
+    streams = {'out': stdout_pos, 'err': stderr_pos}
+    if isinstance(process, vt.Terminal):
+        stdout.truncate(0)
+        stderr.seek(0)
+        stdout.write(process.stream_stdout.getvalue())
+        stderr.write(process.stream_stderr.getvalue())
+    else:
+        stdout.write(non_block_read(process.stdout))
+        stderr.write(non_block_read(process.stderr))
+    for k, val, out in (
+        ('out', stdout.getvalue(), output_out),
+        ('err', stderr.getvalue(), output_err),
     ):
         if not val:
             continue
-        pos = poss[k]
+        pos = streams[k]
         npos = len(val) - 1
         if val and ((pos == 0) or (npos != pos)):
-            stream.write(val[pos:])
-            poss[k] = npos
-    return poss['o'], poss['e']
+            if verbose:
+                out.write(val[pos:])
+            streams[k] = npos
+    return stdout_pos, stderr_pos
 
 
 def format_error(ret):
@@ -146,7 +175,7 @@ def cmd(args,
     environ.update(copy.deepcopy(env))
     now = time.time()
     cli = [api.magicstring(a) for a in args]
-    pid = os.getpid()
+    ospid = pid = os.getpid()
     if not no_quote:
         cli = [pipes.quote(a) for a in cli]
     retcode, force_retcode = None, None
@@ -164,8 +193,8 @@ def cmd(args,
                 cwd=os.getcwd(),
                 preexec_fn=None,
                 env=env,
-                stream_stdout=stdout,
-                stream_stderr=stderr)
+                stream_stdout=cStringIO.StringIO(),
+                stream_stderr=cStringIO.StringIO())
         else:
             process = subprocess.Popen(
                 cli,
@@ -173,10 +202,11 @@ def cmd(args,
                 stdin=stdin,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
-        pid = process.pid
         while True:
             if isinstance(process, vt.Terminal) and process.has_unread_data:
                 process.recv()
+            if pid == ospid or pid is None:
+                pid = process.pid
             if timeout is not None and (time.time() >= now + timeout):
                 terminate(process)
                 error = (
@@ -191,11 +221,10 @@ def cmd(args,
                         force_retcode = VT_ERROR_RETCODE
                 else:
                     retcode = process.poll()
-                if isinstance(process, vt.Terminal):
-                    if verbose:
-                        stdout_pos, stderr_pos = stream_io_to_console(
-                            process,
-                            stdout_pos=stdout_pos, stderr_pos=stderr_pos)
+                stdout_pos, stderr_pos = do_process_ios(
+                    process, verbose=verbose,
+                    stdout_pos=stdout_pos, stderr_pos=stderr_pos,
+                    stdout=stdout, stderr=stderr)
             time.sleep(0.04)
             if retcode is not None or force_retcode is not None:
                 break
@@ -208,6 +237,10 @@ def cmd(args,
             pass
         raise exc
     finally:
+        stdout_pos, stderr_pos = do_process_ios(
+            process, verbose=verbose,
+            stdout_pos=stdout_pos, stderr_pos=stderr_pos,
+            stdout=stdout, stderr=stderr)
         try:
             terminate(process)
         except UnboundLocalError:
@@ -218,13 +251,6 @@ def cmd(args,
         retcode = NO_RETCODE
     if retcode != 0 and not error:
         error = 'program error, check std streams'
-    if isinstance(process, vt.Terminal):
-        if verbose:
-            stdout_pos, stderr_pos = stream_io_to_console(
-                process, stdout_pos=stdout_pos, stderr_pos=stderr_pos)
-    else:
-        stdout.write(api.magicstring(process.stdout.read()))
-        stderr.write(api.magicstring(process.stderr.read()))
     retcode = force_retcode or retcode
     ret = {'retcode': retcode,
            'status': None,
