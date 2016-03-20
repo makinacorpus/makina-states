@@ -3,7 +3,7 @@ cd "$(dirname "$(dirname "$(readlink -f ${0})")")"
 SCRIPT=$(basename ${0})
 WC="$(pwd)"
 MS_VENV_PATH="${MS_VENV_PATH-${WC}/venv}"
-ANSIBLE_LIBRARY="${WC}/ansible:${ANSIBLE_LIBRARY}"
+ANSIBLE_LIBRARY="${WC}/ansible/library:${ANSIBLE_LIBRARY}"
 if [ -e "${MS_VENV_PATH}/bin/activate" ]
 then
     . "${MS_VENV_PATH}/bin/activate"
