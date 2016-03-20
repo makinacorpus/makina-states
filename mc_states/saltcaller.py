@@ -101,10 +101,13 @@ def do_process_ios(process,
         stderr = cStringIO.StringIO()
     streams = {'out': stdout_pos, 'err': stderr_pos}
     if isinstance(process, vt.Terminal):
-        stdout.truncate(0)
-        stderr.seek(0)
-        stdout.write(process.stream_stdout.getvalue())
-        stderr.write(process.stream_stderr.getvalue())
+        for stream, in_ in (
+            (stdout, process.stream_stdout.getvalue()),
+            (stderr, process.stream_stderr.getvalue())
+        ):
+            stream.truncate(0)
+            stream.seek(0)
+            stream.write(in_)
     else:
         stdout.write(non_block_read(process.stdout))
         stderr.write(non_block_read(process.stderr))
@@ -119,8 +122,8 @@ def do_process_ios(process,
         if val and ((pos == 0) or (npos != pos)):
             if verbose:
                 out.write(val[pos:])
-            streams[k] = npos
-    return stdout_pos, stderr_pos
+        streams[k] = npos
+    return streams['out'], streams['err']
 
 
 def format_error(ret):
