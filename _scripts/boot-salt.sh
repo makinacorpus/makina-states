@@ -811,9 +811,22 @@ synchronize_code() {
                 remote=""
                 branch_pref="changeset_"
             fi
-            git clone ${QUIET_GIT} "$(get_ms_url)" "${ms}" &&\
-            cd "${ms}" &&\
-            git checkout ${QUIET_GIT} "${remote}""${ms_branch}" -b "${branch_pref}""${ms_branch}" &&\
+            lret=${?}
+            if [ -e "${ms}" ] ;then
+                bs_log "Directory ${ms} exists without git repo, initing"
+                cd "${ms}" &&\
+                git init &&\
+                git remote add origin "$(get_ms_url)" &&\
+                git fetch origin &&\
+                git checkout ${QUIET_GIT} "${remote}""${ms_branch}" -b "${branch_pref}""${ms_branch}" -t
+            else
+                git clone ${QUIET_GIT} "$(get_ms_url)" "${ms}" &&\
+                git checkout ${QUIET_GIT} "${remote}""${ms_branch}" -b "${branch_pref}""${ms_branch}"
+            fi
+            if [ "x${?}" != "x0" ]; then
+                die "Cant download makina-states"
+            fi
+            cd "${ms}" || die "${ms} does not exists"
             cd - 1>/dev/null 2>/dev/null
             SALT_BOOT_NEEDS_RESTART="1"
             if [ "x${?}" = "x0" ]; then
