@@ -58,7 +58,7 @@ HALF_DAY = ONE_DAY / 2
 
 _MC_SERVERS = {'cache': {}, 'error': {}}
 # trick to be mutable and changed in tests
-_CACHE_PREFIX = {'key': 'mcstates_api_cache_'}
+_CACHE_PREFIX = {'key': 'mcstatesv2_api_cache_'}
 _GLOBAL_KINDS = ['localsettings',
                  'services',
                  'services_managers',
@@ -430,7 +430,7 @@ def get_cache_key(key, __opts__=None, *args, **kw):
         kwarg = kw.get('kwarg', {})
         if not __opts__:
             __opts__ = {}
-        prefix = []
+        prefix = ['v2']
         try:
             if not ('{' in key and '}' in key):
                 raise IndexError('key is not formatted,'
