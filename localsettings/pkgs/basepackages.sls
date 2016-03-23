@@ -120,6 +120,7 @@ sys-pkgs:
       - lvm2
       - bridge-utils
       {% endif %}
+      - bash-completion
       - acl
       - bzip2
       - cron
