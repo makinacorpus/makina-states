@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+w="$(dirname "$(dirname "$(readlink -f "${0}")")")"
+venv="$w/venv"
+cd "$w"
+. venv/bin/activate
+set -x
+exec python src/ansible/hacking/test-module \
+ $( [[ -n "${PDB}" ]] && echo "-D "$w/bin/pdb"" ) \
+ -I ansible_python_interpreter="$venv/bin/python" \
+ "${@}"
