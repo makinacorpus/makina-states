@@ -11,13 +11,9 @@
 include:
   - makina-states.localsettings.users
 
-
-{% if vim.full %}
-vim-ctags:
+vim-pkgs:
   pkg.installed:
-    - pkgs:
-      - exuberant-ctags
-{% endif %}
+    - pkgs: {{vim.packages}}
 
 vim-editor-env-var:
   file.managed:
@@ -46,22 +42,11 @@ vimrc_configs-touch-{{ i }}:
     - group: "{{i}}"
 
 vimrc_configs-append-{{ i }}:
-  #cmd.run:
-  #  - name: >
-  #          sed -i -e "/sts=2 ts=2 ai et tw=0 sw=2/ d" ~/.vimrc &&
-  #          sed -i -e "/set sts=4 ts=4 sw=4 ai et nu bg=dark nocompatible/ d" ~/.vimrc &&
-  #          sed -i -e "/autocmd! BufRead,BufNewFile *.sls set sts=2 ts=2 ai et tw=0/ d" ~/.vimrc &&
-  #          echo "changed=no comment='vimrc edited'"
-  #  - user: {{i}}
-  #  - stateful: true
-  #  - onlyif: test -e ~/.vimrc
   file.accumulated:
     - require:
       #- cmd: vimrc_configs-append-{{ i }}
       - file: vimrc_configs-touch-{{ i }}
-      {% if vim.full %}
-      - pkg: vim-ctags
-      {% endif %}
+      - pkg: vim-pkgs
     - require_in:
       - file: vimrc-config-block-{{i}}
     - filename: {{ home }}/.vimrc
@@ -94,22 +79,10 @@ vimrc_configs-touch-global:
     - group: root
 
 vimrc_configs-append-global:
-  #cmd.run:
-  #  - name: >
-  #          sed -i -e "/sts=2 ts=2 ai et tw=0 sw=2/ d" /etc/vim/vimrc.local &&
-  #          sed -i -e "/set sts=4 ts=4 sw=4 ai et nu bg=dark nocompatible/ d" /etc/vim/vimrc.local &&
-  #          sed -i -e "/autocmd! BufRead,BufNewFile *.sls set sts=2 ts=2 ai et tw=0/ d" /etc/vim/vimrc.local &&
-  #          echo "changed=no comment='vimrc edited'"
-  #  - stateful: true
-  #  - user: root
-  #  - onlyif: test -e /etc/vim/vimrc.local
   file.accumulated:
     - require:
       - file: vimrc_configs-touch-global
-      #- cmd: vimrc_configs-append-global
-      {% if vim.full %}
-      - pkg: vim-ctags
-      {% endif %}
+      - pkg: vim-pkgs
     - require_in:
       - file: vimrc-config-block-global
     - filename: /etc/vim/vimrc.local
