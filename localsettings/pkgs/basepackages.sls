@@ -78,7 +78,6 @@ ubuntu-pkgs:
       - resolvconf
       - sudo
       - tzdata
-      - vim-tiny
       # light version of ubuntu-standard
       # those are harmful packages in a generic container context
       #- command-not-found
@@ -115,7 +114,6 @@ ubuntu-pkgs:
 sys-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
-      - vim
       {% if salt['mc_controllers.allow_lowlevel_states']() %}
       - lvm2
       - bridge-utils
