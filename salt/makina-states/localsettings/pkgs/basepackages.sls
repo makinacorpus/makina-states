@@ -118,6 +118,7 @@ sys-pkgs:
       - vim
       - lvm2
       - bridge-utils
+      - bash-completion
       - acl
       - bzip2
       - cron
