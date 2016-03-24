@@ -130,6 +130,8 @@ def settings(**kwargs):
         if 'devhost' in nodetypes_registry['actives']:
             mode = 'dev'
         data.update({
+            'client_packages': ['mysql-client',
+                                'libmysqlclient-dev'],
             'bind_address': '0.0.0.0',
             'mode': mode,
             'var_log': data['logdir'],
