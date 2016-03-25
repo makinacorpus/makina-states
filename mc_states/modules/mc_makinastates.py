@@ -13,6 +13,7 @@ import re
 import requests
 from requests.auth import HTTPBasicAuth
 from pprint import pprint
+from mc_states.version import VERSION
 
 
 log = logging.getLogger(__name__)
@@ -26,6 +27,11 @@ PREFIX = 'makina-states.{0}'.format(__name)
 
 def _ms():
     return __opts__['file_roots']['base'][0] + '/makina-states'
+
+
+def version():
+    '''return without much salt machinery the current version'''
+    return VERSION
 
 
 def settings():

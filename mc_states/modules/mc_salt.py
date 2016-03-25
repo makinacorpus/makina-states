@@ -13,8 +13,14 @@ import mc_states.api
 import random
 import copy
 import os
+<<<<<<< HEAD
 import logging
+=======
+import sys
+>>>>>>> o/stable
 from mc_states.grains import makina_grains
+from mc_states.version import VERSION
+from distutils.version import LooseVersion
 
 
 __name = 'salt'
@@ -147,4 +153,48 @@ def settings():
         data = _s['mc_utils.format_resolve'](data)
         return data
     return _settings()
+
+
+def prefix():
+    v1 = os.path.join(__opts__['file_roots']['base'][0], 'makina-states')
+    v2 = os.path.dirname(os.path.dirname(v1))
+    if LooseVersion(VERSION) > '1.0':
+        return v2
+    else:
+        return v1
+
+
+def venv():
+    tests = []
+    _s = __salt__
+    if LooseVersion(VERSION) < '2.0':
+        venvp = '/salt-venv'
+    else:
+        venvp = os.path.join(prefix(), 'venv')
+    try:
+        locs = _s['mc_locations.settings']()
+        venvp = locs['venv']
+    except Exception:
+        pass
+    if LooseVersion(VERSION) < '2.0':
+        is_mastersalt = False
+        pr = __opts__.get('config_dir', None) or ''
+        cli = sys.argv and sys.argv[0] or None
+        if not cli:
+            cli = ''
+        is_mastersalt = ('mastersalt' in pr) or ('mastersalt' in cli)
+        tests.append(os.path.join(venvp, (is_mastersalt and 'mastersalt' or 'salt')))
+    else:
+        tests.append(venvp)
+    venv = None
+    for i in tests:
+        if os.path.exists(i):
+            venv = i
+            break
+    if not venv:
+        # defaults to makinastates v2 location
+        log.error('Virtualenv for makina-states not found'
+                  ' (is makinastates installed yet)')
+        venv = tests[-1]
+    return venv
 # vim:set et sts=4 ts=4 tw=80:
