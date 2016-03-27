@@ -13,6 +13,9 @@ wrappers to salt shell commands
 This is not included in a salt module and isolated to be
 picklable and used thorough python multiprocessing as a target
 
+
+The module has redundant functions with the makina-states codebase but the goal is that it is selfcontained and dependency less.
+
 '''
 
 import argparse
@@ -26,10 +29,22 @@ import time
 import traceback
 import logging
 import fcntl
+import datetime
+import json
 
-from salt.utils import vt
+try:
+    from salt.utils import vt
+    HAS_VT = True
+except ImportError:
+    HAS_VT = False
 
-from mc_states import api
+
+try:
+    import chardet
+    HAS_CHARDET = True
+except ImportError:
+    HAS_CHARDET = False
+
 from mc_states.modules import mc_dumper
 
 
@@ -40,8 +55,80 @@ NO_RETCODE = -668
 log = logging.getLogger(__name__)
 
 
+def json_load(data):
+    content = data.replace(' ---ANTLISLASH_N--- ', '\n')
+    content = json.loads(content)
+    return content
+
+
+def json_dump(data, pretty=False):
+    if pretty:
+        content = json.dumps(
+            data, indent=4, separators=(',', ': '))
+    else:
+        content = json.dumps(data)
+        content = content.replace('\n', ' ---ANTLISLASH_N--- ')
+    return content
+
+
+def magicstring(thestr):
+    """
+    Convert any string to UTF-8 ENCODED one
+    """
+    if not HAS_CHARDET:
+        return thestr
+    seek = False
+    if (
+        isinstance(thestr, (int, float, long,
+                            datetime.date,
+                            datetime.time,
+                            datetime.datetime))
+    ):
+        thestr = "{0}".format(thestr)
+    if isinstance(thestr, unicode):
+        try:
+            thestr = thestr.encode('utf-8')
+        except Exception:
+            seek = True
+    if seek:
+        try:
+            detectedenc = chardet.detect(thestr).get('encoding')
+        except Exception:
+            detectedenc = None
+        if detectedenc:
+            sdetectedenc = detectedenc.lower()
+        else:
+            sdetectedenc = ''
+        if sdetectedenc.startswith('iso-8859'):
+            detectedenc = 'ISO-8859-15'
+
+        found_encodings = [
+            'ISO-8859-15', 'TIS-620', 'EUC-KR',
+            'EUC-JP', 'SHIFT_JIS', 'GB2312', 'utf-8', 'ascii',
+        ]
+        if sdetectedenc not in ('utf-8', 'ascii'):
+            try:
+                if not isinstance(thestr, unicode):
+                    thestr = thestr.decode(detectedenc)
+                thestr = thestr.encode(detectedenc)
+            except Exception:
+                for idx, i in enumerate(found_encodings):
+                    try:
+                        if not isinstance(thestr, unicode) and detectedenc:
+                            thestr = thestr.decode(detectedenc)
+                        thestr = thestr.encode(i)
+                        break
+                    except Exception:
+                        if idx == (len(found_encodings) - 1):
+                            raise
+    if isinstance(thestr, unicode):
+        thestr = thestr.encode('utf-8')
+    thestr = thestr.decode('utf-8').encode('utf-8')
+    return thestr
+
+
 def terminate(process):
-    if isinstance(process, vt.Terminal):
+    if HAS_VT and isinstance(process, vt.Terminal):
         process.close(terminate=True, kill=True)
     else:
         for i in ['terminate', 'kill']:
@@ -69,7 +156,7 @@ def failed(ret, error=None):
     if error is not None and not ret['status']:
         ret['error'] = error
     if ret['error']:
-        ret['error'] = api.magicstring(ret['error'])
+        ret['error'] = magicstring(ret['error'])
     return ret
 
 
@@ -100,7 +187,7 @@ def do_process_ios(process,
     if stderr is None:
         stderr = cStringIO.StringIO()
     streams = {'out': stdout_pos, 'err': stderr_pos}
-    if isinstance(process, vt.Terminal):
+    if HAS_VT and isinstance(process, vt.Terminal):
         for stream, in_ in (
             (stdout, process.stream_stdout.getvalue()),
             (stderr, process.stream_stderr.getvalue())
@@ -168,6 +255,8 @@ def cmd(args,
         no_quote=None,
         verbose=None,
         env=None):
+    if use_vt and not HAS_VT:
+        use_vt = False
     if not sleep_interval:
         sleep_interval = 0.04
     if no_quote is None:
@@ -177,7 +266,7 @@ def cmd(args,
     environ = copy.deepcopy(os.environ)
     environ.update(copy.deepcopy(env))
     now = time.time()
-    cli = [api.magicstring(a) for a in args]
+    cli = [magicstring(a) for a in args]
     ospid = pid = os.getpid()
     if not no_quote:
         cli = [pipes.quote(a) for a in cli]
@@ -206,7 +295,11 @@ def cmd(args,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
         while True:
-            if isinstance(process, vt.Terminal) and process.has_unread_data:
+            if (
+                HAS_VT and
+                isinstance(process, vt.Terminal)
+                and process.has_unread_data
+            ):
                 process.recv()
             if pid == ospid or pid is None:
                 pid = process.pid
@@ -218,7 +311,7 @@ def cmd(args,
                 ).format(cli)
                 force_retcode = TIMEOUT_RETCODE
             else:
-                if isinstance(process, vt.Terminal):
+                if HAS_VT and isinstance(process, vt.Terminal):
                     retcode = process.exitstatus
                     if retcode is None and force_retcode is not None:
                         force_retcode = VT_ERROR_RETCODE
@@ -292,6 +385,10 @@ def call(func,
          ret_format=None,
          verbose=None,
          env=None):
+    if out is None:
+        out = 'json'
+    if ret_format is None:
+        ret_format = 'json'
     if verbose is None:
         verbose = False
     if not executable:
@@ -312,15 +409,11 @@ def call(func,
               use_vt=use_vt, verbose=verbose,
               no_quote=no_quote, sleep_interval=sleep_interval,
               stdin=stdin, stderr=stderr, stdout=stdout)
-    decoders = {'json': mc_dumper.json_load,
-                'yaml': mc_dumper.yaml_load}
+    decoders = {'json': json_load}
     encoders = {
         'json': (
-            lambda x: mc_dumper.json_dump(
-                x, pretty=True)),
-        'yaml': (
-            lambda x: mc_dumper.yaml_dump(
-                x, flow=False))}
+            lambda x: json_dump(
+                x, pretty=True))}
     ret['salt_fun'] = func
     ret['salt_args'] = args
     ret['salt_out'] = None
@@ -342,8 +435,6 @@ def call(func,
             if not ret['error']:
                 ret['error'] = ''
             ret['error'] += '\nfailed to decode payload'
-    if ret_format in encoders:
-        ret = encoders[ret_format](ret)
     try:
         retcode = int(ret['retcode'])
     except ValueError:
@@ -353,8 +444,11 @@ def call(func,
         output_queue.put(ret)
     pid = os.getpid()
     if not no_display_ret:
+        eret = ret
+        if ret_format in encoders:
+            eret = encoders[ret_format](eret)
         print("__SALTCALLER_RETURN_{0}".format(pid))
-        print(mc_dumper.json_dump(ret, pretty=True))
+        print(eret)
         print("__SALTCALLER_END_RETURN_{0}".format(pid))
     return ret
 
@@ -401,6 +495,6 @@ def main():
     return call(**vopts)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__' and not os.environ.get('NO_PYEXEC'):
     sys.exit(main()['retcode'])
 # vim:set et sts=4 ts=4 tw=0:
