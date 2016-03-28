@@ -38,14 +38,11 @@ try:
 except ImportError:
     HAS_VT = False
 
-
 try:
     import chardet
     HAS_CHARDET = True
 except ImportError:
     HAS_CHARDET = False
-
-from mc_states.modules import mc_dumper
 
 
 NO_RETURN = '__CALLER_NO_RETURN__'
