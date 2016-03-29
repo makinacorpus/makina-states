@@ -1,0 +1,6 @@
+---
+- name: cloud - lxc installation
+  saltcall: >
+            function=state.sls
+            args='makina-states.cloud.lxc.compute_node.install_lxc'
+  tags: makinastates_cloud_cn,makinastates_cloud_cn_lxc

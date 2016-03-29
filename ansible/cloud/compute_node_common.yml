@@ -1,0 +1,30 @@
+---
+- name: cloud - hostsfiles
+  saltcall: >
+            function=state.sls
+            args='makina-states.cloud.generic.compute_node.hostsfile'
+  tags: makinastates_cloud_cn,makinastates_cloud_cn_hostfiles
+
+- name: cloud - sshkeys
+  saltcall: >
+            function=state.sls
+            args='makina-states.cloud.generic.compute_node.sshkeys'
+  tags: makinastates_cloud_cn,makinastates_cloud_cn_ssh
+
+- name: cloud - sslcerts
+  saltcall: >
+            function=state.sls
+            args='makina-states.cloud.generic.compute_node.sslcerts'
+  tags: makinastates_cloud_cn,makinastates_cloud_cn_sslcerts
+
+- name: cloud - firewall
+  saltcall: >
+            function=state.sls
+            args='makina-states.cloud.generic.compute_node.firewall'
+  tags: makinastates_cloud_cn,makinastates_cloud_cn_fw
+
+- name: cloud - reverse_proxy
+  saltcall: >
+            function=state.sls
+            args='makina-states.cloud.generic.compute_node.reverse_proxy'
+  tags: makinastates_cloud_cn,makinastates_cloud_cn_rp
