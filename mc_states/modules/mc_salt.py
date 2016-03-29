@@ -13,11 +13,8 @@ import mc_states.api
 import random
 import copy
 import os
-<<<<<<< HEAD
 import logging
-=======
 import sys
->>>>>>> o/stable
 from mc_states.grains import makina_grains
 from mc_states.version import VERSION
 from distutils.version import LooseVersion
