@@ -1,0 +1,8 @@
+---
+# tasks file for makinastates_controller
+- saltcall: function=state.sls args='makina-states.cloud.generic.dnsconf'
+  tags: makinastates_controller,makinastates_controller_dns
+- saltcall: function=state.sls args='name=makina states.cloud.generic.controller'
+  tags: makinastates_controller,makinastates_controller_cloud
+- saltcall: function=state.sls args='name=makina-states.cloud.saltify.controller'
+  tags: makinastates_controller,makinastates_controller_cloud 

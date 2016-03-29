@@ -1,0 +1,4 @@
+---
+- hosts: ["{{makinastates_controller}}"]
+  roles:    
+    - makinastates_controller
