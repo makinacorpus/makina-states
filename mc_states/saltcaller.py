@@ -69,9 +69,9 @@ def json_dump(data, pretty=False):
 
 
 def magicstring(thestr):
-    """
+    '''
     Convert any string to UTF-8 ENCODED one
-    """
+    '''
     if not HAS_CHARDET:
         return thestr
     seek = False
