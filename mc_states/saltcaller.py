@@ -25,6 +25,7 @@ import os
 import pipes
 import subprocess
 import sys
+import six
 import time
 import traceback
 import logging
@@ -135,7 +136,7 @@ def terminate(process):
                 pass
 
 
-def validate_states(data):
+def do_validate_states(data):
     if not data:
         return 1
     if not isinstance(data, dict):
@@ -382,6 +383,10 @@ def call(func,
          ret_format=None,
          verbose=None,
          env=None):
+    if args is None:
+        args = []
+    if isinstance(args, six.string_types):
+        args = [args]
     if out is None:
         out = 'json'
     if ret_format is None:
@@ -418,10 +423,10 @@ def call(func,
         try:
             out = decoders[out](ret['stdout'])
             if (
-                validate_states is not False and
+                do_validate_states is not False and
                 func in ['state.highstate', 'state.sls']
             ):
-                validate_states(out)
+                do_validate_states(out)
             if isinstance(out, dict):
                 if [a for a in out] == ['local']:
                     out = out['local']
