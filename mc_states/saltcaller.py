@@ -295,8 +295,8 @@ def cmd(args,
         while True:
             if (
                 HAS_VT and
-                isinstance(process, vt.Terminal)
-                and process.has_unread_data
+                isinstance(process, vt.Terminal) and
+                process.has_unread_data
             ):
                 process.recv()
             if pid == ospid or pid is None:
