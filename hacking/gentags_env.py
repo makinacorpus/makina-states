@@ -1,4 +1,4 @@
-#!bin/mypy
+#!/usr/bin/env python
 # generate python tags to be imported from inside and  outside the VM (from the hosts)
 # main utility is to generate vim tags afterwards importing the .env in the shell
 import os, sys
