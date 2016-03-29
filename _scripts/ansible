@@ -3,13 +3,13 @@ cd "$(dirname "$(dirname "$(readlink -f ${0})")")"
 SCRIPT=$(basename ${0})
 WC="$(pwd)"
 MS_VENV_PATH="${MS_VENV_PATH-${WC}/venv}"
-ANSIBLE_LIBRARY="${WC}/ansible/library:${ANSIBLE_LIBRARY}"
 if [ -e "${MS_VENV_PATH}/bin/activate" ]
 then
     . "${MS_VENV_PATH}/bin/activate"
 else
     warn "virtualenv not found in ${MS_VENV_PATH}"
 fi
+export ANSIBLE_LIBRARY="${WC}/ansible/library:${WC}/ansible:${ANSIBLE_LIBRARY}"
 export ANSIBLE_HOSTS="${ANSIBLE_HOSTS:-"${WC}/mc_states/ansible/inventory.py"}"
 exec ${MS_VENV_PATH}/bin/${SCRIPT} "${@}"
 # vim:set et sts=4 ts=4 tw=80:
