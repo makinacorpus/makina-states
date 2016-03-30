@@ -395,6 +395,8 @@ def call(func,
         verbose = False
     if not executable:
         executable = 'salt-call'
+    if retcode_passthrough is None:
+        retcode_passthrough = True
     eargs = []
     for test, argpart in [
         (True, [executable]),
