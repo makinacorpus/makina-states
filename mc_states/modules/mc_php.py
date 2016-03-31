@@ -156,6 +156,8 @@ def settings():
         ; http://xdebug.org/docs/all_settings#collect_params (0|1|2|3|4)
         php_admin_value[xdebug.collect_params] = xdebug_collect_params  0;
         php_admin_value[xdebug.profiler_enable] = xdebug_profiler_enable ;
+        php_admin_value[xdebug.remote_enable] = xdebug_remote_enable 0;
+        php_admin_value[xdebug.remote_host] = xdebug_remote_host localhost;
         php_admin_value[
             xdebug.profiler_enable_trigger
         ] = xdebug_profiler_enable_trigger  0;
@@ -279,6 +281,8 @@ def settings():
             'xdebug_collect_params': 0,
             'xdebug_profiler_enable': 0,
             'xdebug_profiler_enable_trigger': False,
+            'xdebug_remote_enable': 0,
+            'xdebug_remote_host': 'localhost',
             'xdebug_profiler_output_name': '/cachegrind.out.%p'
         }
 

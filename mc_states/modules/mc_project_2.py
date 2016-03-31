@@ -716,11 +716,10 @@ def uncache_project(name):
         name = name['name']
     __opts__.get('ms_projects', {}).pop(name, None)
     __opts__.pop('ms_project_name', None)
-    for cfg, remote_host in [
-        a for a in __opts__.get('ms_projects', {})
-    ]:
+    projects = __opts__.get('ms_projects', {})
+    for cfg, remote_host in [a for a in projects]:
         if cfg == name:
-            __opts__.pop((cfg, remote_host), None)
+            projects.pop((cfg, remote_host), None)
 
 
 def get_project(name, *args, **kwargs):
