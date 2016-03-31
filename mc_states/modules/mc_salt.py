@@ -127,7 +127,37 @@ def settings():
             'rotate': _s['mc_logrotate.settings']()['days'],
             'log_prefix': '{msr}/var/log',
             'name': 'salt',
-            'pillar_root': '{prefix}/pillar'}
+            'pillar_root': '{prefix}/pillar',
+            'saltmods': {
+                "proxy_dirs": ["{salt_root}/_proxy"],
+                "wrapper_dirs": ["{salt_root}/_wrapper"],
+                "log_handlers_dirs": ["{salt_root}/_log_handlers"],
+                "cloud_dirs": ["{salt_root}/_clouds"],
+                "sdb_dirs": ["{salt_root}/_sdb"],
+                "beacons_dirs": ["{salt_root}/_beacons"],
+                "engines_dirs": ["{salt_root}/_engines"],
+                "search_dirs": ["{salt_root}/_search"],
+                "fileserver_dirs": ["{salt_root}/_fileserver"],
+                "roster_dirs": ["{salt_root}/_roster"],
+                "netapi_dirs": ["{salt_root}/_netapi"],
+                "auth_dirs": ["{salt_root}/_auth"],
+                "queue_dirs": ["{salt_root}/_queues"],
+                "outputter_dirs": ["{salt_root}/_output"],
+                "auth_dirs": ["{salt_root}/_auth"],
+                "outputter_dirs": ["{salt_root}/_output"],
+                "wheel_dirs": ["{salt_root}/_wheel"],
+                "top_dirs": ["{salt_root}/_tops"],
+                "module_dirs": ["{salt_root}/_modules"],
+                "returner_dirs": ["{salt_root}/_returners"],
+                "pillar_dirs": ["{salt_root}/_pillar"],
+                "grain_dirs": ["{salt_root}/_grains"],
+                "grains_dirs": ["{salt_root}/_grains"],
+                "states_dirs": ["{salt_root}/_states"],
+                "render_dirs": ["{salt_root}/_renderers"],
+                "runner_dirs": ["{salt_root}/_runners"],
+                "utils_dirs": ["{salt_root}/_utils"]
+            }
+        }
         data = _s['mc_utils.defaults'](
             'makina-states.controllers.salt', data)
         for k in _o:
@@ -148,6 +178,10 @@ def settings():
         }:
             data[i] = locs[i]
         data = _s['mc_utils.format_resolve'](data)
+        for opt in [a for a in data['saltmods']]:
+            realval = _o.get(opt, None)
+            if realval:
+                data['saltmods'][opt] = copy.deepcopy(realval)
         return data
     return _settings()
 
