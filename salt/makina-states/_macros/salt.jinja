@@ -77,6 +77,14 @@ salt-{{bin}}-bootsalt-link-bin:
     - require_in:
       - mc_proxy: dummy-pre-salt-service-restart
 {% endfor %}
+salt-restrict-conf:
+  file.directory:
+    - names:
+      - {{ settings.msr }}/pillar
+      - {{ settings.msr }}/etc
+    - mode: 700
+    - require_in:
+      - mc_proxy: dummy-pre-salt-service-restart
 salt-crons:
   {% if not settings.cron_auto_sync %}
   file.absent:
