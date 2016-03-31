@@ -65,7 +65,7 @@ def get_salt_branch():
 def get_ansible_branch():
     val = get_local_param('ansible_branch')
     if not val:
-        val = 'stable-2.0"
+        val = 'stable-2.0'
     return val
 
 
