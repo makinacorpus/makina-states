@@ -1153,7 +1153,7 @@ def sync_hooks(name, ret=None, api_version=API_VERSION, *args, **kwargs):
         ret = _get_ret(cfg['name'])
     local_remote = cfg['project_git_root']
     project_git = os.path.join(cfg['project_root'], '.git')
-    ps = _s['mc_locations']()['ms']
+    ms = _s['mc_locations.settings']()['ms']
     params = {
         'WC': ms,
         'FORCE_MARKER': local_remote+'/hooks/force_marker',
@@ -2152,8 +2152,11 @@ def sync_modules(name, *args, **kwargs):
     salt_root = cfg['salt_root']
     system_salt = __opts__['file_roots']['base'][0]
     k = 'salt'
-    saltsettings = __salt__['mc_salt.settings']()[
-        'data_mappings']['minion'][k]
+    try:
+        saltsettings = __salt__['mc_salt.settings']()[
+            'data_mappings']['minion'][k]
+    except KeyError:
+        saltsettings = __salt__['mc_salt.settings']()
     for config_opt, dirs in saltsettings['saltmods'].items():
         dest = dirs[0]
         _d = os.path.basename(dest)
@@ -2710,6 +2713,7 @@ def list_projects():
         if projects:
             for pj in projects:
                 cfgs[pj] = get_configuration(pj)
+                uncache_project(pj)
     for pj in [a for a in cfgs]:
         cfg = cfgs[pj]
         if (

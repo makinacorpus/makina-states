@@ -97,10 +97,12 @@ def settings(cached=True):
     locations
     '''
     def _settings():
-        locationsData = __salt__['mc_utils.defaults'](
+        data = __salt__['mc_utils.defaults'](
             'makina-states.localsettings.locations',
             get_default_locs())
-        return locationsData
+        # compat with v1
+        data['ms'] = data['msr']
+        return data
     if cached:
         _settings = mc_states.api.lazy_subregistry_get(
             __salt__, __name)(_settings)
