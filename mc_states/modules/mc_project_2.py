@@ -538,8 +538,8 @@ def load_sample(cfg, *args, **kwargs):
                 if isinstance(val, dict):
                     for k2, val2 in val.items():
                         if isinstance(val2, dict):
-                            sample_data = _s['mc_utils.dictupdate'](
-                                sample_data, val2)
+                            incfg = sample_data.setdefault(k2, OrderedDict())
+                            incfg = _s['mc_utils.dictupdate'](incfg, val2)
                         else:
                             sample_data[k2] = val2
                 else:
@@ -576,20 +576,22 @@ def _defaultsConfiguration(
         os_defaults = OrderedDict()
     if env_defaults is None:
         env_defaults = OrderedDict()
-    if not env_defaults:
-        env_defaults = _dict_update(
-            env_defaults,
-            copy.deepcopy(
-                _s['mc_utils.get'](
-                    'makina-projects.{name}.env_defaults'.format(**cfg),
-                    OrderedDict())))
-        env_defaults = _dict_update(
-            env_defaults,
-            copy.deepcopy(
-                _s['mc_utils.get'](
-                    'makina-projects.{name}'.format(**cfg),
-                    OrderedDict()
-                ).get('env_defaults', OrderedDict())))
+    sample_env_defaults = sample.get('env_defaults', OrderedDict())
+    if isinstance(sample_env_defaults, dict):
+        env_defaults = _dict_update(env_defaults, sample_env_defaults)
+    env_defaults = _dict_update(
+        env_defaults,
+        copy.deepcopy(
+            _s['mc_utils.get'](
+                'makina-projects.{name}.env_defaults'.format(**cfg),
+                OrderedDict())))
+    env_defaults = _dict_update(
+        env_defaults,
+        copy.deepcopy(
+            _s['mc_utils.get'](
+                'makina-projects.{name}'.format(**cfg),
+                OrderedDict()
+            ).get('env_defaults', OrderedDict())))
     if not os_defaults:
         os_defaults = _dict_update(
             os_defaults,
@@ -610,25 +612,22 @@ def _defaultsConfiguration(
     # makina-projects.projectname
     # makina-states is the old prefix, retro compat
     for subp in ['states', 'projects']:
-        pillar_data = _dict_update(
-            pillar_data,
-            copy.deepcopy(
-                _s['mc_utils.get'](
-                    'makina-{subp}.{name}.data'.format(name=cfg['name'],
-                                                       subp=subp),
-                    OrderedDict())))
-        memd_data = copy.deepcopy(
-            _s['mc_utils.get'](
-                'makina-{subp}.{name}'.format(name=cfg['name'],
-                                              subp=subp),
-                OrderedDict()
-            ).get('data', OrderedDict()))
-        if not isinstance(memd_data, dict):
-            raise ValueError(
-                'data is not a dict for {0}, '
-                'review your pillar and yaml files'.format(
-                    cfg.get('name', 'project')))
-        pillar_data = _dict_update(pillar_data, memd_data)
+        for subk in [a for a in cfg]:
+            val = _s['mc_utils.get'](
+                        'makina-{subp}.{name}.{subk}'.format(
+                            name=cfg['name'], subk=subk, subp=subp),
+                        _MARKER)
+            if val is not _MARKER:
+                pillar_data[subk] = val
+            else:
+                val = _s['mc_utils.get'](
+                    'makina-{subp}.{name}'.format(
+                        name=cfg['name'], subp=subp),
+                    OrderedDict()
+                ).get(subk, _MARKER)
+                if val is not _MARKER:
+                    pillar_data[subk] = val
+    default_env = pillar_data.get('default_env', None) or default_env
     os_defaults.setdefault(__grains__['os'], OrderedDict())
     os_defaults.setdefault(__grains__['os_family'],
                            OrderedDict())
@@ -637,9 +636,11 @@ def _defaultsConfiguration(
         env_defaults.setdefault(k, OrderedDict())
     defaultsConfiguration = _dict_update(
         defaultsConfiguration, pillar_data)
-    defaultsConfiguration = _dict_update(
-        defaultsConfiguration,
-        _s['grains.filter_by'](env_defaults, grain=default_env, default="dev"))
+    if default_env in env_defaults:
+        defaultsConfiguration['data'] = _dict_update(
+            defaultsConfiguration['data'],
+            env_defaults[default_env])
+        cfg['default_env'] = default_env
     defaultsConfiguration = _dict_update(
         defaultsConfiguration,
         _s['grains.filter_by'](os_defaults, grain='os_family'))
@@ -879,12 +880,13 @@ def get_configuration(name, *args, **kwargs):
     if nodata:
         cfg['data'] = OrderedDict()
     else:
-        cfg['data'] = _defaultsConfiguration(
-            cfg,
-            cfg['default_env'],
-            defaultsConfiguration=cfg['defaults'],
-            env_defaults=cfg['env_defaults'],
-            os_defaults=cfg['os_defaults'])
+        cfg.update(
+            _defaultsConfiguration(
+                cfg,
+                cfg['default_env'],
+                defaultsConfiguration=cfg['defaults'],
+                env_defaults=cfg['env_defaults'],
+                os_defaults=cfg['os_defaults']))
     if cfg['data'].get('sls_default_pillar', OrderedDict()):
         cfg['sls_default_pillar'] = cfg['data'].pop('sls_default_pillar')
     # some vars need to be setted just a that time
