@@ -331,6 +331,11 @@ def settings():
                     'etc/nginx/sites-available/vhost.content.conf'),
             }
         )
+
+        # fix virtualbox bad support of sendfile
+        if 'virtual' in __grains__ and __grains__['virtual'] == 'VirtualBox':
+            nginxData['sendfile'] = False
+
         __salt__['mc_macros.update_local_registry'](
             'nginx', local_conf, registry_format='pack')
         return nginxData
