@@ -211,6 +211,12 @@ def settings():
         if __salt__['mc_nodetypes.is_docker']():
             no_daemon = True
         www_reg = __salt__['mc_www.settings']()
+
+        # fix virtualbox bad support of sendfile
+        sendfile = True
+        if __grains__.get('virtual', None) == 'VirtualBox':
+            sendfile = False
+
         nginxData = __salt__['mc_utils.defaults'](
             'makina-states.services.http.nginx', {
                 'rotate': '365',
@@ -281,7 +287,7 @@ def settings():
                 'ldap_cache': True,
                 'logdir': '/var/log/nginx',
                 'access_log': '{logdir}/access.log',
-                'sendfile': True,
+                'sendfile': sendfile,
                 'tcp_nodelay': True,
                 'tcp_nopush': True,
                 'reset_timedout_connection': 'on',
@@ -331,10 +337,6 @@ def settings():
                     'etc/nginx/sites-available/vhost.content.conf'),
             }
         )
-
-        # fix virtualbox bad support of sendfile
-        if 'virtual' in __grains__ and __grains__['virtual'] == 'VirtualBox':
-            nginxData['sendfile'] = False
 
         __salt__['mc_macros.update_local_registry'](
             'nginx', local_conf, registry_format='pack')
