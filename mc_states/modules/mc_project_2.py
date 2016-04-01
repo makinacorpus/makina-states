@@ -636,7 +636,7 @@ def _defaultsConfiguration(
         env_defaults.setdefault(k, OrderedDict())
     defaultsConfiguration = _dict_update(
         defaultsConfiguration, pillar_data)
-    if default_env in env_defaults:
+    if 'data' in defaultsConfiguration and default_env in env_defaults:
         defaultsConfiguration['data'] = _dict_update(
             defaultsConfiguration['data'],
             env_defaults[default_env])
