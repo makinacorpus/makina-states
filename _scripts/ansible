@@ -9,7 +9,12 @@ then
 else
     warn "virtualenv not found in ${MS_VENV_PATH}"
 fi
-export ANSIBLE_LIBRARY="${WC}/ansible/library:${WC}/ansible:${ANSIBLE_LIBRARY}"
+export CANSIBLE_LIBRARY="${WC}/ansible/library:${WC}/ansible:/usr/share/library"
+if [ -n "${ANSIBLE_LIBRARY}" ];then
+    export ANSIBLE_LIBRARY="${CANSIBLE_LIBRARY}:${ANSIBLE_LIBRARY}"
+else
+    export ANSIBLE_LIBRARY="${CANSIBLE_LIBRARY}"
+fi
 export ANSIBLE_HOSTS="${ANSIBLE_HOSTS:-"${WC}/mc_states/ansible/inventory.py"}"
 exec ${MS_VENV_PATH}/bin/${SCRIPT} "${@}"
 # vim:set et sts=4 ts=4 tw=80:
