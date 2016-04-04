@@ -14,6 +14,7 @@ types {
     text/vnd.sun.j2me.app-descriptor      jad;
     text/vnd.wap.wml                      wml;
     text/x-component                      htc;
+    text/plain                            map;
 
     image/png                             png;
     image/tiff                            tif tiff;
@@ -73,6 +74,10 @@ types {
     audio/ogg                             ogg;
     audio/x-m4a                           m4a;
     audio/x-realaudio                     ra;
+
+    font/opentype                         otf;
+    font/truetype                         ttf;
+    font/woff2                            woff2;
 
     video/3gpp                            3gpp 3gp;
     video/mp2t                            ts;
