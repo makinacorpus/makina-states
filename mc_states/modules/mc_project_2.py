@@ -630,9 +630,6 @@ def _defaultsConfiguration(
                 if val is not _MARKER:
                     pillar_data[subk] = val
     default_env = pillar_data.get('default_env', None) or default_env
-    os_defaults.setdefault(__grains__['os'], OrderedDict())
-    os_defaults.setdefault(__grains__['os_family'],
-                           OrderedDict())
     env_defaults.setdefault(default_env, OrderedDict())
     for k in projects_api.ENVS:
         env_defaults.setdefault(k, OrderedDict())
@@ -643,6 +640,10 @@ def _defaultsConfiguration(
             defaultsConfiguration['data'],
             env_defaults[default_env])
         cfg['default_env'] = default_env
+    if 'os' in __grains__:
+        os_defaults.setdefault(__grains__['os'], OrderedDict())
+        os_defaults.setdefault(__grains__['os_family'],
+                               OrderedDict())
     defaultsConfiguration = _dict_update(
         defaultsConfiguration,
         _s['grains.filter_by'](os_defaults, grain='os_family'))
