@@ -1,0 +1,12 @@
+---
+# defaults file for makina-states
+makinastates_dest: "/srv/makina-states"
+makinastates_ansible_repo: null
+makinastates_ansible_version: null
+makinastates_salt_repo: null
+makinastates_salt_version: null
+makinastates_repo: null
+makinastates_version: null
+makinastates_nodetype: null
+makinastates_force_highstate: null
+salt_pillar: {"makinastates_from_ansible": true}

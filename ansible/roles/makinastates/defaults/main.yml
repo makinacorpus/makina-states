@@ -1,7 +1,0 @@
----
-# defaults file for makina-states
-makinastates_dest: "/srv/makina-states"
-makinastates_version: "v2"
-makinastates_nodetype: "scratch"
-akinastates_repo: "https://github.com/makinacorpus/makina-states.git"
-salt_pillar: {"makinastates_from_ansible": true}

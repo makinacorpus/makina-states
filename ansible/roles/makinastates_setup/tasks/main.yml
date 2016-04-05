@@ -1,0 +1,48 @@
+---
+- name: install prerequisites
+  apt: name={{item}} update_cache=yes
+  with_items:
+    - python
+    - git
+    - curl
+  tags: [makinastates_setup]
+
+- name: test ms dir
+  shell: test -e "{{makinastates_dest}}/.git/config";echo $?
+  tags: [makinastates_setup, makinastates_setup_t]
+  register: makinastates_testmsdir
+
+- name: download makina-states
+  git: repo="{{makinastates_repo}}"
+       dest="{{makinastates_dest}}"
+       version="{{makinastates_version}}"
+  tags: [makinastates_setup]
+  when: makinastates_testmsdir.stdout == "1"
+
+- name: run makina-states setup
+  shell: >
+         {{makinastates_dest}}/bin/boot-salt.sh -C
+          {{(makinastates_repo is not none) | ternary(
+            '-g {0}'.format(makinastates_repo), '') }}
+          {{(makinastates_version is not none) | ternary(
+            '-b {0}'.format(makinastates_version), '') }}
+          {{(makinastates_nodetype is not none) | ternary(
+            '-n {0}'.format(makinastates_nodetype), '') }}
+          {{(makinastates_ansible_repo is not none) | ternary(
+            '--ansible-url {0}'.format(makinastates_ansible_repo), '') }}
+          {{(makinastates_ansible_version is not none) | ternary(
+            '--ansible-branch {0}'.format(makinastates_ansible_version), '') }}
+          {{(makinastates_salt_repo is not none) | ternary(
+            '--salt-url {0}'.format(makinastates_salt_repo), '') }}
+          {{(makinastates_salt_version is not none) | ternary(
+            '--salt-branch {0}'.format(makinastates_salt_version), '') }}
+  tags: [makinastates_setup]
+
+- name: test salt & ansible usuability
+  shell: bin/{{item}} --version
+  args:
+    chdir: "{{makinastates_dest}}"
+  with_items:
+    - salt-call
+    - ansible
+  tags: [makinastates_setup]

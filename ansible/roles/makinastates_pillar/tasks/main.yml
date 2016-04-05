@@ -1,0 +1,8 @@
+---
+# install local pillar
+- name: pillar sync
+  template:
+    src=./roles/makinastates_pillar/templates/pillar.json
+    dest={{makinastates_dest}}/pillar/private.pillar.d/makinastates.json
+    mode=0600
+  tags: [makinastates_pillar]

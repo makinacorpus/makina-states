@@ -1,0 +1,8 @@
+---
+- shell: "test -e {{makinastates_dest}}/var/.first_highstate;echo $?"
+  register: makinastates_highstate_cmd_test
+  tags: [makinastates_highstate]
+
+- shell: "{{makinastates_dest}}/bin/salt-call --retcode-passthrough state.sls makina-states.top && touch '{{makinastates_dest}}/var/.first_highstate'"
+  tags: [makinastates_highstate]
+  when: "makinastates_force_highstate or (makinastates_highstate_cmd_test.stdout != 0)"

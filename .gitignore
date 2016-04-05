@@ -84,6 +84,7 @@ boot_salt_top
 /pillar/overrides
 /etc/makina-states/
 /var/cache
+/var/.first_highstate
 /venv
 /etc/masterless_pillars/
 /ansible/**/*.retry

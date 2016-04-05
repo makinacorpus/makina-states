@@ -129,6 +129,7 @@ galaxy_info:
   #  - utopic
   #  - vivid
   #  - wily
+  #  - xenial
   #- name: SLES
   #  versions:
   #  - all
@@ -164,12 +165,8 @@ galaxy_info:
     # NOTE: A tag is limited to a single word comprised of
     # alphanumeric characters. Maximum 20 tags per role.
 
-
 dependencies:
   - { role: makinastates_vars}
-  - { role: makinastates_setup}
-  - { role: makinastates_pillar}
-  - { role: makinastates_highstate}
   # List your role dependencies here, one per line.
   # Be sure to remove the '[]' above if you add dependencies
   # to this list.
