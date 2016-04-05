@@ -33,11 +33,6 @@ import fcntl
 import datetime
 import json
 
-try:
-    from salt.utils import vt
-    HAS_VT = True
-except ImportError:
-    HAS_VT = False
 
 try:
     import chardet
@@ -48,7 +43,6 @@ except ImportError:
 
 NO_RETURN = '__CALLER_NO_RETURN__'
 TIMEOUT_RETCODE = -666
-VT_ERROR_RETCODE = -667
 NO_RETCODE = -668
 log = logging.getLogger(__name__)
 
@@ -126,14 +120,11 @@ def magicstring(thestr):
 
 
 def terminate(process):
-    if HAS_VT and isinstance(process, vt.Terminal):
-        process.close(terminate=True, kill=True)
-    else:
-        for i in ['terminate', 'kill']:
-            try:
-                getattr(process, i)()
-            except Exception:
-                pass
+    for i in ['terminate', 'kill']:
+        try:
+            getattr(process, i)()
+        except Exception:
+            pass
 
 
 def do_validate_states(data):
@@ -185,17 +176,12 @@ def do_process_ios(process,
     if stderr is None:
         stderr = cStringIO.StringIO()
     streams = {'out': stdout_pos, 'err': stderr_pos}
-    if HAS_VT and isinstance(process, vt.Terminal):
-        for stream, in_ in (
-            (stdout, process.stream_stdout.getvalue()),
-            (stderr, process.stream_stderr.getvalue())
-        ):
-            stream.truncate(0)
-            stream.seek(0)
-            stream.write(in_)
-    else:
-        stdout.write(non_block_read(process.stdout))
-        stderr.write(non_block_read(process.stderr))
+    stdo = non_block_read(process.stdout)
+    stde = non_block_read(process.stderr)
+    if stdo:
+        stdout.write(stdo)
+    if stde:
+        stderr.write(stde)
     for k, val, out in (
         ('out', stdout.getvalue(), output_out),
         ('err', stderr.getvalue(), output_err),
@@ -208,7 +194,7 @@ def do_process_ios(process,
             if verbose:
                 out.write(val[pos:])
         streams[k] = npos
-    return streams['out'], streams['err']
+    return streams['out'], streams['err'], stdo, stde
 
 
 def format_error(ret):
@@ -249,12 +235,9 @@ def cmd(args,
         stdout=None,
         sleep_interval=None,
         stderr=None,
-        use_vt=None,
         no_quote=None,
         verbose=None,
         env=None):
-    if use_vt and not HAS_VT:
-        use_vt = False
     if not sleep_interval:
         sleep_interval = 0.04
     if no_quote is None:
@@ -275,30 +258,15 @@ def cmd(args,
         stdout = cStringIO.StringIO()
     if stderr is None:
         stderr = cStringIO.StringIO()
+    process = None
     try:
-        if use_vt:
-            process = vt.Terminal(
-                args,
-                shell=True,
-                cwd=os.getcwd(),
-                preexec_fn=None,
-                env=env,
-                stream_stdout=cStringIO.StringIO(),
-                stream_stderr=cStringIO.StringIO())
-        else:
-            process = subprocess.Popen(
-                cli,
-                env=env,
-                stdin=stdin,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
+        process = subprocess.Popen(
+            cli,
+            env=env,
+            stdin=stdin,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
         while True:
-            if (
-                HAS_VT and
-                isinstance(process, vt.Terminal) and
-                process.has_unread_data
-            ):
-                process.recv()
             if pid == ospid or pid is None:
                 pid = process.pid
             if timeout is not None and (time.time() >= now + timeout):
@@ -309,13 +277,8 @@ def cmd(args,
                 ).format(cli)
                 force_retcode = TIMEOUT_RETCODE
             else:
-                if HAS_VT and isinstance(process, vt.Terminal):
-                    retcode = process.exitstatus
-                    if retcode is None and force_retcode is not None:
-                        force_retcode = VT_ERROR_RETCODE
-                else:
-                    retcode = process.poll()
-                stdout_pos, stderr_pos = do_process_ios(
+                retcode = process.poll()
+                stdout_pos, stderr_pos, stdo, stde = do_process_ios(
                     process, verbose=verbose,
                     stdout_pos=stdout_pos, stderr_pos=stderr_pos,
                     stdout=stdout, stderr=stderr)
@@ -331,14 +294,15 @@ def cmd(args,
             pass
         raise exc
     finally:
-        stdout_pos, stderr_pos = do_process_ios(
-            process, verbose=verbose,
-            stdout_pos=stdout_pos, stderr_pos=stderr_pos,
-            stdout=stdout, stderr=stderr)
-        try:
-            terminate(process)
-        except UnboundLocalError:
-            pass
+        if process is not None:
+            stdout_pos, stderr_pos, stdo, stde = do_process_ios(
+                process, verbose=verbose,
+                stdout_pos=stdout_pos, stderr_pos=stderr_pos,
+                stdout=stdout, stderr=stderr)
+            try:
+                terminate(process)
+            except UnboundLocalError:
+                pass
     if force_retcode is not None:
         retcode = force_retcode
     if retcode is None:
@@ -378,7 +342,6 @@ def call(func,
          local=False,
          out=None,
          no_out=NO_RETURN,
-         use_vt=None,
          no_display_ret=None,
          ret_format=None,
          verbose=None,
@@ -410,7 +373,7 @@ def call(func,
         if test:
             eargs.extend(argpart)
     ret = cmd(args=eargs, env=env, timeout=timeout,
-              use_vt=use_vt, verbose=verbose,
+              verbose=verbose,
               no_quote=no_quote, sleep_interval=sleep_interval,
               stdin=stdin, stderr=stderr, stdout=stdout)
     decoders = {'json': json_load}
@@ -483,11 +446,6 @@ def main():
     parser.add_argument('--no-quote', action='store_true', default=False)
     parser.add_argument('-v', '--verbose', action='store_true',
                         help=('if set, display command output on console'),
-                        default=False)
-    parser.add_argument('--use-vt', action='store_true',
-                        help=('if set, streams the salt-call'
-                              ' process input/output to console while '
-                              'executing in real time and not at the end'),
                         default=False)
     parser.add_argument('--no-display-ret',
                         help=('Do not display the full return'
