@@ -643,10 +643,10 @@ salt_call_wrapper() {
     bs_log "Calling:"
     echo ""\
         "${VENV_PATH}/bin/python ${SALT_MS}/mc_states/saltcaller.py" \
-        " --validate-states --no-display-ret --use-vt -v --executable" \
+        " --validate-states --no-display-ret -v --executable" \
         " ${SALT_MS}/bin/salt-call ${saltargs} ${@}"
     "${VENV_PATH}/bin/python" "${SALT_MS}/mc_states/saltcaller.py" \
-        --validate-states --no-display-ret --use-vt -v --executable \
+        --validate-states --no-display-ret -v --executable \
         "${SALT_MS}/bin/salt-call" ${saltargs} ${@}
     last_salt_retcode=${?}
     if [ "x$(get_nodetype)" = "xtravis" ]; then
@@ -1199,9 +1199,9 @@ get_delay_time() {
 
 run_salt_bootstrap() {
     bs=${1}
-    bs_log "Running ${salt_type} bootstrap: ${bs}"
+    bs_log "Running bootstrap: ${bs}"
     if ! salt_call_wrapper state.sls ${bs};then
-        echo "${salt_type}: Failed bootstrap: ${bs}"
+        echo "Failed bootstrap: ${bs}"
         exit 1
     fi
 }
