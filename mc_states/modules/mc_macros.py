@@ -713,23 +713,81 @@ def dump():
         return _REGISTRY
 
 
+def add_pillar_dirs(pillars, proot, id_):
+    _o = __opts__
+    pillar = pillars.setdefault(id_, [])
+    dirs = [
+        os.path.join(
+            proot,
+            'overrides/{0}.pillar.d'.format(id_)),
+        os.path.join(
+            proot, '{0}.pillar.d'.format(id_))]
+    if id_ == _o['id']:
+        dirs.extend([
+            os.path.join(
+                proot, 'overrides/private.pillar.d'),
+            os.path.join(
+                proot, 'private.pillar.d')
+        ])
+    for i in dirs:
+        if i not in pillar:
+            pillar.append(i)
+    return pillars
+
+
+def get_pillar_dss(ids_=None):
+    _s = __salt__
+    _o = __opts__
+    if ids_ and isinstance(ids_, six.string_types):
+        ids_ = ids_.split(',')
+    if not ids_:
+        ids_ = [_o['id']]
+    ids_ = ids_[:]
+    locs = _s['mc_locations.settings']()
+    proot = locs['pillar_root']
+    pillars = OrderedDict([
+        ('*', [
+            os.path.join(
+                proot, 'overrides/pillar.d'),
+            os.path.join(
+                proot, 'pillar.d')])
+    ])
+    for id_ in ids_:
+        add_pillar_dirs(pillars, proot, id_)
+    if os.path.exists(proot):
+        for i in os.listdir(proot):
+            ai = os.path.join(proot, i)
+            if not os.path.isdir(ai):
+                continue
+            if (
+                not i.endswith('private.pillar.d') and
+                i != 'pillar.d' and
+                i.endswith('.pillar.d')
+            ):
+                id_ = i.split('.pillar.d')[0]
+                add_pillar_dirs(pillars, proot, id_)
+    return pillars
+
+
 def get_pillar_top_files(pillar_autoincludes=None,
                          mc_projects=None,
                          refresh_projects=None):
+    _o = __opts__
     _s = __salt__
     top = {__opts__['id']: set(), '*': set()}
     locs = _s['mc_locations.settings']()
     pdir = os.path.join(locs['pillar_root'], 'makina-projects')
-    pillar_dss = {
-        __opts__['id']: [
-            os.path.join(locs['pillar_root'], 'overrides/private.pillar.d'),
-            os.path.join(locs['pillar_root'], 'private.pillar.d')],
-        '*': [
-            os.path.join(locs['pillar_root'], 'overrides/pillar.d'),
-            os.path.join(locs['pillar_root'], 'pillar.d')]
-    }
+    pillar_dss = get_pillar_dss()
+    # we can autoinclude only what is registered
+    # under the pillar_roots directive (private & global)
+    # we can only feed wia the json extpillar
+    # data per host which is not the current host
     for section, pillar_ds in six.iteritems(pillar_dss):
+        if section not in ['*', _o['id']]:
+            continue
         for pillar_d in pillar_ds:
+            if _o['id'] in pillar_d:
+                continue
             if not os.path.exists(pillar_d):
                 continue
             for sf in os.listdir(pillar_d):
@@ -748,7 +806,7 @@ def get_pillar_top_files(pillar_autoincludes=None,
             pdir = cfg['wired_pillar_root']
             initsls = os.path.join(pdir, 'init.sls')
             if os.path.exists(initsls):
-                top['*'].add('makina-projects.{0}'.format(cfg['name']))
+                top['*'].add('makina-projects.{0}'.format(pj))
     for s in [a for a in top]:
         top[s] = [a for a in top[s]]
     return top

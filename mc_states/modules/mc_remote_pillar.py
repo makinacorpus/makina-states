@@ -43,6 +43,9 @@ classical MQ salt or salt+ssh, so don't use pillar grains matching !
 
 '''
 
+import pstats
+import cProfile
+import datetime
 import os
 import copy
 import time
@@ -131,10 +134,16 @@ def get_generate_hooks():
     return _s['mc_utils.uniquify'](hooks)
 
 
-def generate_masterless_pillar(id_, set_retcode=False, dump=False):
+def generate_masterless_pillar(id_, 
+                               set_retcode=False, 
+                               dump=False, 
+                               profile_enabled=False):
     _s = __salt__
     pid = None
     errors = []
+    if profile_enabled:
+        pr = cProfile.Profile()
+        pr.enable()
     try:
         pillar = get_pillar(id_)
     except Exception:
@@ -159,6 +168,23 @@ def generate_masterless_pillar(id_, set_retcode=False, dump=False):
             log.info('Writing pillar {0}'.format(pid))
             fic.write(_s['mc_dumper.yaml_dump'](pillar))
     result = {'id': id_, 'pillar': pillar, 'errors': errors, 'pid': pid}
+    if profile_enabled:
+        pr.disable()
+        if not os.path.isdir('/tmp/stats'):
+            os.makedirs('/tmp/stats')
+        date = datetime.datetime.now().isoformat()
+        ficp = '/tmp/stats/{0}.{1}.pstats'.format(id_, date)
+        fico = '/tmp/stats/{0}.{1}.dot'.format(id_, date)
+        ficn = '/tmp/stats/{0}.{1}.stats'.format(id_, date)
+        if not os.path.exists(ficp):
+            pr.dump_stats(ficp)
+            with open(ficn, 'w') as fic:
+                pstats.Stats(pr, stream=fic).sort_stats('cumulative')
+        msr = _s['mc_locations.msr']()
+        _s['cmd.run'](
+            'pyprof2calltree '
+            '-i "{0}" -o "{1}"'.format(ficp, fico), python_shell=True)
+
     return result
 
 

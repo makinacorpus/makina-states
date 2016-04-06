@@ -8,8 +8,10 @@ file_roots:
     - /srv/salt
 pillar_roots:
   base:
+    - /srv/makina-states/pillar/overrides/private.pillar.d
     - /srv/makina-states/pillar/overrides/pillar.d
     - /srv/makina-states/pillar/overrides
+    - /srv/makina-states/pillar/private.pillar.d
     - /srv/makina-states/pillar/pillar.d
     - /srv/makina-states/pillar
     - /srv/pillar

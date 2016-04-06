@@ -21,6 +21,7 @@ import re
 import inspect
 import os
 import cProfile
+import json
 import pstats
 import copy
 import hashlib
@@ -3733,6 +3734,29 @@ def invalidate_mc_pillar():
         pass
     except Exception:
         log.error(traceback.format_exc())
+
+
+def json_pillars(id_, pillar=None, raise_error=True, *args, **kw):
+    _s = __salt__
+    dirs = _s['mc_macros.get_pillar_dss']([id_])
+    data = OrderedDict()
+    for section in ['*', id_]:
+        if section not in dirs:
+            continue
+        for pdir in dirs[section]:
+            if not os.path.exists(pdir):
+                continue
+            for i in [a
+                      for a in os.listdir(pdir)
+                      if a.endswith('.json')]:
+                try:
+                    pf = os.path.join(pdir, i)
+                    with open(pf) as fic:
+                        data = _s['mc_utils.dictupdate'](
+                            data, json.loads(fic.read()))
+                except (IOError, ValueError):
+                    pass
+    return data
 
 
 def ext_pillar(id_, pillar=None, raise_error=True, *args, **kw):

@@ -9,18 +9,19 @@ The linking cannot be done as an ext-pillar as the static files rendered
 order is not guarranteed, we need so to wrap that here
 #}
 
-{% set top = {} %}
+{%- set top = {} %}
 {%- if not opts.get('no_makinastates_autoload', False) %}
-{% set autotop = salt['mc_macros.get_pillar_top_files'](
-      pillar_autoincludes=True,
-      mc_projects=True,
-      refresh_projects=True) %}
-{%- for section, aslss in top.items() %}
-{%-   set slss = top.setdefault(section, []) %}
-{%-   for sls in aslss %}
-{%-     if sls not in slss %}{% do slss.append(sls) %}{% endif %}
-{%-  endfor %}
-{%- endfor %}
+{%-   set autotop = salt['mc_macros.get_pillar_top_files'](
+        pillar_autoincludes=True,
+        mc_projects=True,
+        refresh_projects=True) %}
+{%-   for section, aslss in autotop.items() %}
+{%-     for sls in aslss %}
+{%-       set slss = top.setdefault(section, []) %}
+{%-       if sls not in slss %}{% do slss.append(sls) %}{% endif %}
+{%-     endfor %}
+{%-   endfor %}
+{%- endif %}
 base:
   {% if top %}
   {% for section, slss in top.items() %}
@@ -28,7 +29,7 @@ base:
     {% for sls in slss %}
     - {{ sls }}
     {% endfor %}
-  {%endfor %}
+  {% endfor %}
   {% else %}
   not_trigger_render_errors: []
   {% endif %}
