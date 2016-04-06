@@ -2446,6 +2446,47 @@ def fixperms(name, *args, **kwargs):
     return cret
 
 
+def list_projects():
+    _s = __salt__
+    locs = _s['mc_locations.settings']()
+    cfgs = OrderedDict()
+    salt_settings = _s['mc_salt.settings']()
+    wired_pillar_roots = os.path.join(
+        salt_settings['pillar_root'], 'makina-projects')
+    wired_salt_roots = os.path.join(
+        salt_settings['salt_root'], 'makina-projects')
+    if os.path.exists(locs['projects_dir']):
+        projects = os.listdir(locs['projects_dir'])
+        if projects:
+            for pj in projects:
+                cfgs[pj] = {
+                    'pillar_root': os.path.join(
+                        locs['projects_dir'], pj, 'pillar'),
+                    'wired_pillar_root': os.path.join(
+                        wired_pillar_roots, pj),
+                    'wired_salt_root': os.path.join(
+                        wired_salt_roots, pj),
+                    'pillar': os.path.join(
+                        locs['projects_dir'], pj, 'pillar/init.sls'),
+                    'project_root': os.path.join(
+                        locs['projects_dir'], pj, 'project'),
+                    'salt_root': os.path.join(
+                        locs['projects_dir'], pj,
+                        'project/.salt'),
+                    'salt_fixperms': os.path.join(
+                        locs['projects_dir'], pj,
+                        'project/.salt/fixperms.sls'),
+                    'salt_sample': os.path.join(
+                        locs['projects_dir'], pj,
+                        'project/.salt/PILLAR.sample'),
+                }
+        for pj in [a for a in cfgs]:
+            if True in [not os.path.exists(a[1])
+                        for a in six.iteritems(cfgs[pj])]:
+                cfgs.pop(pj, None)
+    return cfgs
+
+
 def link_pillar(names, *args, **kwargs):
     '''
     Add the link wired in pillar folder
@@ -2458,14 +2499,18 @@ def link_pillar(names, *args, **kwargs):
         names = names.split(',')
     names.extend(args)
     ret = _get_ret(*args, **kwargs)
+    projects = list_projects()
     for name in names:
-        cfg = get_configuration(name, nodata=True, *args, **kwargs)
+        if name not in projects:
+            raise projects_api.ProjectInitException(
+                '{0} not found'.format(name))
+        cfg = projects[name]
         salt_settings = __salt__['mc_salt.settings']()
         pillar_root = os.path.join(salt_settings['pillar_root'])
-        upillar_top = 'makina-projects.{name}'.format(**cfg)
+        upillar_top = 'makina-projects.{name}'.format(name=name)
         pillarf = os.path.join(pillar_root, 'top.sls')
         customf = os.path.join(pillar_root, 'custom.sls')
-        pillar_top = 'makina-projects.{name}'.format(**cfg)
+        pillar_top = 'makina-projects.{name}'.format(name=name)
         link_into_root(
             name, ret,
             cfg['wired_pillar_root'], cfg['pillar_root'], do_link=True)
@@ -2512,8 +2557,12 @@ def unlink_pillar(names, *args, **kwargs):
         names = names.split(',')
     names.extend(args)
     ret = _get_ret(*args, **kwargs)
+    projects = list_projects()
     for name in names:
-        cfg = get_configuration(name, nodata=True,  *args, **kwargs)
+        if name not in projects:
+            raise projects_api.ProjectInitException(
+                '{0} not found'.format(name))
+        cfg = projects[name]
         kwargs.pop('ret', None)
         salt_settings = __salt__['mc_salt.settings']()
         pillar_root = os.path.join(salt_settings['pillar_root'])
@@ -2521,7 +2570,7 @@ def unlink_pillar(names, *args, **kwargs):
         pillar_top = 'makina-projects.{name}'.format(**cfg)
         if not LooseVersion(VERSION) >= LooseVersion("2.0"):
             with open(pillarf) as fpillarf:
-                pillar_top = '- makina-projects.{name}'.format(**cfg)
+                pillar_top = '- makina-projects.{name}'.format(name=name)
                 pillars = fpillarf.read()
                 if pillar_top in pillars:
                     lines = []
@@ -2588,8 +2637,12 @@ def link_salt(names, *args, **kwargs):
         names = names.split(',')
     names.extend(args)
     ret = _get_ret(*args, **kwargs)
+    projects = list_projects()
     for name in names:
-        cfg = get_configuration(name, nodata=True, *args, **kwargs)
+        if name not in projects:
+            raise projects_api.ProjectInitException(
+                '{0} not found'.format(name))
+        cfg = projects[name]
         kwargs.pop('ret', None)
         link_into_root(
             name, ret, cfg['wired_salt_root'], cfg['salt_root'], do_link=True)
@@ -2609,8 +2662,12 @@ def unlink_salt(names, *args, **kwargs):
         names = names.split(',')
     names.extend(args)
     ret = _get_ret(*args, **kwargs)
+    projects = list_projects()
     for name in names:
-        cfg = get_configuration(name, nodata=True, *args, **kwargs)
+        if name not in projects:
+            raise projects_api.ProjectInitException(
+                '{0} not found'.format(name))
+        cfg = projects[name]
         kwargs.pop('ret', None)
         link_into_root(
             name, ret, cfg['wired_salt_root'], cfg['salt_root'], do_link=False)
@@ -2706,31 +2763,6 @@ def sync_hooks_for_all(*args, **kwargs):
             if os.path.exists(os.path.join(pt, pj, 'project', '.git')):
                 ret = _merge_statuses(ret, sync_hooks(pj))
     return ret
-
-
-def list_projects():
-    locs = __salt__['mc_locations.settings']()
-    cfgs = OrderedDict()
-    if os.path.exists(locs['projects_dir']):
-        projects = os.listdir(locs['projects_dir'])
-        if projects:
-            for pj in projects:
-                cfgs[pj] = get_configuration(pj)
-                uncache_project(pj)
-    for pj in [a for a in cfgs]:
-        cfg = cfgs[pj]
-        if (
-            not os.path.exists(
-                os.path.join(cfg['pillar_root'], 'init.sls')
-            ) or (
-                True in
-                [not os.path.exists(
-                    os.path.join(cfg['project_root'], '.salt', a)
-                ) for a in ['fixperms.sls', 'PILLAR.sample']]
-            )
-        ):
-            cfgs.pop(pj, None)
-    return cfgs
 
 
 def link_projects(projects=None):
