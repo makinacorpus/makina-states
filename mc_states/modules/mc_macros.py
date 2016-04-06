@@ -717,31 +717,39 @@ def get_pillar_top_files(pillar_autoincludes=None,
                          mc_projects=None,
                          refresh_projects=None):
     _s = __salt__
-    slss = set()
+    top = {__opts__['id']: set(), '*': set()}
     locs = _s['mc_locations.settings']()
     pdir = os.path.join(locs['pillar_root'], 'makina-projects')
-    pillar_ds = [
-        os.path.join(locs['pillar_root'], 'overrides/pillar.d'),
-        os.path.join(locs['pillar_root'], 'pillar.d')]
-    for pillar_d in pillar_ds:
-        if not os.path.exists(pillar_d):
-            continue
-        for sf in os.listdir(pillar_d):
-            f = os.path.join(pillar_d, sf)
-            if (
-                f.endswith('.sls') and
-                (os.path.isfile(f) or
-                 (os.path.islink(f) and os.path.isfile(os.readlink(f))))
-            ):
-                slss.add(sf.split('.sls', 1)[0])
+    pillar_dss = {
+        __opts__['id']: [
+            os.path.join(locs['pillar_root'], 'overrides/private.pillar.d'),
+            os.path.join(locs['pillar_root'], 'private.pillar.d')],
+        '*': [
+            os.path.join(locs['pillar_root'], 'overrides/pillar.d'),
+            os.path.join(locs['pillar_root'], 'pillar.d')]
+    }
+    for section, pillar_ds in six.iteritems(pillar_dss):
+        for pillar_d in pillar_ds:
+            if not os.path.exists(pillar_d):
+                continue
+            for sf in os.listdir(pillar_d):
+                f = os.path.join(pillar_d, sf)
+                if (
+                    f.endswith('.sls') and
+                    (os.path.isfile(f) or
+                     (os.path.islink(f) and os.path.isfile(os.readlink(f))))
+                ):
+                    top[section].add(sf.split('.sls', 1)[0])
     if refresh_projects is not False:
-        __salt__['mc_project.link_projects']()
+        _s['mc_project.link_projects']()
     if mc_projects is not False:
-        projects = __salt__['mc_project.list_projects']()
+        projects = _s['mc_project.list_projects']()
         for pj, cfg in six.iteritems(projects):
             pdir = cfg['wired_pillar_root']
             initsls = os.path.join(pdir, 'init.sls')
             if os.path.exists(initsls):
-                slss.add('makina-projects.{0}'.format(cfg['name']))
-    return [a for a in slss]
+                top['*'].add('makina-projects.{0}'.format(cfg['name']))
+    for s in [a for a in top]:
+        top[s] = [a for a in top[s]]
+    return top
 # vim:set ai:

@@ -8,21 +8,27 @@
 The linking cannot be done as an ext-pillar as the static files rendered
 order is not guarranteed, we need so to wrap that here
 #}
-{%- set slss = [] %}
+
+{% set top = {} %}
 {%- if not opts.get('no_makinastates_autoload', False) %}
-{%- for sls in salt['mc_macros.get_pillar_top_files'](
+{% set autotop = salt['mc_macros.get_pillar_top_files'](
       pillar_autoincludes=True,
       mc_projects=True,
       refresh_projects=True) %}
-      {% if sls not in slss %}{% do slss.append(sls) %}{% endif %}
+{%- for section, aslss in top.items() %}
+{%-   set slss = top.setdefault(section, []) %}
+{%-   for sls in aslss %}
+{%-     if sls not in slss %}{% do slss.append(sls) %}{% endif %}
 {%-  endfor %}
-{%- endif %}
+{%- endfor %}
 base:
-  {% if slss %}
-  '*':
+  {% if top %}
+  {% for section, slss in top.items() %}
+  '{{section}}':
     {% for sls in slss %}
     - {{ sls }}
-    {%endfor %}
+    {% endfor %}
+  {%endfor %}
   {% else %}
   not_trigger_render_errors: []
   {% endif %}

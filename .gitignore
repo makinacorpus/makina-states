@@ -80,6 +80,7 @@ boot_salt_top
 /salt/makina-projects
 /pillar/makina-projects
 /pillar/pillar.d
+/pillar/private.pillar.d
 /pillar/overrides
 /etc/makina-states/
 /var/cache
