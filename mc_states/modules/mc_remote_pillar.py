@@ -97,19 +97,21 @@ def get_pillar(minion='*', skipped=None, saltenv='base', **kwargs):
     or just the global available pillars. This function assumes
     that no minion has the id ``*``.
     '''
+    _o = __opts__
     try:
-        fic = __opts__['config_dir'] + '/master'
+        fic = _o['config_dir'] + '/master'
         os.stat(fic)  # may raise OSError
         mopts = config.master_config(fic)
     except (KeyError, OSError):
         # may not have master config in masterless setups
-        mopts = copy.deepcopy(__opts__)
+        mopts = copy.deepcopy(_o)
     id_, grains, _ = salt.utils.minions.get_minion_data(minion, mopts)
     if not grains:
         grains = {}
     grains = copy.deepcopy(grains)
     did = {'fqdn': minion, 'id': minion}
-    for d in [grains, mopts]:
+    # for d in [grains, mopts]:
+    for d in [grains]:
         d.update(did)
     pillar = salt.pillar.Pillar(mopts, grains, id_, saltenv)
     if not skipped:
