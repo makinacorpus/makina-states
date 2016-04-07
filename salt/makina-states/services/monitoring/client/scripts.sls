@@ -1,5 +1,5 @@
 {%- set data = salt['mc_monitoring.settings']() %}
-{%- set locs = mc_locations.settings']() %}
+{%- set locs = salt['mc_locations.settings']() %}
 {% set dodl=True %}
 {% if grains['os'] in ['Debian'] %}
 {% if grains["osrelease"][0] < "6" %}
