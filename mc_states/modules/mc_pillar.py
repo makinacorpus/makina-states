@@ -146,8 +146,7 @@ def get_db():
 def has_db():
     db = get_db()
     if (
-        (os.path.splitext(db)[1][1:] in SUPPORTED_DB_FORMATS) and
-        db.startswith('/srv')
+        os.path.splitext(db)[1][1:] in SUPPORTED_DB_FORMATS
     ):
         return os.path.exists(db)
     else:
@@ -3740,6 +3739,10 @@ def json_pillars(id_, pillar=None, raise_error=True, *args, **kw):
     _s = __salt__
     dirs = _s['mc_macros.get_pillar_dss']([id_])
     data = OrderedDict()
+    # do not load cache pillar on controller, we will rely here on
+    # mc_pillar and other ext_pillars directly
+    if has_db():
+        return data
     for section in ['*', id_]:
         if section not in dirs:
             continue
