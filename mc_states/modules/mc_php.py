@@ -22,6 +22,7 @@ import logging
 import mc_states.api
 import copy
 import os
+from distutils.version import LooseVersion
 
 # Import salt libs
 from salt import utils, exceptions
@@ -177,6 +178,16 @@ def settings():
         else:
             s_all = ''
 
+        if (
+            __grains__.get('os', '') == 'Ubuntu' and
+            LooseVersion(__grains__.get('osrelease', '0')) >= LooseVersion('16.04')
+        ):
+            php7_onward = True
+            apc_install = 0
+        else:
+            php7_onward = False
+            apc_install = 1
+
         phpdefaults = {
             's_all': s_all,
             'rotate': __salt__['mc_logrotate.settings']()['days'],
@@ -254,7 +265,7 @@ def settings():
             'opcache_force_restart_timeout': 180,
             'opcache_error_log': '',
             'opcache_log_verbosity_level': 1,
-            'apc_install': 1,
+            'apc_install': apc_install,
             'apc_enabled': 0,
             'apc_enable_cli': 0,
             'apc_shm_segments': 1,
@@ -360,10 +371,49 @@ def settings():
             grain='os_family',
             merge=phpStepTwo
         )
+        if php7_onward:
+            phpStepFour = __salt__['mc_utils.dictupdate'](
+                phpStepThree, {
+                'packages': {
+                    'main': 'php',
+                    'mod_fcgid': apacheSettings['mod_packages']['mod_fcgid'],
+                    'mod_fastcgi': (
+                        apacheSettings['mod_packages']['mod_fastcgi']),
+                    'php_fpm': 'php-fpm',
+                    'apc': 'php-apc',
+                    'cli': 'php-cli',
+                    'cas': 'php-cas',
+                    'imagemagick': 'php-imagick',
+                    'memcache': 'php-memcache',
+                    'memcached': 'php-memcached',
+                    'mysql': 'php-mysql',
+                    'postgresql': 'php-pgsql',
+                    'sqlite': 'php-sqlite',
+                    'pear': 'php-pear',
+                    'soap': 'php-soap',
+                    'dev': 'php-dev',
+                    'snmp': 'php-snmp',
+                    'xmlrpc': 'php-xmlrpc',
+                    'json': 'php-json',
+                    'xdebug': 'php-xdebug',
+                    'curl': 'php-curl',
+                    'gd': 'php-gd',
+                    'ldap': 'php-ldap',
+                    'mcrypt': 'php-mcrypt',
+                },
+                'ppa_ver': '7.0',
+                'service': 'php-fpm',
+                'etcdir': locations['conf_dir'] + '/php/7.0',
+                'confdir': locations['conf_dir'] + '/php/7.0/mods-available',
+                'logdir': locations['var_log_dir'] + '/phpfpm',
+                'fpm_sockets_dir': (
+                    locations['var_lib_dir'] + '/apache2/fastcgi')
+            }
+        )
 
         # FINAL STEP: merge with data from pillar and grains
         phpData = __salt__['mc_utils.defaults'](
-            'makina-states.services.php', phpStepThree)
+            'makina-states.services.php', phpStepFour)
         # retro compat
         if 'register-pools' in phpData:
             phpData['fpm_pools'] = __salt__[

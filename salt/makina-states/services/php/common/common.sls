@@ -21,7 +21,7 @@ dotdeb-apache-makina-apache-php-pre-inst:
     - watch_in:
       - mc_proxy: makina-php-pre-inst
 {# Manage php-fpm packages @#}
-{% elif grains['os'] in ['Ubuntu'] %}
+{% elif grains['os'] in ['Ubuntu'] and grains['osrelease'] < '16.04' %}
 makina-php-repos:
   pkgrepo.managed:
     - humanname: php ppa
@@ -33,13 +33,28 @@ makina-php-repos:
     - watch:
       - mc_proxy: makina-php-pre-repo
     - watch_in:
+      - mc_proxy: makina-php-repos:
+{% else %}
+makina-php-repos:
+  file.absent:
+    - name: /etc/apt/sources.list.d/phpppa.list
+    - watch:
+      - mc_proxy: makina-php-pre-repo
+    - watch_in:
+      - mc_proxy: makina-php-pre-inst
+  cmd.watch:
+    - name: apt-get update
+    - watch:
+      - file: makina-php-repos
+      - mc_proxy: makina-php-pre-repo
+    - watch_in:
       - mc_proxy: makina-php-pre-inst
 {% endif %}
 
 php-cli:
   pkg.installed:
     - pkgs:
-      - php5-cli
+      - {{phpSettings.packages.cli}}
     - watch:
       - mc_proxy: makina-php-pre-inst
     - watch_in:
