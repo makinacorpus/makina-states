@@ -402,7 +402,7 @@ def settings():
                     'mcrypt': 'php-mcrypt',
                 },
                 'ppa_ver': '7.0',
-                'service': 'php-fpm',
+                'service': 'php7.0-fpm',
                 'etcdir': locations['conf_dir'] + '/php/7.0',
                 'confdir': locations['conf_dir'] + '/php/7.0/mods-available',
                 'logdir': locations['var_log_dir'] + '/phpfpm',
