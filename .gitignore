@@ -86,3 +86,4 @@ boot_salt_top
 /var/cache
 /venv
 /etc/masterless_pillars/
+/ansible/**/*.retry
