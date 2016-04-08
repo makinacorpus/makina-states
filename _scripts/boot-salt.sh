@@ -1300,10 +1300,10 @@ salt_call_wrapper_() {
     bs_log "Calling:"
     echo ""\
         "${contextual_ms}/bin/python ${contextual_ms}/mc_states/saltcaller.py" \
-        " --validate-states --no-display-ret --use-vt -v --executable" \
+        " --validate-states --no-display-ret -v --executable" \
         " ${contextual_ms}/bin/salt-call ${saltargs} ${@}"
     "${contextual_ms}/bin/python" "${contextual_ms}/mc_states/saltcaller.py" \
-        --validate-states --no-display-ret --use-vt -v --executable \
+        --validate-states --no-display-ret -v --executable \
         "${contextual_ms}/bin/salt-call" ${saltargs} ${@}
     last_salt_retcode=${?}
     if [ "x$(get_salt_nodetype)" = "xtravis" ];then
