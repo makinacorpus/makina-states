@@ -360,10 +360,52 @@ def settings():
             grain='os_family',
             merge=phpStepTwo
         )
+        
+        phpStepFour = __salt__['grains.filter_by']({
+            'Ubuntu-16.04': {
+                'packages': {
+                    'main': 'php',
+                    'mod_fcgid': apacheSettings['mod_packages']['mod_fcgid'],
+                    'mod_fastcgi': (
+                        apacheSettings['mod_packages']['mod_fastcgi']),
+                    'php_fpm': 'php-fpm',
+                    'apc': 'php-apc',
+                    'cli': 'php-cli',
+                    'cas': 'php-cas',
+                    'imagemagick': 'php-imagick',
+                    'memcache': 'php-memcache',
+                    'memcached': 'php-memcached',
+                    'mysql': 'php-mysql',
+                    'postgresql': 'php-pgsql',
+                    'sqlite': 'php-sqlite',
+                    'pear': 'php-pear',
+                    'soap': 'php-soap',
+                    'dev': 'php-dev',
+                    'snmp': 'php-snmp',
+                    'xmlrpc': 'php-xmlrpc',
+                    'json': 'php-json',
+                    'xdebug': 'php-xdebug',
+                    'curl': 'php-curl',
+                    'gd': 'php-gd',
+                    'ldap': 'php-ldap',
+                    'mcrypt': 'php-mcrypt',
+                },
+                'ppa_ver': '7.0',
+                'service': 'php-fpm',
+                'etcdir': locations['conf_dir'] + '/php/7.0',
+                'confdir': locations['conf_dir'] + '/php/7.0/mods-available',
+                'logdir': locations['var_log_dir'] + '/phpfpm',
+                'fpm_sockets_dir': (
+                    locations['var_lib_dir'] + '/apache2/fastcgi')
+            }
+        },
+            grain='osfinger',
+            merge=phpStepThree
+        )
 
         # FINAL STEP: merge with data from pillar and grains
         phpData = __salt__['mc_utils.defaults'](
-            'makina-states.services.php', phpStepThree)
+            'makina-states.services.php', phpStepFour)
         # retro compat
         if 'register-pools' in phpData:
             phpData['fpm_pools'] = __salt__[
