@@ -1,4 +1,10 @@
 disable:
+  service.dead:
+    - names: [mastersalt-minion,
+              mastersalt-master,
+              salt-minion,
+              salt-master]
+    - enable: false
   file.absent:
     - names:
       - /usr/bin/salt
@@ -15,12 +21,7 @@ disable:
       - /usr/bin/salt-unity
     - require:
       - service: disable
-      - cmd: install
-  service.dead:
-    - names: [mastersalt-minion,
-              mastersalt-master,
-              salt-minion, salt-master]
-    - enable: false
+
 up_cron:
   cmd.run:
     - name: |
@@ -28,4 +29,4 @@ up_cron:
                rm -fv "${i}"
             done
     - require:
-      - service: disable 
+      - service: disable

@@ -1,0 +1,18 @@
+---
+- name: service
+  saltcall: >
+            function=state.sls
+            args='makina-states.controllers.migv2.service'
+  tags: makinastates_v2,makinastates_v2_service
+
+- name: install
+  saltcall: >
+            function=state.sls
+            args='makina-states.controllers.migv2.configs'
+  tags: makinastates_v2,makinastates_v2_install
+
+- name: projects
+  saltcall: >
+            function=state.sls
+            args='makina-states.controllers.migv2.projects'
+  tags: makinastates_v2,makinastates_v2_projects
