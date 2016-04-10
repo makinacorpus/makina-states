@@ -820,8 +820,8 @@ synchronize_code() {
                 git fetch origin &&\
                 git checkout ${QUIET_GIT} "${remote}""${ms_branch}" -b "${branch_pref}""${ms_branch}" -t
             else
-                git clone ${QUIET_GIT} "$(get_ms_url)" "${ms}" &&\
-                git checkout ${QUIET_GIT} "${remote}""${ms_branch}" -b "${branch_pref}""${ms_branch}"
+                git clone ${QUIET_GIT} "$(get_ms_url)" -b "${branch_pref}""${ms_branch}" "${ms}" &&\
+                    cd "${ms}"
             fi
             if [ "x${?}" != "x0" ]; then
                 die "Cant download makina-states"
