@@ -53,6 +53,7 @@ def settings():
         ]
         data = __salt__['mc_utils.defaults'](
             'makina-states.localsettings.locales', {
+                'packages': ['locales', 'language-pack-fr', 'language-pack-en'],
                 'locales': default_locales,
                 'locale': default_locale,
             }
