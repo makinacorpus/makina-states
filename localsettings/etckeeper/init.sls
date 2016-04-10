@@ -33,16 +33,18 @@ etckeeper-{{config}}:
     - watch_in:
       - mc_proxy: etckeeper-conf-post
 {% endfor %}
-
 etckeeper-initial:
   cmd.run:
     - name: |
-            /usr/bin/etckeeper init
+            set -ex
+            if [ -e /etc/.git ];then
+              /usr/bin/etckeeper init
+            fi
             cd /etc
             git config user.email 'makinastates@paas.tld'
             git config user.name 'Makina-States'
             /usr/bin/etckeeper commit "Initial commit"
-    - unless: test -d {{locs.conf_dir}}/.git
+    - unless: test -d /etc/.git && egrep -q "email.*=" /etc/.git/config
     - watch:
       - mc_proxy: etckeeper-run-pre
     - watch_in:
