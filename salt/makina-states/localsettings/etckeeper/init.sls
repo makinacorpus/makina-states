@@ -36,7 +36,7 @@ etckeeper-initial:
   cmd.run:
     - name: |
             set -ex
-            if [ -e /etc/.git ];then
+            if [ ! -e /etc/.git ];then
               /usr/bin/etckeeper init
             fi
             cd /etc
