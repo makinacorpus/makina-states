@@ -1203,6 +1203,8 @@ run_salt_bootstrap() {
     if ! salt_call_wrapper state.sls ${bs};then
         echo "Failed bootstrap: ${bs}"
         exit 1
+    else
+        bs_log "bootstrap $bs applied sucessfully"
     fi
 }
 
@@ -1436,6 +1438,8 @@ run_ms_highstate() {
     if ! salt_call_wrapper state.sls makina-states.top; then
         bs_log "Failed highstate"
         return 1
+    else
+        bs_log "highstate finished sucessfully"
     fi
 }
 
@@ -1477,7 +1481,8 @@ main() {
         reconfigure_salt &&\
         install_nodetype &&\
         install_makinastates &&\
-        do_highstate
+        do_highstate &&\
+        bs_log "end - sucess"
 }
 
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ]; then
