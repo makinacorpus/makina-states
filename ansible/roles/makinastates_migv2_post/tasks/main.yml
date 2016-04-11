@@ -1,0 +1,7 @@
+---
+- name: disable_v1
+  saltcall: function=state.sls args='makina-states.controllers.disable_v1'
+  tags: makinastates_migv2,makinastates_migv2_disable_v1,makinastates_migv2_post
+- name: projects
+  saltcall: function=mc_project.link_projects
+  tags: makinastates_migv2,makinastates_migv2_projects,makinastates_migv2_post

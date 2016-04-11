@@ -1,7 +1,3 @@
 ---
 - hosts: "{{hosts|default('all')}}"
-  roles: [makinastates]
-  tags: makinastates_setup
-- hosts: "{{hosts|default('all')}}"
   roles: [makinastates_migv2]
-  tags: makinastates_removev1
