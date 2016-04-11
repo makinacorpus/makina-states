@@ -2,7 +2,6 @@ disable:
   service.dead:
     - names: [mastersalt-minion, mastersalt-master,
               salt-minion, salt-master]
-
     - enable: false
   file.absent:
     - names:
