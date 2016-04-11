@@ -1,9 +1,8 @@
 disable:
   service.dead:
-    - names: [mastersalt-minion,
-              mastersalt-master,
-              salt-minion,
-              salt-master]
+    - names: [mastersalt-minion, mastersalt-master,
+              salt-minion, salt-master]
+
     - enable: false
   file.absent:
     - names:
@@ -19,14 +18,7 @@ disable:
       - /usr/bin/salt-ssh
       - /usr/bin/salt-syndic
       - /usr/bin/salt-unity
-    - require:
-      - service: disable
-
-up_cron:
-  cmd.run:
-    - name: |
-            for i in /etc/cron.d/salt /etc/cron.d/mastersalt;do
-               rm -fv "${i}"
-            done
+      - /etc/cron.d/salt
+      - /etc/cron.d/mastersalt
     - require:
       - service: disable
