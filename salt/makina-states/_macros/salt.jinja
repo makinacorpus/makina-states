@@ -69,7 +69,7 @@ dummy-mastersalt-layout:
 {% macro install_makina_states(mode='xxx', adata=None) %}
 {%- set bootsalt= '{0}/_scripts/boot-salt.sh'.format(settings.msr) %}
 {% set pathid = salt['mc_utils.hash'](settings.msr, typ='md5') %}
-{% for bin in ['ansible', 'salt-call', 'boot-salt.sh'] %}
+{% for bin in ['ansible', 'ansible-playbook', 'salt-call', 'boot-salt.sh'] %}
 salt-{{bin}}-bootsalt-link-bin:
   file.symlink:
     - name: /usr/local/bin/{{bin}}
