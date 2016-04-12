@@ -36,12 +36,17 @@ SALTCALLER = """\
 
 def main():
     changed = False
+    executable = None
+    for i in ['/srv/makina-states/bin/salt-call']:
+        if os.path.exists(i):
+            executable = i
+            break
     msg = ''
     module = AnsibleModule(
         argument_spec=dict(
             saltcaller=dict(required=False, default=None, type='str'),
             function=dict(required=True, default=None, type='str'),
-            executable=dict(required=False, default=None, type='str'),
+            executable=dict(required=False, default=executable, type='str'),
             search_sc=dict(required=False, default=True, type='bool'),
             local=dict(required=False, default=None, type='bool'),
             args=dict(required=False, default=None, type='str'),
@@ -55,7 +60,7 @@ def main():
     if not sc and search_sc:
         for i in ['/srv/makina-states/mc_states/saltcaller.py',
                   '/srv/salt/makina-states/mc_states/saltcaller.py',
-                  '/srv/mastersalt/makina-states/mc_states/saltcaller.py', ]:
+                  '/srv/mastersalt/makina-states/mc_states/saltcaller.py']:
             if os.path.exists(i):
                 sc = i
                 break
