@@ -410,6 +410,8 @@ def settings():
                     locations['var_lib_dir'] + '/apache2/fastcgi')
             }
         )
+        else:
+           phpStepFour = phpStepThree
 
         # FINAL STEP: merge with data from pillar and grains
         phpData = __salt__['mc_utils.defaults'](
