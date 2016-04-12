@@ -1,0 +1,20 @@
+---
+- hosts: "{{makinastates_compute_node}}"
+  saltcall: function=mc_cloud.is_compute_node
+  tags: makinastates_cn,makinastates_common
+  register: makinastates_cn_is_cn
+
+- hosts: "{{makinastates_compute_node}}"
+  roles: [makinastates_cloud_compute_node]
+  tags: makinastates_cn,makinastates_common
+  when: "makinastates_cn_is_cn.get('salt_out', False) is True"
+
+- hosts: "{{makinastates_compute_node}}"
+  saltcall: function=mc_cloud_lxc.is_lxc_compute_node
+  tags: makinastates_cn,makinastates_cn_lxc
+  register: makinastates_cn_is_lxc_cn
+
+- hosts: "{{makinastates_compute_node}}"
+  roles: [makinastates_cloud_compute_node_lxc]
+  tags: makinastates_cn,makinastates_cn_lxc
+  when: "makinastates_cn_is_lxc_cn.get('salt_out', False) is True"

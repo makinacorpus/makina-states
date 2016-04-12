@@ -1,13 +1,3 @@
 ---
 - hosts: "{{makinastates_controller}}"
-  roles: [makinastates_pillar]
-
-- hosts: "{{makinastates_controller}}"
-  tasks:
-    - name: dnsconf
-      saltcall: function=state.sls args='makina-states.cloud.generic.controller.dnsconf'
-      tags: makinastates_controller_setup,makinastates_controller_dns
-
-    - name: generic cloud
-      saltcall: function=state.sls args='makina-states.cloud.generic.controller.ssh'
-      tags: makinastates_controller_setup,makinastates_controller_ssh
+  roles: [makinastates_cloud_controller]

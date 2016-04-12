@@ -669,6 +669,10 @@ def is_compute_node():
     return is_('compute_node')
 
 
+def is_lxc_compute_node():
+    return is_('lxc_compute_node')
+
+
 def is_controller():
     return is_('controller')
 
@@ -748,5 +752,6 @@ def get_cloud_settings():
     if from_extpillar:
         cloudSettings = _s['mc_cloud.extpillar_settings']()
     else:
+        import pdb;pdb.set_trace()  ## Breakpoint ##
         cloudSettings = _s['mc_cloud.settings']()
     return cloudSettings
