@@ -13,6 +13,7 @@ see  :ref:`module_mc_project_2`
 
 from mc_states.project import LAST_PROJECT_API_VERSION
 from mc_states import api
+import salt.utils
 
 
 APIS = {
@@ -147,6 +148,7 @@ def _api_switcher(module, *args, **kwargs):
         else:
             api_ver = LAST_PROJECT_API_VERSION
     mod = APIS[module]["{0}".format(api_ver)]
+    kwargs = salt.utils.clean_kwargs(**kwargs)
     return __salt__[mod](*args, **kwargs)
 
 
