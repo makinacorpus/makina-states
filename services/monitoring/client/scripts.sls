@@ -36,7 +36,11 @@ install-nagios-plugins:
       - nagios-plugins-extra
       - nagios-plugins-contrib
       {% else %}
+      {% if grains['oscodename'] in ['Ubuntu'] %}
+      {%  if grains['osrelease'] < '16.04' %}
       - nagios-plugins-openstack
+      {%  endif %}
+      {% endif %}
       {% if grains['os'] in ['Debian'] %}
       - libsnmp15
       {% else %}

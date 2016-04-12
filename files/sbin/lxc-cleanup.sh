@@ -27,7 +27,11 @@ if [ "x${is_docker}" != "x" ];then
         is_docker="1"
     fi
 fi
-FROZEN_PACKAGES="udev whoopsie ntp fuse grub-common grub-pc grub-pc-bin grub2-common"
+FROZEN_PACKAGES="whoopsie ntp fuse grub-common grub-pc grub-pc-bin grub2-common"
+RELEASE=$(lsb_release -s -r||echo "14.04")
+if [[ "${RELEASE}" -lt "16.04" ]];then
+    FROZEN_PACKAGES="${FROZEN_PACKAGES} udev"
+fi
 # specific to docker
 # if [ "x${is_docker}" != "x" ];then
 #     FROZEN_PACKAGES="${FROZEN_PACKAGES} resolvconf"
