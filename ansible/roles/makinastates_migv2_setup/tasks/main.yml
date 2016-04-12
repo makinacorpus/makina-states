@@ -1,14 +1,16 @@
 ---
-- shell: "test -e /srv/makina-states;echo ${?}"
+- shell: "test -e /etc/makina-states;echo ${?}"
   register: makinastates_migv2_install_dir
   tags: makinastates_migv2,makinastates_migv2_setup
 - name: setup
   shell: |
          set -ex
-         git clone  "{{makinastates_repo}}" -b "{{makinastates_version}}"\
-           "{{makinastates_dest}}"
+         if [ ! -e "{{makinastates_dest}}/.git" ];then
+           git clone "{{makinastates_repo}}" -b "{{makinastates_version}}"\
+             "{{makinastates_dest}}"
+         fi
          cd /etc
-         if [ -e makina-states/nodetype ];then
+         if [ -e makina-states/nodetype ] && [ ! -h makina-states/nodetype ];then
            cp -fv makina-states/nodetype {{makinastates_dest}}/etc/makina-states
          fi
          find mastersalt/makina-states salt/makina-states makina-states\
@@ -32,5 +34,5 @@
                ln -sfv {{makinastates_dest}}/etc/makina-states/$(basename ${f}) ${f}
              fi
            done
-  when: "makinastates_migv2_install_dir.stdout = '0'"
+  when: "makinastates_migv2_install_dir.stdout == '0'"
   tags: makinastates_migv2,makinastates_migv2_setup
