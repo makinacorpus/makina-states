@@ -30,7 +30,6 @@ import salt.exceptions
 from mc_states import saltapi
 
 from distutils.version import LooseVersion
-from mc_states.runners import mc_lxc
 from mc_states.modules.mc_lxc import (
     is_lxc)
 try:
@@ -340,7 +339,7 @@ def snapshot(container, flavor, *args, **kwargs):
     kwargs['container'] = container
     kwargs['flavor'] = flavor
     gvars = get_vars(**kwargs)
-    cret = mc_lxc.snapshot_container(_run, gvars['rootfs'])
+    cret = __salt__['mc_cloud_lxc.snapshot_container'](gvars['rootfs'])
     if cret['retcode']:
         raise _imgerror(
             '{0}/{1}: snapshot failed'.format(container, flavor),
@@ -403,10 +402,8 @@ def sync_container(container,
                    **kwargs):
     orig = '/var/lib/lxc/{0}/rootfs'.format(container)
     dest = '/var/lib/lxc/{0}/rootfs'.format(destination)
-    cret = mc_lxc.sync_container(
+    cret = __salt__['mc_clouc_lxc.sync_container'](
         orig, dest,
-        cmd_runner=_run,
-        __salt__from_exec=__salt__,
         snapshot=snapshot,
         force=force)
     if not cret.get('result', True):
@@ -626,10 +623,9 @@ def sf_release(images=None, flavors=None, sync=True):
         images = [a for a in imgSettings['lxc']['images']]
     gret = {'rets': {}, 'result': True}
     if sync:
-        mc_lxc.sync_image_reference_containers(
+        __salt['mc_cloud_lxc.sync_image_reference_containers'](
             imgSettings, gret,
-            __salt__from_exec=_s,
-            _cmd_runner=_run, force=True)
+            force=True)
     for img in images:
         imgdata = imgSettings['lxc']['images'][img]
         iflavors = copy.deepcopy(flavors)
@@ -668,7 +664,8 @@ def sf_release(images=None, flavors=None, sync=True):
     return gret
 
 
-clean_lxc_config = mc_lxc.clean_lxc_config
+def clean_lxc_config(*args, **kwargs):
+    return __salt__['mc_cloud_lxc.clean_lxc_config'](*args, **kwargs)
 
 
 def mount_container(path, **kwargs):
