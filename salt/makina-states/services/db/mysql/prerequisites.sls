@@ -51,3 +51,35 @@ mysql-salt-pythonmysqldb-pip-install-module-reloader:
       - pip: mysql-salt-pythonmysqldb-pip-install
     - watch_in:
       - mc_proxy: mysql-post-install-hook
+
+mysqlservice-systemd-override-dir:
+  file.directory:
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 775
+    - names:
+      - /etc/systemd/system/mysql.service.d
+    - watch_in:
+      - mc_proxy: mysql-post-install-hook
+
+mysqlservice-systemd-config-override:
+  file.managed:
+    - user: root
+    - group: root
+    - makedirs: true
+    - mode: 664
+    - name: /etc/systemd/system/mysql.service.d/override.conf
+    - source: salt://makina-states/files/etc/systemd/system/overrides.d/mysql.conf
+    - template: 'jinja'
+    - require:
+      - pkg: makina-mysql-pkgs
+      - file: mysqlservice-systemd-override-dir
+    - watch_in:
+      - mc_proxy: mysql-post-install-hook
+
+mysqlservice-systemd-reload-conf:
+  cmd.run:
+    - name: "systemctl daemon-reload"
+    - onchanges:
+      - file: mysqlservice-systemd-config-override

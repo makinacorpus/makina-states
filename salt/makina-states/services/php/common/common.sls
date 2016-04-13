@@ -59,6 +59,40 @@ php-cli:
       - mc_proxy: makina-php-pre-inst
     - watch_in:
       - mc_proxy: makina-php-post-inst
+
+phpservice-systemd-override-dir:
+  file.directory:
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 775
+    - names:
+      - /etc/systemd/system/{{ phpSettings.service }}.service.d
+    - require:
+      - mc_proxy: makina-php-post-inst
+
+phpservice-systemd-config-override:
+  file.managed:
+    - user: root
+    - group: root
+    - makedirs: true
+    - mode: 664
+    - name: /etc/systemd/system/{{ phpSettings.service }}.service.d/override.conf
+    - source: salt://makina-states/files/etc/systemd/system/overrides.d/php.conf
+    - template: 'jinja'
+    - require:
+      - mc_proxy: makina-php-post-inst
+      - file: phpservice-systemd-override-dir
+    - watch_in:
+      - mc_proxy: makina-php-pre-conf
+
+phpservice-systemd-reload-conf:
+  cmd.run:
+    - name: "systemctl daemon-reload"
+    - onchanges:
+      - file: phpservice-systemd-config-override
+
+
 makina-php-timezone:
   file.managed:
     - user: root
