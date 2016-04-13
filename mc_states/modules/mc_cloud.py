@@ -752,6 +752,5 @@ def get_cloud_settings():
     if from_extpillar:
         cloudSettings = _s['mc_cloud.extpillar_settings']()
     else:
-        import pdb;pdb.set_trace()  ## Breakpoint ##
         cloudSettings = _s['mc_cloud.settings']()
     return cloudSettings
