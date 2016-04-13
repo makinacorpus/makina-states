@@ -33,7 +33,7 @@ makina-php-repos:
     - watch:
       - mc_proxy: makina-php-pre-repo
     - watch_in:
-      - mc_proxy: makina-php-repos:
+      - mc_proxy: makina-php-repos
 {% else %}
 makina-php-repos:
   file.absent:
