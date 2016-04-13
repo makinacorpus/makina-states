@@ -73,7 +73,14 @@ except ImportError:
     HAS_CHARDET = False
 
 
+_marker = object()
 NO_RETURN = '__CALLER_NO_RETURN__'
+NORETURN_RETCODE = 5
+NODATA_RETCODE = 6
+NODICT_RETCODE = 7
+NO_INNER_DICT_RETCODE = 8
+STATE_RET_IS_NOT_A_DICT_RETCODE = 11
+STATE_FAILED_RETCODE = 9
 TIMEOUT_RETCODE = -666
 NO_RETCODE = -668
 log = logging.getLogger(__name__)
@@ -161,15 +168,18 @@ def terminate(process):
 
 def do_validate_states(data):
     if not data:
-        return 1
+        return NODATA_RETCODE
     if not isinstance(data, dict):
-        return 1
+        return NODICT_RETCODE
     for i, rdata in data.items():
         if not isinstance(rdata, dict):
-            return 1
+            return NO_INNER_DICT_RETCODE
         for j, statedata in rdata.items():
-            if statedata.get('result', None) is False:
-                return 1
+            if not isinstance(statedata, dict):
+                return STATE_RET_IS_NOT_A_DICT_RETCODE
+            elif statedata.get('result', None) is False:
+                return STATE_FAILED_RETCODE
+    return 0
 
 
 def failed(ret, error=None):
@@ -351,9 +361,64 @@ def cmd(args,
            'stderr': stderr.getvalue()}
     failed(ret, error=error)
     if verbose:
-        # repeat stderr to avoid missing stuff
-        # drowned  in the middle even in VT mode
         print(format_output_and_error(ret))
+    return ret
+
+
+def complex_json_output_simple(string):
+    '''
+    Extract json output from stdout (string parse variant)
+
+    if states garbled the stdout, but we still have a result like::
+
+        ...command gargage output...
+        {"local": true}
+
+    we will try to remove the starting output and so extract
+    the result from the output
+    '''
+    if not isinstance(string, six.string_types):
+        return string
+    ret = _marker
+    for pos, i in enumerate(string):
+        if i == '{':
+            try:
+                ret = json.loads(string[pos:])
+                break
+            except ValueError:
+                pass
+    if ret is _marker:
+        raise ValueError('Cant extract json output')
+    return ret
+
+
+def complex_json_output_multilines(string):
+    '''
+    Extract json output from stdout (lines parse variant)
+
+    if states garbled the stdout, but we still have a result like::
+
+        ...command gargage output...
+        {"local": true}
+
+    we will try to remove the starting output and so extract
+    the result from the output
+    '''
+    if not isinstance(string, six.string_types):
+        return string
+    ret = _marker
+    lines = string.splitlines()
+    for pos, line in enumerate(lines):
+        sline = magicstring(line.strip())
+        if sline.startswith('{'):
+            try:
+                ret = json.loads(''.join([magicstring(a)
+                                          for a in lines[pos:]]))
+                break
+            except ValueError:
+                pass
+    if ret is _marker:
+        raise ValueError('Cant extract json output')
     return ret
 
 
@@ -409,28 +474,39 @@ def call(func,
               no_quote=no_quote, sleep_interval=sleep_interval,
               stdin=stdin, stderr=stderr, stdout=stdout)
     decoders = {'json': json_load}
-    encoders = {
-        'json': (
-            lambda x: json_dump(
-                x, pretty=True))}
+    encoders = {'json': (lambda x: json_dump(x, pretty=True))}
     ret['salt_fun'] = func
     ret['salt_args'] = args
     ret['salt_out'] = None
     if out and out in decoders and ret['retcode'] == 0:
         try:
-            out = decoders[out](ret['stdout'])
-            if (
-                do_validate_states is not False and
-                func in ['state.highstate', 'state.sls']
-            ):
-                do_validate_states(out)
-            if isinstance(out, dict):
-                if [a for a in out] == ['local']:
-                    out = out['local']
-            ret['salt_out'] = out
+            dout = None
+            try:
+                dout = decoders[out](ret['stdout'])
+            except (KeyError, ValueError):
+                if out == 'json':
+                    try:
+                        dout = complex_json_output_multilines(
+                            ret['stdout'])
+                    except (KeyError, ValueError):
+                        dout = complex_json_output_simple(
+                            ret['stdout'])
+                if dout is None:
+                    raise
+            if isinstance(dout, dict):
+                if (
+                    validate_states is not False and
+                    func in ['state.highstate', 'state.sls']
+                ):
+                    src = do_validate_states(dout)
+                    if src and (ret['retcode'] == 0):
+                        ret['retcode'] = src
+                if [a for a in dout] == ['local']:
+                    dout = dout['local']
+            ret['salt_out'] = dout
         except (KeyError, ValueError):
             # no json output is equivalent as a failed call
-            ret['retcode'] = 1
+            ret['retcode'] = NORETURN_RETCODE
             if not ret['error']:
                 ret['error'] = ''
             ret['error'] += '\nfailed to decode payload'
