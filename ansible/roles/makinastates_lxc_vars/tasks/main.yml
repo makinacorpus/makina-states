@@ -1,6 +1,7 @@
 ---
 - name: lxc - init - vars
   tags: makinastates_lxc_vars
+  register: makinastates_lxc_vars
   debug:
     msg:
       lxc_container_name: "{{lxc_container_name}}"
