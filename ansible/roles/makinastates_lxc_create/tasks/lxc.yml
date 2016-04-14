@@ -1,18 +1,18 @@
 ---
-- include: lxc.yml
-  # map computation from lxcvar role back to clean variables
-  vars:
-    lxc_container_name: "{{makinastates_lxc_vars.lxc_container_name}}"
-    lxc_backing_store: "{{makinastates_lxc_vars.lxc_backing_store}}"
-    lxc_template: "{{makinastates_lxc_vars.lxc_template}}"
-    lxc_template_options: "{{makinastates_lxc_vars.lxc_template_options}}"
-    lxc_from_container: "{{makinastates_lxc_vars.lxc_container_name}}"
-    lxc_clone_snapshot: "{{makinastates_lxc_vars.lxc_clone_snapshot}}"
-    lxc_eth0_mac: "{{makinastates_lxc_vars.lxc_eth0_mac}}"
-    lxc_eth0_bridge: "{{makinastates_lxc_vars.lxc_eth0_bridge}}"
-    lxc_eth0_ip: "{{makinastates_lxc_vars.lxc_eth0_ip}}"
-    lxc_eth0_gateway: "{{makinastates_lxc_vars.lxc_eth0_gateway}}"
-    lxc_eth1_mac: "{{makinastates_lxc_vars.lxc_eth1_mac}}"
-    lxc_eth1_bridge: "{{makinastates_lxc_vars.lxc_eth1_bridge}}"
-    lxc_eth1_ip: "{{makinastates_lxc_vars.lxc_eth1_ip}}"
-    lxc_eth1_gateway: "{{makinastates_lxc_vars.lxc_eth1_gateway}}"
+- include: from_template.yml
+  when: lxc_from_container != None
+- include: from_image.yml
+  when: lxc_from_container != None
+- copy: {src: '~/.ssh/id_rsa.pub', dest: '/tmp/ansible_master.pub',  mode: 644}
+- lxc_container:
+    container_ommands : |
+      set -ex
+      if [ ! -d /root/.ssh ];then mkdir -p /root/.ssh;fi
+      if [ ! -e /root/.ssh/authorized_keys ];then touch /root/.ssh/authorized_keys;fi
+      if lsb_release -i -s | egrep -iq "ubuntu|debian";then
+        apt-get install -y python
+      fi
+- shell: |
+      cat /tmp/ansible_master.pub | \
+        lxc-attach -n {ame}} -- tee /root/.ssh/authorized_keys
+ 
