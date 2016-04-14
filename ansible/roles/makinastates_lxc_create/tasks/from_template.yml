@@ -1,7 +1,6 @@
 ---
-- copy: src=~/.ssh/id_rsa.pub dest=/tmp/ansible_master.pub mode=644
 - lxc_container:
-    name: "{{lxc_name}}"
+    name: "{{lxc_container_name}}"
     backing_store: "{{lxc_backing_store}}"
     template: "{{lxc_template}}"
     template_options: "{{lxc_template_options}}"
@@ -19,3 +18,4 @@
       - "{{bool(lxc_eth1_mac)|ternary('lxc.network.hwaddr = {0}'.format(lxc_eth1_mac), '#')}}"
       - "{{bool(lxc_eth1_ip)|ternary('lxc.network.ipv4 = {0}'.format(lxc_eth1_ip), '#')}}"
       - "{{bool((lxc_eth1_mac or lxc_eth1_ip or lxc_eth1_bridge) and lxc_eth1_gateway)|ternary('lxc.network.gateway = {0}'.format(lxc_eth1_gateway), '#')}}"
+
