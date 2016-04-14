@@ -1,6 +1,6 @@
 ---
 - name: lxc config (from container)
-  lxc_container:
+  ms_lxc_container:
     name: "{{lxc_name}}"
     clone_name: "{{lxc_from_container}}"
     backing_store: "{{lxc_backing_store}}"

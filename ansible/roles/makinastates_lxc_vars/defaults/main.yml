@@ -1,6 +1,7 @@
 ---
 hosts: all
 
+lxc_path: /var/lib/lxc
 lxc_container_name: testcontainer
 lxc_pip: "/usr/bin/pip"
 lxc_backing_store: dir
