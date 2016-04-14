@@ -1,0 +1,72 @@
+---
+- hosts: "{{compute_node}}"
+  roles:
+    - role: 'makinastates_create_container'
+      lxc_container_name: "{{lxc_container_name}}"
+      lxc_backing_store: |
+          {{salt_pillar.get('makina-states.cloud.vms.vms'. {}).get(lxc_container_name, {}).get(
+            'profile', {}).get(
+              'backing', lxc_backing_store)}}
+      lxc_template: |
+          {{salt_pillar.get('makina-states.cloud.vms.vms'. {}).get(lxc_container_name, {}).get(
+            'image', lxc_template)}}
+      lxc_template_options: |
+          {{salt_pillar.get('makina-states.cloud.vms.vms'. {}).get(lxc_container_name, {}).get(
+            'image_options', lxc_template_options)}}
+      lxc_from_container: |
+          {{salt_pillar.get('makina-states.cloud.vms.vms'. {}).get(lxc_container_name, {}).get(
+            'from_container', lxc_from_container)}}
+      lxc_clone_snapshot: |
+          {{salt_pillar.get('makina-states.cloud.vms.vms'. {}).get(lxc_container_name, {}).get(
+            'clone_snapshot', lxc_clone_snapshot)}}
+      lxc_eth0_mac: |
+          {{salt_pillar.get('makina-states.cloud.vms.vms'. {}).get(lxc_container_name, {}).get(
+            'network_profile', {}).get(
+              'eth0', {}).get(
+                'hwaddr', lxc_eth0_mac)}}
+      lxc_eth0_bridge: |
+          {{salt_pillar.get('makina-states.cloud.vms.vms'. {}).get(lxc_container_name, {}).get(
+            'network_profile', {}).get(
+              'eth0', {}).get(
+                'link', lxc_eth0_bridge)}}
+      lxc_eth0_ip: |
+          {{salt_pillar.get('makina-states.cloud.vms.vms'. {}).get(lxc_container_name, {}).get(
+            'network_profile', {}).get(
+              'eth0', {}).get(
+                'link', lxc_eth0_ip)}}
+      lxc_eth0_gateway: |
+          {{salt_pillar.get('makina-states.cloud.vms.vms'. {}).get(lxc_container_name, {}).get(
+            'network_profile', {}).get(
+              'eth0', {}).get(
+                'gateway', lxc_eth1_gateway)}}
+      lxc_eth1_mac: |
+          {{salt_pillar.get('makina-states.cloud.vms.vms'. {}).get(lxc_container_name, {}).get(
+             'network_profile', {}).get(
+              'eth0', {}).get(
+                'hwaddr', lxc_eth1_mac)}}
+      lxc_eth1_bridge: |
+          {{salt_pillar.get('makina-states.cloud.vms.vms'. {}).get(lxc_container_name, {}).get(
+            'network_profile', {}).get(
+              'eth1', {}).get(
+                'link', lxc_eth1_bridge)}}
+      lxc_eth1_ip: |
+          {{salt_pillar.get('makina-states.cloud.vms.vms'. {}).get(lxc_container_name, {}).get(
+            'network_profile', {}).get(
+              'eth1', {}).get(
+                'hwaddr', lxc_eth1_ip)}}
+      lxc_eth1_gateway: |
+          {{salt_pillar.get('makina-states.cloud.vms.vms'. {}).get(lxc_container_name, {}).get(
+            'network_profile', {}).get(
+              'eth1', {}).get(
+                'gateway', lxc_eth1_gateway)}}
+
+- hosts: "{{lxc_container_name}}"
+  roles:
+    - role: makinastates
+      makinastates_nodetype: lxccontainer
+  vars:
+    ansible_ssh_common_args: |
+      -o ProxyCommand="ssh -W %h:%p -q {{hostvars[compute_node]['ansible_user']}}@{{hostvars[compute_node]['ansible_host'] -p {{hostvars[compute_node]['ansible_port']}}"
+
+# see ansible/roles/makinastates_create_container/defaults/main.yml
+# at least we need 'lxc_container_name'

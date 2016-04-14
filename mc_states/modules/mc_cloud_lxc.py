@@ -98,6 +98,7 @@ def vt_default_settings(cloudSettings, imgSettings):
                 'fstab': None,
                 'vgname': 'lxc',
                 'lvname': None,
+                'backing': backing,
                 'volumes': [
                     # non implemented yet in any drivers
                     # {"name": "w", "kind": "host",

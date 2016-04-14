@@ -1,0 +1,22 @@
+---
+hosts: all
+
+lxc_container_name: testcontainer
+lxc_backing_store: dir
+
+lxc_template: ubuntu
+lxc_template_options: '-r xenial --mirror "http://mirror.ovh.net/ftp.ubuntu.com/"'
+
+lxc_from_container: null
+lxc_clone_snapshot: null
+
+lxc_eth0_mac: null
+#lxc_eth0_mac: 'aa:bb:cc:dd:ee:ff'
+lxc_eth0_bridge: lxcbr1
+lxc_eth0_ip: null
+lxc_eth0_gateway: null
+#lxc_eth0_ip: '1.2.3.4/32'
+lxc_eth1_mac: null
+lxc_eth1_bridge: null
+lxc_eth1_ip: null
+lxc_eth1_gateway: null
