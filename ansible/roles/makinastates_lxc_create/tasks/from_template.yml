@@ -1,21 +1,24 @@
 ---
-- lxc_container:
+- name: lxc config (from template script)
+  lxc_container:
     name: "{{lxc_container_name}}"
     backing_store: "{{lxc_backing_store}}"
-    template: "{{lxc_template}}"
+    template: "{{lxc_template|ternary(lxc_template, none)}}"
     template_options: "{{lxc_template_options}}"
     container_config:
       - "lxc.start.auto = 1"
       - "lxc.network.type = veth"
       - "lxc.network.name = eth0"
       - "lxc.network.flags = up"
-      - "{{bool(lxc_eth0_bridge)|ternary('lxc.network.link = {0}'.format(lxc_eth0_bridge), '#')}}"
-      - "{{bool(lxc_eth0_gateway)|ternary('lxc.network.gateway = {0}'.format(lxc_eth0_gateway), '#')}}"
-      - "{{bool(lxc_eth0_mac)|ternary('lxc.network.hwaddr = {0}'.format(lxc_eth0_mac), '#')}}"
-      - "{{bool(lxc_eth1_mac or lxc_eth1_ip or lxc_eth1_bridge)|ternary('lxc.network.name = eth1', '#')}}"
-      - "{{bool(lxc_eth1_mac or lxc_eth1_ip or lxc_eth1_bridge)|ternary('lxc.network.flags = up', '#')}}"
-      - "{{bool(lxc_eth1_bridge)|ternary('lxc.network.link = {0}'.foramt(lxc_eth1_bridge), '#')}}"
-      - "{{bool(lxc_eth1_mac)|ternary('lxc.network.hwaddr = {0}'.format(lxc_eth1_mac), '#')}}"
-      - "{{bool(lxc_eth1_ip)|ternary('lxc.network.ipv4 = {0}'.format(lxc_eth1_ip), '#')}}"
-      - "{{bool((lxc_eth1_mac or lxc_eth1_ip or lxc_eth1_bridge) and lxc_eth1_gateway)|ternary('lxc.network.gateway = {0}'.format(lxc_eth1_gateway), '#')}}"
+      - "{{(lxc_eth0_bridge)|ternary('lxc.network.link = {0}'.format(lxc_eth0_bridge), '#')}}"
+      - "{{(lxc_eth0_gateway)|ternary('lxc.network.gateway = {0}'.format(lxc_eth0_gateway), '#')}}"
+      - "{{(lxc_eth0_mac)|ternary('lxc.network.hwaddr = {0}'.format(lxc_eth0_mac), '#')}}"
+      - "{{(lxc_eth1_mac or lxc_eth1_ip or lxc_eth1_bridge)|ternary('lxc.network.name = eth1', '#')}}"
+      - "{{(lxc_eth1_mac or lxc_eth1_ip or lxc_eth1_bridge)|ternary('lxc.network.flags = up', '#')}}"
+      - "{{(lxc_eth1_bridge)|ternary('lxc.network.link = {0}'.format(lxc_eth1_bridge), '#')}}"
+      - "{{(lxc_eth1_mac)|ternary('lxc.network.hwaddr = {0}'.format(lxc_eth1_mac), '#')}}"
+      - "{{(lxc_eth1_ip)|ternary('lxc.network.ipv4 = {0}'.format(lxc_eth1_ip), '#')}}"
+      - "{{((lxc_eth1_mac or lxc_eth1_ip or lxc_eth1_bridge) and lxc_eth1_gateway)|ternary('lxc.network.gateway = {0}'.format(lxc_eth1_gateway), '#')}}"
+  tags: makinastates_lxc_create,makinastates_lxc_create_lxc
+
 

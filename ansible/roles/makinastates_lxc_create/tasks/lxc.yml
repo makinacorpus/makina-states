@@ -1,10 +1,30 @@
 ---
+- apt: name={{item}}
+  with_items:
+    - python-pip
+    - git
+    - build-essential
+    - python-dev
+    - lxc-dev
+  tags: makinastates_lxc_create,makinastates_lxc_create_prereq
+- pip:
+    name: "git+https://github.com/lxc/python2-lxc.git#egg=python2-lxc"
+    editable: true
+    executable: "{{lxc_pip}}"
+  tags: makinastates_lxc_create,makinastates_lxc_create_prereq
+- copy:
+    src: '~/.ssh/id_rsa.pub'
+    dest: '/tmp/ansible_master.pub'
+    mode: 644
+  tags: makinastates_lxc_create
+- debug:
+    msg: {foo: "{{lxc_from_container}}"}
 - include: from_template.yml
-  when: lxc_from_container != None
+  when: 'lxc_from_container == ""'
 - include: from_image.yml
-  when: lxc_from_container != None
-- copy: {src: '~/.ssh/id_rsa.pub', dest: '/tmp/ansible_master.pub',  mode: 644}
-- lxc_container:
+  when: 'lxc_from_container != ""'
+- name: container basic prereqs
+  lxc_container:
     container_ommands : |
       set -ex
       if [ ! -d /root/.ssh ];then mkdir -p /root/.ssh;fi
@@ -12,7 +32,9 @@
       if lsb_release -i -s | egrep -iq "ubuntu|debian";then
         apt-get install -y python
       fi
-- shell: |
+  tags: makinastates_lxc_create
+- name: install ssh key
+  shell: |
       cat /tmp/ansible_master.pub | \
-        lxc-attach -n {ame}} -- tee /root/.ssh/authorized_keys
- 
+        lxc-attach -n {{lxc_container_name}} -- tee /root/.ssh/authorized_keys
+  tags: makinastates_lxc_create,makinastates_lxc_create_ssh_key

@@ -8,4 +8,4 @@
   roles: [{role: makinastates, makinastates_nodetype: lxccontainer}]
   vars:
     ansible_ssh_common_args: |
-      -o ProxyCommand="ssh -W %h:%p -q {{hostvars[compute_node]['ansible_user']}}@{{hostvars[compute_node]['ansible_host'] -p {{hostvars[compute_node]['ansible_port']}}"
+      -o ProxyCommand="ssh -W %h:%p -q {{hostvars[compute_node]['ansible_user']}}@{{hostvars[compute_node]['ansible_host']}} -p {{hostvars[compute_node]['ansible_port']}}"

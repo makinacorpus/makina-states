@@ -1,9 +1,11 @@
 ---
-- lxc_container:
+- name: lxc config (from container)
+  lxc_container:
     name: "{{lxc_name}}"
     clone_name: "{{lxc_from_container}}"
     backing_store: "{{lxc_backing_store}}"
     clone_snapshot: "{{lxc_backing_store in ['overlay'] | ternary(
                         True, bool(lxc_clone_snapshot)}}"
     container_config: ########## COPY FROM OTHER
+  tags: makinastates_lxc_create,makinastates_lxc_create_lxc
 
