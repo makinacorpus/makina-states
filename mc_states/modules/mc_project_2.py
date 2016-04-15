@@ -282,11 +282,13 @@ def _sls_exec(name, cfg, sls):
                 __context__['retcode'] = 3
                 is_really_valid = False
                 ret['result'] = False
-    if (not is_really_valid) and (__context__['retcode'] > 0):
+    if failed or (not is_really_valid) and (__context__['retcode'] > 0):
         ret['result'] = False
         body = ''
         if isinstance(cret, list):
             body += indent(cret)
+        if "No matching sls found" in body:
+            body += "\nYou may have a SLS variable error, check log"
         _append_comment(ret,
                         'Running {1} for {0} failed'.format(name, sls),
                         body=body)
