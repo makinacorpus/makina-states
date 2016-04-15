@@ -736,7 +736,8 @@ def registry():
             'generic': {'active': False},
             'lxc': {'active': False},
             'kvm': {'active': False},
-            'saltify': {'active': False}})
+            #'saltify': {'active': False}
+        })
     return _registry()
 
 
