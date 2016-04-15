@@ -2486,9 +2486,12 @@ def list_projects():
                         'project/.salt/PILLAR.sample'),
                 }
         for pj in [a for a in cfgs]:
-            if True in [not os.path.exists(a[1])
-                        for a in six.iteritems(cfgs[pj])]:
-                cfgs.pop(pj, None)
+            for a in six.iteritems(cfgs[pj]):
+                if 'wired' in a[0]:
+                    continue
+                if not os.path.exists(a[1]):
+                    cfgs.pop(pj, None)
+                    break
     return cfgs
 
 
