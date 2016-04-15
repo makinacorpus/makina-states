@@ -242,6 +242,7 @@ def settings():
                 'open_file_cache_valid': '6m',
                 'configs': {
                     '/etc/nginx/drupal_cron_allowed_hosts.conf': {},
+                    '/etc/nginx/fastcgi_fpm_symfony.conf': {},
                     '/etc/nginx/fastcgi_fpm_drupal.conf': {},
                     '/etc/nginx/fastcgi_fpm_drupal_params.conf': {},
                     '/etc/nginx/fastcgi_fpm_drupal_private_files.conf': {},
