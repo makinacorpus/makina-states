@@ -1,24 +1,5 @@
 ---
-- name: lxc create test (from template script)
-  shell: |
-         lxc-ls --fancy |grep -v ^NAME|awk '{print $1}'|egrep -q "^{{lxc_container_name}}$";echo $?
-  register: makinastates_lxc_create_lxc_test
-  tags: makinastates_lxc_create,makinastates_lxc_create_lxc 
 - name: lxc create (from template script)
   shell: "lxc-create -t {{lxc_template}} -n {{lxc_container_name}} -B {{lxc_backing_store}} -- {{lxc_template_options}}"
   when: 'makinastates_lxc_create_lxc_test.stdout != "0"' 
-  tags: makinastates_lxc_create,makinastates_lxc_create_lxc
-- name: lxc config (from template script)
-  template:
-    src: "../templates/lxc.conf"
-    dest: "{{lxc_path}}/{{lxc_container_name}}/config"
-    mode: 600
-  notify: "RestartContainer{{lxc_container_name}}"
-  tags: makinastates_lxc_create,makinastates_lxc_create_lxc
-- name: "StartContainer{{lxc_container_name}}"
-  shell: |
-         set -ex
-         if ! lxc-ls --fancy|egrep "^{{lxc_container_name}} "|awk '{print $2}'|grep -qi running;then
-           lxc-start -d -n "{{lxc_container_name}}" 
-         fi
   tags: makinastates_lxc_create,makinastates_lxc_create_lxc

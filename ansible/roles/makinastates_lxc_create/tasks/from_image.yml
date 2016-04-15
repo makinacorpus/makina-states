@@ -1,11 +1,5 @@
 ---
-- name: lxc config (from container)
-  ms_lxc_container:
-    name: "{{lxc_name}}"
-    clone_name: "{{lxc_from_container}}"
-    backing_store: "{{lxc_backing_store}}"
-    clone_snapshot: "{{lxc_backing_store in ['overlay'] | ternary(
-                        True, bool(lxc_clone_snapshot)}}"
-    container_config: ########## COPY FROM OTHER
+- name: lxc clone (from container)
+  shell: "lxc-clone -o {{lxc_from_container}} -n {{lxc_container_name}} -B {{lxc_backing_store}}"
+  when: 'makinastates_lxc_create_lxc_test.stdout != "0"'
   tags: makinastates_lxc_create,makinastates_lxc_create_lxc
-

@@ -19,22 +19,61 @@
   tags: makinastates_lxc_create
 - debug:
     msg: {foo: "{{lxc_from_container}}"}
+- name: lxc create test (from template script)
+  shell: |
+         lxc-ls --fancy |grep -v ^NAME|awk '{print $1}'|egrep -q "^{{lxc_container_name}}$";echo $?
+  register: makinastates_lxc_create_lxc_test
+  tags: makinastates_lxc_create,makinastates_lxc_create_lxc
 - include: from_template.yml
   when: 'lxc_from_container == ""'
 - include: from_image.yml
   when: 'lxc_from_container != ""'
+- name: lxc config (from template script)
+  template:
+    src: "../templates/lxc.conf"
+    dest: "{{lxc_path}}/{{lxc_container_name}}/config"
+    mode: 600
+  notify: "RestartContainer{{lxc_container_name}}"
+  tags: makinastates_lxc_create,makinastates_lxc_create_lxc
+- name: "StartContainer{{lxc_container_name}}"
+  shell: |
+         set -ex
+         if ! lxc-ls --fancy|egrep "^{{lxc_container_name}} "|awk '{print $2}'|grep -qi running;then
+           lxc-start -d -n "{{lxc_container_name}}"
+         fi
+  tags: makinastates_lxc_create,makinastates_lxc_create_lxc
 - name: container basic prereqs
   lxc_container:
-    container_ommands : |
-      set -ex
-      if [ ! -d /root/.ssh ];then mkdir -p /root/.ssh;fi
-      if [ ! -e /root/.ssh/authorized_keys ];then touch /root/.ssh/authorized_keys;fi
-      if lsb_release -i -s | egrep -iq "ubuntu|debian";then
-        apt-get install -y python
-      fi
+    name: "{{lxc_container_name}}"
+    container_command : |
   tags: makinastates_lxc_create
-- name: install ssh key
+- name: lxc prereq script
+  template:
+    src: '../templates/prereqs.sh'
+    dest: "{{lxc_path}}/{{lxc_container_name}}/prereqs.sh"
+    mode: 755
+- name: lxc inner prereq script
+  template:
+    src: '../templates/init.sh'
+    dest: "{{lxc_path}}/{{lxc_container_name}}/init.sh"
+    mode: 755
+  tags: makinastates_lxc_create,makinastates_lxc_create_prereq
+- name: lxc prereq
+  shell: "{{lxc_path}}/{{lxc_container_name}}/prereqs.sh"
+  tags: makinastates_lxc_create,makinastates_lxc_create_prereq
+- name: get ip
   shell: |
-      cat /tmp/ansible_master.pub | \
-        lxc-attach -n {{lxc_container_name}} -- tee /root/.ssh/authorized_keys
+      lxc-attach -n {{lxc_container_name}} -- ip addr show eth0|grep inet|grep -v :|awk '{print $2}'|sed "s|/.*||g"
+  register: makinastates_lxc_create_ip
   tags: makinastates_lxc_create,makinastates_lxc_create_ssh_key
+- name: show ip
+  debug: {msg: "{{makinastates_lxc_create_ip}}"}
+
+# during bootstrap, connect to the container via the Bastion method
+# and not via the iptables redirections
+- add_host:
+    name: "{{lxc_container_name}}"
+    ansible_host: "{{makinastates_lxc_create_ip.stdout}}"
+    ansible_port: 22
+    ansible_ssh_common_args: |
+      -o ProxyCommand="ssh -W %h:%p -q {{hostvars[compute_node]['ansible_user']}}@{{hostvars[compute_node]['ansible_host']}} -p {{hostvars[compute_node]['ansible_port']}}"
