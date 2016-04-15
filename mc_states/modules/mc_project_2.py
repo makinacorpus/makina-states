@@ -228,9 +228,9 @@ def remove_path(path):
         print "'%s' was asked to be deleted but does not exists." % path
         print
 
-
 def _sls_exec(name, cfg, sls):
     # be sure of the current project beeing loaded in the context
+    _o = __opts__
     set_project(cfg)
     cfg = get_project(name)
     ret = _get_ret(name)
@@ -241,9 +241,12 @@ def _sls_exec(name, cfg, sls):
         __salt__['mc_utils.copy_dunder'](__pillar__))
     # load an inner execer for our custom slses
     try:
-        __salt__['mc_utils.add_stuff_to_opts'](__opts__)
+        __salt__['mc_utils.add_stuff_to_opts'](_o)
+        cret = __salt__['state.sls'].__globals__.update({
+            '__opts__':  _o})
         cret = __salt__['state.sls'](sls.format(**cfg),
-                                     concurrent=True, pillar=pillar)
+                                     concurrent=True,
+                                     pillar=pillar)
     finally:
         __salt__['mc_utils.remove_stuff_from_opts'](__opts__)
     ret['return'] = cret
