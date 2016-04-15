@@ -1248,3 +1248,17 @@ def json_dump(*args, **kw):
     Retro compat to :meth:`mc_states.modules.mc_dump.old_json_dump`
     '''
     return __salt__['mc_dumper.json_dump'](*args, **kw)
+
+def pdb(**kw):
+    '''
+    Add a breakpoint
+    '''
+    import pdb
+    pdb.set_trace()
+
+def epdb(**kw):
+    '''
+    add a network attachable breakpoint
+    '''
+    import epdb
+    epdb.serve()
