@@ -2795,8 +2795,7 @@ def report():
         ips = 'IP(s): ' + ', '.join(ips) + '\n'
     if ips.endswith(','):
         ips = ips[:-1]
-    if os.path.exists(pt):
-        ret += '''
+    ret += '''
 {id}:
 {ips}
 SSH Config:
@@ -2806,7 +2805,10 @@ User root
 ServerAliveInterval 5
 
 '''.format(id=target, ips=ips, dconf=dconf)
-    projects = os.listdir(pt)
+    if os.path.exists(pt):
+        projects = os.listdir(pt)
+    else:
+        projects = []
     if projects:
         ret += 'Projects:'
         for pj in projects:
