@@ -1,0 +1,2 @@
+---
+- include: ../tasks/register_ip.yml

@@ -1,0 +1,4 @@
+---
+- name: "Task RestartContainer{{lxc_container_name}}"
+  shell: "{{lxc_path}}/{{lxc_container_name}}/manage.sh restart"
+  tags: makinastates_lxc_create,makinastates_lxc_create_restart

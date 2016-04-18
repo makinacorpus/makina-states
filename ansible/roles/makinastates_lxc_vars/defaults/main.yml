@@ -7,7 +7,9 @@ lxc_pip: "/usr/bin/pip"
 lxc_backing_store: dir
 
 lxc_template: ubuntu
-lxc_template_options: '-r xenial --mirror "http://mirror.ovh.net/ftp.ubuntu.com/"'
+lxc_os_release: xenial
+lxc_os_mirror: "http://mirror.ovh.net/ftp.ubuntu.com/"
+lxc_template_options: '-r {lxc_os_release} --mirror "{lxc_os_mirror}"'
 
 lxc_from_container: null
 lxc_clone_snapshot: null

@@ -1,25 +1,11 @@
 ---
-# we do not use anymore ansible/lxc_container
-# - apt: name={{item}}
-#   with_items:
-#     - python-pip
-#     - git
-#     - build-essential
-#     - python-dev
-#     - lxc-dev
-#   tags: makinastates_lxc_create,makinastates_lxc_create_prereq
-# - pip:
-#     name: "git+https://github.com/lxc/python2-lxc.git#egg=python2-lxc"
-#     editable: true
-#     executable: "{{lxc_pip}}"
-#   tags: makinastates_lxc_create,makinastates_lxc_create_prereq
 - copy:
     src: '~/.ssh/id_rsa.pub'
     dest: '/tmp/ansible_master.pub'
     mode: 644
   tags: makinastates_lxc_create
-- debug:
-    msg: {foo: "{{lxc_from_container}}"}
+- debug: {msg: {foo: "{{lxc_from_container}}"}}
+  tags: makinastates_lxc_create
 - name: lxc create test (from template script)
   shell: |
          lxc-ls --fancy |grep -v ^NAME|awk '{print $1}'|egrep -q "^{{lxc_container_name}}$";echo $?
@@ -27,14 +13,18 @@
   tags: makinastates_lxc_create,makinastates_lxc_create_lxc
 - include: from_template.yml
   when: 'lxc_from_container == ""'
+  tags: makinastates_lxc_create,makinastates_lxc_create_lxc_bare
 - include: from_image.yml
   when: 'lxc_from_container != ""'
+  tags: makinastates_lxc_create,makinastates_lxc_create_lxc_bare
 - name: lxc config (from template script)
   template:
     src: "../templates/lxc.conf"
     dest: "{{lxc_path}}/{{lxc_container_name}}/config"
     mode: 600
-  notify: "RestartContainer{{lxc_container_name}}"
+  notify:
+    - "LXC RestartContainer {{lxc_container_name}}"
+    - "LXC Registerip {{lxc_container_name}}"
   tags: makinastates_lxc_create,makinastates_lxc_create_lxc
 - name: lxc mgmt scripts
   template:
@@ -52,13 +42,8 @@
 - name: lxc prereq
   shell: "{{lxc_path}}/{{lxc_container_name}}/prereqs.sh"
   tags: makinastates_lxc_create,makinastates_lxc_create_prereq
-- name: get ip
-  shell: |
-        lxc-attach -n {{lxc_container_name}} -- ip addr show eth0|grep inet|grep -v :|awk '{print $2}'|sed "s|/.*||g"
-  register: makinastates_lxc_create_ip
-  tags: makinastates_lxc_create,makinastates_lxc_create_ssh_key
-- name: show ip
-  debug: {msg: {eth0ip: "{{makinastates_lxc_create_ip}}"}}
+- include: register_ip.yml
+  tags: makinastates_lxc_create
 # during bootstrap, connect to the container via the Bastion method
 # and not via the iptables redirections
 - add_host:

@@ -1,3 +1,8 @@
 ---
-- name: "RestartContainer{{lxc_container_name}}"
-  shell: "{{lxc_path}}/{{lxc_container_name}}/manage.sh restart"
+- name: "LXC RestartContainer {{lxc_container_name}}"
+  include: ../tasks/restart.yml
+  tags: makinastates_lxc_create,makinastates_lxc_create_restart
+  notify: "LXC Registerip {{lxc_container_name}}"
+- name: "LXC Registerip {{lxc_container_name}}"
+  include: ../tasks/register_ip.yml
+  tags: makinastates_lxc_create,makinastates_lxc_create_restart

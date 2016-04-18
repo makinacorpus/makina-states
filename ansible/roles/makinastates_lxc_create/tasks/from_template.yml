@@ -1,5 +1,7 @@
 ---
 - name: lxc create (from template script)
-  shell: "lxc-create -t {{lxc_template}} -n {{lxc_container_name}} -B {{lxc_backing_store}} -- {{lxc_template_options}}"
-  when: 'makinastates_lxc_create_lxc_test.stdout != "0"' 
+  shell: |
+     lxc-create -t {{lxc_template}} -n {{lxc_container_name}} -B {{lxc_backing_store}} -- \
+      {{lxc_template_options.format(lxc_os_release=lxc_os_release,lxc_os_mirror=lxc_os_mirror)}}
+  when: 'makinastates_lxc_create_lxc_test.stdout != "0"'
   tags: makinastates_lxc_create,makinastates_lxc_create_lxc
