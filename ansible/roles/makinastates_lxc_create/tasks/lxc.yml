@@ -1,17 +1,18 @@
 ---
-- apt: name={{item}}
-  with_items:
-    - python-pip
-    - git
-    - build-essential
-    - python-dev
-    - lxc-dev
-  tags: makinastates_lxc_create,makinastates_lxc_create_prereq
-- pip:
-    name: "git+https://github.com/lxc/python2-lxc.git#egg=python2-lxc"
-    editable: true
-    executable: "{{lxc_pip}}"
-  tags: makinastates_lxc_create,makinastates_lxc_create_prereq
+# we do not use anymore ansible/lxc_container
+# - apt: name={{item}}
+#   with_items:
+#     - python-pip
+#     - git
+#     - build-essential
+#     - python-dev
+#     - lxc-dev
+#   tags: makinastates_lxc_create,makinastates_lxc_create_prereq
+# - pip:
+#     name: "git+https://github.com/lxc/python2-lxc.git#egg=python2-lxc"
+#     editable: true
+#     executable: "{{lxc_pip}}"
+#   tags: makinastates_lxc_create,makinastates_lxc_create_prereq
 - copy:
     src: '~/.ssh/id_rsa.pub'
     dest: '/tmp/ansible_master.pub'
@@ -42,11 +43,6 @@
            lxc-start -d -n "{{lxc_container_name}}"
          fi
   tags: makinastates_lxc_create,makinastates_lxc_create_lxc
-- name: container basic prereqs
-  lxc_container:
-    name: "{{lxc_container_name}}"
-    container_command : |
-  tags: makinastates_lxc_create
 - name: lxc prereq script
   template:
     src: '../templates/prereqs.sh'
@@ -68,7 +64,6 @@
   tags: makinastates_lxc_create,makinastates_lxc_create_ssh_key
 - name: show ip
   debug: {msg: "{{makinastates_lxc_create_ip}}"}
-
 # during bootstrap, connect to the container via the Bastion method
 # and not via the iptables redirections
 - add_host:
