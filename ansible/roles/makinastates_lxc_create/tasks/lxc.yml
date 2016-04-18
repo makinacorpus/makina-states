@@ -36,6 +36,7 @@
     - prereqs.sh
     - manage.sh
   tags: makinastates_lxc_create,makinastates_lxc_create_scripts
+- meta: flush_handlers
 - name: "StartContainer{{lxc_container_name}}"
   shell: "{{lxc_path}}/{{lxc_container_name}}/manage.sh start"
   tags: makinastates_lxc_create,makinastates_lxc_create_prereq
