@@ -36,34 +36,29 @@
     mode: 600
   notify: "RestartContainer{{lxc_container_name}}"
   tags: makinastates_lxc_create,makinastates_lxc_create_lxc
+- name: lxc mgmt scripts
+  template:
+    src: '../templates/{{item}}'
+    dest: "{{lxc_path}}/{{lxc_container_name}}/{{item}}"
+    mode: 755
+  with_items:
+    - init.sh
+    - prereqs.sh
+    - manage.sh
+  tags: makinastates_lxc_create,makinastates_lxc_create_scripts
 - name: "StartContainer{{lxc_container_name}}"
-  shell: |
-         set -ex
-         if ! lxc-ls --fancy|egrep "^{{lxc_container_name}} "|awk '{print $2}'|grep -qi running;then
-           lxc-start -d -n "{{lxc_container_name}}"
-         fi
-  tags: makinastates_lxc_create,makinastates_lxc_create_lxc
-- name: lxc prereq script
-  template:
-    src: '../templates/prereqs.sh'
-    dest: "{{lxc_path}}/{{lxc_container_name}}/prereqs.sh"
-    mode: 755
-- name: lxc inner prereq script
-  template:
-    src: '../templates/init.sh'
-    dest: "{{lxc_path}}/{{lxc_container_name}}/init.sh"
-    mode: 755
+  shell: "{{lxc_path}}/{{lxc_container_name}}/manage.sh start"
   tags: makinastates_lxc_create,makinastates_lxc_create_prereq
 - name: lxc prereq
   shell: "{{lxc_path}}/{{lxc_container_name}}/prereqs.sh"
   tags: makinastates_lxc_create,makinastates_lxc_create_prereq
 - name: get ip
   shell: |
-      lxc-attach -n {{lxc_container_name}} -- ip addr show eth0|grep inet|grep -v :|awk '{print $2}'|sed "s|/.*||g"
+        lxc-attach -n {{lxc_container_name}} -- ip addr show eth0|grep inet|grep -v :|awk '{print $2}'|sed "s|/.*||g"
   register: makinastates_lxc_create_ip
   tags: makinastates_lxc_create,makinastates_lxc_create_ssh_key
 - name: show ip
-  debug: {msg: "{{makinastates_lxc_create_ip}}"}
+  debug: {msg: {eth0ip: "{{makinastates_lxc_create_ip}}"}}
 # during bootstrap, connect to the container via the Bastion method
 # and not via the iptables redirections
 - add_host:

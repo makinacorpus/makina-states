@@ -1,8 +1,3 @@
 ---
 - name: "RestartContainer{{lxc_container_name}}"
-  shell: |
-         set -ex
-         if lxc-ls --fancy|egrep "^{{lxc_container_name}} "|awk '{print $2}'|grep -qi running;then
-           lxc-stop -k -n "{{lxc_container_name}}"
-         fi
-         lxc-start -d -n "{{lxc_container_name}}"
+  shell: "{{lxc_path}}/{{lxc_container_name}}/manage.sh restart"
