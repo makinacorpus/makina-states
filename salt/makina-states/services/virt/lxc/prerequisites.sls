@@ -1,7 +1,23 @@
-{%- set pkgssettings = salt['mc_pkgs.settings']() %}
+{%- scet pkgssettings = salt['mc_pkgs.settings']() %}
 include:
   - makina-states.services.virt.lxc.hooks
 {% set locs = salt['mc_locations.settings']() %}
+{% if grains['os'] in ['Ubuntu'] and grains['osrelease'] >= '16.04' %}
+lxc-repo:
+  file.absent:
+    - names:
+      - {{locs.conf_dir}}/apt/sources.list.d/lxcmc.list
+      - {{locs.conf_dir}}/apt/sources.list.d/lxc.list
+    - watch_in:
+      - cmd: lxc-repo
+      - pkg: lxc-pkgs
+  cmd.watch:
+    - name: apt-get update && echo changed=false
+    - stateful: true
+    - watch_in:
+      - pkg: lxc-pkgs
+
+{% else %}
 lxc-repo:
   {# 04/06/2015: lxcfs & lxc are utterly bugged in stable #}
   cmd.run:
@@ -21,10 +37,15 @@ lxc-repo:
     - keyserver: keyserver.ubuntu.com
     - watch:
       - mc_proxy: lxc-pre-pkg
+    - watch_in:
+      - pkg: lxc-pkgs
+{% endif %}
 
 mclxc-repo:
   file.absent:
     - name: {{locs.conf_dir}}/apt/sources.list.d/lxcmc.list
+    - watch_in:
+      - pkg: lxc-pkgs
   {# 04/06/2015: lxcfs & lxc are utterly bugged in stable #}
   {#
   pkgrepo.managed:
@@ -61,5 +82,3 @@ lxc-pkgs:
       - mc_proxy: lxc-post-pkg
     - watch:
       - mc_proxy: lxc-pre-pkg
-      - pkgrepo: lxc-repo
-      - file: mclxc-repo
