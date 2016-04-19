@@ -50,6 +50,8 @@ def _is_docker(_o=None):
     Return true if we find a system or grain flag
     that explicitly shows us we are in a DOCKER context
     """
+    if _o is None:
+        _o = __opts__
     docker = False
     try:
         docker = bool(__grains__.get('makina.docker'))
@@ -111,6 +113,12 @@ def _is_lxc(_o=None):
                               for a in cgroups
                               if ':cpu:' in a or
                               ':cpuset:' in a][-1]
+        except Exception:
+            lxc = False
+    if not lxc:
+        try:
+            content = open('/proc/1/environ').read()
+            lxc = 'container=lxc' in content
         except Exception:
             lxc = False
     return lxc and not _is_docker(_o=_o)
