@@ -106,6 +106,8 @@ makina-php-composer:
 
 {{ macros.toggle_ext('xdebug', phpSettings.xdebug_install and phpSettings.xdebug_enabled) }}
 
+{% if phpSettings.apc_install %}
 {% if not ( (grains['os'] in 'Ubuntu') and (salt['mc_pkgs.settings']().udist not in ['precise'])) %}
 {{ macros.toggle_ext('apcu', apc_enabled)}}
+{% endif %}
 {% endif %}
