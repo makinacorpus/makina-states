@@ -454,7 +454,7 @@ set_vars() {
     BASE_PACKAGES="python-software-properties curl python-virtualenv git rsync bzip2"
     BASE_PACKAGES="${BASE_PACKAGES} acl build-essential m4 libtool pkg-config autoconf gettext"
     BASE_PACKAGES="${BASE_PACKAGES} groff man-db automake tcl8.5 debconf-utils swig"
-    BASE_PACKAGES="${BASE_PACKAGES} libsigc++-2.0-dev libssl-dev libgmp3-dev python-dev"
+    BASE_PACKAGES="${BASE_PACKAGES} libsigc++-2.0-dev libssl-dev libgmp3-dev python-dev python-six"
     BASE_PACKAGES="${BASE_PACKAGES} libffi-dev libzmq3-dev libmemcached-dev"
     NO_MS_VENV_CACHE="${NO_MS_VENV_CACHE:-"no"}"
     DO_INSTALL_PREREQUISITES="${DO_INSTALL_PREREQUISITES:-"y"}"

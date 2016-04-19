@@ -104,6 +104,7 @@ ubuntu-pkgs:
       - apt-transport-https
       - iputils-tracepath
       - uuid-runtime
+      - python-six
 {%- endif %}
 {% if grains.get('osrelease', '') != '5.0.10' and (not grains.get('lsb_distrib_codename') in ['wheezy', 'sarge'])%}
 {% set nojq = True%}
