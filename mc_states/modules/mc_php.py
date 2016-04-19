@@ -189,6 +189,7 @@ def settings():
             apc_install = 1
 
         phpdefaults = {
+            'php7_onward': php7_onward,
             's_all': s_all,
             'rotate': __salt__['mc_logrotate.settings']()['days'],
             'composer': (
@@ -416,6 +417,20 @@ def settings():
         # FINAL STEP: merge with data from pillar and grains
         phpData = __salt__['mc_utils.defaults'](
             'makina-states.services.php', phpStepFour)
+ 
+        configs = {}
+        confdir = phpData['confdir']
+        if phpData['apc_install']:
+            configs[confdir+'/apcu.ini'] = {}
+        if phpData['opcache_install']:
+            configs[confdir+'/opcache.ini'] = {}
+        configs[confdir+'/timezone.ini'] = {}
+        if phpData['php7_onward']:
+            configs['/etc/systemd/system/overrides.d/php.conf'] = {}
+        phpData['configs'] = configs
+
+        phpData = __salt__['mc_utils.defaults'](
+            'makina-states.services.php', phpData)
         # retro compat
         if 'register-pools' in phpData:
             phpData['fpm_pools'] = __salt__[

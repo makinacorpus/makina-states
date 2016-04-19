@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 {% set locs = salt['mc_locations.settings']() %}
 {% set phpSettings = salt['mc_php.settings']()  %}
 {% set pkgssettings = salt['mc_pkgs.settings']()  %}
@@ -51,6 +52,17 @@ makina-php-repos:
       - mc_proxy: makina-php-pre-inst
 {% endif %}
 
+{% macro rmacro() %}
+    - watch:
+      - mc_proxy: makina-php-post-inst
+    - watch_in:
+      - mc_proxy: makina-php-pre-conf
+{% endmacro %}
+{{ h.deliver_config_files(
+     phpSettings.get('configs', {}),
+     mode='644',
+     after_macro=rmacro, prefix='php-')}}
+
 php-cli:
   pkg.installed:
     - pkgs:
@@ -60,55 +72,16 @@ php-cli:
     - watch_in:
       - mc_proxy: makina-php-post-inst
 
-phpservice-systemd-override-dir:
-  file.directory:
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 775
-    - names:
-      - /etc/systemd/system/{{ phpSettings.service }}.service.d
-    - require:
-      - mc_proxy: makina-php-post-inst
-
-phpservice-systemd-config-override:
-  file.managed:
-    - user: root
-    - group: root
-    - makedirs: true
-    - mode: 664
-    - name: /etc/systemd/system/{{ phpSettings.service }}.service.d/override.conf
-    - source: salt://makina-states/files/etc/systemd/system/overrides.d/php.conf
-    - template: 'jinja'
-    - require:
-      - mc_proxy: makina-php-post-inst
-      - file: phpservice-systemd-override-dir
-    - watch_in:
-      - mc_proxy: makina-php-pre-conf
-
 phpservice-systemd-reload-conf:
-  cmd.run:
+  cmd.watch:
     - name: "systemctl daemon-reload"
-    - onchanges:
-      - file: phpservice-systemd-config-override
-
-
-makina-php-timezone:
-  file.managed:
-    - user: root
-    - group: root
-    - makedirs: true
-    - mode: 664
-    - name: {{ phpSettings.confdir }}/timezone.ini
-    - source: salt://makina-states/files{{ phpSettings.confdir }}/timezone.ini
-    - template: 'jinja'
-    - defaults:
-        timezone: "{{ phpSettings.timezone }}"
-    - require:
+    - watch:
       - mc_proxy: makina-php-post-inst
+      - file: php-/etc/systemd/system/overrides.d/php.conf
     - watch_in:
       - mc_proxy: makina-php-pre-conf
 
+#--------------------- APC (mostly deprecated)
 makina-php-composer:
   file.managed:
     - user: root
@@ -133,45 +106,6 @@ makina-php-composer:
 
 {{ macros.toggle_ext('xdebug', phpSettings.xdebug_install and phpSettings.xdebug_enabled) }}
 
-{% if phpSettings.opcache_install %}
-makina-php-opcache:
-  file.managed:
-    - user: root
-    - makedirs: true
-    - group: root
-    - mode: 664
-    - name: {{ phpSettings.confdir }}/opcache.ini
-    - source: salt://makina-states/files{{ phpSettings.confdir }}/opcache.ini
-    - template: 'jinja'
-    - require:
-      - mc_proxy: makina-php-post-inst
-    - watch_in:
-      - mc_proxy: makina-php-pre-conf
-{% endif %}
-
-#--------------------- APC (mostly deprecated)
-{% if phpSettings.apc_install %}
-makina-php-apc:
-  file.managed:
-    - user: root
-    - makedirs: true
-    - group: root
-    - mode: 664
-    - name: {{ phpSettings.confdir }}/apcu.ini
-    - source: salt://makina-states/files{{ phpSettings.confdir }}/apcu.ini
-    - template: 'jinja'
-    - defaults:
-        enabled: {{ phpSettings.apc_enabled }}
-        enable_cli: {{ phpSettings.apc_enable_cli }}
-        shm_segments: "{{ phpSettings.apc_shm_segments }}"
-        shm_size: "{{ phpSettings.apc_shm_size }}"
-        mmap_file_mask: "{{ phpSettings.apc_mmap_file_mask }}"
-    - require:
-      - mc_proxy: makina-php-post-inst
-    - watch_in:
-      - mc_proxy: makina-php-pre-conf
-
 {% if not ( (grains['os'] in 'Ubuntu') and (salt['mc_pkgs.settings']().udist not in ['precise'])) %}
 {{ macros.toggle_ext('apcu', apc_enabled)}}
-{% endif %}
 {% endif %}
