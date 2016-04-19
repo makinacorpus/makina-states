@@ -98,6 +98,8 @@ def _is_lxc(_o=None):
         '3:cpu:/',
         '2:cpuset:/']
     """
+    if _o is None:
+        _o = __opts__
     lxc = None
     if _is_docker(_o=_o):
         lxc = False
