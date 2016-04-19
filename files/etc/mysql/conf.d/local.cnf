@@ -1,4 +1,4 @@
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = data|default(salt['mc_mysql.settings']()) %}
 {% set mysql57onward = grains['os'] in 'Ubuntu' and grains['osrelease'] >= '16.04' %}
 {% set mysql55onward = grains['os'] in 'Ubuntu' and grains['osrelease'] >= '15.04' %}
 {% set mysql55downward = grains['os'] in 'Ubuntu' and grains['osrelease'] <= '15.04' %}

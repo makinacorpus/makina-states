@@ -80,10 +80,6 @@ def settings(**kwargs):
         automatically from that, for example several Drupal instances
         using a lot of fields
         could manage several hundreds of tables. <=== IMPORTANT
-    myCnf
-        MySQL default custom configuration (services.db.mysql)
-        To override the default makina-states configuration file,
-        Use the 'makina-states.services.mysql.cnf pillar/grain
 
 
     If you want to fine tune the mysql server, read the method
@@ -133,7 +129,6 @@ def settings(**kwargs):
             'bind_address': '0.0.0.0',
             'mode': mode,
             'var_log': data['logdir'],
-            'myCnf': None,
             'conn_host': 'localhost',
             'conn_user': None,
             'conn_pass': None,
@@ -141,7 +136,6 @@ def settings(**kwargs):
             'collate': 'utf8_general_ci',
             'noDNS': True,
             'isPercona': False,
-            'myCnf': "salt://makina-states/files/{etcdir}/local.cnf",
             'isOracle': True,
             'isMariaDB': False,
             'port': '3306',

@@ -129,13 +129,17 @@ def settings(**kwargs):
         mode = __salt__['mc_utils.get']('default_env', 'dev')
         if 'devhost' in nodetypes_registry['actives']:
             mode = 'dev'
+        gos = __grains__['os']
+        osrelease = __grains__['osrelease']
         data.update({
+            'mysql57onward': gos in ['Ubuntu'] and osrelease >= '16.04',
+            'mysql55onward': gos in ['Ubuntu'] and osrelease >= '15.04',
+            'mysql55downward': gos in ['Ubuntu'] and osrelease <= '15.04',
             'client_packages': ['mysql-client',
                                 'libmysqlclient-dev'],
             'bind_address': '0.0.0.0',
             'mode': mode,
             'var_log': data['logdir'],
-            'myCnf': None,
             'conn_host': 'localhost',
             'conn_user': None,
             'conn_pass': None,
@@ -143,7 +147,10 @@ def settings(**kwargs):
             'collate': 'utf8_general_ci',
             'noDNS': True,
             'isPercona': False,
-            'myCnf': "salt://makina-states/files/{etcdir}/local.cnf",
+            'configs': {
+                '/etc/mysql/conf.d/local.cnf': {'mode': '644'},
+                '/etc/systemd/system/overrides.d/mysql.conf': {'mode': '644'},
+            },
             'isOracle': True,
             'isMariaDB': False,
             'port': '3306',
@@ -332,8 +339,4 @@ def settings(**kwargs):
         if '__pub_' in k:
             kwargs.pop(k, '')
     return _settings(**kwargs)
-
-
-
-
 #
