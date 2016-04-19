@@ -45,7 +45,8 @@ mysql-reload-systemd:
   cmd.watch:
     - name: "systemctl daemon-reload"
     - watch:
+      - mc_proxy: mysql-post-conf-hook
       - file: mysql-/etc/systemd/system/overrides.d/mysql.conf
     - watch_in:
-      - mc_proxy: mysql-post-restart-hook
+      - mc_proxy: mysql-pre-restart-hook
 # vim: set nofoldenable:
