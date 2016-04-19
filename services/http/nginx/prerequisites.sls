@@ -41,3 +41,34 @@ makina-nginx-pkgs:
       - mc_proxy: nginx-pre-hardrestart-hook
       - mc_proxy: nginx-pre-restart-hook
 
+nginxservice-systemd-override-dir:
+  file.directory:
+    - makedirs: true
+    - user: root
+    - group: root
+    - mode: 775
+    - names:
+      - /etc/systemd/system/nginx.service.d
+    - watch_in:
+      - mc_proxy: nginx-post-install-hook
+
+nginxservice-systemd-config-override:
+  file.managed:
+    - user: root
+    - group: root
+    - makedirs: true
+    - mode: 664
+    - name: /etc/systemd/system/nginx.service.d/override.conf
+    - source: salt://makina-states/files/etc/systemd/system/overrides.d/nginx.conf
+    - template: 'jinja'
+    - require:
+      - pkg: makina-nginx-pkgs
+      - file: nginxservice-systemd-override-dir
+    - watch_in:
+      - mc_proxy: nginx-post-install-hook
+
+nginxservice-systemd-reload-conf:
+  cmd.run:
+    - name: "systemctl daemon-reload"
+    - onchanges:
+      - file: nginxservice-systemd-config-override
