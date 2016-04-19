@@ -45,6 +45,7 @@ def popen(cargs=None, shell=True):
 
 def get_container(pid):
     lxc = 'MAIN_HOST'
+    envf = '/proc/1/environ'.format(pid)
     cg = '/proc/{0}/cgroup'.format(pid)
     # lxc ?
     if os.path.isfile(cg):
@@ -53,6 +54,13 @@ def get_container(pid):
             if 'lxc' in content:
                 # 9:blkio:NAME
                 lxc = content.split('\n')[0].split(':')[-1]
+    if '/lxc' in lxc:
+        lxc = lxc.split('/lxc/', 1)[1]
+    if lxc == 'MAIN_HOST' and os.path.isfile(envf):
+        with open(envf) as fic:
+            content = fic.read()
+            if 'container=lxc' in content:
+                lxc = socket.getfqdn()
     return lxc
 
 
