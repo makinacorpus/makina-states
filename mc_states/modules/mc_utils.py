@@ -1047,6 +1047,12 @@ def get_container(pid):
                 lxc = content.split('\n')[0].split(':')[-1]
     if '/lxc' in lxc:
         lxc = lxc.split('/lxc/', 1)[1]
+    if '/' in lxc and (
+        '.service' in lxc or
+        '.slice' in lxc or
+        '.target' in lxc
+    ):
+        lxc = lxc.split('/')[0]
     if lxc == 'MAIN_HOST' and os.path.isfile(envf):
         with open(envf) as fic:
             content = fic.read()
