@@ -475,6 +475,10 @@ def get_cache_key(key, __opts__=None, *args, **kw):
             sha = "{0}_{1}".format(prefix, key)
         else:
             sha = key
+        if func:
+            pillar = getattr(func, '__globals__', {}).get('__pillar__', {})
+            if not pillar:
+                key += '_nopillar'
         ckey = "{0}_{1}".format(
             _CACHE_PREFIX['key'],
             hashlib.sha1(key).hexdigest())
