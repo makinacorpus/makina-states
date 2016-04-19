@@ -66,7 +66,7 @@ def _is_docker(_o=None):
     return docker
 
 
-def _is_lxc():
+def _is_lxc(_o=None):
     """
     Return true if we find a system or grain flag
     that explicitly shows us we are in a LXC context
@@ -98,6 +98,8 @@ def _is_lxc():
         '3:cpu:/',
         '2:cpuset:/']
     """
+    if _o is None:
+        _o = __opts__
     lxc = None
     if _is_docker():
         lxc = False
