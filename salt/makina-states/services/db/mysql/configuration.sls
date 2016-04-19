@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 {#
 # - install a custom /etc/mysql/conf.d/local.cnf config script
 # - reload salt modules to get the mysql salt modules available
@@ -12,7 +13,27 @@ include:
   - makina-states.services.db.mysql.checkroot
 
 {% import "makina-states/services/db/mysql/init.sls" as macros with context %}
-{{macros.gen_settings()}}
+
+makina-mysql-settings-pre:
+  file.absent:
+    - names:
+      - /etc/mysql/mysql.conf.d/mysqld_safe_syslog.cnf
+      - /etc/mysql/mysql.conf.d/mysqld.cnf
+    - watch:
+      - mc_proxy: mysql-pre-conf-hook
+    - watch_in:
+      - mc_proxy: mysql-post-conf-hook
+
+{% macro rmacro() %}
+    - watch:
+      - mc_proxy: mysql-pre-conf-hook
+    - watch_in:
+      - mc_proxy: mysql-post-conf-hook
+{% endmacro %}
+{{ h.deliver_config_files(
+     mysqlData.get('configs', {}),
+     mode='644',
+     after_macro=rmacro, prefix='mysql-')}}
 
 {% for user, data in mysqlData.get('users', {}).items() %}
 {% set data = data.copy() %}
@@ -20,4 +41,11 @@ include:
 {{macros.mysql_user(user, pw, **data) }}
 {%endfor %}
 
+mysql-reload-systemd:
+  cmd.watch:
+    - name: "systemctl daemon-reload"
+    - watch:
+      - file: mysql-/etc/systemd/system/overrides.d/mysql.conf
+    - watch_in:
+      - mc_proxy: mysql-post-restart-hook
 # vim: set nofoldenable:

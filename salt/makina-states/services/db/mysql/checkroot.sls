@@ -1,9 +1,23 @@
 {# --- ROOT ACCESS MANAGMENT --------------- #}
+
 {# Alter root password only if we can connect without #}
 include:
   - makina-states.services.db.mysql.hooks
 
 {%- set mysqlSettings = salt['mc_mysql.settings']() %}
+{% if mysqlSettings.mysql57onward %}
+change-empty-mysql-root-access-socket:
+  cmd.run:
+    - name: mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ mysqlSettings.root_passwd }}'; FLUSH PRIVILEGES;"
+    - onlyif: echo "select 'connected'"|mysql -u root
+    # tested after each mysql reload or restart
+    - watch_in:
+      - mc_proxy: mysql-setup-access
+    - watch:
+      - mc_proxy: mysql-setup-access-pre
+      - mc_proxy: mysql-post-restart-hook
+      - mc_proxy: mysql-post-hardrestart-hook
+{% else %}
 change-empty-mysql-root-access-socket:
   cmd.run:
     - name: mysqladmin -u root flush-privileges password "{{ mysqlSettings.root_passwd }}"
@@ -15,7 +29,7 @@ change-empty-mysql-root-access-socket:
       - mc_proxy: mysql-setup-access-pre
       - mc_proxy: mysql-post-restart-hook
       - mc_proxy: mysql-post-hardrestart-hook
-
+{% endif %}
 change-empty-mysql-root-access-tcp:
   cmd.run:
     - name: mysqladmin -u root -h 127.0.0.1 flush-privileges password "{{ mysqlSettings.root_passwd }}"
