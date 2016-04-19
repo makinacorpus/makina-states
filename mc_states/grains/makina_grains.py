@@ -51,7 +51,10 @@ def _is_docker(_o=None):
     that explicitly shows us we are in a DOCKER context
     """
     if _o is None:
-        _o = __opts__
+        try:
+            _o = __opts__
+        except NameError:
+            _o = {}
     docker = False
     try:
         docker = bool(__grains__.get('makina.docker'))
@@ -99,7 +102,10 @@ def _is_lxc(_o=None):
         '2:cpuset:/']
     """
     if _o is None:
-        _o = __opts__
+        try:
+            _o = __opts__
+        except NameError:
+            _o = {}
     lxc = None
     if _is_docker(_o=_o):
         lxc = False
