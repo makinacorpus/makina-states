@@ -37,6 +37,7 @@
 {% endfor %}
 {% endmacro %}
 
+
 {% macro repomanaged(name,
                      file,
                      dist=none,
@@ -68,3 +69,12 @@
 {% if after_macro %}{{after_macro()}}{% endif %}
 {% endmacro %}
 
+
+{# DEPRECATED but never ever remove this file to not break api v1#}
+{% macro proxy(name, text='') %}
+{{name}}:
+  mc_proxy.hook:
+    - name: {{name}}
+{{text}}
+{% endmacro %}
+{% set dummy = proxy %}

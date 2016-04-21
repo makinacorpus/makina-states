@@ -1,6 +1,4 @@
 {% import "makina-states/nodetypes/vagrantvm.sls" as vagrantvm with context %}
-{% import "makina-states/_macros/services.jinja" as services with context %}
-{% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {#-
 #
 # Install a project from end to end on the behalf of makina states
@@ -24,8 +22,6 @@
 #}
 
 # export macro to callees
-{% set services = services %}
-{% set nodetypes = nodetypes %}
 {% set ugs = salt['mc_usergroup.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
 
@@ -350,7 +346,7 @@
 {#-
 # if we are on a vagrant box, also register our hosts to be accesible from the host
 #}
-{%-  if nodetypes.registry.is.vagrantvm %}
+{%-  if salt['mc_nodetypes.registry']().is.vagrantvm %}
 {%-    if vagrantvm.vmNum %}
 makina-parent-append-etc-hosts-accumulated-project-{{common.name}}:
   file.accumulated:
