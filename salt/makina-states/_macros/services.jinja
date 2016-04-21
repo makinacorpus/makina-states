@@ -7,10 +7,8 @@
 {#-
 # expose imported macros
 #}
-{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {%- set settings = salt['mc_services.settings']() %}
 {%- set metadata = salt['mc_services.metadata']() %}
 {%- set registry = salt['mc_services.registry']() %}
 {%- set nodetypes = nodetypes %}
-{%- set saltmac = saltmac %}

@@ -5,7 +5,6 @@
 #}
 
 {% set rvms = salt['mc_rvm.settings']() %}
-{%- import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {{ salt['mc_macros.register']('localsettings', 'rvm') }}
 {%- set locs = salt['mc_locations.settings']() %}
 {%- macro rvm_env() %}
@@ -107,7 +106,7 @@ rvm-{{version}}{{suf}}:
 
 active-rvm-bundler-hook:
   cmd.run:
-    - name: {{saltmac.msr}}/_scripts/reset-perms.py --no-acls --dmode 0700 --fmode 0700 --paths "{{locs.rvm_path}}/hooks/after_cd_bundler"
+    - name: {{salt['mc_locations.settings']().msr}}/_scripts/reset-perms.py --no-acls --dmode 0700 --fmode 0700 --paths "{{locs.rvm_path}}/hooks/after_cd_bundler"
     - require_in:
       - mc_proxy: rvm-last
 

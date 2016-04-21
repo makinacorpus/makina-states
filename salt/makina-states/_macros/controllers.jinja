@@ -4,10 +4,6 @@
 # see makina-states.controllers
 #}
 {# DEPRECATED but never ever remove this file to not break api v1#}
-{%- import "makina-states/_macros/salt.jinja" as saltmac with context %}
-# expose imported macros to callers
-{%- set saltmac = saltmac %}
-
 {#- see _modules/mc_controllers.py for exposed settings #}
 {%- set metadata = salt['mc_controllers.metadata']() %}
 {%- set settings = salt['mc_controllers.settings']() %}

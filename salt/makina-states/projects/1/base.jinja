@@ -1,5 +1,4 @@
 {% import "makina-states/nodetypes/vagrantvm.sls" as vagrantvm with context %}
-{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {% import "makina-states/_macros/services.jinja" as services with context %}
 {% import "makina-states/_macros/nodetypes.jinja" as nodetypes with context %}
 {#-
@@ -29,7 +28,6 @@
 {% set nodetypes = nodetypes %}
 {% set ugs = salt['mc_usergroup.settings']() %}
 {% set locs = salt['mc_locations.settings']() %}
-{% set saltmac = saltmac %}
 
 {#
 # Create a dedicated system user for our project

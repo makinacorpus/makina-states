@@ -2,14 +2,12 @@
 # DEPRECATED PROJECT STYLE -- USE APIV2
 #
 #}
-{% import "makina-states/_macros/salt.jinja" as saltmac with context %}
 {% import "makina-states/projects/1/base.jinja" as base with context %}
 {% import "makina-states/services/db/postgresql/init.sls" as pgsql with context %}
 {% import "makina-states/services/java/solr4.sls" as solr with context %}
 {% import "makina-states/services/java/tomcat7.sls" as tomcat with context %}
 
 {%- set services = base.services %}
-{%- set saltmac = base.saltmac %}
 {%- set apacheSettings = salt['mc_apache.settings']() %}
 {%- set locations = salt['mc_locations.settings']() %}
 
@@ -140,7 +138,7 @@ ckan-buildout:
 {{common.name}}-caches-restricted-perms:
   cmd.run:
     - name: >
-            {{saltmac.resetperms}}
+            {{locations.resetperms}}
             --dmode '0775' --fmode '0775'
             --user  {{common.user}} --group "{{common.group}}"
             --paths {{common.data.buildout.settings.buildout['eggs-directory']}}
@@ -456,7 +454,7 @@ etc-logrotate.d-{{common.name}}.conf:
     - template: jinja
     - name: {{solr.home_dir}}/{{siteid}}
     - user: {{tomcat.data['tomcat_user']}}
-    - group: {{saltmac.group}}
+    - group: root
     - core_name: {{siteid}}
     - require:
       - file: solr-default-core-{{solr.v}}
