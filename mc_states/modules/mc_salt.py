@@ -123,6 +123,7 @@ def settings():
                 'pillar',
                 'master',
             ],
+            'use_mc_pillar': True,
             'cron_minion_restart_hour': 0,
             'rotate': _s['mc_logrotate.settings']()['days'],
             'log_prefix': '{msr}/var/log',

@@ -88,3 +88,4 @@ boot_salt_top
 /venv
 /etc/masterless_pillars/
 /ansible/**/*.retry
+/etc/ansible/inventories

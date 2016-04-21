@@ -3,7 +3,7 @@ include:
   - makina-states.controllers.requirements
   - makina-states.controllers.hooks
 {%- set locs = salt['mc_locations.settings']() %}
-{%- set settings = salt['mc_salt.settings']() %} 
+{%- set settings = salt['mc_salt.settings']() %}
 {%- set bootsalt= '{0}/_scripts/boot-salt.sh'.format(settings.msr) %}
 {% set pathid = salt['mc_utils.hash'](settings.msr, typ='md5') %}
 {% for bin in ['ansible', 'ansible-playbook', 'salt-call', 'boot-salt.sh'] %}
@@ -48,6 +48,24 @@ salt-crons:
                 {{settings.cron_sync_minute}} {{settings.cron_sync_hour}} * * * root   {{bootsalt}} --synchronize-code --quiet -C --no-colors
                 {% endif %}
   {% endif %}
+{% if settings.use_mc_pillar %}
+lnk-extpillar-inventory:
+  file.symlink:
+    - name: {{ settings.msr }}/etc/ansible/inventories/makinastates.py
+    - target: {{ settings.msr }}/ansible/inventories/makinastates.py
+    - require:
+      - mc_proxy: dummy-pre-salt-checkouts
+    - require_in:
+      - mc_proxy: dummy-pre-salt-service-restart
+{% else %}
+unlnk-extpillar-inventory:
+  file.absent:
+    - name: {{ settings.msr }}/etc/ansible/inventories/makinastates.py
+    - require:
+      - mc_proxy: dummy-pre-salt-checkouts
+    - require_in:
+      - mc_proxy: dummy-pre-salt-service-restart
+{% endif %}
 update-makinastates-salta:
   cmd.run:
     - name: {{bootsalt}} -C --no-colors --synchronize-code
