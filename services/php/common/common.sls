@@ -72,6 +72,7 @@ php-cli:
     - watch_in:
       - mc_proxy: makina-php-post-inst
 
+{% if phpSettings.php7_onward %}
 phpservice-systemd-reload-conf:
   cmd.watch:
     - name: "systemctl daemon-reload"
@@ -80,6 +81,7 @@ phpservice-systemd-reload-conf:
       - file: php-/etc/systemd/system/overrides.d/php.conf
     - watch_in:
       - mc_proxy: makina-php-pre-conf
+{% endif %}
 
 #--------------------- APC (mostly deprecated)
 makina-php-composer:
