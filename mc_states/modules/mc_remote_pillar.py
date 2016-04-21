@@ -134,9 +134,9 @@ def get_generate_hooks():
     return _s['mc_utils.uniquify'](hooks)
 
 
-def generate_masterless_pillar(id_, 
-                               set_retcode=False, 
-                               dump=False, 
+def generate_masterless_pillar(id_,
+                               set_retcode=False,
+                               dump=False,
                                profile_enabled=False):
     _s = __salt__
     pid = None
