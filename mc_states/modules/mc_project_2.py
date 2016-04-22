@@ -1122,7 +1122,7 @@ if [ ! -e $home/.ssh ];then
   mkdir $home/.ssh;
 fi;
 for i in config id_*;do
-  if [ ! -e $home/.ssh/$i ];then
+  if [ -e $i ] && [ ! -e $home/.ssh/$i ];then
     cp -fv $i $home/.ssh;
   fi;
 done;
@@ -1138,7 +1138,7 @@ if [ "x$(stat -c %U "$home")" != "x$user" ];then
     res=0
 fi
 for i in config id_*;do
-  if [ ! -e $home/.ssh/$i ];then
+  if [ -e $i ] && [ ! -e $home/.ssh/$i ];then
     res=0;
   fi;
 done;
