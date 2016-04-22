@@ -72,3 +72,5 @@ boot_salt_top
 /tests/mc_states
 /docker/virtualenv-makina-states-*
 /docker/*.log
+/salt/_modules/
+/salt/_pillar/
