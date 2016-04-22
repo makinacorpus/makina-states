@@ -1322,7 +1322,7 @@ def init_repo(working_copy,
         if bare:
             igit += '.tmp'
         if remote_less:
-            igit = lgit
+            igit = working_copy
         try:
             parent = os.path.dirname(igit)
             if not os.path.exists(parent):
@@ -2007,7 +2007,12 @@ def init_project(name, *args, **kwargs):
             if not lremote_less:
                 set_upstream(wc, rev, user, ret=ret)
                 sync_working_copy(wc, user=user, rev=rev, ret=ret)
-        link(name, *args, **kwargs)
+        pillar = os.path.join(cfg['pillar_root'], 'init.sls')
+        try:
+            link(name, *args, **kwargs)
+        except Exception:
+            if os.path.exists(pillar):
+                raise
         refresh_files_in_working_copy_kwargs = copy.deepcopy(kwargs)
         for k in [
             'user', 'group', 'project', 'init_data', 'force', 'do_push',
@@ -2015,7 +2020,7 @@ def init_project(name, *args, **kwargs):
         ]:
             refresh_files_in_working_copy_kwargs.pop(k, None)
         refresh_files_in_working_copy_kwargs['commit_all'] = commit_all
-        pillar = os.path.join(cfg['pillar_root'], 'init.sls')
+        relink = False
         if not os.path.exists(pillar):
             init_pillar_dir(
                 cfg['pillar_root'],
@@ -2027,6 +2032,9 @@ def init_project(name, *args, **kwargs):
                 do_push=False,
                 remote_less=pillar_remote_less,
                 ret=ret)
+            relink = True
+        relink = not os.path.exists(
+            os.path.join(cfg['project_root'], '.salt')) or relink
         refresh_files_in_working_copy(cfg['project_root'],
                                       user=user,
                                       group=group,
@@ -2038,6 +2046,8 @@ def init_project(name, *args, **kwargs):
                                       api_version=cfg['api_version'],
                                       *args,
                                       **refresh_files_in_working_copy_kwargs)
+        if relink:
+            link(name, *args, **kwargs)
         # in case of remoteless the .salt folder may have just been created
         # in working dir, so link must be redone here
         if remote_less or pillar_remote_less:
