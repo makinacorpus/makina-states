@@ -86,10 +86,13 @@ class MakinaStatesInventory(object):
         # and salt will also fill ansible connexion hostvars as well
         payload = self.load_inventory(self.targets,
                                       refresh=self.args.refresh_cache)
-        for i in hosts + [a for a in payload['data']]:
-            if i not in self.hosts:
-                self.hosts.append(i)
         self.hostvars.update(payload['data'])
+        for i in [a for a in self.hostvars]:
+            if i not in self.targets:
+                self.hostvars.pop(i, None)
+        for i in hosts + [a for a in self.hostvars]:
+            if i not in self.hosts and i in self.targets:
+                self.hosts.append(i)
         self.make_groups()
         self.to_stdout()
 
