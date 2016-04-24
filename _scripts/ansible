@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 cd "$(dirname "$(dirname "$(readlink -f ${0})")")"
+ANSIBLE_TARGETS=${ANSIBLE_TARGETS-}
+if [[ -n ${ANSIBLE_TARGETS-} ]];then
+    export ANSIBLE_TARGETS
+fi
 SCRIPT=$(basename ${0})
 WC="$(pwd)"
 MS_VENV_PATH="${MS_VENV_PATH-${WC}/venv}"
@@ -16,5 +20,5 @@ else
     export ANSIBLE_LIBRARY="${CANSIBLE_LIBRARY}"
 fi
 export ANSIBLE_HOSTS="${ANSIBLE_HOSTS:-"${WC}/etc/ansible/inventories"}"
-exec ${MS_VENV_PATH}/bin/${SCRIPT} "${@}"
+exec ${MS_VENV_PATH}/bin/${SCRIPT} ${ANSIBLE_TARGETS} "${@}"
 # vim:set et sts=4 ts=4 tw=80:
