@@ -70,13 +70,20 @@ class MakinaStatesInventory(object):
         self.targets = magic_list_of_strings(os.environ.get('ANSIBLE_TARGETS'))
 
         self.debug = self.args.ms_debug
+
+        # we ask first salt for a valid set of hostnames to get pillar from
+        # (minionid == fqdn)
         hosts = self.get_list(refresh=self.args.refresh_cache)
 
+        # if no targets are selected, we compute the whole infrastructure
+        # pillar, and this will be long ! (10min on avg inga)
         if self.targets:
             self.targets = [a for a in self.targets if a in hosts]
         else:
             self.targets = [a for a in hosts]
 
+        # we then load the pillars from each host as the salt_pillar hostvar
+        # and salt will also fill ansible connexion hostvars as well
         payload = self.load_inventory(self.targets,
                                       refresh=self.args.refresh_cache)
         for i in hosts:
@@ -343,18 +350,7 @@ class MakinaStatesInventory(object):
     def update_cache(self, payload, hosts=None):
         """
         Make calls to cobbler and save the output in a cache
-
             hosts: list of hosts to get pillar from
-
-
-        Behavior:
-
-            - if n-host is selected, we use a 10minutes cache policy
-            - if not host is selected (whole infra), we use a 1day cache policy
-            - if refresh-cache is selected, we bypass the cache
-
-
-
         """
         if self.debug:
             print('Computing global salt cache, please wait '
