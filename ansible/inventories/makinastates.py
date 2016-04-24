@@ -24,8 +24,8 @@ rei_flags = re.M | re.U | re.S | re.I
 TTL_KEY = 'ms_ansible_cache_time'
 LIST_TTL_KEY = 'ms_list_ansible_cache_time'
 CACHE_CHANGED_KEY = 'ms_ansible_cache_updated'
-CACHE_MAX_AGE = 10 * 60
-LIST_CACHE_MAX_AGE = 24 * 60 * 60
+CACHE_MAX_AGE = 24 * 60 * 60
+LIST_CACHE_MAX_AGE = 10 * 60
 
 try:
     import json
