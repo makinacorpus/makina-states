@@ -18,6 +18,7 @@ The module has redundant functions with the makina-states codebase but the goal 
 
 '''
 
+import shlex
 import argparse
 import copy
 import cStringIO
@@ -414,7 +415,7 @@ def call(func,
     if args is None:
         args = []
     if isinstance(args, six.string_types):
-        args = [args]
+        args = shlex.split(args)
     if out is None:
         out = 'json'
     if ret_format is None:
