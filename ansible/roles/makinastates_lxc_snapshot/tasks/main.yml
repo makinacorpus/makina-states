@@ -1,0 +1,6 @@
+---
+# map computation from lxcvar role back to clean variables
+- include: run.yml
+  vars:
+    lxc_path: "{{makinastates_lxc_vars.msg['lxc_path']}}"
+    lxc_container_name: "{{makinastates_lxc_vars.msg['lxc_container_name']}}"

@@ -1,0 +1,16 @@
+---
+- name: snapshot container (copy to img & impersonate)
+  saltcall:
+    function: mc_cloud_lxc.sync_image_reference_containers
+    args: >
+          builder_ref={{lxc_container_name}}
+          img={{lxc_template}}
+          snapshot=True force=True
+  register: makinastates_lxc_snapshot
+  tags: makinastates_lxc_snapshot
+- name: show snapshot infos
+  debug: {msg: "{{makinastates_lxc_snapshot}}"}
+  tags: makinastates_lxc_snapshot
+- assert:
+    that: "makinastates_lxc_snapshot['msg']['salt_out']['result']==True"
+  tags: makinastates_lxc_snapshot

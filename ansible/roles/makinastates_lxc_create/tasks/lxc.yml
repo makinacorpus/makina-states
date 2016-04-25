@@ -52,4 +52,4 @@
     ansible_host: "{{makinastates_lxc_create_ip.stdout}}"
     ansible_port: 22
     ansible_ssh_common_args: |
-      -o ProxyCommand="ssh -W %h:%p -q {{hostvars[compute_node]['ansible_user']}}@{{hostvars[compute_node]['ansible_host']}} -p {{hostvars[compute_node]['ansible_port']}}"
+      -o ProxyCommand="ssh -W %h:%p -q {{hostvars[inventory_hostname]['ansible_user']}}@{{hostvars[inventory_hostname]['ansible_host']}} -p {{hostvars[inventory_hostname]['ansible_port']}}"

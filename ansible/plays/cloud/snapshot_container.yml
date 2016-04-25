@@ -4,7 +4,4 @@
 # (see the 'all' statement, must be called with -l indicating the host(s) where
 # to create such a container
 - hosts: all
-  roles: [{role: 'makinastates_lxc_create'}]
-
-- hosts: "{{lxc_container_name}}"
-  roles: [{role: makinastates, makinastates_nodetype: lxccontainer}]
+  roles: [{role: 'makinastates_lxc_snapshot'}]
