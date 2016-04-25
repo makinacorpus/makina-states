@@ -87,7 +87,8 @@ def settings():
             # deb_mirror = 'http://ftp.de.debian.org/debian'
             'mirrors_debian_archive': 'http://archive.debian.org/debian/',
             'mirrors_debian_dist': 'http://mirror.ovh.net/ftp.debian.org/debian/',
-            'mirrors_ubuntu_dist': 'http://fr.archive.ubuntu.com/ubuntu/',
+            'mirrors_ubuntu_dist': 'http://archive.ubuntu.com/ubuntu/',
+            'mirrors_ubuntu_dist_fr': 'http://fr.archive.ubuntu.com/ubuntu/',
             'mirrors_ubuntu_ovh': 'http://mirror.ovh.net/ftp.ubuntu.com/',
             'mirrors_ubuntu_online': 'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu/',
             'mirrors_ubuntu_plus': 'http://mirror.plusserver.com/ubuntu/ubuntu/',
@@ -97,7 +98,9 @@ def settings():
         umirror = mirrors['mirrors_ubuntu_plus']
         if _g['os'] in ['Ubuntu']:
             lts_dist = ubuntu_lts
-            if _s['mc_nodetypes.is_vagrantvm']():
+            if _g['osrelease'] >= '16.04':
+                umirror = '{mirrors_ubuntu_dist}'
+            elif _s['mc_nodetypes.is_vagrantvm']():
                 umirror = '{mirrors_ubuntu_ircam}'
             elif _g['osrelease'] >= '15.04':
                 # umirror = mirrors['dist']
