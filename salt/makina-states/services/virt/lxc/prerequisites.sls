@@ -1,4 +1,4 @@
-{%- scet pkgssettings = salt['mc_pkgs.settings']() %}
+{%- set pkgssettings = salt['mc_pkgs.settings']() %}
 include:
   - makina-states.services.virt.lxc.hooks
 {% set locs = salt['mc_locations.settings']() %}
