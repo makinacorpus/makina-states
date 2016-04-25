@@ -280,7 +280,11 @@ def clean_lxc_config(container, rootfs=None, fstab=None):
 
 def sync_image_reference_containers(builder_ref, img, ret=None,
                                     template='ubuntu',
+                                    snapshot=True,
                                     force=False):
+    '''
+    Sapshot container (copy to img & impersonate)
+    '''
     _s = __salt__
     # try to find the local img reference building counterpart
     # and sync it back to the reference lxc
@@ -297,105 +301,8 @@ def sync_image_reference_containers(builder_ref, img, ret=None,
     sync_container('/var/lib/lxc/{0}/rootfs'.format(builder_ref),
                    rootfs,
                    ret,
+                   snapshot=snapshot,
                    force=force)
     clean_lxc_config(img)
-    return ret
-
-
-def sync_images(images=None,
-                lxctargets=None,
-                force=False,
-                output=True,
-                force_output=False,
-                __salt__from_exec=None):
-    '''
-    Sync the 'makina-states' image to all configured LXC hosts minions
-
-    WARNING
-        it checks .ms_version inside the rootfs of the LXC
-        if this one didnt change, images wont be synced
-
-    Configuration:
-
-        :ref:`module_mc_lxc` settings:
-
-            :images_root: master filesystem root to lxc containers
-            :images: list of image to sync to lxc minions
-            :containers: all minion targets will be synced
-                         with that list of images
-    '''
-    _s = __salt__
-    if not images:
-        images = []
-    if not lxctargets:
-        lxctargets = []
-    if isinstance(images, basestring):
-        images = images.split(',')
-    if isinstance(lxctargets, basestring):
-        lxctargets = lxctargets.split(',')
-    ret = saltapi.result()
-    ret['targets'] = OrderedDict()
-    rsync_cmd = (
-        'rsync -aA --delete-excluded --exclude="makina-states-lxc-*xz"'
-        ' --numeric-ids '
-    )
-    for target in lxctargets:
-        subret = saltapi.result()
-        ret['targets'][target] = subret
-        try:
-            # sync img to temp location
-            for img in images:
-                # transfert: 3h max
-                imgroot = os.path.join('/var/lib/lxc', img)
-                try:
-                    if not os.path.exists(imgroot):
-                        _errmsg('{0} does not exists'.format(img))
-                    cmd = (
-                        'ps aux|egrep "rsync.*{0}"|grep -v grep|wc -l'
-                    ).format(imgroot)
-                    cret = _s['cmd.run_all'](cmd, python_shell=True)
-                    if cret['stdout'].strip() > '0':
-                        _errmsg(
-                            'Transfer already in progress')
-                    cmd = '{2} -z {0}/ root@{1}:{0}/'.format(
-                        imgroot, target, rsync_cmd)
-                    cret = _s['cmd.run_all'](cmd, python_shell=True)
-                    if not cret['retcode']:
-                        subret['comment'] += (
-                            '\n{0} RSYNC(net -> tmp) complete'
-                        ).format(target)
-                    else:
-                        _errmsg(
-                            'Failed to sync single image')
-                except saltapi.MessageError, ex:
-                    subret['trace'] += '\n{0}'.format(ex)
-                    subret['result'] = False
-                    subret['comment'] += (
-                        '\nWe failed to sync image for {0}: {1}'
-                    ).format(target, imgroot)
-        except saltapi.MessageError, ex:
-            subret['trace'] += ''
-            subret['result'] = False
-            subret['comment'] += (
-                '\nWe failed to sync image for {0}:\n{1}'.format(
-                    target, ex))
-        except Exception, ex:
-            trace = traceback.format_exc()
-            subret['trace'] += trace
-            subret['result'] = False
-            subret['comment'] += (
-                '\nWe failed to sync image for {0}:\n{1}'.format(
-                    target, ex))
-    for target, subret in ret['targets'].items():
-        if images and (target not in images):
-            continue
-        api.msplitstrip(subret)
-        if not subret['result']:
-            ret['result'] = False
-    if ret['result']:
-        ret['comment'] = 'We have successfully sync all targets\n'
-    else:
-        ret['comment'] = 'We have missed some target, see logs\n'
-    api.msplitstrip(ret)
     return ret
 # vim:set et sts=4 ts=4 tw=80:
