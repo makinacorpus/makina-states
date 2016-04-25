@@ -37,12 +37,6 @@ def default_settings(cloudSettings):
     bootsalt_args
         args to give to bootsalt
         (default to cloudcontroller configured value)
-    master
-        salt master fqdn to rattach to
-        (default to cloudcontroller configured value)
-    master_port
-        salt master port to rattach to
-        (default to cloudcontroller configured value)
     bootsalt_branch
         default bootsalt_branch to use
         (default to cloudcontroller configured value)
@@ -92,10 +86,8 @@ def default_settings(cloudSettings):
             'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
             'ssh_username': 'root',
             'ssh_keyfile': None,
-            'master': cloudSettings['master'],
             'no_sudo_password': False,
             'keep_tmp': False,
-            'master_port': cloudSettings['master_port'],
             'bootsalt_branch': cloudSettings['bootsalt_branch'],
             'password': None,
             'sudo_password': None,

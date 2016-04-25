@@ -146,10 +146,6 @@ def default_settings():
     '''
     makina-states cloud global configuration options
 
-    master
-      The default master to link to into salt cloud profile
-    master_port
-      The default master port to link to into salt cloud profile
     pvdir
       salt cloud providers directory
     pfdir
@@ -263,9 +259,6 @@ def extpillar_settings(id_=None, ttl=PILLAR_TTL, *args, **kw):
             _s['mc_utils.dictupdate'](
                 default_settings(), {
                     'ssl': {'ca': {'ca_name': id_}},
-                    'master_port': _o.get('ret_port',
-                                          _o.get('master_port', default_port)),
-                    'master': mid,
                     # states registry settings
                     'generic': True,
                     'saltify': True,

@@ -8,7 +8,7 @@ find \
      $WC/etc \
      $WC/files  \
      $WC/hacking \
-     $WC/library \
+     $WC/ansible \
      $WC/mc_states/  \
      $WC/_scripts \
      $WC/tests \

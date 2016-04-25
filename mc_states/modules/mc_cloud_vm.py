@@ -70,8 +70,6 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
         master
             master to uplink the container to
             None
-        master_port
-            '4506'
         image
             LXC template to use
             'ubuntu'
@@ -142,7 +140,6 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 ],
                 #
                 'master': cloudSettings.get('master', __opts__['id']),
-                'master_port': cloudSettings['master_port'],
                 'bootsalt_branch': cloudSettings['bootsalt_branch'],
                 'bootstrap_shell': cloudSettings['bootstrap_shell'],
                 'script': cloudSettings['script'],
