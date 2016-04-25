@@ -273,7 +273,7 @@ def extpillar_settings(id_=None, ttl=PILLAR_TTL, *args, **kw):
                     'kvm': conf.get('cloud_control_kvm', True)}
             ), extdata)
         if not data['bootsalt_branch']:
-            data['bootsalt_branch'] = {'dev': 'master',
+            data['bootsalt_branch'] = {'dev': 'v2',
                                        'prod': 'v2',
                                        'preprod': 'v2'}.get(
                                            default_env, 'v2')
