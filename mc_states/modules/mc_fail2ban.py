@@ -94,11 +94,10 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        _s = __salt__
-        _g = _s['mc_utils.assert_good_grains'](__grains__)
-        shorewall = _s['mc_shorewall.settings']()
-        services_registry = _s['mc_services.registry']()
-        firewalld = _s['mc_firewalld.settings']()
+        grains = __salt__['mc_utils.assert_good_grains'](__grains__)
+        shorewall = __salt__['mc_shorewall.settings']()
+        services_registry = __salt__['mc_services.registry']()
+        firewalld = __salt__['mc_firewalld.settings']()
         banaction = 'iptables'
         if (
             services_registry['has']['firewall.ms_iptables']
@@ -131,14 +130,11 @@ def settings():
             not firewalld.get('permissive_mode')
         ):
             banaction = 'firewallcmd-ipset'
-        locs = _s['mc_locations.settings']()
+        locs = __salt__['mc_locations.settings']()
         destmail = 'root@localhost'
-        if 'fqdn' in _g:
-            destmail = 'root@{0}'.format(_g['fqdn'])
-        ignoreip = ['127.0.0.1']
-        if _s['mc_nodetypes.is_vagrantvm']():
-            ignoreip.append('10.0.2.2')
-        data = _s['mc_utils.defaults'](
+        if 'fqdn' in grains:
+            destmail = 'root@{0}'.format(grains['fqdn'])
+        data = __salt__['mc_utils.defaults'](
             'makina-states.services.firewall.fail2ban', {
                 'location': locs['conf_dir'] + '/fail2ban',
                 'destemail': destmail,
@@ -183,7 +179,7 @@ def settings():
                 },
                 'mail_subject': (
                     '[Fail2Ban {0}] <section>: Banned <ip>'
-                ).format(_g['id']),
+                ).format(grains['id']),
                 'mail_message': (
                     'Hi,<br> The IP <ip> has just been banned by Fail2Ban'
                     ' after <failures> attempts against <section>.<br>'
@@ -211,7 +207,7 @@ def settings():
                 'protocol': 'tcp',
                 'mta': 'sendmail',
                 'banaction': banaction,
-                'ignoreip': ignoreip,
+                'ignoreip': ['127.0.0.1'],
                 'postfix_enabled': 'false',
                 'wuftpd_enabled': 'false',
                 'vsftpd_enabled': 'false',
