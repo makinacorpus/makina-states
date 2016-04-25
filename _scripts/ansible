@@ -20,5 +20,9 @@ else
     export ANSIBLE_LIBRARY="${CANSIBLE_LIBRARY}"
 fi
 export ANSIBLE_HOSTS="${ANSIBLE_HOSTS:-"${WC}/etc/ansible/inventories"}"
-exec ${MS_VENV_PATH}/bin/${SCRIPT} ${ANSIBLE_TARGETS} "${@}"
+if [[ -n ${ANSIBLE_TARGETS-} ]];then
+    exec ${MS_VENV_PATH}/bin/${SCRIPT} -l "${ANSIBLE_TARGETS}" "${@}"
+else
+    exec ${MS_VENV_PATH}/bin/${SCRIPT} "${@}"
+fi
 # vim:set et sts=4 ts=4 tw=80:
