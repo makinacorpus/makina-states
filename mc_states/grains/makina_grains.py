@@ -191,13 +191,17 @@ def _is_devhost(_o=None):
 def _get_msconf(param, _o=None):
     if _o is None:
         _o = __opts__
-    nd = os.path.join(
-        _o.get('config_dir', '/etc/salt'), 'makina-states')
-    try:
-        with open(os.path.join(nd, param)) as fic:
-            content = fic.read().strip()
-    except (OSError, IOError):
-        content = ''
+    cfgdir = os.path.abspath(_o.get('config_dir', '/etc/salt'))
+    nds = [os.path.join(cfgdir, 'makina-states'),
+           os.path.join(os.path.dirname(cfgdir), 'makina-states')]
+    for nd in nds:
+        try:
+            with open(os.path.join(nd, param)) as fic:
+                content = fic.read().strip()
+                if content:
+                    break
+        except (OSError, IOError):
+            content = ''
     return content
 
 
