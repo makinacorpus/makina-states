@@ -38,3 +38,11 @@
           'is', {}).get(
             'lxc_compute_node', False) == True
   tags: makinastates_cloud_cn,makinastates_cloud_cn_lxc
+
+- name: cloud - kvm
+  include: kvm.yml
+  when: |
+        salt_pillar.get('makina-states.cloud', {}).get(
+          'is', {}).get(
+            'kvm_compute_node', False) == True
+  tags: makinastates_cloud_cn,makinastates_cloud_cn_kvm
