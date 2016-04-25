@@ -22,6 +22,8 @@ from salt.utils.odict import OrderedDict
 # early in mcpillar, we dont have __salt__
 from mc_states import api
 from mc_states.grains.makina_grains import _is_lxc
+from distutils.version import LooseVersion
+
 
 _errmsg = saltapi._errmsg
 __name = 'mc_cloud_lxc'
@@ -83,8 +85,19 @@ def vt_default_settings(cloudSettings, imgSettings):
     _s = __salt__
     clone_from = imgSettings['lxc']['default']
     backing = 'dir'
-    if _s['mc_nodetypes.is_devhost']():
-        backing = 'overlayfs'
+    # if _s['mc_nodetypes.is_devhost']():
+    #     backing = 'overlayfs'
+    pkgs = ['lxc-templates', 'lxc', 'python3-lxc',
+            'liblxc1', 'lxcfs', 'dnsmasq', 'cgmanager']
+    # package exists but is currently broken
+    # if (
+    #     __grains__['os'] in ['Ubuntu'] and
+    #     LooseVersion(__grains__['osrelease']) >= '15.10'
+    # ):
+    #     for p in ['cgmanager']:
+    #         if p not in pkgs:
+    #             continue
+    #         pkgs.pop(pkgs.index(p))
     vmSettings = _s['mc_utils.dictupdate'](
         _s['mc_cloud_vm.vt_default_settings'](cloudSettings, imgSettings), {
             'vt': VT,
@@ -110,6 +123,7 @@ def vt_default_settings(cloudSettings, imgSettings):
                 'lxc_conf': [],
                 'lxc_conf_unset': []
             },
+            'pkgs': pkgs,
             'host_confs': {
                 '/etc/apparmor.d/lxc/lxc-default': {'mode': 644},
                 '/etc/default/lxc': {},

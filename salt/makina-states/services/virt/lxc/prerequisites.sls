@@ -2,6 +2,8 @@
 include:
   - makina-states.services.virt.lxc.hooks
 {% set locs = salt['mc_locations.settings']() %}
+{%- set vmdata = salt['mc_cloud_vm.settings']() %}
+{%- set data = vmdata.vts.lxc %}
 {% if grains['os'] in ['Ubuntu'] and grains['osrelease'] >= '16.04' %}
 lxc-repo:
   file.absent:
@@ -69,15 +71,7 @@ lxc-pkgs:
     - fromrepo: {{pkgssettings.udist}}-backports
 {% endif %}
 {% endif %}
-    - pkgs:
-      - lxc-templates
-      - lxc
-      - lxctl
-      - python3-lxc
-      - liblxc1
-      - lxcfs
-      - cgmanager
-      - dnsmasq
+    - pkgs: {{data.pkgs}}
     - watch_in:
       - mc_proxy: lxc-post-pkg
     - watch:
