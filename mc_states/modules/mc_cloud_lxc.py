@@ -240,7 +240,7 @@ def sync_container(origin, destination,
     return ret
 
 
-def clean_lxc_config(container, rootfs=None, fstab=None):
+def clean_lxc_config(container, rootfs=None, fstab=None, start=True):
     if not rootfs:
         rootfs = '/var/lib/lxc/{0}/rootfs'.format(container)
     if not fstab:
@@ -249,9 +249,13 @@ def clean_lxc_config(container, rootfs=None, fstab=None):
     if os.path.exists(config):
         lines = []
         ocontent = []
+        has_start = False
         with open(config) as fic:
             ocontent = fic.readlines()
             for i in ocontent:
+                if 'lxc.start.auto =' in i:
+                    has_start = True
+                    i = 'lxc.start.auto = {0}\n'.format(start and '1' or '0')
                 if 'lxc.utsname =' in i:
                     i = 'lxc.utsname = {0}\n'.format(container)
                 if 'lxc.rootfs =' in i:
@@ -267,6 +271,8 @@ def clean_lxc_config(container, rootfs=None, fstab=None):
                     continue
                 if i.strip():
                     lines.append(i)
+        if not has_start:
+            lines.append('lxc.start.auto = 0')
         content = ''.join(lines)
         if (lines != ocontent) and content:
             log.info('Patching new cleaned'
@@ -303,6 +309,6 @@ def sync_image_reference_containers(builder_ref, img, ret=None,
                    ret,
                    snapshot=snapshot,
                    force=force)
-    clean_lxc_config(img)
+    clean_lxc_config(img, start=False)
     return ret
 # vim:set et sts=4 ts=4 tw=80:
