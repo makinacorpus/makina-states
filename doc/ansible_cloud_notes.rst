@@ -71,5 +71,3 @@ Initialise and finish the container provisioning (from template)::
 
   ANSIBLE_TARGETS="$cn" bin/ansible-playbook \
     ansible/plays/cloud/create_container.yml -e "lxc_container_name=$vm from_container=$vm_tmpl"
-
-
