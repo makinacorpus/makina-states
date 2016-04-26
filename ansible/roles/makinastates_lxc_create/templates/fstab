@@ -1,0 +1,1 @@
+none dev/shm tmpfs rw,nosuid,nodev,create=dir
