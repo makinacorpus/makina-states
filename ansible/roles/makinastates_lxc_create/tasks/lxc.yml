@@ -6,7 +6,7 @@
   tags: makinastates_lxc_create
 - debug: {msg: {foo: "{{lxc_from_container}}"}}
   tags: makinastates_lxc_create
-- name: lxc create test (from template script)
+- name: lxc create test
   shell: |
          lxc-ls --fancy |grep -v ^NAME|awk '{print $1}'|egrep -q "^{{lxc_container_name}}$";echo $?
   register: makinastates_lxc_create_lxc_test
@@ -26,6 +26,12 @@
     - "LXC RestartContainer {{lxc_container_name}}"
     - "LXC Registerip {{lxc_container_name}}"
   tags: makinastates_lxc_create,makinastates_lxc_create_lxc
+- name: lxc reset script
+  template:
+    src: '../../../../files/usr/bin/reset-host.py'
+    dest: "{{lxc_path}}/{{lxc_container_name}}/reset-host.py"
+    mode: 755
+  tags: makinastates_lxc_create,makinastates_lxc_create_scripts
 - name: lxc mgmt scripts
   template:
     src: '../templates/{{item}}'
@@ -40,6 +46,11 @@
 - name: "StartContainer{{lxc_container_name}}"
   shell: "{{lxc_path}}/{{lxc_container_name}}/manage.sh start"
   tags: makinastates_lxc_create,makinastates_lxc_create_prereq
+- name: lxc reset force
+  shell: |
+    lxc-attach -n {{lxc_container_name}} -- rm -f /etc/lxc_reset_done
+  tags: makinastates_lxc_create,makinastates_lxc_create_prereq
+  when: makinastates_lxc_create_lxc_test['stdout'] == '1'
 - name: lxc prereq
   shell: "{{lxc_path}}/{{lxc_container_name}}/prereqs.sh"
   tags: makinastates_lxc_create,makinastates_lxc_create_prereq

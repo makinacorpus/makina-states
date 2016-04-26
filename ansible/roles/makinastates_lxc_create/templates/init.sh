@@ -28,4 +28,17 @@ if ! which python >/dev/null 2>/dev/null;then
       retry 15 1 apt-get install -y --force-yes python
     fi
 fi
+rh="/usr/bin/reset-host.py"
+marker=/etc/lxc_reset_done
+if [ -e "$rh" ] && [ ! -e $marker ];then
+    chmod +x "$rh" && \
+        "$rh" \
+            --origin="{{lxc_container_name}}" \
+            --reset-sshd_keys \
+            --reset-ssh \
+            --reset-files \
+            --reset-postfix &&\
+        touch $marker &&\
+        service ssh restart
+fi
 # vim:set et sts=4 ts=4 tw=80:
