@@ -22,6 +22,7 @@ if [ "x${is_docker}" != "x" ];then
 fi
 
 REMOVE="
+/etc/lxc_reset_done
 /tmp/.saltcloud
 /root/.cache
 /srv/makina-states/etc/salt/makina-states/nodetype
