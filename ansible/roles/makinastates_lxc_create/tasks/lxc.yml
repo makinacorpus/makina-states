@@ -32,20 +32,6 @@
     dest: "{{lxc_path}}/{{lxc_container_name}}/reset-host.py"
     mode: 755
   tags: makinastates_lxc_create,makinastates_lxc_create_scripts
-- name: lxc fstab init test
-  stat:
-    path: "{{lxc_path}}/{{lxc_container_name}}/fstab"
-  register: lxc_fstab_test
-  tags: makinastates_lxc_create,makinastates_lxc_create_fstab
-- name: lxc fstab init
-  template:
-    src: '../templates/{{item}}'
-    dest: "{{lxc_path}}/{{lxc_container_name}}/{{item}}"
-    mode: 644
-  with_items:
-    - fstab
-  when: not lxc_fstab_test.stat.exists
-  tags: makinastates_lxc_create,makinastates_lxc_create_fstab
 - name: lxc mgmt scripts
   template:
     src: '../templates/{{item}}'

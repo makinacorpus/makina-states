@@ -1,5 +1,5 @@
 ---
-- name: "lxc clone (from container: ${{lxc_from_container}})"
+- name: lxc clone (from container: ${{lxc_from_container}})
   shell: "lxc-clone -o {{lxc_from_container}} -n {{lxc_container_name}} -B {{lxc_backing_store}}"
   when: 'makinastates_lxc_create_lxc_test.stdout != "0"'
   tags: makinastates_lxc_create,makinastates_lxc_create_lxc
