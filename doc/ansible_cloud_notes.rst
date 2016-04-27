@@ -72,7 +72,7 @@ and remove parts from it (like sshkeys) to impersonate it::
     ansible/plays/cloud/snapshot_container.yml -e "lxc_template=$vm_tmpl lxc_container_name=lxc$vm_tmpl"
 
 Arguments:
-    
+
     ANSIBLE_TARGETS
         compute node where the container resides (must be in ansible inventary)
     lxc_template
@@ -93,7 +93,27 @@ Initialise and finish the container provisioning (from scratch)::
   ANSIBLE_TARGETS="$cn" bin/ansible-playbook \
     ansible/plays/cloud/create_container.yml -e "lxc_container_name=$vm"
 
+Arguments:
+
+    ANSIBLE_TARGETS
+        compute node where the container resides (must be in ansible inventary)
+    lxc_container_name
+        lxc container to create
+
 Initialise and finish the container provisioning (from template)::
 
   ANSIBLE_TARGETS="$cn" bin/ansible-playbook \
-    ansible/plays/cloud/create_container.yml -e "lxc_container_name=$vm from_container=$vm_tmpl"
+    ansible/plays/cloud/create_container.yml -e "lxc_container_name=$vm lxc_from_container=$vm_tmpl"
+
+Arguments:
+
+    ANSIBLE_TARGETS
+        compute node where the container resides (must be in ansible inventary)
+    lxc_template
+        lxc image to create
+    lxc_from_container
+        lxc container from which initing the container
+
+
+
+
