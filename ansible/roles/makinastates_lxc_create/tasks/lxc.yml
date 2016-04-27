@@ -76,5 +76,8 @@
     name: "{{lxc_container_name}}"
     ansible_host: "{{makinastates_lxc_create_ip.stdout}}"
     ansible_port: 22
-    ansible_ssh_common_args: |
+    ansible_ssh_common_args: >
+      {% if hostvars[inventory_hostname].get('ansible_connection', '') != 'local' %}
       -o ProxyCommand="ssh -W %h:%p -q {{hostvars[inventory_hostname]['ansible_user']}}@{{hostvars[inventory_hostname]['ansible_host']}} -p {{hostvars[inventory_hostname]['ansible_port']}}"
+      {% else %}''
+      {% endif %}
