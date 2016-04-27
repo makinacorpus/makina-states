@@ -7,4 +7,23 @@
   roles: [{role: 'makinastates_lxc_create'}]
 
 - hosts: "{{lxc_container_name}}"
-  roles: [{role: makinastates, makinastates_nodetype: lxccontainer}]
+  tasks:
+    - shell: |
+        test -e /srv/makina-states/bin/salt-call
+        test -e /srv/makina-states/bin/ansible
+        echo $?
+      name: "test makinastates presence"
+      register: lxc_makinastates_presence
+
+- hosts: "{{lxc_container_name}}"
+  roles:
+    - role: makinastates
+      makinastates_nodetype: lxccontainer
+      when: "lxc_makinastates_presence.stdout != '0'"
+
+- hosts: "{{lxc_container_name}}"
+  tasks:
+    - name: reconfiure makina-states
+      shell: |
+        /srv/makina-states/bin/boot-salt.sh -C --reconfigure -m {{lxc_container_name}} -n lxccontainer
+      when: "lxc_makinastates_presence.stdout == '0'"
