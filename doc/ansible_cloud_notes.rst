@@ -57,8 +57,8 @@ Configure compute_node with::
     ansible/plays/cloud/compute_node.yml
 
 
-Cooking and delivery of container templates
----------------------------------------------------
+Cooking and delivery of container / container templates
+--------------------------------------------------------
 Initialise a lxc container that will be the base of our image (after creation go edit
 in it until sastified of the result)::
 
@@ -85,6 +85,17 @@ from that image::
 
    ANSIBLE_TARGETS="$cn,$controller" bin/ansible-playbook \
     ansible/plays/cloud/sync_container.yml -e "lxc_host=$cn lxc_orig_host=$controller lxc_container_name=$vm_tmpl"
+
+Arguments:
+
+    ANSIBLE_TARGETS
+        both orig and dest
+    lxc_host
+        where to transfer container/template
+    lxc_orig_host
+        where from transfer container/template
+    lxc_container_name
+        lxc container to transfer
 
 Initialise a container
 -----------------------
