@@ -23,7 +23,17 @@
 
 - hosts: "{{lxc_container_name}}"
   tasks:
+    - name: test reconfiure makina-states
+      shell: |
+         grep -q "id: {{lxc_container_name}}" \
+               /srv/makina-states/etc/salt/minion.d/01_local.conf
+         echo $?
+      when: "lxc_makinastates_presence.stdout == '0'"
+      register: lxc_makinastates_reconfigured
     - name: reconfiure makina-states
       shell: |
+        set -ex
+        cd /srv/makina-states/
+        git reset --hard HEAD
         /srv/makina-states/bin/boot-salt.sh -C --reconfigure -m {{lxc_container_name}} -n lxccontainer
-      when: "lxc_makinastates_presence.stdout == '0'"
+      when: "lxc_makinastates_reconfigured.stdout != '0'"
