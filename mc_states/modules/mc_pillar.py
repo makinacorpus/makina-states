@@ -109,6 +109,10 @@ class IPRetrievalCycleError(IPRetrievalError):
     ''''''
 
 
+class DatabaseNotFound(KeyError):
+    '''.'''
+
+
 def retrieval_error(exc, fqdn, recurse=None):
     exc.fqdn = fqdn
     if recurse is None:
@@ -152,7 +156,6 @@ def has_db():
     else:
         return False
 
-
 # to be easily mockable in tests while having it cached
 def loaddb_do(*a, **kw5):
     dbpath = get_db()
@@ -162,7 +165,7 @@ def loaddb_do(*a, **kw5):
         raise ValueError(
             'invalid db format {0}: {1}'.format(suf, dbpath))
     if not has_db():
-        raise KeyError("{0} is not present".format(dbpath))
+        raise DatabaseNotFound("{0} is not present".format(dbpath))
     with open(get_db()) as fic:
         content = dbpath
         if suf not in ['sls']:
@@ -3668,11 +3671,15 @@ def get_masterless_makinastates_hosts(ttl=PILLAR_TTL):
     _s = __salt__
     def _do():
         data = set()
-        db = _s['mc_pillar.get_db_infrastructure_maps']()
-        for kind in ('bms', 'vms'):
-            for id_, idata in six.iteritems(db[kind]):
-                data.add(id_)
-        return list(data)
+        try:
+            db = _s['mc_pillar.get_db_infrastructure_maps']()
+            for kind in ('bms', 'vms'):
+                for id_, idata in six.iteritems(db[kind]):
+                    data.add(id_)
+            return list(data)
+        except DatabaseNotFound:
+            log.debug('mc_pillar is not configured')
+            return []
     cache_key = __name + '.get_masterless_makinastates_hosts1'
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
