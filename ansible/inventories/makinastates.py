@@ -346,6 +346,8 @@ class MakinaStatesInventory(object):
                 except ValueError:
                     payload = self.sanitize_payload({})
             hosts = [a for a in hosts if a not in payload['data']]
+        else:
+            payload = self.sanitize_payload(payload)
         if hosts:
             payload = self.update_cache(payload, hosts=hosts)
         return payload
