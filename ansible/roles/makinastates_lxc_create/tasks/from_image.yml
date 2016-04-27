@@ -1,5 +1,21 @@
 ---
+- name: lxc {{lxc_from_container}} config test
+  stat:
+    path: "{{lxc_path}}/{{lxc_from_container}}/config"
+  register: lxc_fstab_test
+  tags: makinastates_lxc_create,makinastates_lxc_create_fstab
+- name: "get rootfs of {{lxc_from_container}}"
+  shell: |-
+    set -ex
+    cfg="{{lxc_path}}/{{lxc_from_container}}/config"
+    test -e $cfg
+    egrep "^lxc.rootfs *= " "$cfg" | awk '{print $3}'
+  when: "lxc_clone_snapshot in [True, 'true', 'True']"
+  tags: makinastates_lxc_create,makinastates_lxc_clone_lxc
+  register: makinastates_lxc_clone_lxc_rootfs
 - name: "lxc clone (from container: ${{lxc_from_container}})"
-  shell: "lxc-clone -o {{lxc_from_container}} -n {{lxc_container_name}} -B {{lxc_backing_store}}"
+  shell: |-
+    lxc-clone -P {{lxc_path}} -o {{lxc_from_container}} -n {{lxc_container_name}} -B {{lxc_backing_store}}\
+    {% if lxc_clone_snapshot in [True, 'true', 'True']%}-s{% endif %}
   when: 'makinastates_lxc_create_lxc_test.stdout != "0"'
-  tags: makinastates_lxc_create,makinastates_lxc_create_lxc
+  tags: makinastates_lxc_create,makinastates_lxc_clone_lxc

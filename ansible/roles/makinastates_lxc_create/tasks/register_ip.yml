@@ -1,7 +1,7 @@
 ---
 - name: get ip
   shell: |
-    lxc-attach -n {{lxc_container_name}} -- ip addr show eth0|grep inet|grep -v :|awk '{print $2}'|sed "s|/.*||g"
+    lxc-attach -P {{lxc_path}} -n {{lxc_container_name}} -- ip addr show eth0|grep inet|grep -v :|awk '{print $2}'|sed "s|/.*||g"
   register: makinastates_lxc_create_ip
   tags: makinastates_lxc_create,makinastates_lxc_create_ip
 - name: show ip

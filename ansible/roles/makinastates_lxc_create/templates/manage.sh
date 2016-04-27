@@ -4,11 +4,12 @@ set -ex
 action=$1
 container="{{lxc_container_name}}"
 mainif=eth0
+lxcp=$(echo $(dirname $(dirname $(readlink -f $0))))
 case $action in
     stop|restart)
         if lxc-ls --fancy|egrep "^$container "|awk '{print $2}'\
             |grep -qi running;then
-            lxc-stop -k -n "$container"
+            lxc-stop -P "$lxcp" -k -n "$container"
         fi
     ;;
 esac
@@ -16,7 +17,7 @@ case $action in
     start|restart)
         if ! lxc-ls --fancy|egrep "^$container "|awk '{print $2}'\
             |grep -qi running;then
-            lxc-start -d -n "$container"
+            lxc-start -P "$lxcp" -d -n "$container"
             ret=$?
         else
             ret=0
@@ -30,7 +31,7 @@ case $action in
             if [ "x${ip}" != "x" ];then
                 break
             fi
-            ip=$(lxc-attach -n $container -- \
+            ip=$(lxc-attach -P "$lxcp" -n $container -- \
                  ip addr show $mainif|grep inet|grep -v : \
                  |awk '{print $2}'|sed "s|/.*||g")
             if [ "x${ip}" = "x" ];then

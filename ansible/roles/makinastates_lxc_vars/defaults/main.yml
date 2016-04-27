@@ -5,6 +5,7 @@ lxc_path: /var/lib/lxc
 lxc_container_name: testcontainer
 lxc_pip: "/usr/bin/pip"
 lxc_backing_store: dir
+lxc_backing_snapshot: null
 
 lxc_template: ubuntu
 lxc_os_release: xenial
