@@ -464,13 +464,15 @@ set_vars() {
     DO_HIGHSTATES="${DO_HIGHSTATES:-"no"}"
     DO_SETUP_VIRTUALENV="${DO_SETUP_VIRTUALENV:-"y"}"
     DO_INSTALL_NODETYPE="${DO_INSTALL_NODETYPE:-"y"}"
-    DO_RECONFIGURE_SALT="${DO_RECONFIGURE_SALT:-"y"}"
+    ONLY_DO_RECONFIGURE="${ONLY_DO_RECONFIGURE:-""}"
+    DO_RECONFIGURE="${DO_RECONFIGURE:-"y"}"
     DO_INSTALL_MAKINASTATES="${DO_INSTALL_MAKINASTATES:-"y"}"
     DO_NOCONFIRM="${DO_NOCONFIRM:-}"
     VENV_PATH="${VENV_PATH:-"${SALT_MS}/venv"}"
     EGGS_GIT_DIRS="ansible salt salttesting"
     PIP_CACHE="${VENV_PATH}/cache"
-    CONF_PREFIX="${SALT_MS}/etc/salt"
+    CONF_ROOT="${SALT_MS}/etc"
+    CONF_PREFIX="${CONF_ROOT}/salt"
     # nodetypes (calculed now in get_nodetype) and controllers sls
     # salt variables
     # global installation marker
@@ -500,6 +502,8 @@ set_vars() {
     export SALT_BRANCH="$(get_salt_branch)"
     export ANSIBLE_URL="$(get_ansible_url)"
     export ANSIBLE_BRANCH="$(get_ansible_branch)"
+    #
+    export CONF_ROOT CONF_PREFIX
     #
     export BASE_PACKAGES VENV_URL VENV_MD5 VENV_URLS_MD5 NO_MS_VENV_CACHE
     #
@@ -1123,16 +1127,19 @@ link_salt_dir() {
     done
 }
 
-reconfigure_salt() {
-    if [ "x${DO_RECONFIGURE_SALT}" != "xy" ]; then
-        bs_log "salt reconfiguration skipped"
+reconfigure() {
+    if [ "x${DO_RECONFIGURE}" != "xy" ]; then
+        bs_log "Reconfiguration skipped"
         return 0
     fi
+    local ansible_localhost="${CONF_ROOT}/ansible/inventories/local"
     overwrite="
     ${CONF_PREFIX}/minion.d/01_local.conf
+    ${ansible_localhost}
     "
     confs="
     ${CONF_PREFIX}/minion.d/01_local.conf.in:${CONF_PREFIX}/minion.d/01_local.conf
+    ${ansible_localhost}.in:${ansible_localhost}
     "
     # configure then salt
     for conft in $confs;do
@@ -1149,6 +1156,9 @@ reconfigure_salt() {
                 -e "s|__MS_PREFIX__|${PREFIX}|g" \
                 -e "s|__MS_MS__|${SALT_MS}|g" \
                 -e "s|__MS_NODETYPE__|$(get_nodetype)|g" \
+                -e "s|__MS_ANSIBLE_PORT__|${ANSIBLE_PORT:-"22"}|g" \
+                -e "s|__MS_USER__|$(whoami)|g" \
+                -e "s|#ms_remove_comment:||g" \
                 "${conf}" && debug_msg "Reconfigured ${conf}"
         fi
     done
@@ -1273,7 +1283,8 @@ usage() {
     bs_help "    --no-ms-venv-cache" "Do not try to download prebuilt virtualenvs" "${NO_MS_VENV_CACHE}" y
     bs_help "    --no-nodetype" "Do not run nodetype bootstrap" "${DO_INSTALL_NODETYPE}" y
     bs_help "    --no-venv" "Do not run the virtualenv setup"  "${DO_SETUP_VIRTUALENV}" y
-    bs_help "    --no-reconfigure-salt" "Do not touch to salt configuration files" "${DO_RECONFIGURE_SALT}" y
+    bs_help "    --reconfigure" "Only reconfigure local conf files" "${ONLY_DO_RECONFIGRE}" y
+    bs_help "    --no-reconfigure" "Do not touch to salt configuration files" "${DO_RECONFIGURE}" y
     bs_help "    --version" "show makina-states version & exit" "" "${DO_VERSION}"
 }
 
@@ -1340,8 +1351,13 @@ parse_cli_opts() {
             DO_SETUP_VIRTUALENV="no"
             argmatch="1"
         fi
-        if [ "x${1}" = "x--no-reconfigure-salt" ]; then
-            DO_RECONFIGURE_SALT="no"
+        if [ "x${1}" = "x--reconfigure" ]; then
+            ONLY_DO_RECONFIGURE="y"
+            DO_RECONFIGURE="y"
+            argmatch="1"
+        fi
+        if [ "x${1}" = "x--no-reconfigure" ]; then
+            DO_RECONFIGURE="no"
             argmatch="1"
         fi
         if [ "x${1}" = "x--no-nodetype" ]; then
@@ -1467,21 +1483,26 @@ do_highstate() {
 }
 
 main() {
-    install_prerequisites &&\
-    if [ "x${DO_GIT_PACK}" = "xy" ]; then
-        git_pack
-        exit $?
+    if [ "x${ONLY_DO_RECONFIGURE}" = "xy" ]; then
+        reconfigure && exit $?
+    else
+        install_prerequisites &&\
+        if [ "x${DO_GIT_PACK}" = "xy" ]; then
+            git_pack
+            exit $?
+        fi &&\
+        synchronize_code && \
+        if [ "x${DO_ONLY_SYNC_CODE}" = "xy" ]; then
+            exit $?
+        fi &&\
+            setup_virtualenv &&\
+            reconfigure &&\
+            install_nodetype &&\
+            install_makinastates &&\
+            do_highstate
     fi &&\
-    synchronize_code && \
-    if [ "x${DO_ONLY_SYNC_CODE}" = "xy" ]; then
-        exit $?
-    fi &&\
-        setup_virtualenv &&\
-        reconfigure_salt &&\
-        install_nodetype &&\
-        install_makinastates &&\
-        do_highstate &&\
         bs_log "end - sucess"
+
 }
 
 if [ "x${SALT_BOOT_AS_FUNCS}" = "x" ]; then
