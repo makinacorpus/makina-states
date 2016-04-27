@@ -59,8 +59,8 @@ Configure compute_node with::
 
 Cooking and delivery of container templates
 ---------------------------------------------------
-Initialise a lxc container image and snapshot with with (after creation go edit
-until complete the container)::
+Initialise a lxc container that will be the base of our image (after creation go edit
+in it until sastified of the result)::
 
   ANSIBLE_TARGETS="$controller,lxc$vm_tmpl" bin/ansible-playbook \
     ansible/plays/cloud/create_container.yml -e "lxc_container_name=lxc$vm_tmpl"
@@ -70,6 +70,15 @@ and remove parts from it (like sshkeys) to impersonate it::
 
   ANSIBLE_TARGETS="$controller" bin/ansible-playbook \
     ansible/plays/cloud/snapshot_container.yml -e "lxc_template=$vm_tmpl lxc_container_name=lxc$vm_tmpl"
+
+Arguments:
+    
+    ANSIBLE_TARGETS
+        compute node where the container resides (must be in ansible inventary)
+    lxc_template
+        lxc image to create
+    lxc_container_name
+        lxc container which serve as a base for the image
 
 Transfer the template to the compute node where you want to spawn containers
 from that image::
