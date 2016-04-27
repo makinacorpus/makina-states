@@ -127,5 +127,6 @@ Initialise and finish the container provisioning (from template)::
 Special case: use overlayfs to create the container::
 
     ANSIBLE_TARGETS="$cn,$vm" bin/ansible-playbook \
-        ansible/plays/cloud/create_container.yml -e "lxc_container_name=$vm lxc_from_container=$vm_tmpl lxc_backing_store=overlayfs"
+     ansible/plays/cloud/create_container.yml \
+     -e "lxc_container_name=$vm lxc_from_container=$vm_tmpl lxc_backing_store=overlayfs"
 
