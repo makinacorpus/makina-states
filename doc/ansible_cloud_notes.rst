@@ -56,7 +56,6 @@ Configure compute_node with::
   ANSIBLE_TARGETS="$cn" ansible-playbook \
     ansible/plays/cloud/compute_node.yml
 
-
 Cooking and delivery of container / container templates
 --------------------------------------------------------
 Initialise a lxc container that will be the base of our image (after creation go edit
