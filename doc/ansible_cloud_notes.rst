@@ -2,6 +2,11 @@ Create lxc containers in a cloud
 ===================================
 workflow:
 
+WARNING currently only those backing store are supported/tested:
+
+    - dir
+    - overlayfs
+
 Go into makina-states folder::
 
     cd /srv/makina-states
@@ -100,7 +105,7 @@ Initialise a container
 -----------------------
 Initialise and finish the container provisioning (from scratch)::
 
-  ANSIBLE_TARGETS="$cn" bin/ansible-playbook \
+  ANSIBLE_TARGETS="$cn,$vm" bin/ansible-playbook \
     ansible/plays/cloud/create_container.yml -e "lxc_container_name=$vm"
 
 Arguments:
@@ -109,21 +114,18 @@ Arguments:
         compute node where the container resides (must be in ansible inventary)
     lxc_container_name
         lxc container to create
+    lxc_from_container
+        lxc container from which initing the container
+    lxc_backing_store
+        (opt) backing store to use
 
 Initialise and finish the container provisioning (from template)::
 
-  ANSIBLE_TARGETS="$cn" bin/ansible-playbook \
+  ANSIBLE_TARGETS="$cn,vm" bin/ansible-playbook \
     ansible/plays/cloud/create_container.yml -e "lxc_container_name=$vm lxc_from_container=$vm_tmpl"
 
-Arguments:
+Special case: use overlayfs to create the container::
 
-    ANSIBLE_TARGETS
-        compute node where the container resides (must be in ansible inventary)
-    lxc_template
-        lxc image to create
-    lxc_from_container
-        lxc container from which initing the container
-
-
-
+    ANSIBLE_TARGETS="$cn,$vm" bin/ansible-playbook \
+        ansible/plays/cloud/create_container.yml -e "lxc_container_name=$vm lxc_from_container=$vm_tmpl lxc_backing_store=overlayfs"
 
