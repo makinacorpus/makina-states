@@ -154,6 +154,7 @@ def registry(ttl=15*60):
             'ssl': {'active': true},
             'users': {'active': true},
             'screen': {'active': true},
+            'editor': {'active': true},
             'vim': {'active': true},
             'rvm': {'active': False}}
         nodetypes_registry = __salt__['mc_nodetypes.registry']()

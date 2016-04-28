@@ -10,10 +10,16 @@
 {%- set locs = salt['mc_locations.settings']() %}
 include:
   - makina-states.localsettings.users
+  - makina-states.localsettings.editor
+  - makina-states.localsettings.vim.hooks
 
 vim-pkgs:
   pkg.installed:
     - pkgs: {{vim.packages}}
+    - watch:
+      - mc_proxy: vim-pre-install
+    - watch_in:
+      - mc_proxy: vim-post-install
 
 vim-editor-env-var:
   file.managed:
@@ -22,6 +28,10 @@ vim-editor-env-var:
     - contents: |
                 export EDITOR="$(which vim)"
                 export ED="$EDITOR"
+    - watch:
+      - mc_proxy: vim-pre-install
+    - watch_in:
+      - mc_proxy: vim-post-install
 
 {% if vim.kiorky_config %}
 vim-kiorky-config:
@@ -29,6 +39,10 @@ vim-kiorky-config:
     - name: https://github.com/kiorky/dotfiles.git
     - target: /etc/kiorky-dotfiles
     - user: root
+    - watch:
+      - mc_proxy: vim-pre-install
+    - watch_in:
+      - mc_proxy: vim-post-install
 {% endif %}
 
 {%- for i, data in ugs.users.items() %}
@@ -40,9 +54,17 @@ vimrc_configs-touch-{{ i }}:
     - mode: "644"
     - user: "{{i}}"
     - group: "{{i}}"
+    - watch:
+      - mc_proxy: vim-pre-install
+    - watch_in:
+      - mc_proxy: vim-post-install
 
 vimrc_configs-append-{{ i }}:
   file.accumulated:
+    - watch:
+      - mc_proxy: vim-pre-install
+    - watch_in:
+      - mc_proxy: vim-post-install
     - require:
       #- cmd: vimrc_configs-append-{{ i }}
       - file: vimrc_configs-touch-{{ i }}
@@ -67,6 +89,10 @@ vimrc-config-block-{{i}}:
     - append_if_not_found: True
     - backup: '.bak'
     - show_changes: True
+    - watch:
+      - mc_proxy: vim-pre-install
+    - watch_in:
+      - mc_proxy: vim-post-install
 {% endfor %}
 
 vimrc_configs-touch-global:
@@ -77,9 +103,17 @@ vimrc_configs-touch-global:
     - mode: 755
     - user: root
     - group: root
+    - watch:
+      - mc_proxy: vim-pre-install
+    - watch_in:
+      - mc_proxy: vim-post-install
 
 vimrc_configs-append-global:
   file.accumulated:
+    - watch:
+      - mc_proxy: vim-pre-install
+    - watch_in:
+      - mc_proxy: vim-post-install
     - require:
       - file: vimrc_configs-touch-global
       - pkg: vim-pkgs
@@ -103,3 +137,7 @@ vimrc-config-block-global:
     - append_if_not_found: True
     - backup: '.bak'
     - show_changes: True
+    - watch:
+      - mc_proxy: vim-pre-install
+    - watch_in:
+      - mc_proxy: vim-post-install

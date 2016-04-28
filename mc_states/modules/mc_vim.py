@@ -45,6 +45,7 @@ def settings():
                 'kiorky_config': kiorky_config,
                 'full': full,
                 'package': 'vim-nox',
+                'editor': '/usr/bin/vim.nox',
                 'packages': []
             })
         if data['package']:
