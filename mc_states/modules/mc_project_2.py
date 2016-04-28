@@ -2068,8 +2068,17 @@ def init_project(name, *args, **kwargs):
 
 def reload_cfg(cfg, *args, **kwargs):
     kwargs['force_reload'] = True
-    cfg = get_configuration(cfg['name'], *args, **kwargs)
-    return cfg
+    ncfg = get_configuration(cfg['name'], *args, **kwargs)
+    # keep some values from previous as cfg will be reloaded
+    # with values that were use in previous steps
+    # but will be rused in next steps
+    for i in [
+        'archives_root',
+        'current_archive_dir',
+    ]:
+        if i in cfg:
+            ncfg[i] = cfg[i]
+    return ncfg
 
 
 def guarded_step(cfg,
