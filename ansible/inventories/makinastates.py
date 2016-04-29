@@ -7,6 +7,7 @@ from __future__ import print_function
 '''
 MakinaStates custom dynamic inventory script for Ansible, in Python.
 '''
+import traceback
 import sys
 import re
 import subprocess
@@ -49,6 +50,83 @@ def magic_list_of_strings(hosts=None, separator=',', uniq=True):
     return result
 
 
+def get_container(pid):
+    '''
+    On a main host context, for a non containerized process
+    this return MAIN_HOST
+
+    On a container context, this return MAIN_HOST
+    On a hpot context, this return MAIN_HOST
+
+
+    '''
+    context = 'MAIN_HOST'
+    cg = '/proc/{0}/cgroup'.format(pid)
+    content = ''
+    # lxc ?
+    if os.path.isfile(cg):
+        with open(cg) as fic:
+            content = fic.read()
+            if 'lxc' in content:
+                # 9:blkio:NAME
+                context = content.split('\n')[0].split(':')[-1]
+    if '/lxc' in context:
+        context = context.split('/lxc/', 1)[1]
+    if '/' in context and (
+        '.service' in context or
+        '.slice' in context or
+        '.target' in context
+    ):
+        context = context.split('/')[0]
+    if 'docker' in content:
+        context = 'docker'
+    return context
+
+
+def is_this_lxc(pid=1):
+    container = get_container(pid)
+    if container not in ['MAIN_HOST']:
+        return True
+    envf = '/proc/{0}/environ'.format(pid)
+    if os.path.isfile(envf):
+        with open(envf) as fic:
+            content = fic.read()
+            if 'container=lxc' in content:
+                return True
+            if 'docker' in content:
+                return True
+            if os.path.exists('/.dockerinit'):
+                return True
+    return False
+
+
+def filter_host_pids(pids):
+    res = [pid for pid in pids
+           if get_container(pid) != 'MAIN_HOST']
+    return res
+
+
+def memcached_running():
+    if filter_host_pids(
+        subprocess.check_output('pgrep memcached',
+                                shell=True).split()
+    ):
+        return True
+    return False
+
+
+def restart_memcached():
+    if memcached_running():
+        try:
+            subprocess.check_output(
+                "sudo service memcached restart",
+                stderr=subprocess.STDOUT,
+                shell=True)
+        except subprocess.CalledProcessError:
+            trace = traceback.format_exc()
+            sys.stderr.write(trace)
+
+
 class MakinaStatesInventory(object):
 
     def __init__(self):
@@ -72,6 +150,10 @@ class MakinaStatesInventory(object):
         self.targets = magic_list_of_strings(os.environ.get('ANSIBLE_TARGETS'))
 
         self.debug = self.args.ms_debug
+
+        # in case of cache refreshing, force memcache restart
+        if self.args.refresh_cache and memcached_running():
+            restart_memcached()
 
         # we ask first salt for a valid set of hostnames to get pillar from
         # (minionid == fqdn)
