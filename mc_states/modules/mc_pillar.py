@@ -52,6 +52,7 @@ socket_errors = (
 )
 
 
+rei_flags = re.M | re.U | re.S | re.I
 log = logging.getLogger(__name__)
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
 DOTTED_DOMAIN_PATTERN = '(^{domain}|@{domain}|\\.{domain})\\.?$'
@@ -3978,6 +3979,54 @@ def get_ssl_conf(id_, ttl=PILLAR_TTL):
     cache_key = __name + '.get_ssl_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
+
+def get_masterless_makinastates_groups(host, pillar=None):
+    if pillar is None:
+        pillar = {}
+    groups = set()
+    mysql = re.compile('mysql', flags=rei_flags)
+    pgsql = re.compile('osm|pgsql|postgresql', flags=rei_flags)
+    es = re.compile('es|elaticsearch', flags=rei_flags)
+    mongo = re.compile('mongo', flags=rei_flags)
+    rabbit = re.compile('rabbit', flags=rei_flags)
+    solr = re.compile('solr', flags=rei_flags)
+    prod = re.compile('^prod-', flags=rei_flags)
+    dev = re.compile('^dev-', flags=rei_flags)
+    staging = re.compile('^staging-', flags=rei_flags)
+    qa = re.compile('^qa-', flags=rei_flags)
+    what = {'all': True,
+            'mysql': mysql.search(host),
+            'pgsql': pgsql.search(host),
+            'rabbit': rabbit.search(host),
+            'solr': solr.search(host),
+            'es': es.search(host),
+            'mongo': mongo.search(host),
+            'prod': prod.search(host),
+            'staging': staging.search(host),
+            'qa': qa.search(host),
+            'dev': dev.search(host)}
+    for group, test in six.iteritems(what):
+        if test:
+            groups.add(group)
+    is_ = pillar.get('makina-states.cloud', {}).get('is', {})
+    mpref = 'makina-states.services.backup.burp.server'
+    if pillar.get(mpref, False):
+        groups.add('burp_servers')
+    mpref = 'makina-states.services.dns.bind.is_master'
+    if pillar.get(mpref, False):
+        groups.add('dns_masters')
+    mpref = 'makina-states.services.dns.bind.is_slave'
+    if pillar.get(mpref, False):
+        groups.add('dns_slaves')
+    if True in [('dns.bind.servers' in a) for a in pillar]:
+        groups.add('dns')
+    if is_.get('vm', True):
+        groups.add('vms')
+    if is_.get('compute_node', True):
+        groups.add('bms')
+    if is_.get('controller', True):
+        groups.add('controllers')
+    return groups
 
 def test():
     return True

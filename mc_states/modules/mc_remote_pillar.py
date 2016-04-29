@@ -134,6 +134,24 @@ def get_generate_hooks():
     return _s['mc_utils.uniquify'](hooks)
 
 
+def get_groups(host, pillar=None, groups=None):
+    _s = __salt__
+    if pillar is None:
+        pillar = get_pillar(host)
+    if groups is None:
+        groups = []
+    data = set()
+    for f in _s:
+        if f.endswith('.get_masterless_makinastates_groups'):
+            data.add(f)
+    for i in data:
+        res = _s[i](host, pillar)
+        if res:
+            [groups.append(i) for i in res
+             if i not in groups]
+    return groups
+
+
 def generate_masterless_pillar(id_,
                                set_retcode=False,
                                dump=False,
@@ -153,6 +171,7 @@ def generate_masterless_pillar(id_,
         log.error('MASTERLESS PILLAR FOR {0} failed'
                   ' to render'.format(id_))
         log.error(error)
+    pillar['ansible_groups'] = get_groups(id_, pillar)
     if isinstance(pillar.get('_errors', None), list):
         errors.extend(pillar['_errors'])
     if dump and not errors:
@@ -384,10 +403,12 @@ def generate_ansible_roster(ids_=None, **kwargs):
                     host,
                     '\n'.join(pillar['_errors'])))
         oinfos = pillar.get(saltapi.SSH_CON_PREFIX, {})
+        pillar['makinastates_from_ansible'] = True
         hosts[host] = {
             'name': host,
             'ansible_host': host,
             'ansible_port': 22,
+            'makinastates_from_ansible': True,
             'salt_pillar': pillar}
         hosts[host].update(oinfos)
         for i, aliases in six.iteritems({

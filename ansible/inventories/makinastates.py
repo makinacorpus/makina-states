@@ -196,60 +196,17 @@ class MakinaStatesInventory(object):
             sys.exit(rc)
 
     def make_groups(self):
-        listhosts = self.inventory['_meta']['hostvars'].keys()
-        mysql = re.compile('mysql', flags=rei_flags)
-        pgsql = re.compile('osm|pgsql|postgresql', flags=rei_flags)
-        es = re.compile('es|elaticsearch', flags=rei_flags)
-        mongo = re.compile('mongo', flags=rei_flags)
-        rabbit = re.compile('rabbit', flags=rei_flags)
-        solr = re.compile('solr', flags=rei_flags)
-        prod = re.compile('^prod-', flags=rei_flags)
-        dev = re.compile('^dev-', flags=rei_flags)
-        staging = re.compile('^staging-', flags=rei_flags)
-        qa = re.compile('^qa-', flags=rei_flags)
-
-        what = {'all': listhosts[:],
-                'mysql': filter(lambda x: mysql.search(x), listhosts[:]),
-                'pgsql': filter(lambda x: pgsql.search(x), listhosts[:]),
-                'rabbit': filter(lambda x: rabbit.search(x), listhosts[:]),
-                'solr': filter(lambda x: solr.search(x), listhosts[:]),
-                'es': filter(lambda x: es.search(x), listhosts[:]),
-                'mongo': filter(lambda x: mongo.search(x), listhosts[:]),
-                'prod': filter(lambda x: prod.search(x), listhosts[:]),
-                'staging': filter(lambda x: staging.search(x), listhosts[:]),
-                'qa': filter(lambda x: qa.search(x), listhosts[:]),
-                'dev': filter(lambda x: dev.search(x), listhosts[:])}
-        for group, hosts in six.iteritems(what):
-            alles = self.inventory.setdefault(group, {})
-            alleshosts = alles.setdefault('hosts', [])
-            _ = [alleshosts.append(i) for i in hosts  # noqa
-                 if i not in alleshosts]
-        dns = self.inventory.setdefault('dns', [])
-        vms = self.inventory.setdefault('vms', [])
-        bms = self.inventory.setdefault('bms', [])
-        controllers = self.inventory.setdefault('controllers', [])
         for host, data in six.iteritems(self.inventory['_meta']['hostvars']):
-            pillar = data.get('salt_pillar', {})
-            if pillar:
-                pillar['makinastates_from_ansible'] = True
-                is_ = pillar.get('makina-states.cloud', {}).get('is', {})
-                mpref = 'makina-states.services.backup.burp.server'
-                if pillar.get(mpref, False):
-                    self.inventory.setdefault('burp_servers', []).append(host)
-                mpref = 'makina-states.services.dns.bind.is_master'
-                if pillar.get(mpref, False):
-                    self.inventory.setdefault('dns_masters', []).append(host)
-                mpref = 'makina-states.services.dns.bind.is_slave'
-                if pillar.get(mpref, False):
-                    self.inventory.setdefault('dns_slaves', []).append(host)
-                if True in [('dns.bind.servers' in a) for a in pillar]:
-                    dns.append(host)
-                if is_.get('vm', True) and host not in vms:
-                    vms.append(host)
-                if is_.get('compute_node', True) and host not in bms:
-                    bms.append(host)
-                if is_.get('controller', True) and host not in controllers:
-                    controllers.append(host)
+            try:
+                groups = data.get('salt_pillar', {}).get('ansible_groups', [])
+            except Exception:
+                continue
+            else:
+                for g in groups:
+                    ggroup = self.inventory.setdefault(g, {})
+                    group = ggroup.setdefault('hosts', [])
+                    if host not in group:
+                        group.append(host)
 
     def fixperms(self):
         if os.path.exists(self.cache_path):
@@ -301,7 +258,6 @@ class MakinaStatesInventory(object):
         json_data = self.json_format_dict(data, True)
         with open(filename, 'w') as cache:
             cache.write(json_data)
-            cache.close()
         self.fixperms()
 
     def is_cache_valid(self, entry, ttl_key=TTL_KEY):
