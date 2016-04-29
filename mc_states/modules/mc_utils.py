@@ -1027,44 +1027,60 @@ def output(mapping, raw=False, outputter='highstate'):
     return ret
 
 
-def is_this_lxc():
-    container = get_container(1)
-    if container not in ['MAIN_HOST']:
-        return True
-    return False
-
-
 def get_container(pid):
-    lxc = 'MAIN_HOST'
-    envf = '/proc/1/environ'.format(pid)
+    '''
+    On a main host context, for a non containerized process
+    this return MAIN_HOST
+
+    On a container context, this return MAIN_HOST
+    On a hpot context, this return MAIN_HOST
+
+
+    '''
+    context = 'MAIN_HOST'
     cg = '/proc/{0}/cgroup'.format(pid)
+    content = ''
     # lxc ?
     if os.path.isfile(cg):
         with open(cg) as fic:
             content = fic.read()
             if 'lxc' in content:
                 # 9:blkio:NAME
-                lxc = content.split('\n')[0].split(':')[-1]
-    if '/lxc' in lxc:
-        lxc = lxc.split('/lxc/', 1)[1]
-    if '/' in lxc and (
-        '.service' in lxc or
-        '.slice' in lxc or
-        '.target' in lxc
+                context = content.split('\n')[0].split(':')[-1]
+    if '/lxc' in context:
+        context = context.split('/lxc/', 1)[1]
+    if '/' in context and (
+        '.service' in context or
+        '.slice' in context or
+        '.target' in context
     ):
-        lxc = lxc.split('/')[0]
-    if lxc == 'MAIN_HOST' and os.path.isfile(envf):
+        context = context.split('/')[0]
+    if 'docker' in content:
+        context = 'docker'
+    return context
+
+
+def is_this_lxc(pid=1):
+    container = get_container(pid)
+    if container not in ['MAIN_HOST']:
+        return True
+    envf = '/proc/{0}/environ'.format(pid)
+    if os.path.isfile(envf):
         with open(envf) as fic:
             content = fic.read()
             if 'container=lxc' in content:
-                lxc = socket.getfqdn()
-    return lxc
+                return True
+            if 'docker' in content:
+                return True
+            if os.path.exists('/.dockerinit'):
+                return True
+    return False
 
 
 def filter_host_pids(pids):
-    thishost = get_container(1)
-    return [a for a in pids
-            if get_container(a) == thishost]
+    res = [pid for pid in pids
+           if get_container(pid) != 'MAIN_HOST']
+    return res
 
 
 def cache_kwargs(*args, **kw):
