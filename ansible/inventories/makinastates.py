@@ -67,6 +67,8 @@ class MakinaStatesInventory(object):
         self.read_settings()
         self.read_cli_args()
         self.init_cache()
+        if os.environ.get('MS_REFRESH_CACHE', ''):
+            self.args.refresh_cache = True
         self.targets = magic_list_of_strings(os.environ.get('ANSIBLE_TARGETS'))
 
         self.debug = self.args.ms_debug
