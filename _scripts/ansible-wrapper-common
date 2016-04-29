@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+export WC=$(pwd)
+export OWC=${OWC:-${WC}}
+export OA=$OWC/ansible
+export A=$WC/ansible
+export SCRIPT=$(basename ${0})
+MS_VENV_PATH="${MS_VENV_PATH-${WC}/venv}"
+if [ -e "${MS_VENV_PATH}/bin/activate" ]
+then
+    . "${MS_VENV_PATH}/bin/activate"
+else
+    warn "virtualenv not found in ${MS_VENV_PATH}"
+fi
+
+export ANSIBLE_NOLIMIT=${ANSIBLE_NOLIMIT-}
+
+ANSIBLE_TARGETS=${ANSIBLE_TARGETS-}
+if [[ -n ${ANSIBLE_TARGETS} ]];then
+    export ANSIBLE_TARGETS
+fi
+
+MS_REFRESH_CACHE=${MS_REFRESH_CACHE-}
+if [[ -n ${MS_REFRESH_CACHE} ]];then
+    export MS_REFRESH_CACHE
+fi
+
+export ANSIBLE_HOSTS="${ANSIBLE_HOSTS:-"${WC}/etc/ansible/inventories"}"
+
+if [[ -z ${ANSIBLE_NOCOWS-} ]];then
+    export ANSIBLE_NOCOWS="False"
+fi
+
+if [[ -z ${ANSIBLE_HOST_KEY_CHECKING-} ]];then
+    export ANSIBLE_HOST_KEY_CHECKING="False"
+fi
+
+if [[ -z ${ANSIBLE_LIBRARY-} ]];then
+    export ANSIBLE_LIBRARY="${A}/library:${OA}/library:${OWC}/library:/usr/share/library"
+fi
+if [[ -z ${ANSIBLE_ROLES_PATH-} ]];then
+    export ANSIBLE_ROLES_PATH="${A}/roles:${OA}/roles:${OWC}/roles:/etc/ansible/roles"
+fi
+if [[ -z ${ANSIBLE_ACTION_PLUGINS-} ]];then
+    export ANSIBLE_ACTION_PLUGINS="${A}/plugins/action:${OA}/plugins/action:${OWC}/plugins/action:~/.ansible/plugins/action:/usr/share/ansible/plugins/action"
+fi
+if [[ -z ${ANSIBLE_CACHE_PLUGINS-} ]];then
+    export ANSIBLE_CACHE_PLUGINS="${A}/plugins/cache:${OA}/plugins/cache:${OWC}/plugins/cache:~/.ansible/plugins/cache:/usr/share/ansible/plugins/cache"
+fi
+if [[ -z ${ANSIBLE_CALLBACK_PLUGINS-} ]];then
+    export ANSIBLE_CALLBACK_PLUGINS="${A}/plugins/callback:${OA}/plugins/callback:${OWC}/plugins/callback:~/.ansible/plugins/callback:/usr/share/ansible/plugins/callback"
+fi
+if [[ -z ${ANSIBLE_CONNECTION_PLUGINS-} ]];then
+    export ANSIBLE_CONNECTION_PLUGINS="${A}/plugins/connection:${OA}/plugins/connection:${OWC}/plugins/connection:~/.ansible/plugins/connection:/usr/share/ansible/plugins/connection"
+fi
+
+if [[ -z ${ANSIBLE_LOOKUP_PLUGINS-} ]];then
+    export ANSIBLE_CALLBACK_PLUGINS="${A}/plugins/lookup:${OA}/plugins/lookup:${OWC}/plugins/lookup:~/.ansible/plugins/lookup:/usr/share/ansible/plugins/lookup"
+fi
+if [[ -z ${ANSIBLE_INVENTORY_PLUGINS-} ]];then
+    export ANSIBLE_CALLBACK_PLUGINS="${A}/plugins/inventory:${OA}/plugins/inventory:${OWC}/plugins/inventory:~/.ansible/plugins/inventory:/usr/share/ansible/plugins/inventory"
+fi
+
+if [[ -z ${ANSIBLE_FILTER_PLUGINS-} ]];then
+    export ANSIBLE_CALLBACK_PLUGINS="${A}/plugins/filter:${OA}/plugins/filter:${OWC}/plugins/filter:~/.ansible/plugins/filter:/usr/share/ansible/plugins/filter"
+fi
+if [[ -z ${ANSIBLE_TEST_PLUGINS-} ]];then
+    export ANSIBLE_CALLBACK_PLUGINS="${A}/plugins/test:${OA}/plugins/test:${OWC}/plugins/test:~/.ansible/plugins/test:/usr/share/ansible/plugins/test"
+fi
+
+if [[ -z ${ANSIBLE_STRATEGY_PLUGINS-} ]];then
+    export ANSIBLE_CALLBACK_PLUGINS="${A}/plugins/stagegy:${OA}/plugins/stagegy:${OWC}/plugins/strategy:~/.ansible/plugins/stagegy:/usr/share/ansible/plugins/stagegy"
+fi
+
+if [[ -n ${MS_ENV_DEBUG-} ]];then
+    env
+    exit 1
+fi

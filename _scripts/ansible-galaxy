@@ -1,23 +1,6 @@
 #!/usr/bin/env bash
+export OWC=$(pwd)
 cd "$(dirname "$(dirname "$(readlink -f ${0})")")"
-if [[ -n ${ANSIBLE_TARGETS-} ]];then
-    export ANSIBLE_TARGETS
-fi
-SCRIPT=$(basename ${0})
-WC="$(pwd)"
-MS_VENV_PATH="${MS_VENV_PATH-${WC}/venv}"
-if [ -e "${MS_VENV_PATH}/bin/activate" ]
-then
-    . "${MS_VENV_PATH}/bin/activate"
-else
-    warn "virtualenv not found in ${MS_VENV_PATH}"
-fi
-export CANSIBLE_LIBRARY="${WC}/ansible/library:${WC}/ansible:/usr/share/library"
-if [ -n "${ANSIBLE_LIBRARY}" ];then
-    export ANSIBLE_LIBRARY="${CANSIBLE_LIBRARY}:${ANSIBLE_LIBRARY}"
-else
-    export ANSIBLE_LIBRARY="${CANSIBLE_LIBRARY}"
-fi
-export ANSIBLE_HOSTS="${ANSIBLE_HOSTS:-"${WC}/etc/ansible/inventories"}"
+. bin/ansible-wrapper-common
 exec ${MS_VENV_PATH}/bin/${SCRIPT} "${@}"
 # vim:set et sts=4 ts=4 tw=80:
