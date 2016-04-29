@@ -57,6 +57,10 @@ __name = 'network'
 log = logging.getLogger(__name__)
 
 
+def mainip():
+    return __salt__['cmd.run']("ip route get 1 | awk '{print $NF;exit}'",
+                               python_shell=True)
+
 def hostname():
     return socket.getfqdn()
 
