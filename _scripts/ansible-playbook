@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 cd "$(dirname "$(dirname "$(readlink -f ${0})")")"
-if [[ -n ${ANSIBLE_TARGETS-} ]];then
+ANSIBLE_NOLIMIT=${ANSIBLE_NOLIMIT-}
+ANSIBLE_TARGETS=${ANSIBLE_TARGETS-}
+if [[ -n ${ANSIBLE_TARGETS} ]];then
     export ANSIBLE_TARGETS
+fi
+MS_REFRESH_CACHE=${MS_REFRESH_CACHE-}
+if [[ -n ${MS_REFRESH_CACHE} ]];then
+    export MS_REFRESH_CACHE
 fi
 SCRIPT=$(basename ${0})
 WC="$(pwd)"
@@ -19,7 +25,7 @@ else
     export ANSIBLE_LIBRARY="${CANSIBLE_LIBRARY}"
 fi
 export ANSIBLE_HOSTS="${ANSIBLE_HOSTS:-"${WC}/etc/ansible/inventories"}"
-if [[ -n ${ANSIBLE_TARGETS-} ]];then
+if [[ -z ${ANSIBLE_NOLIMIT} ]] && [[ -n ${ANSIBLE_TARGETS-} ]];then
     exec ${MS_VENV_PATH}/bin/${SCRIPT} -l "${ANSIBLE_TARGETS}" "${@}"
 else
     exec ${MS_VENV_PATH}/bin/${SCRIPT} "${@}"
