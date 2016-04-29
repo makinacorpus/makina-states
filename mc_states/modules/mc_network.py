@@ -57,6 +57,10 @@ __name = 'network'
 log = logging.getLogger(__name__)
 
 
+def hostname():
+    return socket.getfqdn()
+
+
 def default_net():
     '''
     Function to be used on a running system (opposed to settings)
