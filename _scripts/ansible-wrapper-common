@@ -57,7 +57,7 @@ while read line;do
     eval 'val=$'"${var}"
     if [[ -n "${paths}" ]] && [[ -z ${val} ]]; then
         for p in ${paths//;/ };do
-            if [ -z ${subpaths} ];then
+            if [[ -z ${subpaths} ]]; then
                 subpaths="${p}/${prefix}"
             else
                 subpaths="${subpaths}:${p}/${prefix}"
@@ -71,7 +71,7 @@ while read line;do
     fi
 done <<< "${ANSIBLE_VARS}"
 
-if [[ -n ${MS_ENV_DEBUG-} ]];then
+if [[ -n ${MS_ENV_DEBUG-} ]]; then
     env
     exit 1
 fi
