@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 export WC=$(pwd)
+export A=$WC/ansible
+export DA=$WC/.ansible
 export OWC=${OWC:-${WC}}
 export OA=$OWC/ansible
-export A=$WC/ansible
+export ODA=$OWC/.ansible
 export SCRIPT=$(basename ${0})
-MS_VENV_PATH="${MS_VENV_PATH-${WC}/venv}"
+export MS_VENV_PATH="${MS_VENV_PATH-${WC}/venv}"
+export CONF_PREFIXES="/etc/ansible"
+export MODULE_PREFIXES="/usr/share/ansible/plugins"
+
 if [ -e "${MS_VENV_PATH}/bin/activate" ]
 then
     . "${MS_VENV_PATH}/bin/activate"
@@ -12,64 +17,59 @@ else
     warn "virtualenv not found in ${MS_VENV_PATH}"
 fi
 
-export ANSIBLE_NOLIMIT=${ANSIBLE_NOLIMIT-}
 
-ANSIBLE_TARGETS=${ANSIBLE_TARGETS-}
-if [[ -n ${ANSIBLE_TARGETS} ]];then
-    export ANSIBLE_TARGETS
-fi
+for p in "${WC}" "${OWC}" "${ODA}" "${OA}" "${DA}" "${A}";do
+    CONF_PREFIXES="${p};${CONF_PREFIXES}"
+    MODULE_PREFIXES="${p};${MODULE_PREFIXES}"
+done
 
-MS_REFRESH_CACHE=${MS_REFRESH_CACHE-}
-if [[ -n ${MS_REFRESH_CACHE} ]];then
-    export MS_REFRESH_CACHE
-fi
-
-export ANSIBLE_HOSTS="${ANSIBLE_HOSTS:-"${WC}/etc/ansible/inventories"}"
-
-if [[ -z ${ANSIBLE_NOCOWS-} ]];then
-    export ANSIBLE_NOCOWS="False"
-fi
-
-if [[ -z ${ANSIBLE_HOST_KEY_CHECKING-} ]];then
-    export ANSIBLE_HOST_KEY_CHECKING="False"
-fi
-
-if [[ -z ${ANSIBLE_LIBRARY-} ]];then
-    export ANSIBLE_LIBRARY="${A}/library:${OA}/library:${OWC}/library:/usr/share/library"
-fi
-if [[ -z ${ANSIBLE_ROLES_PATH-} ]];then
-    export ANSIBLE_ROLES_PATH="${A}/roles:${OA}/roles:${OWC}/roles:/etc/ansible/roles"
-fi
-if [[ -z ${ANSIBLE_ACTION_PLUGINS-} ]];then
-    export ANSIBLE_ACTION_PLUGINS="${A}/plugins/action:${OA}/plugins/action:${OWC}/plugins/action:~/.ansible/plugins/action:/usr/share/ansible/plugins/action"
-fi
-if [[ -z ${ANSIBLE_CACHE_PLUGINS-} ]];then
-    export ANSIBLE_CACHE_PLUGINS="${A}/plugins/cache:${OA}/plugins/cache:${OWC}/plugins/cache:~/.ansible/plugins/cache:/usr/share/ansible/plugins/cache"
-fi
-if [[ -z ${ANSIBLE_CALLBACK_PLUGINS-} ]];then
-    export ANSIBLE_CALLBACK_PLUGINS="${A}/plugins/callback:${OA}/plugins/callback:${OWC}/plugins/callback:~/.ansible/plugins/callback:/usr/share/ansible/plugins/callback"
-fi
-if [[ -z ${ANSIBLE_CONNECTION_PLUGINS-} ]];then
-    export ANSIBLE_CONNECTION_PLUGINS="${A}/plugins/connection:${OA}/plugins/connection:${OWC}/plugins/connection:~/.ansible/plugins/connection:/usr/share/ansible/plugins/connection"
-fi
-
-if [[ -z ${ANSIBLE_LOOKUP_PLUGINS-} ]];then
-    export ANSIBLE_CALLBACK_PLUGINS="${A}/plugins/lookup:${OA}/plugins/lookup:${OWC}/plugins/lookup:~/.ansible/plugins/lookup:/usr/share/ansible/plugins/lookup"
-fi
-if [[ -z ${ANSIBLE_INVENTORY_PLUGINS-} ]];then
-    export ANSIBLE_CALLBACK_PLUGINS="${A}/plugins/inventory:${OA}/plugins/inventory:${OWC}/plugins/inventory:~/.ansible/plugins/inventory:/usr/share/ansible/plugins/inventory"
-fi
-
-if [[ -z ${ANSIBLE_FILTER_PLUGINS-} ]];then
-    export ANSIBLE_CALLBACK_PLUGINS="${A}/plugins/filter:${OA}/plugins/filter:${OWC}/plugins/filter:~/.ansible/plugins/filter:/usr/share/ansible/plugins/filter"
-fi
-if [[ -z ${ANSIBLE_TEST_PLUGINS-} ]];then
-    export ANSIBLE_CALLBACK_PLUGINS="${A}/plugins/test:${OA}/plugins/test:${OWC}/plugins/test:~/.ansible/plugins/test:/usr/share/ansible/plugins/test"
-fi
-
-if [[ -z ${ANSIBLE_STRATEGY_PLUGINS-} ]];then
-    export ANSIBLE_CALLBACK_PLUGINS="${A}/plugins/stagegy:${OA}/plugins/stagegy:${OWC}/plugins/strategy:~/.ansible/plugins/stagegy:/usr/share/ansible/plugins/stagegy"
-fi
+ANSIBLE_VARS="\
+ANSIBLE_NOLIMIT
+ANSIBLE_TARGETS
+MS_REFRESH_CACHE
+ANSIBLE_HOSTS:::${WC}/etc/ansible/inventories
+ANSIBLE_HOST_KEY_CHECKING:::False
+ANSIBLE_NOCOWS:::False
+ANSIBLE_LIBRARY:library:${MODULE_PREFIXES}
+ANSIBLE_ROLES_PATH:roles:${CONF_PREFIXES}
+ANSIBLE_ACTION_PLUGINS:action:${MODULE_PREFIXES}
+ANSIBLE_CACHE_PLUGINS:cache:${MODULE_PREFIXES}
+ANSIBLE_CALLBACK_PLUGINS:callback:${MODULE_PREFIXES}
+ANSIBLE_LOOKUP_PLUGINS:lookup:${MODULE_PREFIXES}
+ANSIBLE_CONNECTION_PLUGINS:connection:${MODULE_PREFIXES}
+ANSIBLE_INVENTORY_PLUGINS:inventory:${MODULE_PREFIXES}
+ANSIBLE_FILTER_PLUGINS:filter:${MODULE_PREFIXES}
+ANSIBLE_TEST_PLUGINS:test:${MODULE_PREFIXES}
+ANSIBLE_STRATEGY_PLUGINS:strategy:${MODULE_PREFIXES}"
+i=0
+while read line;do
+    default=$(echo "$line:"|cut -d: -f4)
+    var=$(echo "$line:"|cut -d: -f1)
+    prefix=$(echo "$line:"|cut -d: -f2)
+    paths=$(echo "$line:"|cut -d: -f3)
+    subpaths=""
+    eval 'val=$'"${var}"
+    if [[ -n "${default}" ]] && [[ -z ${val} ]]; then
+        if [[ -z ${val} ]];then
+            eval ${var}'="'${default}'"'
+        fi
+    fi
+    eval 'val=$'"${var}"
+    if [[ -n "${paths}" ]] && [[ -z ${val} ]]; then
+        for p in ${paths//;/ };do
+            if [ -z ${subpaths} ];then
+                subpaths="${p}/${prefix}"
+            else
+                subpaths="${subpaths}:${p}/${prefix}"
+            fi
+        done
+        eval ${var}'="'${subpaths}'"'
+    fi
+    eval 'val=$'"${var}"
+    if [ -n ${val} ]; then
+        eval 'export '${var}'="'${val}'"'
+    fi
+done <<< "${ANSIBLE_VARS}"
 
 if [[ -n ${MS_ENV_DEBUG-} ]];then
     env
