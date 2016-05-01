@@ -75,3 +75,4 @@ if [[ -n ${MS_ENV_DEBUG-} ]]; then
     env
     exit 1
 fi
+cd "${OWC}"
