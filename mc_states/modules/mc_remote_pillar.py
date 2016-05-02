@@ -55,6 +55,7 @@ from multiprocessing import Queue as mQueue
 import multiprocessing
 import threading
 import traceback
+import salt.loader
 
 import salt.utils.minions
 import salt.config as config
@@ -284,7 +285,7 @@ def wait_pool(workers, output_queue, results):
 
 def generate_masterless_pillars(ids_=None,
                                 skip=None,
-                                processes=8,
+                                processes=None,
                                 executable=None,
                                 threads=None,
                                 debug=False,
@@ -298,6 +299,14 @@ def generate_masterless_pillars(ids_=None,
     _s = __salt__
     _o = __opts__
     locs = _s['mc_locations.settings']()
+    if processes is None:
+        try:
+            grains = salt.loader.grains(_o)
+            processes = int(grains['num_cpus']) + 1
+        except ValueError:
+            processes = 0
+        if processes < 2:
+            processes = 2
     if not executable:
         executable = os.path.join(locs['msr'], 'bin/salt-call')
     if not config_dir:
