@@ -302,7 +302,7 @@ def generate_masterless_pillars(ids_=None,
     if processes is None:
         try:
             grains = salt.loader.grains(_o)
-            processes = int(grains['num_cpus']) + 1
+            processes = int(grains['num_cpus'])
         except ValueError:
             processes = 0
         if processes < 2:
