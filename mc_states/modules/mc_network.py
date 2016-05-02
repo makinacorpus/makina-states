@@ -276,11 +276,14 @@ def settings():
             grainsPref + 'domain', default_domain)
         data['fqdn'] = _s['mc_utils.get']('nickname', grains['id'])
         localhosts = []
+        slug = data['hostname']
         if data['domain']:
-            localhosts.extend([
-               '{main_ip} {hostname}.{domain} {hostname}'.format(**data),
-               '127.0.1.1 {hostname}.{domain} {hostname}'.format(**data),
-               '127.0.0.1 {hostname}.{domain} {hostname}'.format(**data)])
+            slug = '{hostname}.{domain} {hostname}'.format(**data)
+        localhosts.extend([
+           '{1} {0}'.format(slug, data['main_ip']),
+           '127.0.1.1 {0}'.format(slug),
+           '127.0.0.1 {0}'.format(slug),
+           '::1       {0}'.format(slug)])
         data['hosts_list'] = hosts_list = []
         for k, edata in pillar.items():
             if k.endswith('makina-hosts'):
