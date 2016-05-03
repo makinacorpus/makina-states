@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+import os
+import sys
+import subprocess
+p = os.path.abspath(os.readlink(sys.argv[0]))
+os.chdir(os.path.dirname(os.path.dirname(p)))
+script = os.path.basename(sys.argv[0])
+WC = os.getcwd()
+VENV_PATH = os.environ.get('VENV_PATH', os.path.join(WC, 'venv'))
+sc = os.environ.get('SALT_CONFIG', os.path.join(WC, 'etc/salt'))
+env = dict(os.environ)
+mscript = os.path.join(VENV_PATH, 'bin', script)
+if os.path.exists(mscript):
+    script = mscript
+cmd = [script, '-c', sc] + sys.argv[1:]
+pr = subprocess.Popen(cmd, env=env, stdout=sys.stdout, stderr=sys.stderr)
+rc = pr.wait()
+sys.exit(rc)
+# vim:set et sts=4 ts=4 tw=80:
