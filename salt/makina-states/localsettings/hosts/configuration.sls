@@ -3,12 +3,13 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/hosts.rst
 #}
+include:
+  - makina-states.localsettings.hosts.hooks
+
 {% set mcn = salt['mc_network.settings']() %}
-{{ salt['mc_macros.register']('localsettings', 'hosts') }}
 {# atomic file is not supported for /etc/hosts on a readonly layer (docker)
  # where the file can be written but not moved #}
 {% if not salt['mc_nodetypes.is_docker']() %}
-
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set hosts_list = mcn.hosts_list %}
 {%- if hosts_list %}
@@ -25,6 +26,10 @@ prepend-hosts-accumulator-from-pillar:
     - filename: {{ locs.conf_dir }}/hosts
     - text: |
             {{ hosts_list|sort|join(separator) }}
+    - watch:
+      - mc_proxy: makina-hosts-hostfiles-pre
+    - watch_in:
+      - mc_proxy: makina-hosts-hostfiles-post
 
 append-hosts-accumulator-from-pillar:
   file.accumulated:
@@ -34,6 +39,10 @@ append-hosts-accumulator-from-pillar:
     - text: |
             #end
             {{ hosts_list|sort|join(separator) }}
+    - watch:
+      - mc_proxy: makina-hosts-hostfiles-pre
+    - watch_in:
+      - mc_proxy: makina-hosts-hostfiles-post
 {% endif %}
 
 {#- States editing a block in {{ locs.conf_dir }}/hosts
@@ -49,6 +58,10 @@ makina-prepend-etc-hosts-management:
     - prepend_if_not_found: True
     - backup: '.bak'
     - show_changes: True
+    - watch:
+      - mc_proxy: makina-hosts-hostfiles-pre
+    - watch_in:
+      - mc_proxy: makina-hosts-hostfiles-post
 
 makina-append-etc-hosts-management:
   file.blockreplace:
@@ -59,14 +72,32 @@ makina-append-etc-hosts-management:
     - append_if_not_found: True
     - backup: '.bak'
     - show_changes: True
+    - watch:
+      - mc_proxy: makina-hosts-hostfiles-pre
+    - watch_in:
+      - mc_proxy: makina-hosts-hostfiles-post
 
-/etc/hostname-set:
+/etc/hostname-set1:
   cmd.run:
     - name: |
-            echo {{mcn.hostname}} > /etc/hostname;
-            chown root:root /etc/hostname;
-            chmod 644 /etc/hostname;
-            hostname {{mcn.hostname}}
+            set -ex
+            chown root:root /etc/hostname
+            chmod 644 /etc/hostname
+            echo {{mcn.hostname}} > /etc/hostname
+    - onlyif: |
+              test "x$(cat /etc/hostname)" != "x{{mcn.hostname}}"
+    - watch:
+      - mc_proxy: makina-hosts-hostname-pre
+    - watch_in:
+      - mc_proxy: makina-hosts-hostname-post
+/etc/hostname-set2:
+  cmd.run:
+    - name: "hostname {{mcn.hostname}}"
     - user: root
-    - unless: test "x$(cat /etc/hostname)" = "x{{mcn.hostname}}"
+    - onlyif: |
+              test "x$(hostname)" != "x{{mcn.hostname}}"
+    - watch:
+      - mc_proxy: makina-hosts-hostname-pre
+    - watch_in:
+      - mc_proxy: makina-hosts-hostname-post
 {% endif %}
