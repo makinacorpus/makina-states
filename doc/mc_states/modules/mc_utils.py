@@ -17,6 +17,7 @@ import crypt
 import collections
 import datetime
 import traceback
+import socket
 import hashlib
 import logging
 import os
@@ -91,15 +92,13 @@ def odict(instance=True):
 def local_minion_id(force=False):
     '''
     search in running config root
-    then in well known config mastersalt root
     then in well known config salt root
     then use regular salt function
     '''
     mid = _CACHE['mid']
     if mid and not force:
         return mid
-    paths = api.uniquify([
-        __opts__['config_dir'], '/etc/mastersalt', '/etc/salt'])
+    paths = api.uniquify([__opts__['config_dir'], '/etc/salt'])
     for path in paths:
         for cfgn, fun in OrderedDict(
             [('master', master_config),
@@ -713,7 +712,7 @@ def defaults(prefix,
         overridden[prefix] = OrderedDict()
     pkeys = OrderedDict()
     for a in datadict:
-        if a not in ignored_keys:
+        if a not in ignored_keys and isinstance(a, six.string_types):
             to_unicode = False
             for i in prefix, a:
                 if isinstance(i, unicode):
@@ -728,7 +727,10 @@ def defaults(prefix,
         # special key to completly override the dictionnary
         avalue = _default_marker
         value = __salt__['mc_utils.get'](
-            value_key + "-overrides", _default_marker)
+            value_key + "-override",
+            __salt__['mc_utils.get'](
+                value_key + "-overrides", _default_marker)
+            )
         if isinstance(default_value, list):
             avalue = __salt__['mc_utils.get'](
                 value_key + "-append", _default_marker)
@@ -791,42 +793,49 @@ def sanitize_kw(kw):
 def salt_root():
     '''get salt root from either pillar or opts (minion or master)'''
     salt = __salt__['mc_salt.settings']()
-    return salt['c']['o']['saltRoot']
+    return salt['salt_root']
 
 
 def msr():
     '''get salt root from either pillar or opts (minion or master)'''
     salt = __salt__['mc_salt.settings']()
-    return salt['c']['o']['msr']
+    return salt['msr']
 
 
 def remove_stuff_from_opts(__opts):
-    opts = __context__.setdefault('mc_opts', __opts)
-    if opts is not __opts:
-        for k in [a for a in __opts]:
-            if k not in opts:
-                __opts.pop(k, None)
-            elif opts[k] != __opts[k]:
-                __opts[k] = opts[k]
-    __context__.pop('mc_opts', None)
-    return __opts
+    if 'mc_opts' in __opts:
+        globals().update({'__opts__': __opts['mc_opts']})
+    return globals()['__opts__']
+
+
+def copy_dunder(dunder):
+    ndunder = OrderedDict()
+    if isinstance(dunder, dict) or 'dict' in dunder.__class__.__name__.lower():
+        for k in dunder:
+            val = dunder[k]
+            ndunder[k] = copy_dunder(val)
+    else:
+        ndunder = copy.deepcopy(dunder)
+    return ndunder
 
 
 def add_stuff_to_opts(__opts):
-    opts = __context__.setdefault('mc_opts', __opts)
-    if opts is __opts:
+    if 'mc_opts' not in __opts:
         # UGLY HACK for the lazyloader
-        old_opts = copy.deepcopy(__opts)
+        # that may fail deepcopying NamespacedDictWrapper
+        # in recent salt versions
+        nopts = copy_dunder(__opts)
+        nopts['mc_opts'] = __opts
         try:
-            __opts['grains'] = __grains__
+            nopts['grains'] = __grains__
         except Exception:
             pass
         try:
-            __opts['pillar'] = __pillar__
+            nopts['pillar'] = __pillar__
         except Exception:
             pass
-        __context__['mc_opts'] = old_opts
-    return __opts
+        globals().update({'__opts__': nopts})
+    return globals()['__opts__']
 
 
 def sls_load(sls, get_inner=False):
@@ -836,7 +845,7 @@ def sls_load(sls, get_inner=False):
     # AttributeError: 'ContextDict' object has no attribute 'global_data'
     # on dunders, later on executions, i do not know why
     # see: https://github.com/saltstack/salt/issues/29123
-    __opts = copy.deepcopy(__opts__)
+    __opts = copy_dunder(__opts__)
     try:
         add_stuff_to_opts(__opts)
         jinjarend = salt.loader.render(__opts, __salt__)
@@ -929,8 +938,9 @@ def profile(func, *args, **kw):
         ps = pstats.Stats(
             pr, stream=fic).sort_stats('tottime')
         ps.print_stats()
+    msr = __salt__['mc_locations.msr']()
     os.system(
-        '/srv/mastersalt/makina-states/bin/pyprof2calltree '
+        msr + '/bin/pyprof2calltree '
         '-i {0} -o {1}'.format(ficp, fico))
     return ret, ficp, fico, ficn, ficcl, fict
 
@@ -1017,38 +1027,60 @@ def output(mapping, raw=False, outputter='highstate'):
     return ret
 
 
-def is_this_lxc():
-    container = get_container(1)
-    if container not in ['MAIN_HOST']:
-        return True
-    return False
-
-
 def get_container(pid):
-    lxc = 'MAIN_HOST'
+    '''
+    On a main host context, for a non containerized process
+    this return MAIN_HOST
+
+    On a container context, this return MAIN_HOST
+    On a hpot context, this return MAIN_HOST
+
+
+    '''
+    context = 'MAIN_HOST'
     cg = '/proc/{0}/cgroup'.format(pid)
+    content = ''
     # lxc ?
     if os.path.isfile(cg):
         with open(cg) as fic:
             content = fic.read()
             if 'lxc' in content:
                 # 9:blkio:NAME
-                lxc = content.split('\n')[0].split(':')[-1]
-    if '/lxc' in lxc:
-        lxc = lxc.split('/lxc/', 1)[1]
-    if '/' in lxc and (
-        '.service' in lxc or
-        '.slice' in lxc or
-        '.target' in lxc
+                context = content.split('\n')[0].split(':')[-1]
+    if '/lxc' in context:
+        context = context.split('/lxc/', 1)[1]
+    if '/' in context and (
+        '.service' in context or
+        '.slice' in context or
+        '.target' in context
     ):
-        lxc = lxc.split('/')[0]
-    return lxc
+        context = context.split('/')[0]
+    if 'docker' in content:
+        context = 'docker'
+    return context
+
+
+def is_this_lxc(pid=1):
+    container = get_container(pid)
+    if container not in ['MAIN_HOST']:
+        return True
+    envf = '/proc/{0}/environ'.format(pid)
+    if os.path.isfile(envf):
+        with open(envf) as fic:
+            content = fic.read()
+            if 'container=lxc' in content:
+                return True
+            if 'docker' in content:
+                return True
+            if os.path.exists('/.dockerinit'):
+                return True
+    return False
 
 
 def filter_host_pids(pids):
-    thishost = get_container(1)
-    return [a for a in pids
-            if get_container(a) == thishost]
+    res = [pid for pid in pids
+           if get_container(pid) != 'MAIN_HOST']
+    return res
 
 
 def cache_kwargs(*args, **kw):
@@ -1074,7 +1106,7 @@ def memoize_cache(*args, **kw):
 
     CLI Examples::
 
-        mastersalt-call -lall mc_pillar.memoize_cache test.ping
+        salt-call -lall mc_pillar.memoize_cache test.ping
 
     '''
     return api.memoize_cache(*args, **cache_kwargs(*args, **kw))
@@ -1239,3 +1271,17 @@ def json_dump(*args, **kw):
     Retro compat to :meth:`mc_states.modules.mc_dump.old_json_dump`
     '''
     return __salt__['mc_dumper.json_dump'](*args, **kw)
+
+def pdb(**kw):
+    '''
+    Add a breakpoint
+    '''
+    import pdb
+    pdb.set_trace()
+
+def epdb(**kw):
+    '''
+    add a network attachable breakpoint
+    '''
+    import epdb
+    epdb.serve()

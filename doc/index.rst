@@ -1,53 +1,32 @@
-.. Makina States documentation master file, created by
-   sphinx-quickstart on Wed Feb 12 00:59:39 2014.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-
-Makina-States, a consistent collection of saltstack formulaes and modules
+Makina-States, a consistent collection of ansible+saltstack formulaes and modules
 =================================================================================
-Please note that the documentation is far from complete, more over on the usage front.
+Please note that the documentation is far from complete, more over on the usage front (read the code ftw).
 
-Please have more a look on the reference chapters.
+Prerequisites
+-------------
+To use makina-states, be sure to understand how:
+    - salt stack works, specially modules, and ext_pillars
+    - ansible works
 
-Usage
------------
+Topics
+--------------
+.. toctree::
+   :maxdepth: 2
+
+   topics/index.rst
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
-   usage_index.rst
+   cloud/index.rst
 
-Reference
------------
+OLD DOCS (v1)
+--------------
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 1
 
-   ref_index.rst
-
-
-.. .. for readthedoc menu !
-.. .. dont include ref section, they blow the menu
-.. .. toctree::
-..    :maxdepth: 20
-..    :hidden:
-..
-..    usage_projects/project_creation.rst
-..    usage_projects/project_list.rst
-..    usage_quickstart/install_systemd.rst
-..    usage_quickstart/install_ubuntu.rst
-..    usage_projects/project_corpus.rst
-..    usage_misc/activate_forwarding.rst
-..    usage_lxc/firewalls.rst
-..    usage_lxc/install_template.rst
-..    usage_general/configure.rst
-..    usage_general/install.rst
-..    usage_mastersalt/install_mastersalt.rst
-..    usage_misc/troubleshooting.rst
-..    usage_write/service.rst
-..    usage_about.rst
-
+   v1/index.rst
 
 Indices and tables
 ==================
@@ -55,5 +34,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
 

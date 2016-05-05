@@ -10,19 +10,25 @@ import re
 import requests
 from requests.auth import HTTPBasicAuth
 from pprint import pprint
+from mc_states.version import VERSION
 
 
 log = logging.getLogger(__name__)
 __name = 'config'
 J = os.path.join
 DEFAULT_OS = 'ubuntu'
-DEFAULT_RELEASE = 'vivid'
+DEFAULT_RELEASE = 'xenial'
 DEFAULT_IMG = None
 PREFIX = 'makina-states.{0}'.format(__name)
 
 
 def _ms():
     return __opts__['file_roots']['base'][0] + '/makina-states'
+
+
+def version():
+    '''return without much salt machinery the current version'''
+    return VERSION
 
 
 def settings():
@@ -33,7 +39,7 @@ def settings():
                 'github_user': None,
                 'github_password': None,
                 'releases': {
-                    'ubuntu': ['trusty', 'vivid']
+                    'ubuntu': ['trusty', 'vivid', 'xenial']
                 }
             }
         )
@@ -42,7 +48,7 @@ def settings():
 
 def _get_img(img, ms_os, release):
     if not img:
-        img = 'makinacorpus/makina-states-{0}-{1}-stable'.format(
+        img = 'makinacorpus/makina-states-{0}-{1}-v2'.format(
             ms_os.capitalize(), release)
     return img
 
@@ -66,7 +72,7 @@ def virtualenv_release(ms_os=DEFAULT_OS,
             __salt__['docker.remove_container'](dname, force=True)
         cmd = ('docker run --rm --name="{dname}" -v "{ms_root}":/makina-states'
                ' -e XZ_OPTS="-9e" {img}'
-               ' tar cJf "/makina-states/{dest}" /salt-venv'
+               ' tar cJf "/makina-states/{dest}" /srv/makina-states/venv'
                '').format(img=img, dname=dname, dest=dest, ms_root=ms_root)
         ret = __salt__['cmd.run_all'](cmd, cwd=ms_root, python_shell=True)
         if ret['retcode'] != 0:
@@ -75,9 +81,8 @@ def virtualenv_release(ms_os=DEFAULT_OS,
             raise Exception('Extraction failed')
     if not upload:
         return
-    ssettings = __salt__['mc_salt.settings']()
-    orga = ssettings['c']['minion']['confRepos']['makina-states'][
-        'name'].replace('.git', '').split('github.com/')[1]
+    orga = __salt__['mc_salt.get_ms_url']().replace(
+        '.git', '').split('github.com/')[1]
     u = "https://api.github.com/repos/" + orga
     tok = HTTPBasicAuth(data['github_user'], data['github_password'])
     releases = requests.get("{0}/releases".format(u), auth=tok)

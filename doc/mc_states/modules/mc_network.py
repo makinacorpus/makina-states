@@ -57,6 +57,14 @@ __name = 'network'
 log = logging.getLogger(__name__)
 
 
+def mainip():
+    return __salt__['cmd.run']("ip route get 1 | awk '{print $NF;exit}'",
+                               python_shell=True)
+
+def hostname():
+    return socket.getfqdn()
+
+
 def default_net():
     '''
     Function to be used on a running system (opposed to settings)
@@ -207,7 +215,7 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        saltmods = __salt__
+        _s = __salt__
         grains = __grains__
         pillar = __pillar__
         data = {'interfaces': {}, 'ointerfaces': []}
@@ -217,8 +225,8 @@ def settings():
         # See makina-states.localsettings.network
         # Compat for the first test!
         data['networkManaged'] = (
-            saltmods['mc_utils.get']('makina-states.network_managed', False) or
-            saltmods['mc_utils.get'](grainsPref + 'network.managed', False))
+            _s['mc_utils.get']('makina-states.network_managed', False) or
+            _s['mc_utils.get'](grainsPref + 'network.managed', False))
         # ip managment
         default_ip = None
         ifaces = grains['ip_interfaces'].items()
@@ -257,22 +265,25 @@ def settings():
         # main hostname
         domain_parts = grains['id'].split('.')
         data['devhost_ip'] = devhost_ip
-        data['main_ip'] = saltmods['mc_utils.get'](
+        data['main_ip'] = _s['mc_utils.get'](
             grainsPref + 'main_ip', default_ip)
-        data['hostname'] = saltmods['mc_utils.get'](
+        data['hostname'] = _s['mc_utils.get'](
             grainsPref + 'hostname', domain_parts[0])
         default_domain = ''
         if len(domain_parts) > 1:
             default_domain = '.'.join(domain_parts[1:])
-        data['domain'] = saltmods['mc_utils.get'](
+        data['domain'] = _s['mc_utils.get'](
             grainsPref + 'domain', default_domain)
-        data['fqdn'] = saltmods['mc_utils.get']('nickname', grains['id'])
+        data['fqdn'] = _s['mc_utils.get']('nickname', grains['id'])
         localhosts = []
+        slug = data['hostname']
         if data['domain']:
-            localhosts.extend([
-               '{main_ip} {hostname}.{domain} {hostname}'.format(**data),
-               '127.0.1.1 {hostname}.{domain} {hostname}'.format(**data),
-               '127.0.0.1 {hostname}.{domain} {hostname}'.format(**data)])
+            slug = '{hostname}.{domain} {hostname}'.format(**data)
+        localhosts.extend([
+           '{1} {0}'.format(slug, data['main_ip']),
+           '127.0.1.1 {0}'.format(slug),
+           '127.0.0.1 {0}'.format(slug),
+           '::1       {0}'.format(slug)])
         data['hosts_list'] = hosts_list = []
         for k, edata in pillar.items():
             if k.endswith('makina-hosts'):
@@ -283,8 +294,9 @@ def settings():
             ip = host['ip']
             for dnsname in host['hosts'].split():
                 hosts_list.append(ip + ' ' + dnsname)
-        netdata = saltmods['mc_utils.defaults'](
+        netdata = _s['mc_utils.defaults'](
             'makina-states.localsettings.network', data)
+        netdata['hosts_list'] = _s['mc_utils.uniquify'](netdata['hosts_list'])
         # retro compat
         for imapping in netdata['ointerfaces']:
             for ikey, idata in imapping.items():
@@ -558,6 +570,11 @@ def is_online(ip):
 def is_ovh(ip):
     data = whois_data(ip)
     return data.get('is_ovh', False)
+
+
+def is_sys(ip):
+    data = whois_data(ip)
+    return data.get('is_sys', data.get('is_ovh', False))
 
 
 def providers():

@@ -1,5 +1,5 @@
-Create lxc containers in a cloud
-===================================
+LXC containers management
+=================================
 workflow:
 
 WARNING currently only those backing store are supported/tested:

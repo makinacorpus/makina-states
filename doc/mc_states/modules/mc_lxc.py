@@ -37,7 +37,7 @@ def gen_mac():
                                                random.randint(0x00, 0xFF)]))
 
 
-def is_lxc():
+def is_lxc(_o=None):
     """
     in case of a container, we have the container name in cgroups
     else, it is equal to /
@@ -66,7 +66,9 @@ def is_lxc():
         '3:cpu:/',
         '2:cpuset:/']
     """
-    return _is_lxc()
+    if _o is None:
+        _o = __opts__
+    return _is_lxc(_o=_o)
 
 
 def is_this_lxc():
@@ -98,28 +100,3 @@ def settings():
             })
         return lxcSettings
     return _settings()
-
-
-def test(name="thisisatest"):
-    vm = {"bridge": "lxcbr1",
-          "backing": "dir",
-          "ip": "10.5.0.7",
-          "bootstrap_shell": "bash",
-          "gateway": "10.5.0.1",
-          "script": "/srv/mastersalt/makina-states/_scripts/boot-salt.sh",
-          "minion": {"master": __opts__['master'],
-                     "master_port": __opts__['master_port']},
-          "clone_from": "makina-states-trusty",
-          "ssh_username": "ubuntu", "ssh_gateway_key": "/root/.ssh/id_dsa",
-          "netmask": "16",
-          "password": "testtesttesttest",
-          "dnsservers": ["8.8.8.8", "4.4.4.4"],
-          "name": name,
-          "target": __opts__['id'],
-          "mac": "00:16:3e:11:31:64",
-          "ssh_gateway_user": "root",
-          "script_args": ("-C --reattach "
-                          "--mastersalt-minion "
-                          "-b stable --reattach-dir {0}"),
-          "ssh_gateway_port": 22}
-    return __salt__['lxc.cloud_init'](name, vm_=vm)

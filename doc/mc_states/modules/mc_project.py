@@ -13,6 +13,7 @@ see  :ref:`module_mc_project_2`
 
 from mc_states.project import LAST_PROJECT_API_VERSION
 from mc_states import api
+import salt.utils
 
 
 APIS = {
@@ -27,6 +28,12 @@ APIS = {
     },
     'sync_hooks_for_all': {
         '2': 'mc_project_2.sync_hooks_for_all',
+    },
+    'list_projects': {
+        '2': 'mc_project_2.list_projects',
+    },
+    'link_projects': {
+        '2': 'mc_project_2.link_projects',
     },
     'report': {
         '2': 'mc_project_2.report',
@@ -141,6 +148,7 @@ def _api_switcher(module, *args, **kwargs):
         else:
             api_ver = LAST_PROJECT_API_VERSION
     mod = APIS[module]["{0}".format(api_ver)]
+    kwargs = salt.utils.clean_kwargs(**kwargs)
     return __salt__[mod](*args, **kwargs)
 
 
@@ -158,6 +166,10 @@ def init_project(name, *args, **kwargs):
 
 def report(*args, **kwargs):
     return _api_switcher('report')
+
+
+def list_projects(*args, **kwargs):
+    return _api_switcher('list_projects')
 
 
 def get_configuration_item(name, *args, **kwargs):
@@ -202,6 +214,10 @@ def sync_hooks(name, *args, **kwargs):
 
 def link(name, *args, **kwargs):
     return _api_switcher('link', name, *args, **kwargs)
+
+
+def link_projects(*args, **kwargs):
+    return _api_switcher('link_projects', *args, **kwargs)
 
 
 def run_task(name, *args, **kwargs):

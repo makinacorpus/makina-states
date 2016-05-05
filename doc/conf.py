@@ -11,7 +11,12 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys
+import os
+import datetime
+
+n = datetime.datetime.now()
+y = n.year
 
 
 class Mock(object):
@@ -673,7 +678,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Makina States'
-copyright = u'2014 -> 2015, Mathieu Le Marec Pasquet, Régis Leroy & Makina Corpus folks'
+copyright = u'2014 -> {0}, Mathieu Le Marec Pasquet, Régis Leroy & Makina Corpus folks'.format(y)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

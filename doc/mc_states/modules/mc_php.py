@@ -22,6 +22,7 @@ import logging
 import mc_states.api
 import copy
 import os
+from distutils.version import LooseVersion
 
 # Import salt libs
 from salt import utils, exceptions
@@ -156,6 +157,8 @@ def settings():
         ; http://xdebug.org/docs/all_settings#collect_params (0|1|2|3|4)
         php_admin_value[xdebug.collect_params] = xdebug_collect_params  0;
         php_admin_value[xdebug.profiler_enable] = xdebug_profiler_enable ;
+        php_admin_value[xdebug.remote_enable] = xdebug_remote_enable 0;
+        php_admin_value[xdebug.remote_host] = xdebug_remote_host localhost;
         php_admin_value[
             xdebug.profiler_enable_trigger
         ] = xdebug_profiler_enable_trigger  0;
@@ -175,7 +178,18 @@ def settings():
         else:
             s_all = ''
 
+        if (
+            __grains__.get('os', '') == 'Ubuntu' and
+            LooseVersion(__grains__.get('osrelease', '0')) >= LooseVersion('16.04')
+        ):
+            php7_onward = True
+            apc_install = 0
+        else:
+            php7_onward = False
+            apc_install = 1
+
         phpdefaults = {
+            'php7_onward': php7_onward,
             's_all': s_all,
             'rotate': __salt__['mc_logrotate.settings']()['days'],
             'composer': (
@@ -243,7 +257,7 @@ def settings():
             'opcache_revalidate_path': 0,
             'opcache_use_cwd': 1,
             'opcache_save_comments': 1,
-            'opcache_load_comments': 0,
+            'opcache_load_comments': 1,
             'opcache_fast_shutdown': 0,
             'opcache_enable_file_override': 1,
             'opcache_optimization_level': '0xffffffff',
@@ -252,7 +266,7 @@ def settings():
             'opcache_force_restart_timeout': 180,
             'opcache_error_log': '',
             'opcache_log_verbosity_level': 1,
-            'apc_install': 1,
+            'apc_install': apc_install,
             'apc_enabled': 0,
             'apc_enable_cli': 0,
             'apc_shm_segments': 1,
@@ -279,6 +293,8 @@ def settings():
             'xdebug_collect_params': 0,
             'xdebug_profiler_enable': 0,
             'xdebug_profiler_enable_trigger': False,
+            'xdebug_remote_enable': 0,
+            'xdebug_remote_host': 'localhost',
             'xdebug_profiler_output_name': '/cachegrind.out.%p'
         }
 
@@ -356,10 +372,65 @@ def settings():
             grain='os_family',
             merge=phpStepTwo
         )
+        if php7_onward:
+            phpStepFour = __salt__['mc_utils.dictupdate'](
+                phpStepThree, {
+                'packages': {
+                    'main': 'php',
+                    'mod_fcgid': apacheSettings['mod_packages']['mod_fcgid'],
+                    'mod_fastcgi': (
+                        apacheSettings['mod_packages']['mod_fastcgi']),
+                    'php_fpm': 'php-fpm',
+                    'apc': 'php-apc',
+                    'cli': 'php-cli',
+                    'cas': 'php-cas',
+                    'imagemagick': 'php-imagick',
+                    'memcache': 'php-memcache',
+                    'memcached': 'php-memcached',
+                    'mysql': 'php-mysql',
+                    'postgresql': 'php-pgsql',
+                    'sqlite': 'php-sqlite',
+                    'pear': 'php-pear',
+                    'soap': 'php-soap',
+                    'dev': 'php-dev',
+                    'snmp': 'php-snmp',
+                    'xmlrpc': 'php-xmlrpc',
+                    'json': 'php-json',
+                    'xdebug': 'php-xdebug',
+                    'curl': 'php-curl',
+                    'gd': 'php-gd',
+                    'ldap': 'php-ldap',
+                    'mcrypt': 'php-mcrypt',
+                },
+                'ppa_ver': '7.0',
+                'service': 'php7.0-fpm',
+                'etcdir': locations['conf_dir'] + '/php/7.0',
+                'confdir': locations['conf_dir'] + '/php/7.0/mods-available',
+                'logdir': locations['var_log_dir'] + '/phpfpm',
+                'fpm_sockets_dir': (
+                    locations['var_lib_dir'] + '/apache2/fastcgi')
+            }
+        )
+        else:
+           phpStepFour = phpStepThree
 
         # FINAL STEP: merge with data from pillar and grains
         phpData = __salt__['mc_utils.defaults'](
-            'makina-states.services.php', phpStepThree)
+            'makina-states.services.php', phpStepFour)
+ 
+        configs = {}
+        confdir = phpData['confdir']
+        if phpData['apc_install']:
+            configs[confdir+'/apcu.ini'] = {}
+        if phpData['opcache_install']:
+            configs[confdir+'/opcache.ini'] = {}
+        configs[confdir+'/timezone.ini'] = {}
+        if phpData['php7_onward']:
+            configs['/etc/systemd/system/overrides.d/php.conf'] = {}
+        phpData['configs'] = configs
+
+        phpData = __salt__['mc_utils.defaults'](
+            'makina-states.services.php', phpData)
         # retro compat
         if 'register-pools' in phpData:
             phpData['fpm_pools'] = __salt__[

@@ -22,7 +22,7 @@ import subprocess
 _cache = {}
 
 
-def init_environ():
+def init_environ(_o=None):
     key = 'init_environ'
     try:
         return _cache[key]
@@ -35,7 +35,7 @@ def init_environ():
     return _cache[key]
 
 
-def _is_travis():
+def _is_travis(_o=None):
     is_nodetype = None
     val = "{0}".format(os.environ.get('TRAVIS', 'false')).lower()
     if val in ['y', 't', 'o', 'true', '1']:
@@ -45,11 +45,16 @@ def _is_travis():
     return is_nodetype
 
 
-def _is_docker():
+def _is_docker(_o=None):
     """
     Return true if we find a system or grain flag
     that explicitly shows us we are in a DOCKER context
     """
+    if _o is None:
+        try:
+            _o = __opts__
+        except NameError:
+            _o = {}
     docker = False
     try:
         docker = bool(__grains__.get('makina.docker'))
@@ -64,7 +69,7 @@ def _is_docker():
     return docker
 
 
-def _is_lxc():
+def _is_lxc(_o=None):
     """
     Return true if we find a system or grain flag
     that explicitly shows us we are in a LXC context
@@ -96,8 +101,13 @@ def _is_lxc():
         '3:cpu:/',
         '2:cpuset:/']
     """
+    if _o is None:
+        try:
+            _o = __opts__
+        except NameError:
+            _o = {}
     lxc = None
-    if _is_docker():
+    if _is_docker(_o=_o):
         lxc = False
     if lxc is None:
         try:
@@ -113,14 +123,20 @@ def _is_lxc():
                               ':cpuset:' in a][-1]
         except Exception:
             lxc = False
-    return lxc and not _is_docker()
+    if not lxc:
+        try:
+            content = open('/proc/1/environ').read()
+            lxc = 'container=lxc' in content
+        except Exception:
+            lxc = False
+    return lxc and not _is_docker(_o=_o)
 
 
-def _is_container():
-    return _is_docker() or _is_lxc()
+def _is_container(_o=None):
+    return _is_docker() or _is_lxc(_o=_o)
 
 
-def _devhost_num():
+def _devhost_num(_o=None):
     return ''
     # devhost will be removed from makina-states sooner or later
     # if os.path.exists('/root/vagrant/provision_settings.sh'):
@@ -135,7 +151,7 @@ def _devhost_num():
     # return num
 
 
-def _routes():
+def _routes(_o=None):
     routes, default_route = [], {}
     troutes = subprocess.Popen(
         'bash -c "netstat -nr"',
@@ -161,51 +177,61 @@ def _routes():
     return routes, default_route, default_route.get('gateway', None)
 
 
-def _is_vm():
+def _is_vm(_o=None):
     ret = False
-    if _is_container():
+    if _is_container(_o=_o):
         ret = True
     return ret
 
 
-def _is_devhost():
-    return _devhost_num() != ''
+def _is_devhost(_o=None):
+    return _devhost_num(_o=_o) != ''
 
 
-def _get_msconf(param):
-    try:
-        with open(
-            os.path.join('/etc/makina-states', param)
-        ) as fic:
-            content = fic.read().strip()
-    except (OSError, IOError):
-        content = ''
+def _get_msconf(param, _o=None):
+    if _o is None:
+        _o = __opts__
+    cfgdir = os.path.abspath(_o.get('config_dir', '/etc/salt'))
+    nds = [os.path.join(cfgdir, 'makina-states'),
+           os.path.join(os.path.dirname(cfgdir), 'makina-states')]
+    for nd in nds:
+        try:
+            with open(os.path.join(nd, param)) as fic:
+                content = fic.read().strip()
+                if content:
+                    break
+        except (OSError, IOError):
+            content = ''
     return content
 
 
-def _nodetype():
-    return _get_msconf('nodetype')
+def _nodetype(_o=None):
+    return _get_msconf('nodetype', _o=_o)
 
 
-def _is_vagrantvm():
-    return _get_msconf('nodetype') in ['vagrantvm']
+def _is_vagrantvm(_o=None):
+    return _nodetype(_o=_o) in ['vagrantvm']
 
 
-def _is_kvm():
-    return _get_msconf('nodetype') in ['kvm']
+def _is_kvm(_o=None):
+    return _nodetype(_o=_o) in ['kvm']
 
 
-def _bootsalt_mode():
-    return _get_msconf('bootsalt_mode')
+def _is_server(_o=None):
+    return _nodetype(_o=_o) in ['server']
 
 
-def _is_upstart():
+def _is_laptop(_o=None):
+    return _nodetype(_o=_o) in ['laptop']
+
+
+def _is_upstart(_o=None):
     if os.path.exists('/var/log/upstart'):
         return True
     return False
 
 
-def _is_systemd():
+def _is_systemd(_o=None):
     try:
         is_ = os.readlink('/proc/1/exe') == '/lib/systemd/systemd'
     except (IOError, OSError):
@@ -220,7 +246,7 @@ def _is_systemd():
     return is_
 
 
-def _pgsql_vers():
+def _pgsql_vers(_o=None):
     vers = {'details': {}, 'global': {}}
     for i in ['9.0', '9.1', '9.3', '9.4', '10.0', '10.1']:
         pid = (
@@ -248,24 +274,25 @@ def _pgsql_vers():
     return vers
 
 
-def get_makina_grains():
+def get_makina_grains(_o=None):
     '''
     '''
-    routes, default_route, gw = _routes()
-    grains = {'makina.upstart': _is_upstart(),
-              'makina.systemd': _is_systemd(),
-              'makina.bootsalt_mode': _bootsalt_mode(),
-              'makina.nodetype': _nodetype(),
-              'makina.container': _is_container(),
-              'makina.vm': _is_vm(),
-              'makina.travis': _is_travis(),
-              'makina.lxc': _is_lxc(),
-              'makina.docker': _is_docker(),
-              'makina.kvm': _is_kvm(),
-              'makina.vagrantvm': _is_vagrantvm(),
-              'makina.devhost': _is_devhost(),
-              'makina.devhost_num': _devhost_num(),
-              'makina.pgsql_vers': _pgsql_vers(),
+    routes, default_route, gw = _routes(_o=_o)
+    grains = {'makina.upstart': _is_upstart(_o=_o),
+              'makina.systemd': _is_systemd(_o=_o),
+              'makina.nodetype': _nodetype(_o=_o),
+              'makina.container': _is_container(_o=_o),
+              'makina.server': _is_server(_o=_o),
+              'makina.vm': _is_vm(_o=_o),
+              'makina.laptop': _is_laptop(_o=_o),
+              'makina.travis': _is_travis(_o=_o),
+              'makina.lxc': _is_lxc(_o=_o),
+              'makina.docker': _is_docker(_o=_o),
+              'makina.kvm': _is_kvm(_o=_o),
+              'makina.vagrantvm': _is_vagrantvm(_o=_o),
+              'makina.devhost': _is_devhost(_o=_o),
+              'makina.devhost_num': _devhost_num(_o=_o),
+              'makina.pgsql_vers': _pgsql_vers(_o=_o),
               'makina.default_route': default_route,
               'makina.default_gw': gw,
               'makina.routes': routes}

@@ -1,9 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+'''
+
+.. _module_mc_pillar:
+
+mc_pillar / makinastates ext-pillar
+===============================================
+
+Transform the informations contained in database.sls to a whole infrastructure
+mapping.
+
+
+'''
+
 import re
 import inspect
 import os
 import cProfile
+import json
 import pstats
 import copy
 import hashlib
@@ -17,10 +32,13 @@ import socket
 import logging
 import time
 import mc_states.api
+from mc_states import saltapi
 import datetime
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 import traceback
+from mc_states.saltapi import (
+    IPRetrievalError, RRError, NoResultError, PillarError)
 six = mc_states.api.six
 
 socket_errors = (
@@ -31,6 +49,7 @@ socket_errors = (
 )
 
 
+rei_flags = re.M | re.U | re.S | re.I
 log = logging.getLogger(__name__)
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
 DOTTED_DOMAIN_PATTERN = '(^{domain}|@{domain}|\\.{domain})\\.?$'
@@ -55,7 +74,7 @@ MS_IPTABLES_MANAGED = True
 PILLAR_TTL = ONE_YEAR
 
 
-def mastersalt_minion_id():
+def minion_id():
     return __salt__['mc_utils.local_minion_id']()
 
 
@@ -63,7 +82,7 @@ def mmid():
     '''
     Alias
     '''
-    return mastersalt_minion_id()
+    return minion_id()
 
 
 def yaml_load(*args, **kw3):
@@ -78,18 +97,6 @@ def generate_password(length=None):
     return __salt__['mc_utils.generate_password'](length)
 
 
-class IPRetrievalError(KeyError):
-    ''''''
-
-
-class RRError(ValueError):
-    """."""
-
-
-class NoResultError(KeyError):
-    ''''''
-
-
 def dolog(msg):
     log.error("----------------")
     log.error(msg)
@@ -98,6 +105,10 @@ def dolog(msg):
 
 class IPRetrievalCycleError(IPRetrievalError):
     ''''''
+
+
+class DatabaseNotFound(KeyError):
+    '''.'''
 
 
 def retrieval_error(exc, fqdn, recurse=None):
@@ -124,10 +135,11 @@ def get_fqdn_domains(fqdn):
 
 def get_db():
     dbpath = None
+    base = os.path.join(
+        os.path.dirname(os.path.abspath(__opts__['config_dir'])),
+        'makina-states')
     for i in SUPPORTED_DB_FORMATS:
-        dbpath = os.path.join(
-            __opts__['pillar_roots']['base'][0],
-            'database.{0}'.format(i))
+        dbpath = os.path.join( base, 'database.{0}'.format(i))
         if os.path.exists(dbpath):
             break
     return dbpath
@@ -136,13 +148,11 @@ def get_db():
 def has_db():
     db = get_db()
     if (
-        (os.path.splitext(db)[1][1:] in SUPPORTED_DB_FORMATS) and
-        db.startswith('/srv')
+        os.path.splitext(db)[1][1:] in SUPPORTED_DB_FORMATS
     ):
         return os.path.exists(db)
     else:
         return False
-
 
 # to be easily mockable in tests while having it cached
 def loaddb_do(*a, **kw5):
@@ -153,7 +163,7 @@ def loaddb_do(*a, **kw5):
         raise ValueError(
             'invalid db format {0}: {1}'.format(suf, dbpath))
     if not has_db():
-        raise KeyError("{0} is not present".format(dbpath))
+        raise DatabaseNotFound("{0} is not present".format(dbpath))
     with open(get_db()) as fic:
         content = dbpath
         if suf not in ['sls']:
@@ -219,6 +229,116 @@ def _load_network(*a, **kw):
     return load_network(**kw)
 
 
+def get_global_clouf_conf(entry, ttl=PILLAR_TTL):
+    def _do(entry):
+        return get_global_conf('cloud_settings', entry)
+    cache_key = __name + '.get_global_cloudconf{0}'.format(entry)
+    return __salt__['mc_utils.memoize_cache'](_do, [entry], {}, cache_key, ttl)
+
+
+def get_cloud_conf(ttl=PILLAR_TTL):
+    def _do():
+        rdata = OrderedDict()
+        dvms = rdata.setdefault('vms', OrderedDict())
+        dcns = rdata.setdefault('cns', OrderedDict())
+        _s = __salt__
+        # warm datastructs
+        _s['mc_cloud.extpillar_settings']()
+        nmh = _s[__name + '.query']('non_managed_hosts', {})
+        cloud_cn_attrs = _s[__name + '.query']('cloud_cn_attrs', {})
+        cloud_vm_attrs = _s[__name + '.query']('cloud_vm_attrs', {})
+        supported_vts = _s['mc_cloud_compute_node.get_vts']()
+        for vt, targets in _s[__name + '.query']('vms', {}).items():
+            if vt not in supported_vts:
+                continue
+            for cn, vms in targets.items():
+                if vms is None:
+                    vms = {}
+                if cn in nmh:
+                    continue
+                dcn = dcns.setdefault(cn, OrderedDict())
+                dcns[cn] = dcn
+                dcn.setdefault('conf', cloud_cn_attrs.get(cn, OrderedDict()))
+                cn_vms = dcn.setdefault('vms', OrderedDict())
+                vts = dcn.setdefault('vts', [])
+                if vt not in vts:
+                    vts.append(vt)
+                for vm in vms:
+                    if vm in nmh:
+                        continue
+                    vmdata = dvms.setdefault(vm, OrderedDict())
+                    cvmdata = cloud_vm_attrs.get(vm, OrderedDict())
+                    vmdata = _s['mc_utils.dictupdate'](vmdata, cvmdata)
+                    vmdata['vt'] = vt
+                    vmdata['target'] = cn
+                    dvms[vm] = cn_vms[vm] = vmdata
+
+        for cn in _s[__name + '.query']('baremetal_hosts'):
+            if cn in nmh:
+                continue
+            dcn = dcns.setdefault(cn, OrderedDict())
+            dcn.setdefault('conf', cloud_cn_attrs.get(cn, OrderedDict()))
+            dcn.setdefault('vms', OrderedDict())
+            dcn.setdefault('vts', [])
+        return rdata
+    cache_key = __name + '.get_cloud_conf8'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+def get_cloud_conf_by_cns():
+    return copy.deepcopy(get_cloud_conf()['cns'])
+
+
+def get_cloud_conf_by_vts(ttl=PILLAR_TTL):
+    def _do():
+        data = OrderedDict()
+        for cn, cdata in get_cloud_conf_by_cns().items():
+            cvms = cdata.pop('vms')
+            for vt in cdata['vts']:
+                vtdata = data.setdefault(vt, OrderedDict())
+                vcndata = vtdata.setdefault(cn, OrderedDict())
+                vcnvms = vcndata.setdefault('vms', OrderedDict())
+            for vm, vmdata in cvms.items():
+                vt = vmdata['vt']
+                vtdata = data.setdefault(vt, OrderedDict())
+                vcndata = vtdata.setdefault(cn, copy.deepcopy(cdata))
+                vcnvms = vcndata.setdefault('vms', OrderedDict())
+                vcnvms[vm] = vmdata
+        return data
+    cache_key = __name + '.get_cloud_conf_by_vts'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+def get_cloud_conf_by_vms(ttl=PILLAR_TTL):
+    def _do():
+        return copy.deepcopy(get_cloud_conf()['vms'])
+    cache_key = __name + '.get_cloud_conf_by_vms'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+def get_cloud_entry_for_cn(id_, default=None):
+    if not default:
+        default = {}
+    return get_cloud_conf_by_cns().get(id_, default)
+
+
+def get_cloud_conf_for_cn(id_, default=None):
+    return get_cloud_entry_for_cn(id_, default=default).get('conf', {})
+
+
+def get_cloud_conf_for_vt(id_, default=None):
+    if not default:
+        default = {}
+    return get_cloud_conf_by_vts().get(id_, default)
+
+
+def get_cloud_conf_for_vm(id_, default=None):
+    if not default:
+        default = {}
+    return copy.deepcopy(get_cloud_conf_by_vms().get(id_, default))
+
+
+
 def get_db_infrastructure_maps(ttl=PILLAR_TTL):
     '''
     Return a struct::
@@ -231,57 +351,34 @@ def get_db_infrastructure_maps(ttl=PILLAR_TTL):
                                 'vt': 'kvm'},}}
     '''
     def _do():
-        lbms = __salt__[__name + '.query']('baremetal_hosts', {})
-        bms = OrderedDict()
-        vms = OrderedDict()
         non_managed_hosts = __salt__[
             __name + '.query']('non_managed_hosts', {})
-        cloud_compute_nodes = []
-        cloud_vms = []
-        for lbm in lbms:
-            bms.setdefault(lbm, [])
-        for vt, targets in __salt__[__name + '.query']('vms', {}).items():
-            for target, lvms in targets.items():
-                if (
-                    target not in non_managed_hosts and
-                    target not in cloud_compute_nodes
-                ):
-                    cloud_compute_nodes.append(target)
-                vts = bms.setdefault(target, [])
-                if vt not in vts:
-                    vts.append(vt)
-                if target not in bms:
-                    bms[target] = []
-                if lvms is None:
-                    log.error('No vms for {0}, error?'.format(target))
-                    continue
-                for vm in lvms:
-                    if vm not in non_managed_hosts:
-                        cloud_vms.append(vm)
-                    vms.update({vm: {'target': target, 'vt': vt}})
-        standalone_hosts = {}
-        for i in bms:
-            if (
-                i not in cloud_compute_nodes and
-                i not in non_managed_hosts
-            ):
+        cloud_conf = get_cloud_conf()
+        bms = copy.deepcopy(cloud_conf['cns'])
+        vms = copy.deepcopy(cloud_conf['vms'])
+        cloud_compute_nodes = set()
+        cloud_vms = set()
+        standalone_hosts = OrderedDict()
+        for i, idata in six.iteritems(bms):
+            cloud_compute_nodes.add(i)
+            for v, vdata in six.iteritems(idata.get('vms', {})):
+                cloud_vms.add(v)
+            if not (idata['vms'] or idata['vts']):
                 standalone_hosts.setdefault(i, {})
         data = {'bms': bms,
+                'vms': vms,
                 'hosts': sorted(
                     __salt__['mc_utils.uniquify'](
                         [a for a in bms] +
                         [a for a in vms] +
                         [a for a in non_managed_hosts] +
-                        [a for a in cloud_compute_nodes] +
-                        [a for a in standalone_hosts]
-                    )),
+                        [a for a in cloud_compute_nodes])),
                 'standalone_hosts': standalone_hosts,
-                'cloud_compute_nodes': cloud_compute_nodes,
-                'cloud_vms': cloud_vms,
-                'vms': vms}
+                'cloud_compute_nodes': [a for a in cloud_compute_nodes],
+                'cloud_vms': [a for a in cloud_vms]}
         return data
     # no memcached, relies on memoize !
-    cache_key = __name + '.get_db_infrastructure_maps'
+    cache_key = __name + '.get_db_infrastructure_maps5'
     return __salt__['mc_utils.memoize_cache'](
         _do, [], {}, cache=_cache, key=cache_key, seconds=ttl)
 
@@ -877,10 +974,14 @@ def get_nss(ttl=PILLAR_TTL):
 
     '''
     def _do():
+        _s = __salt__
         dns_servers = {'all': [],
+                       'map': OrderedDict(),
                        'masters': OrderedDict(),
                        'slaves': OrderedDict()}
-        dbdns_zones = __salt__[__name + '.query']('managed_dns_zones', {})
+        dns_servers['map'] = _s[__name + '.query'](
+            'dns_servers', {}).get('map', {})
+        dbdns_zones = _s[__name + '.query']('managed_dns_zones', {})
         for domain in dbdns_zones:
             master = get_ns_master(domain)
             slaves = get_ns_slaves(domain)
@@ -897,7 +998,7 @@ def get_nss(ttl=PILLAR_TTL):
                     target_masters.append(master)
         dns_servers['all'].sort()
         return dns_servers
-    cache_key = __name + '.get_nss'
+    cache_key = __name + '.get_nss3'
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
@@ -1748,14 +1849,11 @@ def get_configuration(id_=None, ttl=PILLAR_TTL):
             mdn = ['local']
         mdn = '.'.join(mdn)
         data.setdefault('default_env', 'prod')
-        data.setdefault('mastersalt_port', 4606)
-        data.setdefault('mastersalt', mid)
-        data.setdefault('mastersaltdn', mid)
-        data.setdefault('mastersalt_master', mid == id_)
+        data.setdefault('master', mid == id_)
         data.setdefault('domain', mdn)
         return data
     cache_key = __name + '.get_configuration_{0}'.format(id_)
-    mid = mastersalt_minion_id()
+    mid = minion_id()
     return __salt__['mc_utils.memoize_cache'](
         _do, [id_, mid], {}, cache_key, ttl)
 
@@ -2306,46 +2404,31 @@ def get_top_variables(ttl=ONE_MINUTE):
 def is_dns_slave(id_, ttl=PILLAR_TTL):
     def _do(id_):
         sips = []
-        candidates = __salt__[__name + '.get_nss']()['slaves']
+        nsses = __salt__[__name + '.get_nss']()
+        candidates = [a for a in nsses['slaves']]
+        for i in candidates[:]:
+            j = nsses['map'].get(i, None)
+            if j:
+                candidates.append(j)
         if id_ in candidates:
             return True
-        for a in candidates:
-            try:
-                sips.extend(resolve_ips(a, fail_over=True))
-            except Exception:
-                log.error(traceback.format_exc())
-        if sips:
-            try:
-                for ip in resolve_ips(id_, fail_over=True):
-                    if ip in sips:
-                        return True
-            except Exception:
-                log.error(traceback.format_exc())
         return False
-    cache_key = __name + '.is_dns_slave_{0}'.format(id_)
+    cache_key = __name + '.is_dns_slave_5{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def is_dns_master(id_, ttl=PILLAR_TTL):
     def _do(id_):
-        candidates = __salt__[__name + '.get_nss']()['masters']
-        sips = []
+        nsses = __salt__[__name + '.get_nss']()
+        candidates = [a for a in nsses['masters']]
+        for i in candidates[:]:
+            j = nsses['map'].get(i, None)
+            if j:
+                candidates.append(j)
         if id_ in candidates:
             return True
-        for a in candidates:
-            try:
-                sips.extend(resolve_ips(a, fail_over=True))
-            except Exception:
-                log.error(traceback.format_exc())
-        if sips:
-            try:
-                for ip in resolve_ips(id_, fail_over=True):
-                    if ip in sips:
-                        return True
-            except Exception:
-                log.error(traceback.format_exc())
         return False
-    cache_key = __name + '.is_dns_master_{0}'.format(id_)
+    cache_key = __name + '.is_dns_master_{0}4'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
@@ -2387,9 +2470,10 @@ def get_supervision_conf_kind(id_, kind, ttl=PILLAR_TTL):
                     nginx = rdata.setdefault('nginx', {})
                     domain = rdata.get('nginx', {}).get('domain', id_)
                     cert, key = __salt__[
-                        'mc_ssl.selfsigned_ssl_certs'](domain,
-                                                       gen=True,
-                                                       as_text=True)[0]
+                        'mc_ssl.get_selfsigned_cert_for'](
+                            domain,
+                            gen=True,
+                            as_text=True)[0]
                     # unknown ca signed certs do not work in nginx
                     # cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
                     # nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
@@ -2607,6 +2691,10 @@ def get_supervision_objects_defs(id_):
             backup_servers = query('backup_servers', {})
         except Exception:
             backup_servers = {}
+        try:
+            backup_excluded = query('backup_excluded', {})
+        except Exception:
+            backup_excluded = {}
         for host in [a for a in hhosts]:
             hdata = hhosts[host]
             if host in backup_servers:
@@ -2649,6 +2737,9 @@ def get_supervision_objects_defs(id_):
             # backup refreshness
             # if host not in physical_hosts_to_check:
             #    hdata['backup_burp_age'] = False
+            if host in backup_excluded:
+                hdata['backup_burp_age'] = False
+                hdata['burp_counters'] = False
             if hdata.get('backup_burp_age', None) is not False:
                 bsm = __salt__[__name + '.query']('backup_server_map', {})
                 burp_default_server = bsm['default']
@@ -2794,7 +2885,7 @@ def get_dns_slave_conf(id_, ttl=PILLAR_TTL):
         if not _s[__name + '.is_dns_slave'](id_):
             return {}
         pref = 'makina-states.services.dns.bind'
-        rdata = {pref: True}
+        rdata = {pref: True, pref + '.is_slave': True}
         candidates = OrderedDict()
         domains = _s[__name + '.get_slaves_zones_for'](id_)
         candidates = []
@@ -2848,6 +2939,7 @@ def get_dns_master_conf(id_, ttl=PILLAR_TTL):
             return {}
         pref = 'makina-states.services.dns.bind'
         rdata = {pref: True}
+        rdata = {pref: True, pref + '.is_master': True}
         altdomains = []
         for domains in _s[__name + '.query'](
             'managed_alias_zones', {}
@@ -3166,15 +3258,23 @@ def get_sudoers_conf(id_, ttl=PILLAR_TTL):
 def get_packages_conf(id_, ttl=PILLAR_TTL):
     def _do(id_):
         gconf = get_configuration(id_)
-        rdata = {}
-        pref = "makina-states.localsettings.pkgs.apt"
         if not gconf.get('manage_packages', True):
             return {}
-        rdata.update({
-            pref + ".ubuntu.mirror": "http://mirror.ovh.net/ftp.ubuntu.com/",
-            pref + ".debian.mirror": (
+        msconf = __salt__[__name + '.query']('pkgmgr_conf', {})
+        conf = msconf.get(id_, msconf.get('default', OrderedDict()))
+        if not isinstance(conf, dict):
+            conf = {}
+        pref = "makina-states.localsettings.pkgs."
+        rdata = OrderedDict()
+        for item, val in conf.items():
+            rdata[pref + item] = val
+        for item, val in {
+            pref + "apt.ubuntu.mirror": (
+                "http://mirror.ovh.net/ftp.ubuntu.com/"),
+            pref + "apt.debian.mirror": (
                 "http://mirror.ovh.net/ftp.debian.org/debian/")
-        })
+        }.items():
+            rdata.setdefault(item, val)
         return rdata
     cache_key = __name + '.get_packages_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
@@ -3398,15 +3498,20 @@ def get_etc_hosts_conf(id_, ttl=PILLAR_TTL):
         gconf = get_configuration(id_)
         if not gconf.get('manage_hosts', True):
             return {}
+        pref = 'makina-states.localsettings.network.'
         rdata = {}
+        rhosts = rdata.setdefault(pref + 'hosts_list', [])
         hosts = __salt__[__name + '.query']('hosts', {}).get(id_, [])
-        if hosts:
-            dhosts = rdata.setdefault('makina-bosts', [])
-            for entry in hosts:
-                ip = entry.get('ip', __salt__[__name + '.ip_for'](id_))
-                dhosts.append({'ip': ip, 'hosts': entry['hosts']})
+        if not hosts:
+            hosts = []
+        for entry in hosts:
+            ahosts = entry['hosts']
+            if isinstance(ahosts, list):
+                ahosts = ' '.join(ahosts)
+            ip = entry.get('ip', __salt__[__name + '.ip_for'](id_))
+            rhosts.append("{0} {1}".format(ip, ahosts))
         return rdata
-    cache_key = __name + '.get_etc_hosts_conf{0}'.format(id_)
+    cache_key = __name + '.get_etc_hosts_conf7{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
@@ -3497,26 +3602,6 @@ def get_dhcpd_conf(id_, ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
-def get_pkgmgr_conf(id_, ttl=PILLAR_TTL):
-    def _do(id_):
-        rdata = {}
-        gconf = get_configuration(id_)
-        if not gconf.get('manage_packages', True):
-            return {}
-        conf = __salt__[__name + '.query']('pkgmgr_conf', {})
-        conf = conf.get(
-            id_,
-            conf.get('default', OrderedDict()))
-        if not isinstance(conf, dict):
-            conf = {}
-        p = 'makina-states.localsettings.pkgs.'
-        for item, val in conf.items():
-            rdata[p + item] = val
-        return rdata
-    cache_key = __name + '.get_pkgmgr_conf{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
-
-
 def get_dns_resolvers(id_, ttl=PILLAR_TTL):
     def _do(id_):
         gconf = get_configuration(id_)
@@ -3553,6 +3638,59 @@ def get_dns_resolvers(id_, ttl=PILLAR_TTL):
         return rdata
     cache_key = __name + '.get_dns_resolvers{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+
+
+def get_ssh_hosts(ttl=PILLAR_TTL):
+    def _do():
+        try:
+            ssh_hosts = copy.deepcopy(query('ssh_hosts'))
+        except NoResultError:
+            log.info('No ssh_hosts section in configuration')
+            ssh_hosts = {}
+        return ssh_hosts
+    cache_key = __name + '.get_ssh_hosts9'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+def get_ssh_connection_infos(id_, ttl=PILLAR_TTL):
+    def _do():
+        _s = __salt__
+        infos = _s['mc_cloud.ssh_host_settings'](id_)
+        return {saltapi.SSH_CON_PREFIX: infos}
+    cache_key = __name + '.get_ssh_connection_infos{0}5'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+def get_masterless_makinastates_hosts(ttl=PILLAR_TTL):
+    '''
+    Expose on salt metadatas on how to connect
+    on each part of the infra using ssh
+    '''
+    _o = __opts__
+    _s = __salt__
+    def _do():
+        data = set()
+        try:
+            db = _s['mc_pillar.get_db_infrastructure_maps']()
+            for kind in ('bms', 'vms'):
+                for id_, idata in six.iteritems(db[kind]):
+                    data.add(id_)
+            return list(data)
+        except DatabaseNotFound:
+            log.debug('mc_pillar is not configured')
+            return []
+    cache_key = __name + '.get_masterless_makinastates_hosts1'
+    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+def get_masterless_makinastates_hosts_conf(ttl=PILLAR_TTL):
+    _o = __opts__
+    _s = __salt__
+    controller = _s['mc_cloud.is_a_controller'](_o['id'])
+    if not controller:
+        return {}
+    pref = 'makina-states.cloud.masterless_hosts'
+    return {pref: get_masterless_makinastates_hosts()}
 
 
 def get_db_md5(ttl=10):
@@ -3603,7 +3741,34 @@ def invalidate_mc_pillar():
         log.error(traceback.format_exc())
 
 
-def ext_pillar(id_, pillar=None, *args, **kw):
+def json_pillars(id_, pillar=None, raise_error=True, *args, **kw):
+    _s = __salt__
+    dirs = _s['mc_macros.get_pillar_dss']([id_])
+    data = OrderedDict()
+    # do not load cache pillar on controller, we will rely here on
+    # mc_pillar and other ext_pillars directly
+    if has_db():
+        return data
+    for section in ['*', id_]:
+        if section not in dirs:
+            continue
+        for pdir in dirs[section]:
+            if not os.path.exists(pdir):
+                continue
+            for i in [a
+                      for a in os.listdir(pdir)
+                      if a.endswith('.json')]:
+                try:
+                    pf = os.path.join(pdir, i)
+                    with open(pf) as fic:
+                        data = _s['mc_utils.dictupdate'](
+                            data, json.loads(fic.read()))
+                except (IOError, ValueError):
+                    pass
+    return data
+
+
+def ext_pillar(id_, pillar=None, raise_error=True, *args, **kw):
     _s = __salt__
     invalidate_mc_pillar()
     if pillar is None:
@@ -3614,7 +3779,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
             'MC_PILLAR not loader:\n'
             'DATABASE DOES NOT EXISTS: ' + dbpath
         ).replace('.json', '.{json,sls,yaml}')
-        if 'mastersalt' in dbpath:
+        if 'salt' in dbpath:
             log.error(msg)
         return {}
     if isinstance(kw, dict):
@@ -3635,23 +3800,24 @@ def ext_pillar(id_, pillar=None, *args, **kw):
 
     is_this_salt_managed = is_salt_managed(id_)
     is_this_managed = is_managed(id_)
+    raise_error = []
     for callback, copts in {
         'mc_env.ext_pillar': {'only_managed': False},
-        __name + '.get_autoupgrade_conf': {'only_managed': False},
-        __name + '.get_backup_client_conf': {'only_managed': False},
+        __name + '.get_snmpd_conf': {'only_known': False},
         __name + '.get_custom_pillar_conf': {'only_managed': False},
         __name + '.get_dhcpd_conf': {'only_managed': False},
-        __name + '.get_dns_resolvers': {'only_managed': False},
         __name + '.get_etc_hosts_conf': {'only_managed': False},
-        __name + '.get_mail_conf': {'only_managed': False},
         __name + '.get_packages_conf': {'only_managed': False},
-        __name + '.get_pkgmgr_conf': {'only_managed': False},
-        __name + '.get_firewalld_conf': {'only_managed': False},
-        __name + '.get_ms_iptables_conf': {'only_managed': False},
-        __name + '.get_shorewall_conf': {'only_managed': False},
-        __name + '.get_snmpd_conf': {'only_known': False},
+        __name + '.get_autoupgrade_conf': {'only_managed': False},
+        __name + '.get_backup_client_conf': {},
+        __name + '.get_dns_resolvers': {},
+        __name + '.get_mail_conf': {},
+        __name + '.get_firewalld_conf': {},
+        __name + '.get_ms_iptables_conf': {},
+        __name + '.get_shorewall_conf': {},
         __name + '.get_burp_server_conf': {},
         __name + '.get_check_raid_conf': {},
+        __name + '.get_ssh_connection_infos': {},
         __name + '.get_dns_master_conf': {},
         __name + '.get_dns_slave_conf': {},
         __name + '.get_exposed_global_conf': {},
@@ -3660,6 +3826,7 @@ def ext_pillar(id_, pillar=None, *args, **kw):
         __name + '.get_ntp_server_conf': {},
         __name + '.get_passwords_conf': {},
         __name + '.get_slapd_conf': {},
+        __name + '.get_masterless_makinastates_hosts_conf': {},
         __name + '.get_ssh_groups_conf': {},
         __name + '.get_ssh_keys_conf': {},
         __name + '.get_ssl_conf': {},
@@ -3695,7 +3862,9 @@ def ext_pillar(id_, pillar=None, *args, **kw):
             data = dictupdate(data, subpillar)
         except Exception, ex:
             trace = traceback.format_exc()
-            log.error('ERROR in mc_pillar: {0}/{1}'.format(callback, id_))
+            msg = 'ERROR in mc_pillar: {0}/{1}'.format(callback, id_)
+            raise_error.append(msg)
+            log.error(msg)
             log.error(ex)
             log.error(trace)
     if profile_enabled:
@@ -3710,9 +3879,12 @@ def ext_pillar(id_, pillar=None, *args, **kw):
             pr.dump_stats(ficp)
             with open(ficn, 'w') as fic:
                 pstats.Stats(pr, stream=fic).sort_stats('cumulative')
+        msr = __salt__['mc_locations.msr']()
         __salt__['cmd.run'](
-            '/srv/mastersalt/makina-states/bin/pyprof2calltree '
+            msr + '/bin/pyprof2calltree '
             '-i "{0}" -o "{1}"'.format(ficp, fico), python_shell=True)
+    if raise_error:
+        raise PillarError('\n    '+'\n    '.join(raise_error))
     return data
 
 
@@ -3743,104 +3915,6 @@ def get_global_conf(section, entry=10, ttl=PILLAR_TTL):
     cache_key = __name + '.get_global_conf{0}{1}'.format(section, entry)
     return __salt__['mc_utils.memoize_cache'](
         _do, [section, entry], {}, cache_key, ttl)
-
-
-def get_global_clouf_conf(entry, ttl=PILLAR_TTL):
-    def _do(entry):
-        return get_global_conf('cloud_settings', entry)
-    cache_key = __name + '.get_global_cloudconf{0}'.format(entry)
-    return __salt__['mc_utils.memoize_cache'](_do, [entry], {}, cache_key, ttl)
-
-
-def get_cloud_conf(ttl=PILLAR_TTL):
-    def _do():
-        rdata = OrderedDict()
-        dvms = rdata.setdefault('vms', OrderedDict())
-        dcns = rdata.setdefault('cns', OrderedDict())
-        _s = __salt__
-        _s['mc_cloud.extpillar_settings']()
-        cloud_cn_attrs = _s[__name + '.query']('cloud_cn_attrs', {})
-        cloud_vm_attrs = _s[__name + '.query']('cloud_vm_attrs', {})
-        supported_vts = _s['mc_cloud_compute_node.get_vts']()
-        for vt, targets in _s[__name + '.query']('vms', {}).items():
-            if vt not in supported_vts:
-                continue
-            for cn, vms in targets.items():
-                if vms is None:
-                    vms = {}
-                if cn in _s[__name + '.query']('non_managed_hosts', {}):
-                    continue
-                dcn = dcns.setdefault(cn, OrderedDict())
-                dcns[cn] = dcn
-                dcn.setdefault('conf', cloud_cn_attrs.get(cn, OrderedDict()))
-                cn_vms = dcn.setdefault('vms', OrderedDict())
-                vts = dcn.setdefault('vts', [])
-                if vt not in vts:
-                    vts.append(vt)
-                for vm in vms:
-                    if vm in _s[__name + '.query']('non_managed_hosts', {}):
-                        continue
-                    vmdata = dvms.setdefault(vm, OrderedDict())
-                    cvmdata = cloud_vm_attrs.get(vm, OrderedDict())
-                    vmdata = _s['mc_utils.dictupdate'](vmdata, cvmdata)
-                    vmdata['vt'] = vt
-                    dvms[vm] = cn_vms[vm] = vmdata
-        return rdata
-    cache_key = __name + '.get_cloud_conf'
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
-
-
-def get_cloud_conf_by_cns():
-    return copy.deepcopy(get_cloud_conf()['cns'])
-
-
-def get_cloud_conf_by_vts(ttl=PILLAR_TTL):
-    def _do():
-        data = OrderedDict()
-        for cn, cdata in get_cloud_conf_by_cns().items():
-            cvms = cdata.pop('vms')
-            for vt in cdata['vts']:
-                vtdata = data.setdefault(vt, OrderedDict())
-                vcndata = vtdata.setdefault(cn, OrderedDict())
-                vcnvms = vcndata.setdefault('vms', OrderedDict())
-            for vm, vmdata in cvms.items():
-                vt = vmdata['vt']
-                vtdata = data.setdefault(vt, OrderedDict())
-                vcndata = vtdata.setdefault(cn, copy.deepcopy(cdata))
-                vcnvms = vcndata.setdefault('vms', OrderedDict())
-                vcnvms[vm] = vmdata
-        return data
-    cache_key = __name + '.get_cloud_conf_by_vts'
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
-
-
-def get_cloud_conf_by_vms(ttl=PILLAR_TTL):
-    def _do():
-        return copy.deepcopy(get_cloud_conf()['vms'])
-    cache_key = __name + '.get_cloud_conf_by_vms'
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
-
-
-def get_cloud_entry_for_cn(id_, default=None):
-    if not default:
-        default = {}
-    return get_cloud_conf_by_cns().get(id_, default)
-
-
-def get_cloud_conf_for_cn(id_, default=None):
-    return get_cloud_entry_for_cn(id_, default=default).get('conf', {})
-
-
-def get_cloud_conf_for_vt(id_, default=None):
-    if not default:
-        default = {}
-    return get_cloud_conf_by_vts().get(id_, default)
-
-
-def get_cloud_conf_for_vm(id_, default=None):
-    if not default:
-        default = {}
-    return copy.deepcopy(get_cloud_conf_by_vms().get(id_, default))
 
 
 def get_domains_for(id_, ttl=PILLAR_TTL):
@@ -3904,6 +3978,54 @@ def get_ssl_conf(id_, ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
+def get_masterless_makinastates_groups(host, pillar=None):
+    if pillar is None:
+        pillar = {}
+    groups = set()
+    mysql = re.compile('mysql', flags=rei_flags)
+    pgsql = re.compile('osm|pgsql|postgresql', flags=rei_flags)
+    es = re.compile('es|elaticsearch', flags=rei_flags)
+    mongo = re.compile('mongo', flags=rei_flags)
+    rabbit = re.compile('rabbit', flags=rei_flags)
+    solr = re.compile('solr', flags=rei_flags)
+    prod = re.compile('^prod-', flags=rei_flags)
+    dev = re.compile('^dev-', flags=rei_flags)
+    staging = re.compile('^staging-', flags=rei_flags)
+    qa = re.compile('^qa-', flags=rei_flags)
+    what = {'all': True,
+            'mysql': mysql.search(host),
+            'pgsql': pgsql.search(host),
+            'rabbit': rabbit.search(host),
+            'solr': solr.search(host),
+            'es': es.search(host),
+            'mongo': mongo.search(host),
+            'prod': prod.search(host),
+            'staging': staging.search(host),
+            'qa': qa.search(host),
+            'dev': dev.search(host)}
+    for group, test in six.iteritems(what):
+        if test:
+            groups.add(group)
+    is_ = pillar.get('makina-states.cloud', {}).get('is', {})
+    mpref = 'makina-states.services.backup.burp.server'
+    if pillar.get(mpref, False):
+        groups.add('burp_servers')
+    mpref = 'makina-states.services.dns.bind.is_master'
+    if pillar.get(mpref, False):
+        groups.add('dns_masters')
+    mpref = 'makina-states.services.dns.bind.is_slave'
+    if pillar.get(mpref, False):
+        groups.add('dns_slaves')
+    if True in [('dns.bind.servers' in a) for a in pillar]:
+        groups.add('dns')
+    if is_.get('vm', True):
+        groups.add('vms')
+    if is_.get('compute_node', True):
+        groups.add('bms')
+    if is_.get('controller', True):
+        groups.add('controllers')
+    return groups
+
 def test():
     return True
 
@@ -3923,6 +4045,5 @@ def loaded():
         if ret and not has_db():
             ret = False
     except Exception:
-        ret = False
+        ret = Falss
     return ret
-# vim:set et sts=4 ts=4 tw=80:

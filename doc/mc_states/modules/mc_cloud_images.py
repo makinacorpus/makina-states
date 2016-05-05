@@ -29,7 +29,6 @@ import salt.exceptions
 from mc_states import saltapi
 
 from distutils.version import LooseVersion
-from mc_states.runners import mc_lxc
 from mc_states.modules.mc_lxc import (
     is_lxc)
 try:
@@ -51,13 +50,14 @@ PREFIX = 'makina-states.cloud.images'
 IMG_URL = ('https://downloads.sourceforge.net/makinacorpus'
            '/makina-states/'
            '{img}-{flavor}-{ver}.tar.xz')
-LXC_IMAGES = OrderedDict([('makina-states-vivid', {}),
+LXC_IMAGES = OrderedDict([('makina-states-xenial', {}),
+                          ('makina-states-vivid', {}),
                           ('makina-states-trusty', {}),
                           ('makina-states-precise', {})])
 DEFAULT_OS = 'ubuntu'
 RELEASES = {
     'ubuntu': {
-        'default': 'vivid',
+        'default': 'xenial',
         'releases': ['wily', 'utopic', 'vivid', 'trusty', 'precise']
     }
 
@@ -65,6 +65,9 @@ RELEASES = {
 # THIS IS A NON FINISHEP WIP TO REFACTOR IMAGE SETTINGS
 IMAGES = OrderedDict([
     ('lxc', OrderedDict([
+        ('ubuntu-xenial', {
+            'create': '-t ubuntu -- -r xenial --mirror {mirror}'
+        }),
         ('ubuntu-vivid', {
             'create': '-t ubuntu -- -r vivid --mirror {mirror}'
         }),
@@ -73,10 +76,10 @@ IMAGES = OrderedDict([
             'bootsalt': True}),
     ])),
     ('docker', OrderedDict([
+        ('makina-states/ubuntu-xenial-raw', {
+            'from_lxc': 'makina-states-vivid'}),
         ('makina-states/ubuntu-vivid-raw', {
             'from_lxc': 'makina-states-vivid'}),
-        ('ubuntu-vivid-systemd-debug', {
-            'from': 'makina-states:ubuntu-vivid'})
     ]))
 ])
 DOCKERSCRIPT = textwrap.dedent(
@@ -86,7 +89,7 @@ DOCKERSCRIPT = textwrap.dedent(
     /srv/makina-states/_scripts/boot-salt.sh\
         -C --refresh-modules
     /srv/makina-states/_scripts/boot-salt.sh\
-         -C
+        -C
     if test -e /srv/projects;then
         cd /srv/projects
         for i in *;do
@@ -217,7 +220,7 @@ def extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
         cloud_settings = _s['mc_cloud.extpillar_settings']()
         is_devhost = _s['mc_nodetypes.is_devhost']()
         cron_sync = True
-        if is_lxc() or is_devhost:
+        if is_lxc(_o=__opts__) or is_devhost:
             cron_sync = False
         data = _s['mc_utils.dictupdate'](
             _s['mc_utils.dictupdate'](
@@ -315,7 +318,7 @@ def get_vars(**kwargs):
     if kwargs:
         data.update(copy.deepcopy(kwargs))
     data.setdefault('flavor', 'standalone')
-    data.setdefault('container', 'makina-states-vivid')
+    data.setdefault('container', 'makina-states-xenial')
     data['container'] = data['container'].replace('imgbuild-', '')
     data = _s['mc_utils.format_resolve'](data)
     try:
@@ -335,7 +338,7 @@ def snapshot(container, flavor, *args, **kwargs):
     kwargs['container'] = container
     kwargs['flavor'] = flavor
     gvars = get_vars(**kwargs)
-    cret = mc_lxc.snapshot_container(_run, gvars['rootfs'])
+    cret = __salt__['mc_cloud_lxc.snapshot_container'](gvars['rootfs'])
     if cret['retcode']:
         raise _imgerror(
             '{0}/{1}: snapshot failed'.format(container, flavor),
@@ -398,10 +401,8 @@ def sync_container(container,
                    **kwargs):
     orig = '/var/lib/lxc/{0}/rootfs'.format(container)
     dest = '/var/lib/lxc/{0}/rootfs'.format(destination)
-    cret = mc_lxc.sync_container(
+    cret = __salt__['mc_clouc_lxc.sync_container'](
         orig, dest,
-        cmd_runner=_run,
-        __salt__from_exec=__salt__,
         snapshot=snapshot,
         force=force)
     if not cret.get('result', True):
@@ -442,13 +443,9 @@ def archive_standalone(container, *args, **kwargs):
             cmd = ('tar cJfp {absolute_tarball} '
                    ' etc/cron.d/*salt*'
                    ' etc/logrotate.d/*salt*'
-                   ' srv/{{pillar}}'
-                   ' srv/{{salt}}'
+                   ' srv/pillar}}'
+                   ' srv/makina-states'
                    ' usr/bin/salt-*'
-                   ' srv/makina-states/venv'
-                   ' usr/bin/salt'
-                   ' var/cache/{{salt}}'
-                   ' var/run/{{salt}}'
                    ' --ignore-failed-read --numeric-owner').format(**gvars)
             log.info('{container}/{flavor}: '
                      'archiving in {absolute_tarball}'.format(**gvars))
@@ -598,7 +595,7 @@ def sf_release(images=None, flavors=None, sync=True):
         - current ubuntu LTS based tarball containing the minimum vital
           to bring back to like makina-states without rebuilding it
           totally from scratch. This contains a slimed version of
-          the containere files from /srv/makina-states /srv/*salt /etc/*salt
+          the containere files ffrom /salt-venv /srv/*salt /etc/*salt
           /var/log/*salt /var/cache/*salt /var/lib/*salt /usr/bin/*salt*
 
     this is used in makina-states.cloud.lxc as a base
@@ -610,7 +607,7 @@ def sf_release(images=None, flavors=None, sync=True):
 
     Do a release::
 
-        alt-call -all mc_lxc.sf_release makina-states-trusty\\
+        salt-call -all mc_lxc.sf_release makina-states-trusty\\
             [flavor=[lxc/standalone]] sync=True|False
     '''
     _s = __salt__
@@ -625,10 +622,9 @@ def sf_release(images=None, flavors=None, sync=True):
         images = [a for a in imgSettings['lxc']['images']]
     gret = {'rets': {}, 'result': True}
     if sync:
-        mc_lxc.sync_image_reference_containers(
+        __salt['mc_cloud_lxc.sync_image_reference_containers'](
             imgSettings, gret,
-            __salt__from_exec=_s,
-            _cmd_runner=_run, force=True)
+            force=True)
     for img in images:
         imgdata = imgSettings['lxc']['images'][img]
         iflavors = copy.deepcopy(flavors)
@@ -667,7 +663,8 @@ def sf_release(images=None, flavors=None, sync=True):
     return gret
 
 
-clean_lxc_config = mc_lxc.clean_lxc_config
+def clean_lxc_config(*args, **kwargs):
+    return __salt__['mc_cloud_lxc.clean_lxc_config'](*args, **kwargs)
 
 
 def mount_container(path, **kwargs):
@@ -827,7 +824,6 @@ def build_from_lxc(name,
                 'lxc bootstrap script wont transfer in {0}'
                 ''.format(name), cret=ret)
         cargs = '-C'
-        cargs += ' --local-salt-mode masterless'
         cmd = ('{0} {2}/bootstrap.sh {1}'
                '').format(defaults['bootstrap_shell'],
                           cargs,

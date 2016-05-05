@@ -159,6 +159,7 @@ def default_settings():
             'excluded_ports': [],
             'port_range_start': 40000,
             'port_range_end': 60000}
+    data.update(__salt__['mc_cloud.ssh_settings']())
     return data
 
 
@@ -168,24 +169,26 @@ def get_targets(vt=None, ttl=PILLAR_TTL):
     '''
     def _do(vt=None):
         data = OrderedDict()
-        cloudSettings = __salt__['mc_cloud.extpillar_settings']()
-        vm_confs = __salt__['mc_pillar.get_cloud_conf_by_vts']()
-        dvts = [a for a in VIRT_TYPES if a in vm_confs]
-        for cvt in dvts:
-            all_vt_infos = vm_confs.get(cvt, {})
-            for t in all_vt_infos:
-                target = data.setdefault(t, {})
-                vts = target.setdefault('vts', [])
-                vms = target.setdefault('vms', {})
+        # cache warming
+        __salt__['mc_cloud.extpillar_settings']()
+        cloud_conf = __salt__['mc_pillar.get_cloud_conf_by_cns']()
+        for t in cloud_conf:
+            tdata = cloud_conf[t]
+            target = data.setdefault(t, {})
+            vts = target.setdefault('vts', [])
+            vms = target.setdefault('vms', {})
+            for cvt in tdata.get('vts'):
+                if cvt not in VIRT_TYPES:
+                    continue
                 if cvt not in vts:
                     vts.append(cvt)
                 if vt and (vt != cvt):
                     continue
-
-                for vmname in all_vt_infos[t]['vms']:
-                    vms.setdefault(vmname, {'vt': cvt, 'target': t})
+            for vmname in tdata.get('vms', []):
+                vm = vms.setdefault(vmname, OrderedDict())
+                vm.update({'vt': cvt, 'target': t})
         return data
-    cache_key = 'mc_cloud_cn.get_targets{0}'.format(vt)
+    cache_key = 'mc_cloud_cn.get_targets3{0}'.format(vt)
     return copy.deepcopy(__salt__['mc_utils.memoize_cache'](_do, [vt], {}, cache_key, ttl))
 
 
@@ -203,7 +206,7 @@ def get_vms(vt=None, vm=None, ttl=PILLAR_TTL):
             rdata = rdata[vm]
         _targets = get_targets(vt=vt)
         return rdata
-    cache_key = 'mc_cloud_cn.get_vm{0}{1}'.format(vt, vm)
+    cache_key = 'mc_cloud_cn.get_vm{0}{1}3'.format(vt, vm)
     return __salt__['mc_utils.memoize_cache'](_do, [vt, vm], {}, cache_key, ttl)
 
 
@@ -213,7 +216,7 @@ def get_vm(vm, ttl=PILLAR_TTL):
             return get_vms(vm=vm)
         except KeyError:
             raise KeyError('{0} vm not found'.format(vm))
-    cache_key = 'mc_cloud_cn.get_vm{0}'.format(vm)
+    cache_key = 'mc_cloud_cn.get_vm{0}3'.format(vm)
     return __salt__['mc_utils.memoize_cache'](_do, [vm], {}, cache_key, ttl)
 
 
@@ -706,7 +709,7 @@ def _configure_http_reverses(reversep, domain, ip):
     sbackend_name = 'securebck_{0}'.format(dom_id)
     if domain.startswith('*.'):
         rule = ('acl host_{0} hdr_reg(host)'
-                ' -i ^*.{1}(:80)?$').format(dom_id, domain[2:])
+                ' -i ^.*.{1}(:80)?$').format(dom_id, domain[2:])
     else:
         rule = ('acl host_{0} hdr_reg(host)'
                 ' -i ^{0}(:80)?$').format(dom_id)
@@ -922,17 +925,20 @@ def cn_extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
     def _do(id_=None, limited=False):
         _s = __salt__
         if id_ is None:
-            id_ = _s['mc_pillar.mastersalt_minion_id']()
+            id_ = _s['mc_pillar.minion_id']()
         conf = _s['mc_pillar.get_cloud_entry_for_cn'](id_)
         dconf = _s['mc_pillar.get_cloud_conf_for_cn']('default')
         data = _s['mc_utils.dictupdate'](
             _s['mc_utils.dictupdate'](
                 _s['mc_utils.dictupdate'](default_settings(), dconf),
-                conf.get('conf', {})), {'target': id_,
-                                        'reverse_proxies': {'target': id_}})
+                conf.get('conf', {})),
+            {'target': id_,
+             'ssh_host': id_,
+             'reverse_proxies': {'target': id_}})
+        data.update(__salt__['mc_cloud.ssh_host_settings'](id_, defaults=data))
         data['vts'] = conf.get('vts', [])
         return data
-    cache_key = 'mc_cloud_cn.cn_extpillar_settings{0}{1}'.format(id_, limited)
+    cache_key = 'mc_cloud_cn.cn_extpillar_settings{0}{1}2'.format(id_, limited)
     return copy.deepcopy(__salt__['mc_utils.memoize_cache'](
         _do, [id_, limited], {}, cache_key, ttl))
 

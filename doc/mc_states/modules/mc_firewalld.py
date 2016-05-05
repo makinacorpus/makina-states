@@ -275,7 +275,6 @@ def default_settings():
         'services': {
             'burp': {'port': [{'port': '4971-4974'}]},
             'dhcp': {'port': [{'port': '67-68'}]},
-            'mastersalt': {'port': [{'port': '4605-4606'}]},
             'mongodb': {'port': [{'port': '27017'}]},
             # ftp on containers wont use conntrack
             'ftpnc': {'port': [{'port': '21'}]},
@@ -1145,13 +1144,6 @@ def add_services_policies(data=None):
     for i in ['public_services', 'restricted_services']:
         for s in data[i]:
             data['services'].setdefault(s, {})
-    if not data.get('no_salt', False):
-        if controllers_registry['is']['salt_master']:
-            if 'salt' not in data['public_services']:
-                data['public_services'].append('salt')
-        if controllers_registry['is']['mastersalt_master']:
-            if 'mastersalt' not in data['public_services']:
-                data['public_services'].append('mastersalt')
     for z in [a for a in data['zones'] if a != 'trusted']:
         zdata = data['zones'][z]
         services = zdata.setdefault('services', {})

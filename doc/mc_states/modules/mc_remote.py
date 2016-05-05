@@ -470,7 +470,7 @@ def ssh_kwargs(first_argument_kwargs=None, **kw):
 
     All kwargs will be lookup in the form ssh_param and then param.
 
-    Eg: ssh_user, if no value, user, if not value, default.
+    Eg: ssh_username, if no value, user, if not value, default.
 
     This supports for now:
 
@@ -981,7 +981,7 @@ def ssh_transfer_file(host, orig, dest=None, **kwargs):
 
     host
         host to tranfer to
-    ssh_user/user (first win)
+    ssh_username/user (first win)
         user to connect as
     ssh_port/port (first win)
         Port to connect onto
@@ -1008,7 +1008,7 @@ def ssh_transfer_file(host, orig, dest=None, **kwargs):
     '''
     kwargs.setdefault('ssh_display_content_on_error', False)
     kw = ssh_kwargs(kwargs)
-    user = kw['ssh_user']
+    user = mc_states.saltapi.get_ssh_username(kw)
     port = kw['ssh_port']
     progress = kw['ssh_progress']
     makedirs = kw['ssh_makedirs']
@@ -1095,7 +1095,7 @@ def ssh_transfer_dir(host, orig, dest=None, **kwargs):
 
     host
         host to tranfer to
-    ssh_user/user (first win)
+    ssh_username/user (first win)
         user to connect as
     ssh_port/port (first win)
         Port to connect onto
@@ -1122,7 +1122,7 @@ def ssh_transfer_dir(host, orig, dest=None, **kwargs):
         'ssh_display_content_on_error', False)
     kw = ssh_kwargs(kwargs)
     makedirs = kw['ssh_makedirs']
-    user = kw['ssh_user']
+    user = mc_states.saltapi.get_ssh_username(kw)
     port = kw['ssh_port']
     progress = kw.get('progress', False)
     if asbool(makedirs):
@@ -1207,7 +1207,7 @@ def ssh(host, script, **kwargs):
 
     host
         host to execute the script on
-    ssh_user/user (first win)
+    ssh_username/user (first win)
         user to connect as (default: root)
     ssh_port/port (first win)
         Port to connect onto (default: 22)
@@ -1252,7 +1252,7 @@ def ssh(host, script, **kwargs):
     rand = _LETTERSDIGITS_RE.sub('_', salt.utils.pycrypto.secure_password(64))
     tmpdir = kw['ssh_tmpdir']
     dest = os.path.join(tmpdir, '{0}.sh'.format(rand))
-    user = kw['ssh_user']
+    user = mc_states.saltapi.get_ssh_username(kw)
     port = kw['ssh_port']
     script_p, inline_script = script, False
     cret = _get_ret()
@@ -1613,13 +1613,12 @@ def run_salt_call(host,
             'sarg': sarg})
         if not remote:
             # use to call:
-            # or call mastersalt
             if new_shell:
                 try:
                     script = salt_call_script.format(**skwargs)
                     ret = __salt__['cmd.run_all'](script,
                                                   python_shell=True,
-                                                  runas=kw['ssh_user'],
+                                                  runas=mc_states.saltapi.get_ssh_username(kw),
                                                   use_vt=use_vt)
                 finally:
                     if os.path.exists(skwargs['quoted_outfile']):
@@ -1778,7 +1777,7 @@ def salt_call(host,
 
     host
         host to execute on
-    ssh_user/user (first win)
+    ssh_username/user (first win)
         user to connect as (default: root)
     ssh_port/port (first win)
         Port to connect onto (default: 22)
@@ -1816,9 +1815,6 @@ def salt_call(host,
         to cache results easily, eg ::
 
              salt-call --local -lall mc_remote.salt_call fun=test.ping \\
-                host=127.0.0.1 new_shell=False ttl=60
-
-             salt-call --local mc_remote.mastersalt_call fun=mc_cl.settings \\
                 host=127.0.0.1 new_shell=False ttl=60
 
     use_vt
@@ -1905,15 +1901,6 @@ def salt_call(host,
     if not HAS_ARGS:
         raise OSError('Missing salt.utils.args')
     if host in get_localhost():
-        if 'mastersalt' in salt_call_bin:
-            if __salt__['mc_controllers.mastersalt_mode']():
-                new_shell = False
-            else:
-                new_shell = True
-                if not __salt__['mc_controllers.has_mastersalt']():
-                    raise mc_states.saltapi.MastersaltNotInstalled('Mastersalt is not installed')
-                if not __salt__['mc_controllers.has_mastersalt_running']():
-                    raise mc_states.saltapi.MastersaltNotRunning('Mastersalt is not running')
         if remote is None:
             remote = False
     if new_shell is None:
@@ -1926,11 +1913,7 @@ def salt_call(host,
         else:
             use_vt = False
     if masterless is None:
-        if 'mastersalt' in salt_call_bin:
-            fun_ = 'mc_controllers.local_mastersalt_mode'
-        else:
-            fun_ = 'mc_controllers.local_salt_mode'
-        masterless = __salt__[fun_]() == 'masterless'
+        masterless = True
     else:
         masterless = bool(masterless)
     # uglyness for caching a bit based on calling args
@@ -1954,30 +1937,13 @@ def salt_call(host,
     return _process_ret(ret, unparse, strip_out, hard_failure)
 
 
-def mastersalt_call(*a, **kw):
-    '''
-    Execute mastersalt-call remotely
-    see salt-call
-    '''
-    kw.setdefault('salt_call_bin', 'mastersalt-call')
-    return salt_call(*a, **kw)
-
-
-def local_mastersalt_call(*a, **kw):
-    '''
-    Execute mastersalt-call locally, maybe in another shell
-    see salt-call
-    '''
-    return mastersalt_call(None, *a, **kw)
-
-
 def local_salt_call(*a, **kw):
     '''
     Execute salt-call locally, in another shell
     see salt-call
     '''
     kw.setdefault('remote', False)
-    return mastersalt_call(None, *a, **kw)
+    return salt_call(None, *a, **kw)
 
 
 def hardstop_salt_call(*args, **kw):
@@ -1999,7 +1965,7 @@ def sls_(host,
 
     host
         host to connect onto
-    ssh_user/user (first win)
+    ssh_username/user (first win)
         user to connect as (default: root)
     ssh_port/port (first win)
         Port to connect onto (default: 22)
@@ -2031,7 +1997,7 @@ def highstate(host,
 
     host
         host to connect onto
-    ssh_user/user (first win)
+    ssh_username/user (first win)
         user to connect as (default: root)
     ssh_port/port (first win)
         Port to connect onto (default: 22)

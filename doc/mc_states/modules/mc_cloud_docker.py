@@ -36,7 +36,7 @@ def is_docker():
     Return true if we find a system or grain flag
     that explicitly shows us we are in a DOCKER context
     """
-    return _is_docker()
+    return _is_docker(_o=__opts__)
 
 
 def vt_default_settings(cloudSettings, imgSettings):

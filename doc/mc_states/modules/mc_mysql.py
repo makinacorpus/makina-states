@@ -80,6 +80,10 @@ def settings(**kwargs):
         automatically from that, for example several Drupal instances
         using a lot of fields
         could manage several hundreds of tables. <=== IMPORTANT
+    myCnf
+        MySQL default custom configuration (services.db.mysql)
+        To override the default makina-states configuration file,
+        Use the 'makina-states.services.mysql.cnf pillar/grain
 
 
     If you want to fine tune the mysql server, read the method
@@ -125,7 +129,14 @@ def settings(**kwargs):
         mode = __salt__['mc_utils.get']('default_env', 'dev')
         if 'devhost' in nodetypes_registry['actives']:
             mode = 'dev'
+        gos = __grains__['os']
+        osrelease = __grains__['osrelease']
         data.update({
+            'mysql57onward': gos in ['Ubuntu'] and osrelease >= '16.04',
+            'mysql55onward': gos in ['Ubuntu'] and osrelease >= '15.04',
+            'mysql55downward': gos in ['Ubuntu'] and osrelease <= '15.04',
+            'client_packages': ['mysql-client',
+                                'libmysqlclient-dev'],
             'bind_address': '0.0.0.0',
             'mode': mode,
             'var_log': data['logdir'],
@@ -136,6 +147,10 @@ def settings(**kwargs):
             'collate': 'utf8_general_ci',
             'noDNS': True,
             'isPercona': False,
+            'configs': {
+                '/etc/mysql/conf.d/local.cnf': {'mode': '644'},
+                '/etc/systemd/system/overrides.d/mysql.conf': {'mode': '644'},
+            },
             'isOracle': True,
             'isMariaDB': False,
             'port': '3306',
@@ -324,8 +339,4 @@ def settings(**kwargs):
         if '__pub_' in k:
             kwargs.pop(k, '')
     return _settings(**kwargs)
-
-
-
-
 #

@@ -37,18 +37,6 @@ def default_settings(cloudSettings):
     bootsalt_args
         args to give to bootsalt
         (default to cloudcontroller configured value)
-    bootsalt_mastersalt_args
-        args to give to bootsalt
-        (default to cloudcontroller configured value)
-    mode
-        salt mode (salt/mastersalt)
-        (default to cloudcontroller configured value)
-    master
-        salt master fqdn to rattach to
-        (default to cloudcontroller configured value)
-    master_port
-        salt master port to rattach to
-        (default to cloudcontroller configured value)
     bootsalt_branch
         default bootsalt_branch to use
         (default to cloudcontroller configured value)
@@ -74,9 +62,6 @@ def default_settings(cloudSettings):
         (do not use...)
     ip
         eventual ip if dns is not yet accessible
-    mode
-        mastersalt or salt, keep at any price mastersalt
-        or your are on your own
     ssh_username
         user name to connect as to provision the box
     password
@@ -93,7 +78,7 @@ def default_settings(cloudSettings):
         List of minionid Targets where to bootstrap salt using the saltcloud
         saltify driver (something accessible via ssh)
     """
-    data = {'script_args': cloudSettings['bootsalt_mastersalt_args'],
+    data = {'script_args': cloudSettings['bootsalt_args'],
             'ssh_gateway': cloudSettings['ssh_gateway'],
             'ssh_gateway_port': cloudSettings['ssh_gateway_port'],
             'ssh_gateway_user': cloudSettings['ssh_gateway_user'],
@@ -101,11 +86,8 @@ def default_settings(cloudSettings):
             'ssh_gateway_key': cloudSettings['ssh_gateway_key'],
             'ssh_username': 'root',
             'ssh_keyfile': None,
-            'mode': cloudSettings['mode'],
-            'master': cloudSettings['master'],
             'no_sudo_password': False,
             'keep_tmp': False,
-            'master_port': cloudSettings['master_port'],
             'bootsalt_branch': cloudSettings['bootsalt_branch'],
             'password': None,
             'sudo_password': None,

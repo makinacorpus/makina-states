@@ -849,7 +849,7 @@ def edit_configuration_object_settings(filen,
 def add_auto_configuration_host_settings(hostname,
                                          hostgroup=False,
                                          attrs={},
-                                         ssh_user='root',
+                                         ssh_username='root',
                                          ssh_addr='',
                                          ssh_port=22,
                                          ssh_timeout=30,
@@ -960,7 +960,7 @@ def add_auto_configuration_host_settings(hostname,
         services of "services_attrs" dictionary
         and the "cmdarg\_" keys are removed.
 
-        Only the arguments for CSSH (ssh_user, ssh_addr,
+        Only the arguments for CSSH (ssh_username, ssh_addr,
         ssh_port and ssh_timeout) don't begin with "cmdarg\_"
     '''
 #    icingaSettings = copy.deepcopy(__salt__['mc_icinga.settings']())
@@ -983,7 +983,7 @@ def add_auto_configuration_host_settings(hostname,
         service_key_hostname = 'host_name'
 
     kwargs.setdefault('attrs', attrs)
-    kwargs.setdefault('ssh_user', ssh_user)
+    kwargs.setdefault('ssh_username', ssh_username)
     if not ssh_addr:
         ssh_addr = hostname
     kwargs.setdefault('ssh_addr', ssh_addr)
@@ -1112,7 +1112,7 @@ def add_auto_configuration_host_settings(hostname,
             'use': "ST_BACKUP_DAILY_ALERT",
             'check_command': "CSSH_BACKUP_BURP",
 
-            'cmdarg_ssh_user': "root",
+            'cmdarg_ssh_username': "root",
             'cmdarg_ssh_addr': "backup.makina-corpus.net",
             'cmdarg_ssh_port': "22",
             'cmdarg_ssh_timeout': 10,
@@ -1124,7 +1124,7 @@ def add_auto_configuration_host_settings(hostname,
             'use': "ST_BACKUP_DAILY_ALERT",
             'check_command': "CSSH_BACKUP",
 
-            'cmdarg_ssh_user': "root",
+            'cmdarg_ssh_username': "root",
             'cmdarg_ssh_addr': "backup.makina-corpus.net",
             'cmdarg_ssh_port': "22",
             'cmdarg_ssh_timeout': 10,
@@ -1835,12 +1835,12 @@ def add_auto_configuration_host_settings(hostname,
 
     # generate the complete check command (we can't do a loop before
     # we have to give the good order for arguments)
-    cssh_params = ['ssh_user', 'ssh_addr', 'ssh_port', 'ssh_timeout']
+    cssh_params = ['ssh_username', 'ssh_addr', 'ssh_port', 'ssh_timeout']
 
     check_command_args = {
-        'CSSH_BACKUP_BURP': ['ssh_user', 'ssh_addr', 'ssh_port',
+        'CSSH_BACKUP_BURP': ['ssh_username', 'ssh_addr', 'ssh_port',
                              'warning', 'critical'],
-        'CSSH_BACKUP': ['ssh_user', 'ssh_addr', 'ssh_port',
+        'CSSH_BACKUP': ['ssh_username', 'ssh_addr', 'ssh_port',
                         'warning', 'critical'],
         'C_SNMP_PROCESS': ['process', 'warning', 'critical'],
         'CSSH_CRON': cssh_params,
@@ -1911,8 +1911,8 @@ def add_auto_configuration_host_settings(hostname,
 
                 for arg in check_command_args[services_attrs[
                         service]['check_command']]:
-                    # case of ssh params because we look for ssh_user
-                    # not cmdarg_ssh_user
+                    # case of ssh params because we look for ssh_username
+                    # not cmdarg_ssh_username
                     if arg in cssh_params:
                         if arg in services_attrs[service]:
                             args.append(str(services_attrs[service][arg]))
@@ -1943,7 +1943,7 @@ def add_auto_configuration_host_settings(hostname,
                         services_attrs[service][subservice]['check_command']
                     ]:
                         # case of ssh params because we look for
-                        # ssh_user not cmdarg_ssh_user
+                        # ssh_username not cmdarg_ssh_username
                         if arg in cssh_params:
                             if arg in services_attrs[service][subservice]:
                                 args.append(
@@ -1997,7 +1997,7 @@ def add_auto_configuration_host_settings(hostname,
 def add_auto_configuration_host(hostname=None,
                                 hostgroup=False,
                                 attrs={},
-                                ssh_user='root',
+                                ssh_username='root',
                                 ssh_addr='',
                                 ssh_port=22,
                                 ssh_timeout=30,
@@ -2124,7 +2124,7 @@ def add_auto_configuration_host(hostname=None,
                 'hostname': hostname,
                 'hostgroup': hostgroup,
                 'attrs': attrs,
-                'ssh_user': ssh_user,
+                'ssh_username': ssh_username,
                 'ssh_addr': ssh_addr,
                 'ssh_port': ssh_port,
                 'ssh_timeout': ssh_timeout,

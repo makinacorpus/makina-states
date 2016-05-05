@@ -52,6 +52,8 @@ def cyaml_load(*args, **kw):
 
     The first positional argument is either a yaml value
     or a path filename.
+
+    WARNING:  THIS FUNCTION SHOULD WORK WITHOUT SALT
     '''
     args = list(args)
     close = False
@@ -72,6 +74,8 @@ def cyaml_load(*args, **kw):
 def yaml_load(*args, **kw):
     '''
     Wrapper to cyaml_load
+
+    WARNING:  THIS FUNCTION SHOULD WORK WITHOUT SALT
     '''
     return cyaml_load(*args, **kw)
 
@@ -153,6 +157,8 @@ def msgpack_dump(data, *args, **kw):
 def json_load(data, *args, **kw):
     '''
     load a json string
+
+    WARNING:  THIS FUNCTION SHOULD WORK WITHOUT SALT
     '''
     return api.json_load(data)
 

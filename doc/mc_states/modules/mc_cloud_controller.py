@@ -22,7 +22,6 @@ from salt.utils.odict import OrderedDict
 import copy
 import mc_states.api
 from salt.modules import tls as tlsm
-import M2Crypto
 
 from mc_states.modules.mc_pillar import PILLAR_TTL
 from mc_states.modules.mc_ssl import (
@@ -47,7 +46,7 @@ def gen_id(name):
 
 def default_settings():
     _s = __salt__
-    data = {'controller': _s['mc_pillar.mastersalt_minion_id'](),
+    data = {'controller': _s['mc_pillar.minion_id'](),
             'vts': {'generic': True,
                       'saltify': True,
                       'lxc': False,
@@ -61,7 +60,7 @@ def extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
     def _do(id_=None, limited=False):
         _s = __salt__
         gconf = _s['mc_pillar.get_configuration'](
-            _s['mc_pillar.mastersalt_minion_id']())
+            _s['mc_pillar.minion_id']())
         gdata = {'vts': {'lxc': gconf.get('cloud_control_lxc', True),
                          'kvm': gconf.get('cloud_control_kvm', True)}}
         extdata = _s['mc_pillar.get_global_clouf_conf']('cloud')

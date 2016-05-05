@@ -35,9 +35,12 @@ def registry():
     def _registry():
         data = __salt__[
             'mc_macros.construct_registry_configuration'
-        ](__name, defaults={'supervisor': {'active': False},
-                            'circus': {'active': False},
-                            'system': {'active': False}}
+        ](
+            __name,
+            defaults={'supervisor': {'active': False},
+                      'circus': {'active': False},
+                      'system': {'active': False}}
+        )
         return data
     return _registry()
 
@@ -72,8 +75,7 @@ def processes_managers():
 def get_processes_manager(data=None):
     if not data:
         data = {}
-    return data.get('processes_manager',
-                    settings()['processes_manager'])
+    return data.get('processes_manager', settings()['processes_manager'])
 
 
 def get_service_function(pm=None,
@@ -92,8 +94,8 @@ def get_service_function(pm=None,
 
         pm
             the processes manager
-            (one of none|forced|system|circus|supervisor|service.{running,dead})
-            system or forced means to return a function between activate or deactivate
+            (one of none|system|circus|supervisor|service.{running,dead})
+            system means to return a function between activate or deactivate
         enable_toggle
             choose if we are in system mode either to return the 'activate' or 'deactivate'
             function, by default we return the activate function
@@ -114,12 +116,15 @@ def get_service_function(pm=None,
                 return pm
     if pm is None:
         pm = 'system'
-    if has_system_services_manager is None:
-        has_system_services_manager = _s['mc_nodetypes.has_system_services_manager']()
-    if not (has_system_services_manager or pm not in ['system', 'forced']):
-        return
     if enable_toggle is None:
         enable_toggle = True
+    if has_system_services_manager is None:
+        has_system_services_manager = _s[
+            'mc_nodetypes.has_system_services_manager']()
+    if not has_system_services_manager:
+        return
+    if has_system_services_manager and pm in ['circus', 'supervisor']:
+        enable_toggle = False
     return enable_toggle and activate_function or deactivate_function
 
 

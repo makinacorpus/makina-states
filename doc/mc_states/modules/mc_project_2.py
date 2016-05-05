@@ -20,6 +20,7 @@ This can either:
 import yaml.error
 import datetime
 import os
+import grp
 import pipes
 import socket
 import pprint
@@ -29,6 +30,8 @@ import uuid
 import logging
 import yaml
 import copy
+from distutils.version import LooseVersion
+from mc_states.version import VERSION
 from salt.utils.odict import OrderedDict
 import salt.template
 from salt.states import group as sgroup
@@ -227,9 +230,9 @@ def remove_path(path):
         print "'%s' was asked to be deleted but does not exists." % path
         print
 
-
 def _sls_exec(name, cfg, sls):
     # be sure of the current project beeing loaded in the context
+    _o = __opts__
     set_project(cfg)
     cfg = get_project(name)
     ret = _get_ret(name)
@@ -237,12 +240,15 @@ def _sls_exec(name, cfg, sls):
     old_retcode = __context__.get('retcode', 0)
     pillar = __salt__['mc_utils.dictupdate'](
         copy.deepcopy(cfg['sls_default_pillar']),
-        copy.deepcopy(__pillar__))
-    # UGLY HACK for the lazyloader
+        __salt__['mc_utils.copy_dunder'](__pillar__))
+    # load an inner execer for our custom slses
     try:
-        __salt__['mc_utils.add_stuff_to_opts'](__opts__)
+        __salt__['mc_utils.add_stuff_to_opts'](_o)
+        cret = __salt__['state.sls'].__globals__.update({
+            '__opts__':  _o})
         cret = __salt__['state.sls'](sls.format(**cfg),
-                                     concurrent=True, pillar=pillar)
+                                     concurrent=True,
+                                     pillar=pillar)
     finally:
         __salt__['mc_utils.remove_stuff_from_opts'](__opts__)
     ret['return'] = cret
@@ -276,11 +282,13 @@ def _sls_exec(name, cfg, sls):
                 __context__['retcode'] = 3
                 is_really_valid = False
                 ret['result'] = False
-    if (not is_really_valid) and (__context__['retcode'] > 0):
+    if failed or (not is_really_valid) and (__context__['retcode'] > 0):
         ret['result'] = False
         body = ''
         if isinstance(cret, list):
             body += indent(cret)
+        if "No matching sls found" in body:
+            body += "\nYou may have a SLS variable error, check log"
         _append_comment(ret,
                         'Running {1} for {0} failed'.format(name, sls),
                         body=body)
@@ -389,7 +397,7 @@ def get_default_configuration(remote_host=None):
             this_host = fic.read().splitlines()[0].strip()
     if not remote_host:
         remote_host = __grains__['fqdn']
-    if __salt__['mc_cloud.is_vm']:
+    if __salt__['mc_cloud.is_vm']():
         this_host, this_port = __salt__['mc_cloud_vm.vm_host_and_port']()
     conf['remote_host'] = remote_host
     conf['this_host'] = this_host
@@ -420,9 +428,9 @@ def _prepare_configuration(name, *args, **kwargs):
     salt_settings = _s['mc_salt.settings']()
     # special symlinks inside salt wiring
     cfg['wired_salt_root'] = os.path.join(
-        salt_settings['saltRoot'], 'makina-projects', cfg['name'])
+        salt_settings['salt_root'], 'makina-projects', cfg['name'])
     cfg['wired_pillar_root'] = os.path.join(
-        salt_settings['pillarRoot'], 'makina-projects', cfg['name'])
+        salt_settings['pillar_root'], 'makina-projects', cfg['name'])
     # check if the specified sls installer files container
     if not cfg['default_env']:
         # one of:
@@ -465,8 +473,29 @@ def _prepare_configuration(name, *args, **kwargs):
     #
     if not cfg['user']:
         cfg['user'] = '{name}-user'
-    if not cfg['groups']:
-        cfg['groups'].append(_s['mc_usergroup.settings']()['group'])
+    # retro compat, let default_group beeing editor on old prods
+    default_group = _s['mc_usergroup.settings']()['group']
+    locs = _s['mc_locations.settings']()
+    tddir = '{1}/{0}'.format(name, locs['projects_dir'])
+    search_editor_dirs = [
+        tddir,
+        os.path.join(tddir, 'archives'),
+        os.path.join(tddir, 'git'),
+        os.path.join(tddir, 'data'),
+        os.path.join(tddir, 'project')
+    ]
+    for ddir in search_editor_dirs:
+        try:
+            st = os.stat(ddir)
+            uses_editor = 'editor' == grp.getgrgid(st.st_gid).gr_name
+        except (OSError, TypeError, KeyError):
+            uses_editor = False
+        if uses_editor:
+            break
+    if not uses_editor:
+        default_group = '{name}-grp'
+    if default_group not in cfg['groups']:
+        cfg['groups'].append(default_group)
     cfg['groups'] = uniquify(cfg['groups'])
     # those variables are overridable via pillar/grains
     overridable_variables = ['default_env',
@@ -516,8 +545,8 @@ def load_sample(cfg, *args, **kwargs):
                 if isinstance(val, dict):
                     for k2, val2 in val.items():
                         if isinstance(val2, dict):
-                            sample_data = _s['mc_utils.dictupdate'](
-                                sample_data, val2)
+                            incfg = sample_data.setdefault(k2, OrderedDict())
+                            incfg = _s['mc_utils.dictupdate'](incfg, val2)
                         else:
                             sample_data[k2] = val2
                 else:
@@ -554,20 +583,22 @@ def _defaultsConfiguration(
         os_defaults = OrderedDict()
     if env_defaults is None:
         env_defaults = OrderedDict()
-    if not env_defaults:
-        env_defaults = _dict_update(
-            env_defaults,
-            copy.deepcopy(
-                _s['mc_utils.get'](
-                    'makina-projects.{name}.env_defaults'.format(**cfg),
-                    OrderedDict())))
-        env_defaults = _dict_update(
-            env_defaults,
-            copy.deepcopy(
-                _s['mc_utils.get'](
-                    'makina-projects.{name}'.format(**cfg),
-                    OrderedDict()
-                ).get('env_defaults', OrderedDict())))
+    sample_env_defaults = sample.get('env_defaults', OrderedDict())
+    if isinstance(sample_env_defaults, dict):
+        env_defaults = _dict_update(env_defaults, sample_env_defaults)
+    env_defaults = _dict_update(
+        env_defaults,
+        copy.deepcopy(
+            _s['mc_utils.get'](
+                'makina-projects.{name}.env_defaults'.format(**cfg),
+                OrderedDict())))
+    env_defaults = _dict_update(
+        env_defaults,
+        copy.deepcopy(
+            _s['mc_utils.get'](
+                'makina-projects.{name}'.format(**cfg),
+                OrderedDict()
+            ).get('env_defaults', OrderedDict())))
     if not os_defaults:
         os_defaults = _dict_update(
             os_defaults,
@@ -588,39 +619,39 @@ def _defaultsConfiguration(
     # makina-projects.projectname
     # makina-states is the old prefix, retro compat
     for subp in ['states', 'projects']:
-        pillar_data = _dict_update(
-            pillar_data,
-            copy.deepcopy(
-                _s['mc_utils.get'](
-                    'makina-{subp}.{name}.data'.format(name=cfg['name'],
-                                                       subp=subp),
-                    OrderedDict())))
-        memd_data = copy.deepcopy(
-            _s['mc_utils.get'](
-                'makina-{subp}.{name}'.format(name=cfg['name'],
-                                              subp=subp),
-                OrderedDict()
-            ).get('data', OrderedDict()))
-        if not isinstance(memd_data, dict):
-            raise ValueError(
-                'data is not a dict for {0}, '
-                'review your pillar and yaml files'.format(
-                    cfg.get('name', 'project')))
-        pillar_data = _dict_update(pillar_data, memd_data)
-    os_defaults.setdefault(__grains__['os'], OrderedDict())
-    os_defaults.setdefault(__grains__['os_family'],
-                           OrderedDict())
+        for subk in [a for a in cfg]:
+            val = _s['mc_utils.get'](
+                        'makina-{subp}.{name}.{subk}'.format(
+                            name=cfg['name'], subk=subk, subp=subp),
+                        _MARKER)
+            if val is not _MARKER:
+                pillar_data[subk] = val
+            else:
+                val = _s['mc_utils.get'](
+                    'makina-{subp}.{name}'.format(
+                        name=cfg['name'], subp=subp),
+                    OrderedDict()
+                ).get(subk, _MARKER)
+                if val is not _MARKER:
+                    pillar_data[subk] = val
+    default_env = pillar_data.get('default_env', None) or default_env
     env_defaults.setdefault(default_env, OrderedDict())
     for k in projects_api.ENVS:
         env_defaults.setdefault(k, OrderedDict())
     defaultsConfiguration = _dict_update(
         defaultsConfiguration, pillar_data)
-    defaultsConfiguration = _dict_update(
-        defaultsConfiguration,
-        _s['grains.filter_by'](env_defaults, grain=default_env, default="dev"))
-    defaultsConfiguration = _dict_update(
-        defaultsConfiguration,
-        _s['grains.filter_by'](os_defaults, grain='os_family'))
+    if 'data' in defaultsConfiguration and default_env in env_defaults:
+        defaultsConfiguration['data'] = _dict_update(
+            defaultsConfiguration['data'],
+            env_defaults[default_env])
+        cfg['default_env'] = default_env
+    if 'os' in __grains__:
+        os_defaults.setdefault(__grains__['os'], OrderedDict())
+        os_defaults.setdefault(__grains__['os_family'],
+                               OrderedDict())
+        defaultsConfiguration = _dict_update(
+            defaultsConfiguration,
+            _s['grains.filter_by'](os_defaults, grain='os_family'))
     prefs = [
         # retro compat 'foo-default-settings'
         '{name}-default-settings'.format(**cfg),
@@ -692,11 +723,10 @@ def uncache_project(name):
         name = name['name']
     __opts__.get('ms_projects', {}).pop(name, None)
     __opts__.pop('ms_project_name', None)
-    for cfg, remote_host in [
-        a for a in __opts__.get('ms_projects', {})
-    ]:
+    projects = __opts__.get('ms_projects', {})
+    for cfg, remote_host in [a for a in projects]:
         if cfg == name:
-            __opts__.pop((cfg, remote_host), None)
+            projects.pop((cfg, remote_host), None)
 
 
 def get_project(name, *args, **kwargs):
@@ -724,21 +754,6 @@ def _get_contextual_cached_project(name, remote_host=None):
     return cfg
 
 
-'''
-Seems not be used
-Deactivate in a while ;)
-
-def refresh_cached_configuration(name, *args, **kwargs):
-    \'''
-    To inter operate with external tools, we will
-    cache a serialized configuration inside the project root
-    \'''
-    get_configuration(name *args, **kwargs)
-    json_cfg = __salt__['mc_utils.json_dump'](cfg)
-    pack_cfg = __salt__['mc_utils.json_dump'](cfg)
-'''
-
-
 def get_configuration(name, *args, **kwargs):
     '''
     Return a configuration data structure needed data for
@@ -751,7 +766,7 @@ def get_configuration(name, *args, **kwargs):
         Does the project use local remotes (via git hooks) for users
         to push code inside remotes and have the local working copy
         synchronized with those remotes before deploy.
-        Default to False, set to True to not use local remotes
+        Default to True, set to False to use local remotes
         If the project directory .git folder exists, and there
         is no local remote created, the local remotes feature
         will also be disabled
@@ -852,18 +867,19 @@ def get_configuration(name, *args, **kwargs):
             return cfg
     _s = __salt__
     salt_settings = _s['mc_salt.settings']()
-    salt_root = salt_settings['saltRoot']
+    salt_root = salt_settings['salt_root']
     nodata = kwargs.pop('nodata', False)
     ignored_keys = cfg['ignored_keys']
     if nodata:
         cfg['data'] = OrderedDict()
     else:
-        cfg['data'] = _defaultsConfiguration(
-            cfg,
-            cfg['default_env'],
-            defaultsConfiguration=cfg['defaults'],
-            env_defaults=cfg['env_defaults'],
-            os_defaults=cfg['os_defaults'])
+        cfg.update(
+            _defaultsConfiguration(
+                cfg,
+                cfg['default_env'],
+                defaultsConfiguration=cfg['defaults'],
+                env_defaults=cfg['env_defaults'],
+                os_defaults=cfg['os_defaults']))
     if cfg['data'].get('sls_default_pillar', OrderedDict()):
         cfg['sls_default_pillar'] = cfg['data'].pop('sls_default_pillar')
     # some vars need to be setted just a that time
@@ -895,6 +911,9 @@ def get_configuration(name, *args, **kwargs):
     # the default pillar will also recursively be resolved here
     cfg.update(_s['mc_utils.format_resolve'](cfg))
     cfg.update(_s['mc_utils.format_resolve'](cfg, cfg['data']))
+
+    if cfg['group'] not in cfg['groups']:
+        cfg['groups'].insert(0, cfg['group'])
 
     if cfg['remote_less'] is None:
         cfg['remote_less'] = is_remote_less(cfg)
@@ -994,11 +1013,22 @@ def is_pillar_remote_less(cfg):
 
 
 def is_remote_less(cfg):
-    no_remote = cfg.get('remote_less', False) or (
+    # in makinastates v1 layouts, remoteless is False by default
+    remote_less = cfg.get('remote_less', None) or (
         (os.path.exists(J(cfg['project_root'], '.git')) or
          os.path.exists(J(cfg['project_root'], '.salt'))) and
         not os.path.exists(cfg['project_git_root']))
-    return no_remote
+    # if we found remote layout, deactivate remote less
+    if (
+        os.path.exists(cfg['project_git_root']) and
+        os.path.exists(cfg['pillar_git_root'])
+    ):
+        remote_less = False
+    # by default on v2 and later projects, remoteless is now the
+    # default
+    elif remote_less is None and LooseVersion(VERSION) >= LooseVersion("2.0"):
+        remote_less = True
+    return remote_less
 
 
 def init_user_groups(user, groups=None, ret=None):
@@ -1092,7 +1122,7 @@ if [ ! -e $home/.ssh ];then
   mkdir $home/.ssh;
 fi;
 for i in config id_*;do
-  if [ ! -e $home/.ssh/$i ];then
+  if [ -e $i ] && [ ! -e $home/.ssh/$i ];then
     cp -fv $i $home/.ssh;
   fi;
 done;
@@ -1108,7 +1138,7 @@ if [ "x$(stat -c %U "$home")" != "x$user" ];then
     res=0
 fi
 for i in config id_*;do
-  if [ ! -e $home/.ssh/$i ];then
+  if [ -e $i ] && [ ! -e $home/.ssh/$i ];then
     res=0;
   fi;
 done;
@@ -1131,7 +1161,9 @@ def sync_hooks(name, ret=None, api_version=API_VERSION, *args, **kwargs):
         ret = _get_ret(cfg['name'])
     local_remote = cfg['project_git_root']
     project_git = os.path.join(cfg['project_root'], '.git')
+    ms = _s['mc_locations.settings']()['ms']
     params = {
+        'WC': ms,
         'FORCE_MARKER': local_remote+'/hooks/force_marker',
         'api_version': api_version, 'name': name}
     if not cfg.get('remote_less', False):
@@ -1290,7 +1322,7 @@ def init_repo(working_copy,
         if bare:
             igit += '.tmp'
         if remote_less:
-            igit = lgit
+            igit = working_copy
         try:
             parent = os.path.dirname(igit)
             if not os.path.exists(parent):
@@ -1975,7 +2007,12 @@ def init_project(name, *args, **kwargs):
             if not lremote_less:
                 set_upstream(wc, rev, user, ret=ret)
                 sync_working_copy(wc, user=user, rev=rev, ret=ret)
-        link(name, *args, **kwargs)
+        pillar = os.path.join(cfg['pillar_root'], 'init.sls')
+        try:
+            link(name, *args, **kwargs)
+        except Exception:
+            if os.path.exists(pillar):
+                raise
         refresh_files_in_working_copy_kwargs = copy.deepcopy(kwargs)
         for k in [
             'user', 'group', 'project', 'init_data', 'force', 'do_push',
@@ -1983,7 +2020,7 @@ def init_project(name, *args, **kwargs):
         ]:
             refresh_files_in_working_copy_kwargs.pop(k, None)
         refresh_files_in_working_copy_kwargs['commit_all'] = commit_all
-        pillar = os.path.join(cfg['pillar_root'], 'init.sls')
+        relink = False
         if not os.path.exists(pillar):
             init_pillar_dir(
                 cfg['pillar_root'],
@@ -1995,6 +2032,9 @@ def init_project(name, *args, **kwargs):
                 do_push=False,
                 remote_less=pillar_remote_less,
                 ret=ret)
+            relink = True
+        relink = not os.path.exists(
+            os.path.join(cfg['project_root'], '.salt')) or relink
         refresh_files_in_working_copy(cfg['project_root'],
                                       user=user,
                                       group=group,
@@ -2006,6 +2046,8 @@ def init_project(name, *args, **kwargs):
                                       api_version=cfg['api_version'],
                                       *args,
                                       **refresh_files_in_working_copy_kwargs)
+        if relink:
+            link(name, *args, **kwargs)
         # in case of remoteless the .salt folder may have just been created
         # in working dir, so link must be redone here
         if remote_less or pillar_remote_less:
@@ -2036,8 +2078,17 @@ def init_project(name, *args, **kwargs):
 
 def reload_cfg(cfg, *args, **kwargs):
     kwargs['force_reload'] = True
-    cfg = get_configuration(cfg['name'], *args, **kwargs)
-    return cfg
+    ncfg = get_configuration(cfg['name'], *args, **kwargs)
+    # keep some values from previous as cfg will be reloaded
+    # with values that were use in previous steps
+    # but will be rused in next steps
+    for i in [
+        'archives_root',
+        'current_archive_dir',
+    ]:
+        if i in cfg:
+            ncfg[i] = cfg[i]
+    return ncfg
 
 
 def guarded_step(cfg,
@@ -2081,8 +2132,8 @@ def guarded_step(cfg,
         error_msg = (
             'Deployment error: {3}\n'
             'Project {0} failed to deploy and triggered a non managed '
-            'exception in step {2}.\n'
-            '{1}').format(name, ex, step.capitalize(), step)
+            'exception in step: "{2}".\n'
+            '{1}').format(name, ex, step, step)
         # if we have a non scheduled exception, we leave the system
         # in place for further inspection
         trace = traceback.format_exc()
@@ -2127,13 +2178,12 @@ def sync_modules(name, *args, **kwargs):
     _s = __salt__
     salt_root = cfg['salt_root']
     system_salt = __opts__['file_roots']['base'][0]
-    if _s['mc_controllers.mastersalt_mode']():
-        k = 'mastersalt'
-    else:
-        k = 'salt'
-
-    saltsettings = __salt__['mc_salt.settings']()[
-        'data_mappings']['minion'][k]
+    k = 'salt'
+    try:
+        saltsettings = __salt__['mc_salt.settings']()[
+            'data_mappings']['minion'][k]
+    except KeyError:
+        saltsettings = __salt__['mc_salt.settings']()
     for config_opt, dirs in saltsettings['saltmods'].items():
         dest = dirs[0]
         _d = os.path.basename(dest)
@@ -2420,6 +2470,50 @@ def fixperms(name, *args, **kwargs):
     return cret
 
 
+def list_projects():
+    _s = __salt__
+    locs = _s['mc_locations.settings']()
+    cfgs = OrderedDict()
+    salt_settings = _s['mc_salt.settings']()
+    wired_pillar_roots = os.path.join(
+        salt_settings['pillar_root'], 'makina-projects')
+    wired_salt_roots = os.path.join(
+        salt_settings['salt_root'], 'makina-projects')
+    if os.path.exists(locs['projects_dir']):
+        projects = os.listdir(locs['projects_dir'])
+        if projects:
+            for pj in projects:
+                cfgs[pj] = {
+                    'pillar_root': os.path.join(
+                        locs['projects_dir'], pj, 'pillar'),
+                    'wired_pillar_root': os.path.join(
+                        wired_pillar_roots, pj),
+                    'wired_salt_root': os.path.join(
+                        wired_salt_roots, pj),
+                    'pillar': os.path.join(
+                        locs['projects_dir'], pj, 'pillar/init.sls'),
+                    'project_root': os.path.join(
+                        locs['projects_dir'], pj, 'project'),
+                    'salt_root': os.path.join(
+                        locs['projects_dir'], pj,
+                        'project/.salt'),
+                    'salt_fixperms': os.path.join(
+                        locs['projects_dir'], pj,
+                        'project/.salt/fixperms.sls'),
+                    'salt_sample': os.path.join(
+                        locs['projects_dir'], pj,
+                        'project/.salt/PILLAR.sample'),
+                }
+        for pj in [a for a in cfgs]:
+            for a in six.iteritems(cfgs[pj]):
+                if 'wired' in a[0]:
+                    continue
+                if not os.path.exists(a[1]):
+                    cfgs.pop(pj, None)
+                    break
+    return cfgs
+
+
 def link_pillar(names, *args, **kwargs):
     '''
     Add the link wired in pillar folder
@@ -2432,17 +2526,23 @@ def link_pillar(names, *args, **kwargs):
         names = names.split(',')
     names.extend(args)
     ret = _get_ret(*args, **kwargs)
+    projects = list_projects()
     for name in names:
-        cfg = get_configuration(name, nodata=True, *args, **kwargs)
+        if name not in projects:
+            raise projects_api.ProjectInitException(
+                '{0} not found'.format(name))
+        cfg = projects[name]
         salt_settings = __salt__['mc_salt.settings']()
-        pillar_root = os.path.join(salt_settings['pillarRoot'])
-        upillar_top = 'makina-projects.{name}'.format(**cfg)
+        pillar_root = os.path.join(salt_settings['pillar_root'])
+        upillar_top = 'makina-projects.{name}'.format(name=name)
         pillarf = os.path.join(pillar_root, 'top.sls')
         customf = os.path.join(pillar_root, 'custom.sls')
-        pillar_top = 'makina-projects.{name}'.format(**cfg)
+        pillar_top = 'makina-projects.{name}'.format(name=name)
         link_into_root(
             name, ret,
             cfg['wired_pillar_root'], cfg['pillar_root'], do_link=True)
+        if LooseVersion(VERSION) >= LooseVersion("2.0"):
+            continue
         added = '    - {0}'.format(pillar_top)
         for f, content in six.iteritems({pillarf: TOP, customf: CUSTOM}):
             if not os.path.exists(f):
@@ -2484,30 +2584,35 @@ def unlink_pillar(names, *args, **kwargs):
         names = names.split(',')
     names.extend(args)
     ret = _get_ret(*args, **kwargs)
+    projects = list_projects()
     for name in names:
-        cfg = get_configuration(name, nodata=True,  *args, **kwargs)
+        if name not in projects:
+            raise projects_api.ProjectInitException(
+                '{0} not found'.format(name))
+        cfg = projects[name]
         kwargs.pop('ret', None)
         salt_settings = __salt__['mc_salt.settings']()
-        pillar_root = os.path.join(salt_settings['pillarRoot'])
+        pillar_root = os.path.join(salt_settings['pillar_root'])
         pillarf = os.path.join(pillar_root, 'top.sls')
         pillar_top = 'makina-projects.{name}'.format(**cfg)
-        with open(pillarf) as fpillarf:
-            pillar_top = '- makina-projects.{name}'.format(**cfg)
-            pillars = fpillarf.read()
-            if pillar_top in pillars:
-                lines = []
-                log = False
-                for line in pillars.splitlines():
-                    if line.endswith(pillar_top):
-                        log = True
-                        continue
-                    lines.append(line)
-                with open(pillarf, 'w') as wpillarf:
-                    wpillarf.write('\n'.join(lines))
-                if log:
-                    _append_comment(
-                        ret, body=indent(
-                            'Cleaned pillar top: {0}'.format(name)))
+        if not LooseVersion(VERSION) >= LooseVersion("2.0"):
+            with open(pillarf) as fpillarf:
+                pillar_top = '- makina-projects.{name}'.format(name=name)
+                pillars = fpillarf.read()
+                if pillar_top in pillars:
+                    lines = []
+                    log = False
+                    for line in pillars.splitlines():
+                        if line.endswith(pillar_top):
+                            log = True
+                            continue
+                        lines.append(line)
+                    with open(pillarf, 'w') as wpillarf:
+                        wpillarf.write('\n'.join(lines))
+                    if log:
+                        _append_comment(
+                            ret, body=indent(
+                                'Cleaned pillar top: {0}'.format(name)))
         link_into_root(
             name, ret,
             cfg['wired_pillar_root'], cfg['pillar_root'], do_link=False)
@@ -2559,8 +2664,12 @@ def link_salt(names, *args, **kwargs):
         names = names.split(',')
     names.extend(args)
     ret = _get_ret(*args, **kwargs)
+    projects = list_projects()
     for name in names:
-        cfg = get_configuration(name, nodata=True, *args, **kwargs)
+        if name not in projects:
+            raise projects_api.ProjectInitException(
+                '{0} not found'.format(name))
+        cfg = projects[name]
         kwargs.pop('ret', None)
         link_into_root(
             name, ret, cfg['wired_salt_root'], cfg['salt_root'], do_link=True)
@@ -2580,8 +2689,12 @@ def unlink_salt(names, *args, **kwargs):
         names = names.split(',')
     names.extend(args)
     ret = _get_ret(*args, **kwargs)
+    projects = list_projects()
     for name in names:
-        cfg = get_configuration(name, nodata=True, *args, **kwargs)
+        if name not in projects:
+            raise projects_api.ProjectInitException(
+                '{0} not found'.format(name))
+        cfg = projects[name]
         kwargs.pop('ret', None)
         link_into_root(
             name, ret, cfg['wired_salt_root'], cfg['salt_root'], do_link=False)
@@ -2679,6 +2792,15 @@ def sync_hooks_for_all(*args, **kwargs):
     return ret
 
 
+def link_projects(projects=None):
+    rets = OrderedDict()
+    if not projects:
+        projects = list_projects()
+    for pj in projects:
+        rets[pj] = link(pj)
+    return rets
+
+
 def report():
     '''
     Get connection details & projects report
@@ -2687,7 +2809,8 @@ def report():
 
         salt-call --local mc_project.report
     '''
-    pt = get_configuration('project')['projects_dir']
+    locs = __salt__['mc_locations.settings']()
+    pt = locs['projects_dir']
     ret = ''
     target = __grains__['id']
     dconf = get_default_configuration()
@@ -2699,8 +2822,7 @@ def report():
         ips = 'IP(s): ' + ', '.join(ips) + '\n'
     if ips.endswith(','):
         ips = ips[:-1]
-    if os.path.exists(pt):
-        ret += '''
+    ret += '''
 {id}:
 {ips}
 SSH Config:
@@ -2710,7 +2832,10 @@ User root
 ServerAliveInterval 5
 
 '''.format(id=target, ips=ips, dconf=dconf)
-    projects = os.listdir(pt)
+    if os.path.exists(pt):
+        projects = os.listdir(pt)
+    else:
+        projects = []
     if projects:
         ret += 'Projects:'
         for pj in projects:

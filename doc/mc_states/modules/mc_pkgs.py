@@ -69,70 +69,79 @@ def settings():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         _s = __salt__
-        grains = __grains__
+        _g = __grains__
         # instlall mode latest is really too slow
         # default_install_mode = 'latest'
         default_install_mode = 'installed'
         env = _s['mc_env.settings']()['env']
-        deb_mirror = 'http://ftp.de.debian.org/debian'
-        deb_mirror = 'http://mirror.ovh.net/ftp.debian.org/debian/'
         if env in ['prod']:
             default_install_mode = 'installed'
 
         debian_stable = "wheezy"
         ddist = debian_stable
         ubuntu_lts = "trusty"
-        ubuntu_last = "vivid"
+        ubuntu_last = "xenial"
         lts_dist = debian_stable
+        os = _g['os'].lower()
         mirrors = {
-            'ovh': 'http://mirror.ovh.net/ftp.ubuntu.com/',
-            # 'online': 'http://mirror.ovh.net/ubuntu',
-            'online': 'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu/',
-            'dist': 'http://fr.archive.ubuntu.com/ubuntu/',
-        }
-
+            # deb_mirror = 'http://ftp.de.debian.org/debian'
+            'mirrors_debian_archive': 'http://archive.debian.org/debian/',
+            'mirrors_debian_dist': 'http://mirror.ovh.net/ftp.debian.org/debian/',
+            'mirrors_ubuntu_dist': 'http://archive.ubuntu.com/ubuntu/',
+            'mirrors_ubuntu_dist_fr': 'http://fr.archive.ubuntu.com/ubuntu/',
+            'mirrors_ubuntu_ovh': 'http://mirror.ovh.net/ftp.ubuntu.com/',
+            'mirrors_ubuntu_online': 'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu/',
+            'mirrors_ubuntu_plus': 'http://mirror.plusserver.com/ubuntu/ubuntu/',
+            'mirrors_ubuntu_ircam': 'http://mirrors.ircam.fr/pub/ubuntu/archive/'}
         # so you start
-        mirrors['sys'] = mirrors['ovh']
-        umirror = mirrors['ovh']
-        if grains['os'] in ['Ubuntu']:
+        mirrors['mirrors_ubuntu_sys'] = mirrors['mirrors_ubuntu_ovh']
+        umirror = mirrors['mirrors_ubuntu_plus']
+        if _g['os'] in ['Ubuntu']:
             lts_dist = ubuntu_lts
-            if grains['osrelease'] >= '15.04':
+            if _g['osrelease'] >= '16.04':
+                umirror = '{mirrors_ubuntu_dist}'
+            elif _s['mc_nodetypes.is_vagrantvm']():
+                umirror = '{mirrors_ubuntu_ircam}'
+            elif _g['osrelease'] >= '15.04':
                 # umirror = mirrors['dist']
-                umirror = mirrors['ovh']
-            elif __salt__['mc_nodetypes.is_travis']():
-                umirror = mirrors['dist']
+                umirror = '{mirrors_ubuntu_ovh}'
+            elif _s['mc_nodetypes.is_travis']():
+                umirror = '{mirrors_ubuntu_dist}'
 
-        if grains['os'] in ['Debian']:
+        deb_mirror = '{mirrors_debian_dist}'
+        if _g['os'] in ['Debian']:
             ddist = _s['mc_utils.get'](
                 'lsb_distrib_codename', debian_stable)
             if not ddist:
                 ddist = debian_stable
-            if grains['osrelease'][0] == '4':
+            if _g['osrelease'][0] == '4':
                 ddist = debian_stable = "sarge"
-                deb_mirror = 'http://archive.debian.org/debian/'
-            elif grains['osrelease'][0] == '5':
+                deb_mirror = '{mirrors_debian_archive}'
+            elif _g['osrelease'][0] == '5':
                 ddist = debian_stable = "lenny"
-                deb_mirror = 'http://archive.debian.org/debian/'
+                deb_mirror = '{mirrors_debian_archive}'
             else:
                 ddist = _s['mc_utils.get'](
                     'lsb_distrib_codename', debian_stable)
+
         for provider in [a for a in mirrors]:
             for test in ['id', 'fqdn', 'domain', 'host', 'nodename']:
                 val = _s['mc_utils.get'](test, '')
                 if isinstance(val, basestring):
                     if provider in val.lower():
-                        umirror = mirrors.get(provider, umirror)
+                        umirror = mirrors.get('mirrors_{0}_{1}'.format(os, provider),
+                                              mirrors['mirrors_{0}_dist'.format(os)])
 
         ldist = _s['mc_utils.get']('lsb_distrib_codename', ubuntu_lts)
         udist = ldist
         extra_confs = {}
-        if grains['os'] not in ['Ubuntu']:
+        if _g['os'] not in ['Ubuntu']:
             udist = ubuntu_lts
-        if grains['os_family'] in ['Debian']:
+        if _g['os_family'] in ['Debian']:
             extra_confs.update({
                 '/etc/apt/apt.conf.d/99netfamily': {'mode': '644'},
             })
-        if grains['os'] in ['Ubuntu']:
+        if _g['os'] in ['Ubuntu']:
             extra_confs.update({
                 # '/etc/apt/apt.conf.d/99release': {'mode': '644'},
                 '/etc/apt/apt.conf.d/99clean': {'mode': '644'},
@@ -160,23 +169,24 @@ def settings():
                         'lts': ubuntu_lts,
                     },
                     'debian': {
+                        'mirror': deb_mirror,
                         'stable': debian_stable,
                         'use_backports': True,
                         'dist': ddist,
                         'comps': 'main contrib non-free',
-                        'mirror': deb_mirror,
                     },
                 }}
+        DEFAULTS.update(mirrors)
         data = _s['mc_utils.defaults'](PREFIX, DEFAULTS)
         data['use_backports'] = data['apt'].get(
-            grains['os'].lower(), {}).get('use_backports', True)
-        if grains['os'] in ['Ubuntu']:
+            _g['os'].lower(), {}).get('use_backports', True)
+        if _g['os'] in ['Ubuntu']:
             data['use_backports'] = data['apt']['ubuntu']['use_backports']
-        elif grains['os'] in ['Debian']:
-            if grains['osrelease'][0] == '4':
+        elif _g['os'] in ['Debian']:
+            if _g['osrelease'][0] == '4':
                 data['apt']['debian']['mirror'] = (
                     'http://archive.debian.org/debian/')
-            elif grains['osrelease'][0] == '5':
+            elif _g['osrelease'][0] == '5':
                 data['apt']['debian']['mirror'] = (
                     'http://archive.debian.org/debian/')
 
@@ -218,7 +228,7 @@ def settings():
             ]}}, grain='os')
         # https://bugs.launchpad.net/ubuntu/+source/apt-setup/+bug/1409555
         # extras repo doest exist anymore
-        if grains['os'] in ['Ubuntu'] and grains['osrelease'] < '15.04':
+        if _g['os'] in ['Ubuntu'] and _g['osrelease'] < '15.04':
             pkg_data['mirrors'].append({
                 'mirror': 'http://extras.ubuntu.com/ubuntu',
                 'dists': [{'name': udist, 'comps': 'main'}]})
@@ -234,10 +244,10 @@ def settings():
                          'dists': [{'name': udist+'-backports',
                                     'comps': data['ucomps']}]}
                     ]}, grain='os'))
-        if grains['os'] in ['Debian']:
+        if _g['os'] in ['Debian']:
             if (
                 data['ddist'] not in ['sid'] and
-                grains.get('osrelease', '1')[0] <= '5'
+                _g.get('osrelease', '1')[0] <= '5'
             ):
                 pkg_data['mirrors'][0]['dists'].pop(1)
                 pkg_data['mirrors'].pop(1)
@@ -259,7 +269,7 @@ def settings():
                                         'comps': data['dcomps']}]}
                         ]}), grain='os')
         data['ppa_dist'] = data.get('udist', ubuntu_lts)
-        if grains['os'] in ['Debian']:
+        if _g['os'] in ['Debian']:
             data['ppa_dist'] = ubuntu_lts
         data['pkg_data'] = pkg_data
         return data

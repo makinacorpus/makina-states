@@ -117,8 +117,6 @@ def registry(ttl=15*60):
             'makina-states.localsettings.nodejs', False)
         is_docker = __salt__['mc_nodetypes.is_docker']()
         is_travis = __salt__['mc_nodetypes.is_travis']()
-        # only some services will be fully done  on mastersalt side if any
-        # in scratch mode, deactivating all default configuration for services
         true = not __salt__['mc_nodetypes.is_scratch']()
         reg = {
             'env': {'active': true},
@@ -156,6 +154,7 @@ def registry(ttl=15*60):
             'ssl': {'active': true},
             'users': {'active': true},
             'screen': {'active': true},
+            'editor': {'active': true},
             'vim': {'active': true},
             'rvm': {'active': False}}
         nodetypes_registry = __salt__['mc_nodetypes.registry']()

@@ -152,8 +152,8 @@ def settings():
         #
         # default activated postgresql versions & settings:
         #
-        defaultPgVersion = '9.4'
-        for i in ['9.3', '9.2', '9.1']:
+        defaultPgVersion = '9.5'
+        for i in ['9.4', '9.3', '9.2', '9.1']:
             # if we have old wrappers, include the old versions
             # to list of installed pgsql
             if os.path.exists('/usr/bin/psql-{0}'.format(i)):

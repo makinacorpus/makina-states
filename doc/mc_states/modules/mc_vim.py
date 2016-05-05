@@ -44,7 +44,14 @@ def settings():
             'makina-states.localsettings.vim', {
                 'kiorky_config': kiorky_config,
                 'full': full,
+                'package': 'vim-nox',
+                'editor': '/usr/bin/vim.nox',
+                'packages': []
             })
+        if data['package']:
+            data['packages'].append(data['package'])
+            if data['full']:
+                data['packages'].append('exuberant-ctags')
         return data
     return _settings()
 # vim:set et sts=4 ts=4 tw=80:
