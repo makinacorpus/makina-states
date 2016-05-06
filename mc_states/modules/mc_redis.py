@@ -46,8 +46,6 @@ def settings():
         redis_reg = __salt__[
             'mc_macros.get_local_registry'](
                 'redis', registry_format='pack')
-        pw = redis_reg.setdefault(
-            'password', __salt__['mc_utils.generate_password']())
         locs = __salt__['mc_locations.settings']()
         daemonize = 'yes'
         if __salt__['mc_nodetypes.is_docker']():
@@ -55,7 +53,7 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.db.redis', {
                 'admin': 'admin',
-                'password': pw,
+                'password': '',
                 'templates': _OrderedDict([
                     ('/etc/default/redis-server', {}),
                     #('/etc/systemd/system/redis-server.service', {'mode': '644'}),
@@ -126,8 +124,16 @@ def settings():
                                                    'pubsub 32mb 8mb 60'],
                 }
             })
+        if not data['password']:
+            pw = __salt__['mc_utils.generate_password']()
+            data['password'] = pw
+        redis_reg['password'] = data['password']
+        pw = redis_reg['password']
         for i in ['requirepass', 'masterauth']:
-            data['redis'][i] = data['redis'][i + '_format'].format(pw)
+            if pw == 'none':
+                data['redis'][i] = ''
+            else:
+                data['redis'][i] = data['redis'][i + '_format'].format(pw)
         __salt__['mc_macros.update_local_registry'](
             'redis', redis_reg,
             registry_format='pack')
