@@ -9,4 +9,5 @@ General documentation
    database.rst
    ansible.rst
    ssl.rst
+   haproxy.rst
 

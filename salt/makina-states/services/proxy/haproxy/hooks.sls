@@ -37,7 +37,6 @@ haproxy-pre-restart-hook:
 haproxy-post-restart-hook:
   mc_proxy.hook: []
 
-
 haproxy-pre-hardrestart-hook:
   mc_proxy.hook:
     - watch_in:
