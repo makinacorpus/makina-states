@@ -46,6 +46,8 @@ def settings():
         redis_reg = __salt__[
             'mc_macros.get_local_registry'](
                 'redis', registry_format='pack')
+        pw = redis_reg.setdefault(
+            'password', __salt__['mc_utils.generate_password']())
         locs = __salt__['mc_locations.settings']()
         daemonize = 'yes'
         if __salt__['mc_nodetypes.is_docker']():
@@ -53,6 +55,8 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.db.redis', {
                 'admin': 'admin',
+                # have a password less redis, use this pillar entry:
+                # makina-states.services.db.redis.password: False
                 'password': '',
                 'templates': _OrderedDict([
                     ('/etc/default/redis-server', {}),
@@ -124,13 +128,12 @@ def settings():
                                                    'pubsub 32mb 8mb 60'],
                 }
             })
-        if not data['password']:
-            pw = __salt__['mc_utils.generate_password']()
+        if data['password'] is not False and not data['password']:
             data['password'] = pw
         redis_reg['password'] = data['password']
         pw = redis_reg['password']
         for i in ['requirepass', 'masterauth']:
-            if pw == 'none':
+            if data['password'] is False:
                 data['redis'][i] = ''
             else:
                 data['redis'][i] = data['redis'][i + '_format'].format(pw)
