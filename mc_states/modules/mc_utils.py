@@ -644,7 +644,10 @@ def get_uniq_keys_for(prefix):
                     __grains__):
         skeys = []
         for k in mapping:
-            if k.startswith(prefix):
+            if any([
+                k == prefix,
+                k.startswith("{0}.".format(prefix))
+            ]):
                 testn = k[len(prefix):]
                 try:
                     if testn.index('.') < 2:
