@@ -61,8 +61,11 @@ def mainip():
     return __salt__['cmd.run']("ip route get 1 | awk '{print $NF;exit}'",
                                python_shell=True)
 
-def hostname():
-    return socket.getfqdn()
+def hostname(full=False):
+    cmd = 'hostname'
+    if full:
+        cmd += ' -f'
+    return __salt__['cmd.run'](cmd, python_shell=True)
 
 
 def default_net():
