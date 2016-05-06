@@ -153,6 +153,28 @@ def get_registry_path(name,
         confs["global"], "{0}.{1}".format(name, registry_format))
 
 
+def json_load_local_registry(name, registryf=None):
+
+    try:
+        with open(
+            get_registry_path(name,
+                              registryf=registryf,
+                              registry_format='json')
+        ) as f:
+            registry = __salt__['mc_utils.json_load'](f.read())
+    except IOError:
+        pass
+    if not registry:
+        registry = {}
+    return registry
+
+
+def json_dump_local_registry(registry):
+    content = __salt__['mc_utils.json_dump'](registry,
+                                             pretty=True)
+    return content
+
+
 def yaml_load_local_registry(name, registryf=None):
     registry = __salt__['mc_utils.yaml_load'](
         get_registry_path(name,
