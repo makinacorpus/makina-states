@@ -166,6 +166,37 @@ configurations:
   msr-lxc-ref-precise.foo.net:
     {{nopillar()}}
 
+# ssl:
+#   foo.net: [foobar, titi]
+#   default: [foobar2]
+#
+# ssl_certs:
+#     foobar:
+#       - |
+#         -----BEGIN CERTIFICATE-----
+#         XXX
+#         -----END CERTIFICATE-----
+#       - |
+#         -----BEGIN PRIVATE KEY-----
+#         -----END PRIVATE KEY-----
+#     titi:
+#       - |
+#         -----BEGIN CERTIFICATE-----
+#         YYY
+#         -----END CERTIFICATE-----
+#       - |
+#         -----BEGIN PRIVATE KEY-----
+#         -----END PRIVATE KEY-----
+#     foobar2:
+#       - |
+#         -----BEGIN CERTIFICATE-----
+#         XXX
+#         -----END CERTIFICATE-----
+#       - |
+#         -----BEGIN PRIVATE KEY-----
+#         YYY
+#         -----END PRIVATE KEY-----
+
 #  provider3-99.mydomain.tld:
 #    manage_network: false
 #    manage_ntp_server: true

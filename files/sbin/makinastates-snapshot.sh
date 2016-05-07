@@ -52,6 +52,7 @@ WIPE="
 
 /etc/ssl/apache
 /etc/ssl/cloud
+/etc/ssl/cloud2
 /etc/ssl/nginx
 
 /var/log/unattended-upgrades/

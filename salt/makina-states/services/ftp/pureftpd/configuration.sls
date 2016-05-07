@@ -76,12 +76,13 @@ include:
 {%- endfor %}
 
 {%- set ssl = salt['mc_ssl.settings']() %}
+{%- set ca = ssl.ca %}
 {{key}}-makina-pureftpd:
   cmd.run:
     - name: |
             openssl req -batch -x509 -nodes -days 36500 -newkey rsa:2048 \
              -keyout "{{key}}" -out "{{key}}" \
-             -subj "/C={{ssl.country}}/ST={{ssl.st}}/L={{ssl.l}}/O={{ssl.o}}/CN={{ssl.cn}}/EMAIL={{ssl.email}}"
+             -subj "/C={{ca.COUNTRY}}/ST={{ca.ST}}/L={{ca.L}}/O={{ca.O}}/CN={{ca.CN}}/EMAIL={{ca.emailAddress}}"
     - unless: test -e {{key}}
     - watch:
       - mc_proxy: ftpd-pre-configuration-hook

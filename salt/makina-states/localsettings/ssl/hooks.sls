@@ -11,7 +11,30 @@ ssl-certs-pre-hook:
   mc_proxy.hook:
     - watch_in:
       - mc_proxy: ssl-certs-post-hook
-ssl-certs-clean-certs:
+      - mc_proxy: ssl-certs-clean-certs-pre
+ssl-certs-clean-certs-pre:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: ssl-certs-pre-hook
+    - watch_in:
+      - mc_proxy: ssl-certs-post-hook
+      - mc_proxy: ssl-certs-clean-certs-post
+ssl-certs-clean-certs-post:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: ssl-certs-pre-hook
+    - watch_in:
+      - mc_proxy: ssl-certs-post-hook
+
+ssl-certs-trust-certs-pre:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: ssl-certs-pre-hook
+      - mc_proxy: ssl-certs-clean-certs-post
+    - watch_in:
+      - mc_proxy: ssl-certs-post-hook
+      - mc_proxy: ssl-certs-trust-certs-post
+ssl-certs-trust-certs-post:
   mc_proxy.hook:
     - watch:
       - mc_proxy: ssl-certs-pre-hook

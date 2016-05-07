@@ -1,152 +1,95 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
+{% import "makina-states/localsettings/ssl/macros.jinja" as ssl with context %}
 {{ salt['mc_macros.register']('localsettings', 'ssl') }}
-{# drop any configured ssl cert on the compute node #}
-{% set certs = [] %}
-{% set sacerts = [] %}
-{% set socerts = [] %}
-{% set sfcerts = [] %}
-{% set sbcerts = [] %}
-{% set skeys = [] %}
-
+{% set settings = salt['mc_ssl.settings']() %}
+{% set ssl = ssl %}
 include:
   - makina-states.cloud.generic.hooks
-  - makina-states.localsettings.ldap.ldap_conf
   - makina-states.localsettings.ssl.hooks
 
-ssl-pkgs:
+makina-ssl-pkgs:
   pkg.latest:
-    - pkgs:
-      - ca-certificates
-      - ssl-cert
+    - pkgs: [ca-certificates, ssl-cert]
     - watch_in:
       - mc_proxy: ssl-certs-pre-install
       - mc_proxy: ssl-certs-post-install
 
-{% macro install_cert(cert, suf='') %}
-{% set paths = salt['mc_ssl.get_cert_infos'](cert) %}
-{% do certs.append(paths['crt']) %}
-{% do skeys.append(paths['key']) %}
-{% do socerts.append(paths['only']) %}
-{% do sacerts.append(paths['auth']) %}
-{% do sbcerts.append(paths['bundle']) %}
-{% do sfcerts.append(paths['full']) %}
-cpt-cert-{{cert}}-{{paths.domaincert}}-dirs{{suf}}:
+makina-ssl-etc-cloud-user:
+  group.present:
+    - names: [{{settings.group}}]
+    - system: true
+    - watch:
+      - mc_proxy: ssl-certs-post-install
+    - watch_in:
+      - mc_proxy: ssl-certs-pre-hook
+  user.present:
+    - name: {{settings.user}}
+    - system: true
+    - optional_groups: [{{settings.group}}]
+    - remove_groups: false
+    - watch:
+      - group: makina-ssl-etc-cloud-user
+      - mc_proxy: ssl-certs-post-install
+    - watch_in:
+      - mc_proxy: ssl-certs-pre-hook
+
+makina-ssl-etc-cloud-cert-dirs:
   file.directory:
+    - makedirs: true
+    - mode: 750
+    - user: {{settings.user}}
+    - group: {{settings.group}}
     - names:
-      - /etc/ssl/cloud
-      - /etc/ssl/cloud/certs
-      - /etc/ssl/cloud/separate
-    - user: root
-    - group: ssl-cert
-    - mode: 751
-    - makedirs: true
+      - {{settings.config_dir}}
+      - {{settings.config_dir}}/separate
+      - {{settings.config_dir}}/trust
+      - {{settings.config_dir}}/certs
     - watch:
-      - mc_proxy: cloud-sslcerts-pre
+      - user: makina-ssl-etc-cloud-user
+      - mc_proxy: ssl-certs-post-install
+    - watch_in:
+      - mc_proxy: ssl-certs-pre-hook
+
+{% macro rmacro() %}
+    - watch:
       - mc_proxy: ssl-certs-pre-hook
     - watch_in:
-      - mc_proxy: ssl-certs-clean-certs
-      - mc_proxy: cloud-sslcerts
+      - mc_proxy: ssl-certs-clean-certs-pre
       - mc_proxy: ssl-certs-post-hook
-{% for flav in ['crt', 'key',
-                'authr', 'auth', 'bundle', 'full', 'only'] %}
-cpt-cert-{{cert}}-{{paths.domaincert}}-{{flav}}{{suf}}:
-  file.managed:
-    - name: {{paths[flav]}}
-    - source: salt://makina-states/files/etc/ssl/cloud/cert.{{flav}}.crt
-    - defaults:
-        certid: "{{paths.domaincert}}"
-    - user: root
-    - group: ssl-cert
-    - mode: 640
-    - makedirs: true
-    - template: jinja
+{% endmacro %}
+{{ h.deliver_config_files(settings.get('configs', {}),
+                          mode='644',
+                          after_macro=rmacro,
+                          prefix='makina-ssl-certs-')}}
+
+{# XXX: no way as it is used as a potential external macro
+   to track in further calls exactly the certificates we need
+   to manage, so we may remove certificates which are legitimate
+makina-ssl-certs-cleanup:
+  cmd.run:
+    - name: {{settings.config_dir}}/cleanup_certs.py
+    - stateful: true
     - watch:
-      - mc_proxy: cloud-sslcerts-pre
-      - mc_proxy: ssl-certs-pre-hook
+      - mc_proxy: makina-ssl-certs-apply
     - watch_in:
-      - mc_proxy: ssl-certs-clean-certs
-      - mc_proxy: cloud-sslcerts
+      - cmd: makina-ssl-certs-trust
+#}
+
+makina-ssl-certs-trust:
+  cmd.run:
+    - name: {{settings.config_dir}}/trust.sh && echo "changed=no"
+    - stateful: true
+    - onlyif: test $(ls {{settings.config_dir}}/certs/*crt|wc -c) -gt 0
+    - watch:
+      - mc_proxy: ssl-certs-trust-certs-pre
+    - watch_in:
+      - mc_proxy: ssl-certs-trust-certs-post
       - mc_proxy: ssl-certs-post-hook
-{% endfor%}
-{% endmacro%}
 
-
-{% set data  = salt['mc_ssl.settings']() %}
-{% for cert in data.certificates %}
-{{install_cert(cert)}}
+{% for cname, cdata in settings.cas.items() %}
+{{ ssl.install_certificate(cdata) }}
 {% endfor %}
 
-{% set f='/tmp/cloudcerts.py' %}
-cpt-certs-cleanup:
-  file.managed:
-    - name: {{f}}
-    - source: salt://makina-states/files{{f}}
-    - defaults:
-        f: {{f}}
-        certs: |
-               {{salt['mc_utils.json_dump'](certs)}}
-    - user: root
-    - group: root
-    - mode: 700
-    - makedirs: true
-    - template: jinja
-    - watch:
-      - mc_proxy: cloud-sslcerts-pre
-  cmd.run:
-    - name: "{{f}}"
-    - user: root
-    - watch:
-      - file: cpt-certs-cleanup
-      - mc_proxy: cloud-sslcerts-pre
-      - mc_proxy: ssl-certs-pre-hook
-    - watch_in:
-      - mc_proxy: cloud-sslcerts
-      - mc_proxy: ssl-certs-post-hook
-      - cmd: cpt-certs-install-openssl
-{#
-cpt-certs-cleanup-openssl-cloud:
-  cmd.run:
-    - name: |
-            set -e
-            cd /etc/ssl/cloud/separate/
-            find -name "*.key" -type f | egrep '[*]' | while read i
-            do
-              rm -vf "${i}"
-            done
-            find -name "*.crt" -type f | egrep '[*]' | while read i
-            do
-              rm -vf "${i}"
-            done
-    - onlyif: test -e /etc/ssl/cloud/separate
-    - watch:
-      - mc_proxy: cloud-sslcerts-pre
-      - mc_proxy: ssl-certs-pre-hook
-    - watch_in:
-      - cmd: cpt-certs-cleanup-openssl-cloud
-      - mc_proxy: ssl-certs-post-hook
-#}
-{% set f = '/tmp/sslcacerts.sh' %}
-cpt-certs-install-openssl:
-  file.managed:
-    - name: "{{f}}"
-    - source: "salt://makina-states/files{{f}}"
-    - user: root
-    - defaults:
-      f: "{{f}}"
-    - group: root
-    - mode: 700
-    - makedirs: true
-    - template: jinja
-    - watch:
-      - mc_proxy: cloud-sslcerts-pre
-  cmd.run:
-    - name: "{{f}}"
-    - onlyif: |
-              set -e
-              test $(ls /etc/ssl/cloud/separate/*crt|wc -c) -gt 0
-              test -e /usr/local/share/ca-certificates
-    - watch:
-      - file: cpt-certs-install-openssl
-      - mc_proxy: cloud-sslcerts-pre
-      - mc_proxy: ssl-certs-pre-hook
-    - watch_in:
-      - mc_proxy: ssl-certs-post-hook
+{% for cname, cdata in settings.certificates.items() %}
+{{ ssl.install_certificate(cname)}}
+{% endfor %}

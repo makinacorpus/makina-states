@@ -1,0 +1,88 @@
+{% set settings = salt['mc_ssl.settings']() %}
+{% macro sslcert_manage(name) %}
+  file.managed:
+    - name: "{{name}}"
+    - user: root
+    - group: ssl-cert
+    - mode: 640
+    - makedirs: true
+    - template: jinja
+    - watch:
+      - mc_proxy: cloud-sslcerts-pre
+      - mc_proxy: ssl-certs-pre-hook
+    - watch_in:
+      - mc_proxy: ssl-certs-clean-certs-pre
+      - mc_proxy: cloud-sslcerts
+      - mc_proxy: ssl-certs-post-hook
+{% endmacro %}
+{% macro sslcert_absent(name) %}
+  file.absent:
+    - name: "{{name}}"
+    - watch:
+      - mc_proxy: cloud-sslcerts-pre
+      - mc_proxy: ssl-certs-pre-hook
+    - watch_in:
+      - mc_proxy: ssl-certs-clean-certs-pre
+      - mc_proxy: cloud-sslcerts
+      - mc_proxy: ssl-certs-post-hook
+{% endmacro %}
+{% macro install_certificate(
+    cert, key=none, suf='', trust=true) %}
+{% set ssl_infos = salt['mc_ssl.get_cert_infos'](cert, key) %}
+{% set cn = ssl_infos.cn %}
+{% set cert = ssl_infos.cert_data[0] %}
+{% set key = ssl_infos.cert_data[1]  or '' %}
+{% set chain = ssl_infos.cert_data[2] %}
+cpt-cert-{{ssl_infos.cn}}-key{{suf}}:
+  {% if not key %}
+  {{sslcert_absent(ssl_infos['key'])}}
+  {% else %}
+  {{sslcert_manage(ssl_infos['key'])}}
+    - contents: |
+                {{key|indent(16)}}
+  {% endif %}
+
+cpt-cert-{{ssl_infos.cn}}-trust{{suf}}:
+  {% if not trust %}
+  {{sslcert_absent(ssl_infos['trust'])}}
+  {% else %}
+  {{sslcert_manage(ssl_infos['trust'])}}
+    - contents: |
+                {{cert|indent(16)}}
+  {% endif %}
+
+cpt-cert-{{ssl_infos.cn}}-crt{{suf}}:
+  {{sslcert_manage(ssl_infos['crt'])}}
+    - contents: |
+                {{cert|indent(16)}}
+                {{chain|indent(16)}}
+                {{key|indent(16)}}
+
+cpt-cert-{{ssl_infos.cn}}-auth{{suf}}:
+  {{sslcert_manage(ssl_infos['auth'])}}
+    - contents: |
+                {{chain|indent(16)}}
+
+cpt-cert-{{ssl_infos.cn}}-authr{{suf}}:
+  {{sslcert_manage(ssl_infos['authr'])}}
+    - contents: |
+                {{cert|indent(16)}}
+
+cpt-cert-{{ssl_infos.cn}}-bundle{{suf}}:
+  {{sslcert_manage(ssl_infos['bundle'])}}
+    - contents: |
+                {{cert|indent(16)}}
+                {{chain|indent(16)}}
+
+cpt-cert-{{ssl_infos.cn}}-full{{suf}}:
+  {{sslcert_manage(ssl_infos['full'])}}
+    - contents: |
+                {{cert|indent(16)}}
+                {{chain|indent(16)}}
+                {{key|indent(16)}}
+
+cpt-cert-{{ssl_infos.cn}}-only{{suf}}:
+  {{sslcert_manage(ssl_infos['only'])}}
+    - contents: |
+                {{cert|indent(16)}}
+{% endmacro %}

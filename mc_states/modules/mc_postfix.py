@@ -118,9 +118,10 @@ def select_dests_and_relays(data):
 def select_certs(data):
     if not data['cert'] or not data['cert_key']:
         lchain, lkey = __salt__[
-            'mc_ssl.search_matching_certificate'](data['domain'],
-                                                  as_text=True,
-                                                  selfsigned=True)
+            'mc_ssl.get_configured_cert'](data['domain'],
+                                          as_text=True,
+                                          gen=True,
+                                          selfsigned=True)
         data['cert'] = lchain
         data['cert_key'] = lkey
     return data

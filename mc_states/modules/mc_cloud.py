@@ -188,23 +188,14 @@ def default_settings():
         id_ = __grains__['id']
     except (TypeError, KeyError):
         id_ = __opts__['id']
+    ssl_settings = __salt__['mc_ssl.common_settings']()
+    ca = copy.deepcopy(ssl_settings['ca'])
     data = {
         'root': root,
         'all_pillar_dir': prefix + '/makina-states/cloud-controller',
         'ssl': {
-            'cert_days': 365*1000,
-            'ca': {
-                'ca_name': id_,
-                'bits': 2048,
-                'days': 365*1000,
-                'CN': 'makina-states-cloud-controller',
-                'C': 'FR',
-                'ST': 'PdL',
-                'L': 'Nantes',
-                'O': 'Makina Corpus',
-                'OU': None,
-                'emailAddress': 'contact@makina-corpus.com',
-            }
+            'cert_days': ca['days'],
+            'ca': ca,
         },
         'all_sls_dir': 'cloud-controller',
         'compute_node_sls_dir': (
@@ -216,8 +207,6 @@ def default_settings():
         'compute_node_pillar_dir': (
             '{all_pillar_dir}/compute_node'
         ),
-        'ssl_dir': '{all_sls_dir}/ssl',
-        'ssl_pillar_dir': '{all_pillar_dir}/ssl',
         'prefix': prefix,
         'script': msr+'/_scripts/boot-salt.sh',
         'bootstrap_shell': 'bash',
@@ -325,39 +314,6 @@ def is_a_cloud_member(id_=None):
     return any([is_a_vm(id_),
                 is_a_compute_node(id_),
                 is_a_controller(id_)])
-
-
-def ssl_certs_for(main_domain, domains=None, ssl_certs=None):
-    _s = __salt__
-    if ssl_certs is None:
-        ssl_certs = []
-    if not isinstance(domains, list):
-        domains = []
-    domains = [a for a in domains]
-    if main_domain not in domains:
-        domains.insert(0, main_domain)
-    domains = _s['mc_utils.uniquify'](domains)
-    for domain in domains:
-        for cert, key, chain in _s['mc_ssl.ca_ssl_certs'](domain):
-            full = cert + chain + key
-            try:
-                certname = _s['mc_ssl.load_cert'](
-                    _s['mc_ssl.ssl_chain'](domain, cert)[0]
-                ).get_subject().CN
-            except Exception:
-                pass
-            if certname not in [a[0] for a in ssl_certs]:
-                ssl_certs.append((certname, full, cert, key, chain))
-    return ssl_certs
-
-
-def add_ms_ssl_certs(data, extdata=None):
-    if not isinstance(extdata, dict):
-        extdata = data
-    for i in extdata.get('ssl_certs', []):
-        __salt__['mc_pillar.add_ssl_cert'](
-            i[0], i[2] + i[4], i[3], data=data)
-    return data
 
 
 def filter_exposed_data(target, data, mode='full'):

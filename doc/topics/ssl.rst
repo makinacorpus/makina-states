@@ -15,7 +15,7 @@ Or via ansible (remote host)::
         ansible/plays/saltcall.yml -e saltargs makina-states.localsettings.ssl
 
 Add a certificate to the system trust system (add a 'ca')
-----------------------------------------------------------a
+----------------------------------------------------------
 
 pillar/pillar.d/cert.sls::
 
@@ -46,6 +46,9 @@ pillar/pillar.d/cert.sls::
 
 Add a certificate and it's key for reuse in makina-states packages applications
 ------------------------------------------------------------------------------------
+The certicate can be either a selfsigned certificate or a certificate and its
+authority chain with the certificate itself comes first.
+
 pillar/pillar.d/cert.sls::
 
     #                                            <CN>
@@ -107,7 +110,16 @@ Add certificates via the makina-states ext_pillar
 -------------------------------------------------
 When using mc_pillar deployment, edit your local **etc/makina-states/database.sls**
 
-Take an example on the `database.sls <https://github.com/makinacorpus/makina-states/blob/v2/etc/makina-states/database.sls.in>`_ ssl section.
+Take an example on the `database.sls <https://github.com/makinacorpus/makina-states/blob/v2/etc/makina-states/database.sls.in>`_ **ssl** & **ssl_certs** section.
+
+The **ssl_certs** section is a mapping id / tuples of (certicate, key) mappings.
+certicate can be either a selfsigned certificate or a certificate and all the
+authority, where the certificate of the common name comes first.
+
+The **ssl** section is where you will map certificates described in the
+**ssl_certs** section to a particular minion id.
+Remember that the special **default** section has the purpose to map certificate
+to any minion
 
 You can add either certificates for a host by specifying them by the **id** index or
 configure infra wide certs by setting them in the **default** section.
@@ -139,6 +151,7 @@ Parameters:
         either a certificate string (full certificate in PEM format)
         or a path to load a certificate in PEM format
         or a key inside the mc_ssl.settings.certificates regitry
+        (if you need an authority chain, place the certificate first)
 
     cert_key_string (optional)
         in case of cert_string is neither a certificate inline or a certificate

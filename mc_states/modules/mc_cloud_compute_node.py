@@ -152,7 +152,6 @@ def default_settings():
             'expose_limited': {},
             'domains': [],
             'vts': [],
-            'ssl_certs': [],
             'http_port': 80,
             'https_port': 443,
             'reverse_proxies': default_reverse_proxy(target),
@@ -953,11 +952,6 @@ def extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
                     'mc_cloud_vm.vm_extpillar_settings'](_vm)
         # can only be done after some infos is loaded
         data['domains'] = domains_for(id_, data['domains'])
-        gconf = _s['mc_pillar.get_configuration'](id_)
-        if gconf.get('manage_ssl', True):
-            data['ssl_certs'] = _s['mc_cloud.ssl_certs_for'](
-                id_, data['domains'], data['ssl_certs'])
-            _s['mc_cloud.add_ms_ssl_certs'](data)
         return data
     cache_key = 'mc_cloud_cn.extpillar_settings{0}{1}'.format(
         id_, limited)

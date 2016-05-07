@@ -1855,7 +1855,7 @@ def get_configuration(id_=None, ttl=PILLAR_TTL):
         data.setdefault('master', mid == id_)
         data.setdefault('domain', mdn)
         return data
-    cache_key = __name + '.get_configuration_{0}'.format(id_)
+    cache_key = __name + '.get_configuration4_{0}'.format(id_)
     mid = minion_id()
     return __salt__['mc_utils.memoize_cache'](
         _do, [id_, mid], {}, cache_key, ttl)
@@ -2473,9 +2473,10 @@ def get_supervision_conf_kind(id_, kind, ttl=PILLAR_TTL):
                     nginx = rdata.setdefault('nginx', {})
                     domain = rdata.get('nginx', {}).get('domain', id_)
                     cert, key = __salt__[
-                        'mc_ssl.selfsigned_ssl_certs'](domain,
-                                                       gen=True,
-                                                       as_text=True)[0]
+                        'mc_ssl.get_selfsigned_cert_for'](
+                            domain,
+                            gen=True,
+                            as_text=True)[0]
                     # unknown ca signed certs do not work in nginx
                     # cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
                     # nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
@@ -3923,7 +3924,8 @@ def get_domains_for(id_, ttl=PILLAR_TTL):
     def _do(id_):
         _s = __salt__
         gconf = get_configuration(id_)
-        domains = [a for a in gconf.get('domains', [])]
+        domains = [id_]
+        domains += [a for a in gconf.get('domains', [])]
         cn_attrs = _s[__name + '.query']('cloud_cn_attrs', {})
         vm_attrs = _s[__name + '.query']('cloud_vm_attrs', {})
         cloud = get_cloud_conf()
@@ -3935,14 +3937,12 @@ def get_domains_for(id_, ttl=PILLAR_TTL):
             for vm in cloud['cns'][id_]['vms']:
                 vms.append(vm)
         for vm in vms:
+            domains.append(vm)
             domains += [a for a in vm_attrs.get(vm, {}).get('domains', [])]
         # tie extra domains of vms to a A record: part2
-        # try to resolve leftover ips
-        todo = OrderedDict([(id_, id_)])
-        for domain in domains:
-            todo[domain] = domain
-        return todo
-    cache_key = __name + '.get_domains_for{0}'.format(id_)
+        domains = _s['mc_utils.uniquify'](domains)
+        return domains
+    cache_key = __name + '.get_domains_for9{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
@@ -3950,8 +3950,43 @@ def add_ssl_cert(common_name, cert_content, cert_key, data=None):
     if not isinstance(data, dict):
         data = {}
     p = 'makina-states.localsettings.ssl.'
-    data[p + 'certificates.' + common_name] = cert_content, cert_key
+    data[p + 'certificates.' + common_name] = [cert_content, cert_key]
     return data
+
+
+def get_ssl_certs():
+    _s = __salt__
+    ckey = 'mc_pillar.get_ssls_certs'
+    confcerts = query('ssl_certs', {})
+    certs = _cache.setdefault(ckey, {})
+    if not certs:
+        for id_, certdata in six.iteritems(confcerts):
+            try:
+                infos = _s['mc_ssl.get_cert_infos'](certdata[0], certdata[1])
+                for id__ in [id_, infos['cn']] + infos['altnames']:
+                    certs[id__] = infos
+            except (Exception,) as exc:
+                log.error('{0} ssl cert had an error while loading')
+                log.error('{0}'.format(exc))
+    return certs
+
+
+def get_cert_data(cn):
+    _s = __salt__
+    certs = get_ssl_certs()
+    # if cn is explicitly defined in database, use that
+    # else try to use a wildcard domain over a normal domain
+    # unless this one has an entry in which case we will try to get both
+    wd = _s['mc_ssl.get_wildcard'](cn)
+    if wd:
+        if cn not in certs:
+            cn = wd
+    if cn in certs:
+        certdata = certs[cn]
+    else:
+        cert, key = _s['mc_ssl.get_selfsigned_cert_for'](cn, gen=True)
+        certdata = certs[cn] = _s['mc_ssl.get_cert_infos'](cert, key)
+    return certdata
 
 
 def get_ssl_conf(id_, ttl=PILLAR_TTL):
@@ -3961,22 +3996,39 @@ def get_ssl_conf(id_, ttl=PILLAR_TTL):
         if not gconf.get('manage_ssl', True):
             return {}
         rdata = OrderedDict()
-        todo = get_domains_for(id_)
+        confs = query('ssl', {})
+        certs = get_ssl_certs()
         # load also a selfsigned wildcard
         # certificate for all of those domains
-        for d in todo.values():
-            wd = _s['mc_ssl.get_wildcard'](d)
-            if wd:
-                todo[wd] = wd
-        for did, domain in todo.items():
-            for certdata in _s['mc_ssl.ssl_certs'](domain, as_text=True):
-                lcert = certdata[0]
-                lkey = certdata[1]
-                scert, schain = _s['mc_ssl.ssl_chain'](domain, lcert)
-                cinfos = _s['mc_ssl.load_cert'](scert)
-                add_ssl_cert(cinfos.get_subject().CN, lcert, lkey, rdata)
+        todo = _s['mc_utils.uniquify'](
+            (confs.get(id_,
+                       confs.get('default', [])) +
+                get_domains_for(id_)))
+        this_cert, this_wcert = id_, _s['mc_ssl.get_wildcard'](id_)
+        todo = [a for a in todo if a not in [this_cert, this_wcert]]
+        certdatas = OrderedDict()
+        # for the machine fqdn related certificate, we will
+        # try to use a wildcard cert over an exact one
+        machine_cn, machine_cert = None, None
+        for cn in this_wcert, this_cert:
+            machine_cn, machine_cert = cn, certs.get(cn, None)
+            if machine_cert:
+                break
+        if not machine_cert:
+            machine_cn, machine_cert = this_wcert, get_cert_data(this_wcert)
+        certdatas[machine_cn] = machine_cert
+        # for all other domain,
+        # if we dont find a matching certificate
+        # try to find a certificate on the wildcarded domain
+        # else
+        #   generate & use a selfsigned certificate on the wildcard domain
+        for cn in todo:
+            certdatas[cn] = get_cert_data(cn)
+        for cn, cdata in six.iteritems(certdatas):
+            add_ssl_cert(
+                cdata['cn'], cdata['cert'], cdata['cert_data'][1], rdata)
         return rdata
-    cache_key = __name + '.get_ssl_conf{0}'.format(id_)
+    cache_key = __name + '.get_ssl_conf9{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
