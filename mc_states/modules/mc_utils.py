@@ -1080,7 +1080,10 @@ def cache_kwargs(*args, **kw):
         if i not in kw:
             dc = True
     if dc:
-        kw = copy.deepcopy(kw)
+        kw2 = {}
+        for i in kw:
+            kw2[i] = kw[i]
+        kw = kw2
     [kw.pop(i, None) for i in to_delete]
     for i, val in six.iteritems(shared):
         if not kw.get(i):
