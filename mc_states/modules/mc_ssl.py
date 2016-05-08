@@ -616,37 +616,48 @@ def load_extras(data=None):
     _s = __salt__
     if data is None:
         data = common_settings()
-    certs = data.pop('certificates', {})
+    cacerts = data.pop('cas', OrderedDict())
+    dcacerts = data.setdefault('cas', OrderedDict())
+    certs = data.pop('certificates', OrderedDict())
     dcerts = data.setdefault('certificates', OrderedDict())
-    for cert in [a for a in certs]:
-        cdata = certs[cert]
-        do_chain_load = False
-        if len(cdata) < 3:
-            do_chain_load = True
-        if cdata and not do_chain_load and not cdata[2]:
-            if cdata[0].count('BEGIN CERTIFICATE') > 2:
-                do_chain_load = True
-        if not do_chain_load:
-            True
-        if do_chain_load:
-            chain = ssl_chain(cert, cdata[0])
-            key = ssl_key(cdata[1])
-            cdata = chain[0], key, chain[1]
+
+    for cert in [a for a in cacerts]:
+        cdata = cacerts[cert]
+        scert, chain = cdata, ''
+        if cdata[0].count('BEGIN CERTIFICATE') > 1:
+            scert, chain = ssl_chain(cert, scert)
         try:
-            si = ssl_infos(cdata[0])
+            si = ssl_infos(scert)
         except Exception:
             log.error('Error while decoding cert: {0}'.format(cert))
             continue
-        cdata = list(cdata)
-        cdata.append(si)
-        dcerts[si['cn']] = cdata
+        dcacerts[si['cn']] = scert, chain, si
+
+    for cert in [a for a in certs]:
+        cdata = certs[cert]
+        scert, chain = cdata[0], ''
+        if cdata[0].count('BEGIN CERTIFICATE') > 1:
+            scert, chain = ssl_chain(cert, scert)
+        key = ssl_key(cdata[1])
+        try:
+            si = ssl_infos(scert)
+        except Exception:
+            log.error('Error while decoding cert: {0}'.format(cert))
+            continue
+        dcerts[si['cn']] = scert, key, chain, si
+
     is_travis = _s['mc_nodetypes.is_travis']()
     # even if we make a doublon here, it will be filtered by CN indexing
     for domain in data['domains']:
         if is_travis:
             continue
         cert = get_configured_cert(domain, gen=True, data=data)
-        dcerts[domain] = cert
+        try:
+            si = ssl_infos(cert[0])
+        except Exception:
+            log.error('Error while decoding cert: {0}'.format(cert))
+            continue
+        dcerts[domain] = [a for a in cert] + [si]
     # be sure to index them by the CN defined in the cert
     for cert in data['certificates']:
         cdata = data['certificates'][cert]
@@ -742,7 +753,7 @@ def ca_ssl_certs(domains, gen=False, as_text=False, **kwargs):
     return rdomains
 
 
-def get_cert_infos(cn_or_cert, key=None, ttl=60):
+def get_cert_infos(cn_or_cert, key=None, sinfos=None, ttl=60):
     '''
     Get infos for a certificate, either by being configured by makina-states
     or given in parameters::
@@ -760,7 +771,7 @@ def get_cert_infos(cn_or_cert, key=None, ttl=60):
             -----END PRIVATE KEY-----'
     '''
     _s = __salt__
-    def _do(cn_or_cert, key):
+    def _do(cn_or_cert, key, sinfos):
         settings = common_settings()
         keyc = key
         cn_or_certc = None
@@ -791,12 +802,14 @@ def get_cert_infos(cn_or_cert, key=None, ttl=60):
             with open(cn_or_cert) as f:
                 cn_or_certc = f.read()
         if cn_or_certc:
-            sinfos = ssl_infos(cn_or_certc)
+            if sinfos is None:
+                sinfos = ssl_infos(cn_or_certc)
             cert, chain = ssl_chain(sinfos['cn'], cn_or_certc)
             cdata = (cert, keyc, chain)
         else:
             cdata = get_configured_cert(cn_or_cert)
-            sinfos = ssl_infos(cdata[0])
+            if sinfos is None:
+                sinfos = ssl_infos(cdata[0])
         cn = sinfos['cn']
         altnames = sinfos.get('altnames', [])
         if not cn:
@@ -822,5 +835,5 @@ def get_cert_infos(cn_or_cert, key=None, ttl=60):
         (key or '').replace('\n', ''),
     )
     return _s['mc_utils.memoize_cache'](
-        _do, [cn_or_cert, key], {}, cache_key, ttl)
+        _do, [cn_or_cert, key, sinfos], {}, cache_key, ttl)
 # vim:set et sts=4 ts=4 tw=80:

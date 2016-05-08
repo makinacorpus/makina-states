@@ -27,12 +27,16 @@
       - mc_proxy: ssl-certs-post-hook
 {% endmacro %}
 {% macro install_certificate(
-    cert, key=none, suf='', trust=true) %}
-{% set ssl_infos = salt['mc_ssl.get_cert_infos'](cert, key) %}
+    cert, key=none, suf='', trust=true, sinfos=None) %}
+{% set ssl_infos = salt['mc_ssl.get_cert_infos'](cert, key, sinfos=sinfos) %}
 {% set cn = ssl_infos.cn %}
 {% set cert = ssl_infos.cert_data[0] %}
 {% set key = ssl_infos.cert_data[1]  or '' %}
 {% set chain = ssl_infos.cert_data[2] %}
+{%- set ichain = salt['mc_ssl.extract_certs'](chain)[0] %}
+{%- do ichain.reverse() %}
+{%- set sichain = '\n'.join(ichain) %}
+
 cpt-cert-{{ssl_infos.cn}}-key{{suf}}:
   {% if not key %}
   {{sslcert_absent(ssl_infos['key'])}}
@@ -66,7 +70,7 @@ cpt-cert-{{ssl_infos.cn}}-auth{{suf}}:
 cpt-cert-{{ssl_infos.cn}}-authr{{suf}}:
   {{sslcert_manage(ssl_infos['authr'])}}
     - contents: |
-                {{cert|indent(16)}}
+                {{sichain|indent(16)}}
 
 cpt-cert-{{ssl_infos.cn}}-bundle{{suf}}:
   {{sslcert_manage(ssl_infos['bundle'])}}

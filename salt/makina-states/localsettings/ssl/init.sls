@@ -87,9 +87,9 @@ makina-ssl-certs-trust:
       - mc_proxy: ssl-certs-post-hook
 
 {% for cname, cdata in settings.cas.items() %}
-{{ ssl.install_certificate(cdata) }}
+{{ ssl.install_certificate(cdata[0], sinfos=cdata[2]) }}
 {% endfor %}
 
 {% for cname, cdata in settings.certificates.items() %}
-{{ ssl.install_certificate(cname)}}
+{{ ssl.install_certificate(cname, sinfos=cdata[3])}}
 {% endfor %}
