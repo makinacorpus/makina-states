@@ -345,10 +345,10 @@ validate_changeset() {
     set_valid_upstreams
     msb="${1}"
     ret=""
+    c="$(sanitize_changeset ${msb})"
     # also add if we had a particular changeset saved in conf
     # remove
     if [ "x${msb}" != "x" ]; then
-        c="$(sanitize_changeset ${msb})"
         thistest="$(echo "${VALID_CHANGESETS}" "${VALID_BRANCHES}" | grep -q "${c}";echo "${?}")"
         if [ "x${thistest}" = "x0" ]; then
             ret="${msb}"
@@ -358,10 +358,9 @@ validate_changeset() {
     # if we pin a particular changeset make hat as a valid branch
     if [ "x${ret}" = "x" ]; then
         if [ -e "${SALT_MS}/.git" ]; then
-            thistest="$(cd "${SALT_MS}" && git log "${msb}" 2>/dev/null 1>/dev/null;echo ${?})"
+            thistest="$(cd ${SALT_MS} && git log "${c}"^.."${c}" 2>/dev/null 1>/dev/null;echo "${?}")"
             if [ "x${thistest}" = "x0" ]; then
                 ret="${msb}"
-                break
             fi
         fi
     fi
