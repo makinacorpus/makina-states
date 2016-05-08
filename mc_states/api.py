@@ -93,13 +93,13 @@ OKEYS = {}
 
 
 def get_local_cache(key=None):
-    if not key:
-        key = 'local'
-    if isinstance(key, six.string_types):
-        return _LOCAL_CACHES.setdefault(key, {})
-    else:
-        # real cache
+    # real cache
+    if isinstance(key, dict):
         return key
+    # get a mapping cache children of our memoized global cache
+    if not isinstance(key, six.string_types):
+        key = 'local'
+    return _LOCAL_CACHES.setdefault(key, {})
 
 
 def register_memcache_first(pattern):
@@ -625,7 +625,7 @@ def memoize_cache(func,
 
     # first try to find a non expired cache entry
     caches = get_cache_servers(
-        cache, memcache, use_memcache=use_memcache, key=key)
+        cache, memcache, use_memcache=use_memcache, key=key, debug=debug)
     ret = _default
     put_in_cache = True
     if put_in_cache:
