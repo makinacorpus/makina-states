@@ -436,11 +436,20 @@ get_nodetype() {
 
 set_vars() {
     set_colors
+    DEFAULT_PREFIX="/srv"
+    SCRIPT_DIR="$(dirname $THIS)"
+    SCRIPT_TOP="$(dirname $SCRIPT_DIR)"
+    SCRIPT_PREFIX="$(dirname $SCRIPT_TOP)"
     QUIET=${QUIET:-}
     RELEASE_URL="${RELEASE_URL:-https://github.com/makinacorpus/makina-states/releases/download/attachedfiles}"
     VENV_URL="${VENV_URL:-"${RELEASE_URL}/virtualenv-makina-states-${DISTRIB_ID}-${DISTRIB_CODENAME}-v2.tar.xz"}"
-    PREFIX="${PREFIX:-/srv}"
-    SALT_MS="${PREFIX}/makina-states"
+    if [ -e "${SCRIPT_TOP}/.git" ] && [ -e "${SCRIPT_TOP}/salt/makina-states" ];then
+        SALT_MS="${SALT_MS:-${SCRIPT_TOP}}"
+        PREFIX="${PREFIX:-$(dirname ${SALT_MS})}"
+    else
+        PREFIX="${PREFIX:-/srv}"
+        SALT_MS="${SALT_MS:-${PREFIX}/makina-states}"
+    fi
     SALT_PILLAR="${SALT_MS}/pillar"
     CHRONO="$(get_chrono)"
     TRAVIS_DEBUG="${TRAVIS_DEBUG:-}"
