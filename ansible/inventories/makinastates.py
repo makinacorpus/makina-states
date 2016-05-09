@@ -37,6 +37,11 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 
+def chunkify(l, n):
+    n = max(1, n)
+    return [l[i:i + n] for i in range(0, len(l), n)]
+
+
 def magic_list_of_strings(hosts=None, separator=',', uniq=True):
     if hosts is None:
         hosts = []
@@ -352,14 +357,21 @@ class MakinaStatesInventory(object):
             self.fixperms()
         return data['data']
 
-    def get_ext_pillar(self, hosts=None):
-        cmd = ('bin/salt-call --out=json'
+    def get_ext_pillar(self, hosts=None, chunksize=16):
+        _cmd = ('bin/salt-call --out=json'
                ' mc_remote_pillar.generate_ansible_roster')
+        res = {}
+        cmds = []
         if hosts:
             if isinstance(hosts, list):
-                hosts = ','.join(hosts)
-            cmd += ' {0}'.format(hosts)
-        res = self.call_salt(cmd)
+                for chunk in chunkify(hosts, chunksize):
+                    cmds.append('{0} {1}'.format(_cmd, ','.join(chunk)))
+            else:
+                cmds.append('{0} {1}'.format(_cmd, hosts))
+        else:
+            cmds.append(_cmd)
+        for cmd in cmds:
+            res.update(self.call_salt(cmd))
         return res
 
     def sanitize_and_save(self, payload, force=True):
