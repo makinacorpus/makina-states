@@ -38,7 +38,6 @@ _default_activation_status = object()
 _LOCAL_REG_CACHE = {}
 
 
-
 NOT_SHARED = []  # retrocompat
 log = logging.getLogger(__name__)
 DEFAULT_SUF = 'makina-states.local'
