@@ -55,7 +55,9 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.db.redis', {
                 'admin': 'admin',
-                'password': pw,
+                # have a password less redis, use this pillar entry:
+                # makina-states.services.db.redis.password: False
+                'password': '',
                 'templates': _OrderedDict([
                     ('/etc/default/redis-server', {}),
                     #('/etc/systemd/system/redis-server.service', {'mode': '644'}),
@@ -126,8 +128,15 @@ def settings():
                                                    'pubsub 32mb 8mb 60'],
                 }
             })
+        if data['password'] is not False and not data['password']:
+            data['password'] = pw
+        redis_reg['password'] = data['password']
+        pw = redis_reg['password']
         for i in ['requirepass', 'masterauth']:
-            data['redis'][i] = data['redis'][i + '_format'].format(pw)
+            if data['password'] is False:
+                data['redis'][i] = ''
+            else:
+                data['redis'][i] = data['redis'][i + '_format'].format(pw)
         __salt__['mc_macros.update_local_registry'](
             'redis', redis_reg,
             registry_format='pack')
