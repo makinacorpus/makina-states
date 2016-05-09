@@ -28,11 +28,11 @@
 {% endmacro %}
 {% macro install_certificate(
     cert, key=none, suf='', trust=true, sinfos=None) %}
-{% set ssl_infos = salt['mc_ssl.get_cert_infos'](cert, key, sinfos=sinfos) %}
-{% set cn = ssl_infos.cn %}
-{% set cert = ssl_infos.cert_data[0] %}
-{% set key = ssl_infos.cert_data[1]  or '' %}
-{% set chain = ssl_infos.cert_data[2] %}
+{%- set ssl_infos = salt['mc_ssl.get_cert_infos'](cert, key, sinfos=sinfos) %}
+{%- set cn = ssl_infos.cn %}
+{%- set cert = ssl_infos.cert_data[0] %}
+{%- set key = ssl_infos.cert_data[1] or '' %}
+{%- set chain = ssl_infos.cert_data[2] %}
 {%- set ichain = salt['mc_ssl.extract_certs'](chain)[0] %}
 {%- do ichain.reverse() %}
 {%- set sichain = '\n'.join(ichain) %}
@@ -56,11 +56,15 @@ cpt-cert-{{ssl_infos.cn}}-trust{{suf}}:
   {% endif %}
 
 cpt-cert-{{ssl_infos.cn}}-crt{{suf}}:
+  {% if not (cert and key) %}
+  {{sslcert_absent(ssl_infos['crt'])}}
+  {% else %}
   {{sslcert_manage(ssl_infos['crt'])}}
     - contents: |
                 {{cert|indent(16)}}
                 {{chain|indent(16)}}
                 {{key|indent(16)}}
+  {% endif %}
 
 cpt-cert-{{ssl_infos.cn}}-auth{{suf}}:
   {{sslcert_manage(ssl_infos['auth'])}}
