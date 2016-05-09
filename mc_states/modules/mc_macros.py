@@ -51,7 +51,6 @@ def get_registry_formats():
     return copy.deepcopy(REGISTRY_FORMATS)
 
 
-
 # normally not more used
 # def registry_kind_get(kind):
 #     if not kind in _REGISTRY:
