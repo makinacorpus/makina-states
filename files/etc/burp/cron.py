@@ -49,6 +49,7 @@ from Queue import Empty, Queue
 import logging
 from subprocess import Popen, PIPE
 from threading import Thread
+import socket
 
 
 # this match the log ! :)
