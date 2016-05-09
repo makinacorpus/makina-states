@@ -44,7 +44,7 @@ log = logging.getLogger(__name__)
 DEFAULT_SUF = 'makina-states.local'
 DEFAULT_LOCAL_REG_NAME = '{0}.{{0}}'.format(DEFAULT_SUF)
 RKEY = 'mcreg_{0}_{1}'
-REGISTRY_FORMATS = ['pack', 'yaml']
+REGISTRY_FORMATS = ['pack', 'yaml', 'json']
 _default = object()
 
 
