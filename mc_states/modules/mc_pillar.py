@@ -3749,10 +3749,6 @@ def json_pillars(id_, pillar=None, raise_error=True, *args, **kw):
     _s = __salt__
     dirs = _s['mc_macros.get_pillar_dss']([id_])
     data = OrderedDict()
-    # do not load cache pillar on controller, we will rely here on
-    # mc_pillar and other ext_pillars directly
-    if has_db():
-        return data
     for section in ['*', id_]:
         if section not in dirs:
             continue
@@ -3762,6 +3758,11 @@ def json_pillars(id_, pillar=None, raise_error=True, *args, **kw):
             for i in [a
                       for a in os.listdir(pdir)
                       if a.endswith('.json')]:
+                # do not load cache pillar on controller, we will rely here on
+                # mc_pillar and other ext_pillars directly
+                sanei = re.sub('[.-_]', '', i)
+                if has_db() and 'makinastates' in sanei.lower():
+                    continue
                 try:
                     pf = os.path.join(pdir, i)
                     with open(pf) as fic:
