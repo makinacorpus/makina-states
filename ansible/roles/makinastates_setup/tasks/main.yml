@@ -5,6 +5,9 @@
     - python
     - git
     - curl
+    - locales
+    - language-pack-fr
+    - language-pack-en
   tags: [makinastates, makinastates_setup]
 
 - name: test ms dir
