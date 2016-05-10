@@ -2474,10 +2474,7 @@ def get_supervision_conf_kind(id_, kind, ttl=PILLAR_TTL):
                     nginx = rdata.setdefault('nginx', {})
                     domain = rdata.get('nginx', {}).get('domain', id_)
                     cert, key = __salt__[
-                        'mc_ssl.get_selfsigned_cert_for'](
-                            domain,
-                            gen=True,
-                            as_text=True)[0]
+                        'mc_ssl.get_selfsigned_cert_for'](domain, gen=True)
                     # unknown ca signed certs do not work in nginx
                     # cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
                     # nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
