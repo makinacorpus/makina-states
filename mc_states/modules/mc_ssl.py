@@ -593,8 +593,13 @@ def get_configured_cert(domain,
             domains.append(wd)
         for d in domains:
             infos = certs.get(d, None)
-            if infos:
-                pretendants.append(infos)
+            cert, key, chain = infos[0], infos[1], ''
+            if len(infos) >= 2:
+                chain = infos[3]
+            else:
+                cert, chain = ssl_chain(cert)
+            if cert:
+                pretendants.append((cert, key, chain))
         if not pretendants:
             if selfsigned:
                 cert = get_selfsigned_cert_for(domain, gen=gen)
