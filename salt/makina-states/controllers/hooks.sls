@@ -1,5 +1,13 @@
 {#- Dummies states for orchestration and reuse in standalone modes #}
 {#- only here for orchestration purposes #}
+dummy-pre-salt-pkg-pre:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: dummy-pre-salt-pkg-post
+dummy-pre-salt-pkg-post:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: dummy-pre-salt-checkouts
 dummy-pre-salt-checkouts:
   mc_proxy.hook: []
 dummy-pre-salt-service-restart:
