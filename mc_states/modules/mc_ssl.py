@@ -593,8 +593,10 @@ def get_configured_cert(domain,
             domains.append(wd)
         for d in domains:
             infos = certs.get(d, None)
+            if not infos or len(infos) < 2:
+                continue
             cert, key, chain = infos[0], infos[1], ''
-            if len(infos) >= 2:
+            if len(infos) > 2:
                 chain = infos[3]
             else:
                 cert, chain = ssl_chain(cert)
