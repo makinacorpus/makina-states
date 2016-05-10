@@ -593,13 +593,9 @@ def get_configured_cert(domain,
             domains.append(wd)
         for d in domains:
             infos = certs.get(d, None)
-            if not infos or len(infos) < 2:
+            if not infos or len(infos) < 3:
                 continue
-            cert, key, chain = infos[0], infos[1], ''
-            if len(infos) > 2:
-                chain = infos[3]
-            else:
-                cert, chain = ssl_chain(cert)
+            cert, key, chain = infos[0], infos[1], infos[2]
             if cert:
                 pretendants.append((cert, key, chain))
         if not pretendants:
@@ -655,16 +651,25 @@ def load_extras(data=None):
 
     is_travis = _s['mc_nodetypes.is_travis']()
     # even if we make a doublon here, it will be filtered by CN indexing
-    for domain in data['domains']:
+    for d in data['domains']:
         if is_travis:
             continue
-        cert = get_configured_cert(domain, gen=True, data=data)
+        # for staging.foo.net, and we are asking
+        # to generate a cert for *.staging.foo.net
+        # we check that we have not already a certificate for *.foo.net
+        # that would already be usable for staging.foo.net
+        if d.startswith('*.'):
+            uwd = d[2:]
+            wduwd = get_wildcard(uwd)
+            if uwd in dcerts or wduwd in dcerts:
+                continue
+        cert, key, chain = get_configured_cert(d, gen=True, data=data)
         try:
-            si = ssl_infos(cert[0])
+            si = ssl_infos(cert)
         except Exception:
-            log.error('Error while decoding cert: {0}'.format(cert))
+            log.error('Error while decoding cert: {0}'.format(d))
             continue
-        dcerts[domain] = [a for a in cert] + [si]
+        dcerts[d] = cert, key, chain, si
     # be sure to index them by the CN defined in the cert
     for cert in data['certificates']:
         cdata = data['certificates'][cert]
