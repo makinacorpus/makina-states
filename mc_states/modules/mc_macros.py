@@ -201,9 +201,10 @@ def pack_load_local_registry(name, registryf=None):
                 rvalue = fic.read()
                 value = __salt__['mc_utils.msgpack_load'](
                     rvalue)
-    except msgpack.exceptions.UnpackValueError:
+    except (msgpack.exceptions.UnpackValueError,
+            msgpack.exceptions.ExtraData):
         log.error('decoding error, removing stale {0}'.format(regpath))
-        os.unlink(registryf)
+        os.unlink(regpath)
         value = {}
     return value
 
