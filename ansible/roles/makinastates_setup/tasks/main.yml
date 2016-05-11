@@ -39,6 +39,8 @@
             '--salt-url {0}'.format(makinastates_salt_repo), '') }} \
           {{(makinastates_salt_version is not none) | ternary(
             '--salt-branch {0}'.format(makinastates_salt_version), '') }}
+          {{(makinastates_minion_id is not none) | ternary(
+            '-m {0}'.format(makinastates_minion_id), '') }}
   tags: [makinastates, makinastates_setup]
 
 - name: test salt & ansible usuability

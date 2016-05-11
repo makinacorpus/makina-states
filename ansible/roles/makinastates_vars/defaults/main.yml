@@ -9,4 +9,5 @@ makinastates_salt_repo: null
 makinastates_salt_version: null
 makinastates_nodetype: null
 makinastates_force_highstate: null
+makinastates_minion_id: null
 salt_pillar: {"makinastates_from_ansible": true}
