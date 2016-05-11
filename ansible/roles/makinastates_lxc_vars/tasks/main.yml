@@ -66,6 +66,9 @@
         'network_profile', {}).get(
           'eth1', {}).get(
             'gateway', lxc_eth1_gateway)}}"
+      makinastates_version: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+            'bootsalt_branch', makinastates_version)"
 - name: lxc - init - vars - second pass
   tags: makinastates_lxc_vars
   register: makinastates_lxc_vars
@@ -94,3 +97,4 @@
       lxc_eth1_bridge: "{{makinastates_lxc_vars.msg['lxc_eth1_bridge']}}"
       lxc_eth1_ip: "{{makinastates_lxc_vars.msg['lxc_eth1_ip']}}"
       lxc_eth1_gateway: "{{makinastates_lxc_vars.msg['lxc_eth1_gateway']}}"
+      makinastates_version: "{{makinastates_lxc_vars.msg['makinastates_version']}}"

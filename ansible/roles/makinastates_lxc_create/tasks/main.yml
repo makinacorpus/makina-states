@@ -21,3 +21,4 @@
     lxc_os_mirror: "{{makinastates_lxc_vars.msg['lxc_os_mirror']}}"
     lxc_os_release: "{{makinastates_lxc_vars.msg['lxc_os_release']}}"
     lxc_auto_start: "{{makinastates_lxc_vars.msg['lxc_auto_start']}}"
+    makinastates_version: "{{makinastates_lxc_vars.msg['makinastates_version']}}"
