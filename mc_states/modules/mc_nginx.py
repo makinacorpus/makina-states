@@ -214,6 +214,7 @@ def settings():
         nginxData = __salt__['mc_utils.defaults'](
             'makina-states.services.http.nginx', {
                 'rotate': '365',
+                'real_ip_recursive': 'on',
                 'no_daemon': no_daemon,
                 'is_reverse_proxied': is_rp,
                 'reverse_proxy_addresses': reverse_proxy_addresses,
