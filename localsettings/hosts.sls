@@ -33,7 +33,6 @@ append-hosts-accumulator-from-pillar:
       - file: makina-append-etc-hosts-management
     - filename: {{ locs.conf_dir }}/hosts
     - text: |
-            #end
             {{ hosts_list|sort|join(separator) }}
 {% endif %}
 
