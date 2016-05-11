@@ -135,6 +135,12 @@ def get_generate_hooks():
     return _s['mc_utils.uniquify'](hooks)
 
 
+def get_groups_pillar(host, pillar=None):
+    if pillar is None:
+        pillar = __salt__['mc_remote_pillar.get_pillar'](host)
+    return pillar
+
+
 def get_groups(host, pillar=None, groups=None):
     _s = __salt__
     if pillar is None:

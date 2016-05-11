@@ -4033,8 +4033,8 @@ def get_ssl_conf(id_, ttl=PILLAR_TTL):
 
 
 def get_masterless_makinastates_groups(host, pillar=None):
-    if pillar is None:
-        pillar = {}
+    _s = __salt__
+    pillar = _s['mc_remote_pillar.get_groups_pillar'](host, pillar)
     groups = set()
     mysql = re.compile('mysql', flags=rei_flags)
     pgsql = re.compile('osm|pgsql|postgresql', flags=rei_flags)
@@ -4078,7 +4078,7 @@ def get_masterless_makinastates_groups(host, pillar=None):
         groups.add('bms')
     if is_.get('controller', True):
         groups.add('controllers')
-    return groups
+    return list(groups)
 
 def test():
     return True
