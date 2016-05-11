@@ -87,7 +87,10 @@ def settings():
         haproxy_password = _s['mc_utils.generate_stored_password'](
             'mc_haproxy.password')
         ssl = _s['mc_ssl.settings']()
+        proxy_settings = _s['mc_proxy.settings']()
+        reverse_proxy_addresses = proxy_settings['reverse_proxy_addresses']
         data = {
+            'reverse_proxy_addresses': reverse_proxy_addresses,
             'location': locs['conf_dir'] + '/haproxy',
             'config_dir': '/etc/haproxy',
             'rotate': _s['mc_logrotate.settings']()['days'],
