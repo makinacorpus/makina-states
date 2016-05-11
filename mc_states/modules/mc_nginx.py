@@ -28,13 +28,7 @@ log = logging.getLogger(__name__)
 
 
 def is_reverse_proxied():
-    is_vm = False
-    try:
-        with open('/etc/mastersalt/makina-states/cloud.yaml') as fic:
-            is_vm = 'is.vm' in fic.read()
-    except Exception:
-        pass
-    return __salt__['mc_cloud.is_vm']() or is_vm
+    return __salt__['mc_proxy.is_reverse_proxied']()
 
 
 def settings():
@@ -183,24 +177,20 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        _g = __grains__
-        local_conf = __salt__['mc_macros.get_local_registry'](
+        _s, _g = __salt__, __grains__
+        local_conf = _s['mc_macros.get_local_registry'](
             'nginx', registry_format='pack')
         naxsi_ui_pass = local_conf.setdefault('naxsi_ui_pass',
                                               secure_password(32))
-        locations = __salt__['mc_locations.settings']()
+        locations = _s['mc_locations.settings']()
         nbcpus = _g.get('num_cpus', '4')
         epoll = False
         if 'linux' in _g.get('kernel', '').lower():
             epoll = True
         ulimit = "65536"
         is_rp = is_reverse_proxied()
-        reverse_proxy_addresses = []
-        if is_rp:
-            gw = _g.get('makina.default_route', {}).get('gateway', '').strip()
-            if gw and gw not in reverse_proxy_addresses:
-                reverse_proxy_addresses.append(gw)
-
+        proxy_settings = _s['mc_proxy.settings']()
+        reverse_proxy_addresses = proxy_settings['reverse_proxy_addresses']
         logformat = '$remote_addr - $remote_user [$time_local]  '
         logformat += '"$request" $status $bytes_sent "$http_referer" '
         logformat += '"$http_user_agent" "$gzip_ratio"'
@@ -208,16 +198,16 @@ def settings():
             'custom_combined': logformat
         }
         no_daemon = False
-        if __salt__['mc_nodetypes.is_docker']():
+        if _s['mc_nodetypes.is_docker']():
             no_daemon = True
-        www_reg = __salt__['mc_www.settings']()
+        www_reg = _s['mc_www.settings']()
 
         # fix virtualbox bad support of sendfile
         sendfile = True
         if __grains__.get('virtual', None) == 'VirtualBox':
             sendfile = False
 
-        nginxData = __salt__['mc_utils.defaults'](
+        nginxData = _s['mc_utils.defaults'](
             'makina-states.services.http.nginx', {
                 'rotate': '365',
                 'real_ip_recursive': 'on',
@@ -340,7 +330,7 @@ def settings():
                     'etc/nginx/sites-available/vhost.content.conf'),
             }
         )
-        __salt__['mc_macros.update_local_registry'](
+        _s['mc_macros.update_local_registry'](
             'nginx', local_conf, registry_format='pack')
         return nginxData
     return _settings()
