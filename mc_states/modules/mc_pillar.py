@@ -250,6 +250,7 @@ def get_cloud_conf(ttl=PILLAR_TTL):
         _s['mc_cloud.extpillar_settings']()
         nmh = _s[__name + '.query']('non_managed_hosts', {})
         cloud_cn_attrs = _s[__name + '.query']('cloud_cn_attrs', {})
+        default_cn_attrs = cloud_cn_attrs.get('default', OrderedDict())
         cloud_vm_attrs = _s[__name + '.query']('cloud_vm_attrs', {})
         supported_vts = _s['mc_cloud_compute_node.get_vts']()
         for vt, targets in _s[__name + '.query']('vms', {}).items():
@@ -262,7 +263,7 @@ def get_cloud_conf(ttl=PILLAR_TTL):
                     continue
                 dcn = dcns.setdefault(cn, OrderedDict())
                 dcns[cn] = dcn
-                dcn.setdefault('conf', cloud_cn_attrs.get(cn, OrderedDict()))
+                dcn.setdefault('conf', cloud_cn_attrs.get(cn, copy.deepcopy(default_cn_attrs)))
                 cn_vms = dcn.setdefault('vms', OrderedDict())
                 vts = dcn.setdefault('vts', [])
                 if vt not in vts:
@@ -281,7 +282,7 @@ def get_cloud_conf(ttl=PILLAR_TTL):
             if cn in nmh:
                 continue
             dcn = dcns.setdefault(cn, OrderedDict())
-            dcn.setdefault('conf', cloud_cn_attrs.get(cn, OrderedDict()))
+            dcn.setdefault('conf', cloud_cn_attrs.get(cn, copy.deepcopy(default_cn_attrs)))
             dcn.setdefault('vms', OrderedDict())
             dcn.setdefault('vts', [])
         return rdata
