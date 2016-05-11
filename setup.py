@@ -72,13 +72,18 @@ if HAS_PIP:
                 pkgreq = "{0}".format(req.__class__)
                 # match pip._vendor.pkg_resources.Requirement
                 # match pkg_resources.Requirement
-                if "pkg_resources.Requirement" not in pkgreq:
+                if ".Requirement" not in pkgreq:
                     sys.stderr.write('{0} is not a req\n'.format(req))
-                if req.project_name not in candidates:
-                    candidates[req.project_name] = "{0}".format(req)
-                else:
+		try:
+                    reqname = req.project_name
+                except AttributeError:
+                    reqname = req.name
+                sreq = "{0}".format(req)
+                val = candidates.setdefault(reqname, sreq)
+                if val != sreq:
                     raise ValueError(
-                        '{1}: conflict for {0}'.format(req, reqs_file))
+                        '{1}: conflict for {0} {2} / {3}'.format(
+                            req, reqs_file, candidates[reqname], sval))
 for c in [a for a in candidates]:
     val = candidates[c]
     if val not in install_requires:
