@@ -106,8 +106,8 @@ def is_this_lxc(pid=1):
 
 
 def filter_host_pids(pids):
-    res = [pid for pid in pids
-           if get_container(pid) != 'MAIN_HOST']
+    thishost = get_container(os.getpid())
+    res = [pid for pid in pids if get_container(pid) == thishost]
     return res
 
 
