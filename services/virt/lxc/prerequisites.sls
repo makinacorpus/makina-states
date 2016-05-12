@@ -53,7 +53,6 @@ lxc-pkgs:
     - pkgs:
       - lxc-templates
       - lxc
-      - lxctl
       - python3-lxc
       - liblxc1
       - lxcfs
