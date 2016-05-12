@@ -665,7 +665,7 @@ def _configure_http_reverses(reversep,
     for typ, proxy in six.iteritems(
         {'http': http_proxy, 'https': https_proxy}
     ):
-        if domain.startswith('*.'):
+        if domain.startswith('*'):
             hosts = proxy.setdefault('wildcards', [])
         else:
             hosts = proxy.setdefault('hosts', [])
