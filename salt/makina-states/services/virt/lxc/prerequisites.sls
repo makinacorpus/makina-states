@@ -71,7 +71,7 @@ lxc-pkgs:
     - fromrepo: {{pkgssettings.udist}}-backports
 {% endif %}
 {% endif %}
-    - pkgs: {{data.pkgs}}
+    - pkgs: [{{', '.join(data.pkgs)}}]
     - watch_in:
       - mc_proxy: lxc-post-pkg
     - watch:
