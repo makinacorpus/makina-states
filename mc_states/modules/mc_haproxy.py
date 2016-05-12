@@ -236,6 +236,7 @@ def settings():
 def sanitize(key):
     if isinstance(key, list):
         key = '_'.join(key)
+    key = key.replace('*', 'wildcard')
     return OBJECT_SANITIZER.sub('_', key)
 
 
@@ -338,8 +339,12 @@ def ordered_frontend_opts(opts=None):
             pref += 20
         elif ' wc_' in opt:
             pref += 70
+            if 'wildcard' in opt:
+                pref += 1
         elif ' host_' in opt:
             pref += 50
+            if 'wildcard' in opt:
+                pref += 1
         return '{0:04d}_{1}'.format(pref, opt)
 
     opts.sort(key=sort)
