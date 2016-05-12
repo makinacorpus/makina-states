@@ -19,6 +19,9 @@ makina-haproxy-service:
       - mc_proxy: ssl-certs-post-hook
     - watch_in:
       - mc_proxy: haproxy-post-restart-hook
+    - onfail_in:
+      - cmd: fail-makina-haproxy-service
+      - "{{service_function.split('.')[0]}}": fail-makina-haproxy-service
 
 makina-haproxy-restart-service:
   {{service_function}}:
@@ -29,6 +32,53 @@ makina-haproxy-restart-service:
       - mc_proxy: ssl-certs-post-hook
     - watch_in:
       - mc_proxy: haproxy-post-hardrestart-hook
+    - onfail_in:
+      - cmd: fail-makina-haproxy-restart-service
+      - "{{service_function.split('.')[0]}}": fail-makina-haproxy-restart-service
+
+{% macro systemd_reload() %}
+    - name: systemctl daemon-reload
+    - onlyif: systemctl show haproxy
+{% endmacro %}
+
+fail-makina-haproxy-service:
+  cmd.run:
+    {{systemd_reload()}}
+    - watch:
+      - mc_proxy: haproxy-pre-restart-hook
+      - mc_proxy: ssl-certs-post-hook
+    - watch_in:
+      - mc_proxy: haproxy-post-restart-hook
+  {{service_function}}:
+    - name: haproxy
+    - enable: {{salt['mc_services_managers.get_service_enabled_state'](service_function)}}
+    - reload: true
+    - watch:
+      - cmd: fail-makina-haproxy-service
+      - mc_proxy: haproxy-pre-restart-hook
+      - mc_proxy: ssl-certs-post-hook
+    - watch_in:
+      - mc_proxy: haproxy-post-restart-hook
+
+fail-makina-haproxy-restart-service:
+  cmd.run:
+    {{systemd_reload()}}
+    - watch:
+      - mc_proxy: haproxy-pre-hardrestart-hook
+      - mc_proxy: ssl-certs-post-hook
+    - watch_in:
+      - mc_proxy: haproxy-post-hardrestart-hook
+  {{service_function}}:
+    - name: haproxy
+    - enable: {{salt['mc_services_managers.get_service_enabled_state'](service_function)}}
+    - watch:
+      - cmd: fail-makina-haproxy-restart-service
+      - mc_proxy: haproxy-pre-hardrestart-hook
+      - mc_proxy: ssl-certs-post-hook
+    - watch_in:
+      - mc_proxy: haproxy-post-hardrestart-hook
+
+
 {% endif %}
 
 {% if pm == 'circus' %}
