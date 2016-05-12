@@ -3,6 +3,8 @@
   apt: name={{item}} update_cache=yes
   with_items:
     - python
+    - python-chardet
+    - python3-chardet
     - git
     - curl
     - locales
