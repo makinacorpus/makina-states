@@ -20,6 +20,8 @@ from ansible.plugins.callback import CallbackBase
 
 # Fields to reformat output for
 FIELDS = ['cmd',
+          'diff',
+          'changes',
           'src',
           'module_args',
           'invocation',
