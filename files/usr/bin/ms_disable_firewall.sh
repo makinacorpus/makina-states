@@ -138,17 +138,19 @@ main() {
     permissive_routing
     accept_policies
     disabled=""
-    for i in $(seq 5);do
-        if ! soft_disable;then
-            echo "Retrying to soft disabling the firewall (${i})"
-            sleep 1
-            gret=1
-        else
-            gret=0
-            disabled="x"
-            break
-        fi
-    done
+    if [ "x${nohard}" != "x" ];then
+        for i in $(seq 5);do
+            if ! soft_disable;then
+                echo "Retrying to soft disabling the firewall (${i})"
+                sleep 1
+                gret=1
+            else
+                gret=0
+                disabled="x"
+                break
+            fi
+        done
+    fi
     if [ "x${disabled}" = "x" ];then
         echo "Soft disabling failed"
         if [ "x${nohard}" = "x" ];then
