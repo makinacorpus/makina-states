@@ -7,35 +7,15 @@
   roles: [{role: 'makinastates_lxc_create'}]
 
 - hosts: "{{lxc_container_name}}"
-  tasks:
-    - shell: |
-        test -e /srv/makina-states/bin/salt-call
-        test -e /srv/makina-states/bin/ansible
-        echo $?
-      name: "test makinastates presence"
-      register: lxc_makinastates_presence
-
-- hosts: "{{lxc_container_name}}"
   roles:
+    - role: makinastates_presence
     - role: makinastates
       makinastates_nodetype: lxccontainer
       makinastates_version: "{{makinastates_lxc_vars.msg['makinastates_version']}}"
-      when: "lxc_makinastates_presence.stdout != '0'"
-
-- hosts: "{{lxc_container_name}}"
-  tasks:
-    - name: test reconfiure makina-states
-      shell: |
-         grep -q "id: {{lxc_container_name}}" \
-               /srv/makina-states/etc/salt/minion.d/01_local.conf
-         echo $?
-      when: "lxc_makinastates_presence.stdout == '0'"
-      register: lxc_makinastates_reconfigured
-    - name: reconfiure makina-states
-      shell: |
-        set -ex
-        cd /srv/makina-states/
-        git reset --hard HEAD
-        /srv/makina-states/bin/boot-salt.sh -C --reconfigure -m {{lxc_container_name}} \
-            -n lxccontainer -b {{makinastates_lxc_vars.msg['makinastates_version']}}
-      when: "lxc_makinastates_reconfigured.stdout != '0'"
+      when: "makinastates_presence.stdout != '0'"
+    - role: makinastates_presence
+      allow_duplicates: true
+    - role: makinastates_reconfigure
+      makinastates_minion_id: "{{lxc_container_name}}"
+      makinastates_version: "{{makinastates_lxc_vars.msg['makinastates_version']}}"
+      when: "makinastates_presence.stdout == '0'"
