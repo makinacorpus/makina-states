@@ -1,3 +1,4 @@
+---
 dependencies:
   - { role: makinastates_vars}
   - { role: makinastates_migv2_setup}

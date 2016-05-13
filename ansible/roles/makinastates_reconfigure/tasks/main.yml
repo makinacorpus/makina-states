@@ -1,0 +1,16 @@
+---
+- name: reconfigure makina-states
+  register: makinastates_presence/
+  tags: makinastates,makinastates_reconfigure
+  shell: |
+    set -ex
+    cd "{{makinastates_dest}}"
+    if ! git diff --quiet --exit-code;then
+      git stash || /bin/true
+      git reset --hard HEAD
+    fi
+    bin/boot-salt.sh \
+        {% if makinastates_minion_id %}-m "{{makinastates_minion_id}}" {% endif %}\
+        {% if makinastates_nodetype %}-n "{{makinastates_nodetype}}" {% endif %}\
+        {% if makinastates_version %}-b "{{makinastates_version}}" {% endif %}\
+        -C --reconfigure

@@ -1,7 +1,11 @@
-{% set vms = salt['mc_cloud_compute_node.settings']().get('vms', {}) %}
+{% set settings = salt['mc_cloud_compute_node.settings']() %}
+{% set lxc = settings.get('lxc', {}) %}
+{% set lxcd = lxc.get('defaults', {}) %}
+{% set vms = settings.get('vms', {}) %}
 {% for v, vdata in vms.items() -%}
 {% if vdata.vt in ['lxc'] -%}
-host-record={{vdata.target}},10.5.0.1
+{% set gw = lxcd.get('gateway', '10.5.0.1') %}
+host-record={{vdata.target}},{{gw}}
 # {{vdata.name}}
 dhcp-host={{vdata.mac}},{{vdata.ip}},{{vdata.name}},300
 host-record={{vdata.name}},{{vdata.ip}}

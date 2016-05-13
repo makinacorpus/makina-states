@@ -1,0 +1,8 @@
+---
+- shell: |
+    "{{makinastates_dest}}/bin/salt-call" --version 1>/dev/null 2>&1 &&\
+       "{{makinastates_dest}}/bin/ansible" --version 1>/dev/null 2>&1 &&\
+       echo ${?}
+  name: "test makinastates presence"
+  register: makinastates_presence
+  tags: makinastates,makinastates_presence

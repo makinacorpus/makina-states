@@ -7,12 +7,35 @@ from __future__ import print_function
 # Inspired from: https://github.com/redhat-openstack/khaleesi/blob/master/plugins/callbacks/human_log.py
 # Further improved support Ansible 2.0
 
+# set HUMAN_NOLOG to deactivate human log
+
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
+import os
 import six
 import datetime
 import pprint
+from ansible.plugins.callback import CallbackBase
+
+# Fields to reformat output for
+FIELDS = ['cmd',
+          'diff',
+          'changes',
+          'src',
+          'module_args',
+          'invocation',
+          'block',
+          'command',
+          'start',
+          'end',
+          'delta',
+          'msg',
+          'stdout',
+          'stderr',
+          'salt_out',
+          'saltout',
+          'results']
 
 try:
     import simplejson as json
@@ -83,19 +106,6 @@ def magicstring(thestr):
     return thestr
 
 
-# Fields to reformat output for
-FIELDS = ['cmd',
-          'command',
-          'start',
-          'end',
-          'delta',
-          'msg',
-          'stdout',
-          'stderr',
-          'salt_out',
-          'saltout',
-          'results']
-
 
 def nlstrip(val):
     if not val.startswith('\n'):
@@ -112,7 +122,7 @@ def indent_string(val, indent_level, indenter=' '):
     return '\n'.join(out)
 
 
-class CallbackModule(object):
+class CallbackModule(CallbackBase):
     '''
     Ansible callback plugin for human-readable result logging
     '''
@@ -166,10 +176,14 @@ class CallbackModule(object):
         return out
 
     def human_log(self, data):
+        no_display = os.environ.get('HUMAN_NOLOG', '')
+        if no_display:
+            return
         if isinstance(data, dict):
             ndata = {}
             for field, val in six.iteritems(data):
-                if field not in FIELDS:
+                fields = data.get('_ansible_human_log_fields', FIELDS[:])
+                if field not in fields:
                     continue
                 no_log = d_no_log = data.get('_ansible_no_log')
                 if isinstance(val, dict):
@@ -179,23 +193,14 @@ class CallbackModule(object):
             if ndata:
                 print(self._output(ndata))
 
-    def on_any(self, *args, **kwargs):
-        pass
-
     def runner_on_failed(self, host, res, ignore_errors=False):
         self.human_log(res)
 
     def runner_on_ok(self, host, res):
         self.human_log(res)
 
-    def runner_on_skipped(self, host, item=None):
-        pass
-
     def runner_on_unreachable(self, host, res):
         self.human_log(res)
-
-    def runner_on_no_hosts(self):
-        pass
 
     def runner_on_async_poll(self, host, res, jid, clock):
         self.human_log(res)
@@ -206,61 +211,15 @@ class CallbackModule(object):
     def runner_on_async_failed(self, host, res, jid):
         self.human_log(res)
 
-    def playbook_on_start(self):
-        pass
-
-    def playbook_on_notify(self, host, handler):
-        pass
-
-    def playbook_on_no_hosts_matched(self):
-        pass
-
-    def playbook_on_no_hosts_remaining(self):
-        pass
-
-    def playbook_on_task_start(self, name, is_conditional):
-        pass
-
-    def playbook_on_vars_prompt(self, varname, private=True, prompt=None, encrypt=None, confirm=False, salt_size=None, salt=None, default=None):
-        pass
-
-    def playbook_on_setup(self):
-        pass
-
-    def playbook_on_import_for_host(self, host, imported_file):
-        pass
-
-    def playbook_on_not_import_for_host(self, host, missing_file):
-        pass
-
-    def playbook_on_play_start(self, name):
-        pass
-
-    def playbook_on_stats(self, stats):
-        pass
-
-    def on_file_diff(self, host, diff):
-        pass
-
-
     ####### V2 METHODS ######
-    def v2_on_any(self, *args, **kwargs):
-        pass
-
     def v2_runner_on_failed(self, result, ignore_errors=False):
         self.human_log(result._result)
 
     def v2_runner_on_ok(self, result):
         self.human_log(result._result)
 
-    def v2_runner_on_skipped(self, result):
-        pass
-
     def v2_runner_on_unreachable(self, result):
         self.human_log(result._result)
-
-    def v2_runner_on_no_hosts(self, task):
-        pass
 
     def v2_runner_on_async_poll(self, result):
         self.human_log(result._result)
@@ -271,61 +230,11 @@ class CallbackModule(object):
     def v2_runner_on_async_failed(self, result):
         self.human_log(result._result)
 
-    def v2_playbook_on_start(self, playbook):
-        pass
-
-    def v2_playbook_on_notify(self, result, handler):
-        pass
-
-    def v2_playbook_on_no_hosts_matched(self):
-        pass
-
-    def v2_playbook_on_no_hosts_remaining(self):
-        pass
-
-    def v2_playbook_on_task_start(self, task, is_conditional):
-        pass
-
-    def v2_playbook_on_vars_prompt(self, varname, private=True, prompt=None,
-                                   encrypt=None, confirm=False, salt_size=None,
-                                   salt=None, default=None):
-        pass
-
-    def v2_playbook_on_setup(self):
-        pass
-
-    def v2_playbook_on_import_for_host(self, result, imported_file):
-        pass
-
-    def v2_playbook_on_not_import_for_host(self, result, missing_file):
-        pass
-
-    def v2_playbook_on_play_start(self, play):
-        pass
-
-    def v2_playbook_on_stats(self, stats):
-        pass
-
-    def v2_on_file_diff(self, result):
-        pass
-
-    def v2_playbook_on_item_ok(self, result):
-        pass
-
     def v2_playbook_on_item_failed(self, result):
-        pass
+        self.human_log(result._result)
 
-    def v2_playbook_on_item_skipped(self, result):
-        pass
+    def v2_runner_item_on_ok(self, result):
+        self.human_log(result._result)
 
-    def v2_playbook_on_include(self, included_file):
-        pass
-
-    def v2_playbook_item_on_ok(self, result):
-        pass
-
-    def v2_playbook_item_on_failed(self, result):
-        pass
-
-    def v2_playbook_item_on_skipped(self, result):
-        pass
+    def v2_runner_item_on_failed(self, result):
+        self.human_log(result._result)
