@@ -400,12 +400,7 @@ def vhost_settings(domain, doc_root, **kwargs):
         lcert, lkey, lchain = __salt__[
             'mc_ssl.get_configured_cert'](ssldomain, gen=True)
         if not nginxSettings.get('ssl_cert'):
-            try:
-                nginxSettings['ssl_cert'] = lcert + lchain
-            except Exception:
-                import pdb;pdb.set_trace()  ## Breakpoint ##
-                raise
-
+            nginxSettings['ssl_cert'] = lcert + lchain
         if not nginxSettings.get('ssl_key'):
             nginxSettings['ssl_key'] = lcert + lchain + lkey
         if not nginxSettings.get('ssl_bundle'):
