@@ -37,5 +37,33 @@ lxc-pre-restart:
     - watch_in:
       - mc_proxy: lxc-post-inst
 
+lxc-services-others-pre:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: lxc-services-others-post
+lxc-services-others-post:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: lxc-net-services-enabling-pre
+lxc-net-services-enabling-pre:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: lxc-net-services-enabling-post
+lxc-net-services-enabling-post:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: lxc-services-enabling-pre
 lxc-post-inst:
+  mc_proxy.hook: 
+    - watch_in:
+      - mc_proxy: lxc-services-enabling-pre
+lxc-services-enabling-pre:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: lxc-services-enabling-post
+lxc-services-enabling-post:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: lxc-post-end
+lxc-post-end:
   mc_proxy.hook: []

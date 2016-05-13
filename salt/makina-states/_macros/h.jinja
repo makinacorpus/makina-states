@@ -78,3 +78,69 @@
 {{text}}
 {% endmacro %}
 {% set dummy = proxy %}
+
+
+{#
+ # wrapper to service restart/reload that also ensure that systemd is reloaded
+ # if case of the first activation fails
+ # after a unit change and also works if service_function==None
+ # for docker mode where we use another processes manager like circus
+ #}
+{% macro service_restart_reload(
+    unit,
+    service_function='service.running',
+    pref='',
+    enable='none',
+    reload=True, reload_macro=none,
+    restart=True, restart_macro=none) %}
+{% if enable == 'none' %}
+{% set enable = salt['mc_services_managers.get_service_enabled_state'](service_function) %}
+{% endif %}
+{% if service_function %}
+{% if reload %}
+makina-{{pref}}-{{unit}}-service:
+  {{service_function}}:
+    - name: {{unit}}
+    - enable: {{enable}}
+    - reload: true
+    - onfail_in:
+      - cmd: fail-makina-{{pref}}-{{unit}}-service
+      - service: fail-makina-{{pref}}-{{unit}}-service
+  {% if reload_macro %}{{reload_macro()}}{%endif%}
+fail-makina-{{pref}}-{{unit}}-service:
+  cmd.run:
+    - name: systemctl daemon-reload
+    - onlyif: "systemctl show {{unit}}"
+  {% if reload_macro %}{{reload_macro()}}{%endif%}
+  {{service_function}}:
+    - name: {{unit}}
+    - enable: {{enable}}
+    - reload: true
+    - require:
+      - cmd: fail-makina-{{pref}}-{{unit}}-service
+  {% if reload_macro %}{{reload_macro()}}{%endif%}
+{% endif %}
+
+{% if restart %}
+makina-{{pref}}-{{unit}}-restart-service:
+  {{service_function}}:
+    - name: {{unit}}
+    - enable: {{enable}}
+    - onfail_in:
+      - cmd: fail-makina-{{pref}}-{{unit}}-restart-service
+      - service: fail-makina-{{pref}}-{{unit}}-restart-service
+  {% if restart_macro %}{{restart_macro()}}{%endif%}
+fail-makina-{{pref}}-{{unit}}-restart-service:
+  cmd.run:
+    - name: systemctl daemon-reload
+    - onlyif: "systemctl show {{unit}}"
+  {% if restart_macro %}{{restart_macro()}}{%endif%}
+  {{service_function}}:
+    - name: {{unit}}
+    - enable: {{enable}}
+    - require:
+      - cmd: fail-makina-{{pref}}-{{unit}}-restart-service
+  {% if restart_macro %}{{restart_macro()}}{%endif%}
+{% endif %}
+{% endif %}
+{%endmacro%}
