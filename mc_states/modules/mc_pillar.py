@@ -3616,7 +3616,17 @@ def get_dns_resolvers(id_, ttl=PILLAR_TTL):
         if id_ in db['vms']:
             vm_ = db['vms'][id_]
             if vm_.get('vt', '') in ['lxc']:
-                resolvers.add('10.5.0.1')
+                try:
+                    vmextp = __salt__['mc_cloud.ext_pillar'](id_)
+                    gw = vmextp[
+                        'makina-states.cloud.vms.vts'][
+                            'lxc']['defaults']['gateway']
+                except Exception:
+                    trace = traceback.format_exc()
+                    log.error('get_dns_resolvers for {0}'.format(id_))
+                    log.error(trace)
+                    gw = '10.5.0.1'
+                resolvers.add(gw)
             resolvers.add(ip_for(db['vms'][id_]['target']))
         conf = __salt__[__name + '.query']('dns_resolvers', {})
         sconf = __salt__[__name + '.query']('dns_search', {})
