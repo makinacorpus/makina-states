@@ -312,10 +312,14 @@ get_minion_id() {
             mmid=$(cat "${confdir}/minion_id" 2> /dev/null)
         elif egrep -q "^id: [^ ]+" "$confdir/minion" "${confdir}/minion.d/"*conf 2>/dev/null; then
             mmid=$(egrep -r "^id:" "$confdir/minion" "${confdir}/minion.d/"*conf 2>/dev/null|\
-                tail -n1|awk '{print $2}'|grep -v __MS_MINIONID__)
+                tail -n1|awk '{print $2}'|grep -v makinastates.local|grep -v __MS_MINIONID__)
         else
-            mmid=$(hostname -f)
+            mmid=""
         fi
+
+    fi
+    if [ "x${mmid}" = "x" ] ;then
+        mmid=$(hostname -f)
     fi
     if [ "x${mmid}" = "x" ]; then
         mmid="${2:-$(hostname -f)}"
@@ -1153,6 +1157,8 @@ reconfigure() {
     # configure then salt
     for conft in $confs;do
         conf="$(echo "${conft}"|cut -d: -f2-)"
+        # get the minion id from previous conf if exists
+        mid=$(get_minion_id)
         template="$(echo "${conft}"|cut -d: -f-1)"
         if [ ! -e "${conf}" ] || ( echo ${overwrite} | grep -q ${conf} );then
             debug_msg "Overwriting ${conf} from ${template}"
@@ -1161,7 +1167,7 @@ reconfigure() {
         if egrep -q "__(MS_MINIONID|MS_PREFIX|MS_MS|MS_NODETYPE)__" "${conf}"
         then
             "${SED}" -i -r \
-                -e "s/__MS_MINIONID__/$(get_minion_id)/g" \
+                -e "s/__MS_MINIONID__/$mid/g" \
                 -e "s|__MS_PREFIX__|${PREFIX}|g" \
                 -e "s|__MS_MS__|${SALT_MS}|g" \
                 -e "s|__MS_NODETYPE__|$(get_nodetype)|g" \
