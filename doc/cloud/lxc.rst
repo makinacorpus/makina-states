@@ -87,8 +87,9 @@ Arguments:
 Transfer the template to the compute node where you want to spawn containers
 from that image::
 
-   ANSIBLE_TARGETS="$cn,$controller" bin/ansible-playbook \
-    ansible/plays/cloud/sync_container.yml -e "lxc_host=$cn lxc_orig_host=$controller lxc_container_name=$vm_tmpl"
+   ANSIBLE_TARGETS="$cn" ansible-playbook \
+    ansible/plays/cloud/sync_container.yml \
+    -e "lxc_orig_host=$controller lxc_container_name=$vm_tmpl"
 
 Arguments:
 
@@ -126,7 +127,7 @@ Initialise and finish the container provisioning (from template)::
 
 Special case: use overlayfs to create the container::
 
-    ANSIBLE_TARGETS="$cn,$vm" bin/ansible-playbook \
-     ansible/plays/cloud/create_container.yml \
-     -e "lxc_container_name=$vm lxc_from_container=$vm_tmpl lxc_backing_store=overlayfs"
+  ANSIBLE_TARGETS="$cn,$vm" bin/ansible-playbook \
+   ansible/plays/cloud/create_container.yml \
+    -e "lxc_container_name=$vm lxc_from_container=$vm_tmpl lxc_backing_store=overlayfs"
 

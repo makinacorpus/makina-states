@@ -3,5 +3,5 @@
 # see ansible/roles/makinastates_lxc_vars/defaults/main.yml
 # (see the 'all' statement, must be called with -l indicating the host(s) where
 # to create such a container
-- hosts: "{{lxc_host}}"
+- hosts: "all"
   roles: [{role: 'makinastates_lxc_sync'}]
