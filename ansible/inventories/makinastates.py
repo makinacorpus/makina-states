@@ -166,9 +166,22 @@ class MakinaStatesInventory(object):
 
         # if no targets are selected, we compute the whole infrastructure
         # pillar, and this will be long ! (10min on avg inga)
+        full = True
         if self.targets:
-            self.targets = [a for a in self.targets if a in hosts]
-        else:
+            # but if we detect targets, we check if those are single hosts
+            # we will compute pillars only for those hosts
+            full = False
+            targets = set()
+            for a in self.targets:
+                if a not in hosts:
+                    full = True
+                    break
+                targets.add(a)
+            # else if we didnt find one, it may be a group, and
+            # we compute pillar for all hosts
+            if not full:
+                self.targets = list(targets)
+        if full:
             self.targets = [a for a in hosts]
 
         # we then load the pillars from each host as the salt_pillar hostvar
