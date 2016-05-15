@@ -240,8 +240,9 @@ def wait_processes_pool(workers, output_queue, results):
         if item is not None:
             id_ = item['salt_args'][0]
             th = workers.pop(id_, None)
-            th.join(1)
-            th.terminate()
+            if th is not None:
+                th.join(1)
+                th.terminate()
         else:
             msg = ('Waiting for pillars pool(process) to finish {0}'
                    ''.format(' '.join([a for a in workers])))
@@ -270,7 +271,7 @@ def wait_pool(workers, output_queue, results):
             if item is not None:
                 id_ = item[0]
                 th = workers.pop(id_, None)
-                if th.is_alive() and th.ident:
+                if th is not None and th.is_alive() and th.ident:
                     th.join(0.1)
                 handle_result(results, item)
         except Queue.Empty:
