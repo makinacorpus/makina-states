@@ -12,6 +12,7 @@ import msgpack
 import os
 import copy
 import json
+import tempfile
 import hashlib
 import logging
 import time
@@ -53,7 +54,6 @@ def get_registry_formats():
     return copy.deepcopy(REGISTRY_FORMATS)
 
 
-
 # normally not more used
 # def registry_kind_get(kind):
 #     if not kind in _REGISTRY:
@@ -90,6 +90,11 @@ def is_item_active(registry_name,
     if val is _default:
         val = default_status
     return val
+
+
+def get_lock_name(registry_name, registry_format):
+    lockp = 'localregistry_{0}_{1}'.format(registry_name, registry_format)
+    return lockp
 
 
 def load_kind_registries(kind):
@@ -234,26 +239,28 @@ def pack_dump_local_registry(registry):
 
 
 def encode_local_registry(name, registry, registry_format='yaml'):
-    registryf = get_registry_path(
-        name, registry_format=registry_format)
-    dregistry = os.path.dirname(registryf)
-    content = __salt__[
-        'mc_macros.{0}_dump_local_registry'.format(
-            registry_format)](registry)
-    sync = False
-    if os.path.exists(registryf):
-        with open(registryf) as fic:
-            old_content = fic.read()
-            if old_content != content:
-                sync = True
-    else:
-        sync = True
-    if sync:
-        if not os.path.exists(dregistry):
-            os.makedirs(dregistry)
-        with open(registryf, 'w') as fic:
-            fic.write(content)
-    os.chmod(registryf, 0700)
+    lockp = get_lock_name(name, registry_format)
+    with mc_states.api.wait_lock(lockp):
+        registryf = get_registry_path(
+            name, registry_format=registry_format)
+        dregistry = os.path.dirname(registryf)
+        content = __salt__[
+            'mc_macros.{0}_dump_local_registry'.format(
+                registry_format)](registry)
+        sync = False
+        if os.path.exists(registryf):
+            with open(registryf) as fic:
+                old_content = fic.read()
+                if old_content != content:
+                    sync = True
+        else:
+            sync = True
+        if sync:
+            if not os.path.exists(dregistry):
+                os.makedirs(dregistry)
+            with open(registryf, 'w') as fic:
+                fic.write(content)
+        os.chmod(registryf, 0700)
 
 
 def _get_local_registry(name,
@@ -299,10 +306,12 @@ def _get_local_registry(name,
         return registry
     cache_key = RKEY.format(key, registry_format)
     force_run = not cached
-    return __salt__['mc_utils.memoize_cache'](
-        _do, [name, to_load, registry_format], {},
-        cache_key, cachetime, use_memcache=False,
-        force_run=force_run)
+    lockp = get_lock_name(name, registry_format)
+    with mc_states.api.wait_lock(lockp):
+        return __salt__['mc_utils.memoize_cache'](
+            _do, [name, to_load, registry_format], {},
+            cache_key, cachetime, use_memcache=False,
+            force_run=force_run)
 
 
 def _unprefix(registry, name):
@@ -390,9 +399,10 @@ def update_local_registry(registry_name, params, registry_format='yaml'):
     '''
     Alias to update_local_registry
     '''
-    return update_registry_params(registry_name,
-                                  params,
-                                  registry_format=registry_format)
+    ret = update_registry_params(registry_name,
+                                 params,
+                                 registry_format=registry_format)
+    return ret
 
 
 def get_registry(registry_configuration):

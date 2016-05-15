@@ -7,11 +7,10 @@ mc_states_api / general API functions
 =======================================
 
 '''
-# -*- coding: utf-8 -*-
-__docformat__ = 'restructuredtext en'
 import time
 import datetime
 import copy
+import contextlib
 import hashlib
 import json
 import logging
@@ -23,6 +22,9 @@ import salt.output
 from salt.utils.odict import OrderedDict
 import salt.loader
 from mc_states import ping
+import fcntl
+import tempfile
+
 
 try:
     import chardet
@@ -90,6 +92,61 @@ _USE_MEMCACHE_FIRST = OrderedDict()
 _USE_MEMOIZE_FIRST = OrderedDict()
 log = logging.getLogger('mc_states.api')
 OKEYS = {}
+
+
+class LockError(Exception):
+    '''.'''
+
+
+def lock(fd, flags=fcntl.LOCK_NB | fcntl.LOCK_EX):
+    fcntl.flock(fd.fileno(), flags)
+
+
+def unlock(fd):
+    fcntl.flock(fd.fileno(), fcntl.LOCK_UN)
+
+
+@contextlib.contextmanager
+def wait_lock(lockp='lock',
+              wait_timeout=60,
+              logger=None,
+              error_msg='Another instance is locking {lock}'):
+    old_runt = runt = now = time.time()
+    end = now + wait_timeout
+    if logger is None:
+        logger = log
+    if os.path.sep not in lockp:
+        lockp = os.path.join(
+            tempfile.gettempdir(),
+            'makinastates_lock_{0}'.format(lockp))
+    if not os.path.exists(lockp):
+        with open(lockp, 'w') as fic:
+            fic.write('')
+    locko = open(lockp)
+    has_lock = False
+    while time.time() < end:
+        try:
+            lock(locko)
+            has_lock = True
+            break
+        except IOError:
+            if runt - old_runt > 4:
+                old_runt = runt
+                logger.warn('Locked: {0} wait'.format(lockp))
+            runt = time.time()
+            time.sleep(0.5)
+    if not has_lock:
+        raise LockError(error_msg.format(lock=lockp))
+    yield
+    try:
+        if os.path.exists(lockp):
+            os.unlink(lockp)
+    except (OSError, IOError):
+        pass
+    try:
+        unlock(locko)
+    except (OSError, IOError):
+        pass
 
 
 def get_local_cache(key=None):
