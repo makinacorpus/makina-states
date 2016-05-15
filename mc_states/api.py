@@ -119,10 +119,18 @@ def wait_lock(lockp='lock',
         lockp = os.path.join(
             tempfile.gettempdir(),
             'makinastates_lock_{0}'.format(lockp))
-    if not os.path.exists(lockp):
-        with open(lockp, 'w') as fic:
-            fic.write('')
-    locko = open(lockp)
+    locko = None
+    for i in range(10):
+        try:
+            if not os.path.exists(lockp):
+                with open(lockp, 'w') as fic:
+                    fic.write('')
+            locko = open(lockp)
+        except (IOError, OSError):
+            time.sleep(0.5)
+    if locko is None:
+        raise LockError(
+            'Could not get a file in {lock}'.format(lock=lockp))
     has_lock = False
     while time.time() < end:
         try:
