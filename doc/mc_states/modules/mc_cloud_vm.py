@@ -132,7 +132,6 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 'additional_ips': [],
                 'name': _g['id'],
                 'domains': [_g['id']],
-                'ssl_certs': [],
                 'ports': [
                     {'name': 'ssh', 'port': 22, 'protocol': 'tcp'},
                     {'name': 'ssh', 'port': 22, 'protocol': 'udp'},
@@ -389,13 +388,6 @@ def vm_extpillar(id_, limited=False, ttl=60):
         fun = 'mc_cloud_{0}.vm_extpillar'.format(data['vt'])
         data = _s['mc_utils.dictupdate'](_s[fun](id_, data), extdata)
         data['domains'] = domains_for(id_, data['domains'])
-        data['ssl_certs'] = _s['mc_cloud.ssl_certs_for'](
-            id_, data['domains'], data['ssl_certs'])
-        gconf = _s['mc_pillar.get_configuration'](id_)
-        if gconf.get('manage_ssl', True):
-            data['ssl_certs'] = _s['mc_cloud.ssl_certs_for'](
-                id_, data['domains'], data['ssl_certs'])
-            _s['mc_cloud.add_ms_ssl_certs'](data)
         return data
     cache_key = 'mc_cloud_vm.vm_extpillar{0}{1}4'.format(id_, limited)
     return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
@@ -448,10 +440,6 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
                 data[this_host] = vme_settings['target']
             vme_settings['vt'] = vt
             vms_pillar[vm] = vme_settings
-            vgconf = _s['mc_pillar.get_configuration'](vm)
-            if vgconf.get('manage_ssl', True):
-                _s['mc_cloud.add_ms_ssl_certs'](
-                    data, vme_settings)
         return data
     limited = kw.get('limited', False)
     cache_key = 'mc_cloud_vm.ext_pillar{0}{1}{2}2'.format(

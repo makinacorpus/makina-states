@@ -26,13 +26,11 @@ from copy import deepcopy
 import os
 from salt.utils.odict import OrderedDict
 import mc_states.api
-try:
-    import OpenSSL
-    HAS_SSL = True
-except:
-    HAS_SSL = False
+import OpenSSL
+from urllib3.contrib.pyopenssl import get_subj_alt_name
 
 
+HAS_SSL = True  # retrocompat
 __name = 'ssl'
 log = logging.getLogger(__name__)
 PREFIX = 'makina-states.localsettings.ssl'
@@ -67,7 +65,7 @@ def get_cloud_settings():
 
 
 def is_wildcardable(domain):
-    if domain.count('.') >= 2 and not domain.startswith('*.'):
+    if domain.count('.') >= 1 and not domain.startswith('*.'):
         return True
     return False
 
@@ -78,7 +76,11 @@ def get_wildcard(domain):
     # and honnor that we cant wildcard TLD
     # (we should not be a subdomain of a tld domain)
     if is_wildcardable(domain):
-        wdomain = '*.' + '.'.join(domain.split('.')[1:])
+        parts = domain.split('.')
+        if len(parts) > 2:
+            parts = parts[1:]
+        parts.insert(0, '*')
+        wdomain = '.'.join(parts)
     return wdomain
 
 
@@ -198,6 +200,7 @@ def ssl_infos(cert_text, **kw):
             cert subject
     '''
     data = {'cn': None,
+            'altnames': [],
             'subject_r': '',
             'subject': None,
             'issuer': None,
@@ -212,10 +215,17 @@ def ssl_infos(cert_text, **kw):
         except Exception:
             pass
         try:
+            dnss = get_subj_alt_name(cert)
+            for i in dnss:
+                data['altnames'].extend(dnss)
+        except Exception:
+            pass
+        try:
             data['issuer'] = cert.get_issuer()
             data['issuer_r'] = "{0}".format(cert.get_issuer())
         except Exception:
             pass
+        data['altnames'] = __salt__['mc_utils.uniquify'](data['altnames'])
     return data
 
 
@@ -365,7 +375,7 @@ def ssl_chain(common_name, cert_string):
     # else, we got a selfsigned certificate
     else:
         cert = cert_string
-    return cert, chain
+    return cert, chain or ''
 
 
 def selfsigned_last(ctuple):
@@ -402,8 +412,27 @@ def selfsigned_cert(CN,
                     L='Salt Lake City',
                     O='SaltStack',
                     OU=None,
+                    altnames=None,
                     emailAddress='xyz@pdq.net',
                     digest='sha256'):
+    if not altnames:
+        altnames = []
+
+    if CN.count('.') > 1:
+        parts = CN.split('.')
+        for alt in [
+            parts[1:],
+            parts
+        ]:
+            altn = '.'.join(alt)
+            altnames.append(altn)
+
+    alts = set()
+    for i in altnames:
+        if ':' not in i:
+            i = 'DNS:{0}'.format(i)
+        alts.add(i)
+
     # create key
     key = OpenSSL.crypto.PKey()
     key.generate_key(OpenSSL.crypto.TYPE_RSA, bits)
@@ -424,6 +453,11 @@ def selfsigned_cert(CN,
     cert.get_subject().CN = CN
     cert.get_subject().emailAddress = emailAddress
 
+    if alts:
+        alts = ", ".join(list(alts))
+        cert.add_extensions([
+            OpenSSL.crypto.X509Extension('subjectAltName', False, alts)])
+
     cert.set_serial_number(1000)
     cert.set_issuer(cert.get_subject())
     cert.set_pubkey(key)
@@ -433,19 +467,6 @@ def selfsigned_cert(CN,
     keys = OpenSSL.crypto.dump_privatekey(
         OpenSSL.crypto.FILETYPE_PEM, key)
     return certs, keys
-
-
-
-'''
-XXX: for later messing with subjectAltName
-
-            ext = certo.get_ext('subjectAltName')
-            for ev in ext.get_value().split(','):
-                if ev.startswith('DNS:'):
-                    cn = ''.join(ev.split('DNS:')[1:])
-                    if cn not in alts:
-                        alts[cn] = data
-'''
 
 
 def common_settings(ttl=60):
@@ -488,8 +509,10 @@ def common_settings(ttl=60):
                 },
                 'cas': OrderedDict(),
                 'email': 'root@' + _g['fqdn'],
-                'domains': [_g['id'], _o['id'], _g['fqdn']],
-                'certificates_domains_map': OrderedDict(),
+                'domains': ["*.{0}".format(a)
+                            for a in [_g['id'],
+                                      _o['id'],
+                                      _g['fqdn']]],
                 'certificates': OrderedDict()})
         data['cert_days'] = data['ca']['days']
         data['domains'] = _s['mc_utils.uniquify'](data['domains'])
@@ -570,8 +593,11 @@ def get_configured_cert(domain,
             domains.append(wd)
         for d in domains:
             infos = certs.get(d, None)
-            if infos:
-                pretendants.append(infos)
+            if not infos or len(infos) < 3:
+                continue
+            cert, key, chain = infos[0], infos[1], infos[2]
+            if cert:
+                pretendants.append((cert, key, chain))
         if not pretendants:
             if selfsigned:
                 cert = get_selfsigned_cert_for(domain, gen=gen)
@@ -593,42 +619,57 @@ def load_extras(data=None):
     _s = __salt__
     if data is None:
         data = common_settings()
-    certs = data.pop('certificates', {})
+    cacerts = data.pop('cas', OrderedDict())
+    dcacerts = data.setdefault('cas', OrderedDict())
+    certs = data.pop('certificates', OrderedDict())
     dcerts = data.setdefault('certificates', OrderedDict())
-    matches = data.setdefault('certificates_domains_map', OrderedDict())
-    for cert in [a for a in certs]:
-        cdata = certs[cert]
-        do_chain_load = False
-        if len(cdata) < 3:
-            do_chain_load = True
-        if cdata and not do_chain_load and not cdata[2]:
-            if cdata[0].count('BEGIN CERTIFICATE') > 2:
-                do_chain_load = True
-        if not do_chain_load:
-            True
-        if do_chain_load:
-            chain = ssl_chain(cert, cdata[0])
-            key = ssl_key(cdata[1])
-            cdata = chain[0], key, chain[1]
+
+    for cert in [a for a in cacerts]:
+        cdata = cacerts[cert]
+        scert, chain = cdata, ''
+        if cdata[0].count('BEGIN CERTIFICATE') > 1:
+            scert, chain = ssl_chain(cert, scert)
         try:
-            cert = ssl_infos(cdata[0])['subject'].CN
+            si = ssl_infos(scert)
         except Exception:
             log.error('Error while decoding cert: {0}'.format(cert))
-        dcerts[cert] = cdata
-        matched_domains = [cert]
-        # XXX: load also here subAlNames
-        for i in matched_domains + list(data.get('domains', [])):
-            match = matches.setdefault(cert, [])
-            if cert not in match:
-                match.append(cert)
+            continue
+        dcacerts[si['cn']] = scert, chain, si
+
+    for cert in [a for a in certs]:
+        cdata = certs[cert]
+        scert, chain = cdata[0], ''
+        if cdata[0].count('BEGIN CERTIFICATE') > 1:
+            scert, chain = ssl_chain(cert, scert)
+        key = ssl_key(cdata[1])
+        try:
+            si = ssl_infos(scert)
+        except Exception:
+            log.error('Error while decoding cert: {0}'.format(cert))
+            continue
+        dcerts[si['cn']] = scert, key, chain, si
+
     is_travis = _s['mc_nodetypes.is_travis']()
     # even if we make a doublon here, it will be filtered by CN indexing
-    for domain in data['domains']:
-        if domain in matches or is_travis:
+    for d in data['domains']:
+        if is_travis:
             continue
-        cert = get_configured_cert(domain, gen=True, data=data)
-        dcerts[domain] = cert
-        matches[domain] = cert
+        # for staging.foo.net, and we are asking
+        # to generate a cert for *.staging.foo.net
+        # we check that we have not already a certificate for *.foo.net
+        # that would already be usable for staging.foo.net
+        if d.startswith('*.'):
+            uwd = d[2:]
+            wduwd = get_wildcard(uwd)
+            if uwd in dcerts or wduwd in dcerts:
+                continue
+        cert, key, chain = get_configured_cert(d, gen=True, data=data)
+        try:
+            si = ssl_infos(cert)
+        except Exception:
+            log.error('Error while decoding cert: {0}'.format(d))
+            continue
+        dcerts[d] = cert, key, chain, si
     # be sure to index them by the CN defined in the cert
     for cert in data['certificates']:
         cdata = data['certificates'][cert]
@@ -724,7 +765,7 @@ def ca_ssl_certs(domains, gen=False, as_text=False, **kwargs):
     return rdomains
 
 
-def get_cert_infos(cn_or_cert, key=None, ttl=60):
+def get_cert_infos(cn_or_cert, key=None, sinfos=None, ttl=60):
     '''
     Get infos for a certificate, either by being configured by makina-states
     or given in parameters::
@@ -742,7 +783,7 @@ def get_cert_infos(cn_or_cert, key=None, ttl=60):
             -----END PRIVATE KEY-----'
     '''
     _s = __salt__
-    def _do(cn_or_cert, key):
+    def _do(cn_or_cert, key, sinfos):
         settings = common_settings()
         keyc = key
         cn_or_certc = None
@@ -761,11 +802,11 @@ def get_cert_infos(cn_or_cert, key=None, ttl=60):
             else:
                 raise CertificateFileNotFoundError(
                     'invalid key {0}'.format(key))
-        if 'BEGIN CERTIFICATE' in cn_or_cert:
-            cn_or_cert = cn_or_cert.replace(' ', '\n')
-            cn_or_cert = cn_or_cert.replace(
+        if 'BEGIN' in cn_or_cert:
+            cn_or_certc = cn_or_cert.replace(' ', '\n')
+            cn_or_certc = cn_or_cert.replace(
                 'BEGIN\nCERT', 'BEGIN CERT')
-            cn_or_cert = cn_or_cert.replace(
+            cn_or_certc = cn_or_cert.replace(
                 'END\nCERT', 'END CERT')
         elif (
             os.path.exists(cn_or_cert) and '\n' not in cn_or_cert
@@ -773,14 +814,16 @@ def get_cert_infos(cn_or_cert, key=None, ttl=60):
             with open(cn_or_cert) as f:
                 cn_or_certc = f.read()
         if cn_or_certc:
-            sinfos = ssl_infos(cn_or_certc)
+            if sinfos is None:
+                sinfos = ssl_infos(cn_or_certc)
             cert, chain = ssl_chain(sinfos['cn'], cn_or_certc)
             cdata = (cert, keyc, chain)
         else:
-            domain = cn_or_cert
-            cdata = get_configured_cert(domain)
-            sinfos = ssl_infos(cdata[0])
+            cdata = get_configured_cert(cn_or_cert)
+            if sinfos is None:
+                sinfos = ssl_infos(cdata[0])
         cn = sinfos['cn']
+        altnames = sinfos.get('altnames', [])
         if not cn:
             raise CertificateNotFoundError(
                 '{0} is not valid'.format(cn_or_cert))
@@ -788,7 +831,9 @@ def get_cert_infos(cn_or_cert, key=None, ttl=60):
         cpath = os.path.join(settings['config_dir'], 'certs')
         trustpath = os.path.join(settings['config_dir'], 'trust')
         return {'cn': cn,
+                'altnames': altnames,
                 'cert_data': cdata,
+                'cert': '\n'.join([cdata[0], cdata[2] or '']),
                 'crt': '{0}/{1}.crt'.format(cpath, cn),
                 'trust': '{0}/{1}.crt'.format(trustpath, cn),
                 'only': '{0}/{1}.crt'.format(spath, cn),
@@ -797,7 +842,10 @@ def get_cert_infos(cn_or_cert, key=None, ttl=60):
                 'auth': '{0}/{1}-{2}.crt'.format(spath, cn, 'auth'),
                 'authr': '{0}/{1}-{2}.crt'.format(spath, cn, 'authr'),
                 'key': '{0}/{1}.key'.format(spath, cn)}
-    cache_key = 'mc_ssl.get_cert_infos{0}'.format(cn_or_cert.replace('\n', ''))
+    cache_key = 'mc_ssl.get_cert_infos{0}{1}'.format(
+        cn_or_cert.replace('\n', ''),
+        (key or '').replace('\n', ''),
+    )
     return _s['mc_utils.memoize_cache'](
-        _do, [cn_or_cert, key], {}, cache_key, ttl)
+        _do, [cn_or_cert, key, sinfos], {}, cache_key, ttl)
 # vim:set et sts=4 ts=4 tw=80:

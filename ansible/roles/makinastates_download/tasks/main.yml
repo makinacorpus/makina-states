@@ -1,0 +1,12 @@
+---
+- name: test ms dir
+  shell: test -e "{{makinastates_dest}}/.git/config";echo $?
+  tags: [makinastates_setup, makinastates_setup_t]
+  register: makinastates_testmsdir
+
+- name: download makina-states
+  git: repo="{{makinastates_repo}}"
+       dest="{{makinastates_dest}}"
+       version="{{makinastates_version}}"
+  tags: [makinastates, makinastates_setup]
+  when: makinastates_testmsdir.stdout == "1"

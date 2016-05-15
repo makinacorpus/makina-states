@@ -1,6 +1,9 @@
 ---
 dependencies:
   - { role: makinastates_vars}
+  - { role: makinastates_prereqs}
+  - { role: makinastates_download}
+  - { role: makinastates_pillar}
   - { role: makinastates_migv2_setup}
   - { role: makinastates_migv2_install}
   - { role: makinastates_migv2_post}

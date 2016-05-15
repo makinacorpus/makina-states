@@ -1,29 +1,4 @@
 ---
-- name: install prerequisites
-  apt: name={{item}} update_cache=yes
-  with_items:
-    - python
-    - python-chardet
-    - python3-chardet
-    - git
-    - curl
-    - locales
-    - language-pack-fr
-    - language-pack-en
-  tags: [makinastates, makinastates_setup]
-
-- name: test ms dir
-  shell: test -e "{{makinastates_dest}}/.git/config";echo $?
-  tags: [makinastates_setup, makinastates_setup_t]
-  register: makinastates_testmsdir
-
-- name: download makina-states
-  git: repo="{{makinastates_repo}}"
-       dest="{{makinastates_dest}}"
-       version="{{makinastates_version}}"
-  tags: [makinastates, makinastates_setup]
-  when: makinastates_testmsdir.stdout == "1"
-
 - name: run makina-states setup
   shell: |
          {{makinastates_dest}}/bin/boot-salt.sh -C \
