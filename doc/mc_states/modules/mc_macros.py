@@ -38,19 +38,17 @@ _default_activation_status = object()
 _LOCAL_REG_CACHE = {}
 
 
-
 NOT_SHARED = []  # retrocompat
 log = logging.getLogger(__name__)
 DEFAULT_SUF = 'makina-states.local'
 DEFAULT_LOCAL_REG_NAME = '{0}.{{0}}'.format(DEFAULT_SUF)
 RKEY = 'mcreg_{0}_{1}'
-REGISTRY_FORMATS = ['pack', 'yaml']
+REGISTRY_FORMATS = ['pack', 'yaml', 'json']
 _default = object()
 
 
 def get_registry_formats():
     return copy.deepcopy(REGISTRY_FORMATS)
-
 
 
 # normally not more used
@@ -203,9 +201,10 @@ def pack_load_local_registry(name, registryf=None):
                 rvalue = fic.read()
                 value = __salt__['mc_utils.msgpack_load'](
                     rvalue)
-    except msgpack.exceptions.UnpackValueError:
+    except (msgpack.exceptions.UnpackValueError,
+            msgpack.exceptions.ExtraData):
         log.error('decoding error, removing stale {0}'.format(regpath))
-        os.unlink(registryf)
+        os.unlink(regpath)
         value = {}
     return value
 

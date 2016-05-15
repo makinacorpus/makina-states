@@ -28,6 +28,7 @@ except ImportError:
 from mc_states import api
 from mc_states import saltapi
 from mc_states.modules.mc_pillar import PILLAR_TTL
+from mc_states.modules import mc_haproxy
 
 __name = 'mc_cloud_compute_node'
 
@@ -152,7 +153,6 @@ def default_settings():
             'expose_limited': {},
             'domains': [],
             'vts': [],
-            'ssl_certs': [],
             'http_port': 80,
             'https_port': 443,
             'reverse_proxies': default_reverse_proxy(target),
@@ -654,151 +654,30 @@ def default_has(vts=None, **kwargs):
     return vts
 
 
-def _add_server_to_backends(reversep, frontend, backend_name, domain, ip):
-    '''The domain is ppurely informative here'''
-    _s = __salt__
-    kind = 'http'
-    if ' ssl ' in frontend['bind']:
-        kind = 'https'
-    _backends = reversep['{0}_backends'.format(kind)]
-    bck = _backends.setdefault(backend_name, OrderedDict())
-    default_raw_opts = [
-        'balance roundrobin',
-        #  'source 0.0.0.0 usesrc clientip'
-    ]
-    # for now rely on settings xforwardedfor header
-    if reversep['{0}_proxy'.format(kind)].get(
-        'http_proxy_mode', 'xforwardedfor'
-    ) == 'xforwardedfor':
-        # retry to enable full chain keepalive setups
-        # default_raw_opts.append('option http-server-close')
-        default_raw_opts.append('option http-keep-alive')
-        default_raw_opts.append('option forwardfor')
-    bck = _s['mc_utils.dictupdate']({'name': backend_name,
-                                     'raw_opts': [],
-                                     'servers': []}, bck)
-    ssl_srv = {'name': 'srv_ssl_{0}{1}'.format(
-        domain, len(bck['servers']) + 1),
-        'bind': '{0}:443'.format(ip),
-        'opts': 'check weight 100 ssl verify none'}
-    srv = {'name': 'srv_{0}{1}'.format(domain, len(bck['servers']) + 1),
-           'bind': '{0}:80'.format(ip),
-           'opts': 'check weight 50'}
-    servs = [srv]
-    # use backend https server first  and fallback on http
-    if kind == 'https':
-        servs[-1]['opts'] += ' backup'
-        servs.append(ssl_srv)
-    # pylint: disable=w0106
-    noecho = [bck['raw_opts'].append(a)
-              for a in default_raw_opts if a not in bck['raw_opts']]
-    bck['raw_opts'].sort(key=lambda x: x)
-    for srv in servs:
-        if srv['bind'] not in [a.get('bind') for a in bck['servers']]:
-            bck['servers'].append(srv)
-    _backends[backend_name] = bck
-    return reversep
-
-
-def _configure_http_reverses(reversep, domain, ip):
+def _configure_http_reverses(reversep,
+                             domain,
+                             ip,
+                             http_port=None,
+                             https_port=None):
     # http
-    http_proxy = reversep['http_proxy']
-    https_proxy = reversep['https_proxy']
-    dom_id = domain.replace('*', 'star')
-    backend_name = 'bck_{0}'.format(dom_id)
-    sbackend_name = 'securebck_{0}'.format(dom_id)
-    if domain.startswith('*.'):
-        rule = ('acl host_{0} hdr_reg(host)'
-                ' -i ^.*.{1}(:80)?$').format(dom_id, domain[2:])
-    else:
-        rule = ('acl host_{0} hdr_reg(host)'
-                ' -i ^{0}(:80)?$').format(dom_id)
-    rule.replace('.', '\\.')
-    if rule not in http_proxy['raw_opts']:
-        http_proxy['raw_opts'].insert(0, rule)
-        https_proxy['raw_opts'].insert(0, rule.replace(':80', ':443'))
-    rule = 'use_backend {1} if host_{0}'.format(dom_id, backend_name)
-    if rule not in http_proxy['raw_opts']:
-        http_proxy['raw_opts'].append(rule)
-    # https
-    sslr = 'http-request set-header X-SSL %[ssl_fc]'
-    if sslr not in https_proxy['raw_opts']:
-        https_proxy['raw_opts'].insert(0, sslr)
-    rule = 'use_backend {1} if host_{0}'.format(dom_id, sbackend_name)
-    if rule not in https_proxy['raw_opts']:
-        https_proxy['raw_opts'].append(rule)
-    _add_server_to_backends(reversep, http_proxy, backend_name, dom_id, ip)
-    _add_server_to_backends(reversep, https_proxy, sbackend_name, dom_id, ip)
+    http_proxy = reversep['http_proxy'].setdefault(domain, {})
+    https_proxy = reversep['https_proxy'].setdefault(domain, {})
+    for typ, proxy in six.iteritems(
+        {'http': http_proxy, 'https': https_proxy}
+    ):
+        if domain.startswith('*'):
+            hosts = proxy.setdefault('wildcards', [])
+        else:
+            hosts = proxy.setdefault('hosts', [])
+        if domain not in hosts:
+            hosts.append(domain)
+        proxy['ip'] = ip
+        frontends = proxy.setdefault('frontends', {})
+        frontend = frontends.setdefault(
+            {'http': http_port or 80,
+             'https': https_port or 443}[typ], {})
+        frontend.setdefault('mode', typ)
     return reversep
-
-
-def default_http_proxy(target,
-                       proxy_mode=None,
-                       ssl=False,
-                       port=None,
-                       ssl_certs=None,
-                       **kw):
-    if proxy_mode is None:
-        proxy_mode = 'xforwardedfor'
-    name = target
-    extra_bind = ''
-    if ssl:
-        scheme = 'https'
-        extra_bind += ' ssl'
-        if not port:
-            port = 443
-        if ssl_certs:
-            wildcard = __salt__['mc_ssl.get_wildcard'](target)
-            # We must serve the compute node SSL certificate as the default one
-            # search a wildcard
-            if wildcard and wildcard in [a[0] for a in ssl_certs]:
-                first_cert = wildcard
-            # else for the precise domain of the compute node
-            elif target in [a[0] for a in ssl_certs]:
-                first_cert = target
-            # error if we couldnt get any case
-            else:
-                raise ValueError('No such cert for compute node'
-                                 ' {0}'.format(target))
-            extra_bind += (' crt /etc/ssl/cloud/certs/{0}.crt'
-                           ' crt /etc/ssl/cloud/certs').format(first_cert)
-    else:
-        scheme = 'http'
-        if not port:
-            port = 80
-    data = {'name': '{0}-{1}'.format(scheme, name),
-            'mode': 'http',
-            'http_proxy_mode': proxy_mode,
-            'bind': '*:{0}{1}'.format(port, extra_bind),
-            'raw_opts_pre': [],
-            'raw_opts_post': [],
-            'raw_rules_done': False,
-            'raw_opts': []}
-    return data
-
-
-def default_https_proxy(*args, **kw):
-    kw.setdefault('ssl', True)
-    return default_http_proxy(*args, **kw)
-
-
-def _init_http_proxies(data,
-                       port=None,
-                       ssl_port=None,
-                       proxy_mode=None,
-                       ssl_certs=None):
-    for k in ['http', 'https']:
-        port = {'http': port, 'https': ssl_port}[k]
-        key = '{0}_proxy'.format(k)
-        h = __salt__['mc_utils.dictupdate'](
-            default_http_proxy(data['target'],
-                               proxy_mode=proxy_mode,
-                               ssl=k == 'https',
-                               ssl_certs=ssl_certs,
-                               port=port),
-            data[key])
-        data[key] = h
-    return data
 
 
 def feed_http_reverse_proxy_for_target(target_data):
@@ -809,26 +688,14 @@ def feed_http_reverse_proxy_for_target(target_data):
     '''
     _s = __salt__
     reversep = target_data['reverse_proxies']
-    # dict init
-    _init_http_proxies(reversep,
-                       port=target_data.get('http_port', None),
-                       ssl_port=target_data.get('https_port', None),
-                       ssl_certs=target_data.get('ssl_certs', []),
-                       proxy_mode=target_data.get('http_proxy_mode',
-                                                  'xforwardedfor'))
     # http/https automatic rules
     for vmname in target_data['vms']:
         vm = target_data['vms'][vmname]
         for domain in vm['domains']:
-            _configure_http_reverses(reversep, domain, vm['ip'])
-    # http/https raw rules
-    for http_proxy in [reversep['http_proxy'], reversep['https_proxy']]:
-        if not http_proxy.get('raw_rules_done', False):
-            for rule in reversed(http_proxy['raw_opts_pre']):
-                http_proxy['raw_opts'].insert(0, rule)
-            for rule in http_proxy['raw_opts_post']:
-                http_proxy['raw_opts'].append(rule)
-            http_proxy['raw_rules_done'] = False
+            _configure_http_reverses(
+                reversep, domain, vm['ip'],
+                http_port=target_data.get('http_port', None),
+                https_port=target_data.get('https_port', None))
     return target_data
 
 
@@ -953,11 +820,6 @@ def extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
                     'mc_cloud_vm.vm_extpillar_settings'](_vm)
         # can only be done after some infos is loaded
         data['domains'] = domains_for(id_, data['domains'])
-        gconf = _s['mc_pillar.get_configuration'](id_)
-        if gconf.get('manage_ssl', True):
-            data['ssl_certs'] = _s['mc_cloud.ssl_certs_for'](
-                id_, data['domains'], data['ssl_certs'])
-            _s['mc_cloud.add_ms_ssl_certs'](data)
         return data
     cache_key = 'mc_cloud_cn.extpillar_settings{0}{1}'.format(
         id_, limited)
@@ -975,33 +837,19 @@ def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
         data = extpillar_settings(id_, limited=limited)
         # can only be done after some infos is loaded -- part2
         data['reverse_proxies']['target'] = data['target'] = id_
-        haproxy_pre = data.get('haproxy', {}).get('raw_opts_pre', [])
-        haproxy_post = data.get('haproxy', {}).get('raw_opts_post', [])
-        for suf, opts in [
-            a for a in [
-                ['pre', haproxy_pre],
-                ['post', haproxy_post]
-            ] if a[1]
-        ]:
-            for subsection in ['https_proxy', 'http_proxy']:
-                proxy = data['reverse_proxies'].setdefault(
-                    subsection, OrderedDict())
-                proxy['raw_opts_{0}'.format(suf)] = opts
         data = feed_http_reverse_proxy_for_target(data)
         data = feed_sw_reverse_proxies_for_target(data)
         data = feed_network_mappings_for_target(data)
         haproxy_opts = OrderedDict()
         http_proxy = data['reverse_proxies']['http_proxy']
         https_proxy = data['reverse_proxies']['https_proxy']
-        for typ, bdatadict in (
-            ("frontends", {http_proxy['name']:  http_proxy}),
-            ("frontends", {https_proxy['name']: https_proxy}),
-            ("backends", data['reverse_proxies']['http_backends']),
-            ("backends", data['reverse_proxies']['https_backends']),
+        for typ, proxies in (
+            ('http', http_proxy), ('https', https_proxy)
         ):
-            pref = 'makina-states.services.proxy.haproxy'
-            for id_, bdata in bdatadict.items():
-                haproxy_opts[pref + '.{0}.{1}'.format(typ, id_)] = bdata
+            spref = "{0}.mc_cloud_{1}".format(
+                mc_haproxy.registration_prefix, typ)
+            for name, bdatadict in six.iteritems(proxies):
+                haproxy_opts.setdefault(spref, []).append(bdatadict)
         if prefixed:
             data = {PREFIX: data}
         data.update(haproxy_opts)

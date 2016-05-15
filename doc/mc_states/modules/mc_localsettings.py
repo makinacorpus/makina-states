@@ -129,6 +129,7 @@ def registry(ttl=15*60):
             'grub': {'active': False},
             'git': {'active': true},
             'dns': {'active': False},
+            'hostname': {'active': true and not (is_travis or is_docker)},
             'hosts': {'active': true and not (is_travis or is_docker)},
             'jdk': {'active': False},
             'etckeeper': {'active': true and not (is_travis or is_docker)},

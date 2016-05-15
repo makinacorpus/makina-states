@@ -132,7 +132,7 @@ def vt_default_settings(cloudSettings, imgSettings):
                 '/etc/default/lxc-net-makina': {
                     'source':
                     'salt://makina-states/files/etc/'
-                    'default/magicbridge_lxcbr1'},
+                    'default/lxc-net-makina'},
                 '/etc/dnsmasq.lxcbr1/conf.d/makinastates_lxc': {},
                 '/etc/dnsmasq.d/lxcbr1': {},
                 '/etc/dnsmasq.d/lxcbr0': {},

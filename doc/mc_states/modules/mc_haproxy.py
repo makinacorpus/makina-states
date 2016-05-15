@@ -15,8 +15,10 @@ import json
 import logging
 import re
 import os
+import six
 from salt.utils.odict import OrderedDict
 import mc_states.api
+from salt.exceptions import CommandExecutionError
 
 __name = 'haproxy'
 PREFIX ='makina-states.services.proxy.{0}'.format(__name)
@@ -25,7 +27,7 @@ log = logging.getLogger(__name__)
 OBJECT_SANITIZER = re.compile('[\\\@+\$^&~"#\'()\[\]%*.:/]',
                               flags=re.M | re.U | re.X)
 
-registration_prefix = 'nmakina-states.haproxy_registrations'
+registration_prefix = 'makina-states.haproxy_registrations'
 DEFAULT_MODES = {
            9200: 'http',
            80: 'http',
@@ -52,6 +54,16 @@ AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:\
 '''
 
 
+
+def version(default_ver='1.5'):
+    try:
+        ret = __salt__['cmd.run']('haproxy -v')
+        ret = ret.split()[2]
+    except (CommandExecutionError,):
+        ret = default_ver
+    return ret
+
+
 def settings():
     '''
     haproxy settings
@@ -71,14 +83,20 @@ def settings():
         #  'our internal IP address'),
         haproxy_password = _s['mc_utils.generate_stored_password'](
             'mc_haproxy.password')
+        ssl = _s['mc_ssl.settings']()
+        proxy_settings = _s['mc_proxy.settings']()
+        reverse_proxy_addresses = proxy_settings['reverse_proxy_addresses']
         data = {
+            'reverse_proxy_addresses': reverse_proxy_addresses,
             'location': locs['conf_dir'] + '/haproxy',
             'config_dir': '/etc/haproxy',
             'rotate': _s['mc_logrotate.settings']()['days'],
             'config': 'haproxy.cfg',
             'user': 'haproxy',
             'group': 'haproxy',
+            'stats_enabled': True,
             'defaults': {'extra_opts': '', 'enabled': '1'},
+            'crt_dir': ssl['config_dir'] + '/certs',
             'ssl': {
                   'frontend_bind_options': "crt {main_cert} crt {crt_dir}",
                   'bind_options': "no-sslv3 no-tls-tickets",
@@ -191,22 +209,23 @@ def settings():
                 "stats uri /",
                 "stats refresh 5s",
                 "stats realm haproxy\ statistics",
-                    "stats auth {user}:{password}}"]}
+                    "stats auth {user}:{password}"]}
         # if we find in the Pillar some configured certificates, we will use
         # the first found certificate configured for that machine as
         # the default one.
         # Nevertheless, certicates are matched via SNI, the first
         # is always used in THE LAST RESORT
-        ssl = _s['mc_ssl.settings']()
-        for i in ssl['certs']:
-            data['main_cert'] = '{0}/full/{1}.crt'.format(
-                ssl['config_dir'], i)
+        for i, cdata in six.iteritems(ssl['certificates']):
+            cert = _s['mc_ssl.get_cert_infos'](i, sinfos=cdata[3])
+            data['main_cert'] = cert['crt']
         # complete some options after all options collects
-        data['config']['ssl']['frontend_bind_options'] = (
-            data['config']['ssl']['frontend_bind_options'].format(**data)
+        data['ssl']['frontend_bind_options'] = (
+            data['ssl']['frontend_bind_options'].format(**data)
         )
         data = _s['mc_utils.defaults'](PREFIX, data)
         data = make_registrations(haproxy=data)
+        if not data['stats_enabled']:
+            data['listeners'].pop('stats', None)
         return data
     return _settings()
 
@@ -214,6 +233,7 @@ def settings():
 def sanitize(key):
     if isinstance(key, list):
         key = '_'.join(key)
+    key = key.replace('*', 'wildcard')
     return OBJECT_SANITIZER.sub('_', key)
 
 
@@ -316,8 +336,12 @@ def ordered_frontend_opts(opts=None):
             pref += 20
         elif ' wc_' in opt:
             pref += 70
+            if 'wildcard' in opt:
+                pref += 1
         elif ' host_' in opt:
             pref += 50
+            if 'wildcard' in opt:
+                pref += 1
         return '{0:04d}_{1}'.format(pref, opt)
 
     opts.sort(key=sort)
@@ -343,7 +367,7 @@ def register_frontend(port,
         has.update({'ssl': True})
         sbind = '{0} ssl {1}'.format(
            sbind,
-           haproxy['config']['ssl']['frontend_bind_options'])
+           haproxy['ssl']['frontend_bind_options'])
     fr = get_frontend_name(mode, port)
     frontend = frontends.setdefault(fr, {})
     frontend.setdefault('bind', sbind)
@@ -363,9 +387,9 @@ def register_frontend(port,
         aclmodes = (('regex', regexes),
                     ('wildcard', wildcards),
                     ('host', hosts))
-    for aclmode, hosts in aclmodes:
-        if hosts:
-            for match in hosts:
+    for aclmode, chosts in aclmodes:
+        if chosts:
+            for match in chosts:
                 has['backend'] = True
                 bck_name = get_backend_name(
                     mode, port, **{aclmode: match})
@@ -391,11 +415,12 @@ def register_frontend(port,
                     for cfgentry in acls:
                         cfgentry = cfgentry.format(
                             match=(aclmode == 'wildcard' and
-                                   match[2:] or match),
+                                   match[2:] or
+                                   match),
                             sane_match=sane_match,
                             bck_name=bck_name)
-                if cfgentry not in opts:
-                    opts.append(cfgentry)
+                        if cfgentry not in opts:
+                            opts.append(cfgentry)
     if has['ssl'] and not has['main_cert'] or not has['backend']:
         frontends.pop(fr, None)
     return haproxy
@@ -437,7 +462,7 @@ def register_servers_to_backends(port,
                         'opts': 'check weight 50 backup'},
                        {'name': 'srv_{0}_ssl'.format(sane_ip),
                         'bind': '{0}:{1}'.format(ip, to_port),
-                        'opts': 'check weight 100 ssl verify None'}]
+                        'opts': 'check weight 100 ssl verify none'}]
         else:
             servers = [{'name': 'srv_{0}'.format(sane_ip),
                         'bind': '{0}:{1}'.format(ip, to_port),
@@ -464,10 +489,11 @@ def register_servers_to_backends(port,
                 bck_name = get_backend_name(mode, port, **{aclmode: match})
                 backend = backends.setdefault(bck_name, {})
                 backend.setdefault('mode', hmode)
-                if 'raw_opts' not in backend:
-                    bopts = backend.setdefault('raw_opts', [])
+                bopts = backend.setdefault('raw_opts', [])
                 for o in opts:
-                    bopts.append(o.format(user=user, password=password))
+                    o = o.format(user=user, password=password)
+                    if o not in bopts:
+                        bopts.append(o)
                 bopts = backend['raw_opts']
                 bservers = backend.setdefault('servers', [])
                 for server in servers:
@@ -496,31 +522,29 @@ def make_registrations(data=None, haproxy=None):
         a for a in data
         if a.startswith(registration_prefix)
     ]:
-        backendsl = data[k]
-        for haproxy_group, registrations in backendsl.items():
-            definitions = registrations.get(haproxy[haproxy_group], [])
-            for payload in definitions:
-                for port, fdata in payload.get(
-                    'frontends', DEFAULT_FRONTENDS
-                ).items():
-                    port = int(port)
-                    hosts = payload.get('hosts', [])
-                    wildcards = payload.get('wildcards', [])
-                    regexes = payload.get('regexes', [])
-                    to_port = int(fdata.get('to_port', port))
-                    user = fdata.get('user', None)
-                    password = fdata.get('password', None)
-                    mode = fdata.get('mode', DEFAULT_MODES.get(port, 'tcp'))
-                    register_frontend(port, mode, hosts=hosts,
-                                      wildcards=wildcards,
-                                      regexes=regexes,
-                                      haproxy=haproxy)
-                    register_servers_to_backends(
-                        port=port, ip=payload.ip,
-                        to_port=to_port, mode=mode,
-                        user=user, password=password,
-                        hosts=hosts, wildcards=wildcards,
-                        regexes=regexes,
-                        haproxy=haproxy)
+        definitions = data[k]
+        for payload in definitions:
+            for port, fdata in payload.get(
+                'frontends', DEFAULT_FRONTENDS
+            ).items():
+                port = int(port)
+                hosts = payload.get('hosts', [])
+                wildcards = payload.get('wildcards', [])
+                regexes = payload.get('regexes', [])
+                to_port = int(fdata.get('to_port', port))
+                user = fdata.get('user', None)
+                password = fdata.get('password', None)
+                mode = fdata.get('mode', DEFAULT_MODES.get(port, 'tcp'))
+                register_frontend(port, mode, hosts=hosts,
+                                  wildcards=wildcards,
+                                  regexes=regexes,
+                                  haproxy=haproxy)
+                register_servers_to_backends(
+                    port=port, ip=payload['ip'],
+                    to_port=to_port, mode=mode,
+                    user=user, password=password,
+                    hosts=hosts, wildcards=wildcards,
+                    regexes=regexes,
+                    haproxy=haproxy)
     return haproxy
 # vim:set et sts=4 ts=4 tw=80:
