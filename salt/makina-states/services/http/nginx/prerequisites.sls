@@ -27,10 +27,23 @@ nginx-base:
                 Package: nginx
                 Pin: origin "ppa.launchpad.net"
                 Pin-Priority: 9999
+
+                Package: nginx*
+                Pin: origin "ppa.launchpad.net"
+                Pin-Priority: 9999
+
+                Package: nginx-common
+                Pin: origin "ppa.launchpad.net"
+                Pin-Priority: 9999
+
+                Package: nginx-full
+                Pin: origin "ppa.launchpad.net"
+                Pin-Priority: 9999
+
     - mode: 644
     - makedirs: true
     - watch:
-      - mc_proxy: nginx-pre-install-hook 
+      - mc_proxy: nginx-pre-install-hook
     - watch_in:
       - pkgrepo: nginx-base
   pkgrepo.managed:
