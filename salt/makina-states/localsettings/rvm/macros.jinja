@@ -1,0 +1,34 @@
+{%- set rvms = salt['mc_rvm.settings']() %}
+{%- set locs = salt['mc_locations.settings']() %}
+
+{%- macro rvm_env() %}
+    - env:
+      - rvm_prefix: {{locs.rvm_prefix}}
+      - path: {{locs.rvm_path}}
+{%- endmacro %}
+
+{% macro install_ruby(version, suf='') %}
+rvm-{{version}}{{suf}}:
+  cmd.run:
+    - name: {{locs.rvm}} install {{version}} && {{locs.rvm}} fix-permissions
+    - use_vt: true
+    - unless: test -e {{locs.rvm_path}}/rubies/*{{version}}*/bin
+    - require:
+      - mc_proxy: rvm-setup-pre
+    - require_in:
+      - mc_proxy: rvm-setup-post
+{% endmacro %}
+
+{% macro rvm(cmd, state='rvm', version='1.9.3',
+             gemset='global', user='root', vt=True) %}
+{{state}}:
+  cmd.run:
+    - name: >
+            bash --login -c ". /etc/profile
+            && . /usr/local/rvm/scripts/rvm
+            && rvm --create use {{version.strip()}}@{{gemset.strip()}}
+            && {{cmd}}"
+    {% if vt %}
+    - use_vt: {{vt}}
+    {%endif%}
+{% endmacro %}
