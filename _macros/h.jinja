@@ -122,7 +122,9 @@ makina-{{pref}}-{{unit}}-restart-service:
 fail-makina-{{pref}}-{{unit}}-restart-service:
   cmd.run:
     - name: systemctl daemon-reload
-    - onlyif: "systemctl show {{unit}}"
+    - onlyif: |
+              if ! which systemctl >/dev/null 2>&1;then exit 1;fi
+              systemctl show {{unit}}
   {% if restart_macro %}{{restart_macro()}}{%endif%}
   {{service_function}}:
     - name: {{unit}}
