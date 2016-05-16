@@ -1,5 +1,5 @@
 ---
 dependencies:
   - makinastates_vars
-  - makinastates_pillar
   - makinastates_lxc_vars
+  - makinastates_pillar

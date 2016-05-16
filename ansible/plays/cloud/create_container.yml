@@ -3,19 +3,31 @@
 # see ansible/roles/makinastates_lxc_vars/defaults/main.yml
 # (see the 'all' statement, must be called with -l indicating the host(s) where
 # to create such a container
-- hosts: all
-  roles: [{role: 'makinastates_lxc_create'}]
-
-- hosts: "{{lxc_container_name}}"
+#
+# ANSIBLE_TARGETS is the way to specify both the compute node where to init the
+# container, and the container name itself.
+#
+# eg:
+#  ANSIBLE_TARGETS="my_baremetal.foo.net,mylxc.foo.net" \
+#     ansible-playbook a*/p*/c*/create_container.yml
+#
+- hosts: "{{lookup('env', 'ANSIBLE_TARGETS').split(',')[0]}}"
   roles:
+    - role: 'makinastates_lxc_create'
+      lxc_container_name: "{{lookup('env', 'ANSIBLE_TARGETS').split(',')[1]}}"
+
+- hosts: "{{lookup('env', 'ANSIBLE_TARGETS').split(',')[1]}}"
+  roles:
+    - role: makinastates_lxc_vars
     - role: makinastates_presence
+      makinastates_test_first_highstate: true
     - role: makinastates
       makinastates_nodetype: lxccontainer
-      makinastates_version: "{{makinastates_lxc_vars.msg['makinastates_version']}}"
       when: "makinastates_presence.stdout != '0'"
     - role: makinastates_presence
+      makinastates_test_first_highstate: true
       allow_duplicates: true
     - role: makinastates_reconfigure
-      makinastates_minion_id: "{{lxc_container_name}}"
+      makinastates_minion_id: "{{lookup('env', 'ANSIBLE_TARGETS').split(',')[1]}}"
       makinastates_version: "{{makinastates_lxc_vars.msg['makinastates_version']}}"
       when: "makinastates_presence.stdout == '0'"
