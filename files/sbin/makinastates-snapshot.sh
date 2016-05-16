@@ -26,6 +26,13 @@ REMOVE="
 /tmp/.saltcloud
 /root/.cache
 /srv/makina-states/etc/salt/makina-states/nodetype
+/srv/makina-states/var/.first_highstate
+/srv/makina-states/pillar/private.pillar.d/makinastates.json
+/srv/makina-states/var/ansible/ansible-makinastates.cache
+/srv/makina-states/var/ansible/refrech_cache.log
+/srv/makina-states/var/ansible/refrech_cache.lock
+/srv/makina-states/var/ansible/.empty
+/srv/makina-states/var/ansible/list_ansible-makinastates.cache
 /home/*/.cache
 "
 if [ "x${is_docker}" != "x" ];then
@@ -68,6 +75,7 @@ FILE_REMOVE="
 /srv/makina-states/etc/salt/pki
 "
 FILE_WIPE="
+/srv/makina-states/var/log
 /var/log
 "
 # salt cache is relying on semi hardlinks, deleting files from their orig
