@@ -279,6 +279,6 @@ for i in /run/systemd/system /run/uuid;do
     fi
 done
 # if we found the password reset flag, reset any password found
-if [ -e /sbin/reset-passwords.sh ];then /sbin/reset-passwords.sh || /bin/true;fi
+if [ -e /.reset_passwords ];then /sbin/reset-passwords.sh || /bin/true;fi
 exit 0
 # vim:set et sts=4 ts=4 tw=80:
