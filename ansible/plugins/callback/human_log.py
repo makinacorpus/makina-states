@@ -154,6 +154,8 @@ class CallbackModule(CallbackBase):
         else:
             try:
                 sindent = indent
+                if isinstance(val, six.string_types):
+                    val = magicstring(val)
                 sval = "{0}".format(val)
                 if sval.count('\n') > 1 and indent > 1:
                     # dict/iterable element, we nest an indented string for
