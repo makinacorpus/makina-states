@@ -19,24 +19,33 @@ import pprint
 from ansible.plugins.callback import CallbackBase
 
 # Fields to reformat output for
-FIELDS = ['cmd',
-          'diff',
-          'changes',
-          'src',
-          'module_args',
-          'invocation',
-          'block',
+FIELDS = ['block',
+		  'changes',
+		  'comment',
+		  'retcode',
+		  'cli',
+		  'pid',
+		  'id',
+		  'function',
+          'cmd',
           'command',
-          'start',
-          'local',
-          'end',
           'delta',
+		  'mode',
+		  'diff',
+          'end',
+          'invocation',
+          'local',
+          'module_args',
           'msg',
-          'stdout',
-          'stderr',
+          'res'
+          'result'
+          'results'
           'salt_out',
           'saltout',
-          'results']
+          'src',
+          'start',
+          'stderr',
+          'stdout']
 
 try:
     import simplejson as json

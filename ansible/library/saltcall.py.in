@@ -22,6 +22,12 @@ description:
 options:
     function: exec module/fun to call
     args: positional/name args (salt cli formated)
+
+TO maintainers:
+    - do not edit saltcall.py but saltcall.py.in
+    - run hacking/gen_ansible_saltcaller.py to
+      refresh the SALTCALLER SLOT from saltcall.py.in
+      and regerenerate saltcall.py
 '''
 
 EXAMPLES = '''
@@ -29,9 +35,10 @@ EXAMPLES = '''
         function=state.sls args='["makina-states.cloud.generic.dnsconf"]'
 '''
 
-SALTCALLER = """\
-
-"""
+# generated via hacking/gen_ansible_saltcaller.py
+# this embeds the saltcaller script inside the ansible module
+# but not in plain text as ansible would quote it
+SALTCALLER = """"""
 
 
 def main():
@@ -45,10 +52,8 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             loglevel=dict(required=False, default=None, type='str'),
-            saltcaller=dict(required=False, default=None, type='str'),
             function=dict(required=True, default=None, type='str'),
             executable=dict(required=False, default=executable, type='str'),
-            search_sc=dict(required=False, default=True, type='bool'),
             local=dict(required=False, default=None, type='bool'),
             args=dict(required=False, default=None, type='str'),
             verbose=dict(required=False, default=False, type='bool'),
@@ -56,25 +61,7 @@ def main():
             config_dir=dict(required=False, default=None, type='str'),
         )
     )
-    search_sc = module.params.get('search_sc')
-    sc = module.params.get('saltcaller')
-    if not sc and search_sc:
-        for i in ['/srv/makina-states/mc_states/saltcaller.py',
-                  '/srv/salt/makina-states/mc_states/saltcaller.py',
-                  '/srv/mastersalt/makina-states/mc_states/saltcaller.py']:
-            if os.path.exists(i):
-                sc = i
-                break
-    if not sc:
-        sc = SALTCALLER.strip()
-    if not sc:
-        module.fail_json(msg='SaltCaller script not found (code or filepath)')
-    if '\n' not in sc:
-        if os.path.exists(sc):
-            with open(sc) as f:
-                sc = f.read()
-        else:
-            module.fail_json(msg='SaltCaller script not found: {0}'.format(sc))
+    sc = SALTCALLER.decode('base64')
     mod = {}
     if sys.hexversion > 0x03000000:
         exec(compile(sc, '<saltcaller_mod>', 'exec'), mod)
