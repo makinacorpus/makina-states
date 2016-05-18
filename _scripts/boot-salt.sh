@@ -1164,7 +1164,7 @@ reconfigure() {
         bs_log "Reconfiguration skipped"
         return 0
     fi
-    if [ -e ${SALT_MS}/.git/config ];then
+    if [ "x${ONLY_DO_RECONFIGURE}" = "xy" ] && [ -e ${SALT_MS}/.git/config ];then
         if [ "x$(get_git_branch ${SALT_MS})" != "x$(get_ms_branch)" ];then
             bs_log "makina states branch reconfigured from $(get_git_branch ${SALT_MS}) to $(get_ms_branch)"
             synchronize_code --no-deps
