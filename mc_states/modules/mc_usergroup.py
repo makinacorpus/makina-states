@@ -22,10 +22,12 @@ import os
 import logging
 import mc_states.api
 from copy import deepcopy
+import pwd
 
 __name = 'usergroup'
 
 log = logging.getLogger(__name__)
+
 
 
 def get_default_groups():
@@ -69,17 +71,26 @@ def get_default_sysadmins():
     return defaultSysadmins
 
 
-def get_home(user, home=None):
+def get_home(user, home=None, homes=None, not_using_system=False):
     '''get_home'''
+    if home:
+        return home
     locations = __salt__['mc_locations.settings']()
     defaultSysadmins = get_default_sysadmins()
-    if user == 'root':
-        home = locations['root_home_dir']
-    elif user in defaultSysadmins:
-        if not home:
+    if homes is None:
+        homes = locations['users_home_dir']
+    try:
+        if not_using_system:
+            raise KeyError()
+        home = pwd.getpwnam(user).pw_dir
+    except KeyError:
+        if user in ['root']:
+            home = locations['root_home_dir']
+        elif user in defaultSysadmins:
             home = locations['sysadmins_home_dir'] + "/" + user
-    else:
-        home = locations['users_home_dir'] + "/" + user
+            home = os.path.join(homes, id_)
+        else:
+            home = homes + "/" + user
     return home
 
 
@@ -183,7 +194,8 @@ def settings():
             udata = users[i]
             udata.setdefault("groups", [])
             udata.setdefault("system", False)
-            udata.setdefault('home', get_home(i, udata.get('home', None)))
+            udata.setdefault('home',
+                             get_home(i, home=udata.get('home', None)))
             ssh_keys = udata.setdefault('ssh_keys', [])
             ssh_absent_keys = udata.setdefault('ssh_absent_keys', [])
             for k in data['admin']['absent_keys']:

@@ -44,6 +44,7 @@ def main():
     msg = ''
     module = AnsibleModule(
         argument_spec=dict(
+            loglevel=dict(required=False, default=None, type='str'),
             saltcaller=dict(required=False, default=None, type='str'),
             function=dict(required=True, default=None, type='str'),
             executable=dict(required=False, default=executable, type='str'),
@@ -82,6 +83,7 @@ def main():
     verbose = module.params.get('verbose')
     function = module.params.get('function')
     fkwargs = {'no_display_ret': True,
+               'loglevel': module.params.get('loglevel'),
                'timeout': module.params.get('timeout'),
                'local': module.params.get('local'),
                'executable': module.params.get('executable'),
