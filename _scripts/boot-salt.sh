@@ -799,7 +799,115 @@ create_venv_dirs() {
     fi
 }
 
+update_working_copy() {
+    i="${1}"
+    ms="${2:-${SALT_MS}}"
+    is_changeset=""
+    branch_pref=""
+    if [ -e "${i}/.git" ]\
+        && [ "x${DO_SKIP_CHECKOUTS}" = "x" ]; then
+        remote="remotes/origin/"
+        co_branch="master"
+        pref=""
+        if [ "x${i}" = "x${ms}" ]; then
+            co_branch="$(get_ms_branch)"
+            thistest="$(echo "${co_branch}" | grep -q "changeset:";echo "${?}")"
+            if [ "x${thistest}" = "x0" ]; then
+                co_branch="$(sanitize_changeset "${co_branch}")"
+                pref="changeset:"
+                is_changeset="1"
+                branch_pref="changeset_"
+                remote=""
+            fi
+        fi
+        if  [ "x${i}" = "x${ms}/src/salttesting" ] \
+         || [ "x${i}" = "x${ms}/src/SaltTesting" ]; then
+            co_branch="develop"
+        fi
+        if [ "x${i}" = "x${ms}/src/ansible" ]; then
+            co_branch="$(get_ansible_branch)"
+        fi
+        if [ "x${i}" = "x${ms}/src/salt" ]; then
+            co_branch="$(get_salt_branch)"
+        fi
+        if [ "x${QUIET}" = "x" ]; then
+            bs_log "Upgrading ${i}"
+        fi
+        cd "${i}"
+        git fetch --tags origin 1>/dev/null 2>/dev/null
+        git fetch ${QUIET_GIT} origin
+        lbranch="$(get_git_branch .)"
+        if [ "x${lbranch}" != "x${branch_pref}${co_branch}" ]; then
+            if [ "x$(git branch|egrep " ${co_branch}\$" |wc -l|${SED} -e "s/ //g")" != "x0" ]; then
+                # branch already exists
+                if [ "x${QUIET}" = "x" ]; then
+                    bs_log "Switch branch: ${lbranch} -> ${branch_pref}${co_branch}"
+                fi
+                git checkout ${QUIET_GIT} "${branch_pref}""${co_branch}"
+                ret="${?}"
+            else
+                # branch  does not exist yet
+                if [ "x${QUIET}" = "x" ]; then
+                    bs_log "Create & switch on branch: ${branch_pref}${co_branch} from ${lbranch}"
+                fi
+                git checkout ${QUIET_GIT} "${remote}""${co_branch}" -b "${branch_pref}""${co_branch}"
+                ret="${?}"
+            fi
+            if [ "x${ret}" != "x0" ]; then
+                die "Failed to switch branch: ${lbranch} -> ${branch_pref}${co_branch}"
+            else
+                if [ "x${QUIET}" = "x" ]; then
+                    bs_log "Update is necessary"
+                fi
+                SALT_BOOT_NEEDS_RESTART="1"
+            fi
+        else
+            if [ "x${is_changeset}" != "x1" ]; then
+                git diff ${QUIET_GIT} origin/${co_branch} --exit-code 1>/dev/null 2>/dev/null
+                if [ "x${?}" != "x0" ]; then
+                    if [ "x${QUIET}" = "x" ]; then
+                        bs_log "Update is necessary"
+                    fi
+                fi && if \
+                    [ "x${i}" = "x${ms}/src/SaltTesting" ] \
+                    || [ "x${i}" = "x${ms}/src/salttesting" ] \
+                    || [ "x${i}" = "x${ms}/src/docker-py" ]
+                then
+                    git reset ${QUIET_GIT} --hard origin/${co_branch}
+                    die_in_error "${i} git reset failed"
+                else
+                    git merge ${QUIET_GIT} --ff-only origin/${co_branch}
+                    die_in_error "${i} merge forward failed"
+                fi
+                SALT_BOOT_NEEDS_RESTART=1
+            fi
+        fi
+        if [ "x${QUIET}" = "x" ] && echo "${i}" |grep -q ansible; then
+            bs_log "Upgrading ansible submodules"
+            git submodule update --init --recursive
+            die_in_error "${i} submodules upgrade failed"
+        fi
+        if [ "x${?}" = "x0" ]; then
+            increment_gitpack_id
+            if [ "x${QUIET}" = "x" ]; then
+                bs_yellow_log "Downloaded/updated ${i}"
+            fi
+        else
+            die "Failed to download/update ${i}"
+        fi
+        if [ "x${i}" = "x${ms}" ]; then
+            store_conf ms_branch "${pref}${co_branch}"
+        fi
+    fi
+}
+
 synchronize_code() {
+    local nodeps=""
+    for i in "${@}";do
+        if [ "x${i}" = "x--no-deps" ];then
+            nodeps="y"
+        fi
+    done
     if [ "x${DO_SYNC_CODE}" != "xy" ]; then
         bs_log "Sync code skipped"
         return 0
@@ -855,7 +963,9 @@ synchronize_code() {
             fi
         fi
         cd "${ms}"
-        create_venv_dirs "${VENV_PATH}"
+        if [ "x${nodeps}" = "x" ];then
+            create_venv_dirs "${VENV_PATH}"
+        fi
         if [ ! -e src ]; then
             ln -sf "${VENV_PATH}/src" src
         fi
@@ -868,107 +978,16 @@ synchronize_code() {
         if [ ! -e "${ms}" ]; then
             touch "${SALT_MS}/.bootsalt_need_restart"
         fi
-        for i in "${ms}" "${ms}/src/"*;do
-            is_changeset=""
-            branch_pref=""
-            if [ -e "${i}/.git" ]\
-                && [ "x${DO_SKIP_CHECKOUTS}" = "x" ]; then
-                remote="remotes/origin/"
-                co_branch="master"
-                pref=""
-                if [ "x${i}" = "x${ms}" ]; then
-                    co_branch="$(get_ms_branch)"
-                    thistest="$(echo "${co_branch}" | grep -q "changeset:";echo "${?}")"
-                    if [ "x${thistest}" = "x0" ]; then
-                        co_branch="$(sanitize_changeset "${co_branch}")"
-                        pref="changeset:"
-                        is_changeset="1"
-                        branch_pref="changeset_"
-                        remote=""
-                    fi
-                fi
-                if  [ "x${i}" = "x${ms}/src/salttesting" ] \
-                 || [ "x${i}" = "x${ms}/src/SaltTesting" ]; then
-                    co_branch="develop"
-                fi
-                if [ "x${i}" = "x${ms}/src/ansible" ]; then
-                    co_branch="$(get_ansible_branch)"
-                fi
-                if [ "x${i}" = "x${ms}/src/salt" ]; then
-                    co_branch="$(get_salt_branch)"
-                fi
-                if [ "x${QUIET}" = "x" ]; then
-                    bs_log "Upgrading ${i}"
-                fi
-                cd "${i}"
-                git fetch --tags origin 1>/dev/null 2>/dev/null
-                git fetch ${QUIET_GIT} origin
-                lbranch="$(get_git_branch .)"
-                if [ "x${lbranch}" != "x${branch_pref}${co_branch}" ]; then
-                    if [ "x$(git branch|egrep " ${co_branch}\$" |wc -l|${SED} -e "s/ //g")" != "x0" ]; then
-                        # branch already exists
-                        if [ "x${QUIET}" = "x" ]; then
-                            bs_log "Switch branch: ${lbranch} -> ${branch_pref}${co_branch}"
-                        fi
-                        git checkout ${QUIET_GIT} "${branch_pref}""${co_branch}"
-                        ret="${?}"
-                    else
-                        # branch  does not exist yet
-                        if [ "x${QUIET}" = "x" ]; then
-                            bs_log "Create & switch on branch: ${branch_pref}${co_branch} from ${lbranch}"
-                        fi
-                        git checkout ${QUIET_GIT} "${remote}""${co_branch}" -b "${branch_pref}""${co_branch}"
-                        ret="${?}"
-                    fi
-                    if [ "x${ret}" != "x0" ]; then
-                        die "Failed to switch branch: ${lbranch} -> ${branch_pref}${co_branch}"
-                    else
-                        if [ "x${QUIET}" = "x" ]; then
-                            bs_log "Update is necessary"
-                        fi
-                        SALT_BOOT_NEEDS_RESTART="1"
-                    fi
-                else
-                    if [ "x${is_changeset}" != "x1" ]; then
-                        git diff ${QUIET_GIT} origin/${co_branch} --exit-code 1>/dev/null 2>/dev/null
-                        if [ "x${?}" != "x0" ]; then
-                            if [ "x${QUIET}" = "x" ]; then
-                                bs_log "Update is necessary"
-                            fi
-                        fi && if \
-                            [ "x${i}" = "x${ms}/src/SaltTesting" ] \
-                            || [ "x${i}" = "x${ms}/src/salttesting" ] \
-                            || [ "x${i}" = "x${ms}/src/docker-py" ]
-                        then
-                            git reset ${QUIET_GIT} --hard origin/${co_branch}
-                            die_in_error "${i} git reset failed"
-                        else
-                            git merge ${QUIET_GIT} --ff-only origin/${co_branch}
-                            die_in_error "${i} merge forward failed"
-                        fi
-                        SALT_BOOT_NEEDS_RESTART=1
-                    fi
-                fi
-                if [ "x${QUIET}" = "x" ] && echo "${i}" |grep -q ansible; then
-                    bs_log "Upgrading ansible submodules"
-                    git submodule update --init --recursive
-                    die_in_error "${i} submodules upgrade failed"
-                fi
-                if [ "x${?}" = "x0" ]; then
-                    increment_gitpack_id
-                    if [ "x${QUIET}" = "x" ]; then
-                        bs_yellow_log "Downloaded/updated ${i}"
-                    fi
-                else
-                    die "Failed to download/update ${i}"
-                fi
-                if [ "x${i}" = "x${ms}" ]; then
-                    store_conf ms_branch "${pref}${co_branch}"
-                fi
-            fi
-        done
+        update_working_copy "${ms}" "${ms}"
+        if [ "x${nodeps}" = "x" ];then
+            for i in  "${ms}/src/"*;do
+                update_working_copy "${i}"
+            done
+        fi
     fi
-    check_restartmarker_and_maybe_restart
+    if [ "x${nodeps}" = "x" ];then
+        check_restartmarker_and_maybe_restart
+    fi
     if [ "x${QUIET}" = "x" ]; then
         bs_log "Code updated"
     fi
@@ -1144,6 +1163,12 @@ reconfigure() {
     if [ "x${DO_RECONFIGURE}" != "xy" ]; then
         bs_log "Reconfiguration skipped"
         return 0
+    fi
+    if [ -e ${SALT_MS}/.git/config ];then
+        if [ "x$(get_git_branch ${SALT_MS})" != "x$(get_ms_branch)" ];then
+            bs_log "makina states branch reconfigured from $(get_git_branch ${SALT_MS}) to $(get_ms_branch)"
+            synchronize_code --no-deps
+        fi
     fi
     local ansible_localhost="${CONF_ROOT}/ansible/inventories/local"
     overwrite="
