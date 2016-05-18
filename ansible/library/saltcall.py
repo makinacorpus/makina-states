@@ -22,6 +22,12 @@ description:
 options:
     function: exec module/fun to call
     args: positional/name args (salt cli formated)
+
+TO maintainers:
+    - do not edit saltcall.py but saltcall.py.in
+    - run hacking/gen_ansible_saltcaller.py to
+      refresh the SALTCALLER SLOT from saltcall.py.in
+      and regerenerate saltcall.py
 '''
 
 EXAMPLES = '''
@@ -29,548 +35,293 @@ EXAMPLES = '''
         function=state.sls args='["makina-states.cloud.generic.dnsconf"]'
 '''
 
+# generated via hacking/gen_ansible_saltcaller.py
 SALTCALLER = """
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-'''
-
-.. _mc_states_saltcaller
-
-wrappers to salt shell commands
-=================================
-
-This is not included in a salt module and isolated to be
-picklable and used thorough python multiprocessing as a target
-
-
-The module has redundant functions with the makina-states codebase but the goal is that it is selfcontained and dependency less.
-
-'''
-
-import shlex
-import argparse
-import copy
-import cStringIO
-import os
-import pipes
-import subprocess
-import sys
-import six
-import time
-import traceback
-import logging
-import fcntl
-import datetime
-import json
-
-
-try:
-    import chardet
-    HAS_CHARDET = True
-except ImportError:
-    HAS_CHARDET = False
-
-
-_marker = object()
-NO_RETURN = '__CALLER_NO_RETURN__'
-NORETURN_RETCODE = 5
-NODATA_RETCODE = 6
-NODICT_RETCODE = 7
-NO_INNER_DICT_RETCODE = 8
-STATE_RET_IS_NOT_A_DICT_RETCODE = 11
-STATE_FAILED_RETCODE = 9
-TIMEOUT_RETCODE = -666
-NO_RETCODE = -668
-log = logging.getLogger(__name__)
-
-
-def json_load(data):
-    content = data.replace(' ---ANTLISLASH_N--- ', '\n')
-    content = json.loads(content)
-    return content
-
-
-def json_dump(data, pretty=False):
-    if pretty:
-        content = json.dumps(
-            data, indent=4, separators=(',', ': '))
-    else:
-        content = json.dumps(data)
-        content = content.replace('\n', ' ---ANTLISLASH_N--- ')
-    return content
-
-
-def magicstring(thestr):
-    '''
-    Convert any string to UTF-8 ENCODED one
-    '''
-    if not HAS_CHARDET:
-        return thestr
-    seek = False
-    if (
-        isinstance(thestr, (int, float, long,
-                            datetime.date,
-                            datetime.time,
-                            datetime.datetime))
-    ):
-        thestr = "{0}".format(thestr)
-    if isinstance(thestr, unicode):
-        try:
-            thestr = thestr.encode('utf-8')
-        except Exception:
-            seek = True
-    if seek:
-        try:
-            detectedenc = chardet.detect(thestr).get('encoding')
-        except Exception:
-            detectedenc = None
-        if detectedenc:
-            sdetectedenc = detectedenc.lower()
-        else:
-            sdetectedenc = ''
-        if sdetectedenc.startswith('iso-8859'):
-            detectedenc = 'ISO-8859-15'
-
-        found_encodings = [
-            'ISO-8859-15', 'TIS-620', 'EUC-KR',
-            'EUC-JP', 'SHIFT_JIS', 'GB2312', 'utf-8', 'ascii',
-        ]
-        if sdetectedenc not in ('utf-8', 'ascii'):
-            try:
-                if not isinstance(thestr, unicode):
-                    thestr = thestr.decode(detectedenc)
-                thestr = thestr.encode(detectedenc)
-            except Exception:
-                for idx, i in enumerate(found_encodings):
-                    try:
-                        if not isinstance(thestr, unicode) and detectedenc:
-                            thestr = thestr.decode(detectedenc)
-                        thestr = thestr.encode(i)
-                        break
-                    except Exception:
-                        if idx == (len(found_encodings) - 1):
-                            raise
-    if isinstance(thestr, unicode):
-        thestr = thestr.encode('utf-8')
-    thestr = thestr.decode('utf-8').encode('utf-8')
-    return thestr
-
-
-def terminate(process):
-    for i in ['terminate', 'kill']:
-        try:
-            getattr(process, i)()
-        except Exception:
-            pass
-
-
-def do_validate_states(data):
-    if not data:
-        return NODATA_RETCODE
-    if not isinstance(data, dict):
-        return NODICT_RETCODE
-    for i, rdata in data.items():
-        if not isinstance(rdata, dict):
-            return NO_INNER_DICT_RETCODE
-        for j, statedata in rdata.items():
-            if not isinstance(statedata, dict):
-                return STATE_RET_IS_NOT_A_DICT_RETCODE
-            elif statedata.get('result', None) is False:
-                return STATE_FAILED_RETCODE
-    return 0
-
-
-def failed(ret, error=None):
-    ret['status'] = ret['retcode'] == 0
-    if error is not None and not ret['status']:
-        ret['error'] = error
-    if ret['error']:
-        ret['error'] = magicstring(ret['error'])
-    return ret
-
-
-def non_block_read(output):
-    try:
-        fd = output.fileno()
-    except ValueError:
-        return ""
-    else:
-        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-        try:
-            return output.read()
-        except Exception:
-            return ""
-
-
-def do_process_ios(process,
-                   verbose=False,
-                   output_out=sys.stdout,
-                   output_err=sys.stderr,
-                   stdout_pos=None,
-                   stderr_pos=None,
-                   stdout=None,
-                   stderr=None):
-    if stdout is None:
-        stdout = cStringIO.StringIO()
-    if stderr is None:
-        stderr = cStringIO.StringIO()
-    streams = {'out': stdout_pos, 'err': stderr_pos}
-    stdo = non_block_read(process.stdout)
-    stde = non_block_read(process.stderr)
-    if stdo:
-        stdout.write(stdo)
-    if stde:
-        stderr.write(stde)
-    for k, val, out in (
-        ('out', stdout.getvalue(), output_out),
-        ('err', stderr.getvalue(), output_err),
-    ):
-        if not val:
-            continue
-        pos = streams[k]
-        npos = len(val) - 1
-        if val and ((pos == 0) or (npos != pos)):
-            if verbose:
-                out.write(val[pos:])
-        streams[k] = npos
-    return streams['out'], streams['err'], stdo, stde
-
-
-def format_error(ret):
-    '''
-    To avoid large memory usage, only lazy format errors on demand
-    '''
-    return (''
-            '__SALTCALLER_ERROR_{pid}\n'
-            '{error}\n'
-            '__SALTCALLER_END_ERROR_{pid}\n'
-            '').format(**ret)
-
-
-def format_output(ret):
-    '''
-    To avoid large memory usage, only lazy format errors on demand
-    '''
-    return (''
-            '__SALTCALLER_STDERR_{pid}\n'
-            '{stderr}\n'
-            '__SALTCALLER_END_STDERR_{pid}\n'
-            '__SALTCALLER_STDOUT_{pid}\n'
-            '{stdout}\n'
-            '__SALTCALLER_END_STDOUT_{pid}\n'
-            '').format(**ret)
-
-
-def format_output_and_error(ret):
-    '''
-    To avoid large memory usage, only lazy format errors on demand
-    '''
-    return format_error(ret) + format_output(ret)
-
-
-def cmd(args,
-        timeout=None,
-        stdin=None,
-        stdout=None,
-        sleep_interval=None,
-        stderr=None,
-        no_quote=None,
-        verbose=None,
-        env=None):
-    if not sleep_interval:
-        sleep_interval = 0.04
-    if no_quote is None:
-        no_quote = False
-    if not env:
-        env = {}
-    environ = copy.deepcopy(os.environ)
-    environ.update(copy.deepcopy(env))
-    now = time.time()
-    cli = [magicstring(a) for a in args]
-    ospid = pid = os.getpid()
-    if not no_quote:
-        cli = [pipes.quote(a) for a in cli]
-    retcode, force_retcode = None, None
-    stdout_pos, stderr_pos = None, None
-    error = None
-    if stdout is None:
-        stdout = cStringIO.StringIO()
-    if stderr is None:
-        stderr = cStringIO.StringIO()
-    process = None
-    try:
-        process = subprocess.Popen(
-            cli,
-            env=env,
-            stdin=stdin,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-        while True:
-            if pid == ospid or pid is None:
-                pid = process.pid
-            if timeout is not None and (time.time() >= now + timeout):
-                terminate(process)
-                error = (
-                    'job too long to execute, process was killed\n'
-                    '  {0}'
-                ).format(cli)
-                force_retcode = TIMEOUT_RETCODE
-            else:
-                retcode = process.poll()
-                stdout_pos, stderr_pos, stdo, stde = do_process_ios(
-                    process, verbose=verbose,
-                    stdout_pos=stdout_pos, stderr_pos=stderr_pos,
-                    stdout=stdout, stderr=stderr)
-            time.sleep(0.04)
-            if retcode is not None or force_retcode is not None:
-                break
-    except (KeyboardInterrupt, Exception) as exc:
-        trace = traceback.format_exc()
-        print(trace)
-        try:
-            terminate(process)
-        except UnboundLocalError:
-            pass
-        raise exc
-    finally:
-        if process is not None:
-            stdout_pos, stderr_pos, stdo, stde = do_process_ios(
-                process, verbose=verbose,
-                stdout_pos=stdout_pos, stderr_pos=stderr_pos,
-                stdout=stdout, stderr=stderr)
-            try:
-                terminate(process)
-            except UnboundLocalError:
-                pass
-    if force_retcode is not None:
-        retcode = force_retcode
-    if retcode is None:
-        retcode = NO_RETCODE
-    if retcode != 0 and not error:
-        error = 'program error, check std streams'
-    retcode = force_retcode or retcode
-    ret = {'retcode': retcode,
-           'status': None,
-           'error': None,
-           'pid': pid,
-           'cli': ' '.join(cli),
-           'stdout': stdout.getvalue(),
-           'stderr': stderr.getvalue()}
-    failed(ret, error=error)
-    if verbose:
-        print(format_output_and_error(ret))
-    return ret
-
-
-def complex_json_output_simple(string):
-    '''
-    Extract json output from stdout (string parse variant)
-
-    if states garbled the stdout, but we still have a result like::
-
-        ...command gargage output...
-        {"local": true}
-
-    we will try to remove the starting output and so extract
-    the result from the output
-    '''
-    if not isinstance(string, six.string_types):
-        return string
-    ret = _marker
-    for pos, i in enumerate(string):
-        if i == '{':
-            try:
-                ret = json.loads(string[pos:])
-                break
-            except ValueError:
-                pass
-    if ret is _marker:
-        raise ValueError('Cant extract json output')
-    return ret
-
-
-def complex_json_output_multilines(string):
-    '''
-    Extract json output from stdout (lines parse variant)
-
-    if states garbled the stdout, but we still have a result like::
-
-        ...command gargage output...
-        {"local": true}
-
-    we will try to remove the starting output and so extract
-    the result from the output
-    '''
-    if not isinstance(string, six.string_types):
-        return string
-    ret = _marker
-    lines = string.splitlines()
-    for pos, line in enumerate(lines):
-        sline = magicstring(line.strip())
-        if sline.startswith('{'):
-            try:
-                ret = json.loads(''.join([magicstring(a)
-                                          for a in lines[pos:]]))
-                break
-            except ValueError:
-                pass
-    if ret is _marker:
-        raise ValueError('Cant extract json output')
-    return ret
-
-
-def call(func,
-         executable=None,
-         args=None,
-         loglevel=None,
-         config_dir=None,
-         stdin=None,
-         stdout=None,
-         stderr=None,
-         timeout=None,
-         output_queue=None,
-         validate_states=None,
-         retcode_passthrough=None,
-         no_quote=None,
-         sleep_interval=None,
-         local=False,
-         out=None,
-         no_out=NO_RETURN,
-         no_display_ret=None,
-         ret_format=None,
-         verbose=None,
-         env=None):
-    if args is None:
-        args = []
-    if isinstance(args, six.string_types):
-        args = shlex.split(args)
-    if out is None:
-        out = 'json'
-    if ret_format is None:
-        ret_format = 'json'
-    if verbose is None:
-        verbose = False
-    if not executable:
-        executable = 'salt-call'
-    if retcode_passthrough is None:
-        retcode_passthrough = True
-    eargs = []
-    for test, argpart in [
-        (True, [executable]),
-        (local, ['--local']),
-        (retcode_passthrough, ['--retcode-passthrough']),
-        (config_dir, ['-c', config_dir]),
-        (loglevel, ['-l', loglevel]),
-        (out, ['--out', out]),
-        (True, [func] + args)
-    ]:
-        if test:
-            eargs.extend(argpart)
-    ret = cmd(args=eargs, env=env, timeout=timeout,
-              verbose=verbose,
-              no_quote=no_quote, sleep_interval=sleep_interval,
-              stdin=stdin, stderr=stderr, stdout=stdout)
-    decoders = {'json': json_load}
-    encoders = {'json': (lambda x: json_dump(x, pretty=True))}
-    ret['salt_fun'] = func
-    ret['salt_args'] = args
-    ret['salt_out'] = None
-    if out and out in decoders and ret['retcode'] == 0:
-        try:
-            dout = None
-            try:
-                dout = decoders[out](ret['stdout'])
-            except (KeyError, ValueError):
-                if out == 'json':
-                    try:
-                        dout = complex_json_output_multilines(
-                            ret['stdout'])
-                    except (KeyError, ValueError):
-                        dout = complex_json_output_simple(
-                            ret['stdout'])
-                if dout is None:
-                    raise
-            if isinstance(dout, dict):
-                if (
-                    validate_states is not False and
-                    func in ['state.highstate', 'state.sls']
-                ):
-                    src = do_validate_states(dout)
-                    if src and (ret['retcode'] == 0):
-                        ret['retcode'] = src
-                if [a for a in dout] == ['local']:
-                    dout = dout['local']
-            ret['salt_out'] = dout
-        except (KeyError, ValueError):
-            # no json output is equivalent as a failed call
-            ret['retcode'] = NORETURN_RETCODE
-            if not ret['error']:
-                ret['error'] = ''
-            ret['error'] += '\nfailed to decode payload'
-    try:
-        retcode = int(ret['retcode'])
-    except ValueError:
-        retcode = 666
-    ret['retcode'] = retcode
-    if output_queue:
-        output_queue.put(ret)
-    pid = os.getpid()
-    if not no_display_ret:
-        eret = ret
-        if ret_format in encoders:
-            eret = encoders[ret_format](eret)
-        print("__SALTCALLER_RETURN_{0}".format(pid))
-        print(eret)
-        print("__SALTCALLER_END_RETURN_{0}".format(pid))
-    return ret
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('func', nargs=1,
-                        help='salt function to call')
-    parser.add_argument('args',
-                        nargs=argparse.REMAINDER,
-                        help=('function arguments as you would use'
-                              ' on cli to call salt-call'))
-    parser.add_argument('--validate-states',
-                        help=('for states function (sls, highstate),'
-                              ' exist with non-0 status in case of errors'),
-                        default=False, action='store_true')
-    parser.add_argument('--executable')
-    parser.add_argument('-c', '--config-dir')
-    parser.add_argument('--ret-format')
-    parser.add_argument('--local',
-                        help='use --local when calling salt-call',
-                        action='store_true')
-    parser.add_argument('--retcode-passthrough', default=None,
-                        action='store_true')
-    parser.add_argument('--out', default=None)
-    parser.add_argument('-l', '--loglevel')
-    parser.add_argument('--timeout', default=None, type=int)
-    parser.add_argument('--no-quote', action='store_true', default=False)
-    parser.add_argument('-v', '--verbose', action='store_true',
-                        help=('if set, display command output on console'),
-                        default=False)
-    parser.add_argument('--no-display-ret',
-                        help=('Do not display the full return'
-                              ' from process a JSON metadatas'),
-                        action='store_true', default=False)
-    args = parser.parse_args()
-    vopts = vars(args)
-    vopts['func'] = vopts['func'][0]
-    return call(**vopts)
-
-
-if __name__ == '__main__' and not os.environ.get('NO_PYEXEC'):
-    sys.exit(main()['retcode'])
-# vim:set et sts=4 ts=4 tw=0:
-\
-
+Cgpmcm9tIF9fZnV0dXJlX18gaW1wb3J0IGFic29sdXRlX2ltcG9ydApmcm9tIF9fZnV0dXJlX18g
+aW1wb3J0IGRpdmlzaW9uCmZyb20gX19mdXR1cmVfXyBpbXBvcnQgcHJpbnRfZnVuY3Rpb24KJycn
+CgouLiBfbWNfc3RhdGVzX3NhbHRjYWxsZXIKCndyYXBwZXJzIHRvIHNhbHQgc2hlbGwgY29tbWFu
+ZHMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CgpUaGlzIGlzIG5vdCBpbmNsdWRl
+ZCBpbiBhIHNhbHQgbW9kdWxlIGFuZCBpc29sYXRlZCB0byBiZQpwaWNrbGFibGUgYW5kIHVzZWQg
+dGhvcm91Z2ggcHl0aG9uIG11bHRpcHJvY2Vzc2luZyBhcyBhIHRhcmdldAoKClRoZSBtb2R1bGUg
+aGFzIHJlZHVuZGFudCBmdW5jdGlvbnMgd2l0aCB0aGUgbWFraW5hLXN0YXRlcyBjb2RlYmFzZSBi
+dXQgdGhlIGdvYWwgaXMgdGhhdCBpdCBpcyBzZWxmY29udGFpbmVkIGFuZCBkZXBlbmRlbmN5IGxl
+c3MuCgonJycKCmltcG9ydCBzaGxleAppbXBvcnQgYXJncGFyc2UKaW1wb3J0IGNvcHkKaW1wb3J0
+IGNTdHJpbmdJTwppbXBvcnQgb3MKaW1wb3J0IHBpcGVzCmltcG9ydCBzdWJwcm9jZXNzCmltcG9y
+dCBzeXMKaW1wb3J0IHNpeAppbXBvcnQgdGltZQppbXBvcnQgdHJhY2ViYWNrCmltcG9ydCBsb2dn
+aW5nCmltcG9ydCBmY250bAppbXBvcnQgZGF0ZXRpbWUKaW1wb3J0IGpzb24KCgp0cnk6CiAgICBp
+bXBvcnQgY2hhcmRldAogICAgSEFTX0NIQVJERVQgPSBUcnVlCmV4Y2VwdCBJbXBvcnRFcnJvcjoK
+ICAgIEhBU19DSEFSREVUID0gRmFsc2UKCgpfbWFya2VyID0gb2JqZWN0KCkKTk9fUkVUVVJOID0g
+J19fQ0FMTEVSX05PX1JFVFVSTl9fJwpOT1JFVFVSTl9SRVRDT0RFID0gNQpOT0RBVEFfUkVUQ09E
+RSA9IDYKTk9ESUNUX1JFVENPREUgPSA3Ck5PX0lOTkVSX0RJQ1RfUkVUQ09ERSA9IDgKU1RBVEVf
+UkVUX0lTX05PVF9BX0RJQ1RfUkVUQ09ERSA9IDExClNUQVRFX0ZBSUxFRF9SRVRDT0RFID0gOQpU
+SU1FT1VUX1JFVENPREUgPSAtNjY2Ck5PX1JFVENPREUgPSAtNjY4CmxvZyA9IGxvZ2dpbmcuZ2V0
+TG9nZ2VyKF9fbmFtZV9fKQoKCmRlZiBqc29uX2xvYWQoZGF0YSk6CiAgICBjb250ZW50ID0gZGF0
+YS5yZXBsYWNlKCcgLS0tQU5UTElTTEFTSF9OLS0tICcsICdcbicpCiAgICBjb250ZW50ID0ganNv
+bi5sb2Fkcyhjb250ZW50KQogICAgcmV0dXJuIGNvbnRlbnQKCgpkZWYganNvbl9kdW1wKGRhdGEs
+IHByZXR0eT1GYWxzZSk6CiAgICBpZiBwcmV0dHk6CiAgICAgICAgY29udGVudCA9IGpzb24uZHVt
+cHMoCiAgICAgICAgICAgIGRhdGEsIGluZGVudD00LCBzZXBhcmF0b3JzPSgnLCcsICc6ICcpKQog
+ICAgZWxzZToKICAgICAgICBjb250ZW50ID0ganNvbi5kdW1wcyhkYXRhKQogICAgICAgIGNvbnRl
+bnQgPSBjb250ZW50LnJlcGxhY2UoJ1xuJywgJyAtLS1BTlRMSVNMQVNIX04tLS0gJykKICAgIHJl
+dHVybiBjb250ZW50CgoKZGVmIG1hZ2ljc3RyaW5nKHRoZXN0cik6CiAgICAnJycKICAgIENvbnZl
+cnQgYW55IHN0cmluZyB0byBVVEYtOCBFTkNPREVEIG9uZQogICAgJycnCiAgICBpZiBub3QgSEFT
+X0NIQVJERVQ6CiAgICAgICAgcmV0dXJuIHRoZXN0cgogICAgc2VlayA9IEZhbHNlCiAgICBpZiAo
+CiAgICAgICAgaXNpbnN0YW5jZSh0aGVzdHIsIChpbnQsIGZsb2F0LCBsb25nLAogICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgZGF0ZXRpbWUuZGF0ZSwKICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgIGRhdGV0aW1lLnRpbWUsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICBkYXRldGltZS5k
+YXRldGltZSkpCiAgICApOgogICAgICAgIHRoZXN0ciA9ICJ7MH0iLmZvcm1hdCh0aGVzdHIpCiAg
+ICBpZiBpc2luc3RhbmNlKHRoZXN0ciwgdW5pY29kZSk6CiAgICAgICAgdHJ5OgogICAgICAgICAg
+ICB0aGVzdHIgPSB0aGVzdHIuZW5jb2RlKCd1dGYtOCcpCiAgICAgICAgZXhjZXB0IEV4Y2VwdGlv
+bjoKICAgICAgICAgICAgc2VlayA9IFRydWUKICAgIGlmIHNlZWs6CiAgICAgICAgdHJ5OgogICAg
+ICAgICAgICBkZXRlY3RlZGVuYyA9IGNoYXJkZXQuZGV0ZWN0KHRoZXN0cikuZ2V0KCdlbmNvZGlu
+ZycpCiAgICAgICAgZXhjZXB0IEV4Y2VwdGlvbjoKICAgICAgICAgICAgZGV0ZWN0ZWRlbmMgPSBO
+b25lCiAgICAgICAgaWYgZGV0ZWN0ZWRlbmM6CiAgICAgICAgICAgIHNkZXRlY3RlZGVuYyA9IGRl
+dGVjdGVkZW5jLmxvd2VyKCkKICAgICAgICBlbHNlOgogICAgICAgICAgICBzZGV0ZWN0ZWRlbmMg
+PSAnJwogICAgICAgIGlmIHNkZXRlY3RlZGVuYy5zdGFydHN3aXRoKCdpc28tODg1OScpOgogICAg
+ICAgICAgICBkZXRlY3RlZGVuYyA9ICdJU08tODg1OS0xNScKCiAgICAgICAgZm91bmRfZW5jb2Rp
+bmdzID0gWwogICAgICAgICAgICAnSVNPLTg4NTktMTUnLCAnVElTLTYyMCcsICdFVUMtS1InLAog
+ICAgICAgICAgICAnRVVDLUpQJywgJ1NISUZUX0pJUycsICdHQjIzMTInLCAndXRmLTgnLCAnYXNj
+aWknLAogICAgICAgIF0KICAgICAgICBpZiBzZGV0ZWN0ZWRlbmMgbm90IGluICgndXRmLTgnLCAn
+YXNjaWknKToKICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgaWYgbm90IGlzaW5zdGFu
+Y2UodGhlc3RyLCB1bmljb2RlKToKICAgICAgICAgICAgICAgICAgICB0aGVzdHIgPSB0aGVzdHIu
+ZGVjb2RlKGRldGVjdGVkZW5jKQogICAgICAgICAgICAgICAgdGhlc3RyID0gdGhlc3RyLmVuY29k
+ZShkZXRlY3RlZGVuYykKICAgICAgICAgICAgZXhjZXB0IEV4Y2VwdGlvbjoKICAgICAgICAgICAg
+ICAgIGZvciBpZHgsIGkgaW4gZW51bWVyYXRlKGZvdW5kX2VuY29kaW5ncyk6CiAgICAgICAgICAg
+ICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgICAgICAgICBpZiBub3QgaXNpbnN0YW5jZSh0
+aGVzdHIsIHVuaWNvZGUpIGFuZCBkZXRlY3RlZGVuYzoKICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgIHRoZXN0ciA9IHRoZXN0ci5kZWNvZGUoZGV0ZWN0ZWRlbmMpCiAgICAgICAgICAgICAgICAg
+ICAgICAgIHRoZXN0ciA9IHRoZXN0ci5lbmNvZGUoaSkKICAgICAgICAgICAgICAgICAgICAgICAg
+YnJlYWsKICAgICAgICAgICAgICAgICAgICBleGNlcHQgRXhjZXB0aW9uOgogICAgICAgICAgICAg
+ICAgICAgICAgICBpZiBpZHggPT0gKGxlbihmb3VuZF9lbmNvZGluZ3MpIC0gMSk6CiAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICByYWlzZQogICAgaWYgaXNpbnN0YW5jZSh0aGVzdHIsIHVuaWNv
+ZGUpOgogICAgICAgIHRoZXN0ciA9IHRoZXN0ci5lbmNvZGUoJ3V0Zi04JykKICAgIHRoZXN0ciA9
+IHRoZXN0ci5kZWNvZGUoJ3V0Zi04JykuZW5jb2RlKCd1dGYtOCcpCiAgICByZXR1cm4gdGhlc3Ry
+CgoKZGVmIHRlcm1pbmF0ZShwcm9jZXNzKToKICAgIGZvciBpIGluIFsndGVybWluYXRlJywgJ2tp
+bGwnXToKICAgICAgICB0cnk6CiAgICAgICAgICAgIGdldGF0dHIocHJvY2VzcywgaSkoKQogICAg
+ICAgIGV4Y2VwdCBFeGNlcHRpb246CiAgICAgICAgICAgIHBhc3MKCgpkZWYgZG9fdmFsaWRhdGVf
+c3RhdGVzKGRhdGEpOgogICAgaWYgbm90IGRhdGE6CiAgICAgICAgcmV0dXJuIE5PREFUQV9SRVRD
+T0RFCiAgICBpZiBub3QgaXNpbnN0YW5jZShkYXRhLCBkaWN0KToKICAgICAgICByZXR1cm4gTk9E
+SUNUX1JFVENPREUKICAgIGZvciBpLCByZGF0YSBpbiBkYXRhLml0ZW1zKCk6CiAgICAgICAgaWYg
+bm90IGlzaW5zdGFuY2UocmRhdGEsIGRpY3QpOgogICAgICAgICAgICByZXR1cm4gTk9fSU5ORVJf
+RElDVF9SRVRDT0RFCiAgICAgICAgZm9yIGosIHN0YXRlZGF0YSBpbiByZGF0YS5pdGVtcygpOgog
+ICAgICAgICAgICBpZiBub3QgaXNpbnN0YW5jZShzdGF0ZWRhdGEsIGRpY3QpOgogICAgICAgICAg
+ICAgICAgcmV0dXJuIFNUQVRFX1JFVF9JU19OT1RfQV9ESUNUX1JFVENPREUKICAgICAgICAgICAg
+ZWxpZiBzdGF0ZWRhdGEuZ2V0KCdyZXN1bHQnLCBOb25lKSBpcyBGYWxzZToKICAgICAgICAgICAg
+ICAgIHJldHVybiBTVEFURV9GQUlMRURfUkVUQ09ERQogICAgcmV0dXJuIDAKCgpkZWYgZmFpbGVk
+KHJldCwgZXJyb3I9Tm9uZSk6CiAgICByZXRbJ3N0YXR1cyddID0gcmV0WydyZXRjb2RlJ10gPT0g
+MAogICAgaWYgZXJyb3IgaXMgbm90IE5vbmUgYW5kIG5vdCByZXRbJ3N0YXR1cyddOgogICAgICAg
+IHJldFsnZXJyb3InXSA9IGVycm9yCiAgICBpZiByZXRbJ2Vycm9yJ106CiAgICAgICAgcmV0Wydl
+cnJvciddID0gbWFnaWNzdHJpbmcocmV0WydlcnJvciddKQogICAgcmV0dXJuIHJldAoKCmRlZiBu
+b25fYmxvY2tfcmVhZChvdXRwdXQpOgogICAgdHJ5OgogICAgICAgIGZkID0gb3V0cHV0LmZpbGVu
+bygpCiAgICBleGNlcHQgVmFsdWVFcnJvcjoKICAgICAgICByZXR1cm4gIiIKICAgIGVsc2U6CiAg
+ICAgICAgZmwgPSBmY250bC5mY250bChmZCwgZmNudGwuRl9HRVRGTCkKICAgICAgICBmY250bC5m
+Y250bChmZCwgZmNudGwuRl9TRVRGTCwgZmwgfCBvcy5PX05PTkJMT0NLKQogICAgICAgIHRyeToK
+ICAgICAgICAgICAgcmV0dXJuIG91dHB1dC5yZWFkKCkKICAgICAgICBleGNlcHQgRXhjZXB0aW9u
+OgogICAgICAgICAgICByZXR1cm4gIiIKCgpkZWYgZG9fcHJvY2Vzc19pb3MocHJvY2VzcywKICAg
+ICAgICAgICAgICAgICAgIHZlcmJvc2U9RmFsc2UsCiAgICAgICAgICAgICAgICAgICBvdXRwdXRf
+b3V0PXN5cy5zdGRvdXQsCiAgICAgICAgICAgICAgICAgICBvdXRwdXRfZXJyPXN5cy5zdGRlcnIs
+CiAgICAgICAgICAgICAgICAgICBzdGRvdXRfcG9zPU5vbmUsCiAgICAgICAgICAgICAgICAgICBz
+dGRlcnJfcG9zPU5vbmUsCiAgICAgICAgICAgICAgICAgICBzdGRvdXQ9Tm9uZSwKICAgICAgICAg
+ICAgICAgICAgIHN0ZGVycj1Ob25lKToKICAgIGlmIHN0ZG91dCBpcyBOb25lOgogICAgICAgIHN0
+ZG91dCA9IGNTdHJpbmdJTy5TdHJpbmdJTygpCiAgICBpZiBzdGRlcnIgaXMgTm9uZToKICAgICAg
+ICBzdGRlcnIgPSBjU3RyaW5nSU8uU3RyaW5nSU8oKQogICAgc3RyZWFtcyA9IHsnb3V0Jzogc3Rk
+b3V0X3BvcywgJ2Vycic6IHN0ZGVycl9wb3N9CiAgICBzdGRvID0gbm9uX2Jsb2NrX3JlYWQocHJv
+Y2Vzcy5zdGRvdXQpCiAgICBzdGRlID0gbm9uX2Jsb2NrX3JlYWQocHJvY2Vzcy5zdGRlcnIpCiAg
+ICBpZiBzdGRvOgogICAgICAgIHN0ZG91dC53cml0ZShzdGRvKQogICAgaWYgc3RkZToKICAgICAg
+ICBzdGRlcnIud3JpdGUoc3RkZSkKICAgIGZvciBrLCB2YWwsIG91dCBpbiAoCiAgICAgICAgKCdv
+dXQnLCBzdGRvdXQuZ2V0dmFsdWUoKSwgb3V0cHV0X291dCksCiAgICAgICAgKCdlcnInLCBzdGRl
+cnIuZ2V0dmFsdWUoKSwgb3V0cHV0X2VyciksCiAgICApOgogICAgICAgIGlmIG5vdCB2YWw6CiAg
+ICAgICAgICAgIGNvbnRpbnVlCiAgICAgICAgcG9zID0gc3RyZWFtc1trXQogICAgICAgIG5wb3Mg
+PSBsZW4odmFsKSAtIDEKICAgICAgICBpZiB2YWwgYW5kICgocG9zID09IDApIG9yIChucG9zICE9
+IHBvcykpOgogICAgICAgICAgICBpZiB2ZXJib3NlOgogICAgICAgICAgICAgICAgb3V0LndyaXRl
+KHZhbFtwb3M6XSkKICAgICAgICBzdHJlYW1zW2tdID0gbnBvcwogICAgcmV0dXJuIHN0cmVhbXNb
+J291dCddLCBzdHJlYW1zWydlcnInXSwgc3Rkbywgc3RkZQoKCmRlZiBmb3JtYXRfZXJyb3IocmV0
+KToKICAgICcnJwogICAgVG8gYXZvaWQgbGFyZ2UgbWVtb3J5IHVzYWdlLCBvbmx5IGxhenkgZm9y
+bWF0IGVycm9ycyBvbiBkZW1hbmQKICAgICcnJwogICAgcmV0dXJuICgnJwogICAgICAgICAgICAn
+X19TQUxUQ0FMTEVSX0VSUk9SX3twaWR9XG4nCiAgICAgICAgICAgICd7ZXJyb3J9XG4nCiAgICAg
+ICAgICAgICdfX1NBTFRDQUxMRVJfRU5EX0VSUk9SX3twaWR9XG4nCiAgICAgICAgICAgICcnKS5m
+b3JtYXQoKipyZXQpCgoKZGVmIGZvcm1hdF9vdXRwdXQocmV0KToKICAgICcnJwogICAgVG8gYXZv
+aWQgbGFyZ2UgbWVtb3J5IHVzYWdlLCBvbmx5IGxhenkgZm9ybWF0IGVycm9ycyBvbiBkZW1hbmQK
+ICAgICcnJwogICAgcmV0dXJuICgnJwogICAgICAgICAgICAnX19TQUxUQ0FMTEVSX1NUREVSUl97
+cGlkfVxuJwogICAgICAgICAgICAne3N0ZGVycn1cbicKICAgICAgICAgICAgJ19fU0FMVENBTExF
+Ul9FTkRfU1RERVJSX3twaWR9XG4nCiAgICAgICAgICAgICdfX1NBTFRDQUxMRVJfU1RET1VUX3tw
+aWR9XG4nCiAgICAgICAgICAgICd7c3Rkb3V0fVxuJwogICAgICAgICAgICAnX19TQUxUQ0FMTEVS
+X0VORF9TVERPVVRfe3BpZH1cbicKICAgICAgICAgICAgJycpLmZvcm1hdCgqKnJldCkKCgpkZWYg
+Zm9ybWF0X291dHB1dF9hbmRfZXJyb3IocmV0KToKICAgICcnJwogICAgVG8gYXZvaWQgbGFyZ2Ug
+bWVtb3J5IHVzYWdlLCBvbmx5IGxhenkgZm9ybWF0IGVycm9ycyBvbiBkZW1hbmQKICAgICcnJwog
+ICAgcmV0dXJuIGZvcm1hdF9lcnJvcihyZXQpICsgZm9ybWF0X291dHB1dChyZXQpCgoKZGVmIGNt
+ZChhcmdzLAogICAgICAgIHRpbWVvdXQ9Tm9uZSwKICAgICAgICBzdGRpbj1Ob25lLAogICAgICAg
+IHN0ZG91dD1Ob25lLAogICAgICAgIHNsZWVwX2ludGVydmFsPU5vbmUsCiAgICAgICAgc3RkZXJy
+PU5vbmUsCiAgICAgICAgbm9fcXVvdGU9Tm9uZSwKICAgICAgICB2ZXJib3NlPU5vbmUsCiAgICAg
+ICAgZW52PU5vbmUpOgogICAgaWYgbm90IHNsZWVwX2ludGVydmFsOgogICAgICAgIHNsZWVwX2lu
+dGVydmFsID0gMC4wNAogICAgaWYgbm9fcXVvdGUgaXMgTm9uZToKICAgICAgICBub19xdW90ZSA9
+IEZhbHNlCiAgICBpZiBub3QgZW52OgogICAgICAgIGVudiA9IHt9CiAgICBlbnZpcm9uID0gY29w
+eS5kZWVwY29weShvcy5lbnZpcm9uKQogICAgZW52aXJvbi51cGRhdGUoY29weS5kZWVwY29weShl
+bnYpKQogICAgbm93ID0gdGltZS50aW1lKCkKICAgIGNsaSA9IFttYWdpY3N0cmluZyhhKSBmb3Ig
+YSBpbiBhcmdzXQogICAgb3NwaWQgPSBwaWQgPSBvcy5nZXRwaWQoKQogICAgaWYgbm90IG5vX3F1
+b3RlOgogICAgICAgIGNsaSA9IFtwaXBlcy5xdW90ZShhKSBmb3IgYSBpbiBjbGldCiAgICByZXRj
+b2RlLCBmb3JjZV9yZXRjb2RlID0gTm9uZSwgTm9uZQogICAgc3Rkb3V0X3Bvcywgc3RkZXJyX3Bv
+cyA9IE5vbmUsIE5vbmUKICAgIGVycm9yID0gTm9uZQogICAgaWYgc3Rkb3V0IGlzIE5vbmU6CiAg
+ICAgICAgc3Rkb3V0ID0gY1N0cmluZ0lPLlN0cmluZ0lPKCkKICAgIGlmIHN0ZGVyciBpcyBOb25l
+OgogICAgICAgIHN0ZGVyciA9IGNTdHJpbmdJTy5TdHJpbmdJTygpCiAgICBwcm9jZXNzID0gTm9u
+ZQogICAgdHJ5OgogICAgICAgIHByb2Nlc3MgPSBzdWJwcm9jZXNzLlBvcGVuKAogICAgICAgICAg
+ICBjbGksCiAgICAgICAgICAgIGVudj1lbnYsCiAgICAgICAgICAgIHN0ZGluPXN0ZGluLAogICAg
+ICAgICAgICBzdGRvdXQ9c3VicHJvY2Vzcy5QSVBFLAogICAgICAgICAgICBzdGRlcnI9c3VicHJv
+Y2Vzcy5QSVBFKQogICAgICAgIHdoaWxlIFRydWU6CiAgICAgICAgICAgIGlmIHBpZCA9PSBvc3Bp
+ZCBvciBwaWQgaXMgTm9uZToKICAgICAgICAgICAgICAgIHBpZCA9IHByb2Nlc3MucGlkCiAgICAg
+ICAgICAgIGlmIHRpbWVvdXQgaXMgbm90IE5vbmUgYW5kICh0aW1lLnRpbWUoKSA+PSBub3cgKyB0
+aW1lb3V0KToKICAgICAgICAgICAgICAgIHRlcm1pbmF0ZShwcm9jZXNzKQogICAgICAgICAgICAg
+ICAgZXJyb3IgPSAoCiAgICAgICAgICAgICAgICAgICAgJ2pvYiB0b28gbG9uZyB0byBleGVjdXRl
+LCBwcm9jZXNzIHdhcyBraWxsZWRcbicKICAgICAgICAgICAgICAgICAgICAnICB7MH0nCiAgICAg
+ICAgICAgICAgICApLmZvcm1hdChjbGkpCiAgICAgICAgICAgICAgICBmb3JjZV9yZXRjb2RlID0g
+VElNRU9VVF9SRVRDT0RFCiAgICAgICAgICAgIGVsc2U6CiAgICAgICAgICAgICAgICByZXRjb2Rl
+ID0gcHJvY2Vzcy5wb2xsKCkKICAgICAgICAgICAgICAgIHN0ZG91dF9wb3MsIHN0ZGVycl9wb3Ms
+IHN0ZG8sIHN0ZGUgPSBkb19wcm9jZXNzX2lvcygKICAgICAgICAgICAgICAgICAgICBwcm9jZXNz
+LCB2ZXJib3NlPXZlcmJvc2UsCiAgICAgICAgICAgICAgICAgICAgc3Rkb3V0X3Bvcz1zdGRvdXRf
+cG9zLCBzdGRlcnJfcG9zPXN0ZGVycl9wb3MsCiAgICAgICAgICAgICAgICAgICAgc3Rkb3V0PXN0
+ZG91dCwgc3RkZXJyPXN0ZGVycikKICAgICAgICAgICAgdGltZS5zbGVlcCgwLjA0KQogICAgICAg
+ICAgICBpZiByZXRjb2RlIGlzIG5vdCBOb25lIG9yIGZvcmNlX3JldGNvZGUgaXMgbm90IE5vbmU6
+CiAgICAgICAgICAgICAgICBicmVhawogICAgZXhjZXB0IChLZXlib2FyZEludGVycnVwdCwgRXhj
+ZXB0aW9uKSBhcyBleGM6CiAgICAgICAgdHJhY2UgPSB0cmFjZWJhY2suZm9ybWF0X2V4YygpCiAg
+ICAgICAgcHJpbnQodHJhY2UpCiAgICAgICAgdHJ5OgogICAgICAgICAgICB0ZXJtaW5hdGUocHJv
+Y2VzcykKICAgICAgICBleGNlcHQgVW5ib3VuZExvY2FsRXJyb3I6CiAgICAgICAgICAgIHBhc3MK
+ICAgICAgICByYWlzZSBleGMKICAgIGZpbmFsbHk6CiAgICAgICAgaWYgcHJvY2VzcyBpcyBub3Qg
+Tm9uZToKICAgICAgICAgICAgc3Rkb3V0X3Bvcywgc3RkZXJyX3Bvcywgc3Rkbywgc3RkZSA9IGRv
+X3Byb2Nlc3NfaW9zKAogICAgICAgICAgICAgICAgcHJvY2VzcywgdmVyYm9zZT12ZXJib3NlLAog
+ICAgICAgICAgICAgICAgc3Rkb3V0X3Bvcz1zdGRvdXRfcG9zLCBzdGRlcnJfcG9zPXN0ZGVycl9w
+b3MsCiAgICAgICAgICAgICAgICBzdGRvdXQ9c3Rkb3V0LCBzdGRlcnI9c3RkZXJyKQogICAgICAg
+ICAgICB0cnk6CiAgICAgICAgICAgICAgICB0ZXJtaW5hdGUocHJvY2VzcykKICAgICAgICAgICAg
+ZXhjZXB0IFVuYm91bmRMb2NhbEVycm9yOgogICAgICAgICAgICAgICAgcGFzcwogICAgaWYgZm9y
+Y2VfcmV0Y29kZSBpcyBub3QgTm9uZToKICAgICAgICByZXRjb2RlID0gZm9yY2VfcmV0Y29kZQog
+ICAgaWYgcmV0Y29kZSBpcyBOb25lOgogICAgICAgIHJldGNvZGUgPSBOT19SRVRDT0RFCiAgICBp
+ZiByZXRjb2RlICE9IDAgYW5kIG5vdCBlcnJvcjoKICAgICAgICBlcnJvciA9ICdwcm9ncmFtIGVy
+cm9yLCBjaGVjayBzdGQgc3RyZWFtcycKICAgIHJldGNvZGUgPSBmb3JjZV9yZXRjb2RlIG9yIHJl
+dGNvZGUKICAgIHJldCA9IHsncmV0Y29kZSc6IHJldGNvZGUsCiAgICAgICAgICAgJ3N0YXR1cyc6
+IE5vbmUsCiAgICAgICAgICAgJ2Vycm9yJzogTm9uZSwKICAgICAgICAgICAncGlkJzogcGlkLAog
+ICAgICAgICAgICdjbGknOiAnICcuam9pbihjbGkpLAogICAgICAgICAgICdzdGRvdXQnOiBzdGRv
+dXQuZ2V0dmFsdWUoKSwKICAgICAgICAgICAnc3RkZXJyJzogc3RkZXJyLmdldHZhbHVlKCl9CiAg
+ICBmYWlsZWQocmV0LCBlcnJvcj1lcnJvcikKICAgIGlmIHZlcmJvc2U6CiAgICAgICAgcHJpbnQo
+Zm9ybWF0X291dHB1dF9hbmRfZXJyb3IocmV0KSkKICAgIHJldHVybiByZXQKCgpkZWYgY29tcGxl
+eF9qc29uX291dHB1dF9zaW1wbGUoc3RyaW5nKToKICAgICcnJwogICAgRXh0cmFjdCBqc29uIG91
+dHB1dCBmcm9tIHN0ZG91dCAoc3RyaW5nIHBhcnNlIHZhcmlhbnQpCgogICAgaWYgc3RhdGVzIGdh
+cmJsZWQgdGhlIHN0ZG91dCwgYnV0IHdlIHN0aWxsIGhhdmUgYSByZXN1bHQgbGlrZTo6CgogICAg
+ICAgIC4uLmNvbW1hbmQgZ2FyZ2FnZSBvdXRwdXQuLi4KICAgICAgICB7ImxvY2FsIjogdHJ1ZX0K
+CiAgICB3ZSB3aWxsIHRyeSB0byByZW1vdmUgdGhlIHN0YXJ0aW5nIG91dHB1dCBhbmQgc28gZXh0
+cmFjdAogICAgdGhlIHJlc3VsdCBmcm9tIHRoZSBvdXRwdXQKICAgICcnJwogICAgaWYgbm90IGlz
+aW5zdGFuY2Uoc3RyaW5nLCBzaXguc3RyaW5nX3R5cGVzKToKICAgICAgICByZXR1cm4gc3RyaW5n
+CiAgICByZXQgPSBfbWFya2VyCiAgICBmb3IgcG9zLCBpIGluIGVudW1lcmF0ZShzdHJpbmcpOgog
+ICAgICAgIGlmIGkgPT0gJ3snOgogICAgICAgICAgICB0cnk6CiAgICAgICAgICAgICAgICByZXQg
+PSBqc29uLmxvYWRzKHN0cmluZ1twb3M6XSkKICAgICAgICAgICAgICAgIGJyZWFrCiAgICAgICAg
+ICAgIGV4Y2VwdCBWYWx1ZUVycm9yOgogICAgICAgICAgICAgICAgcGFzcwogICAgaWYgcmV0IGlz
+IF9tYXJrZXI6CiAgICAgICAgcmFpc2UgVmFsdWVFcnJvcignQ2FudCBleHRyYWN0IGpzb24gb3V0
+cHV0JykKICAgIHJldHVybiByZXQKCgpkZWYgY29tcGxleF9qc29uX291dHB1dF9tdWx0aWxpbmVz
+KHN0cmluZyk6CiAgICAnJycKICAgIEV4dHJhY3QganNvbiBvdXRwdXQgZnJvbSBzdGRvdXQgKGxp
+bmVzIHBhcnNlIHZhcmlhbnQpCgogICAgaWYgc3RhdGVzIGdhcmJsZWQgdGhlIHN0ZG91dCwgYnV0
+IHdlIHN0aWxsIGhhdmUgYSByZXN1bHQgbGlrZTo6CgogICAgICAgIC4uLmNvbW1hbmQgZ2FyZ2Fn
+ZSBvdXRwdXQuLi4KICAgICAgICB7ImxvY2FsIjogdHJ1ZX0KCiAgICB3ZSB3aWxsIHRyeSB0byBy
+ZW1vdmUgdGhlIHN0YXJ0aW5nIG91dHB1dCBhbmQgc28gZXh0cmFjdAogICAgdGhlIHJlc3VsdCBm
+cm9tIHRoZSBvdXRwdXQKICAgICcnJwogICAgaWYgbm90IGlzaW5zdGFuY2Uoc3RyaW5nLCBzaXgu
+c3RyaW5nX3R5cGVzKToKICAgICAgICByZXR1cm4gc3RyaW5nCiAgICByZXQgPSBfbWFya2VyCiAg
+ICBsaW5lcyA9IHN0cmluZy5zcGxpdGxpbmVzKCkKICAgIGZvciBwb3MsIGxpbmUgaW4gZW51bWVy
+YXRlKGxpbmVzKToKICAgICAgICBzbGluZSA9IG1hZ2ljc3RyaW5nKGxpbmUuc3RyaXAoKSkKICAg
+ICAgICBpZiBzbGluZS5zdGFydHN3aXRoKCd7Jyk6CiAgICAgICAgICAgIHRyeToKICAgICAgICAg
+ICAgICAgIHJldCA9IGpzb24ubG9hZHMoJycuam9pbihbbWFnaWNzdHJpbmcoYSkKICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZm9yIGEgaW4gbGluZXNbcG9zOl1dKSkK
+ICAgICAgICAgICAgICAgIGJyZWFrCiAgICAgICAgICAgIGV4Y2VwdCBWYWx1ZUVycm9yOgogICAg
+ICAgICAgICAgICAgcGFzcwogICAgaWYgcmV0IGlzIF9tYXJrZXI6CiAgICAgICAgcmFpc2UgVmFs
+dWVFcnJvcignQ2FudCBleHRyYWN0IGpzb24gb3V0cHV0JykKICAgIHJldHVybiByZXQKCgpkZWYg
+Y2FsbChmdW5jLAogICAgICAgICBleGVjdXRhYmxlPU5vbmUsCiAgICAgICAgIGFyZ3M9Tm9uZSwK
+ICAgICAgICAgbG9nbGV2ZWw9Tm9uZSwKICAgICAgICAgY29uZmlnX2Rpcj1Ob25lLAogICAgICAg
+ICBzdGRpbj1Ob25lLAogICAgICAgICBzdGRvdXQ9Tm9uZSwKICAgICAgICAgc3RkZXJyPU5vbmUs
+CiAgICAgICAgIHRpbWVvdXQ9Tm9uZSwKICAgICAgICAgb3V0cHV0X3F1ZXVlPU5vbmUsCiAgICAg
+ICAgIHZhbGlkYXRlX3N0YXRlcz1Ob25lLAogICAgICAgICByZXRjb2RlX3Bhc3N0aHJvdWdoPU5v
+bmUsCiAgICAgICAgIG5vX3F1b3RlPU5vbmUsCiAgICAgICAgIHNsZWVwX2ludGVydmFsPU5vbmUs
+CiAgICAgICAgIGxvY2FsPUZhbHNlLAogICAgICAgICBvdXQ9Tm9uZSwKICAgICAgICAgbm9fb3V0
+PU5PX1JFVFVSTiwKICAgICAgICAgbm9fZGlzcGxheV9yZXQ9Tm9uZSwKICAgICAgICAgcmV0X2Zv
+cm1hdD1Ob25lLAogICAgICAgICB2ZXJib3NlPU5vbmUsCiAgICAgICAgIGVudj1Ob25lKToKICAg
+IGlmIGFyZ3MgaXMgTm9uZToKICAgICAgICBhcmdzID0gW10KICAgIGlmIGlzaW5zdGFuY2UoYXJn
+cywgc2l4LnN0cmluZ190eXBlcyk6CiAgICAgICAgYXJncyA9IHNobGV4LnNwbGl0KGFyZ3MpCiAg
+ICBpZiBvdXQgaXMgTm9uZToKICAgICAgICBvdXQgPSAnanNvbicKICAgIGlmIHJldF9mb3JtYXQg
+aXMgTm9uZToKICAgICAgICByZXRfZm9ybWF0ID0gJ2pzb24nCiAgICBpZiB2ZXJib3NlIGlzIE5v
+bmU6CiAgICAgICAgdmVyYm9zZSA9IEZhbHNlCiAgICBpZiBub3QgZXhlY3V0YWJsZToKICAgICAg
+ICBleGVjdXRhYmxlID0gJ3NhbHQtY2FsbCcKICAgIGlmIHJldGNvZGVfcGFzc3Rocm91Z2ggaXMg
+Tm9uZToKICAgICAgICByZXRjb2RlX3Bhc3N0aHJvdWdoID0gVHJ1ZQogICAgZWFyZ3MgPSBbXQog
+ICAgZm9yIHRlc3QsIGFyZ3BhcnQgaW4gWwogICAgICAgIChUcnVlLCBbZXhlY3V0YWJsZV0pLAog
+ICAgICAgIChsb2NhbCwgWyctLWxvY2FsJ10pLAogICAgICAgIChyZXRjb2RlX3Bhc3N0aHJvdWdo
+LCBbJy0tcmV0Y29kZS1wYXNzdGhyb3VnaCddKSwKICAgICAgICAoY29uZmlnX2RpciwgWyctYycs
+IGNvbmZpZ19kaXJdKSwKICAgICAgICAobG9nbGV2ZWwsIFsnLWwnLCBsb2dsZXZlbF0pLAogICAg
+ICAgIChvdXQsIFsnLS1vdXQnLCBvdXRdKSwKICAgICAgICAoVHJ1ZSwgW2Z1bmNdICsgYXJncykK
+ICAgIF06CiAgICAgICAgaWYgdGVzdDoKICAgICAgICAgICAgZWFyZ3MuZXh0ZW5kKGFyZ3BhcnQp
+CiAgICByZXQgPSBjbWQoYXJncz1lYXJncywgZW52PWVudiwgdGltZW91dD10aW1lb3V0LAogICAg
+ICAgICAgICAgIHZlcmJvc2U9dmVyYm9zZSwKICAgICAgICAgICAgICBub19xdW90ZT1ub19xdW90
+ZSwgc2xlZXBfaW50ZXJ2YWw9c2xlZXBfaW50ZXJ2YWwsCiAgICAgICAgICAgICAgc3RkaW49c3Rk
+aW4sIHN0ZGVycj1zdGRlcnIsIHN0ZG91dD1zdGRvdXQpCiAgICBkZWNvZGVycyA9IHsnanNvbic6
+IGpzb25fbG9hZH0KICAgIGVuY29kZXJzID0geydqc29uJzogKGxhbWJkYSB4OiBqc29uX2R1bXAo
+eCwgcHJldHR5PVRydWUpKX0KICAgIHJldFsnc2FsdF9mdW4nXSA9IGZ1bmMKICAgIHJldFsnc2Fs
+dF9hcmdzJ10gPSBhcmdzCiAgICByZXRbJ3NhbHRfb3V0J10gPSBOb25lCiAgICBpZiBvdXQgYW5k
+IG91dCBpbiBkZWNvZGVycyBhbmQgcmV0LmdldCgnc3Rkb3V0JywgJycpOgogICAgICAgIHRyeToK
+ICAgICAgICAgICAgZG91dCA9IE5vbmUKICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAg
+ZG91dCA9IGRlY29kZXJzW291dF0ocmV0WydzdGRvdXQnXSkKICAgICAgICAgICAgZXhjZXB0IChL
+ZXlFcnJvciwgVmFsdWVFcnJvcik6CiAgICAgICAgICAgICAgICBpZiBvdXQgPT0gJ2pzb24nOgog
+ICAgICAgICAgICAgICAgICAgIHRyeToKICAgICAgICAgICAgICAgICAgICAgICAgZG91dCA9IGNv
+bXBsZXhfanNvbl9vdXRwdXRfbXVsdGlsaW5lcygKICAgICAgICAgICAgICAgICAgICAgICAgICAg
+IHJldFsnc3Rkb3V0J10pCiAgICAgICAgICAgICAgICAgICAgZXhjZXB0IChLZXlFcnJvciwgVmFs
+dWVFcnJvcik6CiAgICAgICAgICAgICAgICAgICAgICAgIGRvdXQgPSBjb21wbGV4X2pzb25fb3V0
+cHV0X3NpbXBsZSgKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHJldFsnc3Rkb3V0J10pCiAg
+ICAgICAgICAgICAgICBpZiBkb3V0IGlzIE5vbmU6CiAgICAgICAgICAgICAgICAgICAgcmFpc2UK
+ICAgICAgICAgICAgaWYgaXNpbnN0YW5jZShkb3V0LCBkaWN0KToKICAgICAgICAgICAgICAgIGlm
+ICgKICAgICAgICAgICAgICAgICAgICB2YWxpZGF0ZV9zdGF0ZXMgaXMgbm90IEZhbHNlIGFuZAog
+ICAgICAgICAgICAgICAgICAgIGZ1bmMgaW4gWydzdGF0ZS5oaWdoc3RhdGUnLCAnc3RhdGUuc2xz
+J10KICAgICAgICAgICAgICAgICk6CiAgICAgICAgICAgICAgICAgICAgc3JjID0gZG9fdmFsaWRh
+dGVfc3RhdGVzKGRvdXQpCiAgICAgICAgICAgICAgICAgICAgaWYgc3JjIGFuZCAocmV0WydyZXRj
+b2RlJ10gPT0gMCk6CiAgICAgICAgICAgICAgICAgICAgICAgIHJldFsncmV0Y29kZSddID0gc3Jj
+CiAgICAgICAgICAgICAgICBpZiBbYSBmb3IgYSBpbiBkb3V0XSA9PSBbJ2xvY2FsJ106CiAgICAg
+ICAgICAgICAgICAgICAgZG91dCA9IGRvdXRbJ2xvY2FsJ10KICAgICAgICAgICAgcmV0WydzYWx0
+X291dCddID0gZG91dAogICAgICAgIGV4Y2VwdCAoS2V5RXJyb3IsIFZhbHVlRXJyb3IpOgogICAg
+ICAgICAgICAjIG5vIGpzb24gb3V0cHV0IGlzIGVxdWl2YWxlbnQgYXMgYSBmYWlsZWQgY2FsbAog
+ICAgICAgICAgICByZXRbJ3JldGNvZGUnXSA9IE5PUkVUVVJOX1JFVENPREUKICAgICAgICAgICAg
+aWYgbm90IHJldFsnZXJyb3InXToKICAgICAgICAgICAgICAgIHJldFsnZXJyb3InXSA9ICcnCiAg
+ICAgICAgICAgIHJldFsnZXJyb3InXSArPSAnXG5mYWlsZWQgdG8gZGVjb2RlIHBheWxvYWQnCiAg
+ICB0cnk6CiAgICAgICAgcmV0Y29kZSA9IGludChyZXRbJ3JldGNvZGUnXSkKICAgIGV4Y2VwdCBW
+YWx1ZUVycm9yOgogICAgICAgIHJldGNvZGUgPSA2NjYKICAgIHJldFsncmV0Y29kZSddID0gcmV0
+Y29kZQogICAgaWYgb3V0cHV0X3F1ZXVlOgogICAgICAgIG91dHB1dF9xdWV1ZS5wdXQocmV0KQog
+ICAgcGlkID0gb3MuZ2V0cGlkKCkKICAgIGlmIG5vdCBub19kaXNwbGF5X3JldDoKICAgICAgICBl
+cmV0ID0gcmV0CiAgICAgICAgaWYgcmV0X2Zvcm1hdCBpbiBlbmNvZGVyczoKICAgICAgICAgICAg
+ZXJldCA9IGVuY29kZXJzW3JldF9mb3JtYXRdKGVyZXQpCiAgICAgICAgcHJpbnQoIl9fU0FMVENB
+TExFUl9SRVRVUk5fezB9Ii5mb3JtYXQocGlkKSkKICAgICAgICBwcmludChlcmV0KQogICAgICAg
+IHByaW50KCJfX1NBTFRDQUxMRVJfRU5EX1JFVFVSTl97MH0iLmZvcm1hdChwaWQpKQogICAgcmV0
+dXJuIHJldAoKCmRlZiBtYWluKCk6CiAgICBwYXJzZXIgPSBhcmdwYXJzZS5Bcmd1bWVudFBhcnNl
+cigpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCdmdW5jJywgbmFyZ3M9MSwKICAgICAgICAgICAg
+ICAgICAgICAgICAgaGVscD0nc2FsdCBmdW5jdGlvbiB0byBjYWxsJykKICAgIHBhcnNlci5hZGRf
+YXJndW1lbnQoJ2FyZ3MnLAogICAgICAgICAgICAgICAgICAgICAgICBuYXJncz1hcmdwYXJzZS5S
+RU1BSU5ERVIsCiAgICAgICAgICAgICAgICAgICAgICAgIGhlbHA9KCdmdW5jdGlvbiBhcmd1bWVu
+dHMgYXMgeW91IHdvdWxkIHVzZScKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJyBvbiBj
+bGkgdG8gY2FsbCBzYWx0LWNhbGwnKSkKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoJy0tdmFsaWRh
+dGUtc3RhdGVzJywKICAgICAgICAgICAgICAgICAgICAgICAgaGVscD0oJ2ZvciBzdGF0ZXMgZnVu
+Y3Rpb24gKHNscywgaGlnaHN0YXRlKSwnCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICcg
+ZXhpc3Qgd2l0aCBub24tMCBzdGF0dXMgaW4gY2FzZSBvZiBlcnJvcnMnKSwKICAgICAgICAgICAg
+ICAgICAgICAgICAgZGVmYXVsdD1GYWxzZSwgYWN0aW9uPSdzdG9yZV90cnVlJykKICAgIHBhcnNl
+ci5hZGRfYXJndW1lbnQoJy0tZXhlY3V0YWJsZScpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCct
+YycsICctLWNvbmZpZy1kaXInKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgnLS1yZXQtZm9ybWF0
+JykKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoJy0tbG9jYWwnLAogICAgICAgICAgICAgICAgICAg
+ICAgICBoZWxwPSd1c2UgLS1sb2NhbCB3aGVuIGNhbGxpbmcgc2FsdC1jYWxsJywKICAgICAgICAg
+ICAgICAgICAgICAgICAgYWN0aW9uPSdzdG9yZV90cnVlJykKICAgIHBhcnNlci5hZGRfYXJndW1l
+bnQoJy0tcmV0Y29kZS1wYXNzdGhyb3VnaCcsIGRlZmF1bHQ9Tm9uZSwKICAgICAgICAgICAgICAg
+ICAgICAgICAgYWN0aW9uPSdzdG9yZV90cnVlJykKICAgIHBhcnNlci5hZGRfYXJndW1lbnQoJy0t
+b3V0JywgZGVmYXVsdD1Ob25lKQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgnLWwnLCAnLS1sb2ds
+ZXZlbCcpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCctLXRpbWVvdXQnLCBkZWZhdWx0PU5vbmUs
+IHR5cGU9aW50KQogICAgcGFyc2VyLmFkZF9hcmd1bWVudCgnLS1uby1xdW90ZScsIGFjdGlvbj0n
+c3RvcmVfdHJ1ZScsIGRlZmF1bHQ9RmFsc2UpCiAgICBwYXJzZXIuYWRkX2FyZ3VtZW50KCctdics
+ICctLXZlcmJvc2UnLCBhY3Rpb249J3N0b3JlX3RydWUnLAogICAgICAgICAgICAgICAgICAgICAg
+ICBoZWxwPSgnaWYgc2V0LCBkaXNwbGF5IGNvbW1hbmQgb3V0cHV0IG9uIGNvbnNvbGUnKSwKICAg
+ICAgICAgICAgICAgICAgICAgICAgZGVmYXVsdD1GYWxzZSkKICAgIHBhcnNlci5hZGRfYXJndW1l
+bnQoJy0tbm8tZGlzcGxheS1yZXQnLAogICAgICAgICAgICAgICAgICAgICAgICBoZWxwPSgnRG8g
+bm90IGRpc3BsYXkgdGhlIGZ1bGwgcmV0dXJuJwogICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAnIGZyb20gcHJvY2VzcyBhIEpTT04gbWV0YWRhdGFzJyksCiAgICAgICAgICAgICAgICAgICAg
+ICAgIGFjdGlvbj0nc3RvcmVfdHJ1ZScsIGRlZmF1bHQ9RmFsc2UpCiAgICBhcmdzID0gcGFyc2Vy
+LnBhcnNlX2FyZ3MoKQogICAgdm9wdHMgPSB2YXJzKGFyZ3MpCiAgICB2b3B0c1snZnVuYyddID0g
+dm9wdHNbJ2Z1bmMnXVswXQogICAgcmV0dXJuIGNhbGwoKip2b3B0cykKCgppZiBfX25hbWVfXyA9
+PSAnX19tYWluX18nIGFuZCBub3Qgb3MuZW52aXJvbi5nZXQoJ05PX1BZRVhFQycpOgogICAgc3lz
+LmV4aXQobWFpbigpWydyZXRjb2RlJ10pCgo=
 """
 
 
@@ -585,10 +336,8 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             loglevel=dict(required=False, default=None, type='str'),
-            saltcaller=dict(required=False, default=None, type='str'),
             function=dict(required=True, default=None, type='str'),
             executable=dict(required=False, default=executable, type='str'),
-            search_sc=dict(required=False, default=True, type='bool'),
             local=dict(required=False, default=None, type='bool'),
             args=dict(required=False, default=None, type='str'),
             verbose=dict(required=False, default=False, type='bool'),
@@ -596,25 +345,7 @@ def main():
             config_dir=dict(required=False, default=None, type='str'),
         )
     )
-    search_sc = module.params.get('search_sc')
-    sc = module.params.get('saltcaller')
-    if not sc and search_sc:
-        for i in ['/srv/makina-states/mc_states/saltcaller.py',
-                  '/srv/salt/makina-states/mc_states/saltcaller.py',
-                  '/srv/mastersalt/makina-states/mc_states/saltcaller.py']:
-            if os.path.exists(i):
-                sc = i
-                break
-    if not sc:
-        sc = SALTCALLER.strip()
-    if not sc:
-        module.fail_json(msg='SaltCaller script not found (code or filepath)')
-    if '\n' not in sc:
-        if os.path.exists(sc):
-            with open(sc) as f:
-                sc = f.read()
-        else:
-            module.fail_json(msg='SaltCaller script not found: {0}'.format(sc))
+    sc = SALTCALLER.decode('base64')
     mod = {}
     if sys.hexversion > 0x03000000:
         exec(compile(sc, '<saltcaller_mod>', 'exec'), mod)
