@@ -13,7 +13,7 @@
   when: "lxc_clone_snapshot in [True, 'true', 'True']"
   tags: makinastates_lxc_create,makinastates_lxc_clone_lxc
   register: makinastates_lxc_clone_lxc_rootfs
-- name: "lxc clone (from container: ${{lxc_from_container}})"
+- name: "lxc clone (from container: {{lxc_from_container}})"
   shell: |-
     lxc-clone -P {{lxc_path}} -o {{lxc_from_container}} -n {{lxc_container_name}} -B {{lxc_backing_store}}\
     {% if lxc_clone_snapshot in [True, 'true', 'True']%}-s{% endif %}
