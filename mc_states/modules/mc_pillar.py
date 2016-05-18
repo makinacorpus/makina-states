@@ -2014,30 +2014,27 @@ def get_removed_keys(id_=None, ttl=PILLAR_TTL):
         removed_keys_map = __salt__[__name + '.query']('removed_keys_map', {})
         keys_map = __salt__[__name + '.query']('keys_map', {})
         skeys = []
-        removed = removed_keys_map.get(
-            id_, removed_keys_map.get('default', []))
+        removed = removed_keys_map.get(id_, removed_keys_map.get('default', []))
         for k in removed:
             keys = keys_map.get(k, [])
             for key in keys:
                 if key not in skeys:
                     skeys.append(key)
-        return skeys
+        absent_keys = []
+        for k in skeys:
+            absent_keys.append({k: {}})
+        return absent_keys
     cache_key = __name + '.get_removed_keys{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
 def get_sysadmins_keys(id_=None, ttl=PILLAR_TTL):
     def _do(id_, sysadmins=None):
-        gconf = get_configuration(id_)
-        if not gconf.get('manage_ssh_keys', True):
-            return {}
         sysadmins_keys_map = __salt__[__name + '.query']('sysadmins_keys_map', {})
         keys_map = __salt__[__name + '.query']('keys_map', {})
         skeys = []
         sysadmins = sysadmins_keys_map.get(
             id_, sysadmins_keys_map.get('default', []))
-        if 'infra' not in sysadmins:
-            sysadmins.append('infra')
         for k in sysadmins:
             keys = keys_map.get(k, [])
             for key in keys:
@@ -2045,6 +2042,23 @@ def get_sysadmins_keys(id_=None, ttl=PILLAR_TTL):
                     skeys.append(key)
         return skeys
     cache_key = __name + '.get_sysadmin_keys_{0}'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+
+
+def get_ssh_keys_conf(id_=None, ttl=PILLAR_TTL):
+    def _do(id_, sysadmins=None):
+        gconf = get_configuration(id_)
+        if not gconf.get('manage_ssh_keys', True):
+            return {}
+        rdata = {}
+        adm_pref = "makina-states.localsettings.admin.sysadmins_keys"
+        a_adm_pref = "makina-states.localsettings.admin.absent_keys"
+        rdata.update(
+            {'makina-states.localsettings.sshkeys': True,
+             adm_pref: get_sysadmins_keys(id_),
+             a_adm_pref: get_removed_keys(id_)})
+        return rdata
+    cache_key = __name + '.get_ssh_keys_conf{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
@@ -3460,23 +3474,16 @@ def get_mail_conf(id_, ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
-def get_ssh_keys_conf(id_, ttl=PILLAR_TTL):
+def get_ssh_server_conf(id_, ttl=PILLAR_TTL):
     def _do(id_):
         gconf = get_configuration(id_)
         if not gconf.get('manage_ssh_server', True):
             return {}
         rdata = {}
         pref = "makina-states.services.base.ssh.server"
-        adm_pref = "makina-states.localsettings.admin.sysadmins_keys"
-        a_adm_pref = "makina-states.localsettings.admin.absent_keys"
-        absent_keys = []
-        for k in __salt__[__name + '.get_removed_keys'](id_):
-            absent_keys.append({k: {}})
-        rdata.update({adm_pref: __salt__[__name + '.get_sysadmins_keys'](id_),
-                      a_adm_pref: absent_keys,
-                      pref + ".chroot_sftp": True})
+        rdata.update({pref + ".chroot_sftp": True})
         return rdata
-    cache_key = __name + '.get_ssh_keys_conf{0}'.format(id_) + CACHE_INC_TOKEN
+    cache_key = __name + '.get_ssh_server_conf{0}'.format(id_) + CACHE_INC_TOKEN
     return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
 
 
@@ -3842,6 +3849,7 @@ def ext_pillar(id_, pillar=None, raise_error=True, *args, **kw):
         __name + '.get_masterless_makinastates_hosts_conf': {},
         __name + '.get_ssh_groups_conf': {},
         __name + '.get_ssh_keys_conf': {},
+        __name + '.get_ssh_server_conf': {},
         __name + '.get_ssl_conf': {},
         __name + '.get_sudoers_conf': {},
         __name + '.get_supervision_client_conf': {},
