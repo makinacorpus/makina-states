@@ -3,6 +3,12 @@ disable:
     - names: [mastersalt-minion, mastersalt-master,
               salt-minion, salt-master]
     - enable: false
+  cmd.run:
+    - name: |
+        for i in mastersalt-minion mastersalt-master salt-minion salt-master;do
+          systemctl mask $i || /bin/true
+        done
+    - onlyif: systemctl
   file.absent:
     - names:
       - /usr/bin/salt

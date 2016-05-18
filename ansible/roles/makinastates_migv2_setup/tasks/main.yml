@@ -2,34 +2,53 @@
 - shell: "test -e /etc/makina-states;echo ${?}"
   register: makinastates_migv2_install_dir
   tags: makinastates_migv2,makinastates_migv2_setup
-- name: setup
+- name: "msv2 - setup git"
   shell: |
          set -ex
          if [ ! -e "{{makinastates_dest}}/.git" ];then
            git clone "{{makinastates_repo}}" -b "{{makinastates_version}}"\
              "{{makinastates_dest}}"
          fi
+  when: "makinastates_migv2_install_dir.stdout == '0'"
+  tags: makinastates_migv2,makinastates_migv2_setup
+- name: "msv2 setup - grab confiles"
+  shell: |
+         set -ex
          cd /etc
          if [ -e makina-states/nodetype ] && [ ! -h makina-states/nodetype ];then
-           cp -fv makina-states/nodetype {{makinastates_dest}}/etc/makina-states
+           cp -fv "makina-states/nodetype" "{{makinastates_dest}}/etc/makina-states"
+           rm -f "makina-states/nodetype"
+           ln -sfv "{{makinastates_dest}}/etc/makina-states" "makina-states/nodetype"
          fi
          find mastersalt/makina-states salt/makina-states makina-states -type f|\
            egrep ".(nodetype|yaml|jinja|json|pack)"|\
            egrep -v "(cloud|services|controllers|localsettings|nodetypes).yaml"|\
            while read f;do
-             if [ ! -h $f ]; then
-               cp -v $f {{makinastates_dest}}/etc/makina-states
-               ln -sfv {{makinastates_dest}}/etc/makina-states/$(basename ${f}) ${f}
+             d="{{makinastates_dest}}/etc/makina-states/$(basename ${f})"
+             if [ ! -h "$f" ]; then
+               if [ ! -e "${d}" ];then
+                 cp -vf "${f}" "${d}"
+               fi
+               rm -f "${f}"
+               ln -sfv "${d}" "${f}"
              fi
            done
-         find mastersalt/makina-states salt/makina-states makina-states-type f|\
-           egrep ".(nodetype|yaml|jinja|json|pack)"|\
+  when: "makinastates_migv2_install_dir.stdout == '0'"
+  tags: makinastates_migv2,makinastates_migv2_setup
+- name: "msv2 setup - grab enabled registries fallback"
+  shell: |
+         set -ex
+         cd /etc
+         find mastersalt/makina-states salt/makina-states makina-states -type f|\
            egrep "(cloud|services|controllers|localsettings|nodetypes).yaml"|\
            while read f;do
-             if [ ! -h $f ]; then
-               grep -i ": true" $f \
-                 > {{makinastates_dest}}/etc/makina-states/$(basename $f)
-               ln -sfv {{makinastates_dest}}/etc/makina-states/$(basename ${f}) ${f}
+             d="{{makinastates_dest}}/etc/makina-states/$(basename $f)"
+             if [ ! -h "${f}" ]; then
+               if egrep -i ": true *$" $f;then
+                 egrep -i ": true *$" $f >> "${d}"
+               fi
+               mv "${f}" "${f}.sav"
+               ln -sfv "${d}" "${f}"
              fi
            done
   when: "makinastates_migv2_install_dir.stdout == '0'"
