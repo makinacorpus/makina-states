@@ -13,8 +13,7 @@
          if [ -e makina-states/nodetype ] && [ ! -h makina-states/nodetype ];then
            cp -fv makina-states/nodetype {{makinastates_dest}}/etc/makina-states
          fi
-         find mastersalt/makina-states salt/makina-states makina-states\
-           -type f|\
+         find mastersalt/makina-states salt/makina-states makina-states -type f|\
            egrep ".(nodetype|yaml|jinja|json|pack)"|\
            egrep -v "(cloud|services|controllers|localsettings|nodetypes).yaml"|\
            while read f;do
@@ -23,8 +22,7 @@
                ln -sfv {{makinastates_dest}}/etc/makina-states/$(basename ${f}) ${f}
              fi
            done
-         find mastersalt/makina-states salt/makina-states makina-states|\
-           -type f|\
+         find mastersalt/makina-states salt/makina-states makina-states-type f|\
            egrep ".(nodetype|yaml|jinja|json|pack)"|\
            egrep "(cloud|services|controllers|localsettings|nodetypes).yaml"|\
            while read f;do
