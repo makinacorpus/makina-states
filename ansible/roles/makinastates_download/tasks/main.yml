@@ -10,3 +10,24 @@
        version="{{makinastates_version}}"
   tags: [makinastates, makinastates_setup]
   when: makinastates_testmsdir.stdout == "1"
+
+- name: repair makina-states working copy in error
+  shell: |
+     set -ex
+     cd "{{makinastates_dest}}"
+     if [ ! -e "var/.first_highstate" ];then
+        if ! git diff --exit-code -q;then
+           git stash
+        fi
+     fi
+     echo $?
+  tags: [makinastates, makinastates_setup]
+  register: makinastates_repairwc
+  when: makinastates_testmsdir.stdout != "1"
+
+- name: fix makina-states git branch
+  git: repo="{{makinastates_repo}}"
+       dest="{{makinastates_dest}}"
+       version="{{makinastates_version}}"
+  tags: [makinastates, makinastates_setup]
+  when: 'makinastates_testmsdir.stdout != "1" and makinastates_testmsdir.stdout and  makinastates_repairwc.stdout[-1] == "0"'
