@@ -4078,7 +4078,10 @@ def get_masterless_makinastates_groups(host, pillar=None):
     for group, test in six.iteritems(what):
         if test:
             groups.add(group)
-    is_ = pillar.get('makina-states.cloud', {}).get('is', {})
+    cloud = pillar.get('makina-states.cloud', {})
+    vmsc = pillar.get('makina-states.cloud.vms.vms', {})
+    target = vmsc.get(host, {}).get('target', None)
+    is_ = cloud.get('is', {})
     mpref = 'makina-states.services.backup.burp.server'
     if pillar.get(mpref, False):
         groups.add('burp_servers')
@@ -4090,6 +4093,8 @@ def get_masterless_makinastates_groups(host, pillar=None):
         groups.add('dns_slaves')
     if True in [('dns.bind.servers' in a) for a in pillar]:
         groups.add('dns')
+    if target:
+        groups.add('{0}_vms'.format(target))
     if is_.get('vm', True):
         groups.add('vms')
     if is_.get('compute_node', True):
