@@ -36,6 +36,8 @@ EXAMPLES = '''
 '''
 
 # generated via hacking/gen_ansible_saltcaller.py
+# this embeds the saltcaller script inside the ansible module
+# but not in plain text as ansible would quote it
 SALTCALLER = """
 Cgpmcm9tIF9fZnV0dXJlX18gaW1wb3J0IGFic29sdXRlX2ltcG9ydApmcm9tIF9fZnV0dXJlX18g
 aW1wb3J0IGRpdmlzaW9uCmZyb20gX19mdXR1cmVfXyBpbXBvcnQgcHJpbnRfZnVuY3Rpb24KJycn
