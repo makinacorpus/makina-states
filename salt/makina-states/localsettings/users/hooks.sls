@@ -1,3 +1,6 @@
+include:
+  - makina-states.localsettings.sshkeys.hooks
+
 groups-pre-hook:
   mc_proxy.hook:
     - watch_in:
@@ -12,4 +15,6 @@ users-pre-hook:
     - watch_in:
       - mc_proxy: users-ready-hook
 users-ready-hook:
-  mc_proxy.hook: []
+  mc_proxy.hook:
+    - watch_in: 
+      - mc_proxy: localsettings-ssh-keys-pre
