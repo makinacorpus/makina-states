@@ -207,7 +207,7 @@ class MakinaStatesInventory(object):
 
         # we then load the pillars from each host as the salt_pillar hostvar
         # and salt will also fill ansible connexion hostvars as well
-        if targets:
+        if self.targets:
             payload = self.load_inventory(self.targets,
                                           refresh=self.args.refresh_cache)
             self.update_hostvars(hosts, payload)
