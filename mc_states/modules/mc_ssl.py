@@ -765,7 +765,7 @@ def ca_ssl_certs(domains, gen=False, as_text=False, **kwargs):
     return rdomains
 
 
-def get_cert_infos(cn_or_cert, key=None, sinfos=None, ttl=60):
+def get_cert_infos(cn_or_cert, key=None, sinfos=None, ttl=60, gen=False):
     '''
     Get infos for a certificate, either by being configured by makina-states
     or given in parameters::
@@ -819,7 +819,7 @@ def get_cert_infos(cn_or_cert, key=None, sinfos=None, ttl=60):
             cert, chain = ssl_chain(sinfos['cn'], cn_or_certc)
             cdata = (cert, keyc, chain)
         else:
-            cdata = get_configured_cert(cn_or_cert)
+            cdata = get_configured_cert(cn_or_cert, gen=gen)
             if sinfos is None:
                 sinfos = ssl_infos(cdata[0])
         cn = sinfos['cn']

@@ -3,6 +3,8 @@
 {{ salt['mc_macros.register']('localsettings', 'ssl') }}
 {% set settings = salt['mc_ssl.settings']() %}
 {% set ssl = ssl %}
+{% set install_certificate = ssl.install_certificate %}
+{% set install_cert = ssl.install_cert %}
 include:
   - makina-states.cloud.generic.hooks
   - makina-states.localsettings.ssl.hooks
