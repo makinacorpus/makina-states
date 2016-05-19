@@ -72,7 +72,7 @@ ONE_MONTH = mc_states.api.ONE_MONTH
 ONE_YEAR = ONE_MONTH * 12
 FIREWALLD_MANAGED = False
 MS_IPTABLES_MANAGED = True
-CACHE_INC_TOKEN = '1116'
+CACHE_INC_TOKEN = '1117'
 
 # pillar cache is never expired, only if we detect a change on the database file
 PILLAR_TTL = ONE_YEAR
@@ -3702,10 +3702,10 @@ def get_masterless_makinastates_hosts(ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
 
 
-def get_masterless_makinastates_hosts_conf(ttl=PILLAR_TTL):
+def get_masterless_makinastates_hosts_conf(id_, ttl=PILLAR_TTL):
     _o = __opts__
     _s = __salt__
-    controller = _s['mc_cloud.is_a_controller'](_o['id'])
+    controller = _s['mc_cloud.is_a_controller'](id_)
     if not controller:
         return {}
     pref = 'makina-states.cloud.masterless_hosts'
@@ -4095,10 +4095,12 @@ def get_masterless_makinastates_groups(host, pillar=None):
         groups.add('dns')
     if target:
         groups.add('{0}_vms'.format(target))
+        groups.add('{0}_and_vms'.format(target))
     if is_.get('vm', True):
         groups.add('vms')
     if is_.get('compute_node', True):
         groups.add('bms')
+        groups.add('{0}_and_vms'.format(host))
     if is_.get('controller', True):
         groups.add('controllers')
     return list(groups)
