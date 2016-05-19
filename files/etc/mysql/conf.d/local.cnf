@@ -15,6 +15,14 @@ socket      = {{ data.sockdir }}/mysqld.sock
 # * Basic Settings
 #
 socket      = {{ data.sockdir }}/mysqld.sock
+{% if mysql57onward and data.ssl %}
+{% if data.cert_infos.has_chain %}
+ssl-ca={{data.cert_infos.auth}}
+{% endif %}
+ssl-cert={{data.cert_infos.only}}
+ssl-key={{data.cert_infos.rsa_keyp}}
+{% endif %}
+
 max_connections = {{ data.nb_connections }}
 user            = mysql
 pid-file        = {{ data.sockdir }}/mysqld.pid

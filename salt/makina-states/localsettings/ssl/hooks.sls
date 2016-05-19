@@ -40,5 +40,11 @@ ssl-certs-trust-certs-post:
       - mc_proxy: ssl-certs-pre-hook
     - watch_in:
       - mc_proxy: ssl-certs-post-hook
+
 ssl-certs-post-hook:
+  mc_proxy.hook:
+    - watch_in:
+      - mc_proxy: ssl-certs-end
+
+ssl-certs-end:
   mc_proxy.hook: []

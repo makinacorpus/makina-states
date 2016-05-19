@@ -1,10 +1,32 @@
 {% set settings = salt['mc_ssl.settings']() %}
-{% macro sslcert_manage(name) %}
+
+{% macro add_to_sslcerts(user, rmacro=None, suf='') %}
+"makinastates-{{user}}_usertosslcerts{{suf}}-orchestrate":
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: ssl-certs-post-hook
+    - watch_in:
+      - cmd: "makinastates-{{user}}_usertosslcerts{{suf}}"
+"makinastates-{{user}}_usertosslcerts{{suf}}":
+  user.present:
+    - name: "{{user}}"
+    - remove_groups: False
+    - system: true
+    - optional_groups: [ssl-cert]
+    {% if rmacro %}
+    {{rmacro()}}
+    {% endif %}
+{% endmacro %}
+
+{% macro sslcert_manage(name,
+                        user=settings.user,
+                        group=settings.group,
+                        mode='640') %}
   file.managed:
     - name: "{{name}}"
-    - user: root
-    - group: ssl-cert
-    - mode: 640
+    - user: {{user}}
+    - group: {{group}}
+    - mode: "{{mode}}"
     - makedirs: true
     - template: jinja
     - watch:
@@ -15,6 +37,10 @@
       - mc_proxy: cloud-sslcerts
       - mc_proxy: ssl-certs-post-hook
 {% endmacro %}
+
+
+
+
 {% macro sslcert_absent(name) %}
   file.absent:
     - name: "{{name}}"
@@ -26,72 +52,157 @@
       - mc_proxy: cloud-sslcerts
       - mc_proxy: ssl-certs-post-hook
 {% endmacro %}
-{% macro install_certificate(
-    cert, key=none, suf='', trust=true, sinfos=None, gen=False) %}
-{%- set ssl_infos = salt['mc_ssl.get_cert_infos'](cert, key, gen=True, sinfos=sinfos) %}
-{%- set cn = ssl_infos.cn %}
-{%- set cert = ssl_infos.cert_data[0] %}
-{%- set key = ssl_infos.cert_data[1] or '' %}
-{%- set chain = ssl_infos.cert_data[2] %}
+
+
+
+
+{% macro install_certificate(cert=none,
+                             cert_infos=none,
+                             key=none,
+                             suf='',
+                             fullcert=True,
+                             separates=True,
+                             trust=True,
+                             user=settings.user,
+                             group=settings.group,
+                             separate_ssl_files_path=None,
+                             full_certs_path=None,
+                             trusted_certs_path=none,
+                             sinfos=None,
+                             mode='640',
+                             keymode='640',
+                             gen=False,
+                             keytype=None) %}
+{%- if not cert_infos %}
+{%-   set cert_infos = salt['mc_ssl.get_cert_infos'](
+        cert,
+        key,
+        gen=True,
+        sinfos=sinfos,
+        keytype=keytype,
+        trusted_certs_path=trusted_certs_path,
+        separate_ssl_files_path=separate_ssl_files_path,
+        full_certs_path=full_certs_path) %}
+{%- endif %}
+
+{%- set cn = cert_infos.cn %}
+{%- set cert = cert_infos.cert_data[0] %}
+{%- set key = cert_infos.cert_data[1] or '' %}
+{%- set rsa_key = cert_infos.rsa_key %}
+{%- set public_key = cert_infos.public_key %}
+
+{%- set chain = cert_infos.cert_data[2] %}
 {%- set ichain = salt['mc_ssl.extract_certs'](chain)[0] %}
 {%- do ichain.reverse() %}
 {%- set sichain = '\n'.join(ichain) %}
 
-cpt-cert-{{ssl_infos.cn}}-key{{suf}}:
+{% if separates %}
+cpt-cert-{{cert_infos.cn}}-key{{suf}}:
   {% if not key %}
-  {{sslcert_absent(ssl_infos['key'])}}
+  {{sslcert_absent(cert_infos['key'])}}
   {% else %}
-  {{sslcert_manage(ssl_infos['key'])}}
+  {{sslcert_manage(cert_infos['key'], user=user, group=group, mode=keymode)}}
     - contents: |
                 {{key|indent(16)}}
   {% endif %}
 
-cpt-cert-{{ssl_infos.cn}}-trust{{suf}}:
-  {% if not trust %}
-  {{sslcert_absent(ssl_infos['trust'])}}
+cpt-cert-{{cert_infos.cn}}-public-key{{suf}}:
+  {% if not key %}
+  {{sslcert_absent(cert_infos['public_keyp'])}}
   {% else %}
-  {{sslcert_manage(ssl_infos['trust'])}}
+  {{sslcert_manage(cert_infos['public_keyp'], user=user, group=group,mode=mode)}}
     - contents: |
-                {{cert|indent(16)}}
+                {{public_key|indent(16)}}
   {% endif %}
 
-cpt-cert-{{ssl_infos.cn}}-crt{{suf}}:
-  {% if not (cert and key) %}
-  {{sslcert_absent(ssl_infos['crt'])}}
+cpt-cert-{{cert_infos.cn}}-rsa-key{{suf}}:
+  {% if not key %}
+  {{sslcert_absent(cert_infos['rsa_keyp'])}}
   {% else %}
-  {{sslcert_manage(ssl_infos['crt'])}}
+  {{sslcert_manage(cert_infos['rsa_keyp'], user=user, group=group, mode=keymode)}}
     - contents: |
-                {{cert|indent(16)}}
-                {{chain|indent(16)}}
-                {{key|indent(16)}}
+                {{rsa_key|indent(16)}}
   {% endif %}
 
-cpt-cert-{{ssl_infos.cn}}-auth{{suf}}:
-  {{sslcert_manage(ssl_infos['auth'])}}
+cpt-cert-{{cert_infos.cn}}-auth{{suf}}:
+  {{sslcert_manage(cert_infos['auth'], user=user, group=group, mode=mode)}}
     - contents: |
                 {{chain|indent(16)}}
 
-cpt-cert-{{ssl_infos.cn}}-authr{{suf}}:
-  {{sslcert_manage(ssl_infos['authr'])}}
+cpt-cert-{{cert_infos.cn}}-authr{{suf}}:
+  {{sslcert_manage(cert_infos['authr'], user=user, group=group, mode=mode)}}
     - contents: |
                 {{sichain|indent(16)}}
 
-cpt-cert-{{ssl_infos.cn}}-bundle{{suf}}:
-  {{sslcert_manage(ssl_infos['bundle'])}}
+cpt-cert-{{cert_infos.cn}}-bundle{{suf}}:
+  {{sslcert_manage(cert_infos['bundle'], user=user, group=group, mode=mode)}}
     - contents: |
                 {{cert|indent(16)}}
                 {{chain|indent(16)}}
 
-cpt-cert-{{ssl_infos.cn}}-full{{suf}}:
-  {{sslcert_manage(ssl_infos['full'])}}
+cpt-cert-{{cert_infos.cn}}-full{{suf}}:
+  {{sslcert_manage(cert_infos['full'], user=user, group=group, mode=keymode)}}
     - contents: |
                 {{cert|indent(16)}}
                 {{chain|indent(16)}}
                 {{key|indent(16)}}
 
-cpt-cert-{{ssl_infos.cn}}-only{{suf}}:
-  {{sslcert_manage(ssl_infos['only'])}}
+cpt-cert-{{cert_infos.cn}}-only{{suf}}:
+  {{sslcert_manage(cert_infos['only'], user=user, group=group, mode=mode)}}
     - contents: |
                 {{cert|indent(16)}}
+
+{% endif %}
+
+{% if trust %}
+cpt-cert-{{cert_infos.cn}}-trust{{suf}}:
+  {% if not trust %}
+  {{sslcert_absent(cert_infos['trust'])}}
+  {% else %}
+  {{sslcert_manage(cert_infos['trust'], user=user, group=group, mode=mode)}}
+    - contents: |
+                {{cert|indent(16)}}
+  {% endif %}
+{% endif %}
+
+{% if fullcert %}
+cpt-cert-{{cert_infos.cn}}-crt{{suf}}:
+  {% if not (cert and key) %}
+  {{  sslcert_absent(cert_infos['crt'])}}
+  {% else %}
+  {{  sslcert_manage(cert_infos['crt'], user=user, group=group, mode=keymode)}}
+    - contents: |
+                {{cert|indent(16)}}
+                {{chain|indent(16)}}
+                {{key|indent(16)}}
+  {% endif %}
+{% endif %}
 {% endmacro %}
 {% set install_cert = install_certificate %}
+
+
+
+
+{% macro install_cert_in_dir(domain=none,
+                             cert_infos=none,
+                             key=none,
+                             sinfos=none,
+                             user=settings.user,
+                             group=settings.group,
+                             mode='640',
+                             keymode='640',
+                             gen=False,
+                             suf='',
+                             rmacro=None) %}
+{{ install_certificate(cert=domain,
+                       cert_infos=cert_infos,
+                       gen=gen,
+                       key=key,
+                       sinfos=sinfos,
+                       separates=True,
+                       trust=False,
+                       fullcert=False,
+                       user=user, group=group,
+                       mode=mode, keymode=keymode,
+                       suf=suf) }}
+{% endmacro %}
