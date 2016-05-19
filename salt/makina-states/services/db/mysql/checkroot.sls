@@ -58,6 +58,23 @@ change-empty-mysql-root-access-tcp:
       - mc_proxy: mysql-setup-access-pre
       - mc_proxy: mysql-post-restart-hook
       - mc_proxy: mysql-post-hardrestart-hook
+
+change-empty-mysql-root-grant-access-tcp:
+  cmd.run:
+    - name: |
+        mysql -u root --password='{{ mysqlSettings.root_passwd }}' \
+          -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1' WITH GRANT OPTION; FLUSH PRIVILEGES;"
+    - unless: |
+              echo "select 'connected'" | mysql -u root -p --host=127.0.0.1 --password='{{ mysqlSettings.root_passwd }}'  mysql
+    # tested after each mysql reload or restart
+    - watch_in:
+      - mc_proxy: mysql-setup-access
+    - watch:
+      - cmd: change-empty-mysql-root-access-socket
+      - cmd: change-empty-mysql-root-access-tcp-via-create
+      - mc_proxy: mysql-setup-access-pre
+      - mc_proxy: mysql-post-restart-hook
+      - mc_proxy: mysql-post-hardrestart-hook
 {% else %}
 change-empty-mysql-root-access-socket:
   cmd.run:
