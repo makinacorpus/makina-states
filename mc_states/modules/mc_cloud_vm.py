@@ -62,6 +62,19 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
             ssh gateway info
         ssh_gateway_key
             ssh gateway info
+        ports
+            if hostport is omitted, it will be dynamically assigned
+            in the avalaible port range (40000-50000 by default)
+
+            hostPortRange default to portRange if portRange found
+
+            example::
+
+                {name: redis, port: 6379,
+                 protocol: tcp, hostPort: 22}
+                {name: redis, portRange: "63:79",
+                 protocol: tcp, hostPortRange: "22:23"}
+
         size
             default filesystem size for container on lvm
             None
@@ -135,7 +148,7 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 'ports': [
                     {'name': 'ssh', 'port': 22, 'protocol': 'tcp'},
                     {'name': 'ssh', 'port': 22, 'protocol': 'udp'},
-                    {'name': 'snmp', 'port': 161, 'protocol': 'udp'},
+                    #{'name': 'ssh', 'portRange': "222:223", 'protocol': 'udp'},
                 ],
                 #
                 'master': cloudSettings.get('master', __opts__['id']),
@@ -326,7 +339,7 @@ def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
                 pdata['hostPort'] = __salt__[
                     'mc_cloud_compute_node.get_kind_port'
                 ](vm, data['target'], pdata['name'])
-            if pdata['name'] == 'ssh' or pdata['port'] in [22]:
+            if pdata['name'] == 'ssh' or pdata.get('port') in [22]:
                 ssh_port = pdata['hostPort']
         ssh_host = data['target']
         for ix, ipinfos in enumerate(data['additional_ips']):

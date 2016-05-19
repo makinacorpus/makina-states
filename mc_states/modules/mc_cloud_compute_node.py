@@ -46,10 +46,12 @@ _CUR_API = 2
 _default = object()
 PREFIX = 'makina-states.cloud.compute_node'
 CPORT = {'name': None,
+         'hostPortRange': None,
          'hostPort': None,
          'protocol': None,
          'count': None,
          'to_addr': None,
+         'portRange': None,
          'port': None}
 
 
@@ -708,15 +710,32 @@ def get_port_info(vmdata, portdata, reset=False):
                                                      kind=kind,
                                                      reset=reset)
     cport = copy.deepcopy(CPORT)
-    cport['port'] = portdata['port']
+    for i in 'portRange', 'hostPortRange':
+        cport[i] = portdata.get(i, None)
+    portrange = cport['portRange']
+    hportrange = cport['hostPortRange']
+    if portrange and not hportrange:
+        hportrange = cport['hostPortRange'] = cport['portRange']
+    if not portrange:
+        cport['port'] = portdata['port']
+        cport['hostPort'] = port
     cport['to_addr'] = vmdata['ip']
-    cport['hostPort'] = port
     cport['protocol'] = portdata['protocol']
     cport['count'] = portdata.get('count', None)
-    cport['id'] = '{hostPort}/{protocol}'.format(**cport)
-    cport['name'] = '{0}/{1}/{2}'.format(vm,
-                                         cport['id'],
-                                         portdata['port'])
+    if portrange:
+        hnam = hportrange.format(':', '_')
+        pnam = portrange.format(':', '_')
+        cport['id'] = '{0}/{1}'.format(hnam,
+                                       cport['protocol'])
+        cport['name'] = '{0}/{1}/{2}'.format(vm,
+                                             cport['id'],
+                                             pnam)
+    else:
+        cport['id'] = '{0}/{1}'.format(cport['hostPort'],
+                                       cport['protocol'])
+        cport['name'] = '{0}/{1}/{2}'.format(vm,
+                                             cport['id'],
+                                             portdata['port'])
     return cport
 
 
