@@ -157,11 +157,12 @@ class MakinaStatesInventory(object):
         self.init_cache()
         if os.environ.get('MS_REFRESH_CACHE', ''):
             self.args.refresh_cache = True
-        self.targets = set(
+        targets = set(
             magic_list_of_strings(os.environ.get('ANSIBLE_TARGETS'))
         )
-        self.targets_groups = set()
+        targets_groups = set()
 
+        self.refresh_cache = self.args.refresh_cache
         self.debug = self.args.ms_debug
 
         # in case of cache refreshing, force memcache restart
@@ -175,45 +176,44 @@ class MakinaStatesInventory(object):
         # we get the cache if we have one and we load from there
         # the available hostvars and groups
         payload = self.load_inventory(None, refresh=False)
-        self.update_hostvars(hosts, payload)
+        self.update_hostvars(targets, targets_groups, hosts, payload)
         self.make_groups()
 
         # if no targets are selected, we compute the whole infrastructure
         # pillar, and this will be long ! (10min on avg infra)
         full = True
-        if self.targets:
+        if targets:
             # but if we detect targets, we check if those are single hosts
             # we will compute pillars only for those hosts
             full = False
-            targets = set()
-            targets_groups = set()
-            for a in self.targets:
+            ntargets = set()
+            ntargets_groups = set()
+            for a in targets:
                 if a not in hosts and a not in self.groups:
                     full = True
                     break
                 if a in self.groups:
-                    targets_groups.add(a)
+                    ntargets_groups.add(a)
                 else:
-                    targets.add(a)
+                    ntargets.add(a)
             # else if we didnt find one, it may be a group, and
             # we compute pillar for all hosts
             if not full:
-                self.targets = targets
-                self.targets_groups = targets_groups
+                targets = ntargets
+                targets_groups = ntargets_groups
 
         if full:
-            self.targets = set([a for a in hosts])
-            self.targets_groups = set()
+            targets = set([a for a in hosts])
+            targets_groups = set()
 
         # we then load the pillars from each host as the salt_pillar hostvar
         # and salt will also fill ansible connexion hostvars as well
-        if self.targets:
-            payload = self.load_inventory(self.targets,
-                                          refresh=self.args.refresh_cache)
-            self.update_hostvars(hosts, payload)
+        if targets:
+            payload = self.load_inventory(targets, refresh=self.refresh_cache)
+            self.update_hostvars(targets, targets_groups, hosts, payload)
             self.make_groups()
 
-        self.filter_targets()
+        self.filter_targets(targets, targets_groups)
         self.to_stdout()
 
     def add_group(self, name, data=None, hosts=None):
@@ -235,34 +235,34 @@ class MakinaStatesInventory(object):
         self.groups.pop(name, None)
         self.inventory.pop(name, None)
 
-    def update_hostvars(self, hosts, payload):
+    def update_hostvars(self, targets, targets_groups, hosts, payload):
         self.hosts = self.reset_hosts()
         self.hostvars.update(payload['data'])
         for i in hosts + [a for a in self.hostvars]:
-            if i not in self.hosts and i in self.targets:
+            if i not in self.hosts and i in targets:
                 self.hosts.append(i)
 
-    def filter_targets(self):
+    def filter_targets(self, targets, targets_groups):
         # filter hosts vars
         for i in [a for a in self.hostvars]:
             found = False
             # if we didnt selected any targets:
             # no filter
-            if not (self.targets or self.targets_groups):
-                found = True
-            elif i in self.targets:
+            if i in targets:
                 found = True
             else:
-                for groupn in self.targets_groups:
+                for groupn in targets_groups:
                     group = self.groups.get(groupn, [])
                     if group and i in group:
                         found = True
+            if not (targets and targets_groups):
+                found = True
             if not found:
                 self.hostvars.pop(i, None)
         # filter groups vars
-        if self.targets_groups:
+        if targets_groups:
             for i in [a for a in self.groups]:
-                if i not in self.targets_groups:
+                if i not in targets_groups:
                     self.pop_group(i)
 
     def __debug(self, exit=False, rc=0):
@@ -283,9 +283,13 @@ class MakinaStatesInventory(object):
     def make_groups(self):
         for g in [a for a in self.groups]:
             self.inventory.pop(g, None)
-        for host, data in six.iteritems(self.inventory['_meta']['hostvars']):
+        for host, data in six.iteritems(
+            self.inventory['_meta']['hostvars']
+        ):
             try:
-                groups = data.get('salt_pillar', {}).get('ansible_groups', [])
+                groups = data.get(
+                    'salt_pillar', {}).get(
+                        'ansible_groups', [])
             except Exception:
                 continue
             else:
@@ -455,7 +459,7 @@ class MakinaStatesInventory(object):
 
     def sanitize_and_save(self, payload, force=True):
         payload = self.sanitize_payload(payload)
-        if payload.setdefault(CACHE_CHANGED_KEY, force):
+        if payload.setdefault(CACHE_CHANGED_KEY, False) or force:
             self.write_to_cache(payload, self.caches['hosts'])
         return payload
 
