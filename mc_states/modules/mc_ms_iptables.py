@@ -164,9 +164,6 @@ def get_public_ips(cache=True, data=None, ttl=120):
         _do, [data], {}, cache_key, ttl)
 
 
-
-
-
 def add_nat(port_s,
             to_addr,
             to_port=None,
@@ -183,10 +180,13 @@ def add_nat(port_s,
         port_s = str(port_s)
     if isinstance(to_port, (float, int)):
         to_port = str(to_port)
-    if (':' in port_s or ',' in port_s):
+    if (
+        (':' in port_s or ',' in port_s) and
+        (':' not in to_port)
+    ):
         to_port = None
     if to_port:
-        to_dest += ':{0}'.format(to_port)
+        to_dest += ':{0}'.format(to_port.replace(':', '-'))
     if insert:
         insert = 'I'
     else:
@@ -258,10 +258,13 @@ def add_ports(port_s,
                 source = '-s {0}'.format(source)
             if destination and ('-d' not in destination):
                 destination = '-d {0}'.format(destination)
-            rule = ('{binary} -w -t {table} -{insert}'
-                    ' {chain} -m state --state new'
+            rule = ('{binary} -w -t {table}'
+                    ' -{insert} {chain}'
+                    ' -m state --state new'
                     ' {source} {destination}'
-                    ' -m multiport -p {proto} --dports {port_s} -j {policy}'
+                    ' -m multiport -p {proto}'
+                    ' --dports {port_s}'
+                    ' -j {policy}'
                     '').format(**locals())
             if rule not in rules:
                 rules.append(rule)
@@ -305,10 +308,18 @@ def add_cloud_proxies(data):
         cloud_rules = cloud_reg.get(
             'reverse_proxies', {}).get('network_mappings', [])
         for port, portdata in six.iteritems(cloud_rules):
-            kw = {'to_addr': portdata['to_addr'],
-                  'to_port': portdata['port'],
-                  'protocols': [portdata['protocol']],
-                  'rules': data['config']['rules']}
+            if portdata.get('portRange', None):
+                hport = portdata['hostPortRange']
+                kw = {'to_addr': portdata['to_addr'],
+                      'to_port': portdata['portRange'],
+                      'protocols': [portdata['protocol']],
+                      'rules': data['config']['rules']}
+            else:
+                kw = {'to_addr': portdata['to_addr'],
+                      'to_port': portdata['port'],
+                      'protocols': [portdata['protocol']],
+                      'rules': data['config']['rules']}
+                hport = portdata['hostPort']
             # on hosted nodes, do not blindly map the target port
             # to an host port if not destination has been explicitly
             # be chosen
@@ -317,9 +328,9 @@ def add_cloud_proxies(data):
                     dkw = copy.deepcopy(kw)
                     dkw['rules'] = data['config']['rules']
                     dkw['destination'] = ip
-                    add_nat(portdata['hostPort'], **dkw)
+                    add_nat(hport, **dkw)
             else:
-                add_nat(portdata['hostPort'], **kw)
+                add_nat(hport, **kw)
     return data
 
 
