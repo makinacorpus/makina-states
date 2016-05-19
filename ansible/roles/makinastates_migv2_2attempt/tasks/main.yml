@@ -1,0 +1,31 @@
+---
+- name: "nodetype"
+  shell: |
+    set -ex
+    nt=$(cat {{makinastates_dest}}/etc/makina-states/nodetype 2>/dev/null)
+    if [ "x${nt}" != "x" ] && [ "x${nt}" != "xscratch" ];then
+    {{makinastates_dest}}/bin/salt-call --retcode-passthrough -lall state.sls makina-states.nodetypes.${nt}
+    fi
+  tags: makinastates_migv2_2nd
+- name: "salt"
+  shell: |
+    set -ex
+    {{makinastates_dest}}/bin/salt-call --retcode-passthrough -lall state.sls makina-states.controllers.salt
+  tags: makinastates_migv2_2nd
+- name: "remove v1"
+  shell: |
+    set -ex
+    {{makinastates_dest}}/bin/salt-call --retcode-passthrough -lall state.sls makina-states.controllers.disable_v1
+  tags: makinastates_migv2_2nd
+- name: "highstate"
+  shell: |
+    set -ex
+    if [ ! -e {{makinastates_dest}}/var/.first_highstate ];then
+    {{makinastates_dest}}/bin/salt-call --retcode-passthrough -lall state.sls makina-states.top && touch {{makinastates_dest}}/var/.first_highstate
+    fi
+  tags: makinastates_migv2_2nd
+- name: "projects"
+  shell: |
+    set -ex
+    {{makinastates_dest}}/bin/salt-call --retcode-passthrough -lall mc_project.link_projects
+  tags: makinastates_migv2_2nd
