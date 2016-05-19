@@ -113,8 +113,7 @@ Arguments:
 
     ANSIBLE_TARGETS
         compute node where the container resides (must be in ansible inventary)
-    lxc_container_name
-        lxc container to create
+        & lxc container to create
     lxc_from_container
         lxc container from which initing the container
     lxc_backing_store

@@ -134,13 +134,18 @@ def restart_memcached():
 
 class MakinaStatesInventory(object):
 
+    def reset_hosts(self):
+        self.hosts = self.inventory['all']['hosts'] = []
+        return self.hosts
+
     def __init__(self):
         self.inventory = {'all': {'hosts': []},
                           '_meta': {'hostvars': {}}}
-        self.hosts = self.inventory['all']['hosts']
+        self.reset_hosts()
         self.hostvars = self.inventory['_meta']['hostvars']
         self.debug = False
         self.ms = None
+        self.groups = {}
         self.cache_path = None
         self.caches = {'list': None, 'hosts': None}
         self.cache_max_age = None
@@ -152,7 +157,10 @@ class MakinaStatesInventory(object):
         self.init_cache()
         if os.environ.get('MS_REFRESH_CACHE', ''):
             self.args.refresh_cache = True
-        self.targets = magic_list_of_strings(os.environ.get('ANSIBLE_TARGETS'))
+        self.targets = set(
+            magic_list_of_strings(os.environ.get('ANSIBLE_TARGETS'))
+        )
+        self.targets_groups = set()
 
         self.debug = self.args.ms_debug
 
@@ -164,39 +172,98 @@ class MakinaStatesInventory(object):
         # (minionid == fqdn)
         hosts = self.get_list(refresh=self.args.refresh_cache)
 
+        # we get the cache if we have one and we load from there
+        # the available hostvars and groups
+        payload = self.load_inventory(None, refresh=False)
+        self.update_hostvars(hosts, payload)
+        self.make_groups()
+
         # if no targets are selected, we compute the whole infrastructure
-        # pillar, and this will be long ! (10min on avg inga)
+        # pillar, and this will be long ! (10min on avg infra)
         full = True
         if self.targets:
             # but if we detect targets, we check if those are single hosts
             # we will compute pillars only for those hosts
             full = False
             targets = set()
+            targets_groups = set()
             for a in self.targets:
-                if a not in hosts:
+                if a not in hosts and a not in self.groups:
                     full = True
                     break
-                targets.add(a)
+                if a in self.groups:
+                    targets_groups.add(a)
+                else:
+                    targets.add(a)
             # else if we didnt find one, it may be a group, and
             # we compute pillar for all hosts
             if not full:
-                self.targets = list(targets)
+                self.targets = targets
+                self.targets_groups = targets_groups
+
         if full:
-            self.targets = [a for a in hosts]
+            self.targets = set([a for a in hosts])
+            self.targets_groups = set()
 
         # we then load the pillars from each host as the salt_pillar hostvar
         # and salt will also fill ansible connexion hostvars as well
-        payload = self.load_inventory(self.targets,
-                                      refresh=self.args.refresh_cache)
+        if targets:
+            payload = self.load_inventory(self.targets,
+                                          refresh=self.args.refresh_cache)
+            self.update_hostvars(hosts, payload)
+            self.make_groups()
+
+        self.filter_targets()
+        self.to_stdout()
+
+    def add_group(self, name, data=None, hosts=None):
+        if not data:
+            data = {}
+        if not hosts:
+            hosts = []
+        if not isinstance(hosts, (set, list, tuple, dict)):
+            hosts = []
+        ggroup = self.inventory.setdefault(name, {})
+        ggroup.update(data)
+        group = ggroup.setdefault('hosts', [])
+        for host in hosts:
+            if host not in group:
+                group.append(host)
+        self.groups[name] = copy.deepcopy(group)
+
+    def pop_group(self, name):
+        self.groups.pop(name, None)
+        self.inventory.pop(name, None)
+
+    def update_hostvars(self, hosts, payload):
+        self.hosts = self.reset_hosts()
         self.hostvars.update(payload['data'])
-        for i in [a for a in self.hostvars]:
-            if i not in self.targets:
-                self.hostvars.pop(i, None)
         for i in hosts + [a for a in self.hostvars]:
             if i not in self.hosts and i in self.targets:
                 self.hosts.append(i)
-        self.make_groups()
-        self.to_stdout()
+
+    def filter_targets(self):
+        # filter hosts vars
+        for i in [a for a in self.hostvars]:
+            found = False
+            # if we didnt selected any targets:
+            # no filter
+            if not (self.targets or self.targets_groups):
+                found = True
+            elif i in self.targets:
+                found = True
+            else:
+                for groupn in self.targets_groups:
+                    group = self.groups.get(groupn, [])
+                    if group and i in group:
+                        found = True
+            if not found:
+                self.hostvars.pop(i, None)
+        # filter groups vars
+        if self.targets_groups:
+            for i in [a for a in self.groups]:
+                if i not in self.targets_groups:
+                    self.pop_group(i)
 
     def __debug(self, exit=False, rc=0):
         with open('/foo', 'a') as fic:
@@ -214,6 +281,8 @@ class MakinaStatesInventory(object):
             sys.exit(rc)
 
     def make_groups(self):
+        for g in [a for a in self.groups]:
+            self.inventory.pop(g, None)
         for host, data in six.iteritems(self.inventory['_meta']['hostvars']):
             try:
                 groups = data.get('salt_pillar', {}).get('ansible_groups', [])
@@ -221,10 +290,7 @@ class MakinaStatesInventory(object):
                 continue
             else:
                 for g in groups:
-                    ggroup = self.inventory.setdefault(g, {})
-                    group = ggroup.setdefault('hosts', [])
-                    if host not in group:
-                        group.append(host)
+                    self.add_group(g, hosts=[host])
 
     def fixperms(self):
         if os.path.exists(self.cache_path):
@@ -372,7 +438,7 @@ class MakinaStatesInventory(object):
 
     def get_ext_pillar(self, hosts=None, chunksize=16):
         _cmd = ('bin/salt-call --out=json'
-               ' mc_remote_pillar.generate_ansible_roster')
+                ' mc_remote_pillar.generate_ansible_roster')
         res = {}
         cmds = []
         if hosts:
@@ -410,8 +476,9 @@ class MakinaStatesInventory(object):
                         json.loads(json_inventory))
                 except ValueError:
                     payload = self.sanitize_payload({})
-            hosts = [a for a in hosts if a not in payload['data']]
-        else:
+            if hosts:
+                hosts = [a for a in hosts if a not in payload['data']]
+        if not payload:
             payload = self.sanitize_payload(payload)
         if hosts:
             payload = self.update_cache(payload, hosts=hosts)
