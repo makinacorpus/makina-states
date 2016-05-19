@@ -2594,7 +2594,7 @@ def unlink_pillar(names, *args, **kwargs):
         salt_settings = __salt__['mc_salt.settings']()
         pillar_root = os.path.join(salt_settings['pillar_root'])
         pillarf = os.path.join(pillar_root, 'top.sls')
-        pillar_top = 'makina-projects.{name}'.format(**cfg)
+        pillar_top = 'makina-projects.{name}'.format(name=name)
         if not LooseVersion(VERSION) >= LooseVersion("2.0"):
             with open(pillarf) as fpillarf:
                 pillar_top = '- makina-projects.{name}'.format(name=name)
