@@ -1,5 +1,6 @@
 {% set settings = salt['mc_slapd.settings']() %}
 {% import "makina-states/_macros/h.jinja" as h with context %}
+{% import "makina-states/localsettings/ssl/macros.jinja" as ssl with context %}
 include:
   - makina-states.services.dns.slapd.hooks
   - makina-states.services.dns.slapd.tls-setup
@@ -10,16 +11,13 @@ include:
   {% endif %}
   - makina-states.services.dns.slapd.services
 
-slapd_usertosslcerts:
-  user.present:
-    - name: {{settings.user}}
-    - remove_groups: False
-    - system: true
-    - optional_groups: [ssl-cert]
+{% macro rsmacro() %}
     - watch:
       - mc_proxy: slapd-post-install
     - watch_in:
       - mc_proxy: slapd-pre-conf
+{% endmacro %}
+{{ ssl.add_to_sslcerts(settings.user, rmacro=rsmacro, suf='ldap') }}
 
 slapd_directory:
   file.directory:
@@ -32,7 +30,6 @@ slapd_directory:
       - mc_proxy: slapd-post-install
     - watch_in:
       - mc_proxy: slapd-pre-conf
-
 {% macro rmacro() %}
     - watch:
       - mc_proxy: slapd-pre-conf
