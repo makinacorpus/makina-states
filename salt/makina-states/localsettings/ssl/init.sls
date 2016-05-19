@@ -38,7 +38,7 @@ makina-ssl-etc-cloud-user:
 makina-ssl-etc-cloud-cert-dirs:
   file.directory:
     - makedirs: true
-    - mode: 750
+    - mode: 751
     - user: {{settings.user}}
     - group: {{settings.group}}
     - names:
