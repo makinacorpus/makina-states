@@ -22,12 +22,15 @@ Documentation of this module is available with::
 # Import python libs
 import logging
 # Import salt libs
+import traceback
 from copy import deepcopy
 import os
 from salt.utils.odict import OrderedDict
 import mc_states.api
 import OpenSSL
+from OpenSSL._util import lib as cryptolib
 from urllib3.contrib.pyopenssl import get_subj_alt_name
+import subprocess
 
 
 HAS_SSL = True  # retrocompat
@@ -414,7 +417,8 @@ def selfsigned_cert(CN,
                     OU=None,
                     altnames=None,
                     emailAddress='xyz@pdq.net',
-                    digest='sha256'):
+                    digest='sha256',
+                    keytype=None):
     if not altnames:
         altnames = []
 
@@ -433,9 +437,17 @@ def selfsigned_cert(CN,
             i = 'DNS:{0}'.format(i)
         alts.add(i)
 
+    default_keytype = 'rsa'
+    if keytype is None:
+        keytype = default_keytype
+    cryptokeys =  {
+        'rsa': (OpenSSL.crypto.TYPE_RSA, bits),
+    }
+    if keytype not in cryptokeys:
+        keytype = default_keytype
     # create key
     key = OpenSSL.crypto.PKey()
-    key.generate_key(OpenSSL.crypto.TYPE_RSA, bits)
+    key.generate_key(*cryptokeys[keytype])
 
     # create certificate
     cert = OpenSSL.crypto.X509()
@@ -523,6 +535,7 @@ def common_settings(ttl=60):
 
 def get_selfsigned_cert_for(domain,
                             gen=False,
+                            keytype=None,
                             domain_csr_data=None,
                             as_text=False):
     '''
@@ -531,6 +544,8 @@ def get_selfsigned_cert_for(domain,
     The certificates are stored inside a local registry
     '''
     _s = __salt__
+    if keytype is None and domain.endswith('.rsa'):
+        keytype = 'rsa'
     local_conf = _s['mc_macros.get_local_registry'](
         'mc_ssl_certs', registry_format='json')
     certs = local_conf.setdefault('selfsigned', {})
@@ -539,7 +554,7 @@ def get_selfsigned_cert_for(domain,
         if wdomain:
             try:
                 return get_selfsigned_cert_for(
-                    wdomain, gen=False, as_text=as_text)
+                    wdomain, gen=False, as_text=as_text, keytype=keytype)
             except CertificateNotFoundError:
                 pass
     if domain_csr_data is None:
@@ -555,6 +570,7 @@ def get_selfsigned_cert_for(domain,
             if val and (k not in ['CN', 'days', 'ca_name']):
                 domain_csr_data.setdefault(k, val)
         domain_csr_data.setdefault('days', '372000')
+        domain_csr_data['keytype'] = keytype
         cert = certs[domain] = selfsigned_cert(**domain_csr_data)
         _s['mc_macros.update_local_registry'](
             'mc_ssl_certs', local_conf, registry_format='json')
@@ -572,7 +588,8 @@ def get_configured_cert(domain,
                         selfsigned=True,
                         ttl=60,
                         data=None,
-                        as_text=False):
+                        as_text=False,
+                        keytype=None):
     '''
     Return any configured ssl cert for domain or the wildward domain
     matching the precise domain.
@@ -600,7 +617,7 @@ def get_configured_cert(domain,
                 pretendants.append((cert, key, chain))
         if not pretendants:
             if selfsigned:
-                cert = get_selfsigned_cert_for(domain, gen=gen)
+                cert = get_selfsigned_cert_for(domain, gen=gen, keytype=keytype)
                 pretendants.append((cert[0], cert[1], ''))
                 certs[domain] = cert[0], cert[1], ''
         pretendants.sort(key=selfsigned_last)
@@ -718,7 +735,7 @@ def settings():
     return _settings()
 
 
-def ssl_certs(domains, gen=False, as_text=False, **kw):
+def ssl_certs(domains, gen=False, as_text=False, keytype=None, **kw):
     '''
     Maybe Generate
     and Return SSL certificate and key paths for domain
@@ -737,13 +754,13 @@ def ssl_certs(domains, gen=False, as_text=False, **kw):
         domains = domains.split(',')
     ssl_certs = []
     for domain in domains:
-        crt_data = get_configured_cert(domain, gen=gen, as_text=as_text)
+        crt_data = get_configured_cert(domain, gen=gen, keytype=keytype, as_text=as_text)
         ssl_certs.append(crt_data)
     ssl_certs = __salt__['mc_utils.uniquify'](ssl_certs)
     return ssl_certs
 
 
-def ca_ssl_certs(domains, gen=False, as_text=False, **kwargs):
+def ca_ssl_certs(domains, gen=False, as_text=False, keytype=None, **kwargs):
     '''
     Wrapper to ssl_certs to also return the cacert
     information
@@ -754,7 +771,7 @@ def ca_ssl_certs(domains, gen=False, as_text=False, **kwargs):
     if isinstance(domains, basestring):
         domains = domains.split(',')
     for domain in domains:
-        data = ssl_certs(domain, gen=gen)
+        data = ssl_certs(domain, gen=gen, keytype=keytype)
         if not data:
             continue
         data = data[0]
@@ -765,7 +782,26 @@ def ca_ssl_certs(domains, gen=False, as_text=False, **kwargs):
     return rdomains
 
 
-def get_cert_infos(cn_or_cert, key=None, sinfos=None, ttl=60, gen=False):
+def get_cert_infos(cn_or_cert,
+                   key=None,
+                   sinfos=None,
+                   ttl=60,
+                   gen=False,
+                   keytype=None,
+                   trusted_certs_path=None,
+                   full_certs_path=None,
+                   separate_ssl_files_path=None,
+                   full_basename=None,
+                   auth_basename=None,
+                   authr_basename=None,
+                   crt_basename=None,
+                   crt_full_basename=None,
+                   key_basename=None,
+                   bundle_basename=None,
+                   only_basename=None,
+                   trust_basename=None,
+                   public_key_basename=None,
+                   rsa_key_basename=None):
     '''
     Get infos for a certificate, either by being configured by makina-states
     or given in parameters::
@@ -781,9 +817,52 @@ def get_cert_infos(cn_or_cert, key=None, sinfos=None, ttl=60, gen=False):
             key='-----BEGIN PRIVATE KEY-----
             YYY
             -----END PRIVATE KEY-----'
+
+    return a struct::
+
+        {'cn': common name,
+         'altnames': defined alt names,
+         'cert_data': see bellow,
+         'cert': cert + chain content,
+         'crt': path where the crt should be installed,
+         'trust': VALUE,
+         'only': VALUE,
+         'bundle': VALUE,
+         'full': VALUE,
+         'auth': VALUE,
+         'authr': VALUE,
+         'unlock_key': VALUE,
+         'public_key':  public_key_or_empty_string_content,
+         'rsa_key': unlocked_private_key_or_key_content,
+         'key': VALUE}
+
+    cert_data contains a 4th tuple with the certificate/key/chain contents::
+
+        (cert,
+         key,
+         chain_or_empty_string)
+
     '''
     _s = __salt__
-    def _do(cn_or_cert, key, sinfos):
+    def _do(cn_or_cert,
+            key,
+            sinfos,
+            gen,
+            keytype,
+            trusted_certs_path,
+            full_certs_path,
+            separate_ssl_files_path,
+            full_basename,
+            auth_basename,
+            authr_basename,
+            crt_basename,
+            crt_full_basename,
+            key_basename,
+            bundle_basename,
+            only_basename,
+            trust_basename,
+            public_key_basename,
+            rsa_key_basename):
         settings = common_settings()
         keyc = key
         cn_or_certc = None
@@ -819,7 +898,7 @@ def get_cert_infos(cn_or_cert, key=None, sinfos=None, ttl=60, gen=False):
             cert, chain = ssl_chain(sinfos['cn'], cn_or_certc)
             cdata = (cert, keyc, chain)
         else:
-            cdata = get_configured_cert(cn_or_cert, gen=gen)
+            cdata = get_configured_cert(cn_or_cert, gen=gen, keytype=keytype)
             if sinfos is None:
                 sinfos = ssl_infos(cdata[0])
         cn = sinfos['cn']
@@ -827,25 +906,104 @@ def get_cert_infos(cn_or_cert, key=None, sinfos=None, ttl=60, gen=False):
         if not cn:
             raise CertificateNotFoundError(
                 '{0} is not valid'.format(cn_or_cert))
-        spath = os.path.join(settings['config_dir'], 'separate')
-        cpath = os.path.join(settings['config_dir'], 'certs')
-        trustpath = os.path.join(settings['config_dir'], 'trust')
+        if not separate_ssl_files_path:
+            separate_ssl_files_path = os.path.join(settings['config_dir'],
+                                                   'separate')
+        if not full_certs_path:
+            full_certs_path = os.path.join(settings['config_dir'], 'certs')
+        if not trusted_certs_path:
+            trusted_certs_path = os.path.join(settings['config_dir'], 'trust')
+        cdata = [a for a in cdata]
+        # try to get the unlocked version of the private key
+        pkey = None
+        public_key = ''
+        private_key = ''
+        if cdata[1]:
+            pkey = load_key(cdata[1])
+        if pkey:
+            try:
+                public_key = OpenSSL.crypto.dump_publickey(
+                    OpenSSL.crypto.FILETYPE_PEM, pkey)
+            except Exception:
+                trace = traceback.format_exc()
+                log.error('INFOS public private key for {0}'.format(cn))
+                log.error(trace)
+            try:
+                ossl = subprocess.Popen(['openssl', 'rsa'],
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        stdin=subprocess.PIPE)
+                (stdout, stderr) = ossl.communicate(cdata[1])
+                ossl.wait()
+                if ossl.returncode == 0 and ('BEGIN RSA PRIVATE KEY' in stdout):
+                    keys = ssl_keys(stdout)
+                    if keys:
+                        private_key = keys[0]
+            except Exception:
+                trace = traceback.format_exc()
+                log.error('INFOS rsa private key for {0}'.format(cn))
+                log.error(trace)
         return {'cn': cn,
                 'altnames': altnames,
                 'cert_data': cdata,
+                'rsa_key': private_key,
+                'public_key': public_key,
                 'cert': '\n'.join([cdata[0], cdata[2] or '']),
-                'crt': '{0}/{1}.crt'.format(cpath, cn),
-                'trust': '{0}/{1}.crt'.format(trustpath, cn),
-                'only': '{0}/{1}.crt'.format(spath, cn),
-                'bundle': '{0}/{1}-{2}.crt'.format(spath, cn, 'bundle'),
-                'full': '{0}/{1}-{2}.crt'.format(spath, cn, 'full'),
-                'auth': '{0}/{1}-{2}.crt'.format(spath, cn, 'auth'),
-                'authr': '{0}/{1}-{2}.crt'.format(spath, cn, 'authr'),
-                'key': '{0}/{1}.key'.format(spath, cn)}
+                'crt': '{0}/{1}'.format(
+                    full_certs_path,
+                    full_basename or '{0}.crt'.format(cn)),
+                'trust': '{0}/{1}'.format(
+                    trusted_certs_path,
+                    '{0}.crt'.format(cn)),
+                'only': '{0}/{1}'.format(
+                    separate_ssl_files_path,
+                    only_basename or '{0}.crt'.format(cn)),
+                'bundle': '{0}/{1}'.format(
+                    separate_ssl_files_path,
+                    bundle_basename or '{0}-bundle.crt'.format(cn)),
+                'full': '{0}/{1}'.format(
+                    separate_ssl_files_path,
+                    crt_full_basename or '{0}-full.crt'.format(cn)),
+                'auth': '{0}/{1}'.format(
+                     separate_ssl_files_path,
+                    auth_basename or '{0}-auth.crt'.format(cn)),
+                'authr': '{0}/{1}'.format(
+                    separate_ssl_files_path,
+                    authr_basename or '{0}-authr.crt'.format(cn)),
+                'rsa_keyp': '{0}/{1}'.format(
+                    separate_ssl_files_path,
+                    rsa_key_basename or '{0}.rsa-key'.format(cn)),
+                'public_keyp': '{0}/{1}'.format(
+                    separate_ssl_files_path,
+                    public_key_basename or '{0}.public-key'.format(cn)),
+                'key': '{0}/{1}'.format(
+                    separate_ssl_files_path,
+                    key_basename or '{0}.key'.format(cn)),
+                'has_chain': bool((cdata[2] or '').strip())}
     cache_key = 'mc_ssl.get_cert_infos{0}{1}'.format(
         cn_or_cert.replace('\n', ''),
         (key or '').replace('\n', ''),
     )
     return _s['mc_utils.memoize_cache'](
-        _do, [cn_or_cert, key, sinfos], {}, cache_key, ttl)
+        _do, [
+            cn_or_cert,
+            key,
+            sinfos,
+            gen,
+            keytype,
+            trusted_certs_path,
+            full_certs_path,
+            separate_ssl_files_path,
+            full_basename,
+            auth_basename,
+            authr_basename,
+            crt_basename,
+            crt_full_basename,
+            key_basename,
+            bundle_basename,
+            only_basename,
+            trust_basename,
+            public_key_basename,
+            rsa_key_basename],
+        {}, cache_key, ttl)
 # vim:set et sts=4 ts=4 tw=80:
