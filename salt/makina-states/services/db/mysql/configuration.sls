@@ -1,4 +1,5 @@
 {% import "makina-states/_macros/h.jinja" as h with context %}
+{% import "makina-states/localsettings/ssl/macros.jinja" as ssl with context %}
 {#
 # - install a custom /etc/mysql/conf.d/local.cnf config script
 # - reload salt modules to get the mysql salt modules available
@@ -9,6 +10,7 @@
 #}
 {%- set mysqlData = salt['mc_mysql.settings']() %}
 include:
+  - makina-states.localsettings.ssl
   - makina-states.services.db.mysql.services
   - makina-states.services.db.mysql.checkroot
 
@@ -49,4 +51,15 @@ mysql-reload-systemd:
       - file: mysql-/etc/systemd/system/overrides.d/mysql.conf
     - watch_in:
       - mc_proxy: mysql-pre-restart-hook
+
+{% macro rsmacro() %}
+    - watch:
+      - mc_proxy: mysql-pre-conf-hook
+    - watch_in:
+      - mc_proxy: mysql-post-conf-hook
+{% endmacro %}
+{{ ssl.install_cert_in_dir(cert_infos=mysqlData.cert_infos,
+                           user=mysqlData.user,
+                           group=mysqlData.user,
+                           suf='mysql')}}
 # vim: set nofoldenable:
