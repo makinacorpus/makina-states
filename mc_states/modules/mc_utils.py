@@ -1291,3 +1291,66 @@ def epdb(**kw):
     '''
     import epdb
     epdb.serve()
+
+
+def deepcopy_unicode_free(data, done=None):
+    if done is None:
+        done = {}
+    oid = id(data)
+    if oid in done:
+        return done[oid]
+    else:
+        done[oid] = data
+    if isinstance(data, six.string_types):
+        return magicstring(data)
+    elif isinstance(data, list):
+        ndata = []
+        for i in data:
+            ndata.append(unicode_free(i, done=done))
+        return ndata
+    elif isinstance(data, set):
+        ndata = set()
+        for i in data:
+            ndata.add(unicode_free(i, done=done))
+        return ndata
+    elif isinstance(data, tuple):
+        ndata = []
+        for i in data:
+            ndata.append(unicode_free(i, done=done))
+        return tuple(ndata)
+    elif isinstance(data, dict):
+        ndata = type(data)()  # handle any class of mapping
+        for i, val in six.iteritems(data):
+            ndata[i] = unicode_free(data, done=done)
+        return ndata
+    else:
+        return data
+
+
+def unicode_free(data, done=None):
+    if done is None:
+        done = {}
+    oid = id(data)
+    if oid in done:
+        return done[oid]
+    else:
+        done[oid] = data
+    if isinstance(data, six.string_types):
+        return magicstring(data)
+    elif isinstance(data, list):
+        for i in range(len(data)):
+            data[i] = unicode_free(data[i], done=done)
+    elif isinstance(data, dict):
+        for i in [a for a in data]:
+            data[i] = unicode_free(data[i], done=done)
+    elif isinstance(data, set):
+        ndata = set()
+        for i in data:
+            ndata.add(unicode_free(i, done=done))
+        return ndata
+    elif isinstance(data, tuple):
+        ndata = []
+        for i in data:
+            data.append(unicode_free(i, done=done))
+        return ndata
+    return data
