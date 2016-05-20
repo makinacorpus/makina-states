@@ -1,5 +1,5 @@
-Paas made easy with saltstack and makina-states
-===================================================
+Paas made easy with saltstack, ansible and makina-states
+==============================================================
 About
 ------
 
