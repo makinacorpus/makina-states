@@ -3785,6 +3785,7 @@ def json_pillars(id_, pillar=None, raise_error=True, *args, **kw):
                             data, json.loads(fic.read()))
                 except (IOError, ValueError):
                     pass
+    data = _s['mc_utils.unicode_free'](data)
     return data
 
 
