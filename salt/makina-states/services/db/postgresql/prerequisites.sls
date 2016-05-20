@@ -4,6 +4,7 @@ include:
   - makina-states.services.db.postgresql.hooks
   - makina-states.services.db.postgresql.client
 
+{%- set ssl = salt['mc_ssl.settings']() %}
 {%- set orchestrate = hooks.orchestrate %}
 {%- set locs = salt['mc_locations.settings']() %}
 {% set pkgs = salt['mc_pkgs.settings']() %}
@@ -51,7 +52,7 @@ postpkg-pgtune:
 pguser-to-ssl-cert:
   user.present:
     - name: postgres
-    - optional_groups: [ssl-cert]
+    - optional_groups: [{{ssl.group}}]
     - remove_groups: false
     - require:
       - pkg: postgresql-pkgs

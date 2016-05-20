@@ -509,7 +509,7 @@ def common_settings(ttl=60):
                 },
                 'config_dir': '/etc/ssl/cloud',
                 'user': 'root',
-                'group': 'ssl-certs',
+                'group': 'ssl-cert',
                 'configs': {
                     '/etc/ssl/cloud/trust.sh': {
                         'target': '{config_dir}/trust.sh',

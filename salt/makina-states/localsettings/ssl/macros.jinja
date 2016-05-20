@@ -12,7 +12,7 @@
     - name: "{{user}}"
     - remove_groups: False
     - system: true
-    - optional_groups: [ssl-cert]
+    - optional_groups: [{{settings.group}}]
     {% if rmacro %}
     {{rmacro()}}
     {% endif %}

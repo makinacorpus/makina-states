@@ -20,6 +20,7 @@ slapd-service-restart:
     - name: {{settings.service_name}}
     - enable: True
     - watch:
+      - mc_proxy: ssl-certs-post-hook
       - mc_proxy: slapd-pre-restart
     - watch_in:
       - mc_proxy: slapd-post-restart
