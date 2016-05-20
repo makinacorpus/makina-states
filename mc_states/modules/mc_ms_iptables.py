@@ -180,7 +180,7 @@ def add_nat(port_s,
         port_s = str(port_s)
     if isinstance(to_port, (float, int)):
         to_port = str(to_port)
-    if (
+    if to_port and (
         (':' in port_s or ',' in port_s) and
         (':' not in to_port)
     ):
