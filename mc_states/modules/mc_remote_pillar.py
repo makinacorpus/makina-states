@@ -418,6 +418,8 @@ def generate_ansible_roster(ids_=None, **kwargs):
                 'Pillar for {0} has errors\n{1}'.format(
                     host,
                     '\n'.join(pillar['_errors'])))
+        # ssh connecttion infos must have been exposed in
+        # extpillars in the "saltapi.SSH_CON_PREFIX" subdict
         oinfos = pillar.get(saltapi.SSH_CON_PREFIX, {})
         pillar['makinastates_from_ansible'] = True
         hosts[host] = {
