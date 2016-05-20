@@ -735,10 +735,11 @@ def arobase_iface(iface, data=None):
     if data is None:
         if '@' in iface:
             return iface.split('@')[0]
-    if iface not in data:
-        aiface = iface.split('@')[0]
-        if aiface and aiface in data:
-            iface = aiface
+    else:
+        if iface not in data:
+            aiface = iface.split('@')[0]
+            if aiface and aiface in data:
+                iface = aiface
     return iface
 
 
