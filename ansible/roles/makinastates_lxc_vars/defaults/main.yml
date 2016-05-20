@@ -23,7 +23,49 @@ lxc_eth0_bridge: lxcbr1
 lxc_eth0_ip: null
 lxc_eth0_gateway: null
 #lxc_eth0_ip: '1.2.3.4/32'
+#
+
 lxc_eth1_mac: null
 lxc_eth1_bridge: null
 lxc_eth1_ip: null
 lxc_eth1_gateway: null
+
+lxc_eth2_mac: null
+lxc_eth2_bridge: null
+lxc_eth2_ip: null
+lxc_eth2_gateway: null
+
+lxc_eth3_mac: null
+lxc_eth3_bridge: null
+lxc_eth3_ip: null
+lxc_eth3_gateway: null
+
+lxc_eth4_mac: null
+lxc_eth4_bridge: null
+lxc_eth4_ip: null
+lxc_eth4_gateway: null
+
+lxc_eth5_mac: null
+lxc_eth5_bridge: null
+lxc_eth5_ip: null
+lxc_eth5_gateway: null
+
+lxc_eth6_mac: null
+lxc_eth6_bridge: null
+lxc_eth6_ip: null
+lxc_eth6_gateway: null
+
+lxc_eth7_mac: null
+lxc_eth7_bridge: null
+lxc_eth7_ip: null
+lxc_eth7_gateway: null
+
+lxc_eth8_mac: null
+lxc_eth8_bridge: null
+lxc_eth8_ip: null
+lxc_eth8_gateway: null
+
+lxc_eth9_mac: null
+lxc_eth9_bridge: null
+lxc_eth9_ip: null
+lxc_eth9_gateway: null
