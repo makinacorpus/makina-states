@@ -32,6 +32,213 @@ from OpenSSL._util import lib as cryptolib
 from urllib3.contrib.pyopenssl import get_subj_alt_name
 import subprocess
 
+"""
+BACKPORT FROM PYOPENSSL 0.16
+"""
+from functools import partial
+from six import (
+    integer_types as _integer_types,
+    text_type as _text_type,
+    PY3 as _PY3)
+from OpenSSL._util import (
+    ffi as _ffi,
+    lib as _lib,
+    exception_from_error_queue as _exception_from_error_queue,
+    byte_string as _byte_string,
+    native as _native,
+    UNSPECIFIED as _UNSPECIFIED,
+    text_to_bytes_and_warn as _text_to_bytes_and_warn,
+)
+FILETYPE_PEM = _lib.SSL_FILETYPE_PEM
+FILETYPE_ASN1 = _lib.SSL_FILETYPE_ASN1
+TYPE_RSA = _lib.EVP_PKEY_RSA
+TYPE_DSA = _lib.EVP_PKEY_DSA
+
+_raise_current_error = partial(
+    _exception_from_error_queue, OpenSSL.crypto.Error)
+
+
+def _new_mem_buf(buffer=None):
+    """
+    Allocate a new OpenSSL memory BIO.
+    Arrange for the garbage collector to clean it up automatically.
+    :param buffer: None or some bytes to use to put into the BIO so that they
+        can be read out.
+    """
+    if buffer is None:
+        bio = _lib.BIO_new(_lib.BIO_s_mem())
+        free = _lib.BIO_free
+    else:
+        data = _ffi.new("char[]", buffer)
+        bio = _lib.BIO_new_mem_buf(data, len(buffer))
+
+        # Keep the memory alive as long as the bio is alive!
+        def free(bio, ref=data):
+            return _lib.BIO_free(bio)
+
+    if bio == _ffi.NULL:
+        # TODO: This is untested.
+        _raise_current_error()
+
+    bio = _ffi.gc(bio, free)
+    return bio
+
+class PKey(object):
+    """
+    A class representing an DSA or RSA public key or key pair.
+    """
+    _only_public = False
+    _initialized = True
+
+    def __init__(self):
+        pkey = _lib.EVP_PKEY_new()
+        self._pkey = _ffi.gc(pkey, _lib.EVP_PKEY_free)
+        self._initialized = False
+
+    def generate_key(self, type, bits):
+        """
+        Generate a key pair of the given type, with the given number of bits.
+        This generates a key "into" the this object.
+        :param type: The key type.
+        :type type: :py:data:`TYPE_RSA` or :py:data:`TYPE_DSA`
+        :param bits: The number of bits.
+        :type bits: :py:data:`int` ``>= 0``
+        :raises TypeError: If :py:data:`type` or :py:data:`bits` isn't
+            of the appropriate type.
+        :raises ValueError: If the number of bits isn't an integer of
+            the appropriate size.
+        :return: :py:const:`None`
+        """
+        if not isinstance(type, int):
+            raise TypeError("type must be an integer")
+
+        if not isinstance(bits, int):
+            raise TypeError("bits must be an integer")
+
+        # TODO Check error return
+        exponent = _lib.BN_new()
+        exponent = _ffi.gc(exponent, _lib.BN_free)
+        _lib.BN_set_word(exponent, _lib.RSA_F4)
+
+        if type == TYPE_RSA:
+            if bits <= 0:
+                raise ValueError("Invalid number of bits")
+
+            rsa = _lib.RSA_new()
+
+            result = _lib.RSA_generate_key_ex(rsa, bits, exponent, _ffi.NULL)
+            if result == 0:
+                # TODO: The test for this case is commented out.  Different
+                # builds of OpenSSL appear to have different failure modes that
+                # make it hard to test.  Visual inspection of the OpenSSL
+                # source reveals that a return value of 0 signals an error.
+                # Manual testing on a particular build of OpenSSL suggests that
+                # this is probably the appropriate way to handle those errors.
+                _raise_current_error()
+
+            result = _lib.EVP_PKEY_assign_RSA(self._pkey, rsa)
+            if not result:
+                # TODO: It appears as though this can fail if an engine is in
+                # use which does not support RSA.
+                _raise_current_error()
+
+        elif type == TYPE_DSA:
+            dsa = _lib.DSA_new()
+            if dsa == _ffi.NULL:
+                # TODO: This is untested.
+                _raise_current_error()
+
+            dsa = _ffi.gc(dsa, _lib.DSA_free)
+            res = _lib.DSA_generate_parameters_ex(
+                dsa, bits, _ffi.NULL, 0, _ffi.NULL, _ffi.NULL, _ffi.NULL
+            )
+            if not res == 1:
+                # TODO: This is untested.
+                _raise_current_error()
+            if not _lib.DSA_generate_key(dsa):
+                # TODO: This is untested.
+                _raise_current_error()
+            if not _lib.EVP_PKEY_set1_DSA(self._pkey, dsa):
+                # TODO: This is untested.
+                _raise_current_error()
+        else:
+            raise Error("No such key type")
+
+        self._initialized = True
+
+    def check(self):
+        """
+        Check the consistency of an RSA private key.
+        This is the Python equivalent of OpenSSL's ``RSA_check_key``.
+        :return: True if key is consistent.
+        :raise Error: if the key is inconsistent.
+        :raise TypeError: if the key is of a type which cannot be checked.
+            Only RSA keys can currently be checked.
+        """
+        if self._only_public:
+            raise TypeError("public key only")
+
+        if _lib.EVP_PKEY_type(self.type()) != _lib.EVP_PKEY_RSA:
+            raise TypeError("key type unsupported")
+
+        rsa = _lib.EVP_PKEY_get1_RSA(self._pkey)
+        rsa = _ffi.gc(rsa, _lib.RSA_free)
+        result = _lib.RSA_check_key(rsa)
+        if result:
+            return True
+        _raise_current_error()
+
+    def type(self):
+        """
+        Returns the type of the key
+        :return: The type of the key.
+        """
+        return _lib.Cryptography_EVP_PKEY_id(self._pkey)
+
+    def bits(self):
+        """
+        Returns the number of bits of the key
+        :return: The number of bits of the key.
+        """
+        return _lib.EVP_PKEY_bits(self._pkey)
+
+def load_publickey(type, buffer):
+    """
+    Load a public key from a buffer.
+    :param type: The file type (one of :data:`FILETYPE_PEM`,
+        :data:`FILETYPE_ASN1`).
+    :param buffer: The buffer the key is stored in.
+    :type buffer: A Python string object, either unicode or bytestring.
+    :return: The PKey object.
+    :rtype: :class:`PKey`
+
+    COPIED AS IS FROM PYOPENSSL (because <0.16 does not have the method)
+
+    """
+    if isinstance(buffer, _text_type):
+        buffer = buffer.encode("ascii")
+
+    bio = _new_mem_buf(buffer)
+
+    if type == FILETYPE_PEM:
+        evp_pkey = _lib.PEM_read_bio_PUBKEY(
+            bio, _ffi.NULL, _ffi.NULL, _ffi.NULL)
+    elif type == FILETYPE_ASN1:
+        evp_pkey = _lib.d2i_PUBKEY_bio(bio, _ffi.NULL)
+    else:
+        raise ValueError("type argument must be FILETYPE_PEM or FILETYPE_ASN1")
+
+    if evp_pkey == _ffi.NULL:
+        _raise_current_error()
+
+    pkey = PKey.__new__(PKey)
+    pkey._pkey = _ffi.gc(evp_pkey, _lib.EVP_PKEY_free)
+    return pkey
+
+
+"""
+END PYOPENSSL BACKPORT
+"""
 
 HAS_SSL = True  # retrocompat
 __name = 'ssl'
@@ -169,8 +376,12 @@ def load_key(cert_text_or_file):
         with open(cert_text_or_file) as fic:
             cert_text_or_file = fic.read()
     try:
-        cert = OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, cert_text_or_file)
+        if 'PUBLIC' in cert_text_or_file:
+            cert = load_publickey(
+                OpenSSL.crypto.FILETYPE_PEM, cert_text_or_file)
+        else:
+            cert = OpenSSL.crypto.load_privatekey(
+                OpenSSL.crypto.FILETYPE_PEM, cert_text_or_file)
     except Exception:
         cert = None
     return cert
@@ -261,28 +472,36 @@ def ssl_keys(cert_string):
             cert_string = fic.read()
     keys = []
     if cert_string and cert_string.strip():
-        content, start_rsa, start_dsa, stop_dsa, stop_rsa = (
-            '', False, False, False, False)
+        (content, start_rsa, start_dsa,
+         stop_pub, start_pub,
+         stop_dsa, stop_rsa) = (
+            '', False, False, False, False, False, False)
         for i in cert_string.splitlines():
+            if '-----BEGIN PUBLIC KEY-----' in i:
+                start_pub = True
             if '-----BEGIN PRIVATE KEY-----' in i:
                 start_dsa = True
             if '-----BEGIN RSA PRIVATE KEY-----' in i:
                 start_rsa = True
+            if '-----END PUBLIC KEY-----' in i:
+                stop_pub = True
             if '-----END PRIVATE KEY-----' in i:
                 stop_dsa = True
             if '-----END RSA PRIVATE KEY-----' in i:
                 stop_rsa = True
-            if content or start_rsa or start_dsa:
+            if content or start_rsa or start_dsa or start_pub:
                 content += i.strip()
                 if not content.endswith('\n'):
                     content += '\n'
-            if content and (stop_dsa or stop_rsa):
+            if content and (stop_dsa or stop_rsa or stop_pub):
                 ocert = load_key(content)
                 if ocert is not None:
                     # valid cert
                     keys.append(content)
-                content, start_rsa, start_dsa, stop_dsa, stop_rsa = (
-                    '', False, False, False, False)
+                (content, start_rsa, start_dsa,
+                 stop_pub, start_pub,
+                 stop_dsa, stop_rsa) = (
+                    '', False, False, False, False, False, False)
     return keys
 
 
@@ -922,8 +1141,16 @@ def get_cert_infos(cn_or_cert,
             pkey = load_key(cdata[1])
         if pkey:
             try:
-                public_key = OpenSSL.crypto.dump_publickey(
-                    OpenSSL.crypto.FILETYPE_PEM, pkey)
+                ossl = subprocess.Popen(['openssl', 'rsa', '-pubout'],
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        stdin=subprocess.PIPE)
+                (stdout, stderr) = ossl.communicate(cdata[1])
+                ossl.wait()
+                if ossl.returncode == 0 and ('BEGIN PUBLIC KEY' in stdout):
+                    keys = ssl_keys(stdout)
+                    if keys:
+                        public_key = keys[0]
             except Exception:
                 trace = traceback.format_exc()
                 log.error('INFOS public private key for {0}'.format(cn))
@@ -935,7 +1162,10 @@ def get_cert_infos(cn_or_cert,
                                         stdin=subprocess.PIPE)
                 (stdout, stderr) = ossl.communicate(cdata[1])
                 ossl.wait()
-                if ossl.returncode == 0 and ('BEGIN RSA PRIVATE KEY' in stdout):
+                if (
+                    ossl.returncode == 0 and
+                    ('BEGIN RSA PRIVATE KEY' in stdout)
+                ):
                     keys = ssl_keys(stdout)
                     if keys:
                         private_key = keys[0]
