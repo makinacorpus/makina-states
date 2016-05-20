@@ -726,6 +726,22 @@ except IOError:
     lxcls = None
 
 
+
+def arobase_iface(iface, data=None):
+    '''
+            # match u'vethM8SMUD@if37'
+            # match u'eth0@if37'
+    '''
+    if data is None:
+        if '@' in iface:
+            return iface.split('@')[0]
+    if iface not in data:
+        aiface = iface.split('@')[0]
+        if aiface and aiface in data:
+            iface = aiface
+    return iface
+
+
 def get_states(states):
     if not states:
         states = []
@@ -785,6 +801,8 @@ def get_peer_name(container, veth_host, ttl=60):
 def get_lxc_bridge(lxc_config, iface, ttl=60):
     def _do(container, iface):
         eths = _get_veths(lxc_config.data)
+        # match eth0@if40
+        iface = arobase_iface(iface, eths)
         return eths.get(iface, {}).get('lxc.network.link', '')
     cache_key = 'get_lxc_bridge{0}{1}'.format(lxc_config, iface)
     return memoize_cache(_do, [lxc_config, iface], {}, cache_key, ttl)
@@ -890,6 +908,8 @@ def find_bridge_for_iface(iface_type, iface, ttl=60):
         elif (iface_type == 'vnet') and virsh:
             domains = libvirt_domains('running')
         for domain, data in domains.items():
+            # match u'vethM8SMUD@if37'
+            iface = arobase_iface(iface, data['ifaces'])
             if iface in data['ifaces']:
                 bridge = data['ifaces'][iface]['link']
                 break
@@ -931,8 +951,9 @@ def get_interfaces():
                     bridge = None
             else:
                 bridge = brmatch.groupdict()['link']
-            ifaces[infos['type']][infos['iface']] = {'bridge': bridge,
-                                                     'raw': group}
+            ifaces[infos['type']][
+                arobase_iface(infos['iface'])] = {'bridge': bridge,
+                                                  'raw': group}
     return ifs
 
 
@@ -958,7 +979,7 @@ def main():
                                     '"{0}"'.format(bridge)))
             if not supported_states.search(current_bridge.lower()):
                 print('Linking {0} to {1}: '
-                      'failed to bring up bridge'.format(ifc, bridge))
+                      'failed to bring up bridge'.format(arobase_iface(ifc), bridge))
                 print(current_bridge)
             current_link = get_output('ip link show dev "{0}"'.format(ifc))
             if ' master ' not in current_link:
