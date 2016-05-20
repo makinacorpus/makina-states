@@ -469,7 +469,7 @@ class MakinaStatesInventory(object):
         """
         self.fixperms()
         payload = {}
-        if os.path.isfile(self.caches['hosts']) and not refresh:
+        if os.path.isfile(self.caches['hosts']):
             if self.debug:
                 print('Using {0} cached data, remove the file to use uncached'
                       ' data'.format(self.caches['hosts']))
@@ -481,10 +481,21 @@ class MakinaStatesInventory(object):
                 except ValueError:
                     payload = self.sanitize_payload({})
             if hosts:
-                hosts = [a for a in hosts if a not in payload['data']]
+                # In case we have not explicitly asked to not use the cache
+                # we only compute pillar for hosts which are not already cached
+                if not refresh:
+                    hosts = [a
+                             for a in hosts
+                             if a not in payload['data']]
         if not payload:
             payload = self.sanitize_payload(payload)
         if hosts:
+            if refresh:
+                # in case of a refresh, purge any cached data
+                # that belongs to hosts which we are
+                # computing pillar for
+                for h in hosts:
+                    payload['data'].pop(h, None)
             payload = self.update_cache(payload, hosts=hosts)
         return payload
 
