@@ -166,7 +166,13 @@ class MakinaStatesInventory(object):
         self.debug = self.args.ms_debug
 
         # in case of cache refreshing, force memcache restart
-        if self.args.refresh_cache and memcached_running():
+        if (
+            self.args.refresh_cache and
+            memcached_running() and
+            os.environ.get('NO_MEMCACHE_RESTART', '').lower() not in [
+                'y', '1', 1
+            ]
+        ):
             restart_memcached()
 
         # we ask first salt for a valid set of hostnames to get pillar from
