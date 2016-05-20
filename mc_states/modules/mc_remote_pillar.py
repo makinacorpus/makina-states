@@ -450,7 +450,7 @@ def generate_ansible_roster(ids_=None, **kwargs):
                 hosts[host][alias] = oinfos[i]
         if hosts[host]['ssh_gateway']:
             v = 'ansible_ssh_common_args'
-            hosts[host][v] = '-o ProxyCommand="ssh -W %h:%p -q'
+            hosts[host][v] = '-o ProxyCommand="ssh -W %h:%p'
             if hosts[host]['ssh_gateway_key']:
                 hosts[host][v] += ' -i {0}'.format(
                     hosts[host]['ssh_gateway_key'])
@@ -460,7 +460,7 @@ def generate_ansible_roster(ids_=None, **kwargs):
             if hosts[host]['ssh_gateway_user']:
                 hosts[host][v] += ' -l {0}'.format(
                     hosts[host]['ssh_gateway_user'])
-            hosts[host][v] += ' {0}"'.format(
+            hosts[host][v] += ' {0}'.format(
                 hosts[host]['ssh_gateway'])
     return hosts
 # vim:set et sts=4 ts=4 tw=80:

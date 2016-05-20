@@ -11,12 +11,10 @@ fi
 lock="$(pwd)/var/ansible/refrech_cache.lock"
 log="$(pwd)/var/ansible/refrech_cache.log"
 find "${lock}" -type f -mmin +30 -delete 1>/dev/null 2>&1
-if [ "x${NO_LOCK-}" = "x" ];then
-    if  [ -e "${lock}" ];then
-        echo "Locked ${0}";exit 1
-    fi
-    touch "${lock}"
+if [ -e "${lock}" ];then
+  echo "Locked ${0}";exit 1
 fi
+touch "${lock}"
 if [[ -n ${ANSIBLE_TARGETS-} ]];then
     export ANSIBLE_TARGETS="${ANSIBLE_TARGETS-}"
 fi
@@ -27,7 +25,5 @@ ret=${?}
 if [ "x${ret}" != "x0" ];then
   cat "${log}"
 fi
-if [ "x${NO_LOCK-}" = "x" ];then
-    rm -f "${lock}"
-fi
+rm -f "${lock}"
 # vim:set et sts=4 ts=4 tw=80:
