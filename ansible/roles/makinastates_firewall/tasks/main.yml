@@ -1,0 +1,5 @@
+---
+- shell: |
+      {{makinastates_dest}}/bin/salt-call --retcode-passthrough\
+        state.sls makina-states.services.firewall.firewall
+  tags: [makinastates, makinastates_firewall]

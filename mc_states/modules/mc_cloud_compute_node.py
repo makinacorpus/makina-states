@@ -705,10 +705,13 @@ def get_port_info(vmdata, portdata, reset=False):
     _s = __salt__
     kind = portdata['name']
     vm = vmdata['name']
-    port = _s['mc_cloud_compute_node.get_kind_port'](vm,
-                                                     target=vmdata['target'],
-                                                     kind=kind,
-                                                     reset=reset)
+    port = portdata.get('hostPort', None)
+    # harcode the fact not to bind ssh port directly on host NAT!
+    if port in ['22', 22] or not port:
+        _s['mc_cloud_compute_node.get_kind_port'](vm,
+                                                  target=vmdata['target'],
+                                                  kind=kind,
+                                                  reset=reset)
     cport = copy.deepcopy(CPORT)
     for i in 'portRange', 'hostPortRange':
         cport[i] = portdata.get(i, None)
