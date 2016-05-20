@@ -1,0 +1,13 @@
+---
+# execute a salt call on a host
+# ANSIBLE_TARGETS="$host" ansible-playbook  -v  ansible/plays/saltcall.yml \
+#       -e "saltargs=makina-states.localsettings.users"
+#
+# ANSIBLE_TARGETS="$host" ansible-playbook  -v  ansible/plays/saltcall.yml \
+#       -e "function=test.ping"
+#
+# ANSIBLE_TARGETS="$host" ansible-playbook  -v  ansible/plays/saltcall.yml \
+#       -e "function=cmd.run saltargs='cmd=\"ls /\" python_shell=True'"
+
+- hosts: "{{hosts|default('all')}}"
+  roles: [makinastates_firewall] 

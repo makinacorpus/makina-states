@@ -1,0 +1,4 @@
+---
+dependencies:
+  - { role: makinastates_vars}
+  - { role: makinastates_pillar}
