@@ -121,14 +121,19 @@ def ssh_host_settings(id_, **defaults):
         data, copy.deepcopy(ssh_hosts.get(id_, {})))
     if id_ in db['vms']:
         try:
-            tip = _s['mc_pillar.ips_for'](db['vms'][id_]['target'])[0]
+            target = db['vms'][id_]['target']
+            hostsettings = ssh_host_settings(target)
+            local_ip =  _s['mc_cloud_compute_node.find_ip_for_vm'](
+                    id_, target=target)
         except IPRetrievalError:
             pass
         else:
-            if tip == ssh_host:
-                # vm is natted behind compute node, try to find out the port
-                data['ssh_port'] = _s['mc_cloud_compute_node.get_ssh_port'](
-                    id_, target=db['vms'][id_]['target'])
+            data['ssh_host'] = local_ip
+            data['ssh_gateway'] = hostsettings['ssh_host']
+            data['ssh_gateway_port'] = hostsettings['ssh_port']
+            data['ssh_gateway_user'] = hostsettings['ssh_username']
+            data['ssh_gateway_key'] = hostsettings['ssh_key']
+            data['ssh_gateway_password'] = hostsettings['ssh_password']
     if not data['ssh_host']:
         data['ssh_host'] = ssh_host
     return data

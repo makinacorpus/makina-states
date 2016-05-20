@@ -66,6 +66,166 @@
         'network_profile', {}).get(
           'eth1', {}).get(
             'gateway', lxc_eth1_gateway)}}"
+      lxc_eth2_mac: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+         'eth2', {}).get(
+           'hwaddr', lxc_eth2_mac)}}"
+      lxc_eth2_bridge: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth2', {}).get(
+            'link', lxc_eth2_bridge)}}"
+      lxc_eth2_ip: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth2', {}).get(
+            'hwaddr', lxc_eth2_ip)}}"
+      lxc_eth2_gateway: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth2', {}).get(
+            'gateway', lxc_eth2_gateway)}}"
+      lxc_eth3_mac: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+         'eth3', {}).get(
+           'hwaddr', lxc_eth3_mac)}}"
+      lxc_eth3_bridge: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth3', {}).get(
+            'link', lxc_eth3_bridge)}}"
+      lxc_eth3_ip: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth3', {}).get(
+            'hwaddr', lxc_eth3_ip)}}"
+      lxc_eth3_gateway: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth3', {}).get(
+            'gateway', lxc_eth3_gateway)}}"
+      lxc_eth4_mac: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+         'eth4', {}).get(
+           'hwaddr', lxc_eth4_mac)}}"
+      lxc_eth4_bridge: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth4', {}).get(
+            'link', lxc_eth4_bridge)}}"
+      lxc_eth4_ip: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth4', {}).get(
+            'hwaddr', lxc_eth4_ip)}}"
+      lxc_eth4_gateway: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth4', {}).get(
+            'gateway', lxc_eth4_gateway)}}"
+      lxc_eth5_mac: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+         'eth5', {}).get(
+           'hwaddr', lxc_eth5_mac)}}"
+      lxc_eth5_bridge: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth5', {}).get(
+            'link', lxc_eth5_bridge)}}"
+      lxc_eth5_ip: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth5', {}).get(
+            'hwaddr', lxc_eth5_ip)}}"
+      lxc_eth5_gateway: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth5', {}).get(
+            'gateway', lxc_eth5_gateway)}}"
+      lxc_eth6_mac: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+         'eth6', {}).get(
+           'hwaddr', lxc_eth6_mac)}}"
+      lxc_eth6_bridge: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth6', {}).get(
+            'link', lxc_eth6_bridge)}}"
+      lxc_eth6_ip: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth6', {}).get(
+            'hwaddr', lxc_eth6_ip)}}"
+      lxc_eth6_gateway: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth6', {}).get(
+            'gateway', lxc_eth6_gateway)}}"
+      lxc_eth7_mac: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+         'eth7', {}).get(
+           'hwaddr', lxc_eth7_mac)}}"
+      lxc_eth7_bridge: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth7', {}).get(
+            'link', lxc_eth7_bridge)}}"
+      lxc_eth7_ip: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth7', {}).get(
+            'hwaddr', lxc_eth7_ip)}}"
+      lxc_eth7_gateway: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth7', {}).get(
+            'gateway', lxc_eth7_gateway)}}"
+      lxc_eth8_mac: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+         'eth8', {}).get(
+           'hwaddr', lxc_eth8_mac)}}"
+      lxc_eth8_bridge: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth8', {}).get(
+            'link', lxc_eth8_bridge)}}"
+      lxc_eth8_ip: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth8', {}).get(
+            'hwaddr', lxc_eth8_ip)}}"
+      lxc_eth8_gateway: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth8', {}).get(
+            'gateway', lxc_eth8_gateway)}}"
+      lxc_eth9_mac: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+         'eth9', {}).get(
+           'hwaddr', lxc_eth9_mac)}}"
+      lxc_eth9_bridge: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth9', {}).get(
+            'link', lxc_eth9_bridge)}}"
+      lxc_eth9_ip: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth9', {}).get(
+            'hwaddr', lxc_eth9_ip)}}"
+      lxc_eth9_gateway: "{{
+        salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
+        'network_profile', {}).get(
+          'eth9', {}).get(
+            'gateway', lxc_eth9_gateway)}}"
       makinastates_version: "{{
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
             'bootsalt_branch', makinastates_version)}}"
@@ -97,4 +257,36 @@
       lxc_eth1_bridge: "{{makinastates_lxc_vars.msg['lxc_eth1_bridge']}}"
       lxc_eth1_ip: "{{makinastates_lxc_vars.msg['lxc_eth1_ip']}}"
       lxc_eth1_gateway: "{{makinastates_lxc_vars.msg['lxc_eth1_gateway']}}"
+      lxc_eth2_mac: "{{makinastates_lxc_vars.msg['lxc_eth2_mac']}}"
+      lxc_eth2_bridge: "{{makinastates_lxc_vars.msg['lxc_eth2_bridge']}}"
+      lxc_eth2_ip: "{{makinastates_lxc_vars.msg['lxc_eth2_ip']}}"
+      lxc_eth2_gateway: "{{makinastates_lxc_vars.msg['lxc_eth2_gateway']}}"
+      lxc_eth3_mac: "{{makinastates_lxc_vars.msg['lxc_eth3_mac']}}"
+      lxc_eth3_bridge: "{{makinastates_lxc_vars.msg['lxc_eth3_bridge']}}"
+      lxc_eth3_ip: "{{makinastates_lxc_vars.msg['lxc_eth3_ip']}}"
+      lxc_eth3_gateway: "{{makinastates_lxc_vars.msg['lxc_eth3_gateway']}}"
+      lxc_eth4_mac: "{{makinastates_lxc_vars.msg['lxc_eth4_mac']}}"
+      lxc_eth4_bridge: "{{makinastates_lxc_vars.msg['lxc_eth4_bridge']}}"
+      lxc_eth4_ip: "{{makinastates_lxc_vars.msg['lxc_eth4_ip']}}"
+      lxc_eth4_gateway: "{{makinastates_lxc_vars.msg['lxc_eth4_gateway']}}"
+      lxc_eth5_mac: "{{makinastates_lxc_vars.msg['lxc_eth5_mac']}}"
+      lxc_eth5_bridge: "{{makinastates_lxc_vars.msg['lxc_eth5_bridge']}}"
+      lxc_eth5_ip: "{{makinastates_lxc_vars.msg['lxc_eth5_ip']}}"
+      lxc_eth5_gateway: "{{makinastates_lxc_vars.msg['lxc_eth5_gateway']}}"
+      lxc_eth6_mac: "{{makinastates_lxc_vars.msg['lxc_eth6_mac']}}"
+      lxc_eth6_bridge: "{{makinastates_lxc_vars.msg['lxc_eth6_bridge']}}"
+      lxc_eth6_ip: "{{makinastates_lxc_vars.msg['lxc_eth6_ip']}}"
+      lxc_eth6_gateway: "{{makinastates_lxc_vars.msg['lxc_eth6_gateway']}}"
+      lxc_eth7_mac: "{{makinastates_lxc_vars.msg['lxc_eth7_mac']}}"
+      lxc_eth7_bridge: "{{makinastates_lxc_vars.msg['lxc_eth7_bridge']}}"
+      lxc_eth7_ip: "{{makinastates_lxc_vars.msg['lxc_eth7_ip']}}"
+      lxc_eth7_gateway: "{{makinastates_lxc_vars.msg['lxc_eth7_gateway']}}"
+      lxc_eth8_mac: "{{makinastates_lxc_vars.msg['lxc_eth8_mac']}}"
+      lxc_eth8_bridge: "{{makinastates_lxc_vars.msg['lxc_eth8_bridge']}}"
+      lxc_eth8_ip: "{{makinastates_lxc_vars.msg['lxc_eth8_ip']}}"
+      lxc_eth8_gateway: "{{makinastates_lxc_vars.msg['lxc_eth8_gateway']}}"
+      lxc_eth9_mac: "{{makinastates_lxc_vars.msg['lxc_eth9_mac']}}"
+      lxc_eth9_bridge: "{{makinastates_lxc_vars.msg['lxc_eth9_bridge']}}"
+      lxc_eth9_ip: "{{makinastates_lxc_vars.msg['lxc_eth9_ip']}}"
+      lxc_eth9_gateway: "{{makinastates_lxc_vars.msg['lxc_eth9_gateway']}}"
       makinastates_version: "{{makinastates_lxc_vars.msg['makinastates_version']}}"
