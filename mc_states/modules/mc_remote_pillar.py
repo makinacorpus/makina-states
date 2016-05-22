@@ -428,9 +428,11 @@ def generate_ansible_roster(ids_=None, **kwargs):
             'ansible_port': 22,
             'makinastates_from_ansible': True,
             'salt_pillar': pillar}
+        if hosts[host]['name'] and not hosts[host]['ansible_host']:
+            hosts[host]['ansible_host'] = hosts[host]['name']
         hosts[host].update(oinfos)
         for i, aliases in six.iteritems({
-            'ssh_name': ['ansible_name'],
+            'ssh_name': ['name'],
             'ssh_host': ['ansible_host'],
             'ssh_sudo': ['ansible_become'],
             'ssh_port': ['ansible_port'],
@@ -448,7 +450,19 @@ def generate_ansible_roster(ids_=None, **kwargs):
                 continue
             for alias in aliases:
                 hosts[host][alias] = oinfos[i]
+        hosts[host]['control_path'] = (
+            '~/.ssh_cp'
+            '-{ssh_username}'
+            '@{ssh_host}'
+            '.{ssh_port}'
+        ).format(**hosts[host])
         if hosts[host]['ssh_gateway']:
+            hosts[host]['control_path'] += (
+                '-via'
+                '-{ssh_gateway_user}'
+                '@{ssh_gateway}'
+                '.{ssh_gateway_port}'
+            ).format(**hosts[host])
             v = 'ansible_ssh_common_args'
             hosts[host][v] = '-o ProxyCommand="ssh -W %h:%p -q'
             if hosts[host]['ssh_gateway_key']:
