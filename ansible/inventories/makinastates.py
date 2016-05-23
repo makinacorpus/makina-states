@@ -15,7 +15,6 @@ import copy
 import argparse
 import ConfigParser
 import os
-import six
 import time
 import logging
 import pprint
@@ -222,24 +221,21 @@ class MakinaStatesInventory(object):
         self.filter_targets(targets, targets_groups)
         self.to_stdout()
 
-    def add_group(self, name, data=None, hosts=None, groupvars=None):
+    def add_group(self, name, hosts=None, groupvars=None):
         if groupvars is None:
             groupvars = {}
-        if not data:
-            data = {}
         if not hosts:
             hosts = []
         if not isinstance(hosts, (set, list, tuple, dict)):
             hosts = []
         ggroup = self.inventory.setdefault(name, {})
-        ggroup.update(data)
         group = ggroup.setdefault('hosts', [])
         groupvars_ = ggroup.setdefault('vars', {})
         groupvars_.update(groupvars)
         for host in hosts:
             if host not in group:
                 group.append(host)
-        self.groups[name] = copy.deepcopy(group)
+        self.groups[name] = copy.deepcopy(ggroup)
 
     def pop_group(self, name):
         self.groups.pop(name, None)
@@ -269,11 +265,13 @@ class MakinaStatesInventory(object):
                 found = True
             if not found:
                 self.hostvars.pop(i, None)
-        # filter groups vars
-        if targets_groups:
-            for i in [a for a in self.groups]:
-                if i not in targets_groups:
-                    self.pop_group(i)
+        # filter groups vars has no meaning as it is
+        # data tied to groups and targets are specified
+        # either by CLI or playbook limits
+        # if targets_groups:
+        #     for i in [a for a in self.groups]:
+        #         if i not in targets_groups:
+        #             self.pop_group(i)
 
     def __debug(self, exit=False, rc=0):
         with open('/foo', 'a') as fic:
@@ -293,9 +291,8 @@ class MakinaStatesInventory(object):
     def make_groups(self):
         for g in [a for a in self.groups]:
             self.inventory.pop(g, None)
-        for host, data in six.iteritems(
-            self.inventory['_meta']['hostvars']
-        ):
+        for host in [a for a in self.inventory['_meta']['hostvars']]:
+            data = self.inventory['_meta']['hostvars'][host]
             try:
                 groups = data.get(
                     'salt_pillar', {}).get(
@@ -309,9 +306,9 @@ class MakinaStatesInventory(object):
                 if not isinstance(groups, dict):
                     grps = {}
                     for a in groups:
-                        grps[a] = {}
-                for g, groupvars in six.iteritems(grps):
-                    self.add_group(g, hosts=[host], groupvars=groupvars)
+                        grps.setdefault(a, {})
+                for g in [b for b in grps]:
+                    self.add_group(g, hosts=[host], groupvars=grps[g])
 
     def fixperms(self):
         if os.path.exists(self.cache_path):
