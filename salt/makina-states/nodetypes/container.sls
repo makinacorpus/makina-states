@@ -1,4 +1,6 @@
 {% import "makina-states/_macros/h.jinja" as h with context %}
+{# only really do if docker or lxc, because destructive #}
+{% if salt['mc_nodetypes.is_container']() %}
 {% set isDocker = salt['mc_nodetypes.is_docker']() %}
 include:
   {% if not isDocker %}
@@ -93,5 +95,6 @@ container-do-setup-services:
       - pkg: container-container-pkgs
     - require_in:
       - mc_proxy: makina-lxc-proxy-end
+{% endif %}
 {% endif %}
 # vim:set nofoldenable:
