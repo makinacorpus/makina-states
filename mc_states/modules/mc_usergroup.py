@@ -88,7 +88,7 @@ def get_home(user, home=None, homes=None, not_using_system=False):
             home = locations['root_home_dir']
         elif user in defaultSysadmins:
             home = locations['sysadmins_home_dir'] + "/" + user
-            home = os.path.join(homes, id_)
+            home = os.path.join(homes, user)
         else:
             home = homes + "/" + user
     return home
