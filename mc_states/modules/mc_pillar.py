@@ -4152,3 +4152,18 @@ def loaded():
     except Exception:
         ret = Falss
     return ret
+
+
+def get_ssh_port(id_, ttl=PILLAR_TTL):
+    '''Port without gateway in the middle (use the NATted one in case of vms)'''
+    def _do(id_):
+        db = __salt__['mc_pillar.get_db_infrastructure_maps']()
+        port = 22
+        if id_ in db['vms']:
+            data = db['vms'][id_]
+            if data['vt'] in ['lxc']:
+                port = __salt__['mc_cloud_compute_node.get_kind_port'](
+                    id_, target=data['target'], kind='ssh')
+        return port
+    cache_key = __name + '.get_ssh_port{0}'.format(id_) + CACHE_INC_TOKEN
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
