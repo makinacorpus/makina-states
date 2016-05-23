@@ -533,24 +533,18 @@ def vms_settings(ttl=60):
 
 def vm_host_and_port(ttl=600):
     def do():
-        res = __grains__['id'], 22
-
         def fdo():
-            aret = __salt__['mc_cloud.is_vm']()
-            if aret:
+            host, port = __grains__['id'], 22
+            if __salt__['mc_cloud.is_vm']():
                 res = __salt__['mc_cloud_vm.vm_settings']()
-                if 'target' in res and 'ssh_reverse_proxy_port' in res:
+                if res.get('target', None)  and res.get('ssh_reverse_proxy_port', None):
                     host = res['target']
                     port = res['ssh_reverse_proxy_port']
-                return host, port
-            raise ValueError('no conf found, inconsistent, use default')
-        try:
-            return __salt__['mc_macros.filecache_fun'](
-                fdo,
-                prefix='salt_cloud_vm_host_port_{0}'.format(__grains__['id']),
-                ttl=5 * 24 * 60 * 60)
-        except ValueError:
-            return res
+            return host, port
+        return __salt__['mc_macros.filecache_fun'](
+            fdo,
+            prefix='salt_cloud_vm_host_port_2{0}'.format(__grains__['id']),
+            ttl=5 * 24 * 60 * 60)
     cache_key = '{0}.{1}.{2}'.format(__name, 'vm_host_and_port', '')
     return __salt__['mc_utils.memoize_cache'](do, [], {}, cache_key, ttl)
 
