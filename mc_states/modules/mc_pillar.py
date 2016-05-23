@@ -3675,9 +3675,34 @@ def get_ssh_connection_infos(id_, ttl=PILLAR_TTL):
     def _do():
         _s = __salt__
         infos = _s['mc_cloud.ssh_host_settings'](id_)
-        return {saltapi.SSH_CON_PREFIX: infos}
+        return infos
     cache_key = __name + '.get_ssh_connection_infos{0}'.format(id_) + CACHE_INC_TOKEN
     return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+
+
+def get_ssh_connection_conf(id_, prefix=True, ttl=PILLAR_TTL):
+    def _do(id_):
+        _s = __salt__
+        data = set()
+        infos = OrderedDict()
+        for f in _s:
+            if f.endswith('.get_ssh_connection_infos'):
+                data.add(f)
+        for i in data:
+            res = _s[i](id_)
+            if isinstance(res, dict):
+                infos = _s['mc_utils.dictupdate'](infos, res)
+        if prefix:
+            infos = {saltapi.SSH_CON_PREFIX: infos}
+        return infos
+    cache_key = __name + '.get_ssh_connection_infos_conf{0}{1}'.format(
+        id_, prefix) + CACHE_INC_TOKEN
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+
+
+def get_ssh_connection_for(*args, **kwargs):
+    kwargs['prefix'] = False
+    return get_ssh_groups_conf(*args, **kwargs)
 
 
 def get_masterless_makinastates_hosts(ttl=PILLAR_TTL):
@@ -3838,7 +3863,7 @@ def ext_pillar(id_, pillar=None, raise_error=True, *args, **kw):
         __name + '.get_shorewall_conf': {},
         __name + '.get_burp_server_conf': {},
         __name + '.get_check_raid_conf': {},
-        __name + '.get_ssh_connection_infos': {},
+        __name + '.get_ssh_connection_conf': {},
         __name + '.get_dns_master_conf': {},
         __name + '.get_dns_slave_conf': {},
         __name + '.get_exposed_global_conf': {},
@@ -4127,3 +4152,18 @@ def loaded():
     except Exception:
         ret = Falss
     return ret
+
+
+def get_ssh_port(id_, ttl=PILLAR_TTL):
+    '''Port without gateway in the middle (use the NATted one in case of vms)'''
+    def _do(id_):
+        db = __salt__['mc_pillar.get_db_infrastructure_maps']()
+        port = 22
+        if id_ in db['vms']:
+            data = db['vms'][id_]
+            if data['vt'] in ['lxc']:
+                port = __salt__['mc_cloud_compute_node.get_kind_port'](
+                    id_, target=data['target'], kind='ssh')
+        return port
+    cache_key = __name + '.get_ssh_port{0}'.format(id_) + CACHE_INC_TOKEN
+    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
