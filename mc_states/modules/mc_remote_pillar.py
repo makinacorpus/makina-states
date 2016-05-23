@@ -47,6 +47,7 @@ import pstats
 import cProfile
 import datetime
 import os
+import sys
 import copy
 import time
 import logging
@@ -146,7 +147,7 @@ def get_groups(host, pillar=None, groups=None):
     if pillar is None:
         pillar = get_pillar(host)
     if groups is None:
-        groups = []
+        groups = {}
     data = set()
     for f in _s:
         if f.endswith('.get_masterless_makinastates_groups'):
@@ -154,8 +155,10 @@ def get_groups(host, pillar=None, groups=None):
     for i in data:
         res = _s[i](host, pillar)
         if res:
-            [groups.append(i) for i in res
-             if i not in groups]
+            if isinstance(res, dict):
+                _s['mc_utils.dictupdate'](groups, res)
+            else:
+                [groups.setdefault(g, {}) for g in res]
     return groups
 
 
@@ -412,7 +415,14 @@ def generate_ansible_roster(ids_=None, **kwargs):
     masterless_hosts = generate_masterless_pillars(
         ids_=ids_, **kwargs)
     for host, idata in six.iteritems(masterless_hosts):
-        pillar = idata.get('salt_out', {}).get('pillar', {})
+        try:
+            pillar = idata.get('salt_out', {}).get('pillar', {})
+        except Exception:
+            if idata.get('stderr'):
+                sys.stderr.write(idata['stderr'])
+            else:
+                sys.stderr.write(trace)
+            raise
         if '_errors' in pillar:
             raise AnsibleInventoryIncomplete(
                 'Pillar for {0} has errors\n{1}'.format(
@@ -428,6 +438,10 @@ def generate_ansible_roster(ids_=None, **kwargs):
             'ansible_port': 22,
             'makinastates_from_ansible': True,
             'salt_pillar': pillar}
+        # we can expose custom ansible host vars
+        # by defining the "ansible_vars" inside the pillar
+        hosts[host].update(
+            copy.deepcopy(pillar.get('ansible_vars', {})))
         if hosts[host]['name'] and not hosts[host]['ansible_host']:
             hosts[host]['ansible_host'] = hosts[host]['name']
         hosts[host].update(oinfos)

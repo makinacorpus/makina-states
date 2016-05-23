@@ -222,7 +222,9 @@ class MakinaStatesInventory(object):
         self.filter_targets(targets, targets_groups)
         self.to_stdout()
 
-    def add_group(self, name, data=None, hosts=None):
+    def add_group(self, name, data=None, hosts=None, groupvars=None):
+        if groupvars is None:
+            groupvars = {}
         if not data:
             data = {}
         if not hosts:
@@ -232,6 +234,8 @@ class MakinaStatesInventory(object):
         ggroup = self.inventory.setdefault(name, {})
         ggroup.update(data)
         group = ggroup.setdefault('hosts', [])
+        groupvars_ = ggroup.setdefault('vars', {})
+        groupvars_.update(groupvars)
         for host in hosts:
             if host not in group:
                 group.append(host)
@@ -299,8 +303,15 @@ class MakinaStatesInventory(object):
             except Exception:
                 continue
             else:
-                for g in groups:
-                    self.add_group(g, hosts=[host])
+                # handle the case where groups is just a list
+                # of groupnames
+                grps = groups
+                if not isinstance(groups, dict):
+                    grps = {}
+                    for a in groups:
+                        grps[a] = {}
+                for g, groupvars in six.iteritems(grps):
+                    self.add_group(g, hosts=[host], groupvars=groupvars)
 
     def fixperms(self):
         if os.path.exists(self.cache_path):
