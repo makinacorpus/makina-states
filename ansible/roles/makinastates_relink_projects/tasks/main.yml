@@ -1,0 +1,9 @@
+---
+- shell: |
+         cd /srv/projects/
+         for i in *;do 
+                if [ -e $i/project ];then 
+                        salt-call --local -lall mc_project.sync_modules $i
+                fi
+         done
+  tags: [makinastates, makinastates_relink_projects]
