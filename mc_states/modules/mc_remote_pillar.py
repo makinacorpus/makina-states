@@ -451,11 +451,15 @@ def generate_ansible_roster(ids_=None, **kwargs):
             for alias in aliases:
                 hosts[host][alias] = oinfos[i]
         hosts[host]['control_path'] = (
-            '~/.ssh_cp'
+            '~/.assh'
             '-{ssh_username}'
             '@{ssh_host}'
             '.{ssh_port}'
         ).format(**hosts[host])
+        c_a = 'ansible_ssh_common_args'
+        c_av = hosts[host].setdefault(c_a, '')
+        if not isinstance(c_av, six.string_types):
+            hosts[host][c_a] = ''
         if hosts[host]['ssh_gateway']:
             hosts[host]['control_path'] += (
                 '-via'
@@ -463,18 +467,19 @@ def generate_ansible_roster(ids_=None, **kwargs):
                 '@{ssh_gateway}'
                 '.{ssh_gateway_port}'
             ).format(**hosts[host])
-            v = 'ansible_ssh_common_args'
-            hosts[host][v] = '-o ProxyCommand="ssh -W %h:%p -q'
+            hosts[host][c_a] += ' -o ProxyCommand="ssh -W %h:%p -q'
             if hosts[host]['ssh_gateway_key']:
-                hosts[host][v] += ' -i {0}'.format(
+                hosts[host][c_a] += ' -i {0}'.format(
                     hosts[host]['ssh_gateway_key'])
             if hosts[host]['ssh_gateway_port']:
-                hosts[host][v] += ' -p {0}'.format(
+                hosts[host][c_a] += ' -p {0}'.format(
                     hosts[host]['ssh_gateway_port'])
             if hosts[host]['ssh_gateway_user']:
-                hosts[host][v] += ' -l {0}'.format(
+                hosts[host][c_a] += ' -l {0}'.format(
                     hosts[host]['ssh_gateway_user'])
-            hosts[host][v] += ' {0}"'.format(
+            hosts[host][c_a] += ' {0}"'.format(
                 hosts[host]['ssh_gateway'])
+        if 'controlpath' not in c_a.lower():
+            hosts[host][c_a] += ' -o ControlPath="{control_path}"'.format(**hosts[host])
     return hosts
 # vim:set et sts=4 ts=4 tw=80:
