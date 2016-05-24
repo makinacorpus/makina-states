@@ -30,6 +30,14 @@ log = logging.getLogger(__name__)
 
 
 
+def user_exists(user):
+   try:
+        home = pwd.getpwnam(user).pw_dir
+        return True
+   except KeyError:
+        return False
+
+
 def get_default_groups():
     saltmods = __salt__
     data = {}
@@ -58,16 +66,23 @@ def get_default_users():
 
 
 def get_default_sysadmins():
-    '''get_default_sysadmins'''
+    '''
+    get_default_sysadmins
+    '''
+    _g = __grains__
+    _s = __salt__
+    lreg = __salt__['mc_localsettings.registry']()
     defaultSysadmins = ['root', 'sysadmin']
-    grains = __grains__
-    saltmods = __salt__
-    if grains['os'] in ['Ubuntu']:
+    if _g['os'] in ['Ubuntu']:
         defaultSysadmins.append('ubuntu')
-    if saltmods['mc_macros.is_item_active'](
+    if _s['mc_macros.is_item_active'](
         'nodetypes', 'vagrantvm'
     ):
         defaultSysadmins.append('vagrant')
+    # if we dont manage users ourselves, only manage sysadmins which already
+    # exists
+    if not lreg['is']['users']:
+        defaultSysadmins = [a for a in defaultSysadmins if user_exists(a)]
     return defaultSysadmins
 
 
