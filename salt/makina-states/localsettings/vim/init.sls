@@ -9,7 +9,6 @@
 {% set vim = salt['mc_vim.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 include:
-  - makina-states.localsettings.users
   - makina-states.localsettings.editor
   - makina-states.localsettings.vim.hooks
 
@@ -50,6 +49,7 @@ vim-kiorky-config:
 vimrc_configs-touch-{{ i }}:
   file.managed:
     - name: {{ home }}/.vimrc
+    - onlyif: "test -e {{ home }}"
     - source: ""
     - mode: "644"
     - user: "{{i}}"
@@ -72,6 +72,7 @@ vimrc_configs-append-{{ i }}:
     - require_in:
       - file: vimrc-config-block-{{i}}
     - filename: {{ home }}/.vimrc
+    - onlyif: "test -e {{ home }}"
     - text: |
             if filereadable("/etc/kiorky-dotfiles/.vim/load.vim")
             source /etc/kiorky-dotfiles/.vim/load.vim
@@ -82,6 +83,7 @@ vimrc_configs-append-{{ i }}:
 
 vimrc-config-block-{{i}}:
   file.blockreplace:
+    - onlyif: "test -e {{ home }}"
     - name: {{ home }}/.vimrc
     - marker_start: "\" START managed zone vimrc -DO-NOT-EDIT-"
     - marker_end: "\" END managed zone vimrc -DO-NOT-EDIT-"
