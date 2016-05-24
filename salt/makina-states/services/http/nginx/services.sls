@@ -19,6 +19,32 @@ makina-nginx-conf-syntax-check:
     - watch:
       - mc_proxy: nginx-post-conf-hook
 
+
+{#
+ # sometimes the pid file exists but is empty somehow
+ # calling stop nginx will kill any running nginx services
+ # and we ensure to remove the pidfile after
+ #
+ ##}
+makina-nginx-safebelt-restart:
+  cmd.run:
+    - name: |
+            set -x
+            p="/var/run/nginx.pid"
+            if [ -e "$p" ];then
+              if [ "x$(cat $p)" = "x" ];then
+                service nginx stop || /bin/true
+                rm -f "${p}" || /bin/true
+              fi
+            fi
+            echo changed=false
+    - stateful: true
+    - watch:
+      - mc_proxy: nginx-post-conf-hook
+    - watch_in:
+      - mc_proxy: nginx-pre-hardrestart-hook
+      - mc_proxy: nginx-pre-restart-hook
+
 {% if service_function %}
 makina-nginx-restart:
   {{service_function}}:
@@ -26,6 +52,7 @@ makina-nginx-restart:
     - enable: {{salt['mc_services_managers.get_service_enabled_state'](service_function)}}
     - reload: true
     - watch:
+      - cmd: makina-nginx-safebelt-restart
       - mc_proxy: nginx-pre-restart-hook
     - watch_in:
       - mc_proxy: nginx-post-restart-hook
@@ -35,6 +62,7 @@ makina-nginx-hard-restart:
     - names: [{{ settings.service }}]
     - enable: {{salt['mc_services_managers.get_service_enabled_state'](service_function)}}
     - watch:
+      - cmd: makina-nginx-safebelt-restart
       - mc_proxy: nginx-pre-hardrestart-hook
     - watch_in:
       - mc_proxy: nginx-post-hardrestart-hook
