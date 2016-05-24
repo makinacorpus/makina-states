@@ -40,6 +40,33 @@ ubuntugis-pgrouting-base:
 {% endif %}
 {% endif %}
 
+
+{# key changed recently #}
+ubuntugis-pgrouting-base-2:
+{% if grains.get('osrelease') <= '14.04' %}
+  file.absent:
+    - names:
+      - {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/pgrouting.list
+    - watch_in:
+      - pkg: ubuntugis-pkgs
+  cmd.run:
+    - name: sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com ACCC4CF8
+    - unless: apt-key list|grep -q ACCC4CF8
+  pkgrepo.managed:
+    - humanname: ubuntugis pgrouting ppa
+    - name: deb http://ppa.launchpad.net/georepublic/pgrouting/ubuntu {{dist}} main
+    - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/pgrouting2.list
+    - keyid: ACCC4CF8
+    - keyserver: keyserver.ubuntu.com
+    - watch:
+      - file: ubuntugis-pgrouting-base-2
+      - cmd: ubuntugis-pgrouting-base-2
+      - pkgrepo: ubuntugis-pgrouting-base
+      - mc_proxy: makina-postgresql-post-pkg
+    - watch_in:
+      - pkg: ubuntugis-pkgs
+{% endif %}
+
 ubuntugis-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs:
