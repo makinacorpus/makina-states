@@ -579,7 +579,7 @@ def uncached_get(key, default='',
     ):
         local_registry = _s['mc_macros.get_local_registry'](
             local_registry, registry_format=registry_format)
-    else:
+    elif not isinstance(local_registry, dict):
         local_registry = None
     ret = traverse_dict(_o, key, delimiter=delimiter)
     if ret != '_|-':
