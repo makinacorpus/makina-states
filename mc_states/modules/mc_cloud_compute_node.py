@@ -465,6 +465,27 @@ def remove_allocated_ip(target=None, ip=None, vm=None):
     return get_allocated_ips(target)['ips']
 
 
+def get_ip_for_vm(vm, target=None, default=False):
+    '''
+    Get the allocated ip of a vm and return
+    either default or raise an error if
+    default is not set
+    '''
+    if target is None:
+        target = target_for_vm(vm)
+    allocated_ips = get_allocated_ips(target)
+    vmdata = get_vms()[vm]
+    vt = vmdata.get('vt', None)
+    if vt:
+        try:
+            ip4 = get_conf_for_vm(vm, 'ip4', target=target)
+        except msgpack.exceptions.UnpackValueError:
+            ip4 = default
+    if ip4 is False:
+        raise saltapi.IPRetrievalError(vm)
+    return ip4
+
+
 def find_ip_for_vm(vm,
                    default=None,
                    network=api.NETWORK,
@@ -478,7 +499,7 @@ def find_ip_for_vm(vm,
 
     To get and maybe allocate an ip for a vm call
 
-        find_ip_for_vm(target, vmname)
+        find_ip_for_vm(vmname, target=target)
 
     For force/set an ip use::
 
@@ -489,17 +510,8 @@ def find_ip_for_vm(vm,
         target = target_for_vm(vm)
     if not HAS_NETADDR:
         raise Exception('netaddr required for ip generation')
+    ip4 = get_ip_for_vm(vm, target=target, default=None)
     allocated_ips = get_allocated_ips(target)
-    ip4 = None
-    vmdata = get_vms()[vm]
-    vt = vmdata.get('vt', None)
-    if vt:
-        try:
-            ip4 = get_conf_for_vm(vm, 'ip4', target=target)
-        except msgpack.exceptions.UnpackValueError:
-            ip4 = None
-    if not ip4:
-        ip4 = default
     if not ip4:
         # get network bounds
         network = netaddr.IPNetwork('{0}/{1}'.format(network, netmask))
