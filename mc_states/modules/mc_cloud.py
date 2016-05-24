@@ -123,7 +123,7 @@ def ssh_host_settings(id_, **defaults):
         try:
             target = db['vms'][id_]['target']
             hostsettings = ssh_host_settings(target)
-            local_ip =  _s['mc_cloud_compute_node.find_ip_for_vm'](
+            local_ip =  _s['mc_cloud_compute_node.get_ip_for_vm'](
                     id_, target=target)
         except IPRetrievalError:
             pass

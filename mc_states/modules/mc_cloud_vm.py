@@ -309,13 +309,13 @@ def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
             vm_default_settings(
                 vme, cloudSettings, imgSettings, extpillar=True),
             data)
-        data.update(__salt__['mc_cloud.ssh_host_settings'](
-            data['name'], defaults=data))
         find_ip = 'mc_cloud_compute_node.find_ip_for_vm'
         data['ip'] = _s[find_ip](vme,
                                  network=data['network'],
                                  netmask=data['netmask'],
                                  default=data.get('ip'))
+        data.update(__salt__['mc_cloud.ssh_host_settings'](
+            data['name'], defaults=data))
         data['mac'] = _s['mc_cloud_compute_node.find_mac_for_vm'](
             vme, default=data.get('mac', None))
         data['password'] = _s[
