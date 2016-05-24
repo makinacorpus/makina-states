@@ -7,10 +7,10 @@
   register: makinastates_presence
   tags: makinastates,makinastates_presence
 - shell: |
-     {%if makinastates_presence.stdout == '0'%}
+     {%if makinastates_presence.stdout and makinastates_presence.stdout[-1] == '0'%}
      test -e "{{makinastates_dest}}/var/.first_highstate"
      echo ${?}
-     {%else %}echo 0{% endif %}
+     {%else %}echo 1{% endif %}
   name: "test makinastates presence"
   register: makinastates_presence
   when: "makinastates_test_first_highstate"
