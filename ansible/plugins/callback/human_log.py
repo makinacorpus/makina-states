@@ -1,16 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+# set HUMAN_NOLOG to deactivate human log
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-# https://raw.githubusercontent.com/n0ts/ansible-human_log/master/human_log.py
-# Inspired from: https://github.com/redhat-openstack/khaleesi/blob/master/plugins/callbacks/human_log.py
-# Further improved support Ansible 2.0
-
-# set HUMAN_NOLOG to deactivate human log
-
-from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
 
 import os
 import six
@@ -19,19 +13,22 @@ import pprint
 from ansible.plugins.callback import CallbackBase
 
 # Fields to reformat output for
+__metaclass__ = type
+_salt_opts = {}
+SALT_FIELDS = ['saltout', 'salt_out']
 FIELDS = ['block',
-		  'changes',
-		  'comment',
-		  'retcode',
-		  'cli',
-		  'pid',
-		  'id',
-		  'function',
+          'changes',
+          'comment',
+          'retcode',
+          'cli',
+          'pid',
+          'id',
+          'function',
           'cmd',
           'command',
           'delta',
-		  'mode',
-		  'diff',
+          'mode',
+          'diff',
           'end',
           'invocation',
           'local',
@@ -40,8 +37,6 @@ FIELDS = ['block',
           'res'
           'result'
           'results'
-          'salt_out',
-          'saltout',
           'src',
           'start',
           'stderr',
@@ -57,6 +52,14 @@ try:
     HAS_CHARDET = True
 except ImportError:
     HAS_CHARDET = False
+
+
+try:
+    import salt.config
+    import salt.output
+    HAS_SALT = True
+except ImportError:
+    HAS_SALT = False
 
 
 def magicstring(thestr):
@@ -116,12 +119,10 @@ def magicstring(thestr):
     return thestr
 
 
-
 def nlstrip(val):
     if not val.startswith('\n'):
         val = val.lstrip()
     return val
-
 
 
 def indent_string(val, indent_level, indenter=' '):
@@ -130,6 +131,38 @@ def indent_string(val, indent_level, indenter=' '):
     for i in val.splitlines():
         out.append('{0}{1}'.format(indent, magicstring(i)))
     return '\n'.join(out)
+
+
+def cached_saltopts():
+    if not _salt_opts:
+        opts = salt.config.minion_config('/dev/null', cache_minion_id=True)
+        _salt_opts.update(opts)
+    return _salt_opts
+
+
+def salt_out(val, display='highstate', color=True, opts=None):
+    outval = None
+    if opts is None:
+        opts = cached_saltopts()
+    opts['color'] = color
+    try:
+        outval = salt.output.try_printout(val, display, opts)
+        if (
+            isinstance(val, dict) and
+            display in ['highstate'] and
+            '_|-' in outval
+        ):
+            val = {'local': val}
+            outval = salt.output.try_printout(val, display, opts)
+    except Exception:
+        try:
+            outval = salt.output.try_printout(val, 'nested', opts)
+        except Exception:
+            try:
+                outval = salt.output.try_printout(val, 'txt', opts)
+            except Exception:
+                pass
+    return outval
 
 
 class CallbackModule(CallbackBase):
@@ -142,7 +175,7 @@ class CallbackModule(CallbackBase):
     CALLBACK_NAME = 'human_log'
     CALLBACK_NEEDS_WHITELIST = False
 
-    def _output(self, val, indent=1):
+    def _output(self, val, indent=1, color=True):
         out, end = '', None
         # Strip unicode
         if isinstance(val, dict):
@@ -151,6 +184,8 @@ class CallbackModule(CallbackBase):
                 if not out.endswith('\n'):
                     out += '\n'
                 out += indent_string('{0}: '.format(i), indent+1)
+                if HAS_SALT and i in SALT_FIELDS:
+                    val2 = salt_out(val2, color=color)
                 out += nlstrip(self._output(val2, indent+2))
             end = '}'
         elif isinstance(val, (list, tuple, set)):
@@ -197,8 +232,10 @@ class CallbackModule(CallbackBase):
             return
         if isinstance(data, dict):
             ndata = {}
+            color = not bool(data.get('_ansible_no_color'))
             for field, val in six.iteritems(data):
-                fields = data.get('_ansible_human_log_fields', FIELDS[:])
+                fields = data.get(
+                    '_ansible_human_log_fields', FIELDS[:] + SALT_FIELDS[:])
                 if field not in fields:
                     continue
                 no_log = d_no_log = data.get('_ansible_no_log')
@@ -207,7 +244,7 @@ class CallbackModule(CallbackBase):
                 if not no_log:
                     ndata[field] = val
             if ndata:
-                print(self._output(ndata))
+                print(self._output(ndata, color=color))
 
     def runner_on_failed(self, host, res, ignore_errors=False):
         self.human_log(res)
