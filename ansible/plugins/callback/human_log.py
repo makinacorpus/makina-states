@@ -140,11 +140,12 @@ def cached_saltopts():
     return _salt_opts
 
 
-def salt_out(val, display='highstate', color=True, opts=None):
+def salt_out(val, display='nested', color=True, opts=None):
     outval = None
     if opts is None:
         opts = cached_saltopts()
     opts['color'] = color
+    opts['strip_colors'] = not color
     try:
         outval = salt.output.try_printout(val, display, opts)
         if (
@@ -185,7 +186,13 @@ class CallbackModule(CallbackBase):
                     out += '\n'
                 out += indent_string('{0}: '.format(i), indent+1)
                 if HAS_SALT and i in SALT_FIELDS:
-                    val2 = salt_out(val2, color=color)
+                    display = 'nested'
+                    func = val.get('salt_fun', None)
+                    if not isinstance(func, six.string_types):
+                        func = ''
+                    if func.startswith('state.'):
+                        display = 'highstate'
+                    val2 = salt_out(val2, display=display, color=color)
                 out += nlstrip(self._output(val2, indent+2))
             end = '}'
         elif isinstance(val, (list, tuple, set)):
