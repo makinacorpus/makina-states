@@ -68,6 +68,7 @@ makina-nginx-safebelt-restart:
                             reload_macro=reload_macro) }}
 {% endif %}
 
+{% if pm == 'circus' %}
 {% set circus_data = {
   'cmd': "/usr/sbin/nginx -g 'daemon off;master_process on;'",
   'environment': {},
@@ -81,3 +82,4 @@ makina-nginx-safebelt-restart:
   'working_dir': '/var/www/html',
   'warmup_delay': "2"} %}
 {{ circus.circusToggleWatcher(pm=='circus', 'nginx', **circus_data) }}
+{% endif %}
