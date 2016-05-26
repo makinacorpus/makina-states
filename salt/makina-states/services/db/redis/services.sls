@@ -1,5 +1,7 @@
-{% import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
-{% set redisSettings = salt['mc_redis.settings']() %}
+{%- import "makina-states/_macros/h.jinja" as h with context %}
+{%- set redisSettings = salt['mc_redis.settings']() %}
+{%- set pm = salt['mc_services_managers.get_processes_manager'](redisSettings) %}
+{%- set service_function = salt['mc_services_managers.get_service_function'](pm) %}
 include:
   - makina-states.services.db.redis.hooks
   {% if salt['mc_nodetypes.is_docker_service']() %}
@@ -21,23 +23,23 @@ include:
 {{ circus.circusAddWatcher('redis', **circus_data) }}
 {%else %}
 {% if not salt['mc_nodetypes.is_docker']() %}
-makina-redis-service:
-  service.running:
-    - name: {{redisSettings.service}}
-    - enable: true
-    {# does not work - reload: true #}
+
+{% macro reload_macro() %}
     - watch:
       - mc_proxy: redis-pre-restart
     - watch_in:
       - mc_proxy: redis-post-restart
-
-makina-redis-restart-service:
-  service.running:
-    - name: {{redisSettings.service}}
-    - enable: true
+{% endmacro %}
+{% macro restart_macro() %}
     - watch:
       - mc_proxy: redis-pre-hardrestart
     - watch_in:
       - mc_proxy: redis-post-hardrestart
-{%endif%}
+{% endmacro %}
+{{ h.service_restart_reload(redisSettings.service,
+                            service_function=service_function,
+                            pref='makina-redis',
+                            restart_macro=restart_macro,
+                            reload_macro=reload_macro) }}
+{%endif %}
 {% endif %}
