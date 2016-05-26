@@ -149,7 +149,7 @@ def settings(**kwargs):
             'isPercona': False,
             'configs': {
                 '/etc/mysql/conf.d/local.cnf': {'mode': '644'},
-                '/etc/systemd/system/overrides.d/mysql.conf': {'mode': '644'},
+                '/etc/systemd/system/mysql.service.d/mysql.conf': {'mode': '644'},
             },
             'isOracle': True,
             'isMariaDB': False,

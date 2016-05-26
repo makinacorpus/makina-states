@@ -419,7 +419,7 @@ def settings():
         # FINAL STEP: merge with data from pillar and grains
         phpData = __salt__['mc_utils.defaults'](
             'makina-states.services.php', phpStepFour)
- 
+
         configs = {}
         confdir = phpData['confdir']
         if phpData['apc_install']:
@@ -428,7 +428,13 @@ def settings():
             configs[confdir+'/opcache.ini'] = {}
         configs[confdir+'/timezone.ini'] = {}
         if phpData['php7_onward']:
-            configs['/etc/systemd/system/overrides.d/php.conf'] = {}
+            unit =  'php7.0-fpm.service.d'
+        else:
+            unit =  'php5-fpm.service.d'
+        configs['/etc/systemd/system/{0}/php.conf'.format(unit)] = {
+            'source': ('salt://makina-states/files'
+                       '/etc/systemd/system/php-fpm.service.d/php.conf')
+        }
         phpData['configs'] = configs
 
         phpData = __salt__['mc_utils.defaults'](
