@@ -43,15 +43,6 @@ makina-mysql-settings-pre:
 {{macros.mysql_user(user, pw, **data) }}
 {%endfor %}
 
-mysql-reload-systemd:
-  cmd.watch:
-    - name: "systemctl daemon-reload"
-    - watch:
-      - mc_proxy: mysql-post-conf-hook
-      - file: mysql-/etc/systemd/system/overrides.d/mysql.conf
-    - watch_in:
-      - mc_proxy: mysql-pre-restart-hook
-
 {% macro rsmacro() %}
     - watch:
       - mc_proxy: mysql-pre-conf-hook
