@@ -7,8 +7,11 @@ include:
   {% if salt['mc_nodetypes.is_docker_service']() %}
   - makina-states.services.monitoring.circus.hooks
   {% endif %}
+  {% if pm in salt['mc_services_managers.processes_managers']() %}
+  - makina-states.services_managers.{{pm}}.hooks
+  {% endif %}
 
-{% if salt['mc_nodetypes.is_docker_service']() %}
+{% if pm == 'circus' %}
 {% set circus_data = {
   'cmd': '/usr/bin/redis-server-wrapper.sh /etc/redis/redis.conf',
   'environment': {},
@@ -21,9 +24,9 @@ include:
   'conf_priority': '50',
   'max_age': 24*60*60} %}
 {{ circus.circusAddWatcher('redis', **circus_data) }}
-{%else %}
-{% if not salt['mc_nodetypes.is_docker']() %}
+{% endif %}
 
+{% if service_function %}
 {% macro reload_macro() %}
     - watch:
       - mc_proxy: redis-pre-restart
@@ -41,5 +44,4 @@ include:
                             pref='makina-redis',
                             restart_macro=restart_macro,
                             reload_macro=reload_macro) }}
-{%endif %}
 {% endif %}
