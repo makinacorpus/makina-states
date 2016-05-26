@@ -1,7 +1,8 @@
-{% import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
-{% set settings = salt['mc_nginx.settings']() %}
-{% set pm = salt['mc_services_managers.get_processes_manager'](settings) %}
-{% set service_function = salt['mc_services_managers.get_service_function'](pm) %}
+{%- import "makina-states/_macros/h.jinja" as h with context %}
+{%- import "makina-states/services/monitoring/circus/macros.jinja" as circus with context %}
+{%- set settings = salt['mc_nginx.settings']() %}
+{%- set pm = salt['mc_services_managers.get_processes_manager'](settings) %}
+{%- set service_function = salt['mc_services_managers.get_service_function'](pm) %}
 include:
   - makina-states.services.http.nginx.hooks
   {% if pm in salt['mc_services_managers.processes_managers']() %}
@@ -46,26 +47,25 @@ makina-nginx-safebelt-restart:
       - mc_proxy: nginx-pre-restart-hook
 
 {% if service_function %}
-makina-nginx-restart:
-  {{service_function}}:
-    - names: [{{ settings.service }}]
-    - enable: {{salt['mc_services_managers.get_service_enabled_state'](service_function)}}
-    - reload: true
+{% macro reload_macro() %}
     - watch:
       - cmd: makina-nginx-safebelt-restart
       - mc_proxy: nginx-pre-restart-hook
     - watch_in:
       - mc_proxy: nginx-post-restart-hook
-
-makina-nginx-hard-restart:
-  {{service_function}}:
-    - names: [{{ settings.service }}]
-    - enable: {{salt['mc_services_managers.get_service_enabled_state'](service_function)}}
+{% endmacro %}
+{% macro restart_macro() %}
     - watch:
       - cmd: makina-nginx-safebelt-restart
       - mc_proxy: nginx-pre-hardrestart-hook
     - watch_in:
       - mc_proxy: nginx-post-hardrestart-hook
+{% endmacro %}
+{{ h.service_restart_reload(settings.service,
+                            service_function=service_function,
+                            pref='makina-nginx',
+                            restart_macro=restart_macro,
+                            reload_macro=reload_macro) }}
 {% endif %}
 
 {% set circus_data = {
