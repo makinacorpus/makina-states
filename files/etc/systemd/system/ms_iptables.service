@@ -1,6 +1,6 @@
 [Unit]
 Description=ms iptables
-Before=network.target
+After=network.target
 Before=libvirtd.service
 Before=NetworkManager.service
 Before=lxc-net-makina.service
