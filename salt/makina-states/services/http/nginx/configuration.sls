@@ -40,12 +40,3 @@ makina-nginx-helman:
      settings.get('configs', {}),
      mode='644',
      after_macro=rmacro, prefix='nginx-')}}
-
-nginxservice-systemd-reload-conf:
-  cmd.run:
-    - name: "systemctl daemon-reload"
-    - watch:
-      - file: nginx-/etc/systemd/system/overrides.d/nginx.conf
-      - mc_proxy: nginx-pre-conf-hook
-    - watch_in:
-      - mc_proxy: nginx-post-conf-hook

@@ -264,7 +264,7 @@ def settings():
                     "/etc/logrotate.d/nginx": {},
                     '/etc/default/nginx': {},
                     '/etc/init.d/nginx': {"mode": "755"},
-                    '/etc/systemd/system/overrides.d/nginx.conf': {"mode": "644"},
+                    '/etc/systemd/system/nginx.service.d/nginx.conf': {"mode": "644"},
                 },
                 'open_file_cache_min_uses': '2',
                 'open_file_cache_errors': 'off',

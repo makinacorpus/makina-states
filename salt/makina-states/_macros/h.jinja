@@ -98,6 +98,19 @@
 {% endif %}
 {% if service_function %}
 {% if reload %}
+makina-{{pref}}-{{unit}}-reload-reload-systemd:
+  cmd.watch:
+    - name: systemctl daemon-reload
+    - onlyif: |
+              if ! which systemctl >/dev/null 2>&1;then exit 1;fi
+              systemctl show {{unit}}
+  {% if reload_macro %}{{reload_macro()}}{%endif%}
+makina-{{pref}}-{{unit}}-service-o:
+  mc_proxy.hook:
+    - require:
+        - cmd: makina-{{pref}}-{{unit}}-reload-reload-systemd
+    - require_in:
+        - {{service_function.split('.')[0]}}: makina-{{pref}}-{{unit}}-service
 makina-{{pref}}-{{unit}}-service:
   {{service_function}}:
     - name: {{unit}}
@@ -122,6 +135,19 @@ fail-makina-{{pref}}-{{unit}}-service:
 {% endif %}
 
 {% if restart %}
+makina-{{pref}}-{{unit}}-restart-reload-systemd:
+  cmd.watch:
+    - name: systemctl daemon-reload
+    - onlyif: |
+              if ! which systemctl >/dev/null 2>&1;then exit 1;fi
+              systemctl show {{unit}}
+  {% if restart_macro %}{{restart_macro()}}{%endif%}
+makina-{{pref}}-{{unit}}-restart-service-o:
+  mc_proxy.hook:
+    - require:
+        - cmd: makina-{{pref}}-{{unit}}-restart-reload-systemd
+    - require_in:
+        - {{service_function.split('.')[0]}}: makina-{{pref}}-{{unit}}-restart-service
 makina-{{pref}}-{{unit}}-restart-service:
   {{service_function}}:
     - name: {{unit}}
