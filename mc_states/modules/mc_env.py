@@ -82,6 +82,10 @@ def settings():
     return _settings()
 
 
+def env():
+    return settings()['env']
+
+
 def ext_pillar(id_, ttl=PILLAR_TTL, *args, **kw):
     def _do(id_, args, kw):
         rdata = {}
