@@ -4,8 +4,8 @@
 {% macro circusAddWatcher(name, cmd) %}
 {% set args = kwargs.pop('args', []) %}
 {% set conf_priority = kwargs.get('priority', kwargs.get('conf_priority', '100')) %}
-{% set force_reload = kwargs.pop('manager_force_reload', False) %}
-{% set force_restart = kwargs.pop('manager_force_restart', False) %}
+{% set force_reload = kwargs.pop('manager_force_reload', kwargs.pop('force_reload', False)) %}
+{% set force_restart = kwargs.pop('manager_force_restart', kwargs.pop('force_restart', False)) %}
 circus-add-watcher-{{ name }}-parents:
   file.directory:
     - mode: 755
