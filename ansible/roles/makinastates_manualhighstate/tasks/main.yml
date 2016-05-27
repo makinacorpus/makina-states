@@ -1,3 +1,7 @@
 ---
-- shell: "{{makinastates_dest}}/bin/salt-call --retcode-passthrough state.sls makina-states.top"
+- name: "manual highstate on {{inventory_hostname}}"
+  saltcall:
+    function: state.sls
+    args: makina-states.top
+  register: makinastates_manualhighstate
   tags: [makinastates, makinastates_manualhighstate]
