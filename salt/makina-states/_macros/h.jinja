@@ -102,7 +102,7 @@ makina-{{pref}}-{{unit}}-reload-reload-systemd:
   cmd.watch:
     - name: |
             if ! which systemctl >/dev/null 2>&1;then exit 0;fi
-            if ! systemctl show {{unit}}:then exit 0;fi
+            if ! systemctl show {{unit}};then exit 0;fi
             systemctl daemon-reload
   {% if reload_macro %}{{reload_macro()}}{%endif%}
 makina-{{pref}}-{{unit}}-service-o:
@@ -139,7 +139,7 @@ makina-{{pref}}-{{unit}}-restart-reload-systemd:
   cmd.watch:
     - name: |
             if ! which systemctl >/dev/null 2>&1;then exit 0;fi
-            if ! systemctl show {{unit}}:then exit 0;fi
+            if ! systemctl show {{unit}};then exit 0;fi
             systemctl daemon-reload
   {% if restart_macro %}{{restart_macro()}}{%endif%}
 makina-{{pref}}-{{unit}}-restart-service-o:
