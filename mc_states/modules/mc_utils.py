@@ -44,6 +44,26 @@ _marker = object()
 log = logging.getLogger(__name__)
 
 
+def empty_caches(extras=None):
+    if not extras:
+        extras = []
+    for i in extras + [_CACHE]:
+        if isinstance(i, dict):
+            for a in [b for b in i]:
+                i.pop(a, None)
+    for cache in [
+        mc_states.api._LOCAL_CACHES,
+    ]:
+        for i in [a for a in cache]:
+            val = cache[a]
+            if isinstance(val, dict):
+                for v in [b for b in val]:
+                    val.pop(v, None)
+            else:
+                cache.pop(i, None)
+    _CACHE['mid'] = None
+
+
 def assert_good_grains(grains):
      ''''
      no time to search/debug why,
