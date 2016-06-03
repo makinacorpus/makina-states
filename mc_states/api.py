@@ -76,7 +76,7 @@ RUNNER_CACHE_TIME = 24 * 60 * 60
 AUTO_NAMES = {'_registry': 'registry',
               '_settings': 'settings',
               '_metadata': 'metadata'}
-_CACHEKEY = 'localreg_{0}_{1}'
+_CACHEKEY = 'localreg_'
 _DEFAULT_MC = 'default'
 _LOCAL_CACHES = {}
 _DEFAULT_KEY = 'cache_key_{0}'
@@ -92,6 +92,20 @@ _USE_MEMCACHE_FIRST = OrderedDict()
 _USE_MEMOIZE_FIRST = OrderedDict()
 log = logging.getLogger('mc_states.api')
 OKEYS = {}
+_CONFIG_CACHE_KEYS = ['master',
+                      'config_dir',
+                      'local',
+                      'conf_file',
+                      'master_port',
+                      'file_roots',
+                      'pillar_roots',
+                      '__role',
+                      'user',
+                      'username',
+                      'conf_prefix',
+                      'publish_port',
+                      'id',
+                      'ret_port']
 
 
 class LockError(Exception):
@@ -168,13 +182,17 @@ def get_local_cache(key=None):
 
 
 def register_memcache_first(pattern):
-    if pattern not in _USE_MEMCACHE_FIRST:
-        _USE_MEMCACHE_FIRST[pattern] = re.compile(pattern, RE_FLAGS)
+    '''
+    Obsolete
+    '''
+    log.error('register_memcache_first is deprecated and has no effect')
 
 
 def register_memoize_first(pattern):
-    if pattern not in _USE_MEMOIZE_FIRST:
-        _USE_MEMOIZE_FIRST[pattern] = re.compile(pattern, RE_FLAGS)
+    '''
+    Obsolete
+    '''
+    log.error('register_memcache_first is deprecated and has no effect')
 
 
 def cache_pop(cache, key, default=None):
@@ -211,64 +229,89 @@ def cache_set(cache, key, val=None):
     return cache_get(cache, key)
 
 
+def get_cs(addrs, key, binary=None, behaviors=None, ping_test=True):
+    cs = None
+    cache_key = (os.getpid(), key)
+    error_key = (os.getpid(), cache_key[1], tuple(addrs))
+    trace = None
+    error = False
+    if not behaviors:
+        behaviors = {"tcp_nodelay": True, "ketama": True}
+    if binary is None:
+        binary = True
+    try:
+        cs = _MC_SERVERS['cache'][cache_key]
+    except KeyError:
+        cs = None
+    if not cs:
+        try:
+            _MC_SERVERS['error'][error_key]
+        except KeyError:
+            pass
+        else:
+            # retry failed memcache server in ten minutes
+            if time.time() < (_MC_SERVERS['error'][error_key] + (10 * 60)):
+                ping_test = False
+        try:
+            mcs = pylibmc.Client(addrs, binary=binary, behaviors=behaviors)
+            # threadsafe pools
+            cs = _MC_SERVERS['cache'][
+                cache_key] = pylibmc.ThreadMappedPool(mcs)
+            trace, error = None, False
+        except (pylibmc.WriteError,):
+            error = 'Local memcached server is not reachable (w)'
+        except (Exception,):
+            trace = traceback.format_exc()
+            error = 'Local memcached server is not reachable'
+    if cs is not None and ping_test and not error:
+        try:
+            cache_set(cs, 'mc_states_ping', 'ping')
+            trace, error = None, False
+        except (pylibmc.WriteError,):
+            error = 'Local memcached server is not usable (w)'
+        except (Exception,):
+            trace = traceback.format_exc()
+            error = 'Local memcached server is not usable'
+    if error:
+        cs = None
+        _MC_SERVERS['error'][error_key] = time.time()
+        try:
+            del _MC_SERVERS['cache'][cache_key]
+        except KeyError:
+            pass
+    _MC_SERVERS['cache'][cache_key] = cs
+    return cs, error, trace
+
+
 def get_mc_server(key=None,
                   addrs=None,
                   ping_test=True,
                   binary=None,
+                  retries=12,
                   behaviors=None):
     if not key:
         key = _DEFAULT_MC
     if not addrs:
         addrs = os.environ.get('MC_SERVER', '127.0.0.1')
-    if not behaviors:
-        behaviors = {"tcp_nodelay": True, "ketama": True}
-    if binary is None:
-        binary = True
     if isinstance(addrs, basestring):
         addrs = addrs.split(',')
     if not addrs:
         addrs = ['127.0.0.1']
     # log.error('addrs: {0}'.format(addrs))
-    cache_key = (os.getpid(), key)
-    error, error_key = False, (os.getpid(), key, tuple(addrs))
-    if HAS_PYLIBMC and key not in _MC_SERVERS['cache']:
-        try:
-            mcs = pylibmc.Client(
-                addrs, binary=binary, behaviors=behaviors)
-            # threadsafe pools
-            _MC_SERVERS['cache'][cache_key] = pylibmc.ThreadMappedPool(mcs)
-        except (pylibmc.WriteError,):
-            error = True
-        except (Exception,):
-            error = True
-            trace = traceback.format_exc()
-            log.warn('Local memcached server is not reachable')
+    if HAS_PYLIBMC:
+        for i in range(retries):
+            cs, error, trace = get_cs(
+                addrs, key,
+                binary=binary,
+                behaviors=behaviors,
+                ping_test=ping_test)
+            if cs is not None:
+                break
+    if error:
+        log.warn(error)
+        if trace:
             log.trace('Memcached error:\n{0}'.format(trace))
-        if error:
-            _MC_SERVERS['error'][error_key] = time.time()
-    if error_key in _MC_SERVERS['error']:
-        # retry failed memcache server in ten minutes
-        if time.time() < (_MC_SERVERS['error'][error_key] + (10 * 60)):
-            ping_test = False
-    pinguable = False
-    if HAS_PYLIBMC and ping_test:
-        try:
-            cache_set(_MC_SERVERS['cache'][cache_key],
-                      'mc_states_ping', 'ping')
-            pinguable = True
-        except (pylibmc.WriteError,):
-            error = True
-        except (Exception,):
-            error = True
-            trace = traceback.format_exc()
-            log.warn('Local memcached server is not usable')
-            log.trace('Memcached error:\n{0}'.format(trace))
-        if error:
-            _MC_SERVERS['error'][error_key] = time.time()
-            _MC_SERVERS['cache'].pop(cache_key, None)
-    if pinguable and (error_key in _MC_SERVERS['error']):
-        _MC_SERVERS['cache'].pop(cache_key, None)
-    return _MC_SERVERS['cache'].get(cache_key, None)
+    return cs
 
 
 def strip_colors(line):
@@ -403,7 +446,7 @@ def lazy_subregistry_get(__salt__, registry):
             ]:
                 val = globs.get(i, {})
                 _do.__globals__[i] = val
-            ckey = _CACHEKEY.format(registry, key)
+            ckey = _CACHEKEY + '_ ' + registry + '_' + key
             ret = memoize_cache(
                 _do, [func, a, kw], {},  ckey,
                 seconds=ttl, force_run=force_run)
@@ -423,19 +466,24 @@ def filter_locals(reg, filter_list=None):
     # kind = reg.get('reg_kind', None)
     subreg = reg.get('reg_func_name', None)
     if not filter_list:
-        filter_list = {
-            'settings': [
-                'REG',
-                '__salt__',
-                'pillar',
-                'grains',
-                '__pillar__',
-                '__grains__',
-                'saltmods',
-            ]}.get(subreg, [])
+        try:
+            filter_list = {
+                'settings': [
+                    'REG',
+                    '__salt__',
+                    'pillar',
+                    'grains',
+                    '__pillar__',
+                    '__grains__',
+                    'saltmods',
+                ]}[subreg]
+        except KeyError:
+            filter_list = []
     for item in filter_list:
-        if item in reg:
+        try:
             del reg[item]
+        except KeyError:
+            pass
     return reg
 
 
@@ -445,7 +493,7 @@ def is_valid_ip(ip_or_name):
         if not valid:
             try:
                 if socket.inet_pton(familly, ip_or_name):
-                    valid = True
+                    return True
             except:
                 pass
     return valid
@@ -496,22 +544,30 @@ def get_cache_key(key, __opts__=None, *args, **kw):
     # if we have a sha key, use that
     # use viewkeys => threadsafe, no iterator on
     # continelously mutating dict
-    if key in six.viewkeys(_CACHE_KEYS):
+    try:
+        ckey = _CACHE_PREFIX[key]
+    except KeyError:
+        pass
+    try:
+        assert key.index(_CACHE_PREFIX['key']) == 0
         ckey = key
-    if key.startswith(_CACHE_PREFIX['key']):
-        ckey = key
+    except (ValueError, AssertionError):
+        pass
     if not ckey:
-        func = kw.get('fun', None)
-        arg = kw.get('arg', None)
-        kwarg = kw.get('kwarg', {})
         if not __opts__:
-            __opts__ = {}
-        prefix = ['v2']
+            __opts__ = None
+        func = kw.get('fun', None)
+        prefix = 'v2'
         try:
-            if not ('{' in key and '}' in key):
+            try:
+                key.index('{')
+                key.index('}')
+            except ValueError:
                 raise IndexError('key is not formatted,'
                                  ' skip early'
                                  ' (error is passed later)')
+            kwarg = kw.get('kwarg', {})
+            arg = kw.get('arg', None)
             format_args = []
             if arg is None:
                 arg = []
@@ -525,39 +581,32 @@ def get_cache_key(key, __opts__=None, *args, **kw):
                 key = key.format(*format_args, **kwarg)
         except Exception:
             pass  # key may not be meaned to be formated afterall
-
         # if we are called from a salt function and have enougth
         # information, be sure to modulate the cache from the daemon
         # we are calling from (master, minion, syndic & etc.)
-        for k in ['master',
-                  'config_dir',
-                  'local',
-                  'conf_file',
-                  'master_port',
-                  'file_roots',
-                  'pillar_roots',
-                  '__role',
-                  'user',
-                  'username',
-                  'conf_prefix',
-                  'publish_port',
-                  'id',
-                  'ret_port']:
-            val = __opts__.get(k, None)
-            if val:
-                prefix.append("{0}".format(val))
-        prefix = '_'.join(prefix)
+        if __opts__ is not None:
+            for k in _CONFIG_CACHE_KEYS:
+                try:
+                    val = __opts__[k]
+                except KeyError:
+                    continue
+                else:
+                    if val:
+                        try:
+                            prefix += val
+                        except (ValueError, TypeError):
+                            prefix += str(val)
         if prefix and not key.startswith(prefix):
-            sha = "{0}_{1}".format(prefix, key)
+            sha = prefix + "_" + key
         else:
             sha = key
         if func:
-            pillar = getattr(func, '__globals__', {}).get('__pillar__', {})
-            if not pillar:
+            try:
+                func.__globals__['__pillar__']
+            except Exception:
                 key += '_nopillar'
-        ckey = "{0}_{1}".format(
-            _CACHE_PREFIX['key'],
-            hashlib.sha1(key).hexdigest())
+        # ckey = _CACHE_PREFIX['key'] + "_" + key.encode('base64')
+        ckey = _CACHE_PREFIX['key'] + "_" + hashlib.sha1(key).hexdigest()
         _CACHE_KEYS[ckey] = (sha, key)
     return ckey
 
@@ -574,7 +623,7 @@ def get_cache_servers(cache=None,
             either a string to cache in a localthreaded memoize cache
             or a dict mutable where to stock the cache
         memcache
-            memcache pool instance
+            memcache pool instance (can be used instead of default one)
         use_memcache
             if memcache is available, use it amongst local cache
 
@@ -595,30 +644,14 @@ def get_cache_servers(cache=None,
     if (
         HAS_PYLIBMC and
         key and
-        (use_memcache is not False) and
+        use_memcache and
         not explicit_local_cache
     ):
         if isinstance(memcache, (pylibmc.Client, pylibmc.ThreadMappedPool)):
             mc_server = memcache
         else:
             mc_server = get_mc_server(memcache)
-        if mc_server and mc_server not in caches:
-            caches.append(mc_server)
-        ckey = get_cache_key(key)
-        fun_args = _CACHE_KEYS.get(ckey, ('', None))[1]
-        memcache_first = False
-        for spattern, repattern in six.iteritems(_USE_MEMCACHE_FIRST):
-            if spattern in fun_args:
-                memcache_first = True
-                break
-            if repattern.search(fun_args):
-                memcache_first = True
-                break
-        if memcache_first:
-            caches.reverse()
-    # explicit memcache use, fail if no memcache present
-    if caches and use_memcache is True:
-        caches = [caches[0]]
+        caches.insert(0, mc_server)
     return caches
 
 
@@ -633,7 +666,9 @@ def cache_check(key,
     Invalidate record in cache  if expired
     '''
     key = get_cache_key(key, __opts__=__opts__, **kwargs)
-    for cache in get_cache_servers(cache, memcache, key=key):
+    for cache in get_cache_servers(cache=cache,
+                                   memcache=memcache,
+                                   key=key):
         try:
             entry = cache_get(cache, key)
         except (IndexError, KeyError):
