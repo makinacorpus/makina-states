@@ -165,11 +165,15 @@ def get_groups(host, pillar=None, groups=None):
 def generate_masterless_pillar(id_,
                                set_retcode=False,
                                profile_enabled=False,
+                               reset_local_cache=True,
                                restart_memcached=True):
     _s = __salt__
-    if profile_enabled and restart_memcached:
-        _s['cmd.run']('service memcached restart')
-        time.sleep(2)
+    if profile_enabled:
+        if reset_local_cache:
+            _s['mc_pillar.invalidate_mc_pillar']()
+        if restart_memcached:
+            _s['cmd.run']('service memcached restart')
+            time.sleep(2)
     pid = None
     errors = []
     if profile_enabled:
