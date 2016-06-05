@@ -700,7 +700,7 @@ def _merge_statuses(ret, cret, step=None):
     return ret
 
 
-def _init_context(name=None, remote_host=None):
+def _init_context(*args, **kwargs):
     if 'ms_projects' not in __opts__:
         __opts__['ms_projects'] = OrderedDict()
     if 'ms_project' not in __opts__:
@@ -709,7 +709,7 @@ def _init_context(name=None, remote_host=None):
 
 
 def set_project(cfg):
-    _init_context(cfg.get('name', None))
+    _init_context()
     __opts__['ms_project'] = cfg
     __opts__['ms_project_name'] = cfg['name']
     __opts__['ms_projects'][(cfg['name'], cfg['remote_host'])] = cfg
@@ -737,7 +737,9 @@ def get_project(name, *args, **kwargs):
 
 
 def _get_contextual_cached_project(name, remote_host=None):
-    _init_context(name=name, remote_host=remote_host)
+    if not remote_host:
+        remote_host = __grains__['fqdn']
+    _init_context()
     # throw KeyError if not already loaded
     key = (name, remote_host)
     try:
@@ -1217,9 +1219,9 @@ def get_contextual_cfg_defaults(configs, project=None, remote_host=None):
                 project = data.get('name', None)
             rhost = data.get('remote_host', thishost)
             if (
-                (remote_host is None)
-                and rhost
-                and (rhost  != thishost)
+                (remote_host is None) and
+                rhost and
+                (rhost != thishost)
             ):
                 remote_host = rhost
     project = get_default_project(project)
@@ -2117,8 +2119,12 @@ def guarded_step(cfg,
                 set_project(cfg)
                 if cfg.get('skip_{0}'.format(step), False):
                     continue
-                cret = __salt__['mc_project_{1}.{0}'.format(
-                    step, cfg['api_version'])](name, *args, **kwargs)
+                if 'cfg' not in kwargs:
+                    cret = __salt__['mc_project_{1}.{0}'.format(
+                        step, cfg['api_version'])](name, cfg=cfg, *args, **kwargs)
+                else:
+                    cret = __salt__['mc_project_{1}.{0}'.format(
+                        step, cfg['api_version'])](name, *args, **kwargs)
                 _merge_statuses(ret, cret, step=step)
         except projects_api.ProjectProcedureException, pr:
             # if we are not in an inner step, raise in first place !
@@ -2153,7 +2159,9 @@ def execute_garded_step(name,
                         error_msg=None,
                         rollback=False,
                         *args, **kwargs):
-    cfg = get_configuration(name, *args, **kwargs)
+    cfg = kwargs.get('cfg', None)
+    if cfg is None:
+        cfg = get_configuration(name, *args, **kwargs)
     return guarded_step(cfg, step_or_steps,
                         inner_step=inner_step,
                         error_msg=error_msg,
@@ -2173,7 +2181,9 @@ def sync_modules(name, *args, **kwargs):
           salt-call foo_foo.bar()
 
     '''
-    cfg = get_configuration(name, *args, **kwargs)
+    cfg = kwargs.get('cfg', None)
+    if cfg is None:
+        cfg = get_configuration(name, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
     _s = __salt__
     salt_root = cfg['salt_root']
@@ -2242,7 +2252,9 @@ def deploy(name, *args, **kwargs):
 
     '''
     ret = _get_ret(name, *args, **kwargs)
-    cfg = get_configuration(name, *args, **kwargs)
+    cfg = kwargs.get('cfg', None)
+    if cfg is None:
+        cfg = get_configuration(name, *args, **kwargs)
     if cfg['skip_deploy']:
         return ret
     # make the deploy_ret dict available in notify sls runners
@@ -2267,12 +2279,31 @@ def deploy(name, *args, **kwargs):
                      ret=ret)
 
     if ret['result']:
+        ocfg = copy.deepcopy(cfg)
+        try:
+            cfg = get_configuration(name, *args, **kwargs)
+            guarded_step(cfg,
+                         ['release_sync'],
+                         rollback=True,
+                         inner_step=True,
+                         ret=ret)
+
+        except Exception:
+            ret['result'] = False
+        if not ret['result']:
+            cfg = ocfg
+            set_project(cfg)
+            log.error('New project config has errors, will rollback')
+            ret['result'] = False
+            cfg['rollback'] = True
+
+    if ret['result']:
+        # ensure new modules are also synced
         guarded_step(cfg,
-                     ['release_sync'],
+                     ['sync_modules'],
                      rollback=True,
                      inner_step=True,
                      ret=ret)
-        cfg = get_configuration(name, *args, **kwargs)
 
     if ret['result']:
         guarded_step(cfg,
@@ -2318,7 +2349,9 @@ def run_task(name, only_steps, *args, **kwargs):
     if not only_steps:
         raise _stop_proc('One task at least must be providen')
     ret = _get_ret(name, *args, **kwargs)
-    cfg = get_configuration(name, *args, **kwargs)
+    cfg = kwargs.get('cfg', None)
+    if cfg is None:
+        cfg = get_configuration(name, *args, **kwargs)
     if cfg['skip_deploy']:
         return ret
     # make the deploy_ret dict available in notify sls runners
@@ -2349,13 +2382,17 @@ def run_task(name, only_steps, *args, **kwargs):
 
 
 def archive(name, *args, **kwargs):
-    cfg = get_configuration(name, *args, **kwargs)
+    cfg = kwargs.get('cfg', None)
+    if cfg is None:
+        cfg = get_configuration(name, *args, **kwargs)
     cret = _step_exec(cfg, 'archive')
     return cret
 
 
 def release_sync(name, *args, **kwargs):
-    cfg = get_configuration(name, *args, **kwargs)
+    cfg = kwargs.get('cfg', None)
+    if cfg is None:
+        cfg = get_configuration(name, *args, **kwargs)
     iret = init_project(name, *args, **kwargs)
     cfg = reload_cfg(cfg)
     return iret
@@ -2410,11 +2447,13 @@ def install(name, only_steps=None, task_mode=False, *args, **kwargs):
         salt mc_project.deploy only=install onlystep=00_foo
 
     '''
+    cfg = kwargs.get('cfg', None)
+    if cfg is None:
+        cfg = get_configuration(name, *args, **kwargs)
     if not only_steps:
         only_steps = []
     if isinstance(only_steps, basestring):
         only_steps = only_steps.split(',')
-    cfg = get_configuration(name, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
     if ret['result']:
         guarded_step(cfg,
@@ -2458,14 +2497,18 @@ def install(name, only_steps=None, task_mode=False, *args, **kwargs):
     return ret
 
 
-def run_setup(name, step_name,  *args, **kwargs):
-    cfg = get_configuration(name, *args, **kwargs)
+def run_setup(name, step_name, *args, **kwargs):
+    cfg = kwargs.get('cfg', None)
+    if cfg is None:
+        cfg = get_configuration(name, *args, **kwargs)
     cret = _step_exec(cfg, step)
     return cret
 
 
 def fixperms(name, *args, **kwargs):
-    cfg = get_configuration(name, *args, **kwargs)
+    cfg = kwargs.get('cfg', None)
+    if cfg is None:
+        cfg = get_configuration(name, *args, **kwargs)
     cret = _step_exec(cfg, 'fixperms')
     return cret
 
@@ -2743,7 +2786,9 @@ def rollback(name, *args, **kwargs):
     '''
     Run the rollback corpus step
     '''
-    cfg = get_configuration(name, *args, **kwargs)
+    cfg = kwargs.get('cfg', None)
+    if cfg is None:
+        cfg = get_configuration(name, *args, **kwargs)
     cret = _step_exec(cfg, 'rollback')
     return cret
 
@@ -2752,7 +2797,9 @@ def rotate_archives(name, *args, **kwargs):
     '''
     Run the rotate_archives corpus step
     '''
-    cfg = get_configuration(name, *args, **kwargs)
+    cfg = kwargs.get('cfg', None)
+    if cfg is None:
+        cfg = get_configuration(name, *args, **kwargs)
     ret = _get_ret(name, *args, **kwargs)
     try:
         if os.path.exists(cfg['archives_root']):
@@ -2773,7 +2820,9 @@ def rotate_archives(name, *args, **kwargs):
 
 
 def notify(name, *args, **kwargs):
-    cfg = get_configuration(name, *args, **kwargs)
+    cfg = kwargs.get('cfg', None)
+    if cfg is None:
+        cfg = get_configuration(name, *args, **kwargs)
     cret = _step_exec(cfg, 'notify')
     return cret
 

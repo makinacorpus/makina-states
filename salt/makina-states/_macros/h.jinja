@@ -100,10 +100,10 @@
 {% if reload %}
 makina-{{pref}}-{{unit}}-reload-reload-systemd:
   cmd.watch:
-    - name: systemctl daemon-reload
-    - onlyif: |
-              if ! which systemctl >/dev/null 2>&1;then exit 1;fi
-              systemctl show {{unit}}
+    - name: |
+            if ! which systemctl >/dev/null 2>&1;then exit 0;fi
+            if ! systemctl show {{unit}};then exit 0;fi
+            systemctl daemon-reload
   {% if reload_macro %}{{reload_macro()}}{%endif%}
 makina-{{pref}}-{{unit}}-service-o:
   mc_proxy.hook:
@@ -137,10 +137,10 @@ fail-makina-{{pref}}-{{unit}}-service:
 {% if restart %}
 makina-{{pref}}-{{unit}}-restart-reload-systemd:
   cmd.watch:
-    - name: systemctl daemon-reload
-    - onlyif: |
-              if ! which systemctl >/dev/null 2>&1;then exit 1;fi
-              systemctl show {{unit}}
+    - name: |
+            if ! which systemctl >/dev/null 2>&1;then exit 0;fi
+            if ! systemctl show {{unit}};then exit 0;fi
+            systemctl daemon-reload
   {% if restart_macro %}{{restart_macro()}}{%endif%}
 makina-{{pref}}-{{unit}}-restart-service-o:
   mc_proxy.hook:

@@ -23,6 +23,10 @@ log = logging.getLogger(__name__)
 CUR_VER = '4.3.0'
 
 
+def ver():
+    return CUR_VER
+
+
 def settings():
     '''
     nodejs
@@ -32,7 +36,7 @@ def settings():
     def _settings():
         locations = __salt__['mc_locations.settings']()
         # nodejs
-        cur_nodejsver = '4.3.0'
+        cur_nodejsver = CUR_VER
         data = __salt__['mc_utils.defaults'](
             'makina-states.localsettings.nodejs', {
                 'shas': {

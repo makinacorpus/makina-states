@@ -57,23 +57,26 @@ def default_settings():
 
 
 def extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
-    def _do(id_=None, limited=False):
+    def _doextpillar_settings(id_=None, limited=False):
         _s = __salt__
         gconf = _s['mc_pillar.get_configuration'](
             _s['mc_pillar.minion_id']())
         gdata = {'vts': {'lxc': gconf.get('cloud_control_lxc', True),
                          'kvm': gconf.get('cloud_control_kvm', True)}}
         extdata = _s['mc_pillar.get_global_clouf_conf']('cloud')
-        data = _s['mc_utils.dictupdate'](default_settings(),
-                                         _s['mc_utils.dictupdate'](gdata, extdata))
+        data = _s['mc_utils.dictupdate'](
+            default_settings(),
+            _s['mc_utils.dictupdate'](gdata, extdata))
         return data
     cache_key = 'mc_cloud_controller.extpillar_settings{0}{1}'.format(
         id_, limited)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _doextpillar_settings, [id_, limited], {},
+        cache_key, ttl, use_memcache=True)
 
 
 def ext_pillar(id_=None, prefixed=True, limited=False, ttl=PILLAR_TTL):
-    def _do(id_=None, prefixed=True, limited=False):
+    def _doext_pillar(id_=None, prefixed=True, limited=False):
         if not id_:
             id_ = __grains__['id']
         _s = __salt__
@@ -83,7 +86,8 @@ def ext_pillar(id_=None, prefixed=True, limited=False, ttl=PILLAR_TTL):
         if not expose:
             return {}
         data = extpillar_settings(id_)
-        conf_targets = _s['mc_cloud_compute_node.get_targets']()
+        conf_targets = copy.deepcopy(
+            _s['mc_cloud_compute_node.get_targets']())
         conf_vms = _s['mc_cloud_compute_node.get_vms']()
         compute_node_data = conf_targets.get(id_, None)
         dtargets = data['compute_nodes']
@@ -117,16 +121,19 @@ def ext_pillar(id_=None, prefixed=True, limited=False, ttl=PILLAR_TTL):
         return data
     cache_key = 'mc_cloud_controller.extpillar{0}{1}{2}'.format(
         id_, prefixed, limited)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_, prefixed, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _doext_pillar, [id_, prefixed, limited], {},
+        cache_key, ttl, use_memcache=True)
 
 
 def settings(ttl=60):
     '''
     compute node related settings
     '''
-    def _do():
+    def _dosettings():
         _s = __salt__
         data = _s['mc_utils.defaults'](PREFIX, default_settings())
         return data
     cache_key = '{0}.{1}'.format(__name, 'settings')
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dosettings, [], {}, cache_key, ttl)
