@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-RELEASE="wheezy"
+RELEASE="sid"
 packages=""
 packages="$packages mdadm 3ware-status tw-cli 3dm2 aacraid-status arcconf hrconf"
 packages="$packages cciss-vol-status hpacucli megaraid-status megactl megamgr dellmgr megaclisas-status"
@@ -16,10 +16,15 @@ do_aptget() {
         #adaptec-storage-manager-agent\
         #adaptec-storage-manager-common\
 }
-install_debian() {
-    if [ "x$(grep -q "hwraid.le-vert.net" $(find /etc/apt/sources.list* -type f);echo ${?})" != "x0" ];then
-        if [ ! -e /etc/apt/sources.list.d/ ];then mkdir /etc/apt/sources.list.d;fi
+cfgapt() {
         echo "deb http://hwraid.le-vert.net/debian ${RELEASE} main" > /etc/apt/sources.list.d/hwraid.list
+}
+install_debian() {
+    if [ ! -e /etc/apt/sources.list.d/ ];then mkdir /etc/apt/sources.list.d;fi
+    if ! grep -q "hwraid.le-vert.net" $(find /etc/apt/sources.list* -type f);then
+        cfgapt
+    elif ! egrep -q "hwraid.le-vert.net.*$RELEASE" $(find /etc/apt/sources.list* -type f);then
+        cfgapt
     fi
     key="http://hwraid.le-vert.net/debian/hwraid.le-vert.net.gpg.key"
     if [ "x$(apt-key list|grep -qi le-ver;echo $?)" != "x0" ];then
