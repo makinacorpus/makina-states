@@ -229,12 +229,14 @@ def cache_set(cache, key, val=None):
     return cache_get(cache, key)
 
 
-def get_cs(addrs, key, binary=None, behaviors=None, ping_test=True):
+def get_cs(addrs, key, binary=None, behaviors=None, ping_test=None):
     cs = None
     cache_key = (os.getpid(), key)
     error_key = (os.getpid(), cache_key[1], tuple(addrs))
     trace = None
     error = False
+    if ping_test is None:
+        ping_test = True
     if not behaviors:
         behaviors = {"tcp_nodelay": True, "ketama": True}
     if binary is None:
@@ -252,6 +254,8 @@ def get_cs(addrs, key, binary=None, behaviors=None, ping_test=True):
             # retry failed memcache server in ten minutes
             if time.time() < (_MC_SERVERS['error'][error_key] + (10 * 60)):
                 ping_test = False
+                error = True
+    if not error and not cs:
         try:
             mcs = pylibmc.Client(addrs, binary=binary, behaviors=behaviors)
             # threadsafe pools
@@ -273,19 +277,20 @@ def get_cs(addrs, key, binary=None, behaviors=None, ping_test=True):
             trace = traceback.format_exc()
             error = 'Local memcached server is not usable'
     if error:
-        cs = None
         _MC_SERVERS['error'][error_key] = time.time()
         try:
             del _MC_SERVERS['cache'][cache_key]
         except KeyError:
             pass
-    _MC_SERVERS['cache'][cache_key] = cs
+        cs = None
+    else:
+        _MC_SERVERS['cache'][cache_key] = cs
     return cs, error, trace
 
 
 def get_mc_server(key=None,
                   addrs=None,
-                  ping_test=True,
+                  ping_test=None,
                   binary=None,
                   retries=12,
                   behaviors=None):
@@ -651,7 +656,8 @@ def get_cache_servers(cache=None,
             mc_server = memcache
         else:
             mc_server = get_mc_server(memcache)
-        caches.insert(0, mc_server)
+        if mc_server is not None:
+            caches.insert(0, mc_server)
     return caches
 
 
@@ -770,7 +776,12 @@ def memoize_cache(func,
     if put_in_cache:
         for cache in caches:
             now = time.time()
-            last_access = cache_get(cache, 'last_access', None)
+            try:
+                last_access = cache_get(cache, 'last_access', None)
+            except Exception:
+                import pdb;pdb.set_trace()  ## Breakpoint ##
+                raise
+
             if last_access is None:
                 cache_set(cache, 'last_access', now)
                 last_access = cache_get(cache, 'last_access')
