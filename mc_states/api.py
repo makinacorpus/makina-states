@@ -229,14 +229,12 @@ def cache_set(cache, key, val=None):
     return cache_get(cache, key)
 
 
-def get_cs(addrs, key, binary=None, behaviors=None, ping_test=None):
+def get_cs(addrs, key, binary=None, behaviors=None, ping_test=True):
     cs = None
     cache_key = (os.getpid(), key)
     error_key = (os.getpid(), cache_key[1], tuple(addrs))
     trace = None
     error = False
-    if ping_test is None:
-        ping_test = True
     if not behaviors:
         behaviors = {"tcp_nodelay": True, "ketama": True}
     if binary is None:
@@ -254,8 +252,6 @@ def get_cs(addrs, key, binary=None, behaviors=None, ping_test=None):
             # retry failed memcache server in ten minutes
             if time.time() < (_MC_SERVERS['error'][error_key] + (10 * 60)):
                 ping_test = False
-                error = True
-    if not error and not cs:
         try:
             mcs = pylibmc.Client(addrs, binary=binary, behaviors=behaviors)
             # threadsafe pools
@@ -277,20 +273,19 @@ def get_cs(addrs, key, binary=None, behaviors=None, ping_test=None):
             trace = traceback.format_exc()
             error = 'Local memcached server is not usable'
     if error:
+        cs = None
         _MC_SERVERS['error'][error_key] = time.time()
         try:
             del _MC_SERVERS['cache'][cache_key]
         except KeyError:
             pass
-        cs = None
-    else:
-        _MC_SERVERS['cache'][cache_key] = cs
+    _MC_SERVERS['cache'][cache_key] = cs
     return cs, error, trace
 
 
 def get_mc_server(key=None,
                   addrs=None,
-                  ping_test=None,
+                  ping_test=True,
                   binary=None,
                   retries=12,
                   behaviors=None):
@@ -656,8 +651,7 @@ def get_cache_servers(cache=None,
             mc_server = memcache
         else:
             mc_server = get_mc_server(memcache)
-        if mc_server is not None:
-            caches.insert(0, mc_server)
+        caches.insert(0, mc_server)
     return caches
 
 
