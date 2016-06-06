@@ -770,7 +770,12 @@ def memoize_cache(func,
     if put_in_cache:
         for cache in caches:
             now = time.time()
-            last_access = cache_get(cache, 'last_access', None)
+            try:
+                last_access = cache_get(cache, 'last_access', None)
+            except Exception:
+                import pdb;pdb.set_trace()  ## Breakpoint ##
+                raise
+
             if last_access is None:
                 cache_set(cache, 'last_access', now)
                 last_access = cache_get(cache, 'last_access')
