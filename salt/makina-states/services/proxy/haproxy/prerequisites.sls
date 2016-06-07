@@ -2,6 +2,7 @@
 {% set haproxySettings = salt['mc_haproxy.settings']() %}
 include:
   - makina-states.services.proxy.haproxy.hooks
+  - makina-states.localsettings.insserv
 
 {% set f = salt['mc_locations.settings']().conf_dir + '/apt/sources.list.d/haproxy.list' %}
 
@@ -33,6 +34,7 @@ haproxy-pkgs:
     - pkgs:
       - haproxy
     - watch:
+      - mc_proxy: localsettings-inssserv-post
       - mc_proxy: haproxy-pre-install-hook
     - watch_in:
       - mc_proxy: haproxy-pre-hardrestart-hook
