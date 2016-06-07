@@ -3994,13 +3994,6 @@ def ext_pillar_do(id_, pillar=None, raise_error=True, *args, **kw):
         pr.enable()
 
     dictupdate = _s['mc_utils.dictupdate']
-    for i in [
-        # catch mc_pillar.& & <foo>.*pillar.*
-        '.*(ext)*_?pillar.*',
-        'mc_cloud.*(get_cloud_conf|get_vms)'
-    ]:
-        __salt__['mc_utils.register_memcache_first'](i)
-
     is_this_salt_managed = is_salt_managed(id_)
     is_this_managed = is_managed(id_)
     raise_error = []
