@@ -107,6 +107,7 @@ def vt_default_settings(cloudSettings, imgSettings):
                 'gateway': '10.5.0.1',
                 'netmask': '16',
                 'network': '10.5.0.0',
+                'proc_mode': 'rw',
                 'netmask_full': '255.255.0.0',
                 'fstab': None,
                 'vgname': 'lxc',
