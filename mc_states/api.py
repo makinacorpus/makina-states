@@ -440,18 +440,26 @@ def lazy_subregistry_get(__salt__, registry):
                 ret = func(*a, **kw)
                 ret = filter_locals(ret)
                 return ret
-
-            # forward globals from the function to the wrapper
+            # adapt cache key to the loaded dunders
+            # Also forward globals from the function to the wrapper
             # for the cache function to correctly determine if the pillar
             # is there
+            ckey = _CACHEKEY + '_ ' + registry + '_' + key
             globs = getattr(func, '__globals__', {})
             for i in [
-                '__opts__', '__pillar__', '__grains__', '__context__',
+                '__opts__',
+                '__pillar__',
+                '__grains__',
+                '__context__',
                 '__salt__',
             ]:
-                val = globs.get(i, {})
-                _do.__globals__[i] = val
-            ckey = _CACHEKEY + '_ ' + registry + '_' + key
+                try:
+                    val = globs[i]
+                    ckey += '_'
+                    ckey += str(id(val))
+                    _do.__globals__[i] = val
+                except KeyError:
+                    continue
             ret = memoize_cache(
                 _do, [func, a, kw], {},  ckey,
                 seconds=ttl, force_run=force_run)

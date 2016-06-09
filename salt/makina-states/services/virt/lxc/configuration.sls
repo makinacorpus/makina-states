@@ -1,7 +1,8 @@
 {% import "makina-states/_macros/h.jinja" as h with context %}
 {%- set vmdata = salt['mc_cloud_vm.settings']() %}
 {%- set data = vmdata.vts.lxc %}
-{% set extra_confs = {} %}
+{%- set extra_confs = {} %}
+{%- set proc_mode = data.defaults.proc_mode %}
 include:
   - makina-states.services.virt.lxc.hooks
   - makina-states.localsettings.apparmor
@@ -38,3 +39,14 @@ include:
       - mc_proxy: lxc-post-conf
 {% endmacro %}
 {{ h.deliver_config_files(extra_confs, after_macro=rmacro, prefix='lxc-conf-')}}
+
+{% for i in ['/usr/share/lxc/config/common.conf'] %}
+lxc-config-patch-{{i}}:
+  cmd.run:
+    - name: sed -re "s/proc:(mixed|ro|rw)/proc:{{proc_mode}}/g" -i "{{i}}"
+    - onlyif: |
+              set -ex
+              test -e "{{i}}"
+              grep "proc:" "{{i}}"|egrep -vq "proc:{{proc_mode}}"
+  {{rmacro()}}
+{% endfor%}
