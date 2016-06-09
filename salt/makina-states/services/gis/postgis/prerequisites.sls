@@ -1,5 +1,5 @@
 {# install the postgis pgsql template/extension #}
-{% import "makina-states/services/db/postgresql/init.sls" as pgsql with context %}
+{%- import "makina-states/services/db/postgresql/init.sls" as pgsql with context %}
 include:
   - makina-states.services.db.postgresql.hooks
 {% set pgSettings = salt['mc_pgsql.settings']() %}
@@ -19,7 +19,7 @@ prereq-postgis-{{pgVer}}-{{postgisVer}}:
       - python-virtualenv {# noop #}
       {% if grains['os_family'] in ['Debian'] %}
       - postgresql-{{pgVer}}-postgis-{{postgisVer}}
-      - liblwgeom-dev
+      {% if not pgSettings.xenial_onward %}- liblwgeom-dev{% endif%}
       - postgresql-{{pgVer}}-postgis-scripts
       {% endif %}
 {%-    endif %}
