@@ -14,6 +14,7 @@ import copy
 from salt.utils.odict import OrderedDict
 from salt.utils import context
 from copy import deepcopy
+from distutils.version import LooseVersion
 
 import mc_states.api
 
@@ -148,11 +149,24 @@ def settings():
                     if isinstance(data['groups'], basestring):
                         data['groups'] = data['groups'].split(',')
                 postgresqlUsers.update({userk: data})
+        pkgs = __salt__['mc_pkgs.settings']()
+        if (
+            __grains__.get('os', '') == 'Ubuntu' and
+            LooseVersion(__grains__.get('osrelease', '0')) >= LooseVersion('16.04')
+        ):
+            xenial_onward = True
+            defaultPgVersion = '9.5'
+            pgis_version = '2.2'
+            dist = 'xenial'
+        else:
+            xenial_onward = False
+            pgis_version = '2.1'
+            defaultPgVersion = '9.5'
+            dist = pkgs['lts_dist']
 
         #
         # default activated postgresql versions & settings:
         #
-        defaultPgVersion = '9.5'
         for i in ['9.4', '9.3', '9.2', '9.1']:
             # if we have old wrappers, include the old versions
             # to list of installed pgsql
@@ -162,13 +176,17 @@ def settings():
         defaultVersions = [defaultPgVersion]
         pgSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.db.postgresql', {
+                'dist': dist,
+                'xenial_onward': xenial_onward,
                 'user': 'postgres',
                 'version': defaultPgVersion,
                 'defaultPgVersion': defaultPgVersion,
                 'versions': defaultVersions,
                 'encoding': 'utf8',
                 'locale': 'fr_FR.UTF-8',
-                'postgis': {'2.1': defaultVersions + ['9.2']},
+                'postgis': {
+                    pgis_version: defaultVersions + ['9.2']
+                },
                 'postgis_db': 'postgis',
                 'pg_conf': {
                     'default': {
