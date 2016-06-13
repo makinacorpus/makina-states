@@ -232,6 +232,7 @@ def settings():
                 'logformats': logformats,
                 'v6': False,
                 'allowed_hosts': [],
+                'donotlog_options_requests': False,
                 'ulimit': ulimit,
                 'client_max_body_size': www_reg[
                     'upload_max_filesize'],
