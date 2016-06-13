@@ -3,7 +3,7 @@ Circus configuration
 
 Circus_ is a Python program which can be used to monitor and control processes and sockets.
 
-.. _Circus: http://circus.readthedocs.org/en/latest/
+.. _Circus: https://circus.readthedocs.io/en/latest/
 
 Exposed Hooks:
   circus-pre-restart
