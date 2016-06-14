@@ -211,6 +211,10 @@ class MakinaStatesInventory(object):
             targets = set([a for a in hosts])
             targets_groups = set()
 
+        for g in targets_groups:
+            for h in self.groups.get(g, {}).get('hosts', []):
+                targets.add(h)
+
         # we then load the pillars from each host as the salt_pillar hostvar
         # and salt will also fill ansible connexion hostvars as well
         if targets:

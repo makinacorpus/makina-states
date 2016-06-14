@@ -14,8 +14,16 @@
   tags: makinastates_lxc_create,makinastates_lxc_clone_lxc
   register: makinastates_lxc_clone_lxc_rootfs
 - name: "lxc clone (from container: {{lxc_from_container}})"
-  shell: |-
-    lxc-clone -P {{lxc_path}} -o {{lxc_from_container}} -n {{lxc_container_name}} -B {{lxc_backing_store}}\
-    {% if lxc_clone_snapshot in [True, 'true', 'True']%}-s{% endif %}
+  shell: |
+    set -ex
+    if which lxc-copy 2>&1 >/dev/null;then
+       lxc-copy -P {{lxc_path}} -n {{lxc_from_container}} -N {{lxc_container_name}} -B {{lxc_backing_store}} -d\
+         {% if lxc_clone_snapshot in [True, 'true', 'True']%}-s{% endif %}\
+         ;
+    else
+       lxc-clone -P {{lxc_path}} -o {{lxc_from_container}} -n {{lxc_container_name}} -B {{lxc_backing_store}}\
+         {% if lxc_clone_snapshot in [True, 'true', 'True']%}-s{% endif %}\
+         ;
+    fi
   when: 'makinastates_lxc_create_lxc_test.stdout != "0"'
   tags: makinastates_lxc_create,makinastates_lxc_clone_lxc
