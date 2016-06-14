@@ -39,7 +39,7 @@ my $VERSION = '0.07';
 
 my $RET = 'OK';
 my $LOCK_FILE = "/var/lib/dpkg/lock";
-my $CMD_APT = "/usr/bin/apt-get update ; /usr/bin/apt-get -s upgrade";
+my $CMD_APT = "/usr/bin/apt-get update 2>/dev/null 1>/dev/null; /usr/bin/apt-get -s upgrade";
 my $TIMEOUT = 60;
 my $DEBUG	= 0;
 
