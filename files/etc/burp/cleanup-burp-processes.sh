@@ -22,10 +22,16 @@ ps_etime() {
 }
 kill_old_syncs() {
     # kill all stale synchronnise code jobs
-    ps_etime|sort -n -k2|grep burp|grep -- "-a t"|grep -v grep|while read psline;
+    while read psline;
     do
-        seconds="$(echo "$psline"|awk '{print $2}')"
         pid="$(filter_host_pids $(echo $psline|awk '{print $1}'))"
+        boottime=$(cat /proc/stat  | awk '/btime/ { print $2 }')
+        now=$(date +%s)
+
+        starttime_from_boot=$(awk '{print int($22 / 100)}' /proc/$pid/stat)
+        starttime=$((boottime + starttime_from_boot))
+
+        seconds=$((now - starttime))
         # 8 minutes
         if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "72000" ];then
             echo "Something was wrong with last backup, killing old sync processes: $pid"
@@ -33,7 +39,7 @@ kill_old_syncs() {
             kill -9 "${pid}"
             todo="y"
         fi
-    done
+    done < <( ps_etime|sort -n -k2|grep burp|grep -- "-a t"|grep -v grep )
     lines="$(filter_host_pids $(ps aux|grep burp|grep -- '-a t'|awk '{print $2}')|wc -l|sed 's/ +//g')"
     if [ "x${lines}" = "x0" ];then
         if [ -f /var/run/burp.client.pid ];then
