@@ -28,16 +28,18 @@ kill_old_syncs() {
         boottime=$(cat /proc/stat  | awk '/btime/ { print $2 }')
         now=$(date +%s)
 
-        starttime_from_boot=$(awk '{print int($22 / 100)}' /proc/$pid/stat)
-        starttime=$((boottime + starttime_from_boot))
+        if [ "x${pid}" != "x" ];then
+            starttime_from_boot=$(awk '{print int($22 / 100)}' /proc/$pid/stat)
+            starttime=$((boottime + starttime_from_boot))
 
-        seconds=$((now - starttime))
-        # 8 minutes
-        if [ "x${pid}" != "x" ] && [ "${seconds}" -gt "72000" ];then
-            echo "Something was wrong with last backup, killing old sync processes: $pid"
-            echo "${psline}"
-            kill -9 "${pid}"
-            todo="y"
+            seconds=$((now - starttime))
+            # 8 minutes
+            if [ "${seconds}" -gt "72000" ];then
+                echo "Something was wrong with last backup, killing old sync processes: $pid"
+                echo "${psline}"
+                kill -9 "${pid}"
+                todo="y"
+            fi
         fi
     done < <( ps_etime|sort -n -k2|grep burp|grep -- "-a t"|grep -v grep )
     lines="$(filter_host_pids $(ps aux|grep burp|grep -- '-a t'|awk '{print $2}')|wc -l|sed 's/ +//g')"
