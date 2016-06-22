@@ -260,24 +260,25 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
-        locs = __salt__['mc_locations.settings']()
+        _g, _s = __grains__, __salt__
+        locs = _s['mc_locations.settings']()
 
         # get default ido database connectionfrom mc_icinga
-        icinga_settings = __salt__['mc_icinga2.settings']()
+        icinga_settings = _s['mc_icinga2.settings']()
         ido2db_database = icinga_settings['modules']['ido2db']['database']
-        icinga_web_reg = __salt__[
+        icinga_web_reg = _s[
             'mc_macros.get_local_registry'](
                 'icinga_web', registry_format='pack')
         password_web_db = icinga_web_reg.setdefault(
             'web.db_password',
-            __salt__['mc_utils.generate_password']())
+            _s['mc_utils.generate_password']())
         password_web_root_account = icinga_web_reg.setdefault(
             'web.root_account_password',
-            __salt__['mc_utils.generate_password']())
+            _s['mc_utils.generate_password']())
         if not password_web_root_account:
-            password_web_root_account = icinga_web_reg['web.root_account_password'] = __salt__['mc_utils.generate_password'](8)
+            password_web_root_account = icinga_web_reg[
+                'web.root_account_password'] = _s[
+                    'mc_utils.generate_password'](8)
 
         web_database = {
             'type': "pgsql",
@@ -298,14 +299,12 @@ def settings():
 
         has_sgbd = (
             (
-                ('host' in web_database)
-                and (
+                ('host' in web_database) and (
                     web_database['host'] in ['localhost',
                                              '127.0.0.1',
-                                             grains['host']]
+                                             _g['host']]
                 )
-            )
-            or ('socket' in web_database))
+            ) or ('socket' in web_database))
 
         NAVGIS_DEFAULTS = {
             'enabled': True,
@@ -329,7 +328,7 @@ def settings():
                 },
             },
         }
-        data = __salt__['mc_utils.defaults'](
+        data = _s['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga_web', {
                 'package': ['icinga-web', 'php5-ldap',
                             'php5', 'php5-cli', 'php-pear',
@@ -338,10 +337,8 @@ def settings():
                             'php5-ldap'],
                 'configuration_directory': locs['conf_dir']+"/icinga-web",
                 'create_pgsql': True,
-                'has_pgsql': ('pgsql' == web_database['type']
-                              and has_sgbd),
-                'has_mysql': ('mysql' == web_database['type']
-                              and has_sgbd),
+                'has_pgsql': ('pgsql' == web_database['type'] and has_sgbd),
+                'has_mysql': ('mysql' == web_database['type'] and has_sgbd),
                 'modules': {
                     'nagvis': NAVGIS_DEFAULTS,
                     'pnp4nagios': {
@@ -382,6 +379,7 @@ def settings():
                 'databases': {'ido2db': ido2db_database,
                               'web': web_database},
                 'nginx': {
+                    'vhost_basename': 'icingaweb',
                     'ssl_cacert': '',
                     'ssl_cert': '',
                     'ssl_key': '',
@@ -409,6 +407,7 @@ def settings():
                     },
                 },
                 'phpfpm': {
+                    'pool_name': 'icingaweb',
                     'open_basedir': (
                         "/usr/share/icinga-web/"
                         ":/etc"
@@ -421,18 +420,22 @@ def settings():
                 },
                 'templates': {},
                 'has_jasper': False,
-        })
+            }
+        )
+        if data['nginx'].get('ssl_redirect', False):
+            if not data['nginx'].get('ssl_cert', None):
+                cert, key, chain = _s['mc_ssl.get_configured_cert'](
+                    data['nginx']['domain'], gen=True)
+                data['nginx']['ssl_key'] = key
+                data['nginx']['ssl_cert'] = cert + chain
+
         data['nginx']['icinga_web']['fastcgi_pass'] = (
-            "unix:/var/spool/www/{0}.fpm.sock".format(
+            "unix:/var/spool/www/icingaweb.fpm.sock".format(
                 data['nginx']['domain'].replace('.', '_')
             )
         )
-        __salt__['mc_macros.update_local_registry'](
+        _s['mc_macros.update_local_registry'](
             'icinga_web', icinga_web_reg,
             registry_format='pack')
         return data
     return _settings()
-
-
-
-#
