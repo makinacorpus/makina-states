@@ -606,6 +606,10 @@ backup_configurations:
       - /data
       - /etc
       - /home
+      - /lib
+      - /lib64
+      - /lib32
+      - /root
       - /srv
       - /opt
       - /srv/backups
@@ -613,6 +617,8 @@ backup_configurations:
       - /var/
       - /var/www
       - /var/makina
+      - /vmlinuz
+      - /initrd.img
     cross_filesystem:
       - /boot
       - /backup
@@ -620,6 +626,10 @@ backup_configurations:
       - /etc
       - /opt
       - /home
+      - /lib
+      - /lib64
+      - /lib32
+      - /root
       - /srv
       - /srv/backups
       - /static
@@ -633,9 +643,8 @@ backup_configurations:
       - ".*nobackup.*"
       - ".*lost.found.*"
       - ".*makina-states.*-lxc.*.tar.*xz.*"
-      - ".*srv/mountpoints.*"
-      - ".*srv/remounts.*"
-      - ".*srv.*makina-states.*"
+      - ".*/mountpoints/.*"
+      - ".*/remounts/.*"
       - ".*srv.*projects.*archives.*"
       - ".*srv.*salt.*makina-states.*"
       - ".*var.*cache.*apt.*"
@@ -663,12 +672,15 @@ backup_configurations:
       - /etc
       - /opt
       - /home
+      - /root
       - /srv
       - /srv/backup
       - /static
       - /var
       - /var/www
       - /var/makina
+      - /vmlinuz
+      - /initrd.img
     include:
       - /boot
       - /backup
@@ -676,6 +688,7 @@ backup_configurations:
       - /etc
       - /opt
       - /home
+      - /root
       - /srv
       - /srv/backup
       - /static
@@ -688,9 +701,8 @@ backup_configurations:
       - ".*nobackup.*"
       - ".*lost.found.*"
       - ".*makina-states.*-lxc.*.tar.*xz"
-      - ".*srv.*makina-states.*"
-      - ".*srv/mountpoints.*"
-      - ".*srv/remounts.*"
+      - ".*/mountpoints/.*"
+      - ".*/remounts/.*"
       - ".*srv.*projects.*archives.*"
       - ".*srv.*salt.*makina-states.*"
       - ".*var.*cache.*apt.*"
