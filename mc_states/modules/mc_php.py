@@ -20,6 +20,7 @@ Documentation of this module is available with::
 # Import python libs
 import logging
 import mc_states.api
+import six
 import copy
 import os
 from distutils.version import LooseVersion
@@ -30,6 +31,7 @@ from salt import utils, exceptions
 __name = 'php'
 
 log = logging.getLogger(__name__)
+_marker = object()
 
 
 def settings():
@@ -200,7 +202,8 @@ def settings():
             'composer_sha1': '017a611cd72cc1878d3ca1db2c0cc7f0a5f58541',
             'fpm_pools': {},
             'timezone': 'Europe/Paris',
-            'open_basedir': 1,
+            'open_basedir': None,
+            'include_path': None,
             'open_basedir_additions': '',
             'file_uploads': 1,
             'upload_max_filesize': www_reg['upload_max_filesize'],
@@ -614,33 +617,45 @@ def fpmpool_settings(domain, doc_root, **kw):
     include_path = [".", "..", doc_root,
                     os.path.join(doc_root, 'include'),
                     "/usr/lib/php5/20121212"]
-    for glob_inc in ['/usr/lib/php5']:
+    for glob_inc in [
+        '/usr/lib/php5',
+        '/usr/lib/php',
+        '/usr/lib/php7'
+    ]:
         if os.path.exists(glob_inc):
             for i in os.listdir(glob_inc):
                 if os.path.isdir(i):
                     include_path.append(
                         os.path.join(glob_inc, i))
 
-    custom_open_basedir = kw.pop('open_basedir', '')
-    if custom_open_basedir and not isinstance(custom_open_basedir, list):
+    custom_open_basedir = kw.pop('open_basedir', _marker)
+    if not custom_open_basedir:
+        custom_open_basedir = []
+        open_basedir = []
+    if custom_open_basedir is _marker:
+        custom_open_basedir = []
+    if isinstance(custom_open_basedir, six.string_types):
         custom_open_basedir = custom_open_basedir.split(':')
     if isinstance(custom_open_basedir, list):
         open_basedir.extend(custom_open_basedir)
     open_basedir = [a for a in open_basedir if a.strip()]
 
-    custom_include_path = kw.pop('include_path', '')
-    if custom_include_path and not isinstance(custom_include_path, list):
+    custom_include_path = kw.pop('include_path', _marker)
+    if not custom_include_path:
+        custom_include_path = []
+        include_path = []
+    if custom_include_path is _marker:
+        custom_include_path = []
+    if isinstance(custom_include_path, six.string_types):
         custom_include_path = custom_include_path.split(':')
     if isinstance(custom_include_path, list):
         include_path.extend(custom_include_path)
     include_path = [a for a in include_path if a.strip()]
-    if open_basedir:
-        kw['open_basedir'] = ":".join(
-            __salt__['mc_utils.uniquify'](open_basedir))
-    if include_path:
-        kw['include_path'] = ":".join(
-            __salt__['mc_utils.uniquify'](include_path))
+
+    kw['open_basedir'] = ":".join(
+        __salt__['mc_utils.uniquify'](open_basedir))
+    kw['include_path'] = ":".join(
+        __salt__['mc_utils.uniquify'](include_path))
     phpData = __salt__['mc_utils.dictupdate'](
         copy.deepcopy(__salt__['mc_php.settings']()), kw)
     return phpData
-#
