@@ -15,10 +15,16 @@
 
 {% for f, fdata in confs.items() %}
 {% set templated = fdata.get('template', template) %}
+{% if 'source' not in fdata %}
+{% set source = 'salt://{0}{1}'.format(dir, f) %}
+{% else %}
+{% set source = fdata['source'] %}
+{% endif %}
+
 {{prefix}}{{f}}:
   file.managed:
     - name: "{{fdata.get('target', "{0}{1}".format(target_prefix, f))}}"
-    - source: "{{fdata.get('source', 'salt://{0}{1}'.format(dir, f))}}"
+    {% if source%}- source: "{{source}}"{%endif%}
     - mode: "{{fdata.get('mode', mode)}}"
     - user: "{{fdata.get('user', user)}}"
     - group:  "{{fdata.get('group', group)}}"

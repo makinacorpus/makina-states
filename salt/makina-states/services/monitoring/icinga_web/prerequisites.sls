@@ -5,7 +5,7 @@ include:
 icinga_web-base:
   pkgrepo.managed:
     - humanname: icingaweb ppa
-    - name: deb http://ppa.launchpad.net/formorer/icinga-web/ubuntu {{pkgssettings.ppa_dist}} main
+    - name: deb http://ppa.launchpad.net/formorer/icinga/ubuntu {{pkgssettings.ppa_dist}} main
     - dist: {{pkgssettings.ppa_dist}}
     - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/icingaweb.list
     - keyid: 36862847
