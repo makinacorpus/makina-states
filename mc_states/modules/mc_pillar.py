@@ -70,7 +70,7 @@ ONE_MONTH = mc_states.api.ONE_MONTH
 ONE_YEAR = ONE_MONTH * 12
 FIREWALLD_MANAGED = False
 MS_IPTABLES_MANAGED = True
-CACHE_INC_TOKEN = '1117'
+CACHE_INC_TOKEN = '1118'
 _NAMESERVERS = {}
 
 # pillar cache is never expired, only if we detect a change on the database file
@@ -2580,14 +2580,12 @@ def get_supervision_conf_kind(id_, kind, ttl=PILLAR_TTL):
                 if 'nginx' in rdata:
                     nginx = rdata['nginx']
                     nginx = rdata.setdefault('nginx', {})
-                    domain = rdata.get('nginx', {}).get('domain', id_)
-                    cert, key = __salt__[
-                        'mc_ssl.get_selfsigned_cert_for'](domain, gen=True)
+                    # domain = rdata.get('nginx', {}).get('domain', id_)
+                    # cert, key = __salt__[
+                    #     'mc_ssl.get_selfsigned_cert_for'](domain, gen=True)
                     # unknown ca signed certs do not work in nginx
                     # cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
                     # nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
-                    nginx['ssl_key'] = key
-                    nginx['ssl_cert'] = cert
                     nginx['ssl_redirect'] = True
 
         return rdata
@@ -2925,6 +2923,13 @@ def get_supervision_ui_conf(id_, ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](
         _doget_supervision_ui_conf, [id_], {}, cache_key, ttl)
 
+def get_supervision_ui2_conf(id_, ttl=PILLAR_TTL):
+    def _doget_supervision_ui_conf(id_):
+        k = 'makina-states.services.monitoring.icinga_web2'
+        return {k: get_supervision_conf_kind(id_, 'ui2')}
+    cache_key = __name + '.get_supervision_ui2_conf_{0}2'.format(id_)
+    return __salt__['mc_utils.memoize_cache'](
+        _doget_supervision_ui_conf, [id_], {}, cache_key, ttl)
 
 def is_supervision_kind(id_, kind, ttl=PILLAR_TTL):
     def _dois_supervision_kind(id_, kind):
@@ -3365,11 +3370,12 @@ def get_supervision_master_conf(id_, ttl=PILLAR_TTL):
 def get_supervision_confs(id_, ttl=PILLAR_TTL):
     def _doget_supervision_confs(id_):
         rdata = {}
-        for kind in ['master', 'ui', 'pnp', 'nagvis']:
+        for kind in ['master', 'ui2', 'ui', 'pnp', 'nagvis']:
             if __salt__[__name + '.is_supervision_kind'](id_, kind):
                 rdata.update({
                     'master': get_supervision_master_conf,
                     'ui': get_supervision_ui_conf,
+                    'ui2': get_supervision_ui2_conf,
                     'pnp': get_supervision_pnp_conf,
                     'nagvis': get_supervision_nagvis_conf
                 }[kind](id_))

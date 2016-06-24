@@ -606,6 +606,10 @@ backup_configurations:
       - /data
       - /etc
       - /home
+      - /lib
+      - /lib64
+      - /lib32
+      - /root
       - /srv
       - /opt
       - /srv/backups
@@ -613,6 +617,8 @@ backup_configurations:
       - /var/
       - /var/www
       - /var/makina
+      - /vmlinuz
+      - /initrd.img
     cross_filesystem:
       - /boot
       - /backup
@@ -620,6 +626,10 @@ backup_configurations:
       - /etc
       - /opt
       - /home
+      - /lib
+      - /lib64
+      - /lib32
+      - /root
       - /srv
       - /srv/backups
       - /static
@@ -633,9 +643,8 @@ backup_configurations:
       - ".*nobackup.*"
       - ".*lost.found.*"
       - ".*makina-states.*-lxc.*.tar.*xz.*"
-      - ".*srv/mountpoints.*"
-      - ".*srv/remounts.*"
-      - ".*srv.*makina-states.*"
+      - ".*/mountpoints/.*"
+      - ".*/remounts/.*"
       - ".*srv.*projects.*archives.*"
       - ".*srv.*salt.*makina-states.*"
       - ".*var.*cache.*apt.*"
@@ -663,12 +672,15 @@ backup_configurations:
       - /etc
       - /opt
       - /home
+      - /root
       - /srv
       - /srv/backup
       - /static
       - /var
       - /var/www
       - /var/makina
+      - /vmlinuz
+      - /initrd.img
     include:
       - /boot
       - /backup
@@ -676,6 +688,7 @@ backup_configurations:
       - /etc
       - /opt
       - /home
+      - /root
       - /srv
       - /srv/backup
       - /static
@@ -688,9 +701,8 @@ backup_configurations:
       - ".*nobackup.*"
       - ".*lost.found.*"
       - ".*makina-states.*-lxc.*.tar.*xz"
-      - ".*srv.*makina-states.*"
-      - ".*srv/mountpoints.*"
-      - ".*srv/remounts.*"
+      - ".*/mountpoints/.*"
+      - ".*/remounts/.*"
       - ".*srv.*projects.*archives.*"
       - ".*srv.*salt.*makina-states.*"
       - ".*var.*cache.*apt.*"
@@ -779,7 +791,8 @@ backup_configurations:
 # configure an icinga cluster
 # supervision_configurations:
 #   supervision:
-#     ui: icinga.foo.net
+#     ui: icinga.foo.net #ui = icingaweb, ui2 = icingaweb2
+#     ui2: icinga.foo.net
 #     pnp: icinga.foo.net
 #     master: icinga.foo.net
 #     nagvis: icinga.foo.net
@@ -799,6 +812,47 @@ backup_configurations:
 #         domain: pnp.foo.net
 #         pnp4nagios:
 #           htpasswd_file: ldap://ldap.foo.net/dc=mcjam,dc=org?uid?sub?(objectClass=person)
+#     ui2_conf:
+#       roles:
+#         admins:
+#           users: 'icingaadmin,employeeA'
+#           groups: 'sysadmin-grp'
+#         readonly:
+#           groups: 'ldapreaders,foo-employees,foo-interns'
+#       authentication_settings:
+#         ldap_a:
+#           base_dn: 'ou=People,dc=foo,dc=com'
+#       groups:
+#         ldap_g:
+#           base_dn: 'ou=Group,dc=foo,dc=com'
+#       resources:
+#         ldap:
+#           enabled: true
+#           hostname: 'ldap.foo/com',
+#           port: '389'
+#           root_dn: 'dc=foo,dc=com'
+#           bind_dn: 'uid=icingaweb2,ou=People,dc=foo,dc=com'
+#           bind_pw: 'xxxx'
+#           user_class: 'inetOrgPerson'
+#           user_name_attribute: 'uid'
+#       create_pgsql: true
+#       nginx:
+#         domain: icinga-web2.foo.com
+#         icinga_web:
+#       databases:
+#         web:
+#           host: '10.5.0.1'
+#           port: '5432'
+#           name: 'icinga_web2'
+#           user: 'icinga_web2'
+#           password: 'x'
+#         ido2db:
+#           host: '10.5.0.1'
+#           port: '5432'
+#           user: 'icinga'
+#           password: 'x'
+#           name: 'icinga'
+#           prefix: 'icinga_'
 #     ui_conf:
 #       ldap_auth:
 #         url: ldap://ldap.foo.net

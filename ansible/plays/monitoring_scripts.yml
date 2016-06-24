@@ -1,0 +1,14 @@
+---
+- hosts: "{{hosts|default('all')}}"
+  roles: [makinastates_pillar]
+
+
+- hosts: "{{hosts|default('all')}}"
+  tasks:
+    - name: pull-states.services.monitoring.client.scripts
+      shell: |
+             cd /srv/makina-states;git pull
+    - name: makina-states.services.monitoring.client.scripts
+      saltcall:
+        function: state.sls
+        args: makina-states.services.monitoring.client.scripts
