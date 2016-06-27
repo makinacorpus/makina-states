@@ -14,21 +14,23 @@
             # hack to be sure that nginx is in www-data
             # in most cases
             datagroup="{{cfg.group}}"
-            groupadd -r $datagroup || /bin/true
-            gpasswd -a nginx $datagroup || /bin/true
-            gpasswd -a www-data $datagroup || /bin/true
+            groupadd -r $datagroup 2>/dev/null || /bin/true
+            users="nginx www-data"
+            for i in $users;do
+              gpasswd -a $i $datagroup 2>/dev/null || /bin/true
+            done
             # be sure to remove POSIX acls support
             setfacl -P -R -b -k "{{cfg.project_dir}}"
             "{{locs.resetperms}}" -q --no-acls\
-              --user root --group "{{cfg.group}}" \
+              --user root --group "$datagroup" \
               --dmode '0770' --fmode '0770' \
               --paths "{{cfg.pillar_root}}";
             find -H \
               "{{cfg.project_root}}" \
               "{{cfg.data_root}}" \
               \(\
-                \(     -type f -and \( -not -user {{cfg.user}} -or -not -group {{cfg.group}}                      \) \)\
-                -or \( -type d -and \( -not -user {{cfg.user}} -or -not -group {{cfg.group}} -or -not -perm -2000 \) \)\
+                \(     -type f -and \( -not -user {{cfg.user}} -or -not -group $datagroup                      \) \)\
+                -or \( -type d -and \( -not -user {{cfg.user}} -or -not -group $datagroup -or -not -perm -2000 \) \)\
               \)\
               |\
               while read i;do
