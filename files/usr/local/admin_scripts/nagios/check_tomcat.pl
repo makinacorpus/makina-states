@@ -26,6 +26,8 @@ use LWP::UserAgent;
 use Getopt::Std;
 use XML::XPath;
 
+binmode(STDOUT, ":utf8");
+
 my %optarg;
 my $getopt_result;
 
