@@ -745,6 +745,8 @@ def common_settings(ttl=60):
                                       _o['id'],
                                       _g['fqdn']]],
                 'certificates': OrderedDict()})
+        # retro compat
+        data['ca']['COUNTRY'] = data['ca']['C']
         data['cert_days'] = data['ca']['days']
         data['domains'] = _s['mc_utils.uniquify'](data['domains'])
         return data
