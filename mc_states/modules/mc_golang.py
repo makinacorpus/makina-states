@@ -21,6 +21,7 @@ Documentation of this module is available with::
 import logging
 import copy
 import mc_states.api
+from distutils.version import LooseVersion
 
 __name = 'golang'
 PREFIX = 'makina-states.localsettings.{0}'.format(__name)
@@ -39,17 +40,26 @@ def settings():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         _s, _g = __salt__, __grains__
-        data = _s['mc_utils.defaults'](
-            PREFIX, {
-                'ppa': 'http://ppa.launchpad.net/gophers/archive/ubuntu',
-                'dist': _g['oscodename'],
-                'packages': [],
-                'versions': ['1.7']
-            })
+        data = {
+            'ppa': 'http://ppa.launchpad.net/gophers/archive/ubuntu',
+            'dist': _g['oscodename'],
+            'bins': ['go', 'gofmt'],
+            'version': None,
+            'packages': [],
+            'versions': ['1.6', '1.7']
+            }
+        data['version'] = '{0}'.format(
+            max([LooseVersion(v) for v in data['versions']]))
+        data = _s['mc_utils.defaults'](PREFIX, data)
         for v in data['versions']:
-            p = 'golang-{0}'.format(v)
-            if p in data['packages']:
-                continue
-            data['packages'].append(p)
+            packages = [
+                'golang-{0}'.format(v),
+                'golang-{0}-go'.format(v),
+                'golang-{0}-src'.format(v),
+            ]
+            for p in packages:
+                if p in data['packages']:
+                    continue
+                data['packages'].append(p)
         return data
     return _settings()
