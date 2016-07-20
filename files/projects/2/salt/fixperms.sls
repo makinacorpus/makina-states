@@ -17,7 +17,7 @@
             groupadd -r $datagroup 2>/dev/null || /bin/true
             users="nginx www-data"
             for i in $users;do
-              gpasswd -a $i $datagroup 2>/dev/null || /bin/true
+              gpasswd -a $i $datagroup >/dev/null 2>&1 || /bin/true
             done
             # be sure to remove POSIX acls support
             setfacl -P -R -b -k "{{cfg.project_dir}}"
