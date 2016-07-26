@@ -634,10 +634,13 @@ def selfsigned_cert(CN,
                     L='Salt Lake City',
                     O='SaltStack',
                     OU=None,
+                    COUNTRY=None,
                     altnames=None,
                     emailAddress='xyz@pdq.net',
                     digest='sha256',
                     keytype=None):
+    if COUNTRY and not C:
+        C = COUNTRY
     if not altnames:
         altnames = []
 
