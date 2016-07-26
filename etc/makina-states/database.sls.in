@@ -838,7 +838,6 @@ backup_configurations:
 #       create_pgsql: true
 #       nginx:
 #         domain: icinga-web2.foo.com
-#         icinga_web:
 #       databases:
 #         web:
 #           host: '10.5.0.1'

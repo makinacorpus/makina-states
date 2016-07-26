@@ -82,7 +82,7 @@ include:
     - name: |
             openssl req -batch -x509 -nodes -days 36500 -newkey rsa:2048 \
              -keyout "{{key}}" -out "{{key}}" \
-             -subj "/C={{ca.COUNTRY}}/ST={{ca.ST}}/L={{ca.L}}/O={{ca.O}}/CN={{ca.CN}}/EMAIL={{ca.emailAddress}}"
+             -subj "/C={{ca.C}}/ST={{ca.ST}}/L={{ca.L}}/O={{ca.O}}/CN={{ca.CN}}/EMAIL={{ca.emailAddress}}"
     - unless: test -e {{key}}
     - watch:
       - mc_proxy: ftpd-pre-configuration-hook

@@ -20,7 +20,7 @@ include:
 {% do extra_confs.update({
   '/usr/bin/ms-lxc-setup.sh': {},
   '/usr/bin/ms-lxc-stop.sh': {},
-  '/etc/systemd/system/lxc.service': {'mode': "644"},
+  '/etc/systemd/system/lxc.service.d/lxc.conf': {'mode': "644"},
   '/etc/systemd/system/lxc-net-makina.service': {'mode': "644"}}) %}
 
 {% set extra_confs = salt['mc_utils.copy_dictupdate'](
@@ -33,12 +33,31 @@ include:
 {%  endif %}
 
 {% macro rmacro() %}
-    - watch:
-      - mc_proxy: lxc-pre-conf
     - watch_in:
       - mc_proxy: lxc-post-conf
+    - watch:
+      - mc_proxy: lxc-pre-conf
 {% endmacro %}
 {{ h.deliver_config_files(extra_confs, after_macro=rmacro, prefix='lxc-conf-')}}
+
+lxc-conf-lxc-remove-files:
+  file.absent:
+    - names:
+      - /etc/systemd/system/lxc.service
+      {{rmacro()}}
+
+lxc-conf-lxc-remove-files-reload:
+  cmd.watch:
+    - name: systemctl daemon-reload
+    - onlyif: |
+              if ! which systemctl >/dev/null 2>&1;then exit 1;fi
+              systemctl show lxc
+    - require:
+      - mc_proxy: lxc-post-conf
+    - watch:
+      - file: lxc-conf-lxc-remove-files
+    - watch_in:
+      - mc_proxy: lxc-pre-restart
 
 {% for i in ['/usr/share/lxc/config/common.conf'] %}
 lxc-config-patch-{{i}}:
