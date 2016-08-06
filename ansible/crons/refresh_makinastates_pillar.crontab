@@ -1,5 +1,4 @@
 MS_PREFIX=/srv/makina-states
 D=/etc/default/makina-states
-S=ansible/crons/refresh_makinastates_pillar.sh
-15,30,45,00 * * * * root sh -c "if [ -f ${D} ];then . ${D};fi;${MS_PREFIX}/${S}"
+15,30,45,00 * * * * root sh -c "if [ -f ${D} ];then . ${D};fi;${MS_PREFIX}/ansible/crons/refresh_makinastates_pillar.sh"
 # vim:set et sts=4 ts=4 tw=80 ft=crontab:
