@@ -455,7 +455,16 @@ def ips_for(fqdn,
         if fqdn in ipsfo:
             resips.append(ipsfo[fqdn])
         for ipfo in ipsfo_map.get(fqdn, []):
-            resips.append(ipsfo[ipfo])
+            try:
+                resips.append(ipsfo[ipfo])
+            except KeyError:
+                # try map of map
+                if ipfo in ipsfo_map:
+                    [resips.append(a)
+                     for a in ips_for(ipfo)
+                     if a not in resips]
+                else:
+                    raise
 
     # then for ips which are duplicated among other dns names
     for alias_fqdn in ips_map.get(fqdn, []):
