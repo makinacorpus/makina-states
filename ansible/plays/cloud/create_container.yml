@@ -31,3 +31,6 @@
       makinastates_minion_id: "{{lookup('env', 'ANSIBLE_TARGETS').split(',')[1]}}"
       makinastates_version: "{{makinastates_lxc_vars.msg['makinastates_version']}}"
       when: "makinastates_presence.stdout == '0'"
+    - role: makinastates_lxc_baseinstall
+      makinastates_minion_id: "{{lookup('env', 'ANSIBLE_TARGETS').split(',')[1]}}"
+      when: "makinastates_presence.stdout == '0'"

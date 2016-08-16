@@ -1,0 +1,9 @@
+---
+- saltcall: "function=state.sls args='{{ item.sls }}'"
+  name: 'saltcall {{ item.sls }}'
+  tags: 'makinastates_lxc_post_install'
+  with_items: "{{ slss }}"
+  vars:
+    slss:
+      - sls: makina-states.localsettings.timezone
+      - sls: makina-states.localsettings.locales
