@@ -137,19 +137,44 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        salt = __salt__
-        local_conf = salt['mc_macros.get_local_registry'](
+        _s, _g = __salt__,  __grains__
+        debmode = None
+        mc_pkgs = _s['mc_pkgs.settings']()
+        ppa = None
+        source = False
+        pkgs = ['burp']
+        fromrepo = None
+        if debmode == 'debsource':
+            pkgs = ['librsync-dev',
+                    'zlib1g-dev',
+                    'libssl-dev',
+                    'uthash-dev',
+                    'rsync',
+                    'build-essential',
+                    'libncurses5-dev',
+                    'libacl1-dev']
+        if _g['os'] in ['Ubuntu'] and _g['osrelease'] < '14.04':
+            ppa = ('deb'
+                   ' http://ppa.launchpad.net/bas-dikkenberg/'
+                   'burp-stable/ubuntu'
+                   ' {udist} main').format(**mc_pkgs)
+        if _g['os'] in ['Debian']:
+            fromrepo = 'sid'
+            if _g['osrelease'][0] < '6':
+                source = True
+        local_conf = _s['mc_macros.get_local_registry'](
             'burp', registry_format='pack')
         ca_pass = local_conf.get('ca_pass', secure_password(32))
         server_pass = local_conf.get('server_pass', secure_password(32))
         timers = local_conf.setdefault('timers_v2', OrderedDict())
         local_conf['ca_pass'] = ca_pass
         local_conf['server_pass'] = server_pass
-        grains = __grains__
-        pillar = __pillar__
-        locs = __salt__['mc_locations.settings']()
-        data = __salt__['mc_utils.defaults'](
+        data = _s['mc_utils.defaults'](
             'makina-states.services.backup.burp', {
+                'ppa': ppa,
+                'source': source,
+                'fromrepo': fromrepo,
+                'pkgs': pkgs,
                 'admins': 'root',
                 'cron_activated': True,
                 'cron_periodicity': '40 0,6,12,18 * * *',
@@ -158,7 +183,7 @@ def settings():
                 'group': 'root',
                 'ssl_cert_ca': '/etc/burp/ssl_cert_ca.pem',
                 'server_conf': {
-                    'fqdn': grains['id'],
+                    'fqdn': _g['id'],
                     'port': '4971',
                     'status_port': '7972',
                     'client_port': '4971',
@@ -194,7 +219,7 @@ def settings():
                                    '13,14,15,16,17,18,19,20,21,22,23')],
                     'ca_conf': '/etc/burp/CA.cnf',
                     'ca_name': 'burpCA',
-                    'ca_server_name': grains['id'],
+                    'ca_server_name': _g['id'],
                     'ca_burp_ca': '/usr/sbin/burp_ca',
                     'ssl_cert': '/etc/burp/ssl_cert-server.pem',
                     'ssl_key': '/etc/burp/ssl_cert-server.key',
@@ -204,7 +229,7 @@ def settings():
                     'notify_failure_arg': [
                         'sendmail -t',
                         'To: root',
-                        'From: "burp {0}" <root@makina-corpus.com>'.format(grains['id']),
+                        'From: "burp {0}" <root@makina-corpus.com>'.format(_g['id']),
                         'Subject: %b failed: %c %w'],
                     'server_script_pre': None,
                     'server_script_pre_arg': None,
@@ -396,7 +421,7 @@ def settings():
                                 item = item - 60
                             if item not in per:
                                 per[ix] = item
-                        per = __salt__['mc_utils.uniquify'](per)
+                        per = _s['mc_utils.uniquify'](per)
                         val = '{0} */6 * * *'.format(','.join(
                             ["{0}".format(t) for t in per]))
                     timers[cname] = val
@@ -407,7 +432,7 @@ def settings():
             local_conf.pop(a, None)
         for i in removes:
             data['clients'].pop(i, None)
-        salt['mc_macros.update_registry_params'](
+        _s['mc_macros.update_registry_params'](
             'burp', local_conf, registry_format='pack')
         return data
     return _settings()
