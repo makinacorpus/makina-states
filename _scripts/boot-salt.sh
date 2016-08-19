@@ -386,7 +386,7 @@ get_ansible_url() {
 }
 
 get_ansible_branch() {
-    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.0"
+    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.1"
 }
 
 get_ms_url() {
