@@ -37,6 +37,9 @@ def settings():
         default GPG server
     dist
         current system dist
+    udist
+        applicable ubuntu dist,
+        For eg, install ubuntu pkgs on a Debian.
     lts_dist
         current distributaion stable release
     force_apt_ipv4
@@ -268,9 +271,8 @@ def settings():
                              'dists': [{'name': ddist+'-backports',
                                         'comps': data['dcomps']}]}
                         ]}), grain='os')
-        data['ppa_dist'] = data.get('udist', ubuntu_lts)
-        if _g['os'] in ['Debian']:
-            data['ppa_dist'] = ubuntu_lts
+        # retrocompat
+        data['ppa_dist'] = data['udist']
         data['pkg_data'] = pkg_data
         return data
     return _settings()

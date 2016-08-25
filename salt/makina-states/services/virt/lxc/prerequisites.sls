@@ -32,8 +32,8 @@ lxc-repo:
     - watch_in:
       - pkgrepo: lxc-repo
   pkgrepo.managed:
-    #- name: deb http://ppa.launchpad.net/ubuntu-lxc/daily/ubuntu {{pkgssettings.ppa_dist}} main
-    - name: deb http://ppa.launchpad.net/ubuntu-lxc/stable/ubuntu {{pkgssettings.ppa_dist}} main
+    #- name: deb http://ppa.launchpad.net/ubuntu-lxc/daily/ubuntu {{pkgssettings.udist}} main
+    - name: deb http://ppa.launchpad.net/ubuntu-lxc/stable/ubuntu {{pkgssettings.udist}} main
     - file: {{locs.conf_dir}}/apt/sources.list.d/lxc.list
     - keyid: 7635B973
     - keyserver: keyserver.ubuntu.com
@@ -53,8 +53,8 @@ mclxc-repo:
   pkgrepo.managed:
     - name: lxc
     - humanname: LXCMC PPA
-    - name: deb http://ppa.launchpad.net/makinacorpus/lxc/ubuntu {{pkgssettings.ppa_dist}} main
-    - dist: {{pkgssettings.ppa_dist}}
+    - name: deb http://ppa.launchpad.net/makinacorpus/lxc/ubuntu {{pkgssettings.udist}} main
+    - dist: {{pkgssettings.udist}}
     - file: {{locs.conf_dir}}/apt/sources.list.d/lxcmc.list
     - keyid: 207A7A4E
     - keyserver: keyserver.ubuntu.com

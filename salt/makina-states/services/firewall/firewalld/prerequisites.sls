@@ -5,8 +5,8 @@ include:
 firewalld-repo:
   pkgrepo.managed:
     - humanname: firewalld ppa
-    - name: deb http://ppa.launchpad.net/makinacorpus/firewalld/ubuntu {{pkgssettings.ppa_dist}} main
-    - dist: {{pkgssettings.ppa_dist}}
+    - name: deb http://ppa.launchpad.net/makinacorpus/firewalld/ubuntu {{pkgssettings.udist}} main
+    - dist: {{pkgssettings.udist}}
     - file: /etc/apt/sources.list.d/firewalld.list
     - keyid: 207A7A4E
     - keyserver: keyserver.ubuntu.com

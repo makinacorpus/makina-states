@@ -48,8 +48,8 @@ nginx-base:
       - pkgrepo: nginx-base
   pkgrepo.managed:
     - humanname: nginx ppa
-    - name: deb http://ppa.launchpad.net/makinacorpus/nginx/ubuntu {{pkgssettings.ppa_dist}} main
-    - dist: {{pkgssettings.ppa_dist}}
+    - name: deb http://ppa.launchpad.net/makinacorpus/nginx/ubuntu {{pkgssettings.udist}} main
+    - dist: {{pkgssettings.udist}}
     - file: /etc/apt/sources.list.d/nginx.list
     - keyid: 207A7A4E
     - keyserver: keyserver.ubuntu.com
