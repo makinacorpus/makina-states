@@ -23,7 +23,7 @@ if [[ -n ${ANSIBLE_TARGETS-} ]];then
 fi
 export MS_REFRESH_CACHE="${MS_REFRESH_CACHE-y}"
 args=${@:-"--list"}
-ANSIBLE_TARGETS="burp_servers" ansible-playbook -vvvvv ansible/plays/makinastates/pillar.yml 1>$log 2>&1
+ANSIBLE_TARGETS="burp_servers" bin/ansible-playbook -vvvvv ansible/plays/makinastates/pillar.yml 1>$log 2>&1
 ret=${?}
 if [ "x${ret}" != "x0" ];then
   cat "${log}"
