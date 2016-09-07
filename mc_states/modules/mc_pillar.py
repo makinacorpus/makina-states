@@ -198,7 +198,7 @@ def load_db(ttl=PILLAR_TTL):
 
 
 def query(doc_types, default=_marker, ttl=PILLAR_TTL, **kwargs):
-    def _doquery(doc_types):
+    def _doquery(doc_types, **kw):
         try:
             db = __salt__[__name + '.load_db']()
             try:
