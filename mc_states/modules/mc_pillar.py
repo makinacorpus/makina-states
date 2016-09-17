@@ -3817,6 +3817,9 @@ def get_dns_resolvers(id_, ttl=PILLAR_TTL):
         if search:
             rdata[p + 'search'] = [a.strip() for a in search if a.strip()]
         if resolvers:
+            rdata[p + 'gateway_ns'] = None
+            rdata[p + 'no_default_dnses'] = True
+            rdata[p + 'google_first'] = False
             rdata[p + 'default_dnses'] = [a.strip()
                                           for a in resolvers if a.strip()]
         return rdata
