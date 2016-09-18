@@ -1,6 +1,5 @@
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 {% set settings = salt['mc_dhcpd.settings']() %}
-{% set yameld_data = salt['mc_utils.json_dump'](settings) %}
 
 dhcpd-checkconf:
   cmd.run:
