@@ -3,12 +3,12 @@
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/locales.rst
 #}
-{% set locals = salt['mc_locales.settings']() %}
+{% set data = salt['mc_locales.settings']() %}
 include:
   - makina-states.localsettings.locales.hooks
 
-{% set locales = locals.locales %}
-{% set default_locale = locals.locale %}
+{% set locales = data.locales %}
+{% set default_locale = data.locale %}
 {% for locale in locales %}
 {% set lid=locale.replace('@', '_').replace('.', '_').replace('-', '_')%}
 {% set localeo = locale %}
