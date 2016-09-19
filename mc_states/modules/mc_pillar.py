@@ -198,7 +198,7 @@ def load_db(ttl=PILLAR_TTL):
 
 
 def query(doc_types, default=_marker, ttl=PILLAR_TTL, **kwargs):
-    def _doquery(doc_types):
+    def _doquery(doc_types, **kw):
         try:
             db = __salt__[__name + '.load_db']()
             try:
@@ -455,7 +455,16 @@ def ips_for(fqdn,
         if fqdn in ipsfo:
             resips.append(ipsfo[fqdn])
         for ipfo in ipsfo_map.get(fqdn, []):
-            resips.append(ipsfo[ipfo])
+            try:
+                resips.append(ipsfo[ipfo])
+            except KeyError:
+                # try map of map
+                if ipfo in ipsfo_map:
+                    [resips.append(a)
+                     for a in ips_for(ipfo)
+                     if a not in resips]
+                else:
+                    raise
 
     # then for ips which are duplicated among other dns names
     for alias_fqdn in ips_map.get(fqdn, []):
@@ -3808,6 +3817,9 @@ def get_dns_resolvers(id_, ttl=PILLAR_TTL):
         if search:
             rdata[p + 'search'] = [a.strip() for a in search if a.strip()]
         if resolvers:
+            rdata[p + 'gateway_ns'] = None
+            rdata[p + 'no_default_dnses'] = True
+            rdata[p + 'google_first'] = False
             rdata[p + 'default_dnses'] = [a.strip()
                                           for a in resolvers if a.strip()]
         return rdata

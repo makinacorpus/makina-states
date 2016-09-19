@@ -2,7 +2,7 @@
 # oracle jdk configuration
 #   - makina-states/doc/ref/formulaes/localsettings/jdk.rst
 #}
-{% set javas = salt['mc_java.settings']() %}
+{%- set javas = salt['mc_java.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 
 {% macro jdk_pkgs(ver, suf='') %}
@@ -16,6 +16,8 @@ jdk-{{ ver }}-pkgs{{suf}}:
     - require:
       - pkgrepo: jdk-repo
       - cmd: jdk-{{ ver }}-pkgs
+    - watch_in:
+      - mc_proxy: makina-states-jdk_last
 {% endmacro %}
 {{ salt['mc_macros.register']('localsettings', 'jdk') }}
 {% if grains['os_family'] in ['Debian'] %}
@@ -25,8 +27,10 @@ jdk-{{ ver }}-pkgs{{suf}}:
 {% set dist = salt['mc_pkgs.settings']().ubuntu_lts %}
 {% endif %}
 {%- set default_ver = javas.default_jdk_ver %}
+
 include:
   - makina-states.localsettings.jdk.hooks
+
 jdk-repo:
   pkgrepo.managed:
     - watch:
@@ -36,9 +40,10 @@ jdk-repo:
     - keyid: EEA14886
     - keyserver: keyserver.ubuntu.com
 
-{% for ver in '6', '7' %}
+{% for ver in javas.installed %}
 {{ jdk_pkgs(ver) }}
 {% endfor %}
+
 java-{{ default_ver }}-install:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs: [oracle-java{{ default_ver }}-set-default]

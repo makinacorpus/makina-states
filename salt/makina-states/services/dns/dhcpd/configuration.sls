@@ -1,23 +1,19 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 {% set settings = salt['mc_dhcpd.settings']() %}
-{% set yameld_data = salt['mc_utils.json_dump'](settings) %}
 include:
   - makina-states.services.dns.dhcpd.hooks
   - makina-states.services.dns.dhcpd.services
-{% for file, tp in settings.templates.items() %}
-dhcpd_config_{{tp}}:
-  file.managed:
-    - name: {{file}}
-    - makedirs: true
-    - source: {{tp}}
-    - template: jinja
-    - mode: 750
-    - user: root
-    - group: root
-    - defaults:
-      data: |
-            {{yameld_data}}
+
+{% macro rmacro() %}
     - watch:
       - mc_proxy: dhcpd-pre-conf
     - watch_in:
       - mc_proxy: dhcpd-post-conf
-{% endfor %}
+{% endmacro %}
+{{ h.deliver_config_files(
+     settings.get('templates', {}), 
+     mode='750',
+     user='root',
+     group='root',
+     after_macro=rmacro, 
+     prefix='dhcpd-')}} 

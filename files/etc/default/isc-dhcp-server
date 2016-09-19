@@ -2,7 +2,7 @@
 # sourced by /etc/init.d/isc-dhcp-server
 # installed at /etc/default/isc-dhcp-server by the maintainer scripts
 
-{% set data = salt['mc_utils.json_load'](data) %}
+{% set data = salt['mc_dhcpd.settings']() %}
 #
 # This is a POSIX shell fragment
 #
