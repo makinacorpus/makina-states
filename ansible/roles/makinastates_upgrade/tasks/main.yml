@@ -1,6 +1,6 @@
 ---
 - name: reconfigure makina-states
-  register: makinastates_presence/
+  register: makinastates_presence
   tags: makinastates,makinastates_upgrade
   shell: |
     set -ex
