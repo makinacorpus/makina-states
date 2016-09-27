@@ -378,7 +378,7 @@ get_salt_url() {
 }
 
 get_salt_branch() {
-    get_default_knob salt_branch "${SALT_BRANCH}" "2016.3"
+    get_default_knob salt_branch "${SALT_BRANCH}" "2015.8"
 }
 
 get_ansible_url() {
@@ -386,7 +386,7 @@ get_ansible_url() {
 }
 
 get_ansible_branch() {
-    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.1"
+    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.0"
 }
 
 get_ms_url() {

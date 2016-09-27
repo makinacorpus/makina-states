@@ -58,14 +58,14 @@ def get_ansible_url():
 def get_salt_branch():
     val = get_local_param('salt_branch')
     if not val:
-        val = '2016.3'
+        val = '2015.8'
     return val
 
 
 def get_ansible_branch():
     val = get_local_param('ansible_branch')
     if not val:
-        val = 'stable-2.1'
+        val = 'stable-2.0'
     return val
 
 
