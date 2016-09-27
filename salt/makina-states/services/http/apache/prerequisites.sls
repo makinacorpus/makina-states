@@ -29,8 +29,8 @@ apache-mpm:
 apache-repo:
   pkgrepo.managed:
     - humanname: apache ppa
-    - name: deb http://ppa.launchpad.net/ondrej/apache2/ubuntu {{pkgssettings.ppa_dist}} main
-    - dist: {{pkgssettings.ppa_dist}}
+    - name: deb http://ppa.launchpad.net/ondrej/apache2/ubuntu {{pkgssettings.udist}} main
+    - dist: {{pkgssettings.udist}}
     - file: /etc/apt/sources.list.d/apacheppa.list
     - keyid: E5267A6C
     - keyserver: keyserver.ubuntu.com

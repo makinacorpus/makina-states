@@ -86,6 +86,56 @@
 {% set dummy = proxy %}
 
 
+{% macro retry_apt_get(name, pref='', suf='', rmacro=none,
+                       pkgs=None, pkg=None,
+                       require_knob='require_in',
+                       update=True, fromrepo=None,
+                       install_function='pkg.latest') %}
+{%- if not pkgs %}
+{%- set pkgs = [] %}
+{%- endif %}
+{%- if pkg and (pkg not in pkgs) %}{% do pkgs.append(pkg) %} {% endif %}
+{%- set install_module = install_function.split('.')[0] %}
+{{pref}}{{name}}{{suf}}:
+  {{install_function}}:
+    - pkgs: {{pkgs}}
+    {% if fromrepo %}
+    - fromrepo: {{ fromrepo }}
+    {% endif %}
+    {% if rmacro %}
+    {{ rmacro() }}
+    {% endif %}
+{% if update %}
+{{pref}}{{name}}aptgetretry-update{{suf}}:
+  cmd.run:
+    - name: |
+            set -ex
+            apt-get update
+            for i in {{ ' '.join(pkgs) }};do
+              apt-cache madison $i
+            done
+    - onfail:
+      - {{install_module}}: {{pref}}{{name}}{{suf}}
+    - {{require_knob}}:
+      - {{install_module}}: {{pref}}{{name}}aptgetretry-retry{{suf}}
+    {% if rmacro %}
+    {{ rmacro() }}
+    {% endif %}
+{% endif %}
+{{pref}}{{name}}aptgetretry-retry{{suf}}:
+  {{install_function}}:
+    - pkgs: {{pkgs}}
+    {% if fromrepo %}
+    - fromrepo: {{ fromrepo }}
+    {% endif %}
+    - onfail:
+      - {{install_module}}: {{pref}}{{name}}{{suf}}
+    {% if rmacro %}
+    {{ rmacro() }}
+    {% endif %} 
+{% endmacro %}
+
+
 {#
  # wrapper to service restart/reload that also ensure that systemd is reloaded
  # if case of the first activation fails

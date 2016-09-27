@@ -26,8 +26,8 @@ dotdeb-apache-makina-apache-php-pre-inst:
 makina-php-repos:
   pkgrepo.managed:
     - humanname: php ppa
-    - name: deb http://ppa.launchpad.net/ondrej/php5-{{phpSettings.ppa_ver}}/ubuntu {{pkgssettings.ppa_dist}} main
-    - dist: {{pkgssettings.ppa_dist}}
+    - name: deb http://ppa.launchpad.net/ondrej/php5-{{phpSettings.ppa_ver}}/ubuntu {{pkgssettings.udist}} main
+    - dist: {{pkgssettings.udist}}
     - file: /etc/apt/sources.list.d/phpppa.list
     - keyid: E5267A6C
     - keyserver: keyserver.ubuntu.com

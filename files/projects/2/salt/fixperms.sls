@@ -31,8 +31,8 @@
               \(\
                 \(     -type f -and \( -not -user {{cfg.user}} -or -not -group $datagroup                      \) \)\
                 -or \( -type d -and \( -not -user {{cfg.user}} -or -not -group $datagroup -or -not -perm -2000 \) \)\
-              \)\
-              |\
+              \) \
+              2>/dev/null |\
               while read i;do
                 if [ ! -h "${i}" ];then
                   if [ -d "${i}" ];then

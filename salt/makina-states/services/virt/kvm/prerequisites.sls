@@ -1,11 +1,6 @@
 {%- set pkgSettings = salt['mc_pkgs.settings']() %}
 include:
   - makina-states.services.virt.kvm.hooks
-{% if grains['os'] in ['Ubuntu'] %}
-{% set dist = pkgSettings.apt.ubuntu.dist %}
-{% else %}
-{% set dist = pkgSettings.apt.ubuntu.lts %}
-{% endif %}
 {% set locs = salt['mc_locations.settings']() %}
 
 kvm-pkgs:

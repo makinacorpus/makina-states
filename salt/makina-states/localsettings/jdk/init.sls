@@ -20,12 +20,6 @@ jdk-{{ ver }}-pkgs{{suf}}:
       - mc_proxy: makina-states-jdk_last
 {% endmacro %}
 {{ salt['mc_macros.register']('localsettings', 'jdk') }}
-{% if grains['os_family'] in ['Debian'] %}
-{% set dist = salt['mc_pkgs.settings']().udist %}
-{% endif %}
-{% if grains['os'] in ['Debian'] %}
-{% set dist = salt['mc_pkgs.settings']().ubuntu_lts %}
-{% endif %}
 {%- set default_ver = javas.default_jdk_ver %}
 
 include:
@@ -35,7 +29,7 @@ jdk-repo:
   pkgrepo.managed:
     - watch:
       - mc_proxy: makina-states-jdk_begin
-    - name: deb http://ppa.launchpad.net/webupd8team/java/ubuntu {{ dist }} main
+    - name: deb http://ppa.launchpad.net/webupd8team/java/ubuntu {{ salt['mc_pkgs.settings']().udist }} main
     - file: {{ locs.conf_dir }}/apt/sources.list.d/webupd8team.list
     - keyid: EEA14886
     - keyserver: keyserver.ubuntu.com

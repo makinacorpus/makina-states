@@ -150,19 +150,16 @@ def settings():
                         data['groups'] = data['groups'].split(',')
                 postgresqlUsers.update({userk: data})
         pkgs = __salt__['mc_pkgs.settings']()
-        if (
-            __grains__.get('os', '') == 'Ubuntu' and
-            LooseVersion(__grains__.get('osrelease', '0')) >= LooseVersion('16.04')
-        ):
-            xenial_onward = True
-            defaultPgVersion = '9.5'
-            pgis_version = '2.2'
-            dist = 'xenial'
-        else:
-            xenial_onward = False
-            pgis_version = '2.1'
-            defaultPgVersion = '9.5'
-            dist = pkgs['lts_dist']
+        dist = pkgs['lts_dist']
+        if __grains__.get('os', '') == 'Ubuntu':
+            if LooseVersion(__grains__.get('osrelease', '0')) >= LooseVersion('16.04'):
+                xenial_onward = True
+                defaultPgVersion = '9.5'
+                pgis_version = '2.2'
+            else:
+                xenial_onward = False
+                pgis_version = '2.1'
+                defaultPgVersion = '9.5'
 
         #
         # default activated postgresql versions & settings:

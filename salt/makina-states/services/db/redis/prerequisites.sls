@@ -3,9 +3,6 @@
 include:
   - makina-states.services.db.redis.hooks
 {% set dist = pkgssettings.udist %} 
-{% if grains['os'] in ['Debian'] %}
-{%  set dist = pkgssettings.ubuntu_lts %}
-{% endif %}
 {% set mir = 'deb http://ppa.launchpad.net/chris-lea/redis-server/ubuntu {0} main'.format(dist) %}
 redis-base:
   pkgrepo.managed:

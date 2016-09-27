@@ -3,13 +3,8 @@
 include:
   - makina-states.services.queue.rabbitmq.hooks
 
-{% if grains['os_family'] in ['Debian'] %}
 {% set dist = pkgssettings.udist %}
-{% endif %}
 {% if grains['os'] in ['Debian'] %}
-{% set dist = pkgssettings.ubuntu_lts %}
-{% set mir = 'deb http://www.rabbitmq.com/debian/ testing main' %}
-{% else %}
 {% set mir = 'deb http://www.rabbitmq.com/debian/ testing main' %}
 {% endif %}
 rabbitmq-base:

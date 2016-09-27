@@ -19,8 +19,8 @@ haproxy-base:
       - mc_proxy: haproxy-post-install-hook
   pkgrepo.managed:
     - humanname: haproxy ppa
-    - name: deb http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu {{pkgssettings.ppa_dist}} main
-    - dist: {{pkgssettings.ppa_dist}}
+    - name: deb http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu {{pkgssettings.udist}} main
+    - dist: {{pkgssettings.udist}}
     - file: "{{f}}"
     - keyid: 207A7A4E
     - keyserver: keyserver.ubuntu.com
