@@ -68,6 +68,7 @@ include:
       {% endfor %}
     - user: {{ user }}
     - name: {{ext}}
+    - unless: echo "SELECT extname from pg_extension;" | su {{user}} -c "psql -t -A -F"---" {{db}}" | egrep -q "^{{ext}}$"
     - pg_version: {{version}}
     - maintenance_db: {{db}}
     - db_host: {{db_host if db_host != None else 'null'}}
