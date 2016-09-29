@@ -47,6 +47,12 @@
     - replication: {{ replication if replication != None else 'null'}}
     - encrypted: {{ encrypted if encrypted != None else 'null'}}
     - createroles: {{createroles if createroles != None else 'null'}}
+    - unless: |
+              echo 'select 1;' | psql-{{version}} -v ON_ERROR_STOP=1 \
+                'postgresql://{{
+                  name}}{{':{0}'.format(password) if password != None else ''}}@{{
+                    db_host if db_host != None else '127.0.0.1'}}{{
+                      ':{0}'.format(db_port) if db_port != None else ':5432'}}/postgres'
     {% if groups %}
     - groups: {{','.join(groups)}}
     {% endif %}

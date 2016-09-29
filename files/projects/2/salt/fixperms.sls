@@ -19,8 +19,8 @@
             for i in $users;do
               gpasswd -a $i $datagroup >/dev/null 2>&1 || /bin/true
             done
-            # be sure to remove POSIX acls support
-            setfacl -P -R -b -k "{{cfg.project_dir}}"
+            # be sure to remove POSIX acls support (not by default)
+            # setfacl -P -R -b -k "{{cfg.project_dir}}"
             "{{locs.resetperms}}" -q --no-acls\
               --user root --group "$datagroup" \
               --dmode '0770' --fmode '0770' \

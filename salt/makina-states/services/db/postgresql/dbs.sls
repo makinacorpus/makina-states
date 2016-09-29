@@ -46,7 +46,7 @@ include:
     # if database exists
     # do not run as default locate can change over time and make this
     # state fail whenever the database already easist and works well
-    - onlyif: test "x$(echo "SELECT datname FROM pg_database;"|su postgres -c "psql -t -A -F"---""|egrep -q "^{{db}}$";echo $?)" = "x1"
+    - unless: echo "SELECT datname FROM pg_database;" | su {{user}} -c "psql -t -A -F"---"" | egrep -q "^{{db}}$"
     - user: {{ user }}
     - require:
       - mc_proxy: {{orchestrate[version]['predb']}}
@@ -62,10 +62,11 @@ include:
   cmd.run:
     - name: |
             set -e
-            echo "GRANT ALL PRIVILEGES ON DATABASE {{ db }} TO {{ owner }};"|psql-{{version}} -v ON_ERROR_STOP=1 {{db}}
-            echo "ALTER SCHEMA public OWNER TO {{ owner }};"|psql-{{version}} -v ON_ERROR_STOP=1 {{db}}
-            echo "GRANT ALL PRIVILEGES ON SCHEMA public TO {{ owner }};"|psql-{{version}} -v ON_ERROR_STOP=1 {{db}}
-    - user: {{ user }}
+            echo "GRANT ALL PRIVILEGES ON DATABASE {{ db }} TO {{ owner }}; \
+                  ALTER SCHEMA public OWNER TO {{ owner }}; \
+                  GRANT ALL PRIVILEGES ON SCHEMA public TO {{ owner }};" | su '{{user}}' -c 'psql-{{version}} -v ON_ERROR_STOP=1 {{db}}'
+            touch /etc/postgresql/{{version}}-{{db}}-owners.chown_done
+    - onlyif: test ! -e /etc/postgresql/{{version}}-{{db}}-owners.chown_done
     - require:
       - mc_postgres_database: {{version}}-{{ db }}-makina-postgresql-database
 
@@ -77,25 +78,56 @@ include:
     - group: root
     - template: jinja
     - contents: |
-                ALTER DATABASE {{db}} OWNER TO {{owner}};
+                SELECT 'ALTER DATABASE {{db}} OWNER TO {{owner}}'
+                FROM PG_DATABASE d, pg_roles r
+                WHERE d.DATNAME = '{{db}}'
+                AND d.datdba = r.oid
+                AND r.rolname != '{{owner}}';
+
                 SELECT 'ALTER SCHEMA "' || n.NSPNAME || '" OWNER TO {{owner}};'
-                FROM PG_CATALOG.PG_NAMESPACE n
-                WHERE n.NSPNAME NOT ILIKE 'PG_%' AND n.NSPNAME NOT ILIKE 'INFORMATION_SCHEMA';
+                FROM PG_CATALOG.PG_NAMESPACE n, pg_roles r
+                WHERE n.NSPNAME NOT ILIKE 'PG_%'
+                AND n.NSPNAME NOT ILIKE 'INFORMATION_SCHEMA'
+                AND n.nspowner = r.oid
+                AND rolname != '{{owner}}';
+
                 SELECT 'ALTER TABLE "'|| schemaname || '"."' || tablename ||'" OWNER TO {{owner}};'
-                FROM pg_tables WHERE NOT schemaname IN ('pg_catalog', 'information_schema')
+                FROM pg_tables
+                WHERE NOT schemaname IN ('pg_catalog', 'information_schema')
+                AND tableowner != '{{owner}}'
                 ORDER BY schemaname, tablename;
-                SELECT 'ALTER SEQUENCE "'|| sequence_schema || '"."' || sequence_name ||'" OWNER TO {{owner}};'
-                FROM information_schema.sequences WHERE NOT sequence_schema IN ('pg_catalog', 'information_schema')
-                ORDER BY sequence_schema, sequence_name;
-                SELECT 'ALTER VIEW "'|| table_schema || '"."' || table_name ||'" OWNER TO {{owner}};'
-                FROM information_schema.views WHERE NOT table_schema IN ('pg_catalog', 'information_schema')
-                ORDER BY table_schema, table_name;
+
+                SELECT 'ALTER SEQUENCE "'|| rr.nspname || '"."' || c.relname ||'" OWNER TO {{owner}};'
+                FROM pg_class c, pg_user u, pg_namespace rr
+                WHERE c.relowner = u.usesysid
+                AND c.relkind = 'S'
+                AND rr.oid = c.relnamespace
+                AND relnamespace = rr.oid
+                AND rr.nspname NOT LIKE 'pg_%'
+                AND rr.nspname != 'information_schema'
+                AND u.usename != '{{owner}}';
+
+                SELECT 'ALTER VIEW "'|| rr.nspname || '"."' || c.relname ||'" OWNER TO {{owner}};'
+                FROM pg_class c, pg_user u, pg_namespace rr
+                WHERE c.relowner = u.usesysid
+                AND c.relkind = 'v'
+                AND rr.oid = c.relnamespace
+                AND relnamespace = rr.oid
+                AND rr.nspname NOT LIKE 'pg_%'
+                AND rr.nspname != 'information_schema'
+                AND u.usename != '{{owner}}';
   cmd.run:
+    - stateful: true
     - name: |
             set -e
             fic="/tmp/postgresql_{{version}}-{{db}}-do-owners.sql"
-            psql-{{version}} -f "/etc/postgresql/{{version}}-{{db}}-owners.sql" -t -q -v ON_ERROR_STOP=1 {{db}} | grep ALTER > "${fic}"
-            psql-{{version}} -f "${fic}" -v ON_ERROR_STOP=1 "{{db}}"
+            psql-{{version}} -f "/etc/postgresql/{{version}}-{{db}}-owners.sql" -t -q -v ON_ERROR_STOP=1 {{db}} | grep ALTER > "${fic}" || /bin/true
+            if grep -i alter "${fic}" 2>/dev/null; then
+              psql-{{version}} -f "${fic}" -v ON_ERROR_STOP=1 "{{db}}"
+              echo "changed=true"
+            else
+              echo "changed=false"
+            fi
             rm -f "${fic}"
     - user: {{ user }}
     - watch:

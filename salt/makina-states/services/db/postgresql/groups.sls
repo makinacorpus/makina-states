@@ -31,6 +31,7 @@ include:
     - encrypted: {{ encrypted if encrypted != None else 'null'}}
     - password: {{ rolepassword if rolepassword != None else 'null'}}
     - superuser: {{ superuser if superuser != None else 'null'}}
+    - unless: echo "SELECT rolname FROM pg_roles;" | su {{user}} -c "psql -t -A -F"---" postgres" | egrep -q "^{{group}}$"
     - replication: {{ replication if replication != None else 'null'}}
     - login: {{ login if login != None}}
     - user: {{ user }}
