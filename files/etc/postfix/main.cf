@@ -8,10 +8,14 @@ myhostname = {{data.mailname }}
 myorigin = {{data.conf_dir}}/mailname
 inet_protocols = {{' '.join(data.inet_protocols)}}
 inet_interfaces = {{' '.join(data.inet_interfaces)}}
-mydestination  = hash:/etc/postfix/destinations,hash:/etc/postfix/destinations.local
-relay_domains  = hash:/etc/postfix/relay_domains,hash:/etc/postfix/relay_domains.local
-mynetworks     = cidr:/etc/postfix/networks,cidr:/etc/postfix/networks.local
-transport_maps = hash:/etc/postfix/transport,hash:/etc/postfix/transport.local
+{% for i in ['mydestination', 'relay_domains',
+             'mynetworks', 'transport_maps',
+             'local_recipient_maps'] %}
+{%- set val = data[i+'_param'] %}
+{%- if val %}
+{{-i}} = {{val}}
+{%- endif %}
+{% endfor %}
 # TLS parameters
 smtp_use_tls={{data.use_tls}}
 smtpd_use_tls={{data.use_tls}}
@@ -120,6 +124,8 @@ recipient_delimiter = +
 # tls
 # http://www.postfix.org/TLS_README.html#client_tls_may
 smtp_tls_security_level = may
+
+owner_request_special = {{data.owner_request_special}}
 
 # debug_peer_list=mail.foo.com
 # debug_peer_level=3
