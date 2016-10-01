@@ -26,7 +26,9 @@ include:
 
 npm-version-{{version.replace('.', '_') }}{{suf}}:
   file.directory:
-    - name: {{ '/'.join(dest.split('/')[:-1]) }}
+    - names: {{ salt['mc_utils.uniquify']([
+        '/'.join(dest.split('/')[:-1]),
+        '/'.join(dest.split('/')[:-2])]) }}
     - makedirs: true
     - user: root
     - mode: 755

@@ -257,6 +257,19 @@ def settings():
                         'source': '',
                         'mode': '640'},
                 },
+                'mydestination_param': (
+                    'hash:/etc/postfix/destinations,'
+                    'hash:/etc/postfix/destinations.local'),
+                'relay_domains_param': (
+                    'hash:/etc/postfix/relay_domains,'
+                    'hash:/etc/postfix/relay_domains.local'),
+                'mynetworks_param': (
+                    'cidr:/etc/postfix/networks,'
+                    'cidr:/etc/postfix/networks.local'),
+                'transport_maps_param': (
+                    'hash:/etc/postfix/transport,'
+                    'hash:/etc/postfix/transport.local'),
+                'local_recipient_maps_param': None,
                 'cert': None,
                 'cert_key': None,
                 'smtp_auth': True,
@@ -273,6 +286,7 @@ def settings():
                 'append_dot_mydomain': 'no',
                 'relay_domains': OrderedDict(),
                 'sasl_passwd': [],
+                'owner_request_special': 'yes',
                 'transport': [],
                 'virtual_map': [],
                 'catchall': None})

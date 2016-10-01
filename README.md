@@ -13,5 +13,3 @@ Please go to this [documentation](https://makina-states.readthedocs.io).
 By [Makina-Corpus developers](http://www.makina-corpus.com).
 
 
-
-
