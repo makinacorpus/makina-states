@@ -1390,26 +1390,45 @@ def get_slaves_zones_for(fqdn, ttl=PILLAR_TTL):
     return _doget_slaves_zones_for(fqdn)
 
 
+def get_rr_left(domain, fqdn):
+    if fqdn in [domain, domain+'.']:
+        rr_left = '@'
+    else:
+        rr_left = fqdn
+    return rr_left
+
+
 def rrs_mx_for(domain, ttl=PILLAR_TTL):
     '''
     Return all configured MX records for a domain
     '''
     def _dorrs_mx_for(domain):
         mx_map = __salt__[__name + '.query']('mx_map', {})
+        mdnsz = __salt__[__name + '.query']('managed_dns_zones', {})
         all_rrs = OrderedDict()
-        servers = mx_map.get(domain, {})
-        for fqdn in servers:
-            rrs = all_rrs.setdefault(fqdn, [])
-            dfqdn = fqdn
-            if not dfqdn.endswith('.'):
-                dfqdn += '.'
-            for rr in rr_entry(
-                '@', [dfqdn],
-                priority=servers[fqdn].get('priority', '10'),
-                record_type='MX'
-            ).split('\n'):
-                if rr not in rrs:
-                    rrs.append(rr)
+        servers = {}
+        for dom, domain_data in six.iteritems(mx_map):
+            # search for subdomains, if not handled
+            if (
+                dom == domain or
+                (dom.endswith('.'+domain) and
+                 dom not in mdnsz)
+            ):
+                servers[dom] = domain_data
+        for dom, domain_data in six.iteritems(servers):
+            rr_left = get_rr_left(domain, dom)
+            for fqdn in domain_data:
+                rrs = all_rrs.setdefault(fqdn, [])
+                dfqdn = fqdn
+                if not dfqdn.endswith('.'):
+                    dfqdn += '.'
+                for rr in rr_entry(
+                    rr_left, [dfqdn],
+                    priority=domain_data[fqdn].get('priority', '10'),
+                    record_type='MX'
+                ).split('\n'):
+                    if rr not in rrs:
+                        rrs.append(rr)
         rr = filter_rr_str(all_rrs)
         return rr
     # cache_key = __name + '.rrs_mx_for_{0}'.format(domain) + CACHE_INC_TOKEN
