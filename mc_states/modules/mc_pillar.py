@@ -1826,12 +1826,10 @@ def get_ldap(ttl=PILLAR_TTL):
         data = OrderedDict()
         masters = data.setdefault('masters', OrderedDict())
         slaves = data.setdefault('slaves', OrderedDict())
-        default = _s[__name + '.query']('ldap_maps', {}).get(
-            'default', OrderedDict())
+        ldap_maps = _s[__name + '.query']('ldap_maps', {})
+        default = ldap_maps.get( 'default', OrderedDict())
         for kind in ['masters', 'slaves']:
-            for server, adata in _s[
-                __name + '.query'
-            ]('ldap_maps', {}).get(kind, OrderedDict()).items():
+            for server, adata in ldap_maps.get(kind, OrderedDict()).items():
                 sdata = data[kind][server] = copy.deepcopy(adata)
                 for k, val in default.items():
                     sdata.setdefault(k, val)
@@ -1841,7 +1839,10 @@ def get_ldap(ttl=PILLAR_TTL):
         slavesids = [a for a in slaves]
         slavesids.sort()
         for server in slavesids:
-            adata = copy.deepcopy(slaves.get('default', {}))
+            adata = copy.deepcopy(
+                ldap_maps.get('slave_default',
+                              slaves.get('default', {}))
+            )
             adata.update(slaves[server])
             master = adata.setdefault('master', 'localhost')
             master_port = adata.setdefault('master_port', '389')
@@ -1859,7 +1860,7 @@ def get_ldap(ttl=PILLAR_TTL):
             srepl['{0}rid'] = '{0}'.format(rid)
             slaves[server] = adata
         return data
-    cache_key = __name + '.getldap' + CACHE_INC_TOKEN
+    cache_key = __name + '.getldap' + CACHE_INC_TOKEN + '1'
     return __salt__['mc_utils.memoize_cache'](
         _doget_ldap, [], {}, cache_key, ttl)
 
