@@ -1177,11 +1177,11 @@ def get_raw_ns_slaves(id_, dns_servers=None, default=None, ttl=PILLAR_TTL):
     name::
 
         ns1.makina-corpus.net:
-            ovh-r5-2.makina-corpus.net
+            moo.makina-corpus.net
         ns2.makina-corpus.net:
-            online-dc3-4.makina-corpus.net
+            foo.makina-corpus.net
         ns3.makina-corpus.net:
-            online-dc3-3.makina-corpus.net
+            boo.makina-corpus.net
     '''
     def _doget_raw_ns_slaves(id_, dns_servers=None, default=None):
         managed_dns_zones = __salt__[
