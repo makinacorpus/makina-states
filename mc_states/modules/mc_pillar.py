@@ -1176,12 +1176,12 @@ def get_raw_ns_slaves(id_, dns_servers=None, default=None, ttl=PILLAR_TTL):
     This returns a map between the NS record name and it's associated server
     name::
 
-        ns1.makina-corpus.net:
-            moo.makina-corpus.net
-        ns2.makina-corpus.net:
-            foo.makina-corpus.net
-        ns3.makina-corpus.net:
-            boo.makina-corpus.net
+        ns1.foo.net:
+            moo.foo.net
+        ns2.foo.net:
+            foo.foo.net
+        ns3.foo.net:
+            boo.foo.net
     '''
     def _doget_raw_ns_slaves(id_, dns_servers=None, default=None):
         managed_dns_zones = __salt__[
