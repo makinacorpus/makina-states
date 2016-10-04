@@ -49,12 +49,12 @@ format: 1
 #   #    syncrepl:
 #   #      binddn: "cn=replicator,ou=Virtual,ou=people,dc=xxx"
 #   #      credentials: "xxx"
+#   slave_default:
+#     syncrepl:
+#       binddn: "cn=replicator,ou=Virtual,ou=people,dc=xxx"
+#       credentials: "xxx"
+#       provider: "ldap://prod-fusiondirectory.foo.net:1389"
 #   slaves:
-#     default:
-#       syncrepl:
-#         binddn: "cn=replicator,ou=Virtual,ou=people,dc=xxx"
-#         credentials: "xxx"
-#         provider: "ldap://prod-fusiondirectory.foo.net:1389"
 #     c.foo.net:
 #       syncrepl:
 #         provider: "ldap://prod-fusiondirectory.foo.net:389"
