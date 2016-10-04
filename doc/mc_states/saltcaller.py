@@ -444,7 +444,7 @@ def call(func,
     ret['salt_fun'] = func
     ret['salt_args'] = args
     ret['salt_out'] = None
-    if out and out in decoders and ret['retcode'] == 0:
+    if out and out in decoders and ret.get('stdout', ''):
         try:
             dout = None
             try:

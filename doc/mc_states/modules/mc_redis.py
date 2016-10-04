@@ -49,7 +49,7 @@ def settings():
         pw = redis_reg.setdefault(
             'password', __salt__['mc_utils.generate_password']())
         locs = __salt__['mc_locations.settings']()
-        daemonize = 'yes'
+        daemonize = 'no'
         if __salt__['mc_nodetypes.is_docker']():
             daemonize = 'no'
         data = __salt__['mc_utils.defaults'](
@@ -61,7 +61,7 @@ def settings():
                 'templates': _OrderedDict([
                     ('/etc/default/redis-server', {}),
                     #('/etc/systemd/system/redis-server.service', {'mode': '644'}),
-                    ('/etc/systemd/system/overrides.d/redis-server.conf', {'mode': '644'}),
+                    ('/etc/systemd/system/redis-server.service.d/redis-server.conf', {'mode': '644'}),
                     ('/usr/bin/redis-server-wrapper.sh', {'mode': '755'}),
                     ('/etc/redis/redis.conf', {})]),
                 'packages':  [

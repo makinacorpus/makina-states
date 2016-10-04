@@ -28,14 +28,6 @@ OBJECT_SANITIZER = re.compile('[\\\@+\$^&~"#\'()\[\]%*.:/]',
                               flags=re.M | re.U | re.X)
 
 registration_prefix = 'makina-states.haproxy_registrations'
-DEFAULT_MODES = {
-           9200: 'http',
-           80: 'http',
-           443: 'https',
-           5672: 'rabbitmq',
-           6379: 'redis',
-           6378: 'redis'
-}
 DEFAULT_FRONTENDS = {80: {}, 443: {}}
 
 CIPHERS = '''\
@@ -93,6 +85,7 @@ def settings():
             'rotate': _s['mc_logrotate.settings']()['days'],
             'config': 'haproxy.cfg',
             'user': 'haproxy',
+            'use_rsyslog': False,
             'group': 'haproxy',
             'stats_enabled': True,
             'defaults': {'extra_opts': '', 'enabled': '1'},
@@ -105,15 +98,34 @@ def settings():
                   'server_bind_ciphers': CIPHERS},
             'main_cert': None,
             'backend_opts': {
+                'http_strict': [
+                    'balance roundrobin',
+                    'option forwardfor',
+                    'option http-keep-alive',
+                    'option httpchk',
+                    'option log-health-checks'],
+                'https_strict': [
+                    'balance roundrobin',
+                    'option forwardfor',
+                    'option http-keep-alive',
+                    'http-request set-header X-SSL %[ssl_fc]',
+                    'option httpchk',
+                    'option log-health-checks'],
                 'http': [
                     'balance roundrobin',
                     'option forwardfor',
-                    'option http-keep-alive'],
+                    'option http-keep-alive',
+                    'option httpchk',
+                    'option log-health-checks',
+					'http-check expect rstatus (2|3|4|5)[0-9][0-9]'],
                 'https': [
                     'balance roundrobin',
                     'option forwardfor',
                     'option http-keep-alive',
-                    'http-request set-header X-SSL %[ssl_fc]'],
+                    'http-request set-header X-SSL %[ssl_fc]',
+                    'option httpchk',
+                    'option log-health-checks',
+					'http-check expect rstatus (2|3|4|5)[0-9][0-9]'],
                 'tcp': ['balance roundrobin'],
                 'rabbitmq': [
                     "balance roundrobin",
@@ -141,6 +153,14 @@ def settings():
                     'tcp-check expect string +OK'],
             },
             'frontend_opts': {'http': [], 'https': []},
+            'proxy_modes': {
+                9200: 'http',
+                80: 'http',
+                443: 'https',
+                5672: 'rabbitmq',
+                6379: 'redis',
+                6378: 'redis'
+            },
             'configs': {'/etc/haproxy/haproxy.cfg': {},
                         '/etc/systemd/system/haproxy.service': {},
                         '/etc/haproxy/cfg.d/backends.cfg': {},
@@ -363,7 +383,7 @@ def register_frontend(port,
     has = {'backend': False,
            'ssl': False,
            'main_cert': haproxy['main_cert'] != None}
-    if mode in ['https', 'tcps', 'ssl', 'tls']:
+    if mode.startswith('https') or mode  in ['tcps', 'ssl', 'tls']:
         has.update({'ssl': True})
         sbind = '{0} ssl {1}'.format(
            sbind,
@@ -373,7 +393,8 @@ def register_frontend(port,
     frontend.setdefault('bind', sbind)
     # normalise https -> http  & default proxy mode to TCP
     hmode = frontend.setdefault(
-        'mode', {'https': 'http', 'http': 'http'}.get(mode, 'tcp'))
+        'mode',
+        mode.startswith('http') and 'http' or 'tcp')
     opts = frontend.setdefault(
         'raw_opts',
         haproxy['frontend_opts'].get(mode, [])[:])
@@ -381,7 +402,7 @@ def register_frontend(port,
     # TUPLE FOR ORDER IS IMPORTANT !
     # one_backend does not have any importanance, its sole purpose is
     # to factorize further code
-    if hmode != 'http':
+    if not hmode.startswith('http'):
         aclmodes = (('default', ['one_backend']),)
     else:
         aclmodes = (('regex', regexes),
@@ -394,6 +415,11 @@ def register_frontend(port,
                 bck_name = get_backend_name(
                     mode, port, **{aclmode: match})
                 sane_match = sanitize(match)
+                if any([
+                    aclmode == 'wildcard' and match == '*',
+                    aclmode == 'regex' and match == '.*'
+                ]):
+                    aclmode = 'default'
                 cfgentries = {
                     'default': (
                         [],
@@ -453,10 +479,10 @@ def register_servers_to_backends(port,
         haproxy['backend_opts']['tcp'])
     if not to_port:
         to_port = port
-    if mode in ['http', 'https']:
+    if mode.startswith('http'):
         hmode = 'http'
         #  we try first a backend over https, and if not present on http #}
-        if mode == 'https':
+        if mode.startswith('https'):
             servers = [{'name': 'srv_{0}_clear'.format(sane_ip),
                         'bind': '{0}:{1}'.format(ip, 80),
                         'opts': 'check weight 50 backup'},
@@ -477,7 +503,7 @@ def register_servers_to_backends(port,
                {'name': 'srv_{0}'.format(sane_ip),
                 'bind': '{0}:{1}'.format(ip, to_port),
                 'opts': 'check inter 1s'}]
-    if hmode != 'http':
+    if not hmode.startswith('http'):
         aclmodes = (('default', ['one_backend']),)
     else:
         aclmodes = (('host', hosts),
@@ -534,7 +560,8 @@ def make_registrations(data=None, haproxy=None):
                 to_port = int(fdata.get('to_port', port))
                 user = fdata.get('user', None)
                 password = fdata.get('password', None)
-                mode = fdata.get('mode', DEFAULT_MODES.get(port, 'tcp'))
+                mode = fdata.get('mode',
+                                 haproxy['proxy_modes'].get(port, 'tcp'))
                 register_frontend(port, mode, hosts=hosts,
                                   wildcards=wildcards,
                                   regexes=regexes,

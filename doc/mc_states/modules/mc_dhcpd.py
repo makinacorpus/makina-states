@@ -38,18 +38,22 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
+        _g = __grains__
+        _p = __pillar__
         locations = __salt__['mc_locations.settings']()
         local_conf = __salt__['mc_macros.get_local_registry'](
             'dhcpd', registry_format='pack')
         cn_pass = local_conf.setdefault('cn_pass', secure_password(32))
+        pkgs = ['dhcp3-server']
+        if _g.get('os') in ['Ubuntu']:
+            if _g['osrelease'] >= 15.10:
+                pkgs = ['isc-dhcp-server']
         dhcpdData = __salt__['mc_utils.defaults'](
             'makina-states.services.dns.dhcpd', {
                 'dhcpd_directory': "/etc/dhcpd",
                 'templates': {
-                  '/etc/default/isc-dhcp-server': 'salt://makina-states/files/etc/default/isc-dhcp-server',
-                  '/etc/dhcp/dhcpd.conf': 'salt://makina-states/files/etc/dhcp/dhcpd.conf',
+                  '/etc/default/isc-dhcp-server': {},
+                  '/etc/dhcp/dhcpd.conf': {},
                 },
                 'extra_dirs': [
                 ],
@@ -68,12 +72,8 @@ def settings():
                     'domain_name_servers': (
                         'ns1.example.org, ns2.example.org'),
                 },
-                'pkgs': ['dhcp3-server'],
+                'pkgs': pkgs,
                 'service_name': 'isc-dhcp-server',
             })
         return dhcpdData
     return _settings()
-
-
-
-#

@@ -232,6 +232,7 @@ def settings():
                 'logformats': logformats,
                 'v6': False,
                 'allowed_hosts': [],
+                'donotlog_options_requests': False,
                 'ulimit': ulimit,
                 'client_max_body_size': www_reg[
                     'upload_max_filesize'],
@@ -264,7 +265,7 @@ def settings():
                     "/etc/logrotate.d/nginx": {},
                     '/etc/default/nginx': {},
                     '/etc/init.d/nginx': {"mode": "755"},
-                    '/etc/systemd/system/overrides.d/nginx.conf': {"mode": "644"},
+                    '/etc/systemd/system/nginx.service.d/nginx.conf': {"mode": "644"},
                 },
                 'open_file_cache_min_uses': '2',
                 'open_file_cache_errors': 'off',

@@ -62,6 +62,19 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
             ssh gateway info
         ssh_gateway_key
             ssh gateway info
+        ports
+            if hostport is omitted, it will be dynamically assigned
+            in the avalaible port range (40000-50000 by default)
+
+            hostPortRange default to portRange if portRange found
+
+            example::
+
+                {name: redis, port: 6379,
+                 protocol: tcp, hostPort: 22}
+                {name: redis, portRange: "63:79",
+                 protocol: tcp, hostPortRange: "22:23"}
+
         size
             default filesystem size for container on lvm
             None
@@ -104,7 +117,7 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
 
         The settings are not stored here for obvious performance reasons
     '''
-    def _do(cloudSettings, imgSettings):
+    def _dovt_default_settings(cloudSettings, imgSettings):
         _s = __salt__
         _g = __grains__
         default_snapshot = False
@@ -135,7 +148,7 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
                 'ports': [
                     {'name': 'ssh', 'port': 22, 'protocol': 'tcp'},
                     {'name': 'ssh', 'port': 22, 'protocol': 'udp'},
-                    {'name': 'snmp', 'port': 161, 'protocol': 'udp'},
+                    #{'name': 'ssh', 'portRange': "222:223", 'protocol': 'udp'},
                 ],
                 #
                 'master': cloudSettings.get('master', __opts__['id']),
@@ -169,7 +182,8 @@ def vt_default_settings(cloudSettings, imgSettings, ttl=60):
     cache_key = 'mc_cloud_vm.default_settings'
     return copy.deepcopy(
         __salt__['mc_utils.memoize_cache'](
-            _do, [cloudSettings, imgSettings], {}, cache_key, ttl))
+            _dovt_default_settings, [cloudSettings, imgSettings], {},
+            cache_key, ttl))
 
 
 # pylint: disable=W0621
@@ -266,7 +280,7 @@ def vm_registry(prefixed=True):
 
 def vt_extpillar_settings(vt, ttl=PILLAR_TTL):
 
-    def _do(vte):
+    def _dovt_extpillar_settings(vte):
         _s = __salt__
         fun = 'mc_cloud_{0}.vt_default_settings'.format(vt)
         extdata = _s['mc_pillar.get_global_clouf_conf'](vt)
@@ -276,7 +290,8 @@ def vt_extpillar_settings(vt, ttl=PILLAR_TTL):
             _s[fun](cloudSettings, imgSettings), extdata)
         return data
     cache_key = 'mc_cloud_vm.vt_extpillar_settings{0}'.format(vt)
-    return __salt__['mc_utils.memoize_cache'](_do, [vt], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dovt_extpillar_settings, [vt], {}, cache_key, ttl)
 
 
 def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
@@ -288,7 +303,7 @@ def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
         else:
             return '1{0}'.format(dom)
 
-    def _do(vme, limited):
+    def _dovm_extpillar_settings(vme, limited):
         cloudSettings = _s['mc_cloud.extpillar_settings']()
         imgSettings = _s['mc_cloud_images.extpillar_settings']()
         data = _s['mc_pillar.get_cloud_conf_for_vm'](vme)
@@ -296,13 +311,13 @@ def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
             vm_default_settings(
                 vme, cloudSettings, imgSettings, extpillar=True),
             data)
-        data.update(__salt__['mc_cloud.ssh_host_settings'](
-            data['name'], defaults=data))
         find_ip = 'mc_cloud_compute_node.find_ip_for_vm'
         data['ip'] = _s[find_ip](vme,
                                  network=data['network'],
                                  netmask=data['netmask'],
                                  default=data.get('ip'))
+        data.update(__salt__['mc_cloud.ssh_host_settings'](
+            data['name'], defaults=data))
         data['mac'] = _s['mc_cloud_compute_node.find_mac_for_vm'](
             vme, default=data.get('mac', None))
         data['password'] = _s[
@@ -326,7 +341,7 @@ def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
                 pdata['hostPort'] = __salt__[
                     'mc_cloud_compute_node.get_kind_port'
                 ](vm, data['target'], pdata['name'])
-            if pdata['name'] == 'ssh' or pdata['port'] in [22]:
+            if pdata['name'] == 'ssh' or pdata.get('port') in [22]:
                 ssh_port = pdata['hostPort']
         ssh_host = data['target']
         for ix, ipinfos in enumerate(data['additional_ips']):
@@ -350,12 +365,13 @@ def vm_extpillar_settings(vm, limited=False, ttl=PILLAR_TTL):
         data.update({'ssh_port': ssh_port, 'ssh_host': ssh_host})
         return data
     cache_key = 'mc_cloud_vm.extpillar_settings{0}{1}8'.format(vm, limited)
-    return __salt__['mc_utils.memoize_cache'](_do, [vm, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dovm_extpillar_settings, [vm, limited], {}, cache_key, ttl)
 
 
 def vt_extpillar(target, vt, limited=False, ttl=PILLAR_TTL):
 
-    def _do(target, vt, limited):
+    def _dovt_extpillar(target, vt, limited):
         _s = __salt__
         extdata = _s['mc_pillar.get_cloud_conf_for_cn'](target).get(vt, {})
         data = vt_extpillar_settings(vt)
@@ -364,7 +380,8 @@ def vt_extpillar(target, vt, limited=False, ttl=PILLAR_TTL):
             target, data, limited=limited), extdata)
         return data
     cache_key = 'mc_cloud_vm.vt_extpillar{0}{1}{2}1'.format(target, vt, limited)
-    return __salt__['mc_utils.memoize_cache'](_do, [target, vt, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dovt_extpillar, [target, vt, limited], {}, cache_key, ttl)
 
 
 def domains_for(vm, domains=None):
@@ -381,7 +398,7 @@ def domains_for(vm, domains=None):
 
 def vm_extpillar(id_, limited=False, ttl=60):
 
-    def _do(id_, limited):
+    def _dovm_extpillar(id_, limited):
         _s = __salt__
         extdata = _s['mc_pillar.get_cloud_conf_for_vm'](id_)
         data = vm_extpillar_settings(id_)
@@ -390,12 +407,14 @@ def vm_extpillar(id_, limited=False, ttl=60):
         data['domains'] = domains_for(id_, data['domains'])
         return data
     cache_key = 'mc_cloud_vm.vm_extpillar{0}{1}4'.format(id_, limited)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dovm_extpillar, [id_, limited], {},
+        cache_key, ttl, use_memcache=True)
 
 
 def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
 
-    def _do(id_, prefixed, limited):
+    def _doext_pillar(id_, prefixed, limited):
         _s = __salt__
         all_vms = _s['mc_cloud_compute_node.get_vms']()
         targets = _s['mc_cloud_compute_node.get_targets']()
@@ -445,7 +464,8 @@ def ext_pillar(id_, prefixed=True, ttl=60, *args, **kw):
     cache_key = 'mc_cloud_vm.ext_pillar{0}{1}{2}2'.format(
         id_, prefixed, limited)
     return __salt__['mc_utils.memoize_cache'](
-        _do, [id_, prefixed, limited], {}, cache_key, ttl)
+        _doext_pillar, [id_, prefixed, limited], {},
+        cache_key, ttl, use_memcache=True)
 
 
 # pylint: disable=w0105
@@ -457,17 +477,18 @@ After the pillar has loaded, on the compute node or on the VM
 
 def raw_settings(ttl=60):
 
-    def _do():
+    def _doraw_settings():
         _s = __salt__
         settings = _s['mc_utils.defaults'](PREFIX, vm_registry(prefixed=False))
         return settings
     cache_key = '{0}.{1}'.format(__name, 'raw_settings')
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _doraw_settings, [], {}, cache_key, ttl)
 
 
 def vts_settings(ttl=60):
 
-    def _do():
+    def _dovts_settings():
         data = raw_settings()
         _s = __salt__
         svts = data.setdefault('vts', OrderedDict())
@@ -482,19 +503,21 @@ def vts_settings(ttl=60):
                 data.get(vt, {}))
         return svts
     cache_key = '{0}.{1}'.format(__name, 'vts_settings')
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dovts_settings, [], {}, cache_key, ttl)
 
 
 def vt_settings(vt=VT, ttl=60):
 
-    def _do(vte):
+    def _dovt_settings(vte):
         return vts_settings().get(vte, {})
     cache_key = '{0}.{1}{2}'.format(__name, 'vt_settings', vt)
-    return __salt__['mc_utils.memoize_cache'](_do, [vt], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dovt_settings, [vt], {}, cache_key, ttl)
 
 
 def vms_settings(ttl=60):
-    def _do():
+    def _dovms_settings():
         _s = __salt__
         svms = raw_settings().setdefault('vms', OrderedDict())
         if svms:
@@ -515,47 +538,45 @@ def vms_settings(ttl=60):
                         data)
         return svms
     cache_key = '{0}.{1}2'.format(__name, 'vms_settings')
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dovms_settings, [], {}, cache_key, ttl)
 
 
 def vm_host_and_port(ttl=600):
-    def do():
-        res = __grains__['id'], 22
-
+    def dovm_host_and_port():
         def fdo():
-            aret = __salt__['mc_cloud.is_vm']()
-            if aret:
+            host, port = __grains__['id'], 22
+            if __salt__['mc_cloud.is_vm']():
                 res = __salt__['mc_cloud_vm.vm_settings']()
-                if 'target' in res and 'ssh_reverse_proxy_port' in res:
+                if res.get('target', None)  and res.get('ssh_reverse_proxy_port', None):
                     host = res['target']
                     port = res['ssh_reverse_proxy_port']
-                return host, port
-            raise ValueError('no conf found, inconsistent, use default')
-        try:
-            return __salt__['mc_macros.filecache_fun'](
-                fdo,
-                prefix='salt_cloud_vm_host_port_{0}'.format(__grains__['id']),
-                ttl=5 * 24 * 60 * 60)
-        except ValueError:
-            return res
+            return host, port
+        return __salt__['mc_macros.filecache_fun'](
+            fdo,
+            prefix='salt_cloud_vm_host_port_2{0}'.format(__grains__['id']),
+            ttl=5 * 24 * 60 * 60)
     cache_key = '{0}.{1}.{2}'.format(__name, 'vm_host_and_port', '')
-    return __salt__['mc_utils.memoize_cache'](do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        dovm_host_and_port, [], {}, cache_key, ttl)
 
 
 def vm_settings(id_=None, ttl=60):
-    def _do(id_):
+    def _dovm_settings(id_):
         if not id_:
             id_ = __grains__['id']
         return vms_settings().get(id_, {})
     cache_key = '{0}.{1}{2}'.format(__name, 'vm_settings', id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dovm_settings, [id_], {}, cache_key, ttl)
 
 
 def settings(ttl=60):
-    def _do():
+    def _dosettings():
         rdata = {'vms': vms_settings(),
                  'vts': vts_settings()}
         return rdata
     cache_key = '{0}.{1}'.format(__name, 'settings')
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dosettings, [], {}, cache_key, ttl)
 # vim:set et sts=4 ts=4 tw=81:

@@ -20,6 +20,7 @@ Documentation of this module is available with::
 # Import python libs
 import logging
 import mc_states.api
+from distutils.version import LooseVersion
 
 __name = 'pkgs'
 
@@ -37,6 +38,9 @@ def settings():
         default GPG server
     dist
         current system dist
+    udist
+        applicable ubuntu dist,
+        For eg, install ubuntu pkgs on a Debian.
     lts_dist
         current distributaion stable release
     force_apt_ipv4
@@ -79,8 +83,9 @@ def settings():
 
         debian_stable = "wheezy"
         ddist = debian_stable
-        ubuntu_lts = "trusty"
-        ubuntu_last = "xenial"
+        ubuntu_old_lts = "trusty"
+        ubuntu_lts = "xenial"
+        ubuntu_last = "yakkety"
         lts_dist = debian_stable
         os = _g['os'].lower()
         mirrors = {
@@ -98,7 +103,13 @@ def settings():
         umirror = mirrors['mirrors_ubuntu_plus']
         if _g['os'] in ['Ubuntu']:
             lts_dist = ubuntu_lts
-            if _g['osrelease'] >= '16.04':
+            if LooseVersion(_g['osrelease']) >= LooseVersion('16.04'):
+                lts_dist = ubuntu_lts = 'xenial'
+            elif LooseVersion(_g['osrelease']) >= LooseVersion('14.04'):
+                lts_dist = ubuntu_lts = 'trusty'
+            elif LooseVersion(_g['osrelease']) >= LooseVersion('12.04'):
+                lts_dist = ubuntu_lts = 'precise'
+            if LooseVersion(_g['osrelease']) >= LooseVersion('16.04'):
                 umirror = '{mirrors_ubuntu_dist}'
             elif _s['mc_nodetypes.is_vagrantvm']():
                 umirror = '{mirrors_ubuntu_ircam}'
@@ -167,6 +178,7 @@ def settings():
                         'use_backports': True,
                         'last': ubuntu_last,
                         'lts': ubuntu_lts,
+                        'old_lts': ubuntu_old_lts,
                     },
                     'debian': {
                         'mirror': deb_mirror,
@@ -197,6 +209,7 @@ def settings():
         data['lts_dist'] = data['lts_dist']
         data['ubuntu_last'] = data['apt']['ubuntu']['last']
         data['ubuntu_lts'] = data['apt']['ubuntu']['lts']
+        data['ubuntu_old_lts'] = data['apt']['ubuntu']['old_lts']
         data['ubuntu_mirror'] = data['apt']['ubuntu']['mirror']
         data['ucomps'] = data['apt']['ubuntu']['comps']
         data['ubp'] = data['apt']['ubuntu']['use_backports']
@@ -268,9 +281,8 @@ def settings():
                              'dists': [{'name': ddist+'-backports',
                                         'comps': data['dcomps']}]}
                         ]}), grain='os')
-        data['ppa_dist'] = data.get('udist', ubuntu_lts)
-        if _g['os'] in ['Debian']:
-            data['ppa_dist'] = ubuntu_lts
+        # retrocompat
+        data['ppa_dist'] = data['udist']
         data['pkg_data'] = pkg_data
         return data
     return _settings()

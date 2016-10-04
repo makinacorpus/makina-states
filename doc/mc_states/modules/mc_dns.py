@@ -74,6 +74,7 @@ def settings(ttl=15*60):
                 'no_default_dnses': False,
                 'google_first': False,
                 'search': [],
+                'gateway_ns': gateway_ns(),
                 'default_dnses': []})
         if settings['default_dnses']:
             # if we have an explicit ns, dont check localhost as we
@@ -84,7 +85,7 @@ def settings(ttl=15*60):
             settings['google_first'] = True
         if not settings['no_default_dnses']:
             nss = [a
-                   for a in ([gateway_ns()] +
+                   for a in ([settings['gateway_ns']] +
                              ['127.0.0.1', '127.0.1.1', '8.8.8.8'])
                    if a]
             for i in nss:

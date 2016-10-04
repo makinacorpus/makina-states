@@ -596,43 +596,43 @@ def settings():
             # enable compute node redirection port ange if any
             # XXX: this is far from perfect, now we open a port range which
             # will be avalaible for connection and the controller will use that
-            is_compute_node = _s['mc_cloud.is_compute_node']()
-            if is_compute_node and not data['no_computenode']:
-                try:
-                    cloud_rules = []
-                    try:
-                        cloud_reg = _s['mc_cloud_compute_node.settings']()
-                        cloud_rules = cloud_reg.get(
-                            'reverse_proxies', {}).get('sw_proxies', [])
-                    except Exception:
-                        cloud_rules = []
-                    if not cloud_rules:
-                        # before refactor transition
-                        lcloud_reg = _s['mc_cloud_compute_node.cn_settings']()
-                        cloud_rules = lcloud_reg.get(
-                            'cnSettings', {}).get(
-                                'rp', {}).get(
-                                    'reverse_proxies', {}).get(
-                                        'sw_proxies', [])
-                    for r in cloud_rules:
-                        rules = []
-                        # replace all DNAT rules to use each external ip
-                        if ':' in r.get('dest', ''):
-                            z = r['dest'].split(':')[0]
-                            rr = r.copy()
-                            for sip in source_ips:
-                                rr['odest'] = sip
-                                for i in data['zones']:
-                                    if i not in [z, 'fw']:
-                                        target_r = rr.copy()
-                                        target_r['source'] = i
-                                        rules.append(target_r)
-                        else:
-                            rules.append(r)
-                        data['default_rules'].extend(rules)
-                except:
-                    log.error("ERROR IN CLOUD SHOREWALL RULES")
-                    log.error(traceback.format_exc())
+            #is_compute_node = _s['mc_cloud.is_compute_node']()
+            #if is_compute_node and not data['no_computenode']:
+            #    try:
+            #        cloud_rules = []
+            #        try:
+            #            cloud_reg = _s['mc_cloud_compute_node.settings']()
+            #            cloud_rules = cloud_reg.get(
+            #                'reverse_proxies', {}).get('sw_proxies', [])
+            #        except Exception:
+            #            cloud_rules = []
+            #        if not cloud_rules:
+            #            # before refactor transition
+            #            lcloud_reg = _s['mc_cloud_compute_node.cn_settings']()
+            #            cloud_rules = lcloud_reg.get(
+            #                'cnSettings', {}).get(
+            #                    'rp', {}).get(
+            #                        'reverse_proxies', {}).get(
+            #                            'sw_proxies', [])
+            #        for r in cloud_rules:
+            #            rules = []
+            #            # replace all DNAT rules to use each external ip
+            #            if ':' in r.get('dest', ''):
+            #                z = r['dest'].split(':')[0]
+            #                rr = r.copy()
+            #                for sip in source_ips:
+            #                    rr['odest'] = sip
+            #                    for i in data['zones']:
+            #                        if i not in [z, 'fw']:
+            #                            target_r = rr.copy()
+            #                            target_r['source'] = i
+            #                            rules.append(target_r)
+            #            else:
+            #                rules.append(r)
+            #            data['default_rules'].extend(rules)
+            #    except:
+            #        log.error("ERROR IN CLOUD SHOREWALL RULES")
+            #        log.error(traceback.format_exc())
 
             data['default_rules'].append({'comment': 'dns'})
             if data['no_dns']:
