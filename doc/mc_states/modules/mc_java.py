@@ -38,20 +38,16 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        saltmods = __salt__
-        grains = __grains__
-        data = saltmods['mc_utils.defaults'](
+        _s = __salt__
+        data = _s['mc_utils.defaults'](
             'makina-states.localsettings.jdk', {
                 'default_jdk_ver': 7,
+                'installed': [],
             })
+        if data['default_jdk_ver'] not in data['installed']:
+            data['installed'].append(data['default_jdk_ver'])
         # retrocompat
         data['jdkDefaultVer'] = data['default_jdk_ver']
         return data
     return _settings()
-
-
-
-#
-# -*- coding: utf-8 -*-
-
 # vim:set et sts=4 ts=4 tw=80:

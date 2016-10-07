@@ -1176,12 +1176,12 @@ def get_raw_ns_slaves(id_, dns_servers=None, default=None, ttl=PILLAR_TTL):
     This returns a map between the NS record name and it's associated server
     name::
 
-        ns1.makina-corpus.net:
-            ovh-r5-2.makina-corpus.net
-        ns2.makina-corpus.net:
-            online-dc3-4.makina-corpus.net
-        ns3.makina-corpus.net:
-            online-dc3-3.makina-corpus.net
+        ns1.foo.net:
+            moo.foo.net
+        ns2.foo.net:
+            foo.foo.net
+        ns3.foo.net:
+            boo.foo.net
     '''
     def _doget_raw_ns_slaves(id_, dns_servers=None, default=None):
         managed_dns_zones = __salt__[
@@ -1390,26 +1390,45 @@ def get_slaves_zones_for(fqdn, ttl=PILLAR_TTL):
     return _doget_slaves_zones_for(fqdn)
 
 
+def get_rr_left(domain, fqdn):
+    if fqdn in [domain, domain+'.']:
+        rr_left = '@'
+    else:
+        rr_left = fqdn
+    return rr_left
+
+
 def rrs_mx_for(domain, ttl=PILLAR_TTL):
     '''
     Return all configured MX records for a domain
     '''
     def _dorrs_mx_for(domain):
         mx_map = __salt__[__name + '.query']('mx_map', {})
+        mdnsz = __salt__[__name + '.query']('managed_dns_zones', {})
         all_rrs = OrderedDict()
-        servers = mx_map.get(domain, {})
-        for fqdn in servers:
-            rrs = all_rrs.setdefault(fqdn, [])
-            dfqdn = fqdn
-            if not dfqdn.endswith('.'):
-                dfqdn += '.'
-            for rr in rr_entry(
-                '@', [dfqdn],
-                priority=servers[fqdn].get('priority', '10'),
-                record_type='MX'
-            ).split('\n'):
-                if rr not in rrs:
-                    rrs.append(rr)
+        servers = {}
+        for dom, domain_data in six.iteritems(mx_map):
+            # search for subdomains, if not handled
+            if (
+                dom == domain or
+                (dom.endswith('.'+domain) and
+                 dom not in mdnsz)
+            ):
+                servers[dom] = domain_data
+        for dom, domain_data in six.iteritems(servers):
+            rr_left = get_rr_left(domain, dom)
+            for fqdn in domain_data:
+                rrs = all_rrs.setdefault(fqdn, [])
+                dfqdn = fqdn
+                if not dfqdn.endswith('.'):
+                    dfqdn += '.'
+                for rr in rr_entry(
+                    rr_left, [dfqdn],
+                    priority=domain_data[fqdn].get('priority', '10'),
+                    record_type='MX'
+                ).split('\n'):
+                    if rr not in rrs:
+                        rrs.append(rr)
         rr = filter_rr_str(all_rrs)
         return rr
     # cache_key = __name + '.rrs_mx_for_{0}'.format(domain) + CACHE_INC_TOKEN
@@ -1807,12 +1826,10 @@ def get_ldap(ttl=PILLAR_TTL):
         data = OrderedDict()
         masters = data.setdefault('masters', OrderedDict())
         slaves = data.setdefault('slaves', OrderedDict())
-        default = _s[__name + '.query']('ldap_maps', {}).get(
-            'default', OrderedDict())
+        ldap_maps = _s[__name + '.query']('ldap_maps', {})
+        default = ldap_maps.get( 'default', OrderedDict())
         for kind in ['masters', 'slaves']:
-            for server, adata in _s[
-                __name + '.query'
-            ]('ldap_maps', {}).get(kind, OrderedDict()).items():
+            for server, adata in ldap_maps.get(kind, OrderedDict()).items():
                 sdata = data[kind][server] = copy.deepcopy(adata)
                 for k, val in default.items():
                     sdata.setdefault(k, val)
@@ -1822,7 +1839,10 @@ def get_ldap(ttl=PILLAR_TTL):
         slavesids = [a for a in slaves]
         slavesids.sort()
         for server in slavesids:
-            adata = copy.deepcopy(slaves.get('default', {}))
+            adata = copy.deepcopy(
+                ldap_maps.get('slave_default',
+                              slaves.get('default', {}))
+            )
             adata.update(slaves[server])
             master = adata.setdefault('master', 'localhost')
             master_port = adata.setdefault('master_port', '389')
@@ -1840,7 +1860,7 @@ def get_ldap(ttl=PILLAR_TTL):
             srepl['{0}rid'] = '{0}'.format(rid)
             slaves[server] = adata
         return data
-    cache_key = __name + '.getldap' + CACHE_INC_TOKEN
+    cache_key = __name + '.getldap' + CACHE_INC_TOKEN + '1'
     return __salt__['mc_utils.memoize_cache'](
         _doget_ldap, [], {}, cache_key, ttl)
 
@@ -2769,13 +2789,23 @@ def get_supervision_objects_defs(id_):
             if host not in parents:
                 parents.append(host)
             # set the local ip for snmp and ssh
+            # case of VMs running along side the supervision node
+            # and natted from the public internet
+            # we in this case access the VMS via their private network IP
             if vm_parent == host:
                 ssh_host = snmp_host = 'localhost'
                 eext_pillar = __salt__['mc_cloud_vm.vm_extpillar'](vm)
                 ssh_host = snmp_host = eext_pillar['ip']
             # we can access sshd and snpd on cloud vms
             # thx to special port mappings
-            if is_cloud_vm(vm) and (vm_parent != host) and vt in ['lxc']:
+            # ONLYIF
+            #   - the vms are not in the same network of the supervision node
+            #   - the vms are not publicly routable
+            if (
+                is_cloud_vm(vm) and
+                vt in ['lxc'] and
+                ((vm_parent != host and tipaddr == host_ip))
+            ):
                 ssh_port = (
                     __salt__['mc_cloud_compute_node.get_ssh_port'](vm))
                 snmp_port = (
@@ -2783,10 +2813,13 @@ def get_supervision_objects_defs(id_):
             no_common_checks = vdata.get('no_common_checks', False)
             if tipaddr == host_ip and vt in ['lxc']:
                 no_common_checks = True
-            other_ips = [a.get('ip', None)
-                         for a in query('cloud_vm_attrs').get(
-                             vm, {}).get('additional_ips', [])
-                         if a.get('ip', None)]
+            cloud_vm_attrs = query('cloud_vm_attrs')
+            np = cloud_vm_attrs.get('network_profile', {})
+            other_ips = []
+            if np:
+                other_ips = [a['ipv4'] for ifc, a in six.iteritems(np)
+                             if ifc not in ['eth0']]
+
             if (
                 tipaddr in other_ips and
                 tipaddr != host_ip and

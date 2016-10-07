@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 cd $(dirname $0)/../..
 usage() {
     set +x
@@ -13,6 +13,7 @@ for i in $@;do
             usage;;
     esac
 done
+vm_tmpl=${vm_tmpl:-makinastates}
 for i in controller vm cn vm_tmpl;do
     if [[ -z "${!i}" ]];then
         echo "Please define $i"
@@ -25,6 +26,7 @@ if [[ -z "${no_wait}" ]];then
     echo "Press any key to continue or <C-C> to interrupt within 10 sec"
     read -t 10 || true
 fi
+set -x
 if [[ -n "${no_controller}" ]];then
     echo "Skip controller $controller step"
 else

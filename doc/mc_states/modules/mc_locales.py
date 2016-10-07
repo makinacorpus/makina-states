@@ -42,8 +42,6 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        saltmods = __salt__
-        grains = __grains__
         # locales
         default_locale = 'fr_FR.UTF-8'
         default_locales = [
@@ -62,13 +60,4 @@ def settings():
         data['default_locale'] = data["locale"]
         return data
     return _settings()
-
-
-
-#
-# -*- coding: utf-8 -*-
-
-# vim:set et sts=4 ts=4 tw=80:
-# -*- coding: utf-8 -*-
-
 # vim:set et sts=4 ts=4 tw=80:

@@ -1,0 +1,42 @@
+---
+- hosts: all
+  tasks:
+    - name: "is {{service}} already running?"
+      shell: service {{service}} status warn=false
+      register: _svc_{{service}}
+      failed_when: _svc_{{service}}.rc != 0 and ("unrecognized service" not in _svc_{{service}}.stderr)
+      ignore_errors: true
+    - name: "is {{service}} already running v2?"
+      shell: |
+             is_container() {
+                 if cat -e /proc/1/cgroup 2>/dev/null|egrep -q 'docker|lxc'; then
+                     echo "0"
+                 else
+                     echo "1"
+                 fi
+             }
+             filter_host_pids() {
+                 pids=""
+                 if [ "x$(is_container)" = "x0" ]; then
+                     pids="${pids} $(echo "${@}")"
+                 else
+                     for pid in ${@};do
+                         if [ "x$(grep -q /lxc/ /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ]; then
+                             pids="${pids} $(echo "${pid}")"
+                         fi
+                      done
+                 fi
+                 echo "${pids}" | sed -e "s/\(^ \+\)\|\( \+$\)//g"
+             }
+             test $(filter_host_pids $(ps afux|grep "{{process_name|default(service)}}"|grep -v grep|awk '{print $2}') | wc -w) -gt 0
+             exit $?
+      register: _svc_{{service}}_2
+      ignore_errors: true
+    - name: "restart {{service}}_2 if running"
+      service: name={{service}} state=restarted
+      when: "_svc_{{service}}.rc == 0 or _svc_{{service}}_2.rc == 0"
+
+# VARIABLES:
+#   - service
+#   - process_name (opt)
+# vim:ft=ansible:

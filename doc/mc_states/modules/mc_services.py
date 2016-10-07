@@ -125,6 +125,8 @@ def registry():
                 'mail.postfix': {'active': False},
                 # moved to process_managers, retrocompat
                 'monitoring.supervisor': {'active': False},
+                'monitoring.icinga2': {'active': False},
+                'monitoring.icinga_web': {'active': False},
                 'monitoring.circus': {'active': False},
                 #
                 'monitoring.snmpd': {'active': False},

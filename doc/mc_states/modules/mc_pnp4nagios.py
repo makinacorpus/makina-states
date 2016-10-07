@@ -108,19 +108,19 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
-        locs = __salt__['mc_locations.settings']()
+        _g, _p, _s = __grains__, __pillar__, __salt__
+        locs = _s['mc_locations.settings']()
 
-        pnp4nagios_reg = __salt__[
+        pnp4nagios_reg = _s[
             'mc_macros.get_local_registry'](
                 'pnp4nagios', registry_format='pack')
 
-        data = __salt__['mc_utils.defaults'](
+        data = _s['mc_utils.defaults'](
             'makina-states.services.monitoring.pnp4nagios', {
                 'package': ['pnp4nagios-bin', 'pnp4nagios-web'],
                 'configuration_directory': locs['conf_dir']+"/pnp4nagios",
                 'nginx': {
+                    'vhost_basename': 'pnp',
                     'ssl_cacert': '',
                     'ssl_cert': '',
                     'ssl_key': '',
@@ -136,13 +136,14 @@ def settings():
                     'pnp4nagios': {
                         'web_directory': "/pnp4nagios",
                         'fastcgi_pass': ("unix:/var/spool/www/"
-                                         "pnp4nagios_localhost.fpm.sock"),
+                                         "pnp.fpm.sock"),
                         'realm': "Authentication",
                         'htpasswd_file': "/etc/icinga2/htpasswd.users",
                         'htdocs_dir': "/usr/share/icinga/htdocs/",
                     },
                 },
                 'phpfpm': {
+                    'pool_name': 'pnp',
                     'open_basedir': (
                         "/usr/bin/rrdtool"
                         ":/etc/pnp4nagios/"
@@ -251,19 +252,23 @@ def settings():
                         "RRA:MIN:0.5:360:5840",
                     ],
                 },
-        })
+            }
+        )
+
+        if data['nginx'].get('ssl_redirect', False):
+            if not data['nginx'].get('ssl_cert', None):
+                cert, key, chain = _s['mc_ssl.get_configured_cert'](
+                    data['nginx']['domain'], gen=True)
+                data['nginx']['ssl_key'] = key
+                data['nginx']['ssl_cert'] = cert + chain
         data['nginx']['pnp4nagios']['fastcgi_pass'] = (
             "unix:/var/spool/www/{0}.fpm.sock".format(
                 data['nginx']['domain'].replace('.', '_')
             )
         )
 
-        __salt__['mc_macros.update_local_registry'](
+        _s['mc_macros.update_local_registry'](
             'pnp4nagios', pnp4nagios_reg,
             registry_format='pack')
         return data
     return _settings()
-
-
-
-#

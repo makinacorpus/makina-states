@@ -44,6 +44,7 @@ import pstats
 import cProfile
 import datetime
 import os
+import sys
 import copy
 import time
 import logging
@@ -143,7 +144,7 @@ def get_groups(host, pillar=None, groups=None):
     if pillar is None:
         pillar = get_pillar(host)
     if groups is None:
-        groups = []
+        groups = {}
     data = set()
     for f in _s:
         if f.endswith('.get_masterless_makinastates_groups'):
@@ -151,16 +152,25 @@ def get_groups(host, pillar=None, groups=None):
     for i in data:
         res = _s[i](host, pillar)
         if res:
-            [groups.append(i) for i in res
-             if i not in groups]
+            if isinstance(res, dict):
+                _s['mc_utils.dictupdate'](groups, res)
+            else:
+                [groups.setdefault(g, {}) for g in res]
     return groups
 
 
 def generate_masterless_pillar(id_,
                                set_retcode=False,
-                               dump=False,
-                               profile_enabled=False):
+                               profile_enabled=False,
+                               reset_local_cache=True,
+                               restart_memcached=True):
     _s = __salt__
+    if profile_enabled:
+        if reset_local_cache:
+            _s['mc_pillar.invalidate_mc_pillar']()
+        if restart_memcached:
+            _s['cmd.run']('service memcached restart')
+            time.sleep(2)
     pid = None
     errors = []
     if profile_enabled:
@@ -178,18 +188,6 @@ def generate_masterless_pillar(id_,
     pillar['ansible_groups'] = get_groups(id_, pillar)
     if isinstance(pillar.get('_errors', None), list):
         errors.extend(pillar['_errors'])
-    if dump and not errors:
-        target_dir = os.path.join(
-            os.path.dirname(__opts__['config_dir']), 'masterless_pillars')
-        client_dir = os.path.join(target_dir, id_)
-        pclient_dir = os.path.join(client_dir, 'pillar')
-        if not os.path.isdir(pclient_dir):
-            os.makedirs(pclient_dir)
-        pfi = 'makinastates-masterless.sls'
-        pid = os.path.join(client_dir, pclient_dir, pfi)
-        with open(os.path.join(pid), 'w') as fic:
-            log.info('Writing pillar {0}'.format(pid))
-            fic.write(_s['mc_dumper.yaml_dump'](pillar))
     result = {'id': id_, 'pillar': pillar, 'errors': errors, 'pid': pid}
     if profile_enabled:
         pr.disable()
@@ -205,9 +203,8 @@ def generate_masterless_pillar(id_,
                 pstats.Stats(pr, stream=fic).sort_stats('cumulative')
         msr = _s['mc_locations.msr']()
         _s['cmd.run'](
-            'pyprof2calltree '
-            '-i "{0}" -o "{1}"'.format(ficp, fico), python_shell=True)
-
+            '{2}/venv/bin/pyprof2calltree '
+            '-i "{0}" -o "{1}"'.format(ficp, fico, msr), python_shell=True)
     return result
 
 
@@ -237,8 +234,9 @@ def wait_processes_pool(workers, output_queue, results):
         if item is not None:
             id_ = item['salt_args'][0]
             th = workers.pop(id_, None)
-            th.join(1)
-            th.terminate()
+            if th is not None:
+                th.join(1)
+                th.terminate()
         else:
             msg = ('Waiting for pillars pool(process) to finish {0}'
                    ''.format(' '.join([a for a in workers])))
@@ -267,7 +265,7 @@ def wait_pool(workers, output_queue, results):
             if item is not None:
                 id_ = item[0]
                 th = workers.pop(id_, None)
-                if th.is_alive() and th.ident:
+                if th is not None and th.is_alive() and th.ident:
                     th.join(0.1)
                 handle_result(results, item)
         except Queue.Empty:
@@ -408,12 +406,22 @@ def generate_ansible_roster(ids_=None, **kwargs):
     masterless_hosts = generate_masterless_pillars(
         ids_=ids_, **kwargs)
     for host, idata in six.iteritems(masterless_hosts):
-        pillar = idata.get('salt_out', {}).get('pillar', {})
+        try:
+            pillar = idata.get('salt_out', {}).get('pillar', {})
+        except Exception:
+            trace = traceback.format_exc()
+            if idata.get('stderr'):
+                sys.stderr.write(idata['stderr'])
+            else:
+                sys.stderr.write(trace)
+            raise
         if '_errors' in pillar:
             raise AnsibleInventoryIncomplete(
                 'Pillar for {0} has errors\n{1}'.format(
                     host,
                     '\n'.join(pillar['_errors'])))
+        # ssh connecttion infos must have been exposed in
+        # extpillars in the "saltapi.SSH_CON_PREFIX" subdict
         oinfos = pillar.get(saltapi.SSH_CON_PREFIX, {})
         pillar['makinastates_from_ansible'] = True
         hosts[host] = {
@@ -422,9 +430,15 @@ def generate_ansible_roster(ids_=None, **kwargs):
             'ansible_port': 22,
             'makinastates_from_ansible': True,
             'salt_pillar': pillar}
+        # we can expose custom ansible host vars
+        # by defining the "ansible_vars" inside the pillar
+        hosts[host].update(
+            copy.deepcopy(pillar.get('ansible_vars', {})))
+        if hosts[host]['name'] and not hosts[host]['ansible_host']:
+            hosts[host]['ansible_host'] = hosts[host]['name']
         hosts[host].update(oinfos)
         for i, aliases in six.iteritems({
-            'ssh_name': ['ansible_name'],
+            'ssh_name': ['name'],
             'ssh_host': ['ansible_host'],
             'ssh_sudo': ['ansible_become'],
             'ssh_port': ['ansible_port'],
@@ -442,19 +456,36 @@ def generate_ansible_roster(ids_=None, **kwargs):
                 continue
             for alias in aliases:
                 hosts[host][alias] = oinfos[i]
+        hosts[host]['control_path'] = (
+            '~/.assh'
+            '-{ssh_username}'
+            '@{ssh_host}'
+            '.{ssh_port}'
+        ).format(**hosts[host])
+        c_a = 'ansible_ssh_common_args'
+        c_av = hosts[host].setdefault(c_a, '')
+        if not isinstance(c_av, six.string_types):
+            hosts[host][c_a] = ''
         if hosts[host]['ssh_gateway']:
-            v = 'ansible_ssh_common_args'
-            hosts[host][v] = '-o ProxyCommand="ssh -W %h:%p'
+            hosts[host]['control_path'] += (
+                '-via'
+                '-{ssh_gateway_user}'
+                '@{ssh_gateway}'
+                '.{ssh_gateway_port}'
+            ).format(**hosts[host])
+            hosts[host][c_a] += ' -o ProxyCommand="ssh -W %h:%p -q'
             if hosts[host]['ssh_gateway_key']:
-                hosts[host][v] += ' -i {0}'.format(
+                hosts[host][c_a] += ' -i {0}'.format(
                     hosts[host]['ssh_gateway_key'])
             if hosts[host]['ssh_gateway_port']:
-                hosts[host][v] += ' -p {0}'.format(
+                hosts[host][c_a] += ' -p {0}'.format(
                     hosts[host]['ssh_gateway_port'])
             if hosts[host]['ssh_gateway_user']:
-                hosts[host][v] += ' -l {0}'.format(
+                hosts[host][c_a] += ' -l {0}'.format(
                     hosts[host]['ssh_gateway_user'])
-            hosts[host][v] += ' {0}'.format(
+            hosts[host][c_a] += ' {0}"'.format(
                 hosts[host]['ssh_gateway'])
+        if 'controlpath' not in c_a.lower():
+            hosts[host][c_a] += ' -o ControlPath="{control_path}"'.format(**hosts[host])
     return hosts
 # vim:set et sts=4 ts=4 tw=80:

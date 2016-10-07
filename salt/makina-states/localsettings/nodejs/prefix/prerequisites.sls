@@ -42,10 +42,18 @@ npm-version-{{version.replace('.', '_') }}{{suf}}:
     {% if "xz" in url %}
     - tar_options: J
     {% endif %}
-    {% if archive in settings.shas %}
-    {%  set hash = settings.shas[archive]%}
+    {% if not hash %}
+    {%  set hash = salt['mc_nodejs.get_hash'](url) %}
     {% endif %}
+    {% if hash %}
+    {% if '=' not in hash %}
     - source_hash: sha1={{hash}}
+    {%else %}
+    - source_hash: {{hash}}
+    {% endif %}
+    {% else %}
+    - skip_verify: true
+    {% endif %}
     - watch_in:
       - mc_proxy: nodejs-post-prefix-install
     - watch:
@@ -111,7 +119,7 @@ npm-install-version-{{ version.replace('.', '_')}}.post{{suf}}:
 
 
 npm-version-{{ version.replace('.', '_')}}.post{{suf}}:
-  file.touch:
+  file.managed:
      - name: {{dest}}/bin/.node_{{version}}
      - require:
        - cmd: npm-version-{{ version.replace('.', '_') }}{{suf}}

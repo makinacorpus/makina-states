@@ -121,25 +121,31 @@ def ssh_host_settings(id_, **defaults):
         data, copy.deepcopy(ssh_hosts.get(id_, {})))
     if id_ in db['vms']:
         try:
-            tip = _s['mc_pillar.ips_for'](db['vms'][id_]['target'])[0]
+            target = db['vms'][id_]['target']
+            hostsettings = ssh_host_settings(target)
+            local_ip =  _s['mc_cloud_compute_node.get_ip_for_vm'](
+                    id_, target=target)
         except IPRetrievalError:
             pass
         else:
-            if tip == ssh_host:
-                # vm is natted behind compute node, try to find out the port
-                data['ssh_port'] = _s['mc_cloud_compute_node.get_ssh_port'](
-                    id_, target=db['vms'][id_]['target'])
+            data['ssh_host'] = local_ip
+            data['ssh_gateway'] = hostsettings['ssh_host']
+            data['ssh_gateway_port'] = hostsettings['ssh_port']
+            data['ssh_gateway_user'] = hostsettings['ssh_username']
+            data['ssh_gateway_key'] = hostsettings['ssh_key']
+            data['ssh_gateway_password'] = hostsettings['ssh_password']
     if not data['ssh_host']:
         data['ssh_host'] = ssh_host
     return data
 
 
 def exposed_ssh_settings(ttl=PILLAR_TTL):
-    def _do():
+    def _doexposed_ssh_settings():
         return __salt__['mc_utils.defaults'](
             mc_states.saltapi.SSH_CON_PREFIX, {})
     cache_key = __name + '.exposed_ssh_settings'
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _doexposed_ssh_settings, [], {}, cache_key, ttl)
 
 
 def default_settings():
@@ -233,7 +239,7 @@ def extpillar_settings(id_=None, ttl=PILLAR_TTL, *args, **kw):
     '''
     return the cloud global configuation
     '''
-    def _do(id_=None, limited=False):
+    def _doextpillar_settings(id_=None, limited=False):
         _s = __salt__
         _o = __opts__
         if id_ is None:
@@ -263,11 +269,12 @@ def extpillar_settings(id_=None, ttl=PILLAR_TTL, *args, **kw):
         return data
     limited = kw.get('limited', False)
     cache_key = 'mc_cloud.extpillar_settings{0}{1}'.format(id_, limited)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _doextpillar_settings, [id_, limited], {}, cache_key, ttl)
 
 
 def is_a_vm(id_=None, ttl=PILLAR_TTL):
-    def _do(id_=None):
+    def _dois_a_vm(id_=None):
         if id_ is None:
             id_ = __grains__['id']
         _s = __salt__
@@ -276,11 +283,12 @@ def is_a_vm(id_=None, ttl=PILLAR_TTL):
             return True
         return False
     cache_key = 'mc_cloud.is_a_vm{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dois_a_vm, [id_], {}, cache_key, ttl)
 
 
 def is_a_compute_node(id_=None, ttl=PILLAR_TTL):
-    def _do(id_=None):
+    def _dois_a_compute_node(id_=None):
         if id_ is None:
             id_ = __grains__['id']
         _s = __salt__
@@ -289,11 +297,12 @@ def is_a_compute_node(id_=None, ttl=PILLAR_TTL):
             return True
         return False
     cache_key = 'mc_cloud.is_a_compute_node{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dois_a_compute_node, [id_], {}, cache_key, ttl)
 
 
 def is_a_controller(id_=None, ttl=PILLAR_TTL):
-    def _do(id_):
+    def _dois_a_controller(id_):
         if id_ is None:
             id_ = __grains__['id']
         _s = __salt__
@@ -305,7 +314,8 @@ def is_a_controller(id_=None, ttl=PILLAR_TTL):
             return True
         return False
     cache_key = 'mc_cloud.is_a_controller{0}'.format(id_)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dois_a_controller, [id_], {}, cache_key, ttl)
 
 
 def is_a_cloud_member(id_=None):
@@ -333,7 +343,7 @@ def gather_expositions(ttl=PILLAR_TTL):
     Merge expositions amongst CN & VM settings
     as a vm can also be a compute node itself
     '''
-    def _do():
+    def _dogather_expositions():
         _s = __salt__
         data = OrderedDict()
         direct = data.setdefault('direct', OrderedDict())
@@ -422,11 +432,12 @@ def gather_expositions(ttl=PILLAR_TTL):
                             edata['kinds'].append(kind)
         return data
     cache_key = '{0}.{1}'.format(__name, 'gather_expositions')
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dogather_expositions, [], {}, cache_key, ttl)
 
 
 def gather_exposed_data(target, ttl=PILLAR_TTL):
-    def _do(target):
+    def _dogather_exposed_data(target):
         _s = __salt__
         exposed_to_me = copy.deepcopy(
             gather_expositions()['indirect'].get(target, OrderedDict())
@@ -473,7 +484,8 @@ def gather_exposed_data(target, ttl=PILLAR_TTL):
                     filter_exposed_data(target, gepillar, tdata['access']))
         return exposed_datas
     cache_key = '{0}.{1}.{2}'.format(__name, 'gather_exposed_data', target)
-    return __salt__['mc_utils.memoize_cache'](_do, [target], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dogather_exposed_data, [target], {}, cache_key, ttl)
 
 
 def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
@@ -530,7 +542,7 @@ def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
 
 
     '''
-    def _do(id_, prefixed, limited):
+    def _doext_pillar(id_, prefixed, limited):
         data = {}
         _s = __salt__
         # run that to aliment the cache
@@ -592,8 +604,9 @@ def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
     limited = kw.get('limited', False)
     cache_key = 'mc_cloud.ext_pillar{0}{1}{2}'.format(
         id_, prefixed, limited)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_, prefixed, limited], {},
-                         cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _doext_pillar, [id_, prefixed, limited], {},
+        cache_key, ttl, use_memcache=True)
 
 
 '''
@@ -638,7 +651,7 @@ def settings(ttl=60):
     '''
     Global cloud configuration
     '''
-    def _do():
+    def _dosettings():
         _s = __salt__
         _g = __grains__
         _o = __opts__
@@ -672,7 +685,8 @@ def settings(ttl=60):
             data['bootsalt_branch'] = 'master'
         return data
     cache_key = '{0}.{1}'.format(__name, 'settings')
-    data = __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+    data = __salt__['mc_utils.memoize_cache'](
+        _dosettings, [], {}, cache_key, ttl)
     return data
 
 

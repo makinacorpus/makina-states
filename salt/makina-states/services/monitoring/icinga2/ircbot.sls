@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 #
 # You only need to drop a configuration file in the include dir to add a watcher.
 # Please see the circusAddWatcher macro at the end of this file.
@@ -28,25 +29,23 @@ icinga2-bot-packages:
       - mc_proxy: circus-post-conf
       - mc_proxy: icinga2-post-conf
 
-{% for f in [
-  '/home/users/icinga_supybot/makina_icinga.conf',
-  ] %}
-icinga2-bot-{{f}}:
-  file.managed:
-    - name: {{f}}
-    - source: salt://makina-states/files{{f}}
-    - template: jinja
-    - makedirs: true
-    - user: icinga_supybot
-    - group: icinga_supybot
-    - mode: 740
+{% set extra_confs = {
+     '/etc/logrotate.d/icinga_supybot.conf': {'mode': '644'},
+     '/home/users/icinga_supybot/makina_icinga.conf': {
+       'user':  'icinga_supybot',
+       'group': 'icinga_supybot',
+       'mode': '740'}
+       } %}
+{% macro rmacro() %}
     - watch:
       - mc_proxy: icinga2-pre-conf
       - mc_proxy: users-ready-hook
     - watch_in:
       - mc_proxy: circus-post-conf
       - mc_proxy: icinga2-post-conf
-{% endfor %}
+{% endmacro %}
+{{ h.deliver_config_files(extra_confs, after_macro=rmacro, prefix='icinga2-bot-conf-')}}
+
 {% for f in ['/home/users/icinga_supybot/backup',
              '/home/users/icinga_supybot/conf',
              '/home/users/icinga_supybot/data',
@@ -84,9 +83,11 @@ icinga2-bot-{{f}}:
   'max_age': 24*60*60} %}
 {{ circus.circusAddWatcher('icinga_supybot', **circus_data) }}
 {% else %}
-icinga2-disable-watcher:
+icinga2-disable-ircbot:
   file.absent:
-    - name: /etc/circus/circusd.conf.d/100_watcher-icinga_supybot.ini
+    - names:
+      - /etc/circus/circusd.conf.d/100_watcher-icinga_supybot.ini
+      - /etc/logrotate.d/icinga_supybot.ini
     - watch_in:
       - mc_proxy: icinga2-post-conf
 {% endif %}

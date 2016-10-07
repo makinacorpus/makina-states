@@ -92,19 +92,19 @@ def settings(**kwargs):
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings(**lkwargs):
+        _s = __salt__
         nodetypes_registry = __salt__['mc_nodetypes.registry']()
-        mysql_reg = __salt__[
+        mysql_reg = _s[
             'mc_macros.get_local_registry'](
                 'mysql', registry_format='pack')
         rootpw = mysql_reg.setdefault(
-            'root_password', __salt__['mc_utils.generate_password']())
+            'root_password', _s['mc_utils.generate_password']())
         if not rootpw:
-            rootpw = __salt__['mc_utils.generate_password']()
-        grains = __grains__
-        pillar = __pillar__
-        locs = __salt__['mc_locations.settings']()
+            rootpw = _s['mc_utils.generate_password']()
+        _g = __grains__
+        locs = _s['mc_locations.settings']()
 
-        data = __salt__['grains.filter_by']({
+        data = _s['grains.filter_by']({
             'Debian': {
                 'packages': {
                     'main': 'mysql-server',
@@ -126,11 +126,11 @@ def settings(**kwargs):
         #
         # mangle the default dict
         #
-        mode = __salt__['mc_utils.get']('default_env', 'dev')
+        mode = _s['mc_utils.get']('default_env', 'dev')
         if 'devhost' in nodetypes_registry['actives']:
             mode = 'dev'
-        gos = __grains__['os']
-        osrelease = __grains__['osrelease']
+        gos = _g['os']
+        osrelease = _g['osrelease']
         data.update({
             'mysql57onward': gos in ['Ubuntu'] and osrelease >= '16.04',
             'mysql55onward': gos in ['Ubuntu'] and osrelease >= '15.04',
@@ -149,12 +149,14 @@ def settings(**kwargs):
             'isPercona': False,
             'configs': {
                 '/etc/mysql/conf.d/local.cnf': {'mode': '644'},
-                '/etc/systemd/system/overrides.d/mysql.conf': {'mode': '644'},
+                '/etc/systemd/system/mysql.service.d/mysql.conf': {'mode': '644'},
             },
             'isOracle': True,
             'isMariaDB': False,
+            'ssl': True,
             'port': '3306',
             'user': 'mysql',
+            'cert_domain': _g['id'],
             'users': OrderedDict(),
             'group': 'mysql',
             'root_passwd': None,
@@ -205,13 +207,13 @@ def settings(**kwargs):
         # * table_open_cache
         # * table_definition_cache
         # first get the Mo of memory, cpu and disks on the system
-        full_mem = data.setdefault('full_mem', grains['mem_total'])
-        nb_cpus = data.setdefault('nb_cpus', grains['num_cpus'])
+        full_mem = data.setdefault('full_mem', _g['mem_total'])
+        nb_cpus = data.setdefault('nb_cpus', _g['num_cpus'])
         # Then extract memory that we could use for this MySQL server
         available_mem = data.setdefault(
             'available_mem', full_mem * data['memory_usage_percent'] / 100)
         pref = 'makina-states.services.db.mysql'
-        data = __salt__['mc_utils.defaults'](pref , data)
+        data = _s['mc_utils.defaults'](pref , data)
         available_mem = data['available_mem']
         # Now for all non set tuning parameters try to fill the gaps
         # ---- NUMBER OF CONNECTIONS
@@ -258,10 +260,10 @@ def settings(**kwargs):
             'innodb_log_buffer_size_M',
             int(round((innodb_buffer_pool_size_M / 4), 0)))
 
-        data = __salt__['mc_utils.defaults'](
+        data = _s['mc_utils.defaults'](
             'makina-states.services.db.mysql',
             data)
-        data = __salt__['mc_utils.dictupdate'](data, lkwargs)
+        data = _s['mc_utils.dictupdate'](data, lkwargs)
         if data['conn_user'] == 'root':
             data['conn_pass'] = data['root_passwd']
         # ------- INNODB other settings
@@ -331,8 +333,16 @@ def settings(**kwargs):
             data['conn_user'] = 'root'
         if data['conn_pass'] is None:
             data['conn_pass'] = data['root_passwd']
-        __salt__['mc_macros.update_local_registry'](
+        _s['mc_macros.update_local_registry'](
             'mysql', mysql_reg, registry_format='pack')
+        data['cert_infos'] = _s['mc_ssl.get_cert_infos'](
+            data['cert_domain'],
+            auth_basename='ca.pem',
+            key_basename='key.pem',
+            only_basename='crt.pem',
+            rsa_key_basename='rsa_key.pem',
+            separate_ssl_files_path=data['datadir'],
+            gen=True)
         return data
     kwargs = copy.deepcopy(kwargs)
     for k in [a for a in kwargs]:

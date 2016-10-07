@@ -1,23 +1,27 @@
 include:
   - makina-states.localsettings.npm.hooks
-{%  if grains['os'] in ['Debian'] %}
+  - makina-states.localsettings.nodejs.system
+{# retrocompat states, as now only the nodejs state suffice #}
 npm-pkgs:
-  file.symlink:
-    - target: {{locs.bin_dir}}/nodejs
-    - name: {{locs.bin_dir}}/node
+  file.exists:
+    - names:
+        - /usr/bin/nodejs
+        - /usr/bin/node
+        - /usr/bin/npm
     - watch:
       - mc_proxy: nodejs-pre-system-install
   cmd.run:
+    - name: /bin/false
+    - onlyif: test ! -e /usr/bin/npm
+    {# disabled
     - unless: which npm
-    - name: >
             . /etc/profile &&
             curl -s https://npmjs.org/install.sh -o /tmp/npminstall &&
             chmod +x /tmp/npminstall &&
             /tmp/npminstall && rm -f /tmp/npminstall;
+    #}
     - watch_in:
       - mc_proxy: nodejs-post-system-install
     - watch:
       - file: npm-pkgs
       - mc_proxy: nodejs-pre-system-install
-      - pkg: nodejs-pkgs
-{% endif %}

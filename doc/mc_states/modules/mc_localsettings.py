@@ -153,6 +153,7 @@ def registry(ttl=15*60):
             'groups': {'active': true},
             'sysctl': {'active': true},
             'ssl': {'active': true},
+            'sshkeys': {'active': true},
             'users': {'active': true},
             'screen': {'active': true},
             'editor': {'active': true},

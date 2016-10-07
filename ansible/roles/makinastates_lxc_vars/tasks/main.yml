@@ -40,7 +40,7 @@
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
           'network_profile', {}).get(
           'eth0', {}).get(
-            'link', lxc_eth0_ip)}}"
+            'ipv4', lxc_eth0_ip)}}"
       lxc_eth0_gateway: "{{
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
           'network_profile', {}).get(
@@ -60,7 +60,7 @@
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
           'eth1', {}).get(
-            'hwaddr', lxc_eth1_ip)}}"
+            'ipv4', lxc_eth1_ip)}}"
       lxc_eth1_gateway: "{{
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
@@ -80,7 +80,7 @@
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
           'eth2', {}).get(
-            'hwaddr', lxc_eth2_ip)}}"
+            'ipv4', lxc_eth2_ip)}}"
       lxc_eth2_gateway: "{{
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
@@ -100,7 +100,7 @@
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
           'eth3', {}).get(
-            'hwaddr', lxc_eth3_ip)}}"
+            'ipv4', lxc_eth3_ip)}}"
       lxc_eth3_gateway: "{{
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
@@ -120,7 +120,7 @@
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
           'eth4', {}).get(
-            'hwaddr', lxc_eth4_ip)}}"
+            'ipv4', lxc_eth4_ip)}}"
       lxc_eth4_gateway: "{{
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
@@ -140,7 +140,7 @@
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
           'eth5', {}).get(
-            'hwaddr', lxc_eth5_ip)}}"
+            'ipv4', lxc_eth5_ip)}}"
       lxc_eth5_gateway: "{{
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
@@ -160,7 +160,7 @@
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
           'eth6', {}).get(
-            'hwaddr', lxc_eth6_ip)}}"
+            'ipv4', lxc_eth6_ip)}}"
       lxc_eth6_gateway: "{{
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
@@ -180,7 +180,7 @@
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
           'eth7', {}).get(
-            'hwaddr', lxc_eth7_ip)}}"
+            'ipv4', lxc_eth7_ip)}}"
       lxc_eth7_gateway: "{{
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
@@ -200,7 +200,7 @@
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
           'eth8', {}).get(
-            'hwaddr', lxc_eth8_ip)}}"
+            'ipv4', lxc_eth8_ip)}}"
       lxc_eth8_gateway: "{{
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
@@ -220,7 +220,7 @@
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(
           'eth9', {}).get(
-            'hwaddr', lxc_eth9_ip)}}"
+            'ipv4', lxc_eth9_ip)}}"
       lxc_eth9_gateway: "{{
         salt_pillar.get('makina-states.cloud.vms.vms', {}).get(lxc_container_name, {}).get(
         'network_profile', {}).get(

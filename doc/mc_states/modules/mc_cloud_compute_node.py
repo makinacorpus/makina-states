@@ -46,10 +46,12 @@ _CUR_API = 2
 _default = object()
 PREFIX = 'makina-states.cloud.compute_node'
 CPORT = {'name': None,
+         'hostPortRange': None,
          'hostPort': None,
          'protocol': None,
          'count': None,
          'to_addr': None,
+         'portRange': None,
          'port': None}
 
 
@@ -167,7 +169,7 @@ def get_targets(vt=None, ttl=PILLAR_TTL):
     '''
     Return all vms indexed by targets
     '''
-    def _do(vt=None):
+    def _doget_targets(vt=None):
         data = OrderedDict()
         # cache warming
         __salt__['mc_cloud.extpillar_settings']()
@@ -189,45 +191,48 @@ def get_targets(vt=None, ttl=PILLAR_TTL):
                 vm.update({'vt': cvt, 'target': t})
         return data
     cache_key = 'mc_cloud_cn.get_targets3{0}'.format(vt)
-    return copy.deepcopy(__salt__['mc_utils.memoize_cache'](_do, [vt], {}, cache_key, ttl))
+    return __salt__['mc_utils.memoize_cache'](
+            _doget_targets, [vt], {}, cache_key, ttl)
 
 
 def get_vms(vt=None, vm=None, ttl=PILLAR_TTL):
     '''
     Returns vms indexed by name
     '''
-    def _do(vt, vm):
-        _targets = get_targets(vt=vt)
+    def _doget_vms(vt, vm):
+        _targets = copy.deepcopy(get_targets(vt=vt))
         rdata = {}
         for target, tdata in _targets.items():
             for tvm, vmdata in tdata['vms'].items():
                 rdata[tvm] = vmdata
         if vm:
             rdata = rdata[vm]
-        _targets = get_targets(vt=vt)
         return rdata
     cache_key = 'mc_cloud_cn.get_vm{0}{1}3'.format(vt, vm)
-    return __salt__['mc_utils.memoize_cache'](_do, [vt, vm], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _doget_vms, [vt, vm], {}, cache_key, ttl)
 
 
 def get_vm(vm, ttl=PILLAR_TTL):
-    def _do(vm):
+    def _doget_vm(vm):
         try:
             return get_vms(vm=vm)
         except KeyError:
             raise KeyError('{0} vm not found'.format(vm))
     cache_key = 'mc_cloud_cn.get_vm{0}3'.format(vm)
-    return __salt__['mc_utils.memoize_cache'](_do, [vm], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _doget_vm, [vm], {}, cache_key, ttl)
 
 
 def target_for_vm(vm, target=None, ttl=PILLAR_TTL):
     '''
     Get target for a vm
     '''
-    def _do(vm, target=None):
+    def _dotarget_for_vm(vm, target=None):
         return get_vm(vm)['target']
     cache_key = 'mc_cloud_cn.target_for_vm{0}{1}'.format(vm, target)
-    return __salt__['mc_utils.memoize_cache'](_do, [vm, target], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dotarget_for_vm, [vm, target], {}, cache_key, ttl)
 
 
 def vt_for_vm(vm, target=None):
@@ -246,7 +251,7 @@ def get_vms_for_target(target, vt=None):
 
 def get_targets_and_vms_for_vt(vt):
     _s = __salt__
-    data = get_targets(vt=vt)
+    data = copy.deepcopy(get_targets(vt=vt))
     for cn in [a for a in data]:
         if not data[cn]['vms']:
             data.pop(cn, None)
@@ -463,6 +468,27 @@ def remove_allocated_ip(target=None, ip=None, vm=None):
     return get_allocated_ips(target)['ips']
 
 
+def get_ip_for_vm(vm, target=None, default=False):
+    '''
+    Get the allocated ip of a vm and return
+    either default or raise an error if
+    default is not set
+    '''
+    if target is None:
+        target = target_for_vm(vm)
+    allocated_ips = get_allocated_ips(target)
+    vmdata = get_vms()[vm]
+    vt = vmdata.get('vt', None)
+    if vt:
+        try:
+            ip4 = get_conf_for_vm(vm, 'ip4', target=target)
+        except msgpack.exceptions.UnpackValueError:
+            ip4 = default
+    if ip4 is False:
+        raise saltapi.IPRetrievalError(vm)
+    return ip4
+
+
 def find_ip_for_vm(vm,
                    default=None,
                    network=api.NETWORK,
@@ -476,7 +502,7 @@ def find_ip_for_vm(vm,
 
     To get and maybe allocate an ip for a vm call
 
-        find_ip_for_vm(target, vmname)
+        find_ip_for_vm(vmname, target=target)
 
     For force/set an ip use::
 
@@ -487,17 +513,8 @@ def find_ip_for_vm(vm,
         target = target_for_vm(vm)
     if not HAS_NETADDR:
         raise Exception('netaddr required for ip generation')
+    ip4 = get_ip_for_vm(vm, target=target, default=None)
     allocated_ips = get_allocated_ips(target)
-    ip4 = None
-    vmdata = get_vms()[vm]
-    vt = vmdata.get('vt', None)
-    if vt:
-        try:
-            ip4 = get_conf_for_vm(vm, 'ip4', target=target)
-        except msgpack.exceptions.UnpackValueError:
-            ip4 = None
-    if not ip4:
-        ip4 = default
     if not ip4:
         # get network bounds
         network = netaddr.IPNetwork('{0}/{1}'.format(network, netmask))
@@ -703,20 +720,40 @@ def get_port_info(vmdata, portdata, reset=False):
     _s = __salt__
     kind = portdata['name']
     vm = vmdata['name']
-    port = _s['mc_cloud_compute_node.get_kind_port'](vm,
-                                                     target=vmdata['target'],
-                                                     kind=kind,
-                                                     reset=reset)
+    port = portdata.get('hostPort', None)
+    # harcode the fact not to bind ssh port directly on host NAT!
+    if port in ['22', 22] or not port:
+        _s['mc_cloud_compute_node.get_kind_port'](vm,
+                                                  target=vmdata['target'],
+                                                  kind=kind,
+                                                  reset=reset)
     cport = copy.deepcopy(CPORT)
-    cport['port'] = portdata['port']
+    for i in 'portRange', 'hostPortRange':
+        cport[i] = portdata.get(i, None)
+    portrange = cport['portRange']
+    hportrange = cport['hostPortRange']
+    if portrange and not hportrange:
+        hportrange = cport['hostPortRange'] = cport['portRange']
+    if not portrange:
+        cport['port'] = portdata['port']
+        cport['hostPort'] = port
     cport['to_addr'] = vmdata['ip']
-    cport['hostPort'] = port
     cport['protocol'] = portdata['protocol']
     cport['count'] = portdata.get('count', None)
-    cport['id'] = '{hostPort}/{protocol}'.format(**cport)
-    cport['name'] = '{0}/{1}/{2}'.format(vm,
-                                         cport['id'],
-                                         portdata['port'])
+    if portrange:
+        hnam = hportrange.format(':', '_')
+        pnam = portrange.format(':', '_')
+        cport['id'] = '{0}/{1}'.format(hnam,
+                                       cport['protocol'])
+        cport['name'] = '{0}/{1}/{2}'.format(vm,
+                                             cport['id'],
+                                             pnam)
+    else:
+        cport['id'] = '{0}/{1}'.format(cport['hostPort'],
+                                       cport['protocol'])
+        cport['name'] = '{0}/{1}/{2}'.format(vm,
+                                             cport['id'],
+                                             portdata['port'])
     return cport
 
 
@@ -789,7 +826,7 @@ def feed_sw_reverse_proxies_for_target(target_data):
 
 
 def cn_extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
-    def _do(id_=None, limited=False):
+    def _docn_extpillar_settings(id_=None, limited=False):
         _s = __salt__
         if id_ is None:
             id_ = _s['mc_pillar.minion_id']()
@@ -807,11 +844,11 @@ def cn_extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
         return data
     cache_key = 'mc_cloud_cn.cn_extpillar_settings{0}{1}2'.format(id_, limited)
     return copy.deepcopy(__salt__['mc_utils.memoize_cache'](
-        _do, [id_, limited], {}, cache_key, ttl))
+        _docn_extpillar_settings, [id_, limited], {}, cache_key, ttl))
 
 
 def extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
-    def _do(id_=None, limited=False):
+    def _doextpillar_settings(id_=None, limited=False):
         _s = __salt__
         data = cn_extpillar_settings(id_=id_)
         if not limited:
@@ -823,14 +860,16 @@ def extpillar_settings(id_=None, limited=False, ttl=PILLAR_TTL):
         return data
     cache_key = 'mc_cloud_cn.extpillar_settings{0}{1}'.format(
         id_, limited)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_, limited], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _doextpillar_settings, [id_, limited], {}, cache_key, ttl,
+         use_memcache=True)
 
 
 def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
     '''
     compute node extpillar
     '''
-    def _do(id_, prefixed, limited):
+    def _doext_pillar(id_, prefixed, limited):
         _s = __salt__
         if not _s['mc_cloud.is_a_compute_node'](id_):
             return {}
@@ -857,8 +896,9 @@ def ext_pillar(id_, prefixed=True, ttl=PILLAR_TTL, *args, **kw):
     limited = kw.get('limited', False)
     cache_key = 'mc_cloud_compute_node.ext_pillar{0}{1}{2}'.format(
         id_, prefixed, limited)
-    return __salt__['mc_utils.memoize_cache'](_do, [id_, prefixed, limited],
-                                              {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _doext_pillar, [id_, prefixed, limited],
+        {}, cache_key, ttl, use_memcache=True)
 
 
 # pylint: disable=w0105
@@ -954,10 +994,11 @@ def settings(ttl=120):
     '''
     compute node related settings
     '''
-    def _do():
+    def _dosettings():
         _s = __salt__
         data = _s['mc_utils.defaults'](PREFIX, default_settings())
         return data
     cache_key = '{0}.{1}'.format(__name, 'settings')
-    return __salt__['mc_utils.memoize_cache'](_do, [], {}, cache_key, ttl)
+    return __salt__['mc_utils.memoize_cache'](
+        _dosettings, [], {}, cache_key, ttl)
 # vim:set et sts=4 ts=4 tw=80:

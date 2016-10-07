@@ -43,14 +43,9 @@ def settings():
         data = saltmods['mc_utils.defaults'](
             'makina.localsettings.timezone', {
                 'tz': 'Europe/Paris',
+                'pkgs': ['tzdata'],
             }
         )
         return data
     return _settings()
-
-
-
-#
-# -*- coding: utf-8 -*-
-
 # vim:set et sts=4 ts=4 tw=80:

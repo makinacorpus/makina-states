@@ -46,11 +46,45 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        saltmods = __salt__
-        grains = __grains__
+        _s, _g = __salt__, __grains__
         locations = __salt__['mc_locations.settings']()
-        data = saltmods['mc_utils.defaults'](
+        pkgs = ['bash',
+                'coreutils',
+                'gzip',
+                'bzip2',
+                'gawk',
+                'sed',
+                'curl',
+                'git-core',
+                'subversion',
+                'build-essential',
+                'openssl',
+                'libreadline6',
+                'libreadline6-dev',
+                'curl',
+                'git-core',
+                'zlib1g',
+                'zlib1g-dev',
+                'libssl-dev',
+                'libyaml-dev',
+                'libsqlite3-0',
+                'libsqlite3-dev',
+                'sqlite3',
+                'libxml2-dev',
+                'libxslt1-dev',
+                'autoconf',
+                'libc6-dev',
+                'libncurses5-dev',
+                'automake',
+                'libtool',
+                'bison',
+                'subversion',
+                'ruby']
+        if not (_g['os'] in ['Ubuntu'] and _g['osrelease'] >= '15.04'):
+            pkgs.append('ruby1.9.3')
+        data = _s['mc_utils.defaults'](
             'makina-states.localsettings.rvm', {
+                'pkgs': pkgs,
                 'url': RVM_URL,
                 'rubies': ['1.9.3'],
                 'user': 'rvm',
@@ -60,10 +94,4 @@ def settings():
             })
         return data
     return _settings()
-
-
-
-#
-# -*- coding: utf-8 -*-
-
 # vim:set et sts=4 ts=4 tw=80:
