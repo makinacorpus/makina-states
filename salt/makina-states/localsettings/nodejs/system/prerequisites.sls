@@ -43,9 +43,19 @@ nodejs-repo:
       - file: nodejs-repo
       - mc_proxy: nodejs-pre-system-install
 {% endif %}
-nodejs-pkgs:
+nodejs-pkgs-prereqs:
   pkg.{{pkgsettings['installmode']}}:
     - watch:
+      - mc_proxy: nodejs-pre-system-install
+    - watch_in:
+      - mc_proxy: nodejs-post-system-install
+    - pkgs:
+      - wget
+      - curl
+nodejs-pkgs:
+  pkg.latest:
+    - watch:
+      - pkg: nodejs-pkgs-prereqs
       - mc_proxy: nodejs-pre-system-install
       {% if grains['os'] in ['Ubuntu'] %}
       - pkgrepo: nodejs-repo
@@ -53,8 +63,4 @@ nodejs-pkgs:
     - watch_in:
       - mc_proxy: nodejs-post-system-install
     - pkgs:
-      - wget
-      - curl
-      {% if grains['os'] in ['Ubuntu'] %}
       - nodejs
-      {% endif %}
