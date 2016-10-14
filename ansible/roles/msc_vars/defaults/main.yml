@@ -1,0 +1,5 @@
+---
+# one of : default, kvm, lxccontainer, baremetal, dockercontainer, vagrant
+msc_server_type: null
+# configure to be secure
+msc_security: false
