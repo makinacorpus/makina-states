@@ -1,0 +1,6 @@
+// MANAGED VIA ANSIBLE DO NOT EDIT
+{% set data = ms_localsettings_autoupgrades_vars %}
+APT::Periodic::Update-Package-Lists "{{data.UpdatePackageLists}}";
+APT::Periodic::Download-Upgradeable-Packages "{{data.DownloadUpgradeablePackages}}";
+APT::Periodic::AutocleanInterval "{{data.autoclean}}";
+APT::Periodic::Unattended-Upgrade "{{data.activated}}";

@@ -1,0 +1,3 @@
+---
+dependencies:
+  - role: ms_localsettings_autoupgrades_vars

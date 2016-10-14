@@ -1,0 +1,22 @@
+---
+- name: install prerequisites
+  package:
+    name: "{{item}}"
+    state: installed
+  with_items: "{{ms_localsettings_autoupgrades_vars.packages}}"
+  when: |
+      {{ms_localsettings_autoupgrades_vars.packages is not none and
+        ms_localsettings_autoupgrades_vars.packages|length > 0}}
+  tags: ms_localsettings_autoupgrades
+- name: configs
+  template:
+    src: ../templates/{{item.name}}
+    dest: "{{item.name}}"
+    mode: "{{item.mode|default(omit)}}"
+    owner: "{{item.owner|default(omit)}}"
+    group: "{{item.group|default(omit)}}"
+  with_items: "{{ms_localsettings_autoupgrades_vars.configs}}"
+  when: |
+    {{ms_localsettings_autoupgrades_vars.configs is not none and
+      ms_localsettings_autoupgrades_vars.configs|length > 0}}
+  tags: ms_localsettings_autoupgrades
