@@ -1,3 +1,0 @@
----
-ms_server_type: null
-# one of : default, kvm, lxccontainer, baremetal, dockercontainer, vagrant

@@ -1,0 +1,92 @@
+---
+- hosts: all
+  tasks:
+    - name: SETUP
+      tags: ms_provision_server_setup
+      ms_include_jinja_vars:
+        content: |
+          ---
+          {% set msc_server_type = msc_server_type | default(None) %}
+          {% set vt = ansible_virtualization_type | default(None) %}
+          {% if not msc_server_type %}
+          {%  set msc_server_type = vt in ['docker', 'lxc'] | ternary(vt, 'baremetal') %}
+          {% endif %}
+          {% set ms_localsettings_git_enabled = ms_localsettings_git_enabled
+                | default(True) %}
+          {% set ms_localsettings_screen_enabled = ms_localsettings_screen_enabled
+                | default(True) %}
+          {% set ms_localsettings_pkgmgr_enabled = ms_localsettings_pkgmgr_enabled
+                | default(True) %}
+          {% set ms_localsettings_dns_servers = ms_localsettings_dns_servers
+                | default([]) %}
+          {% set ms_localsettings_dns_search = ms_localsettings_dns_search
+                | default([]) %}
+          {% set ms_localsettings_sudo_enabled = ms_localsettings_sudo_enabled
+                | default(True) %}
+          {% set ms_localsettings_etckeeper_enabled = vt not in ['docker'] %}
+          {% set msc_security = msc_security | default(True) %}
+          {% set ms_localsettings_apparmor_enabled = ms_localsettings_apparmor_enabled
+              | default(ansible_lsb.id == 'Ubuntu' and msc_server_type not in ['lxc', 'docker'])
+              | ternary(True, False) %}
+          {% set ms_services_base_ssh_server_enabled = ms_services_base_ssh_server_enabled
+              | default(True) %}
+          {% set ms_services_base_ntp_enabled = ms_services_base_ntp_enabled
+              | default(True) %}
+          {% set ms_localsettings_autoupgrades_enabled = ms_localsettings_autoupgrades_enabled
+              | default(msc_security) %}
+          {% set ms_services_firewall_fail2ban_enabled = ms_services_firewall_fail2ban_enabled
+              | default(ms_services_base_ssh_server_enabled and msc_security)
+              | ternary(True, False) %}
+          {% set ms_localsettings_golang_enabled = ms_localsettings_golang_enabled
+                | default(False) %}
+          {% set ms_localsettings_nscd_enabled = vt not in ['docker'] %}
+          {% set ms_localsettings_dns_enabled = (
+                ms_localsettings_dns_servers or ms_localsettings_dns_search) | length > 0 %}
+          msc_server_type: {{ msc_server_type }}
+          msc_security: {{ msc_security }}
+          ms_services_base_ssh_server_enabled: {{ ms_services_base_ssh_server_enabled }}
+          ms_services_base_ntp_enabled: {{ ms_services_base_ntp_enabled }}
+          ms_localsettings_autoupgrades_enabled: {{ ms_localsettings_autoupgrades_enabled }}
+          ms_services_firewall_fail2ban_enabled: {{ ms_services_firewall_fail2ban_enabled }}
+          ms_localsettings_apparmor_enabled: {{ ms_localsettings_apparmor_enabled }}
+          ms_localsettings_dns_enabled: {{ ms_localsettings_dns_enabled }}
+          ms_localsettings_etckeeper_enabled: {{ ms_localsettings_etckeeper_enabled }}
+          ms_localsettings_nscd_enabled: {{ ms_localsettings_nscd_enabled }}
+          ms_localsettings_sudo_enabled: {{ ms_localsettings_sudo_enabled }}
+          ms_localsettings_pkgmgr_enabled: {{ ms_localsettings_pkgmgr_enabled }}
+          ms_localsettings_git_enabled: {{ ms_localsettings_git_enabled }}
+          ms_localsettings_screen_enabled: {{ ms_localsettings_screen_enabled }}
+          ms_localsettings_golang_enabled: {{ ms_localsettings_golang_enabled }}
+- hosts: all
+  roles:
+    - role: msc_vars
+    - role: ms_services_base_ntp_vars
+      when: '{{ms_services_base_ntp_enabled}}'
+    - role: ms_localsettings_apparmor_vars
+      when: '{{ms_localsettings_apparmor_enabled}}'
+    - role: ms_localsettings_autoupgrades_vars
+      when: '{{ms_localsettings_autoupgrades_enabled}}'
+    - role: ms_localsettings_dns_vars
+      when: '{{ms_localsettings_dns_enabled}}'
+    - role: ms_services_base_ntp
+      when: '{{ms_services_base_ntp_enabled}}'
+    - role: ms_localsettings_apparmor
+      when: '{{ms_localsettings_apparmor_enabled}}'
+    - role: ms_localsettings_autoupgrades
+      when: '{{ms_localsettings_autoupgrades_enabled}}'
+    - role: ms_localsettings_dns
+      when: '{{ms_localsettings_dns_enabled}}'
+    - role: ms_localsettings_etckeeper
+      when: '{{ms_localsettings_etckeeper_enabled}}'
+    - role: ms_localsettings_nscd
+      when: '{{ms_localsettings_nscd_enabled}}'
+    - role: ms_localsettings_sudo
+      when: '{{ms_localsettings_sudo_enabled}}'
+    - role: ms_localsettings_pkgmgr
+      when: '{{ms_localsettings_pkgmgr_enabled}}'
+    - role: ms_localsettings_git
+      when: '{{ms_localsettings_git_enabled}}'
+    - role: ms_localsettings_screen
+      when: '{{ms_localsettings_screen_enabled}}'
+    - role: ms_localsettings_golang
+      when: '{{ms_localsettings_golang_enabled|bool}}'
