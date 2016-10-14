@@ -9,6 +9,6 @@
 # Not used if NTPDATE_USE_NTP_CONF is yes.
 
 # NTPOPTIONS: Additional options to pass to ntpdate
-{% for i, val in ms_ntp_defaults.items() %}
+{% for i, val in ms_services_base_ntp_vars.defaults.items() %}
 {{i}}={{val}}
 {% endfor %}

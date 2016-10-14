@@ -21,7 +21,9 @@ filter_host_pids() {
     fi
     echo "${pids}" | sed -e "s/\(^ \+\)\|\( \+$\)//g"
 }
-
+if [ -e /etc/default/ntpdate ];then
+    . /etc/default/ntpdate
+fi
 if which service 1>/dev/null 2>&1;then
     svc="service "
 else
