@@ -1,0 +1,13 @@
+---
+{% set prefix = 'ms_localsettings_dns_' %}
+
+{% if vars[prefix+'servers'] or vars[prefix+'search'] %}
+{% set _ = vars.update({prefix+'enabled': True})%}
+{% endif %}
+
+{% for var in vars %}
+{% if var.startswith(prefix) %}
+{% set svar = var.replace(prefix, '') %}
+{{svar}}: {{vars[var]|to_json}}
+{% endif %}
+{% endfor %}
