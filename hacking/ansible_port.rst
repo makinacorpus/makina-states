@@ -1,0 +1,138 @@
+Ansible PORT TODO
+====================
+Salt States
+---------------
+- [x] localsettings/apparmor
+- [x] localsettings/autoupgrade
+- [x] localsettings/dns
+- [x] services/base/ntp
+- [x] localsettings/etckeeper
+- [x] localsettings/nscd
+- (x] localsettings/sudo
+- [x] localsettings/pkgs/mgr
+- localsettings/pkgs
+- localsettings/editor
+- localsettings/env
+- [x] localsettings/screen
+- localsettings/vim
+- [x] localsettings/git
+- localsettings/sysctl
+- localsettings/locales
+- localsettings/golang
+- localsettings/groups
+- services/base/cron
+- services/base/ssh/server
+- services/base/ssh/client
+- services/log/rsyslog
+- localsettings/grub
+- localsettings/hostname
+- localsettings/hosts
+- localsettings/insserv
+- localsettings/jdk
+- localsettings/ldap
+- localsettings/localrc
+- localsettings/network
+- services/db/postgresql
+- services/db/mongodb
+- services/db/redis
+- services/db/mysql
+- localsettings/ssl
+- localsettings/python
+- localsettings/reconfigure-network
+- localsettings/repository_dotdeb
+- localsettings/timezone
+- localsettings/updatedb
+- localsettings/users
+- localsettings/nodejs
+- localsettings/rvm
+- localsettings/shell
+- localsettings/sshkeys
+- localsettings/systemd
+- localsettings/npm
+- localsettings/nodejs
+- localsettings/npm
+- services/dns/bind
+- services/virt/virtualbox
+- services/virt/lxc
+- services/proxy/haproxy
+- services/http/apache_modfastcgi
+- services/http/common
+- services/http/apache_modfcgid
+- services/http/apache
+- services/http/apache/vhosts
+- services/http/nginx
+- services/http/apache_modproxy
+- services/php/common
+- services/php/phpfpm_with_apache
+- services/php/phpfpm
+- services/php/modphp
+- services/gis/ubuntugis
+- services/gis/postgis
+- services/gis/qgis
+- services/ftp/pureftpd
+- services/mail/dovecot
+- services/mail/postfix
+- services/base/dbus
+- services/dns/slapd
+- services/dns/dhcpd
+- services/sound/mumble
+- services/cache/memcached
+- services/monitoring/circus
+- services/monitoring/icinga2
+- services/monitoring/supervisor
+- services/monitoring/pnp4nagios
+- services/monitoring/icinga_web2
+- services/monitoring/client
+- services/java/tomcat
+- services/log/ulogd
+- services/virt/docker
+- services/virt/kvm
+- services/queue/rabbitmq
+- services/proxy/uwsgi
+- localsettings/mvn
+- localsettings/check_raid
+- localsettings/desktoptools
+
+Infra Workflow
+------------------------
+- This is sometwhat a rethinking of mc_pillar:
+
+  - provision servers [doing]
+  - manage ssh keys
+  - de/register DNS entries
+  - de/register backup clients to their server
+  - manage dns servers
+  - manage ldap servers
+  - manage superision
+
+Main helpers
+------------
+- circus workers
+- supervisor workers
+- apache vhost
+- nginx vhost
+- phpfpm workflow
+- mysql db, group & users
+- pgsql db, group & users
+- es db & users
+- es2 db & user
+
+Project helpers
+---------------
+- port mc_project to ansible roles
+
+Wont be ported yet
+------------------
+- localsettings/casperjs
+- localsettings/phantomjs
+- services/firewall/firewalld
+- services/firewall/psad
+- services/firewall/shorewall
+- services/backup/bacula/fd
+- services/backup/users
+- services/backup/rdiff-backup
+- services/monitoring/snmpd
+- services/monitoring/nagvis
+- services/monitoring/icinga_web
+- services/monitoring/icinga
+- services/collab/etherpad
