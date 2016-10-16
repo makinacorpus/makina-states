@@ -1,0 +1,14 @@
+---
+ms_localsettings_etckeeper_packages: [git, etckeeper]
+ms_localsettings_etckeeper_configs:
+  - {'name': '/etc/cron.daily/etckeeper', 'mode': '750'}
+  - {'name': '/etc/etckeeper/etckeeper.conf', 'mode': '644'}
+ms_localsettings_etckeeper_installer: null
+ms_localsettings_etckeeper_installer_debian: 'dpkg'
+ms_localsettings_etckeeper_pm: null
+ms_localsettings_etckeeper_pm_debian: 'apt'
+ms_localsettings_etckeeper_vcs: null
+ms_localsettings_etckeeper_vcs_debian: 'git'
+ms_localsettings_etckeeper_specialfilewarning: False
+ms_localsettings_etckeeper_commitbeforeinstall: True
+ms_localsettings_etckeeper_autocommit: True
