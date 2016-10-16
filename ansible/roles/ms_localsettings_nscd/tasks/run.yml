@@ -1,0 +1,29 @@
+---
+- name: install prerequisites
+  package:
+    name: "{{item}}"
+    state: installed
+  with_items: '{{ms_localsettings_nscd_vars.packages}}'
+  when: |
+      {{ms_localsettings_nscd_vars.packages is not none and
+        ms_localsettings_nscd_vars.packages|length > 0}}
+  tags: ms_localsettings_nscd
+- name: configs
+  template:
+    src: "../templates/{{item.name}}"
+    dest: "{{item.name}}"
+    mode: "{{item.mode|default(omit)}}"
+    owner: "{{item.owner|default(omit)}}"
+    group: "{{item.group|default(omit)}}"
+  with_items: "{{ms_localsettings_nscd_vars.configs}}"
+  when: |
+    {{ms_localsettings_nscd_vars.configs is not none and
+      ms_localsettings_nscd_vars.configs|length > 0}}
+  tags: ms_localsettings_nscd
+- name: service
+  service:
+    enabled: "{{ms_localsettings_nscd_vars.activated}}"
+    state: "{{ms_localsettings_nscd_vars.activated | ternary('started', 'stopped')}}"
+    name: "{{item}}"
+  with_items: "{{ms_localsettings_nscd_vars.services}}"
+  tags: ms_localsettings_nscd

@@ -1,0 +1,5 @@
+---
+ms_localsettings_nscd_activated: true
+ms_localsettings_nscd_packages: [nscd]
+ms_localsettings_nscd_configs: []
+ms_localsettings_nscd_services: [nscd]
