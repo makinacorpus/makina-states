@@ -1,0 +1,36 @@
+# WARNING -- MANAGED BY ANSIBLE /  DO NOT EDIT DIRECTLY ---
+# Please consider adding local content in /etc/sudoers.d/ instead of
+# directly modifying this file.
+# See the man page for details on how to write a sudoers file.
+{% if ansible_lsb.id.lower() == 'debian' and ansible_lsb.major_release < '5' %}
+{% set old_sudo = True %}
+{% else %}
+{% set old_sudo = False %}
+{% endif %}
+Defaults	env_reset
+Defaults	mail_badpass
+{% if old_sudo %}
+# no secure path :-/
+{% else %}
+Defaults	secure_path="{{ms_localsettings_sudo_vars.secure_path}}"
+{% endif %}
+# Host alias specification
+# User alias specification
+# Cmnd alias specification
+{% if old_sudo %}
+# User privilege specification
+root	ALL=(ALL) ALL
+# Members of the admin group may gain root privileges
+%admin ALL=(ALL) ALL
+# Allow members of group sudo to execute any command
+%sudo	ALL=(ALL) ALL
+{% else %}
+# User privilege specification
+root	ALL=(ALL:ALL) ALL
+# Members of the admin group may gain root privileges
+%admin ALL=(ALL) ALL
+# Allow members of group sudo to execute any command
+%sudo	ALL=(ALL:ALL) ALL
+{% endif %}
+# See sudoers(5) for more information on "#include" directives:
+#includedir /etc/sudoers.d

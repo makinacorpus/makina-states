@@ -1,0 +1,20 @@
+---
+{% set prefix = 'ms_localsettings_sudo_' %}
+
+{% for os in ['debian'] %}
+{% for v in ['configs', 'packages'] %}
+{% set vn = prefix + v %}
+{% if vars[vn] is none %}
+{% if ansible_os_family.lower() == os %}
+{% set  _ = vars.update({vn: vars[vn + '_' + os]}) %}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+{% for var in vars %}
+{% if var.startswith(prefix) %}
+{% set svar = var.replace(prefix, '') %}
+{{svar}}: {{vars[var]|to_json}}
+{% endif %}
+{% endfor %}
