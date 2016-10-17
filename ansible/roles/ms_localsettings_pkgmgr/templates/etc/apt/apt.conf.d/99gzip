@@ -1,0 +1,4 @@
+// MANAGED VIA ANSIBLE DO NOT EDIT
+Acquire::GzipIndexes "true";
+Acquire::CompressionTypes::Order:: "gz";
+

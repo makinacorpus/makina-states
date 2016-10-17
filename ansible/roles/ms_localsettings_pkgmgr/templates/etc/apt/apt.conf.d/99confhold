@@ -1,0 +1,2 @@
+// MANAGED VIA ANSIBLE DO NOT EDIT
+DPkg::options { "--force-confdef"; "--force-confold"; };

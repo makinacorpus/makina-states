@@ -1,0 +1,5 @@
+# Managed via ansible, do not edit
+{% set data = ms_localsettings_pkgmgr_vars %}
+{% for i in data.sources_lists  %}
+{{i.format(**data)}}
+{% endfor %}

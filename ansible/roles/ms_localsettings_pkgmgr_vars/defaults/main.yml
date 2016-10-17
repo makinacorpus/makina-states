@@ -1,0 +1,52 @@
+---
+ms_localsettings_pkgmgr_packages: null
+ms_localsettings_pkgmgr_packages_debian: [software-properties-common]
+ms_localsettings_pkgmgr_packages_ubuntu: [
+  software-properties-common]
+ms_localsettings_pkgmgr_configs: null
+ms_localsettings_pkgmgr_configs_ubuntu:
+  - {'name': '/etc/apt/sources.list', 'mode': '644'}
+  - {'name': '/etc/apt/apt.conf.d/99confhold', 'mode': '644'}
+  - {'name': '/etc/apt/apt.conf.d/99gzip', 'mode': '644'}
+  - {'name': '/etc/apt/apt.conf.d/99notrad', 'mode': '644'}
+  - {'name': '/etc/apt/preferences.d/00_proposed.pref', 'mode': '644'}
+  - {'name': '/etc/apt/apt.conf.d/99netfamily', 'mode': '644'}
+ms_localsettings_pkgmgr_configs_debian:
+  - {'name': '/etc/apt/sources.list', 'mode': '644'}
+  - {'name': '/etc/apt/apt.conf.d/99confhold', 'mode': '644'}
+  - {'name': '/etc/apt/apt.conf.d/99gzip', 'mode': '644'}
+  - {'name': '/etc/apt/apt.conf.d/99notrad', 'mode': '644'}
+  - {'name': '/etc/apt/apt.conf.d/99netfamily', 'mode': '644'}
+  - {'name': '/etc/apt/preferences.d/sid.pref', 'mode': '644'}
+ms_localsettings_pkgmgr_apt_clean: false
+ms_localsettings_pkgmgr_apt_clean_configs:
+  - {'name': '/etc/apt/apt.conf.d/99clean', 'mode': '644'}
+ms_localsettings_pkgmgr_files: []
+ms_localsettings_pkgmgr_dist: '<CODENAME_MUST_BE_REPLACED>'
+ms_localsettings_pkgmgr_force_apt_ipv4: true
+ms_localsettings_pkgmgr_force_apt_ipv6: false
+ms_localsettings_pkgmgr_comps: null
+ms_localsettings_pkgmgr_comps_debian: main contrib non-free
+ms_localsettings_pkgmgr_comps_ubuntu: main restricted universe multiverse
+ms_localsettings_pkgmgr_mirror: null
+ms_localsettings_pkgmgr_mirror_debian: 'http://mirror.ovh.net/ftp.debian.org/'
+ms_localsettings_pkgmgr_mirror_debian_archive: 'http://archive.debian.org/debian/'
+ms_localsettings_pkgmgr_mirror_ubuntu: 'http://mirror.ovh.net/ftp.ubuntu.com/'
+ms_localsettings_pkgmgr_sources_lists: null
+ms_localsettings_pkgmgr_sources_lists_ubuntu:
+ - 'deb {mirror} {dist} {comps}'
+ - 'deb-src {mirror} {dist} {comps}'
+ - 'deb {mirror} {dist}-proposed {comps}'
+ - 'deb-src {mirror} {dist}-proposed {comps}'
+ - 'deb {mirror} {dist}-updates {comps}'
+ - 'deb-src {mirror} {dist}-updates {comps}'
+ - 'deb {mirror} {dist}-security {comps}'
+ - 'deb-src {mirror} {dist}-security {comps}'
+ - 'deb {partner_mirror} {dist} partner'
+ - 'deb-src {partner_mirror} {dist} partner'
+ #- 'deb {mirror} {dist}-backport {comps}'
+ #- 'deb-src {mirror} {dist}-backport {comps}'
+ms_localsettings_pkgmgr_sources_lists_debian:
+ - 'deb {mirror} {dist} {comps}'
+ - 'deb-src {mirror} {dist} {comps}'
+ms_localsettings_pkgmgr_partner_mirror: 'http://archive.canonical.com/ubuntu'
