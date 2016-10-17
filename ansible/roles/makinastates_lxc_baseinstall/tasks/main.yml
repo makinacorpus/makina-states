@@ -7,3 +7,5 @@
     slss:
       - sls: makina-states.localsettings.timezone
       - sls: makina-states.localsettings.locales
+      - sls: makina-states.localsettings.hostname
+      - sls: makina-states.localsettings.hosts
