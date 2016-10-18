@@ -1,0 +1,15 @@
+---
+ms_localsettings_screen_packages: [screen]
+ms_localsettings_screen_configs:
+  - {'name': '/etc/screenrc', 'mode': '644'}
+ms_localsettings_screen_files: []
+ms_localsettings_screen_defscrollback: '30000'
+ms_localsettings_screen_vbell_msg: '"bell on %t (%n)"'
+ms_localsettings_screen_hardstatus:
+  - 'on'
+  - 'alwayslastline'
+  - "string '%{gk}[ %{G}%H %{g}][%=
+  %{wk}%?%-Lw%?%{=b kR}(%{W}%n*%f
+  %t%?(%u)%?%{=b kR})%{=
+  kw}%?%+Lw%?%?%= %{g}][%{Y}%l%{g}]%{=b C}[
+  %m/%d %c ]%{W}'"
