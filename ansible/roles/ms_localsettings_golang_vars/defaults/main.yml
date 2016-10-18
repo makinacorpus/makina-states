@@ -1,0 +1,12 @@
+---
+ms_localsettings_golang_packages: null
+ms_localsettings_golang_packages_ubuntu: null
+  - 'golang-{v}'
+  - 'golang-{v}-go'
+  - 'golang-{v}-src'
+ms_localsettings_golang_versions: ['1.6', '1.7']
+ms_localsettings_golang_version: '1.7'
+ms_localsettings_golang_configs: {}
+ms_localsettings_golang_files: []
+ms_localsettings_golang_bins: ['go', 'gofmt']
+
