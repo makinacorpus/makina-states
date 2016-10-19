@@ -1,0 +1,36 @@
+---
+- name: install ppa for old ubuntu
+  apt_repository:
+    repo: 'ppa:git-core/ppa'
+    filename: /etc/apt/sources.list.d/git.list
+    state: present
+  when: "{{ansible_lsb.id == 'Ubuntu' and
+           ansible_lsb.release | version_compare('12.04', '<=') and
+           ms_localsettings_git_vars.packages is not none and
+           ms_localsettings_git_vars.packages|length > 0}}"
+  register: ms_localsettings_git_ppa
+  tags: ms_localsettings_git
+- apt:
+    update_cache: yes
+  when: ms_localsettings_git_ppa.changed
+  tags: ms_localsettings_git
+- name: install prerequisites
+  package:
+    package: '{{ms_localsettings_git_vars.packages}}'
+    state: present
+  when: "{{ansible_os_family == 'Debian' and
+           ms_localsettings_git_vars.packages is not none and
+           ms_localsettings_git_vars.packages|length > 0}}"
+  tags: ms_localsettings_git
+- name: configs
+  template:
+    src: "../templates/{{item.name}}"
+    dest: "{{item.name}}"
+    mode: "{{item.mode|default(omit)}}"
+    owner: "{{item.owner|default(omit)}}"
+    group: "{{item.group|default(omit)}}"
+  with_items: "{{ms_localsettings_git_vars.configs}}"
+  when: |
+    {{ms_localsettings_git_vars.configs is not none and
+      ms_localsettings_git_vars.configs|length > 0}}
+  tags: ms_localsettings_git

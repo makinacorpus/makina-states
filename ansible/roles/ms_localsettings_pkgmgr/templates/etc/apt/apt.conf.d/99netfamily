@@ -1,0 +1,8 @@
+// MANAGED VIA ANSIBLE DO NOT EDIT
+#{% set data = ms_localsettings_pkgmgr_vars %}
+# {% if data.get('force_apt_ipv4', False) %}
+Acquire::ForceIPv4 "true";
+# {% endif %}
+# {% if data.get('force_apt_ipv6', False) %}
+Acquire::ForceIPv6 "true";
+# {% endif %}

@@ -1,0 +1,9 @@
+---
+- name: "ms_localsettings_sudo preflight check - SKIPTEST"
+  debug:
+    msg: '{{True}}'
+  register: ms_localsettings_sudo_can_run
+  tags: ms_localsettings_sudo
+- include: run.yml
+  when: '{{ ms_localsettings_sudo_can_run.msg == True }}'
+  tags: ms_localsettings_sudo

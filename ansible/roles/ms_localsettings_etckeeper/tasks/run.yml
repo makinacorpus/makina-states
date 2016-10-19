@@ -1,0 +1,39 @@
+---
+- name: install prerequisites
+  package:
+    name: "{{item}}"
+    state: installed
+  with_items: '{{ms_localsettings_etckeeper_vars.packages}}'
+  when: |
+      {{ms_localsettings_etckeeper_vars.packages is not none and
+        ms_localsettings_etckeeper_vars.packages|length > 0}}
+  tags: ms_localsettings_etckeeper
+- name: configs
+  template:
+    src: "../templates/{{item.name}}"
+    dest: "{{item.name}}"
+    mode: "{{item.mode|default(omit)}}"
+    owner: "{{item.owner|default(omit)}}"
+    group: "{{item.group|default(omit)}}"
+  with_items: "{{ms_localsettings_etckeeper_vars.configs}}"
+  when: |
+    {{ms_localsettings_etckeeper_vars.configs is not none and
+      ms_localsettings_etckeeper_vars.configs|length > 0}}
+  tags: ms_localsettings_etckeeper
+- shell: test -d /etc/.git && egrep -q "email.*=" /etc/.git/config
+  register: ms_localsettings_etckeeper_do
+  changed_when: False
+  failed_when: False
+  tags: ms_localsettings_etckeeper
+- shell: |
+      set -ex
+      if [ ! -e /etc/.git ];then
+        /usr/bin/etckeeper init
+      fi
+      cd /etc
+      git config user.email 'makinastates@paas.tld'
+      git config user.name 'Makina-States'
+      /usr/bin/etckeeper commit "Initial commit"
+      chmod -Rf 2700 /etc/.git
+  when: "{{ms_localsettings_etckeeper_do.rc != 0}}"
+  tags: ms_localsettings_etckeeper

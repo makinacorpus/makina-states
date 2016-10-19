@@ -1,0 +1,4 @@
+{%- set p = ms_localsettings_pkgmgr_vars %}
+Package: *
+Pin: release a={{p.dist}}-proposed
+Pin-Priority: -1

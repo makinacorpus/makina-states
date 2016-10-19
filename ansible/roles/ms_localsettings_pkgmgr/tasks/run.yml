@@ -1,0 +1,47 @@
+---
+- name: files
+  file:
+    path: "{{item.path}}"
+    state: "{{item.state|default(omit)}}"
+    mode: "{{item.mode|default(omit)}}"
+    owner: "{{item.owner|default(omit)}}"
+    group: "{{item.group|default(omit)}}"
+  with_items: "{{ms_localsettings_pkgmgr_vars.files}}"
+  when: |
+    {{ms_localsettings_pkgmgr_vars.files is not none and
+      ms_localsettings_pkgmgr_vars.files|length > 0}}
+  tags: ms_localsettings_pkgmgr
+- name: configs apt clean
+  template:
+    src: "../templates/{{item.name}}"
+    dest: "{{item.name}}"
+    mode: "{{item.mode|default(omit)}}"
+    owner: "{{item.owner|default(omit)}}"
+    group: "{{item.group|default(omit)}}"
+  with_items: "{{ms_localsettings_pkgmgr_vars.apt_clean_configs}}"
+  when: |
+    {{ms_localsettings_pkgmgr_vars.apt_clean and
+      ms_localsettings_pkgmgr_vars.apt_clean_configs is not none and
+      ms_localsettings_pkgmgr_vars.apt_clean_configs|length > 0}}
+  tags: ms_localsettings_pkgmgr
+- name: configs
+  template:
+    src: "../templates/{{item.name}}"
+    dest: "{{item.name}}"
+    mode: "{{item.mode|default(omit)}}"
+    owner: "{{item.owner|default(omit)}}"
+    group: "{{item.group|default(omit)}}"
+  with_items: "{{ms_localsettings_pkgmgr_vars.configs}}"
+  when: |
+    {{ms_localsettings_pkgmgr_vars.configs is not none and
+      ms_localsettings_pkgmgr_vars.configs|length > 0}}
+  tags: ms_localsettings_pkgmgr
+- name: update & install prerequisites
+  apt:
+    update_cache: yes
+    package: '{{ms_localsettings_pkgmgr_vars.packages}}'
+    state: present
+  when: "{{ansible_os_family == 'Debian' and
+           ms_localsettings_pkgmgr_vars.packages is not none and
+           ms_localsettings_pkgmgr_vars.packages|length > 0}}"
+  tags: ms_localsettings_pkgmgr

@@ -1,0 +1,56 @@
+# MANAGED VIA ANSIBLE, DO NOT EDIT
+[color]
+        diff = auto
+        status = auto
+        branch = auto
+        ui = auto
+[color "branch"]
+        current = yellow reverse
+        local = yellow
+        remote = green
+[color "diff"]
+        meta = yellow bold
+        frag = magenta bold
+        old = red bold
+        new = green bold
+        whitespace = red reverse
+[color "status"]
+        added = yellow
+        changed = green
+        untracked = cyan
+[alias]
+        changes=diff --name-status -r
+        dc = diff --cached
+        rc = rebase --continue
+        st = status
+        ci = commit
+        br = branch
+        co = checkout
+        df = diff
+        lg = log -p
+        mpan = config user.email "mpa@makina-corpus.com"
+        mpae = config user.name 'Mathieu Le Marec - Pasquet'
+        mpa =  !git mpan && git mpae
+        mstn = config user.email 'makinastates@paas.tld'
+        mste = config user.name 'Makina-States'
+        mst =  !git mstn && git mste
+        rn = config user.email "regis.leroy@makina-corpus.com"
+        re = config user.name 'Régis Leroy'
+        r =  !git rn && git re
+        kn = config user.email "kiorky@cryptelium.net"
+        ke = config user.name 'Mathieu Le Marec - Pasquet'
+        k =  !git kn && git ke
+        pt = log --pretty=format:'%C(yellow)%h%Cred%d%Creset - %C(cyan)%an %Creset: %s %Cgreen(%cr)'
+        bt = log --pretty=format:'%C(yellow)%h : %Creset%s'
+        changes=diff --name-status -r
+        bdiff= !"f() { git pt $(git symbolic-ref -q --short HEAD) ^${1:-master} ; }; f"
+        ibdiff= !"f() { git pt ${1:-master} ^$(git symbolic-ref -q --short HEAD) ; }; f"
+        stree =log --graph --oneline --decorate --all
+[core]
+        whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
+        filemode=false
+
+[diff]
+        renames = true
+[push]
+        default = matching

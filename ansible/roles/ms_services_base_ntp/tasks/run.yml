@@ -1,0 +1,40 @@
+---
+- name: install prerequisites
+  package:
+    name: "{{item}}"
+    state: installed
+  with_items: '{{ms_services_base_ntp_vars.packages}}'
+  when: |
+      {{ms_services_base_ntp_vars.packages is not none and
+        ms_services_base_ntp_vars.packages|length > 0}}
+  tags: ms_services_base_ntp
+- name: configs
+  template:
+    src: "../templates/{{item.name}}"
+    dest: "{{item.name}}"
+    mode: "{{item.mode|default(omit)}}"
+    owner: "{{item.owner|default(omit)}}"
+    group: "{{item.group|default(omit)}}"
+  with_items: "{{ms_services_base_ntp_vars.configs}}"
+  when: |
+    {{ms_services_base_ntp_vars.configs is not none and
+      ms_services_base_ntp_vars.configs|length > 0}}
+  tags: ms_services_base_ntp
+- name: kill
+  shell: /sbin/ntp-kill.sh
+  when: "{{not ms_services_base_ntp_vars.activated}}"
+  tags: ms_services_base_ntp
+- name: run
+  shell: /sbin/ntp-sync.sh
+  when: "{{ms_services_base_ntp_vars.activated}}"
+  tags: ms_services_base_ntp
+- service:
+    state: restarted
+    name: "{{ms_services_base_ntp_vars.service_name}}"
+    enabled: True
+  when: "{{not ms_services_base_ntp_vars.activated}}"
+- service:
+    state: stopped
+    name: "{{ms_services_base_ntp_vars.service_name}}"
+    enabled: false
+  when: "{{ms_services_base_ntp_vars.activated}}"

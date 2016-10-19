@@ -1,0 +1,8 @@
+---
+ms_localsettings_sudo_packages: [sudo]
+ms_localsettings_sudo_configs:
+  - {'name': '/etc/sudoers', 'mode': '440'}
+ms_localsettings_sudo_files:
+  - { path: /etc/sudoers.d, state: directory,
+      user: root, group: root, mode: 755 }
+ms_localsettings_sudo_secure_path: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"

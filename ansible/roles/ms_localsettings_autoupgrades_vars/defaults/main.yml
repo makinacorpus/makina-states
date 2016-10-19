@@ -1,0 +1,22 @@
+---
+ms_localsettings_autoupgrades_packages: null
+ms_localsettings_autoupgrades_configs: null
+ms_localsettings_autoupgrades_packages_debian: ['unattended-upgrades']
+ms_localsettings_autoupgrades_configs_debian:
+  - name: '/etc/apt/apt.conf.d/50unattended-upgrades'
+  - name: '/etc/apt/apt.conf.d/10periodic'
+ms_localsettings_autoupgrades_activated: "1"
+ms_localsettings_autoupgrades_autoclean: "7"
+ms_localsettings_autoupgrades_DownloadUpgradeablePackages: "1"
+ms_localsettings_autoupgrades_UpdatePackageLists: "1"
+ms_localsettings_autoupgrades_mail_on_error: "true"
+ms_localsettings_autoupgrades_remove_unused: "false"
+ms_localsettings_autoupgrades_mail: "root"
+ms_localsettings_autoupgrades_autofix: "true"
+ms_localsettings_autoupgrades_blacklist: []
+ms_localsettings_autoupgrades_origins: null
+ms_localsettings_autoupgrades_origins_debian:
+  - 'Debian:stable'
+  - '${distro_id}:${distro_codename}-security'
+ms_localsettings_autoupgrades_origins_ubuntu:
+  - '${distro_id}:${distro_codename}-security'

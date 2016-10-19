@@ -1,0 +1,4 @@
+---
+# To see variables for this role, call it directly via ansible-playbook -vvv ansible/roles/msc_vars/role.yml
+- hosts: all
+  roles: [msc_vars]

@@ -1,0 +1,9 @@
+---
+- name: "ms_services_base_ntp preflight check - SKIPTEST"
+  debug:
+    msg: '{{True}}'
+  register: ms_services_base_ntp_can_run
+  tags: ms_services_base_ntp
+- include: run.yml
+  when: '{{ms_services_base_ntp_can_run.msg == True}}'
+  tags: ms_services_base_ntp

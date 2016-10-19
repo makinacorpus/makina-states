@@ -1,0 +1,3 @@
+---
+- ms_include_jinja_vars:
+  tags: [msc_vars, ms_localsettings_git_vars, ms_localsettings_git]

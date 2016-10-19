@@ -1,0 +1,21 @@
+---
+- name: update & install prerequisites
+  package:
+    package: '{{ms_localsettings_screen_vars.packages}}'
+    state: present
+  when: "{{ansible_os_family == 'Debian' and
+           ms_localsettings_screen_vars.packages is not none and
+           ms_localsettings_screen_vars.packages|length > 0}}"
+  tags: ms_localsettings_screen
+- name: configs
+  template:
+    src: "../templates/{{item.name}}"
+    dest: "{{item.name}}"
+    mode: "{{item.mode|default(omit)}}"
+    owner: "{{item.owner|default(omit)}}"
+    group: "{{item.group|default(omit)}}"
+  with_items: "{{ms_localsettings_screen_vars.configs}}"
+  when: |
+    {{ms_localsettings_screen_vars.configs is not none and
+      ms_localsettings_screen_vars.configs|length > 0}}
+  tags: ms_localsettings_screen

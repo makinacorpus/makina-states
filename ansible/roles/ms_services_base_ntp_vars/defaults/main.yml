@@ -1,0 +1,39 @@
+---
+ms_services_base_ntp_packages: [ntp, ntpdate, libopts25]
+ms_services_base_ntp_servers: ['0.ubuntu.pool.ntp.org',
+                               '1.ubuntu.pool.ntp.org',
+                               '2.ubuntu.pool.ntp.org',
+                               '3.ubuntu.pool.ntp.org',
+                               'ntp.ubuntu.com',
+                               '127.127.1.0']
+ms_services_base_ntp_fudge: ['127.127.1.0 stratum 11']
+ms_services_base_ntp_restrict: []
+ms_services_base_ntp_default_all: True
+ms_services_base_ntp_activated: True
+ms_services_base_ntp_block_ext: False
+ms_services_base_ntp_ignore: False
+ms_services_base_ntp_kod: True
+ms_services_base_ntp_limited: False
+ms_services_base_ntp_lowpriotrap: False
+ms_services_base_ntp_peer: False
+ms_services_base_ntp_trap: False
+ms_services_base_ntp_serve: True
+ms_services_base_ntp_trust: True
+ms_services_base_ntp_modify: False
+ms_services_base_ntp_query: False
+ms_services_base_ntp_defaults:
+  NTPSERVERS: '"ntp.org"'
+  NTPDATE_USE_NTP_CONF: '"yes"'
+  NTPOPTIONS: '""'
+ms_services_base_ntp_upstream: 'ntp.org'
+ms_services_base_ntp_default_flags: None
+ms_services_base_ntp_service_name: ntp
+ms_services_base_ntp_configs:
+  - name: '/etc/cron.d/ntpsync'
+    mode: '700'
+  - name: '/etc/default/ntpdate'
+  - name: '/etc/ntp.conf'
+  - name: '/sbin/ntp-kill.sh'
+    mode: '755'
+  - name: '/sbin/ntp-sync.sh'
+    mode: '755'

@@ -1,0 +1,52 @@
+---
+- name: install golang ppa
+  apt_repository:
+    repo: 'ppa:gophers'
+    filename: /etc/apt/sources.list.d/golang.list
+    state: present
+  when: "{{ansible_lsb.id == 'Ubuntu' and
+           ms_localsettings_golang_vars.packages is not none and
+           ms_localsettings_golang_vars.packages|length > 0}}"
+  register: ms_localsettings_golang_ppa
+  tags: ms_localsettings_golang
+- apt:
+    update_cache: yes
+  when: ms_localsettings_golang_ppa.changed
+  tags: ms_localsettings_golang
+- name: update & install prerequisites
+  package:
+    package: '{{ms_localsettings_golang_vars.packages}}'
+    state: present
+  when: "{{ansible_os_family == 'Debian' and
+           ms_localsettings_golang_vars.packages is not none and
+           ms_localsettings_golang_vars.packages|length > 0}}"
+  tags: ms_localsettings_golang
+- name: configs
+  template:
+    src: "../templates/{{item.name}}"
+    dest: "{{item.name}}"
+    mode: "{{item.mode|default(omit)}}"
+    owner: "{{item.owner|default(omit)}}"
+    group: "{{item.group|default(omit)}}"
+  with_items: "{{ms_localsettings_golang_vars.configs}}"
+  when: |
+    {{ms_localsettings_golang_vars.configs is not none and
+      ms_localsettings_golang_vars.configs|length > 0}}
+  tags: ms_localsettings_golang
+- name: 'install golang versions'
+  changed_when: '{{False}}'
+  shell: |
+    set -e {% set data = ms_localsettings_golang_vars %}
+    {%- for j in data.bins %}
+    update-alternatives --quiet --remove-all {{j}} || true;
+    {%- for i in data.versions %}
+    update-alternatives --quiet --install /usr/local/bin/{{j}} {{j}} /usr/lib/go-{{i}}/bin/{{j}} 0;
+    {% endfor%}
+  tags: ms_localsettings_golang
+- name: 'set wanted golang targets'
+  shell: |
+    set -e
+    {%- for j in data.bins %}
+    update-alternatives --quiet --set {{j}} /usr/lib/go-{{data.version}}/bin/{{j}};
+    {% endfor %}
+  tags: ms_localsettings_golang

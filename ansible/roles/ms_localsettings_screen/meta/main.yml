@@ -1,0 +1,3 @@
+---
+dependencies:
+  - role: ms_localsettings_screen_vars

@@ -1,0 +1,28 @@
+---
+{% set prefix = 'ms_localsettings_git_' %}
+
+{% set  _ = vars.update({prefix+'dist': ansible_lsb.codename}) %}
+
+{% for v in ['mirror', 'comps',
+             'configs', 'sources_lists', 'packages'] %}
+{%  for os in ['ubuntu', 'debian'] %}
+{%   if  (
+        ansible_os_family.lower() == os or
+        ansible_lsb.id.lower() == os) %}
+{%    set vn = prefix + v %}
+{%    if vars[vn] is none %}
+{%      set os_val = vars.get(vn + '_' + os, None) %}
+{%      if os_val is not none %}
+{%        set  _ = vars.update({vn: os_val}) %}
+{%      endif %}
+{%    endif %}
+{%   endif %}
+{%  endfor %}
+{% endfor %}
+
+{% for var in vars %}
+{% if var.startswith(prefix) %}
+{% set svar = var.replace(prefix, '') %}
+{{svar}}: {{vars[var]|to_json}}
+{% endif %}
+{% endfor %}

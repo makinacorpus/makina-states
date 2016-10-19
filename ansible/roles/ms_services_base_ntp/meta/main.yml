@@ -1,0 +1,3 @@
+---
+dependencies:
+  - role: ms_services_base_ntp_vars

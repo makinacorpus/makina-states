@@ -1,0 +1,6 @@
+---
+ms_localsettings_git_packages: [git]
+ms_localsettings_git_configs:
+  - {'name': '/etc/gitconfig', 'mode': '644'}
+ms_localsettings_git_files: []
+

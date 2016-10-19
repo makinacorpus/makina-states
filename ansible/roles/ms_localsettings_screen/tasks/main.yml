@@ -1,0 +1,9 @@
+---
+- name: "ms_localsettings_screen preflight check - SKIPTEST"
+  debug:
+    msg: '{{True}}'
+  register: ms_localsettings_screen_can_run
+  tags: ms_localsettings_screen
+- include: run.yml
+  when: '{{ ms_localsettings_screen_can_run.msg == True }}'
+  tags: ms_localsettings_screen
