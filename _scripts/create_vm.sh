@@ -30,12 +30,12 @@ set -x
 if [[ -n "${no_controller}" ]];then
     echo "Skip controller $controller step"
 else
-    if [[ -n "${no_controller_setup}" ]];then
-        echo "Skip controller setup"
-    else
-        service memcached restart
-        salt-call -lall state.sls makina-states.services.dns.bind
-    fi
+    #if [[ -n "${no_controller_setup}" ]];then
+    #    echo "Skip controller setup"
+    #else
+    #    service memcached restart
+    #    salt-call -lall state.sls makina-states.services.dns.bind
+    #fi
     if [[ -n "${no_sync}" ]];then
         echo "skip sync container to image"
     else
