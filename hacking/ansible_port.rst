@@ -1,5 +1,5 @@
-Ansible PORT TODO
-====================
+Ansible PORT TODO (port to `corpusos <https://github.com/corpusops>`_   )
+==================================================================================
 Salt States
 ---------------
 - [x] localsettings/apparmor
@@ -10,20 +10,23 @@ Salt States
 - [x] localsettings/nscd
 - (x] localsettings/sudo
 - [x] localsettings/pkgs/mgr
-- localsettings/pkgs
-- localsettings/editor
-- localsettings/env
-- [x] localsettings/screen
-- localsettings/vim
+- [x] localsettings/golang
 - [x] localsettings/git
-- localsettings/sysctl
-- localsettings/locales
-- localsettings/golang
-- localsettings/groups
-- services/base/cron
-- services/base/ssh/server
-- services/base/ssh/client
+- [x] localsettings/screen
+- [x] localsettings/pkgs
+- [x] localsettings/editor
+- [x] localsettings/env
+- [x] localsettings/sysctl
+- [x] localsettings/locales
+- [x] localsettings/profile <- localsettings/shell
+- [x] services/base/cron
+- [x] services/base/ssh/server
+- [x] services/base/ssh/client
+- localsettings/timezone
+- services/base/ssh/rootkey
 - services/log/rsyslog
+- services/log/ulogd
+- services/virt/lxc
 - localsettings/grub
 - localsettings/hostname
 - localsettings/hosts
@@ -40,12 +43,9 @@ Salt States
 - localsettings/python
 - localsettings/reconfigure-network
 - localsettings/repository_dotdeb
-- localsettings/timezone
 - localsettings/updatedb
-- localsettings/users
 - localsettings/nodejs
 - localsettings/rvm
-- localsettings/shell
 - localsettings/sshkeys
 - localsettings/systemd
 - localsettings/npm
@@ -53,7 +53,6 @@ Salt States
 - localsettings/npm
 - services/dns/bind
 - services/virt/virtualbox
-- services/virt/lxc
 - services/proxy/haproxy
 - services/http/apache_modfastcgi
 - services/http/common
@@ -84,7 +83,6 @@ Salt States
 - services/monitoring/icinga_web2
 - services/monitoring/client
 - services/java/tomcat
-- services/log/ulogd
 - services/virt/docker
 - services/virt/kvm
 - services/queue/rabbitmq
@@ -123,12 +121,15 @@ Project helpers
 
 Wont be ported yet
 ------------------
+- localsettings/groups
+- localsettings/vim
 - localsettings/casperjs
 - localsettings/phantomjs
 - services/firewall/firewalld
 - services/firewall/psad
 - services/firewall/shorewall
 - services/backup/bacula/fd
+- localsettings/users
 - services/backup/users
 - services/backup/rdiff-backup
 - services/monitoring/snmpd
