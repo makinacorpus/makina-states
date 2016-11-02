@@ -22,7 +22,7 @@ haproxy-base:
     - name: deb http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu {{pkgssettings.udist}} main
     - dist: {{pkgssettings.udist}}
     - file: "{{f}}"
-    - keyid: 207A7A4E
+    - keyid: 1C61B9CD
     - keyserver: keyserver.ubuntu.com
     - require:
       - cmd: haproxy-base
