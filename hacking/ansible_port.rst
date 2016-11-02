@@ -22,8 +22,11 @@ Salt States
 - [x] services/base/cron
 - [x] services/base/ssh/server
 - [x] services/base/ssh/client
+- localsettings/timezone
 - services/base/ssh/rootkey
 - services/log/rsyslog
+- services/log/ulogd
+- services/virt/lxc
 - localsettings/grub
 - localsettings/hostname
 - localsettings/hosts
@@ -40,7 +43,6 @@ Salt States
 - localsettings/python
 - localsettings/reconfigure-network
 - localsettings/repository_dotdeb
-- localsettings/timezone
 - localsettings/updatedb
 - localsettings/nodejs
 - localsettings/rvm
@@ -51,7 +53,6 @@ Salt States
 - localsettings/npm
 - services/dns/bind
 - services/virt/virtualbox
-- services/virt/lxc
 - services/proxy/haproxy
 - services/http/apache_modfastcgi
 - services/http/common
@@ -82,7 +83,6 @@ Salt States
 - services/monitoring/icinga_web2
 - services/monitoring/client
 - services/java/tomcat
-- services/log/ulogd
 - services/virt/docker
 - services/virt/kvm
 - services/queue/rabbitmq
