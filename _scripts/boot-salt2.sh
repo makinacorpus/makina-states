@@ -519,6 +519,9 @@ recap_(){
     bs_yellow_log "   - ${THIS} [--help] [--long-help]"
     bs_yellow_log "----------------------------------------------------------"
     bs_log "  Minion Id: $(get_minion_id)"
+    if [ "x${SALT_NDDETYPE}" != "xscratch" ]; then
+        bs_log "  Nodetype: ${SALT_NODETYPE}"
+    fi
     bs_log "DATE: ${CHRONO}"
     bs_log "PREFIX: ${PREFIX}"
     bs_yellow_log "---------------------------------------------------"
@@ -1130,6 +1133,31 @@ reconfigure() {
     ${ansible_localhost}.in:${ansible_localhost}
     "
     # configure then salt
+    nsyml="${SALT_MS}/etc/makina-states/nodetypes.yaml"
+    nsymld="$(dirname "${nsyml}")"
+    if [ ! -e "${nsymld}" ];then
+        mkdir -p "${nsymld}"
+    fi
+    if [ ! -e "${nsyml}" ];then
+        touch "${nsyml}"
+    fi
+    if ! grep -q "makina-states\.nodetypes\.${SALT_NODETYPE}: true" "${nsyml}"; then
+        bs_log "Activating ${SALT_NODETYPE}"
+        echo "makina-states.nodetypes.${SALT_NODETYPE}: true" \
+            >> "${nsyml}"
+    fi
+    if [ "x${SALT_NODETYPE}" = "xscratch" ]; then
+        if grep  makina-states.nodetypes. "${nsyml}" | grep -vq ${SALT_NODETYPE};then
+            bs_log "Wiping any non ${SALT_NODETYPE} nodetype"
+            echo "makina-states.nodetypes.${SALT_NODETYPE}: true" \
+                > "${nsyml}"
+        fi
+    else
+        if grep -q -- 'makina-states.nodetypes.scratch:' "${nsyml}"; then
+            bs_log "Wiping scratch nodetype mode"
+            "${SED}" -i -re '/makina-states.nodetypes.scratch: .*/d' "${nsyml}"
+        fi
+    fi
     for conft in $confs;do
         conf="$(echo "${conft}"|cut -d: -f2-)"
         # get the minion id from previous conf if exists
