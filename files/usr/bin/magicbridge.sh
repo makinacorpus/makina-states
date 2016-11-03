@@ -203,10 +203,12 @@ teardown_forward() {
     iptables_remove INPUT -i ${BRIDGE} -p tcp --dport 67 -j ACCEPT
     iptables_remove INPUT -i ${BRIDGE} -p udp --dport 53 -j ACCEPT
     iptables_remove INPUT -i ${BRIDGE} -p tcp --dport 53 -j ACCEPT
-    iptables_add OUTPUT -o ${BRIDGE} -p udp --sport 67 -j ACCEPT
-    iptables_add OUTPUT -o ${BRIDGE} -p tcp --sport 67 -j ACCEPT
-    iptables_add OUTPUT -o ${BRIDGE} -p udp --sport 53 -j ACCEPT
-    iptables_add OUTPUT -o ${BRIDGE} -p tcp --sport 53 -j ACCEPT
+    iptables_remove OUTPUT -o ${BRIDGE} -p udp --sport 67 -j ACCEPT
+    iptables_remove OUTPUT -o ${BRIDGE} -p tcp --sport 67 -j ACCEPT
+    iptables_remove OUTPUT -o ${BRIDGE} -p udp --sport 53 -j ACCEPT
+    iptables_remove OUTPUT -o ${BRIDGE} -p tcp --sport 53 -j ACCEPT
+    iptables_remove OUTPUT -o ${BRIDGE} -p udp --dport 22 -j ACCEPT
+    iptables_remove OUTPUT -o ${BRIDGE} -p tcp --dport 22 -j ACCEPT
     iptables_remove FORWARD -i ${BRIDGE} -j ACCEPT
     iptables_remove FORWARD -o ${BRIDGE} -j ACCEPT
     iptables_remove POSTROUTING -t mangle -o ${BRIDGE} -p udp -m udp --dport 68 -j CHECKSUM --checksum-fill
@@ -237,6 +239,8 @@ setup_forward() {
         iptables_add OUTPUT -o ${BRIDGE} -p tcp --sport 67 -j ACCEPT
         iptables_add OUTPUT -o ${BRIDGE} -p udp --sport 53 -j ACCEPT
         iptables_add OUTPUT -o ${BRIDGE} -p tcp --sport 53 -j ACCEPT
+        iptables_add OUTPUT -o ${BRIDGE} -p udp --dport 22 -j ACCEPT
+        iptables_add OUTPUT -o ${BRIDGE} -p tcp --dport 22 -j ACCEPT
         iptables_add FORWARD -i ${BRIDGE} -j ACCEPT
         iptables_add FORWARD -o ${BRIDGE} -j ACCEPT
         iptables_add POSTROUTING -t mangle -o ${BRIDGE} -p udp -m udp --dport 68 -j CHECKSUM --checksum-fill
