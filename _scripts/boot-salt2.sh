@@ -451,6 +451,7 @@ set_vars() {
     # salt variables
     # global installation marker
     # base sls bootstrap
+    SALT_NODETYPE="${SALT_NODETYPE:-scratch}"
     SALT_MINION_ID="${SALT_MINION_ID:-}"
     set_valid_upstreams
     # just tell to bootstrap and run highstates
@@ -481,7 +482,7 @@ set_vars() {
     #
     export QUIET
     #
-    export PREFIX VENV_PATH PIP_CACHE SALT_MS SALT_MINION_ID
+    export PREFIX VENV_PATH PIP_CACHE SALT_MS SALT_MINION_ID SALT_NODETYPE
 }
 
 check_py_modules() {
@@ -1145,7 +1146,7 @@ reconfigure() {
                 -e "s|__WHOAMI__|$(whoami)|g" \
                 -e "s|__MS_PREFIX__|${PREFIX}|g" \
                 -e "s|__MS_MS__|${SALT_MS}|g" \
-                -e "s|__MS_NODETYPE__|scratch|g" \
+                -e "s|__MS_NODETYPE__|${SALT_NDDETYPE}|g" \
                 -e "s|__MS_ANSIBLE_PORT__|${ANSIBLE_PORT:-"22"}|g" \
                 -e "s|__MS_USER__|$(whoami)|g" \
                 -e "s|#ms_remove_comment:||g" \
@@ -1215,6 +1216,7 @@ usage() {
     echo
     bs_log "  General settings"
     bs_help "    -h|--help / -l/--long-help" "this help message or the long & detailed one" "" y
+    bs_help "    -n|--nodetype <nodetype>" "prefix path" "${SALT_NDDETYPE}" y
     bs_help "    -p|--prefix <path>" "prefix path" "${PREFIX}" yi
     bs_help "    -b|--branch <branch>" "MakinaStates branch to use" "$(get_ms_branch)" y
     bs_help "    -g|--makina-states-url <url>" "makina-states git url" "$(get_ms_url)" y
@@ -1322,6 +1324,9 @@ parse_cli_opts() {
         if [ "x${1}" = "x--no-reconfigure" ]; then
             DO_RECONFIGURE="no"
             argmatch="1"
+        fi
+        if [ "x${1}" = "x-n" ] || [ "x${1}" = "x--nodetype" ]; then
+            SALT_NODETYPE="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x-m" ] || [ "x${1}" = "x--minion-id" ]; then
             SALT_MINION_ID="${2}";sh="2";argmatch="1"
