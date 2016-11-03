@@ -2,6 +2,7 @@
 - name: install prerequisites
   apt: name={{item}} update_cache=yes
   with_items:
+    - ca-certificates
     - python
     - python-chardet
     - python3-chardet
