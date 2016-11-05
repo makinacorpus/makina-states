@@ -154,22 +154,35 @@ def settings():
         if __grains__.get('os', '') == 'Ubuntu':
             if LooseVersion(__grains__.get('osrelease', '0')) >= LooseVersion('16.04'):
                 xenial_onward = True
-                defaultPgVersion = '9.5'
-                pgis_version = '2.2'
+                defaultPgVersion = '9.6'
             else:
                 xenial_onward = False
+                defaultPgVersion = '9.6'
+            if LooseVersion(defaultPgVersion) >= '9.6':
+                pgis_version = '2.3'
+            elif LooseVersion(defaultPgVersion) >= '9.4':
+                pgis_version = '2.2'
+            else:
                 pgis_version = '2.1'
-                defaultPgVersion = '9.5'
 
-        #
         # default activated postgresql versions & settings:
-        #
-        for i in ['9.4', '9.3', '9.2', '9.1']:
+        for i in ['9.6', '9.5', '9.4', '9.3', '9.2', '9.1']:
             # if we have old wrappers, include the old versions
             # to list of installed pgsql
-            if os.path.exists('/usr/bin/psql-{0}'.format(i)):
-                defaultPgVersion = i
-                break
+            pgconf = '/etc/postgresql/{0}/main/postgresql.conf'.format(i)
+            if os.path.exists(pgconf):
+                with open(pgconf) as f:
+                    content = f.read()
+                    portm = PORT_RE.search(content)
+                    if portm:
+                        port = portm.groups()[0]
+                        try:
+                            if int(port) == 5432:
+                                defaultPgVersion = i
+                                break
+                        except (ValueError, TypeError) as exc:
+                            pass
+
         defaultVersions = [defaultPgVersion]
         pgSettings = __salt__['mc_utils.defaults'](
             'makina-states.services.db.postgresql', {
