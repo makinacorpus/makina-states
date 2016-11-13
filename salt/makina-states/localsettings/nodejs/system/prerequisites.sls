@@ -38,7 +38,7 @@ nodejs-repo:
     - name: deb https://deb.nodesource.com/{{settings.repo}} {{pkgsettings.dist}} main
     - dist: {{pkgsettings.dist}}
     - file: {{locs.conf_dir}}/apt/sources.list.d/nodejs_c.list
-    - key_url: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key"
+    - key_url: "http://deb.nodesource.com/gpgkey/nodesource.gpg.key"
     - watch:
       - file: nodejs-repo
       - mc_proxy: nodejs-pre-system-install

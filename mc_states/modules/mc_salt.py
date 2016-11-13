@@ -126,6 +126,7 @@ def settings():
             'use_mc_pillar': True,
             'cron_minion_restart_hour': 0,
             'rotate': _s['mc_logrotate.settings']()['days'],
+            'ansible_log_prefix': '{msr}/var/ansible',
             'log_prefix': '{msr}/var/log',
             'name': 'salt',
             'pillar_root': '{prefix}/pillar',

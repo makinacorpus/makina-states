@@ -296,6 +296,19 @@ get_default_knob() {
     echo "${setting}"
 }
 
+get_nodetype() {
+    confdir="${1:-"${CONF_PREFIX}"}"
+    nodetype="${SALT_NODETYPE:-${2-}}"
+    if [ "x${nodetype}" = "x" ] ;then
+        if egrep -q -r "^makina-states.nodetypes.[^.:]+:" "$confdir/minion" "${confdir}/minion.d/"*conf 2>/dev/null; then
+            nodetype=$(egrep -r "^makina-states.nodetypes.[^.:]+:"  "$confdir/minion" "${confdir}/minion.d/"*conf 2>/dev/null \
+                      |grep -v __MS_NODETYPE__ | awk -F':' '{print $2}' | awk -F. '{print $NF}')
+        fi
+
+    fi
+    echo ${nodetype:-scratch}
+}
+
 get_minion_id() {
     confdir="${1:-"${CONF_PREFIX}"}"
     notfound=""
@@ -451,7 +464,7 @@ set_vars() {
     # salt variables
     # global installation marker
     # base sls bootstrap
-    SALT_NODETYPE="${SALT_NODETYPE:-scratch}"
+    SALT_NODETYPE="${SALT_NODETYPE:-}"
     SALT_MINION_ID="${SALT_MINION_ID:-}"
     set_valid_upstreams
     # just tell to bootstrap and run highstates
@@ -520,7 +533,7 @@ recap_(){
     bs_yellow_log "----------------------------------------------------------"
     bs_log "  Minion Id: $(get_minion_id)"
     if [ "x${SALT_NDDETYPE}" != "xscratch" ]; then
-        bs_log "  Nodetype: ${SALT_NODETYPE}"
+        bs_log "  Nodetype: $(get_nodetype)"
     fi
     bs_log "DATE: ${CHRONO}"
     bs_log "PREFIX: ${PREFIX}"
@@ -1141,16 +1154,15 @@ reconfigure() {
     if [ ! -e "${nsyml}" ];then
         touch "${nsyml}"
     fi
-    if ! grep -q "makina-states\.nodetypes\.${SALT_NODETYPE}: true" "${nsyml}"; then
-        bs_log "Activating ${SALT_NODETYPE}"
-        echo "makina-states.nodetypes.${SALT_NODETYPE}: true" \
-            >> "${nsyml}"
+    if ! grep -q "makina-states\.nodetypes\.$(get_nodetype): true" "${nsyml}"; then
+        bs_log "Activating and persisting $(get_nodetype) nodetype"
+        echo "makina-states.nodetypes.$(get_nodetype): true" >> "${nsyml}"
     fi
-    if [ "x${SALT_NODETYPE}" = "xscratch" ]; then
-        if grep  makina-states.nodetypes. "${nsyml}" | grep -vq ${SALT_NODETYPE};then
-            bs_log "Wiping any non ${SALT_NODETYPE} nodetype"
-            echo "makina-states.nodetypes.${SALT_NODETYPE}: true" \
-                > "${nsyml}"
+    if [ "x$(get_nodetype)" = "xscratch" ]; then
+        if egrep -r "makina-states.nodetypes.[^.:]+:" "${nsyml}" | grep -vq scratch;then
+            bs_log "Wiping any non scratch nodetype"
+            "${SED}" -i -re '/makina-states.nodetypes.[^.:]+: .*/d' "${nsyml}"
+            echo "makina-states.nodetypes.scratch: true" >> "${nsyml}"
         fi
     else
         if grep -q -- 'makina-states.nodetypes.scratch:' "${nsyml}"; then
@@ -1174,7 +1186,7 @@ reconfigure() {
                 -e "s|__WHOAMI__|$(whoami)|g" \
                 -e "s|__MS_PREFIX__|${PREFIX}|g" \
                 -e "s|__MS_MS__|${SALT_MS}|g" \
-                -e "s|__MS_NODETYPE__|${SALT_NDDETYPE}|g" \
+                -e "s|__MS_NODETYPE__|$(get_nodetype)|g" \
                 -e "s|__MS_ANSIBLE_PORT__|${ANSIBLE_PORT:-"22"}|g" \
                 -e "s|__MS_USER__|$(whoami)|g" \
                 -e "s|#ms_remove_comment:||g" \

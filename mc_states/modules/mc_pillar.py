@@ -4154,6 +4154,7 @@ def ext_pillar_do(id_, pillar=None, raise_error=True, *args, **kw):
             # only dictupdate if there is key overlay
             subpillar = _s[callback](id_)
             data = dictupdate(data, subpillar)
+            data['mc_pillar.generated_for'] = id_
             data['mc_pillar.generated_by'] = __opts__['id']
         except Exception, ex:
             trace = traceback.format_exc()
