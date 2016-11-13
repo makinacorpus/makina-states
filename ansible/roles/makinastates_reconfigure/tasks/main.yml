@@ -11,13 +11,11 @@
     fi
     if [ -e bin/boot-salt2.sh ];then
       sc="bin/boot-salt2.sh"
-      c_args=""
     else
       sc="bin/boot-salt.sh"
-      c_args="{% if makinastates_nodetype %}-n "{{makinastates_nodetype}}" {% endif %}"
     fi
     "$sc" \
-          ${c_args} \
+          {% if makinastates_nodetype %}-n "{{makinastates_nodetype}}" {% endif %} \
           {% if makinastates_minion_id %}-m "{{makinastates_minion_id}}" {% endif %}\
           {% if makinastates_version %}-b "{{makinastates_version}}" {% endif %}\
           {% if makinastates_salt_version %}--salt-branch "{{makinastates_salt_version}}" {% endif %}\

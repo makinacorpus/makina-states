@@ -29,6 +29,7 @@
       allow_duplicates: true
     - role: makinastates_reconfigure
       makinastates_minion_id: "{{lookup('env', 'ANSIBLE_TARGETS').split(',')[1]}}"
+      makinastates_nodetype: lxccontainer
       makinastates_version: "{{makinastates_lxc_vars.msg['makinastates_version']}}"
       when: "makinastates_presence.stdout == '0'"
     - role: makinastates_lxc_baseinstall
