@@ -726,7 +726,10 @@ def defaults(prefix,
                 val = __salt__['mc_utils.dictupdate'](curval, val)
             elif isinstance(curval, (list, set)):
                 if val is not None:
-                    curval.extend(val)
+                    for subitem in val:
+                        if subitem in curval:
+                            continue
+                        curval.append(subitem)
                 val = curval
             datadict[key] = val
     if overridden is None:
@@ -775,10 +778,16 @@ def defaults(prefix,
                 ):
                     if nvalue is None:
                         nvalue = []
-                    nvalue.extend(value)
+                    for subitem in value:
+                        if subitem in nvalue:
+                            continue
+                        nvalue.append(subitem)
                 value = nvalue
             if isinstance(avalue, list):
-                value.extend(avalue)
+                for subitem in avalue:
+                    if subitem in value:
+                        continue
+                    value.append(subitem)
         elif isinstance(value, dict):
             # recurvive and conservative dictupdate
             ndefaults = defaults(value_key,
