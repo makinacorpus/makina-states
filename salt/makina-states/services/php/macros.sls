@@ -70,6 +70,7 @@ makina-php-pool-{{ data.pool_name }}:
     - name: "{{ data.etcdir }}/fpm/pool.d/{{ data.pool_name }}.conf"
     - source: {{ data.pool_template_source }}
     - template: 'jinja'
+    - makedirs: true
     - defaults:
         data: |
               {{sdata}}

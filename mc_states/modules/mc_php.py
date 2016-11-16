@@ -18,6 +18,7 @@ Documentation of this module is available with::
 '''
 
 # Import python libs
+import re
 import logging
 import mc_states.api
 import six
@@ -26,9 +27,11 @@ import os
 from distutils.version import LooseVersion
 
 # Import salt libs
-from salt import utils, exceptions
+from salt import exceptions
+
 
 __name = 'php'
+PREFIX = 'makina-states.services.{0}'.format(__name)
 
 log = logging.getLogger(__name__)
 _marker = object()
@@ -170,30 +173,34 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
+        _s, _g, _p = __salt__, __grains__, __pillar__
+        locations = _s['mc_locations.settings']()
+        www_reg = _s['mc_www.settings']()
+        apacheSettings = _s['mc_apache.settings']()
 
-        grains = __grains__
-        pillar = __pillar__
-        locations = __salt__['mc_locations.settings']()
-        www_reg = __salt__['mc_www.settings']()
-        if grains['os'] in ['Ubuntu']:
+        if _g['os'] in ['Ubuntu']:
             s_all = '-s ALL'
         else:
             s_all = ''
 
+        php_ver = '7.0'
+        use_ppa = False
         if (
-            __grains__.get('os', '') == 'Ubuntu' and
-            LooseVersion(__grains__.get('osrelease', '0')) >= LooseVersion('16.04')
+            _g['os'] in ['Ubuntu'] and
+            LooseVersion(_g['osrelease']) < LooseVersion('16.04')
         ):
-            php7_onward = True
-            apc_install = 0
-        else:
-            php7_onward = False
-            apc_install = 1
+            use_ppa = True
+            php_ver = '5.6'
 
-        phpdefaults = {
-            'php7_onward': php7_onward,
+        phpData = {
+            'php_ver': php_ver,
+            'use_ppa': use_ppa,
+            'coinstallable_php': None,  # computed
+            'php7_onward': None,  # computed
+            'php56_onward': None,  # computed
+            'configs': {},
             's_all': s_all,
-            'rotate': __salt__['mc_logrotate.settings']()['days'],
+            'rotate': _s['mc_logrotate.settings']()['days'],
             'composer': (
                 'http://downloads.sourceforge.net/project'
                 '/makinacorpus/makina-states/'
@@ -269,7 +276,7 @@ def settings():
             'opcache_force_restart_timeout': 180,
             'opcache_error_log': '',
             'opcache_log_verbosity_level': 1,
-            'apc_install': apc_install,
+            'apc_install': 0,
             'apc_enabled': 0,
             'apc_enable_cli': 0,
             'apc_shm_segments': 1,
@@ -298,11 +305,12 @@ def settings():
             'xdebug_profiler_enable_trigger': False,
             'xdebug_remote_enable': 0,
             'xdebug_remote_host': 'localhost',
-            'xdebug_profiler_output_name': '/cachegrind.out.%p'
+            'xdebug_profiler_output_name': '/cachegrind.out.%p',
+            'disabled_fpm_services': None,
         }
 
         # now filter defaults with dev/prod alterations
-        phpStepTwo = __salt__['grains.filter_by']({
+        phpData = _s['grains.filter_by']({
             'dev': {
             },
             'prod': {
@@ -325,13 +333,12 @@ def settings():
                 'modules_xdebug_enabled': False,
             }},
             grain='default_env',
-            merge=phpdefaults,
+            merge=phpData,
             default='dev'
         )
-        apacheSettings = __salt__['mc_apache.settings']()
 
         # Default OS-based paths settings added on phpData
-        phpStepThree = __salt__['grains.filter_by']({
+        phpData = _s['grains.filter_by']({
             'Debian': {
                 'packages': {
                     'main': 'php5',
@@ -365,8 +372,6 @@ def settings():
                     'redis': 'php5-redis',
                     'gmp': 'php5-gmp',
                 },
-                'ppa_ver': '5.6',
-                'php_ver': '5.6',
                 'service': 'php5-fpm',
                 'etcdir': locations['conf_dir'] + '/php5',
                 'confdir': locations['conf_dir'] + '/php5/mods-available',
@@ -376,86 +381,168 @@ def settings():
             }
         },
             grain='os_family',
-            merge=phpStepTwo
+            merge=phpData,
         )
-        if php7_onward:
-            phpStepFour = __salt__['mc_utils.dictupdate'](
-                phpStepThree, {
-                'packages': {
-                    'main': 'php',
-                    'mod_fcgid': apacheSettings['mod_packages']['mod_fcgid'],
-                    'mod_fastcgi': (
-                        apacheSettings['mod_packages']['mod_fastcgi']),
-                    'php_fpm': 'php-fpm',
-                    'apc': 'php-apc',
-                    'cli': 'php-cli',
-                    'cas': 'php-cas',
-                    'imagemagick': 'php-imagick',
-                    'memcache': 'php-memcache',
-                    'memcached': 'php-memcached',
-                    'mysql': 'php-mysql',
-                    'postgresql': 'php-pgsql',
-                    'sqlite': 'php-sqlite',
-                    'pear': 'php-pear',
-                    'soap': 'php-soap',
-                    'dev': 'php-dev',
-                    'snmp': 'php-snmp',
-                    'xmlrpc': 'php-xmlrpc',
-                    'json': 'php-json',
-                    'xdebug': 'php-xdebug',
-                    'curl': 'php-curl',
-                    'gd': 'php-gd',
-                    'ldap': 'php-ldap',
-                    'mcrypt': 'php-mcrypt',
-                    'redis': 'php-redis',
-                    'gmp': 'php-gmp',
-                },
-                'ppa_ver': '7.0',
-                'php_ver': '7.0',
-                'service': 'php7.0-fpm',
-                'etcdir': locations['conf_dir'] + '/php/7.0',
-                'confdir': locations['conf_dir'] + '/php/7.0/mods-available',
-                'logdir': locations['var_log_dir'] + '/phpfpm',
-                'fpm_sockets_dir': (
-                    locations['var_lib_dir'] + '/apache2/fastcgi')
+
+        # compute a first time data from pillar to get
+        # some settings that will need in a first phase
+        customsettings = ['php_ver', 'use_ppa', 'coinstallable_php',
+                          'php7_onward', 'php56_onward',
+                          'apc_install', 'opcache_install',
+                          'configs',
+                          'disabled_fpm_services']
+
+        customsettings1 = _s['mc_utils.defaults'](
+            PREFIX, dict([(a, phpData[a]) for a in customsettings]))
+        use_ppa = customsettings1['use_ppa']
+        php_ver = customsettings1['php_ver']
+        php7_onward = customsettings1['php7_onward'] = (
+            LooseVersion(php_ver[0]) >= LooseVersion('7'))
+        php56_onward = customsettings1['php56_onward'] = (
+            LooseVersion(php_ver[0:3]) >= LooseVersion('5.6'))
+        phpData['apc_install'] = not php56_onward
+        coinstallable_php = customsettings1['coinstallable_php'] = (
+            php7_onward or use_ppa)
+        customsettings1 = _s['mc_utils.dictupdate'](phpData, customsettings1)
+
+        if coinstallable_php:
+            packages = {
+                'main': 'php',
+                'php_fpm': 'php-fpm',
+                'mod_fcgid': (
+                    apacheSettings['mod_packages']['mod_fcgid']),
+                'mod_fastcgi': (
+                    apacheSettings['mod_packages']['mod_fastcgi']),
+                'apc': 'php-apc',
+                'cli': 'php-cli',
+                'cas': 'php-cas',
+                'imagemagick': 'php-imagick',
+                'memcache': 'php-memcache',
+                'memcached': 'php-memcached',
+                'mysql': 'php-mysql',
+                'postgresql': 'php-pgsql',
+                'sqlite': 'php-sqlite',
+                'pear': 'php-pear',
+                'soap': 'php-soap',
+                'dev': 'php-dev',
+                'snmp': 'php-snmp',
+                'xmlrpc': 'php-xmlrpc',
+                'json': 'php-json',
+                'xdebug': 'php-xdebug',
+                'curl': 'php-curl',
+                'gd': 'php-gd',
+                'ldap': 'php-ldap',
+                'mcrypt': 'php-mcrypt',
+                'mbstring': 'php-mcrypt',
+                'redis': 'php-redis',
+                'gmp': 'php-gmp',
             }
-        )
-        else:
-           phpStepFour = phpStepThree
 
-        # FINAL STEP: merge with data from pillar and grains
-        phpData = __salt__['mc_utils.defaults'](
-            'makina-states.services.php', phpStepFour)
+            if use_ppa:
+                packages.update({
+                    'main':'php{php_ver}',
+                    'php_fpm': 'php{php_ver}-fpm',
+                    'apc': 'php{php_ver}-apc',
+                    'cli': 'php{php_ver}-cli',
+                    'cas': 'php{php_ver}-cas',
+                    'imagemagick': 'php{php_ver}-imagick',
+                    'memcache': 'php{php_ver}-memcache',
+                    'memcached': 'php{php_ver}-memcached',
+                    'mysql': 'php{php_ver}-mysql',
+                    'postgresql': 'php{php_ver}-pgsql',
+                    'sqlite': 'php{php_ver}-sqlite',
+                    'pear': 'php{php_ver}-pear',
+                    'soap': 'php{php_ver}-soap',
+                    'dev': 'php{php_ver}-dev',
+                    'snmp': 'php{php_ver}-snmp',
+                    'xmlrpc': 'php{php_ver}-xmlrpc',
+                    'json': 'php{php_ver}-json',
+                    'xdebug': 'php{php_ver}-xdebug',
+                    'curl': 'php{php_ver}-curl',
+                    'gd': 'php{php_ver}-gd',
+                    'ldap': 'php{php_ver}-ldap',
+                    'mcrypt': 'php{php_ver}-mcrypt',
+                    'mbstring': 'php{php_ver}-mcrypt',
+                    'redis': 'php{php_ver}-redis',
+                    'gmp': 'php{php_ver}-gmp',
+                })
+            customsettings1 = _s['mc_utils.dictupdate'](
+                customsettings1, {
+                    'packages': packages,
+                    'service': 'php{php_ver}-fpm',
+                    'etcdir': locations['conf_dir'] + '/php/{php_ver}',
+                    'confdir': (locations['conf_dir'] +
+                                '/php/{php_ver}/mods-available'),
+                    'logdir': locations['var_log_dir'] + '/phpfpm',
+                    'fpm_sockets_dir': (
+                        locations['var_lib_dir'] + '/apache2/fastcgi')
+                }
+            )
 
-        configs = {}
-        confdir = phpData['confdir']
-        if phpData['apc_install']:
-            configs[confdir+'/apcu.ini'] = {}
-        if phpData['opcache_install']:
-            configs[confdir+'/opcache.ini'] = {}
-        configs[confdir+'/timezone.ini'] = {}
-        if phpData['php7_onward']:
-            unit =  'php7.0-fpm.service.d'
-        else:
-            unit =  'php5-fpm.service.d'
-        configs['/etc/systemd/system/{0}/php.conf'.format(unit)] = {
+        configs = customsettings1['configs']
+        unit = 'php{0}-fpm.service.d'.format(
+            coinstallable_php and phpData['php_ver'] or phpData['php_ver'][0])
+        configs['/etc/systemd/system/PHPSERVICE/php.conf'.format(unit)] = {
             'source': ('salt://makina-states/files'
-                       '/etc/systemd/system/php-fpm.service.d/php.conf')
+                       '/etc/systemd/system/php-fpm.service.d/php.conf'),
+            'target': (
+                '/etc/systemd/system/{0}/php.conf'.format(unit))
         }
-        phpData['configs'] = configs
+        configs.update({
+            'CONFDIR/timezone.ini': {
+                'source': 'salt://makina-states/files{confdir}/timezone.ini',
+                'target': '{confdir}/timezone.ini'
+            }
+        })
+        if customsettings1['apc_install']:
+            configs['CONFDIR/apcu.ini'] = {
+                'source': 'salt://makina-states/files{confdir}/apcu.ini',
+                'target': '{confdir}/apcu.ini'
+            }
 
-        phpData = __salt__['mc_utils.defaults'](
-            'makina-states.services.php', phpData)
+        if customsettings1['opcache_install']:
+            configs['/opcache.ini'] = {
+                'source': 'salt://makina-states/files{confdir}/opcache.ini',
+                'target': '{confdir}/opcache.ini'
+            }
+
+        # get back custom settings to defaults
+        phpData.update(customsettings1)
+        phpData = _s['mc_utils.dictupdate'](phpData, customsettings1)
+
+        # override all other settings as usually - phase1
+        phpData = _s['mc_utils.defaults'](PREFIX, phpData)
+        configs = phpData['configs']
+
+        if coinstallable_php:
+            pattern = (
+                '(.*/etc/php/)({0})(/.*)'.format(phpData['php_ver']))
+            common_re = re.compile(pattern)
+            for i in [a for a in configs]:
+                m = common_re.search(configs[i].get('source', ''))
+                if m:
+                    configs[i]['source'] = m.expand('\\1common\\3')
+            if phpData['disabled_fpm_services'] is None:
+                phpData['disabled_fpm_services'] = []
+                phpData['disabled_fpm_services'].append('php-fpm')
+                for i in [
+                    '5', '5.6', '5.7', '7.0', '7.1', '7.2'
+                ]:
+                    if i != php_ver:
+                        phpData['disabled_fpm_services'].append(
+                            'php{0}-fpm'.format(i))
+
+        # override all other settings as usually - phase2
+        phpData = _s['mc_utils.defaults'](PREFIX, phpData)
+
         # retro compat
         if 'register-pools' in phpData:
-            phpData['fpm_pools'] = __salt__[
+            phpData['fpm_pools'] = _s[
                 'mc_utils.dict_update'](
                     phpData['fpm_pools'], phpData['register-pools'])
-        if not phpData['fpm_pools'].get('localhost',
-                                        {}):
+        if not phpData['fpm_pools'].get('localhost', {}):
             phpData['fpm_pools']['localhost'] = {
-                'doc_root': '/var/www/default'
-            }
+                'doc_root': '/var/www/default'}
         return phpData
     return _settings()
 

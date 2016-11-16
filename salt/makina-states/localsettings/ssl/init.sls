@@ -8,7 +8,7 @@
 include:
   - makina-states.cloud.generic.hooks
   - makina-states.localsettings.ssl.hooks
-
+  - makina-states.localsettings.pkgs.fixppas
 makina-ssl-pkgs:
   pkg.latest:
     - pkgs: [ca-certificates, ssl-cert]
