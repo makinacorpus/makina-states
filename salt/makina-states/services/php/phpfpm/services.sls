@@ -14,6 +14,15 @@ include:
       # restart service in case of package install
       - mc_proxy: makina-php-post-restart
 {% endmacro %}
+
+{% if phpSettings.disabled_fpm_services %}
+makina-states-disable-main-fpm:
+  service.dead:
+    - names: {{phpSettings.disabled_fpm_services}}
+    - enable: false
+    - watch_in:
+      - mc_proxy: makina-php-pre-restart
+{% endif %}
 {{ h.service_restart_reload(phpSettings.service,
                             service_function=service_function,
                             pref='makina-phpfpm',

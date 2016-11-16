@@ -8,6 +8,7 @@
 {#- Common php installations (mod_php or php-fpm) files #}
 include:
   - makina-states.services.php.hooks
+  - makina-states.localsettings.pkgs.fixppas
 {%  if grains.get('lsb_distrib_id','') == "Debian" -%}
 {# Include dotdeb repository for Debian #}
   - makina-states.localsettings.repository_dotdeb
@@ -22,19 +23,21 @@ dotdeb-apache-makina-apache-php-pre-inst:
     - watch_in:
       - mc_proxy: makina-php-pre-inst
 {# Manage php-fpm packages @#}
-{% elif grains['os'] in ['Ubuntu'] and grains['osrelease'] < '16.04' %}
+{% elif phpSettings.use_ppa %}
 makina-php-repos:
   pkgrepo.managed:
     - humanname: php ppa
-    - name: deb http://ppa.launchpad.net/ondrej/php5-{{phpSettings.ppa_ver}}/ubuntu {{pkgssettings.udist}} main
+    - name: deb http://ppa.launchpad.net/ondrej/php/ubuntu {{pkgssettings.udist}} main
     - dist: {{pkgssettings.udist}}
     - file: /etc/apt/sources.list.d/phpppa.list
     - keyid: E5267A6C
     - keyserver: keyserver.ubuntu.com
     - watch:
       - mc_proxy: makina-php-pre-repo
+      - mc_proxy: makina-php-fix-repos
     - watch_in:
       - mc_proxy: makina-php-repos
+      - mc_proxy: makina-php-pre-inst
 {% else %}
 makina-php-repos:
   file.absent:

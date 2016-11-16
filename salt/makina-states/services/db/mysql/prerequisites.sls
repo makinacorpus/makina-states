@@ -1,5 +1,8 @@
 include:
   - makina-states.services.db.mysql.hooks
+  # if php is installed, we may be in an inconsistent state
+  - makina-states.localsettings.pkgs.fixppas
+
 {%- set mysqlSettings = salt['mc_mysql.settings']() %}
 {%- set venv = salt['mc_locations.settings']().venv %}
 {#
