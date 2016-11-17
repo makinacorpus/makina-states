@@ -1001,9 +1001,16 @@ def magicstring(thestr):
 
 def prefered_ips(bclients):
     clients = []
+    if isinstance(bclients, six.string_types):
+        bclients = [a.strip() for a in bclients.split()]
     for client in bclients:
         try:
-            clients.append(socket.gethostbyname(client))
+            try:
+                infos = socket.gethostbyname_ex(client)
+                assert bool(infos[2])
+                clients.extend(infos[2])
+            except Exception:
+                clients.append(socket.gethostbyname(client))
         except Exception:
             # try to ping
             ret = None
