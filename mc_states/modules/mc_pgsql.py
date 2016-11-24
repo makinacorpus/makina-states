@@ -25,6 +25,8 @@ PORT_RE = re.compile('port\s*=\s*([0-9]+)[^0-9]*$', re.M | re.U | re.S)
 SOCKET_RE = re.compile(
     'unix_socket_director(y|ies)\s*=\s*["\']([^"\']+)["\'].*$',
     re.M | re.U | re.S)
+__name = 'postgresql'
+PREFIX = 'makina-states.services.db.{0}'.format(__name)
 
 
 def wrapper(wrappy):
@@ -125,47 +127,40 @@ def settings():
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
-        grains = __grains__
-        pillar = __pillar__
-        #
-        # PostGRESQL:  (services.db.postgresql)
-        # default postgresql/ grains configured databases (see service doc)
-        #
-        pgDbs = {}
-        for dbk, data in pillar.items():
-            if dbk.endswith('-makina-postgresql'):
-                db = data.get('name', dbk.split('-makina-postgresql')[0])
-                pgDbs.update({db: data})
-        #
-        # default postgresql/ grains configured users (see service doc)
-        #
-        postgresqlUsers = {}
-        for userk, data in pillar.items():
-            if userk.endswith('-makina-services-sql-user'):
-                userk = data.get(
-                    'name',
-                    userk.replace('-makina-services-postgresql-user', ''))
-                if data.get('groups', None):
-                    if isinstance(data['groups'], basestring):
-                        data['groups'] = data['groups'].split(',')
-                postgresqlUsers.update({userk: data})
+        _g, _s, _p = __grains__, __salt__, __pillar__
         pkgs = __salt__['mc_pkgs.settings']()
         dist = pkgs['lts_dist']
-        if __grains__.get('os', '') == 'Ubuntu':
-            if LooseVersion(__grains__.get('osrelease', '0')) >= LooseVersion('16.04'):
-                xenial_onward = True
-                defaultPgVersion = '9.6'
-            else:
-                xenial_onward = False
-                defaultPgVersion = '9.6'
-            if LooseVersion(defaultPgVersion) >= '9.6':
-                pgis_version = '2.3'
-            elif LooseVersion(defaultPgVersion) >= '9.4':
-                pgis_version = '2.2'
-            else:
-                pgis_version = '2.1'
-
+        defaultPgVersion = '9.6'
         # default activated postgresql versions & settings:
+        defaultVersions = []
+        found_ports = []
+        pg_conf = {
+            'default': {
+                'catalog': 'pg_catalog.french',
+                'locale': 'fr_FR.UTF-8',
+                'port': 5432,
+                'unix_socket_directories': (
+                    "'/var/run/postgresql'"),
+                'ssl': 'true',
+                'listen': ['*'],
+                'datestyle': 'iso, dmy',
+                'timezone': 'localtime',
+                'max_connections': '100',
+                'max_locks_per_transaction': '164',
+                'max_pred_locks_per_transaction': '164',
+                'log_line_prefix': '%t ',
+                'log_timezone': 'localtime',
+                'shared_buffers': '128MB',
+                'ssl_cert_file': (
+                    '/etc/ssl/certs/'
+                    'ssl-cert-snakeoil.pem'),
+                'ssl_key_file': (
+                    '/etc/ssl/private/'
+                    'ssl-cert-snakeoil.key'),
+                'extras': {
+                },
+            },
+        }
         for i in ['9.6', '9.5', '9.4', '9.3', '9.2', '9.1']:
             # if we have old wrappers, include the old versions
             # to list of installed pgsql
@@ -177,54 +172,34 @@ def settings():
                     if portm:
                         port = portm.groups()[0]
                         try:
-                            if int(port) == 5432:
-                                defaultPgVersion = i
-                                break
+                            port = int(port)
+                            if port not in found_ports:
+                                if port == 5432:
+                                    defaultPgVersion = i
+                                found_ports.append(port)
+                                defaultVersions.append(i)
+                                pg_vconf = pg_conf.setdefault(i, {})
+                                pg_vconf.update({
+                                    'port': port,
+                                })
                         except (ValueError, TypeError) as exc:
                             pass
+        if not defaultVersions:
+            defaultVersions.append(defaultPgVersion)
 
-        defaultVersions = [defaultPgVersion]
-        pgSettings = __salt__['mc_utils.defaults'](
-            'makina-states.services.db.postgresql', {
+        pgSettings = _s['mc_utils.defaults'](
+            PREFIX, {
+                'pgDbs': {},
+                'postgresqlUsers': {},
                 'dist': dist,
-                'xenial_onward': xenial_onward,
                 'user': 'postgres',
                 'version': defaultPgVersion,
-                'defaultPgVersion': defaultPgVersion,
                 'versions': defaultVersions,
+                'defaultPgVersion': defaultPgVersion,
                 'encoding': 'utf8',
                 'locale': 'fr_FR.UTF-8',
-                'postgis': {
-                    pgis_version: defaultVersions + ['9.2']
-                },
                 'postgis_db': 'postgis',
-                'pg_conf': {
-                    'default': {
-                        'catalog': 'pg_catalog.french',
-                        'locale': 'fr_FR.UTF-8',
-                        'port': 5432,
-                        'unix_socket_directories': (
-                            "'/var/run/postgresql'"),
-                        'ssl': 'true',
-                        'listen': ['*'],
-                        'datestyle': 'iso, dmy',
-                        'timezone': 'localtime',
-                        'max_connections': '100',
-                        'max_locks_per_transaction': '164',
-                        'max_pred_locks_per_transaction': '164',
-                        'log_line_prefix': '%t ',
-                        'log_timezone': 'localtime',
-                        'shared_buffers': '128MB',
-                        'ssl_cert_file': (
-                            '/etc/ssl/certs/'
-                            'ssl-cert-snakeoil.pem'),
-                        'ssl_key_file': (
-                            '/etc/ssl/private/'
-                            'ssl-cert-snakeoil.key'),
-                        'extras': {
-                        }
-                    },
-                },
+                'pg_conf': pg_conf,
                 'pg_hba':  [
                     {'comment': "# administration "},
                     {'type': 'local',
@@ -264,19 +239,63 @@ def settings():
                 ]
             }
         )
+
+        postgis_pkgs = []
+        client_pkgs = ['libpq-dev']
+        packages = ['libpq-dev', 'postgresql-contrib']
+        postgis = {}
+
+        if __grains__.get('os', '') == 'Ubuntu':
+            if LooseVersion(__grains__.get('osrelease', '0')) < LooseVersion('16.04'):
+                for p in ['liblwgeom-dev']:
+                    if p not in postgis_pkgs:
+                        postgis_pkgs.append(p)
+
+        for version in pgSettings['versions']:
+            if LooseVersion(version) >= '9.6':
+                pgis_version = '2.3'
+            elif LooseVersion(version) >= '9.4':
+                pgis_version = '2.2'
+            else:
+                pgis_version = '2.1'
+            pgis_versions = postgis.setdefault(pgis_version, [])
+            if not version in pgis_versions:
+                pgis_versions.append(version)
+            pgis = 'postgresql-{0}-postgis-{1}'.format(version, pgis_version)
+            if pgis not in postgis_pkgs:
+                postgis_pkgs.insert(0, pgis)
+            scripts =  'postgresql-{0}-postgis-scripts'.format(version)
+            if scripts not in postgis_pkgs:
+                postgis_pkgs.append(scripts)
+            if _g['os_family'] in ['Debian']:
+                for pkgs, candidates in [
+                    [client_pkgs, ['postgresql-client-{0}'.format(version)]],
+                    [packages, ['postgresql-{0}',
+                                'postgresql-server-dev-{0}',
+                                'postgresql-{0}-pgextwlist']]
+                ]:
+                    for p in candidates:
+                        p = p.format(version)
+                        if p not in pkgs:
+                            pkgs.append(p)
+
+        data_second_round = {'packages': packages,
+                             'postgis': postgis,
+                             'client_pkgs': client_pkgs,
+                             'postgis_pkgs': postgis_pkgs}
+        second_round = _s['mc_utils.defaults'](PREFIX, copy.deepcopy(data_second_round))
+        for i in data_second_round:
+            pgSettings[i] = second_round[i]
+
         dpgconf = pgSettings['pg_conf']['default']
         dport = dpgconf['port']
         for i, ver in enumerate(pgSettings['versions']):
             pgconf = pgSettings['pg_conf'].setdefault(
                 ver, OrderedDict())
             pgconf.setdefault('port', dport + i)
-            pgSettings['pg_conf'][ver] = __salt__[
+            pgSettings['pg_conf'][ver] = _s[
                 'mc_utils.dictupdate'](
                     copy.deepcopy(dpgconf), pgconf)
-            pgSettings['pg_conf'][ver][
-                'unix_socket_directories']
-        pgSettings['pgDbs'] = pgDbs
-        pgSettings['postgresqlUsers'] = postgresqlUsers
         return pgSettings
     return _settings()
 

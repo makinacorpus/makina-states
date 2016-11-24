@@ -32,7 +32,7 @@ include:
 {%- if not owner -%}
 {%-   set owner = '%s_owners' % db %}
 {%- endif -%}
-{{ groups.postgresql_group(owner, user=user, login=True, suf=suf) }}
+{{ groups.postgresql_group(owner, user=user, login=True, suf=suf, version=version) }}
 {{version}}-{{ db }}-makina-postgresql-database:
   mc_postgres_database.present:
     - name: {{ db }}

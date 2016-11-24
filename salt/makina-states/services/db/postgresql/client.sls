@@ -7,6 +7,7 @@ include:
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set pkgs = salt['mc_pkgs.settings']() %}
 {%- set settings = salt['mc_pgsql.settings']() %}
+
 {%- if grains['os_family'] in ['Debian'] %}
 pgsql-repo:
   pkgrepo.managed:
@@ -20,20 +21,15 @@ pgsql-repo:
       - mc_proxy: {{orchestrate['base']['postpkg']}}
 {%- endif %}
 
+{% if settings.client_pkgs %}
 postgresql-pkgs-client:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
-    - pkgs:
-      - python-virtualenv {# noop #}
-      {% if grains['os_family'] in ['Debian'] %}
-      {% for pgver in settings.versions %}
-      - postgresql-client-{{pgver}}
-      {% endfor %}
-      - libpq-dev
-      {% endif %}
-    {% if grains['os_family'] in ['Debian'] %}
+    - pkgs: {{settings.client_pkgs }}
     - require:
+      {% if grains['os_family'] in ['Debian'] %}
       - pkgrepo: pgsql-repo
+      {% endif %}
       - mc_proxy: {{orchestrate['base']['prepkg']}}
     - require_in:
       - mc_proxy: {{orchestrate['base']['postpkg']}}
-    {% endif %}
+{% endif %}

@@ -18,7 +18,8 @@ include:
                          user=default_user,
                          watch=None,
                          watch_in=None,
-                         full=True) %}
+                         full=True,
+                         suf='') %}
 {%- if wait_for_database_creation is none %}
 {%- set  wait_for_database_creation = True %}
 {%- endif %}
@@ -35,16 +36,19 @@ include:
 {%- do dbs.append(db) %}
 {%- endif %}
 {%- if not versions %}
-{%- set versions = [settings.defaultPgVersion] %}
+{%- set versions = [] %}
 {%- endif %}
 {%- if version and not version in versions%}
 {%- do versions.append(version) %}
+{%- endif %}
+{%- if not versions %}
+{%- set versions = [settings.defaultPgVersion] %}
 {%- endif %}
 {% for version in versions %}
 {%  for db in dbs %}
 {%    for ext in exts %}
 {% set extidx = loop.index0 %}
-{{version}}-{{db}}-{{ext}}-makina-postgresql:
+{{version}}-{{db}}-{{ext}}-makina-postgresql{{suf}}:
   mc_postgres_extension.present:
     {% if wait_for_database_creation or watch or (extidx > 0) %}
     - watch:

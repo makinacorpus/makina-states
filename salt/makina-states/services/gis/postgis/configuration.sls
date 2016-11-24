@@ -7,7 +7,7 @@ include:
 {% for postgisVer, pgvers in pgSettings.postgis.items() -%}
 {%  for pgVer in pgvers -%}
 {%    if pgVer in pgSettings.versions -%}
-{{ pgsql.postgresql_db(dbname, full=full, version=pgVer) }}
+{{ pgsql.postgresql_db(dbname, full=full, version=pgVer, suf='postgis-{0}'.format(postgisVer)) }}
 {{ pgsql.install_pg_exts(
     ["postgis",
      "postgis_topology",
