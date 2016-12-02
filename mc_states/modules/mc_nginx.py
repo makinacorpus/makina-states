@@ -41,22 +41,6 @@ def settings():
         authorized reverse proxied addresses
     use_real_ip
         do we use real ip module
-    use_naxsi
-        configure & use naxsi
-    use_naxsi_secrules
-        use sec rules in naxsi
-    naxsi_ui_pass
-        pass for naxsi leaning mode ui
-    naxsi_ui_host
-        host for naxsi leaning mode ui
-    naxsi_ui_intercept_port
-        intercept_port for naxsi leaning mode ui
-    naxsi_ui_extract_port
-        extract port for naxsi leaning mode ui
-    use_naxsi_learning
-        put naxsi in learning mode
-    naxsi_denied_url
-        uri for naxsi refused cnx
     real_ip_header
         which http header to search for real ip
     reverse_proxy_addresses
@@ -180,8 +164,6 @@ def settings():
         _s, _g = __salt__, __grains__
         local_conf = _s['mc_macros.get_local_registry'](
             'nginx', registry_format='pack')
-        naxsi_ui_pass = local_conf.setdefault('naxsi_ui_pass',
-                                              secure_password(32))
         locations = _s['mc_locations.settings']()
         nbcpus = _g.get('num_cpus', '4')
         epoll = False
@@ -216,17 +198,8 @@ def settings():
                 'reverse_proxy_addresses': reverse_proxy_addresses,
                 'default_vhost': True,
                 'use_real_ip': True,
-                'use_naxsi': False,
-                'use_naxsi_secrules': True,
-                'naxsi_ui_user': 'naxsi_web',
                 'proxy_headers_hash_max_size': '1024',
                 'proxy_headers_hash_bucket_size': '128',
-                'naxsi_ui_pass': naxsi_ui_pass,
-                'naxsi_ui_host': '127.0.01',
-                'naxsi_ui_intercept_port': '18080',
-                'naxsi_ui_extract_port': '18081',
-                'use_naxsi_learning': True,
-                'naxsi_denied_url': "/RequestDenied",
                 'real_ip_header': 'X-Forwarded-For',
                 'logformat': 'custom_combined',
                 'logformats': logformats,
@@ -252,7 +225,6 @@ def settings():
                     '/etc/nginx/map_cache.conf': {},
                     '/etc/nginx/microcache_fcgi.conf': {},
                     '/etc/nginx/mime.types': {},
-                    '/etc/nginx/naxsi_core.rules': {},
                     '/etc/nginx/nginx.conf': {},
                     '/etc/nginx/php_fpm_status_vhost.conf': {},
                     '/etc/nginx/php_fpm_status_allowed_hosts.conf': {},
