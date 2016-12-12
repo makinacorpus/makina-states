@@ -48,10 +48,9 @@ lxc-conf-lxc-remove-files:
 
 lxc-conf-lxc-remove-files-reload:
   cmd.watch:
-    - name: systemctl daemon-reload
-    - onlyif: |
-              if ! which systemctl >/dev/null 2>&1;then exit 1;fi
-              systemctl show lxc
+    - name: |
+        if ! which systemctl >/dev/null 2>&1;then exit 0;fi
+        if systemctl show lxc;then systemctl daemon-reload;fi
     - require:
       - mc_proxy: lxc-post-conf
     - watch:
