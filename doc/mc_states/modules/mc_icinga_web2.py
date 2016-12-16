@@ -216,10 +216,10 @@ def settings():
                     'vhost_basename': 'icingaweb2',
                     'vh_content_source': (
                         "salt://makina-states/files/etc/nginx/"
-                        "sites-available/icinga-web2.content.conf"),
+                        "includes/icinga-web2.content.conf"),
                     'vh_top_source': (
                         "salt://makina-states/files/etc/"
-                        "nginx/sites-available/icinga-web2.top.conf"),
+                        "nginx/includes/icinga-web2.top.conf"),
                 },
                 'fastcgi_pass': (
                     "unix:/var/spool/www/"

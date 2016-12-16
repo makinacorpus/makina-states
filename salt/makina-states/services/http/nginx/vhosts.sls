@@ -9,9 +9,16 @@ include:
   - makina-states.services.http.common.default_vhost
   - makina-states.services.http.nginx.hooks
   - makina-states.services.http.nginx.services
-nginx-remove-def:
+nginx-remove-def1:
   file.absent:
     - name: /etc/nginx/sites-enabled/default
+    - require:
+      - mc_proxy: nginx-pre-conf-hook
+    - require_in:
+      - mc_proxy: nginx-post-conf-hook
+nginx-remove-def2:
+  file.absent:
+    - name: /etc/nginx/conf.d/default
     - require:
       - mc_proxy: nginx-pre-conf-hook
     - require_in:
@@ -25,9 +32,16 @@ nginx-remove-def:
     default_server=True,
     vh_content_source=nginxSettings.vhost_default_content)}}
 {% else %}
-removedef-nginx-test:
+removedef-nginx-default-test1:
   file.absent:
     - name: /etc/nginx/sites-enabled/localhost.conf
+    - watch_in:
+      - mc_proxy: nginx-pre-restart-hook
+    - watch:
+      - mc_proxy: nginx-post-conf-hook
+removedef-nginx-default-test2:
+  file.absent:
+    - name: /etc/nginx/conf.d/localhost.conf
     - watch_in:
       - mc_proxy: nginx-pre-restart-hook
     - watch:

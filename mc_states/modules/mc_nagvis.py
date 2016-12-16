@@ -227,11 +227,11 @@ def settings():
                     'doc_root': "/usr/share/nagvis/www/",
                     'vh_content_source': (
                         "salt://makina-states/files/etc/nginx/"
-                        "sites-available/nagvis.content.conf"
+                        "includes/nagvis.content.conf"
                     ),
                     'vh_top_source': (
                         "salt://makina-states/files/"
-                        "etc/nginx/sites-available/nagvis.top.conf"),
+                        "etc/nginx/includes/nagvis.top.conf"),
                     'nagvis': {
                         'htpasswd_file': '/etc/icinga2/htpasswd.users',
                         'web_directory': "/nagvis",

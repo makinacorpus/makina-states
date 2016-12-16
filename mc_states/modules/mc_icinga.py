@@ -558,8 +558,8 @@ def settings():
                         'nginx': {
                             'domain': "icinga-cgi.localhost",
                             'doc_root': "/usr/share/icinga/htdocs/",
-                            'vh_content_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-cgi.content.conf",
-                            'vh_top_source': "salt://makina-states/files/etc/nginx/sites-available/icinga-cgi.top.conf",
+                            'vh_content_source': "salt://makina-states/files/etc/nginx/includes/icinga-cgi.content.conf",
+                            'vh_top_source': "salt://makina-states/files/etc/nginx/includes/icinga-cgi.top.conf",
                             'icinga_cgi': {
                                 'web_directory': "",
                                 'realm': "Authentication",

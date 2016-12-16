@@ -9,8 +9,9 @@ nginx-vhost-dirs:
     - names:
       - {{settings.logdir}}
       - {{settings.basedir}}/conf.d
+      - {{settings.basedir}}/includes
       - {{settings.basedir}}/sites-available
-      - {{settings.basedir}}/sites-enabled
+      - {{settings.basedir}}/modules-enabled
     - mode: 755
     - makedirs: true
     - watch_in:
