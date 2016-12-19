@@ -28,6 +28,7 @@ apache-mpm:
 
 apache-repo:
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     - humanname: apache ppa
     - name: deb http://ppa.launchpad.net/ondrej/apache2/ubuntu {{pkgssettings.udist}} main
     - dist: {{pkgssettings.udist}}

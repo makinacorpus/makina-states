@@ -32,6 +32,7 @@ lxc-repo:
     - watch_in:
       - pkgrepo: lxc-repo
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     #- name: deb http://ppa.launchpad.net/ubuntu-lxc/daily/ubuntu {{pkgssettings.udist}} main
     - name: deb http://ppa.launchpad.net/ubuntu-lxc/stable/ubuntu {{pkgssettings.udist}} main
     - file: {{locs.conf_dir}}/apt/sources.list.d/lxc.list
@@ -51,6 +52,7 @@ mclxc-repo:
   {# 04/06/2015: lxcfs & lxc are utterly bugged in stable #}
   {#
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     - name: lxc
     - humanname: LXCMC PPA
     - name: deb http://ppa.launchpad.net/makinacorpus/lxc/ubuntu {{pkgssettings.udist}} main

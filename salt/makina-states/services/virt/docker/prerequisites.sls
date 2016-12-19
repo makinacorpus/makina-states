@@ -6,6 +6,7 @@ include:
 
 docker-repo:
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     - name: deb http://get.docker.io/ubuntu docker main
     - file: {{ locs.conf_dir }}/apt/sources.list.d/docker.list
     - key_url: https://get.docker.io/gpg

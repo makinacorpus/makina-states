@@ -6,6 +6,7 @@ include:
 {% set mir = 'deb http://ppa.launchpad.net/chris-lea/redis-server/ubuntu {0} main'.format(dist) %}
 redis-base:
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     - humanname: redis ppa
     - name: {{mir}}
     - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/redis.list
@@ -22,4 +23,3 @@ redis-pkgs:
     - watch_in:
       - mc_proxy: redis-pre-hardrestart
       - mc_proxy: redis-post-install
-
