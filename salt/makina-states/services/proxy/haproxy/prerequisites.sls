@@ -6,31 +6,44 @@ include:
 
 {% set f = salt['mc_locations.settings']().conf_dir + '/apt/sources.list.d/haproxy.list' %}
 
-haproxy-base:
+haproxy-base-cleanup:
   cmd.run:
-    - name: sed -i "/makinacorpus/ d" "{{f}}" && echo changed='false'
+    - names: 
+      - sed -i "/makinacorpus/ d" "{{f}}" && echo changed='false'
+      - sed -i "/haproxy-1.5/ d" "{{f}}" && echo changed='false'
+      - sed -i "/haproxy-1.6/ d" "{{f}}" && echo changed='false'
+{% if salt['mc_haproxy.version']() >= '1.6' %}
+      - |
+        if grep "listen stats :" /etc/haproxy/cfg.d/listeners.cfg >/dev/null 2>&1; then
+          rm -f /etc/haproxy/cfg.d/listeners.cfg
+          echo changed='false' 
+          exit 0
+        fi
+        exit 1
+{% endif %}
     - onlyif: test -e "{{f}}"
-    #- name: sed -i "/vbernat/ d" "{{f}}" && echo changed='false'
     - stateful: true
+    - require_in:
+      - pkgrepo: haproxy-base
     - watch:
       - mc_proxy: haproxy-pre-install-hook
     - watch_in:
       - mc_proxy: haproxy-pre-hardrestart-hook
       - mc_proxy: haproxy-post-install-hook
+
+haproxy-base:
   pkgrepo.managed:
     - humanname: haproxy ppa
-    - name: deb http://ppa.launchpad.net/vbernat/haproxy-1.5/ubuntu {{pkgssettings.udist}} main
+    - name: deb http://ppa.launchpad.net/vbernat/haproxy-1.7/ubuntu {{pkgssettings.udist}} main
     - dist: {{pkgssettings.udist}}
     - file: "{{f}}"
     - keyid: 1C61B9CD
     - keyserver: keyserver.ubuntu.com
-    - require:
-      - cmd: haproxy-base
     - require_in:
       - pkg: haproxy-pkgs
 
 haproxy-pkgs:
-  pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
+  pkg.latest:
     - pkgs:
       - haproxy
     - watch:
