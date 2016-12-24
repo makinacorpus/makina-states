@@ -8,7 +8,7 @@ include:
 
 haproxy-base-cleanup:
   cmd.run:
-    - names: 
+    - names:
       - sed -i "/makinacorpus/ d" "{{f}}" && echo changed='false'
       - sed -i "/haproxy-1.5/ d" "{{f}}" && echo changed='false'
       - sed -i "/haproxy-1.6/ d" "{{f}}" && echo changed='false'
@@ -16,10 +16,8 @@ haproxy-base-cleanup:
       - |
         if grep "listen stats :" /etc/haproxy/cfg.d/listeners.cfg >/dev/null 2>&1; then
           rm -f /etc/haproxy/cfg.d/listeners.cfg
-          echo changed='false' 
-          exit 0
         fi
-        exit 1
+        echo changed='false'
 {% endif %}
     - onlyif: test -e "{{f}}"
     - stateful: true
