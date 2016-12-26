@@ -2248,8 +2248,7 @@ def rrs_for(domain, aslist=False):
         rrs_txt_for(domain) + '\n' +
         rrs_raw_for(domain) + '\n' +
         rrs_mx_for(domain) + '\n' +
-        rrs_srv_for(domain) + '\n' +
-        rrs_cnames_for(domain)
+        rrs_srv_for(domain)
     )
     try:
         aas = rrs_a_for(domain)
@@ -2261,7 +2260,8 @@ def rrs_for(domain, aslist=False):
         aaaas = []
     for aas_ in (aas, aaaas):
         if aas_:
-            rr = rr + '\n' + aas_
+            rr = rr + '\n' + aas_ + '\n'
+    rr += rrs_cnames_for(domain)
     if aslist:
         rr = [a.strip() for a in rr.split('\n') if a.strip()]
     return rr
