@@ -3143,6 +3143,7 @@ def get_non_supervised_hosts(ttl=PILLAR_TTL):
 
 def get_supervision_objects_defs(id_):
     rdata = {}
+    _s = __salt__
     net = load_network_infrastructure()
     non_supervised_hosts = get_non_supervised_hosts()
     disable_common_checks = {'disk_space': False,
@@ -3151,11 +3152,11 @@ def get_supervision_objects_defs(id_):
                              'ntp_time': False,
                              'swap': False,
                              'ping': False}
-    providers = __salt__['mc_network.providers']()
+    providers = _s['mc_network.providers']()
     physical_hosts_to_check = set()
     host = 'HOST'
     if is_supervision_kind(id_, 'master'):
-        data = __salt__[__name + '.query']('supervision_configurations', {})
+        data = _s[__name + '.query']('supervision_configurations', {})
         defs = data.get('definitions', {})
         sobjs = defs.setdefault('objects', OrderedDict())
         hhosts = defs.setdefault('autoconfigured_hosts', OrderedDict())
@@ -3164,7 +3165,7 @@ def get_supervision_objects_defs(id_):
                 hhosts[hhost].setdefault(i, OrderedDict())
                 if not isinstance(hhosts[hhost][i], dict):
                     hhosts[hhost][i] = OrderedDict()
-        maps = __salt__[__name + '.get_db_infrastructure_maps']()
+        maps = _s[__name + '.get_db_infrastructure_maps']()
         for host, vts in maps['bms'].items():
             if host in non_supervised_hosts:
                 continue
@@ -3197,7 +3198,7 @@ def get_supervision_objects_defs(id_):
             hdata.setdefault('nic_card', ['eth0'])
             if vts:
                 hdata['memory_mode'] = 'large'
-            for vt in __salt__['mc_cloud_compute_node.get_all_vts']():
+            for vt in _s['mc_cloud_compute_node.get_all_vts']():
                 attrs['vars.{0}'.format(vt)] = vt in vts
                 if vt in vts:
                     for i in [
@@ -3213,7 +3214,7 @@ def get_supervision_objects_defs(id_):
                     break
             if not host_provider:
                 for provider in providers:
-                    if __salt__[
+                    if _s[
                         'mc_network.is_{0}'.format(provider)
                     ](attrs['address']):
                         host_provider = provider
@@ -3227,7 +3228,7 @@ def get_supervision_objects_defs(id_):
             for i in ['HG_HOSTS', 'HG_BMS']:
                 if i not in groups:
                     groups.append(i)
-            if host not in __salt__[__name + '.query'](
+            if host not in _s[__name + '.query'](
                 'non_managed_hosts', {}
             ):
                 ds = hdata.setdefault('disk_space', [])
@@ -3246,7 +3247,7 @@ def get_supervision_objects_defs(id_):
             physical_hosts_to_check.add(host)
             vt = vdata['vt']
             host = vdata['target']
-            host_ip = ip_for(host)
+            host_ips = ips_for(host, fail_over=True)
             hdata = hhosts.setdefault(vm, OrderedDict())
             attrs = hdata.setdefault('attrs', OrderedDict())
             sattrs = hdata.setdefault('services_attrs', OrderedDict())
@@ -3276,7 +3277,7 @@ def get_supervision_objects_defs(id_):
             # we in this case access the VMS via their private network IP
             if vm_parent == host:
                 ssh_host = snmp_host = 'localhost'
-                eext_pillar = __salt__['mc_cloud_vm.vm_extpillar'](vm)
+                eext_pillar = _s['mc_cloud_vm.vm_extpillar'](vm)
                 ssh_host = snmp_host = eext_pillar['ip']
             # we can access sshd and snpd on cloud vms
             # thx to special port mappings
@@ -3286,14 +3287,14 @@ def get_supervision_objects_defs(id_):
             if (
                 is_cloud_vm(vm) and
                 vt in ['lxc'] and
-                ((vm_parent != host and tipaddr == host_ip))
+                ((vm_parent != host and tipaddr in host_ips))
             ):
                 ssh_port = (
-                    __salt__['mc_cloud_compute_node.get_ssh_port'](vm))
+                    _s['mc_cloud_compute_node.get_ssh_port'](vm))
                 snmp_port = (
-                    __salt__['mc_cloud_compute_node.get_snmp_port'](vm))
+                    _s['mc_cloud_compute_node.get_snmp_port'](vm))
             no_common_checks = vdata.get('no_common_checks', False)
-            if tipaddr == host_ip and vt in ['lxc']:
+            if tipaddr in host_ips and vt in ['lxc']:
                 no_common_checks = True
             cloud_vm_attrs = query('cloud_vm_attrs')
             np = cloud_vm_attrs.get('network_profile', {})
@@ -3304,7 +3305,7 @@ def get_supervision_objects_defs(id_):
 
             if (
                 tipaddr in other_ips and
-                tipaddr != host_ip and
+                tipaddr not in host_ips and
                 vt in ['lxc', 'docker']
             ):
                 # specific ip on lxc, monitor eth1
@@ -3314,7 +3315,7 @@ def get_supervision_objects_defs(id_):
                 if i not in groups:
                     groups.append(i)
             # those checks are useless on lxc
-            if vt in ['lxc'] and vm in __salt__[__name + '.query']('non_managed_hosts', {}):
+            if vt in ['lxc'] and vm in _s[__name + '.query']('non_managed_hosts', {}):
                 no_common_checks = True
             if no_common_checks:
                 hdata.update(disable_common_checks)
@@ -3378,7 +3379,7 @@ def get_supervision_objects_defs(id_):
                 hdata['backup_burp_age'] = False
                 hdata['burp_counters'] = False
             if hdata.get('backup_burp_age', None) is not False:
-                bsm = __salt__[__name + '.query']('backup_server_map', {})
+                bsm = _s[__name + '.query']('backup_server_map', {})
                 burp_default_server = bsm['default']
                 burp_server = bsm.get(host, burp_default_server)
                 burpattrs = sattrs.setdefault('backup_burp_age', {})
@@ -3396,7 +3397,7 @@ def get_supervision_objects_defs(id_):
             if id_ == host:
                 for i in parents[:]:
                     parents.pop()
-            hdata['parents'] = __salt__['mc_utils.uniquify'](parents)
+            hdata['parents'] = _s['mc_utils.uniquify'](parents)
         for g in [a for a in sobjs]:
             if 'HG_PROVIDER_' in g:
                 sobjs[g.replace('HG_PROVIDER_', '')] = {
