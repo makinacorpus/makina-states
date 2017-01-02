@@ -814,14 +814,16 @@ def load_raw_network_infrastructure(ttl=PILLAR_TTL):
     dbi = get_db_infrastructure_maps()
     baremetal_hosts = dbi['bms']
 
+    # ipv4
     for fqdn in ipsfo:
         if fqdn in ips:
             continue
         ips[fqdn] = ips_for(fqdn, fail_over=True)
+    # ipv6
     for fqdn in ip6sfo:
         if fqdn in ips:
             continue
-        ips[fqdn] = ip6s_for(fqdn, fail_over=True)
+        ip6s[fqdn] = ip6s_for(fqdn, fail_over=True)
 
     # ADD A Mappings for aliased ips (manual) or over ip failover
     cvms = OrderedDict()
@@ -917,9 +919,9 @@ def load_raw_network_infrastructure(ttl=PILLAR_TTL):
         if vm not in ip6s:
             try:
                 if vm in ip6s_map:
-                    ips[vm] = ip6s_for(vm)
+                    ip6s[vm] = ip6s_for(vm)
                 else:
-                    ips[vm] = ip6s_for(vm_host)
+                    ip6s[vm] = ip6s_for(vm_host)
                 # accept ipv6 only conf
                 errors.pop(vm, None)
             except (IPRetrievalError,) as exc:
@@ -939,29 +941,7 @@ def load_raw_network_infrastructure(ttl=PILLAR_TTL):
         domains = _data.get('domains', [])
         if not isinstance(domains, list):
             continue
-        for domain in domains:
-            dips = ip6s.setdefault(domain, [])
-            # never append an ip of a vm is it is already defined
-            if len(dips):
-                continue
-            aliases = ip6s_map.get(domain, [])
-            if aliases:
-                for alias in aliases:
-                    try:
-                        for ip in ip6s_for(alias, fail_over=True):
-                            if ip not in dips:
-                                dips.append(ip)
-                    except IPRetrievalError:
-                        continue
-            # never append an ip if it was aliased before
-            if len(dips):
-                continue
-            try:
-                for ip in ip6s_for(vm, fail_over=True):
-                    if ip not in dips:
-                        dips.append(ip)
-            except IPRetrievalError:
-                continue
+        # ipv4
         for domain in domains:
             dips = ips.setdefault(domain, [])
             # never append an ip of a vm is it is already defined
@@ -985,12 +965,38 @@ def load_raw_network_infrastructure(ttl=PILLAR_TTL):
                         dips.append(ip)
             except IPRetrievalError:
                 continue
+        # ipv6
+        for domain in domains:
+            dips = ip6s.setdefault(domain, [])
+            # never append an ip of a vm is it is already defined
+            if len(dips):
+                continue
+            aliases = ip6s_map.get(domain, [])
+            if aliases:
+                for alias in aliases:
+                    try:
+                        for ip in ip6s_for(alias, fail_over=True):
+                            if ip not in dips:
+                                dips.append(ip)
+                    except IPRetrievalError:
+                        continue
+            # never append an ip if it was aliased before
+            if len(dips):
+                continue
+            try:
+                for ip in ip6s_for(vm, fail_over=True):
+                    if ip not in dips:
+                        dips.append(ip)
+            except IPRetrievalError:
+                continue
 
     # add all IPS  from aliased ips to main dict
+    # ipv4
     for fqdn in ips_map:
         if fqdn in ips:
             continue
         ips[fqdn] = ips_for(fqdn)
+    # ipv6
     for fqdn in ip6s_map:
         if fqdn in ip6s:
             continue
@@ -1057,7 +1063,6 @@ def load_raw_network_infrastructure(ttl=PILLAR_TTL):
             if errors:
                 raise IPRetrievalError(' '.join([a for a in errors]))
 
-
     data['raw_db_loading'] = False
     data['raw_db_loaded'] = True
     return data
@@ -1090,7 +1095,7 @@ def ip6s_canfailover_for(*a, **kw):
         return ips
     except IPRetrievalError:
         kw['fail_over'] = True
-        return ips_for(*a, **kw)
+        return ip6s_for(*a, **kw)
 
 
 def ip_canfailover_for(*a, **kw):
@@ -1140,6 +1145,7 @@ def load_network_infrastructure(ttl=PILLAR_TTL):
             # special case
             if '.' in slave and zone not in nsq:
                 continue
+            # ipv4
             if nsq not in ips:
                 if nsq.endswith(zone) and nsq != slave:
                     nsqs = ips.setdefault(nsq, [])
@@ -1150,22 +1156,29 @@ def load_network_infrastructure(ttl=PILLAR_TTL):
                     for ip in sips:
                         if ip not in nsqs:
                             nsqs.append(ip)
-
             if slave in cnames and slave not in ips:
                 ips[slave] = [ip_canfailover_for(cnames[slave][:-1])]
-            if slave in cnames and slave not in ip6s:
-                ips[slave] = [ip6_canfailover_for(cnames[slave][:-1])]
-
             if nsq in cnames and slave not in ips:
                 ips[slave] = [ip_canfailover_for(cnames[nsq][:-1])]
-            if nsq in cnames and slave not in ip6s:
-                ip6s[slave] = [ip6_canfailover_for(cnames[nsq][:-1])]
-
             if (nsq in ips or nsq in ips_map) and slave not in ips:
                 ips[slave] = [ip_canfailover_for(nsq)]
+            # ipv6
+            if nsq not in ip6s:
+                if nsq.endswith(zone) and nsq != slave:
+                    nsqs = ip6s.setdefault(nsq, [])
+                    try:
+                        sips = ip6s_canfailover_for(slave)
+                    except IPRetrievalError:
+                        sips = []
+                    for ip in sips:
+                        if ip not in nsqs:
+                            nsqs.append(ip)
+            if slave in cnames and slave not in ip6s:
+                ip6s[slave] = [ip6_canfailover_for(cnames[slave][:-1])]
+            if nsq in cnames and slave not in ip6s:
+                ip6s[slave] = [ip6_canfailover_for(cnames[nsq][:-1])]
             if (nsq in ip6s or nsq in ip6s_map) and slave not in ip6s:
                 ip6s[slave] = [ip6_canfailover_for(nsq)]
-
     mxs = []
     for servers in mx_map.values():
         for server in servers:
@@ -1905,6 +1918,7 @@ def rrs_aaaa_for(domain, ttl=PILLAR_TTL):
         db = load_network_infrastructure()
         rrs_ttls = __salt__[__name + '.query']('rrs_ttls', {})
         ips = db['ip6s']
+        ip4s = db['ips']
         all_rrs = OrderedDict()
         domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
                                re.M | re.U | re.S | re.I)
@@ -1913,7 +1927,11 @@ def rrs_aaaa_for(domain, ttl=PILLAR_TTL):
             if domain_re.search(fqdn):
                 rrs = all_rrs.setdefault(fqdn, [])
                 if not ips[fqdn]:
-                    raise RRError('No ip for {0}'.format(fqdn))
+                    if fqdn in ip4s:
+                        log.trace('{0} has only ipv4 resolution'.format(fqdn))
+                        continue
+                    else:
+                        raise RRError('No ip for {0}'.format(fqdn))
                 for rr in rr_entry(
                     fqdn, ips[fqdn], rrs_ttls, record_type='AAAA'
                 ).split('\n'):
