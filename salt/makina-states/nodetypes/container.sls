@@ -19,7 +19,7 @@ container-container-pkgs:
       - cmd: container-do-cleanup
 
 {% set extra_confs = {
-  '/usr/bin/ms-lxc-setup.sh': {"mode": "755"},
+  '/usr/bin/lxc-setup.sh': {"mode": "755"},
   '/etc/init/lxc-setup.conf': {"mode": "644"},
   '/etc/init/lxc-stop.conf': {"mode": "644"},
   '/sbin/build_lxccorepackages.sh': {

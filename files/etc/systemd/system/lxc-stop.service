@@ -7,7 +7,7 @@ DefaultDependencies=no
 [Service]
 Type=oneshot
 ExecStart=/bin/true
-ExecStop=/usr/bin/ms-lxc-stop.sh
+ExecStop=/usr/bin/lxc-stop.sh
 
 [Install]
 WantedBy=shutdown.target
