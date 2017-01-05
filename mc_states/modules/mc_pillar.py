@@ -2120,7 +2120,7 @@ def serial_for(domain,
         try:
             db_serial = int(serials.get(domain, serial))
         except (ValueError, TypeError):
-            db_serial = serial
+            db_serial = -1
         tnow = time.time()
         dnow = datetime.datetime.now()
         ttl_key = '{0}__ttl__'.format(domain)
@@ -2201,8 +2201,9 @@ def serial_for(domain,
                     if ns in dns_failures:
                         dns_failures.pop(ns, None)
             if dns_serial != serial and dns_serial > 0:
-                serial = dns_serial
+                serial = max(dns_serial, db_serial)
         except Exception, ex:
+
             hasns, nsip, failure = True, '', {}
             trace = traceback.format_exc()
             try:
