@@ -2200,8 +2200,7 @@ def serial_for(domain,
                                 dns_serial = soa.serial
                     if ns in dns_failures:
                         dns_failures.pop(ns, None)
-            if dns_serial != serial and dns_serial > 0:
-                serial = max(dns_serial, db_serial)
+            serial = max(serial, dns_serial, db_serial)
         except Exception, ex:
 
             hasns, nsip, failure = True, '', {}
