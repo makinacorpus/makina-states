@@ -32,6 +32,15 @@ network-cfg:
     - name: {{ locs.conf_dir }}/network/interfaces
     - source: salt://makina-states/files/etc/network/interfaces
     - watch_in:
+
+network-cfg-custom:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: '0644'
+    - makedirs: true
+    - name: "{{ locs.conf_dir }}/network/interfaces.d/custom.cfg"
+    - watch_in:
       - mc_proxy: network-cfg-gen
 
 # second chance to bring up failover ips
