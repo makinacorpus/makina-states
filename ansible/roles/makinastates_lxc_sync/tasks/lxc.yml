@@ -1,6 +1,7 @@
 ---
 - name: "Synchronise {{lxc_container_name}} to {{inventory_hostname}} from {{lxc_orig_host}}"
   synchronize:
+    compress: false
     src: '{{lxc_path}}/{{lxc_container_name}}/'
     dest: '{{lxc_path}}/{{lxc_container_name}}/'
     rsync_opts: ['-a', '-z', '-v', '--delete']
