@@ -41,22 +41,6 @@ def settings():
         authorized reverse proxied addresses
     use_real_ip
         do we use real ip module
-    use_naxsi
-        configure & use naxsi
-    use_naxsi_secrules
-        use sec rules in naxsi
-    naxsi_ui_pass
-        pass for naxsi leaning mode ui
-    naxsi_ui_host
-        host for naxsi leaning mode ui
-    naxsi_ui_intercept_port
-        intercept_port for naxsi leaning mode ui
-    naxsi_ui_extract_port
-        extract port for naxsi leaning mode ui
-    use_naxsi_learning
-        put naxsi in learning mode
-    naxsi_denied_url
-        uri for naxsi refused cnx
     real_ip_header
         which http header to search for real ip
     reverse_proxy_addresses
@@ -164,10 +148,10 @@ def settings():
         salt://makina-states/files/etc/nginx/sites-available/default.conf'
     vhost_top_template
        default template to include in vhost top
-       salt://makina-states/files/etc/nginx/sites-available/vhost.top.conf,
+       salt://makina-states/files/etc/nginx/includes/vhost.top.conf,
     vhost_content_template
        default template for vhost content
-       salt://makina-states/files/etc/nginx/sites-available/vhost.content.conf
+       salt://makina-states/files/etc/nginx/includes/vhost.content.conf
     virtualhosts
         Mapping containing all defined virtualhosts
     rotate
@@ -180,8 +164,6 @@ def settings():
         _s, _g = __salt__, __grains__
         local_conf = _s['mc_macros.get_local_registry'](
             'nginx', registry_format='pack')
-        naxsi_ui_pass = local_conf.setdefault('naxsi_ui_pass',
-                                              secure_password(32))
         locations = _s['mc_locations.settings']()
         nbcpus = _g.get('num_cpus', '4')
         epoll = False
@@ -216,17 +198,8 @@ def settings():
                 'reverse_proxy_addresses': reverse_proxy_addresses,
                 'default_vhost': True,
                 'use_real_ip': True,
-                'use_naxsi': False,
-                'use_naxsi_secrules': True,
-                'naxsi_ui_user': 'naxsi_web',
                 'proxy_headers_hash_max_size': '1024',
                 'proxy_headers_hash_bucket_size': '128',
-                'naxsi_ui_pass': naxsi_ui_pass,
-                'naxsi_ui_host': '127.0.01',
-                'naxsi_ui_intercept_port': '18080',
-                'naxsi_ui_extract_port': '18081',
-                'use_naxsi_learning': True,
-                'naxsi_denied_url': "/RequestDenied",
                 'real_ip_header': 'X-Forwarded-For',
                 'logformat': 'custom_combined',
                 'logformats': logformats,
@@ -239,23 +212,16 @@ def settings():
                 'open_file_cache': 'max=200000 inactive=5m',
                 'open_file_cache_valid': '6m',
                 'configs': {
-                    '/etc/nginx/drupal_cron_allowed_hosts.conf': {},
                     '/etc/nginx/fastcgi_fpm_symfony.conf': {},
                     '/etc/nginx/fastcgi_fpm_drupal.conf': {},
-                    '/etc/nginx/fastcgi_fpm_drupal_params.conf': {},
-                    '/etc/nginx/fastcgi_fpm_drupal_private_files.conf': {},
-                    '/etc/nginx/fastcgi_microcache_zone.conf': {},
                     '/etc/nginx/fastcgi_params': {},
-                    '/etc/nginx/fastcgi_params_common': {},
                     '/etc/nginx/koi-utf': {},
                     '/etc/nginx/koi-win': {},
                     '/etc/nginx/map_cache.conf': {},
                     '/etc/nginx/microcache_fcgi.conf': {},
                     '/etc/nginx/mime.types': {},
-                    '/etc/nginx/naxsi_core.rules': {},
                     '/etc/nginx/nginx.conf': {},
                     '/etc/nginx/php_fpm_status_vhost.conf': {},
-                    '/etc/nginx/php_fpm_status_allowed_hosts.conf': {},
                     '/etc/nginx/proxy_params': {},
                     '/etc/nginx/scgi_params': {},
                     '/etc/nginx/status_allowed_hosts.conf': {},
@@ -310,6 +276,13 @@ def settings():
                 'docdir': '/usr/share/doc/nginx',
                 'doc_root': www_reg['doc_root'],
                 'service': 'nginx',
+                'fpm_statuspath': '/fpmstatus',
+                'fpm_ping': '/ping',
+                'status_allowed_ip': [
+                    '127.0.0.1',
+                    '192.168.0.0/16',
+                    '10.0.0.0/8'
+                ],
                 'basedir': locations['conf_dir'] + '/nginx',
                 'confdir': locations['conf_dir'] + '/nginx/conf.d',
                 'logdir': locations['var_log_dir'] + '/nginx',
@@ -325,10 +298,10 @@ def settings():
                     'etc/nginx/sites-available/default.conf'),
                 'vhost_top_template': (
                     'salt://makina-states/files/'
-                    'etc/nginx/sites-available/vhost.top.conf'),
+                    'etc/nginx/includes/vhost.top.conf'),
                 'vhost_content_template': (
                     'salt://makina-states/files/'
-                    'etc/nginx/sites-available/vhost.content.conf'),
+                    'etc/nginx/includes/vhost.content.conf'),
             }
         )
         _s['mc_macros.update_local_registry'](
@@ -359,11 +332,11 @@ def vhost_settings(domain, doc_root, **kwargs):
         nginxSettings['basedir'] + "/sites-available/" + vhost_basename + ".conf")
     kwargs.setdefault(
         'vhost_content_file',
-        (nginxSettings['basedir'] + "/sites-available/" +
+        (nginxSettings['basedir'] + "/includes/" +
          vhost_basename + ".content.conf"))
     kwargs.setdefault(
         'vhost_top_file',
-        nginxSettings['basedir'] + "/sites-available/" + vhost_basename + ".top.conf")
+        nginxSettings['basedir'] + "/includes/" + vhost_basename + ".top.conf")
     kwargs.setdefault('with_include_sls_statement', False)
     kwargs.setdefault('redirect_aliases', True)
     kwargs.setdefault('force_reload', True)

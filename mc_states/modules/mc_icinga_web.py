@@ -387,10 +387,10 @@ def settings():
                     'doc_root': "/usr/share/icinga-web/www/",
                     'vh_content_source': (
                         "salt://makina-states/files/etc/nginx/"
-                        "sites-available/icinga-web.content.conf"),
+                        "includes/icinga-web.content.conf"),
                     'vh_top_source': (
                         "salt://makina-states/files/etc/"
-                        "nginx/sites-available/icinga-web.top.conf"),
+                        "nginx/includes/icinga-web.top.conf"),
                     'icinga_web': {
                         'htpasswd_file': '/etc/icinga2/htpasswd.users',
                         'web_directory': "/icinga-web",
