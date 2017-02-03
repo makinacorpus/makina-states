@@ -3297,14 +3297,15 @@ def get_supervision_objects_defs(id_):
             if tipaddr in host_ips and vt in ['lxc']:
                 no_common_checks = True
             cloud_vm_attrs = query('cloud_vm_attrs')
-            np = cloud_vm_attrs.get('network_profile', {})
+            np = cloud_vm_attrs.get(vm, {}).get('network_profile', {})
             other_ips = []
             if np:
-                other_ips = [a['ipv4'] for ifc, a in six.iteritems(np)
-                             if ifc not in ['eth0']]
-
+                other_ips = [a for a in [a.get('ip', a.get('ipv4', None))
+                                         for ifc, a in six.iteritems(np)
+                                         if ifc not in ['eth0']]
+                             if a]
             if (
-                tipaddr in other_ips and
+                ((tipaddr in other_ips) or not other_ips) and
                 tipaddr not in host_ips and
                 vt in ['lxc', 'docker']
             ):
