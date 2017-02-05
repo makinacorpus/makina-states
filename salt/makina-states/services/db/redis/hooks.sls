@@ -24,8 +24,8 @@ redis-pre-conf:
 redis-post-conf:
   mc_proxy.hook:
     - watch_in:
-      - mc_proxy: redis-pre-restart
-      - mc_proxy: redis-post-restart
+      - mc_proxy: redis-pre-hardrestart
+      - mc_proxy: redis-post-hardrestart
 
 redis-pre-restart:
   mc_proxy.hook:
