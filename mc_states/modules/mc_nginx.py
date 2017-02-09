@@ -342,6 +342,7 @@ def vhost_settings(domain, doc_root, **kwargs):
     kwargs.setdefault('force_reload', True)
     kwargs.setdefault('force_restart', False)
     kwargs.setdefault('domain', domain)
+    kwargs.setdefault('http2', False)
     kwargs.setdefault('active', nginxSettings['default_activation'])
     kwargs.setdefault('server_name', kwargs['domain'])
     kwargs.setdefault('default_server', False)
