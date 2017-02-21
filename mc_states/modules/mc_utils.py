@@ -882,7 +882,8 @@ def sls_load(sls, get_inner=False):
         add_stuff_to_opts(__opts)
         jinjarend = salt.loader.render(__opts, __salt__)
         data_l = salt.template.compile_template(
-            sls, jinjarend, __opts['renderer'], 'base')
+            sls, jinjarend, __opts['renderer'], saltenv='base',
+            blacklist=None, whitelist=None)
     except Exception:
         trace = traceback.format_exc()
         log.error(trace)
