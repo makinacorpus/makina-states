@@ -27,7 +27,6 @@ include:
 
 jdk-repo:
   pkgrepo.managed:
-    - retry: {attempts: 6, interval: 10}
     - watch:
       - mc_proxy: makina-states-jdk_begin
     - name: deb http://ppa.launchpad.net/webupd8team/java/ubuntu {{ salt['mc_pkgs.settings']().udist }} main

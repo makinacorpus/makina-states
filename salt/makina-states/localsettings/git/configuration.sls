@@ -15,7 +15,6 @@ global-git-config:
 {% if grains['oscodename'] in ['precise'] %}
 git-recent-base:
   pkgrepo.managed:
-    - retry: {attempts: 6, interval: 10}
     - humanname: git ppa
     - name: deb http://ppa.launchpad.net/git-core/ppa/ubuntu {{grains['oscodename']}} main
     - dist: {{grains['oscodename']}}

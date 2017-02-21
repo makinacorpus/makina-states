@@ -7,7 +7,6 @@ include:
 {% if burp.ppa %}
 burp-repo:
   pkgrepo.managed:
-    - retry: {attempts: 6, interval: 10}
     - humanname: burp stable ppa
     - name: '{{burp.ppa}}'
     - file: {{locs.conf_dir}}/apt/sources.list.d/burp.list

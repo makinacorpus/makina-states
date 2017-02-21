@@ -11,7 +11,6 @@ include:
 {%- set locs = salt['mc_locations.settings']() %}
 dotdeb-repo:
   pkgrepo.managed:
-    - retry: {attempts: 6, interval: 10}
     - humanname: DotDeb PPA
     - name: deb http://packages.dotdeb.org  {{pkgssettings.dist}}  all
     - dist: {{pkgssettings.dist}}

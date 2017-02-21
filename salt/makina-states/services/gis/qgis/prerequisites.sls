@@ -5,7 +5,6 @@ include:
 {% set locs = salt['mc_locations.settings']() %}
 qgis-repo:
   pkgrepo.managed:
-    - retry: {attempts: 6, interval: 10}
     - name: deb http://qgis.org/debian {{pkgssettings.dist}} main
     - file: {{ locs.conf_dir }}/apt/sources.list.d/qgis.list
     - keyid: '47765B75'

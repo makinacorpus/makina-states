@@ -9,7 +9,6 @@ include:
 {% endif %}
 mongodb-base:
   pkgrepo.managed:
-    - retry: {attempts: 6, interval: 10}
     - humanname: mongodb ppa
     - name: {{mir}}
     - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/mongodb.list
@@ -28,3 +27,4 @@ mongodb-pkgs:
     - watch_in:
       - mc_proxy: mongodb-pre-hardrestart
       - mc_proxy: mongodb-post-install
+

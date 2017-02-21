@@ -4,7 +4,6 @@ include:
 {% if grains['os'] in ['Ubuntu'] %}
 chrome-base:
   pkgrepo.managed:
-    - retry: {attempts: 6, interval: 10}
     - humanname: chrome ppa
     - name: deb http://dl.google.com/linux/chrome/deb/ stable main
     - dist: stable

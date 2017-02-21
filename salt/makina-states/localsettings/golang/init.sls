@@ -9,7 +9,6 @@ include:
 {%- if (grains['os'] in ['Ubuntu'])%}
 golang-ppa:
   pkgrepo.managed:
-    - retry: {attempts: 6, interval: 10}
     - name: deb {{data.ppa}} {{data.dist}} main
     - dist: {{data.dist}}
     - file: {{locs.conf_dir}}/apt/sources.list.d/golang.list

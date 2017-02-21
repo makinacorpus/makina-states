@@ -26,7 +26,6 @@ dotdeb-apache-makina-apache-php-pre-inst:
 {% elif phpSettings.use_ppa %}
 makina-php-repos:
   pkgrepo.managed:
-    - retry: {attempts: 6, interval: 10}
     - humanname: php ppa
     - name: deb http://ppa.launchpad.net/ondrej/php/ubuntu {{pkgssettings.udist}} main
     - dist: {{pkgssettings.udist}}

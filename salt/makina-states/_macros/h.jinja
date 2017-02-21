@@ -67,7 +67,6 @@
     - stateful: true
 {% endif %}
   pkgrepo.managed:
-    - retry: {attempts: 6, interval: 10}
     - name: "{{name}}"
     - file: "{{file}}"
     {% if dist %}- dist: "{{dist}}"{% endif %}

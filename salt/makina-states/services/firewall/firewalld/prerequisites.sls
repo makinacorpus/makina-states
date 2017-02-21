@@ -4,7 +4,6 @@ include:
   - makina-states.services.firewall.firewalld.hooks
 firewalld-repo:
   pkgrepo.managed:
-    - retry: {attempts: 6, interval: 10}
     - humanname: firewalld ppa
     - name: deb http://ppa.launchpad.net/makinacorpus/firewalld/ubuntu {{pkgssettings.udist}} main
     - dist: {{pkgssettings.udist}}
