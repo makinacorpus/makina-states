@@ -31,6 +31,7 @@ haproxy-base-cleanup:
 
 haproxy-base:
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     - humanname: haproxy ppa
     - name: deb http://ppa.launchpad.net/vbernat/haproxy-1.7/ubuntu {{pkgssettings.udist}} main
     - dist: {{pkgssettings.udist}}

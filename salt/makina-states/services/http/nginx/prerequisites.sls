@@ -47,6 +47,7 @@ nginx-base:
     - watch_in:
       - pkgrepo: nginx-base
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     - humanname: nginx ppa
     - name: deb http://ppa.launchpad.net/makinacorpus/nginx/ubuntu {{pkgssettings.udist}} main
     - dist: {{pkgssettings.udist}}

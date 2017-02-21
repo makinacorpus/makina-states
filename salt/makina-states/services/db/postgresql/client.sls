@@ -11,6 +11,7 @@ include:
 {%- if grains['os_family'] in ['Debian'] %}
 pgsql-repo:
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     - name: deb http://apt.postgresql.org/pub/repos/apt/ {{settings.dist}}-pgdg main
     - file: {{ locs.conf_dir }}/apt/sources.list.d/pgsql.list
     - keyid: 'ACCC4CF8'

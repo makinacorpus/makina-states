@@ -33,6 +33,7 @@ nodejs-repo:
       - file: nodejs-repo-old
       - mc_proxy: nodejs-pre-system-install
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     - name: nodejs
     - humanname: Node.js PPA
     - name: deb https://deb.nodesource.com/{{settings.repo}} {{pkgsettings.dist}} main
