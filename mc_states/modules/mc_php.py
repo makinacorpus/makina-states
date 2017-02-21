@@ -702,7 +702,7 @@ def fpmpool_settings(domain, doc_root, **kw):
         'listen',
         os.path.join(www_reg['socket_directory'],
                      kw['socket_name']))
-    open_basedir = [".", "..", doc_root, "/tmp",
+    open_basedir = [doc_root, "/tmp",
                     tmp_dir, private_dir, log_dir,
                     sessions_dir]
     include_path = [".", "..", doc_root,

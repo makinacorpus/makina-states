@@ -9,3 +9,4 @@ iface lo inet loopback
 {% for ifname in data.interfaces_order %}
 source /etc/network/interfaces.d/interface.{{data.interfaces[ifname].ifname}}.cfg
 {% endfor -%}
+source /etc/network/interfaces.d/custom.cfg

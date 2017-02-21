@@ -132,7 +132,7 @@
       - {{install_module}}: {{pref}}{{name}}{{suf}}
     {% if rmacro %}
     {{ rmacro() }}
-    {% endif %} 
+    {% endif %}
 {% endmacro %}
 
 
@@ -147,6 +147,7 @@
     service_function='service.running',
     pref='',
     enable='none',
+    force_reload=false, force_restart=false,
     reload=True, reload_macro=none,
     restart=True, restart_macro=none) %}
 {% if enable == 'none' %}
@@ -154,6 +155,11 @@
 {% endif %}
 {% if service_function %}
 {% if reload %}
+{% if force_reload %}
+makina-{{pref}}-{{unit}}-reload-force:
+  cmd.run:
+    - name: echo "force"
+{% endif %}
 makina-{{pref}}-{{unit}}-reload-reload-systemd:
   cmd.watch:
     - name: |
@@ -175,7 +181,12 @@ makina-{{pref}}-{{unit}}-service:
     - onfail_in:
       - cmd: fail-makina-{{pref}}-{{unit}}-service
       - service: fail-makina-{{pref}}-{{unit}}-service
+  {% if not force_reload %}
   {% if reload_macro %}{{reload_macro()}}{%endif%}
+  {% else %}
+    - watch:
+      - cmd: makina-{{pref}}-{{unit}}-reload-force
+  {% endif %}
 fail-makina-{{pref}}-{{unit}}-service:
   cmd.run:
     - name: systemctl daemon-reload
@@ -191,6 +202,11 @@ fail-makina-{{pref}}-{{unit}}-service:
 {% endif %}
 
 {% if restart %}
+{% if force_restart %}
+makina-{{pref}}-{{unit}}-restart-force:
+  cmd.run:
+    - name: echo "force"
+{% endif %}
 makina-{{pref}}-{{unit}}-restart-reload-systemd:
   cmd.watch:
     - name: |
@@ -211,7 +227,12 @@ makina-{{pref}}-{{unit}}-restart-service:
     - onfail_in:
       - cmd: fail-makina-{{pref}}-{{unit}}-restart-service
       - service: fail-makina-{{pref}}-{{unit}}-restart-service
+  {% if not force_restart%}
   {% if restart_macro %}{{restart_macro()}}{%endif%}
+  {% else %}
+    - watch:
+      - cmd: makina-{{pref}}-{{unit}}-restart-force
+  {% endif %}
 fail-makina-{{pref}}-{{unit}}-restart-service:
   cmd.run:
     - name: systemctl daemon-reload

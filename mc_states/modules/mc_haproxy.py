@@ -220,6 +220,7 @@ def settings():
             'backends': OrderedDict(),
             'frontends': OrderedDict(),
             'dispatchers': OrderedDict(),
+            'no_ipv6': False,
         }
         data['listeners']['stats'] = {
             # set bind to null to deactivate the stats listener
@@ -380,6 +381,8 @@ def register_frontend(port,
     if haproxy is None:
         haproxy = settings()
     sbind = '*:{0}'.format(port)
+    if not haproxy['no_ipv6']:
+        sbind = '{0},ipv6@:{1}'.format(sbind, port)
     # if this is a TLS backend, append also the certificates
     # configured on the machine
     frontends = haproxy.setdefault('frontends', {})

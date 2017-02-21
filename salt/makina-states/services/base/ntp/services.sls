@@ -32,7 +32,7 @@ ntpd:
 {% if data['activated'] %}
 ntpd-sync:
   cmd.run:
-    - name: /sbin/ntp-sync.sh
+    - name: "/sbin/ntp-sync.sh && echo changed=false"
     - stateful: true
     - watch_in:
       - mc_proxy: ntp-post-restart-hook
@@ -42,7 +42,7 @@ ntpd-sync:
 {%else%}
 ntpd-kill:
   cmd.run:
-    - name: /sbin/ntp-kill.sh
+    - name: "/sbin/ntp-kill.sh && echo changed=false"
     - stateful: true
     - watch_in:
       - mc_proxy: ntp-post-restart-hook

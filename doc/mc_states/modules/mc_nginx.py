@@ -164,10 +164,10 @@ def settings():
         salt://makina-states/files/etc/nginx/sites-available/default.conf'
     vhost_top_template
        default template to include in vhost top
-       salt://makina-states/files/etc/nginx/sites-available/vhost.top.conf,
+       salt://makina-states/files/etc/nginx/includes/vhost.top.conf,
     vhost_content_template
        default template for vhost content
-       salt://makina-states/files/etc/nginx/sites-available/vhost.content.conf
+       salt://makina-states/files/etc/nginx/includes/vhost.content.conf
     virtualhosts
         Mapping containing all defined virtualhosts
     rotate
@@ -325,10 +325,10 @@ def settings():
                     'etc/nginx/sites-available/default.conf'),
                 'vhost_top_template': (
                     'salt://makina-states/files/'
-                    'etc/nginx/sites-available/vhost.top.conf'),
+                    'etc/nginx/includes/vhost.top.conf'),
                 'vhost_content_template': (
                     'salt://makina-states/files/'
-                    'etc/nginx/sites-available/vhost.content.conf'),
+                    'etc/nginx/includes/vhost.content.conf'),
             }
         )
         _s['mc_macros.update_local_registry'](
@@ -359,11 +359,11 @@ def vhost_settings(domain, doc_root, **kwargs):
         nginxSettings['basedir'] + "/sites-available/" + vhost_basename + ".conf")
     kwargs.setdefault(
         'vhost_content_file',
-        (nginxSettings['basedir'] + "/sites-available/" +
+        (nginxSettings['basedir'] + "/includes/" +
          vhost_basename + ".content.conf"))
     kwargs.setdefault(
         'vhost_top_file',
-        nginxSettings['basedir'] + "/sites-available/" + vhost_basename + ".top.conf")
+        nginxSettings['basedir'] + "/includes/" + vhost_basename + ".top.conf")
     kwargs.setdefault('with_include_sls_statement', False)
     kwargs.setdefault('redirect_aliases', True)
     kwargs.setdefault('force_reload', True)

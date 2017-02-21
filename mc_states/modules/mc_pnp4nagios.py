@@ -128,11 +128,11 @@ def settings():
                     'doc_root': "/usr/share/pnp4nagios/html/",
                     'vh_content_source': (
                         "salt://makina-states/files/"
-                        "etc/nginx/sites-available/"
+                        "etc/nginx/includes/"
                         "pnp4nagios.content.conf"),
                     'vh_top_source': (
                         "salt://makina-states/files/etc/nginx/"
-                        "sites-available/pnp4nagios.top.conf"),
+                        "includes/pnp4nagios.top.conf"),
                     'pnp4nagios': {
                         'web_directory': "/pnp4nagios",
                         'fastcgi_pass': ("unix:/var/spool/www/"

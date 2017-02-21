@@ -440,6 +440,16 @@ ssh_groups:
 #   www2.mydomain.com: [154.65.11.155]
 #   www1.mydomain.com: [154.65.11.154]
 
+#ip6s:
+#  xxx.com: ["201:40:02:ea::"]
+#ip6s_map:
+#  www.xxx.com: [xxx.com]
+#ip6sfo:
+#  foxxx.com: ["201:40:02:ea::"]
+#ip6sfo_map:
+#  foxxx.com: ["201:40:02:ea::"]
+
+
 # Mappings of a FQDN with an IP Failover
 #   - If mapped is an host, the ip will be mounted
 #     as an alias of the first ethernet card

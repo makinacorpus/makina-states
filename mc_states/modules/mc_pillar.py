@@ -227,7 +227,11 @@ def load_network(ttl=PILLAR_TTL, debug=None):
                 'raw_db_loading': None,
                 'raw_db_loaded': False,
                 'extra_info_loaded': False}
-        for i in ['cnames', 'ips', 'ipsfo', 'ips_map', 'ipsfo_map']:
+        for i in [
+            'ip6s', 'ip6s_map', 'ip6sfo', 'ip6sfo_map',
+            'ips', 'ipsfo', 'ips_map', 'ipsfo_map',
+            'cnames',
+        ]:
             data[i] = copy.deepcopy(__salt__[__name + '.query'](i, {}))
         return data
     # no memcached, relies on memoize !
@@ -406,6 +410,198 @@ def get_db_infrastructure_maps(ttl=PILLAR_TTL):
     return __salt__['mc_utils.memoize_cache'](
         _doget_db_infrastructure_maps, [], {},
         cache=get_local_cache(), key=cache_key, seconds=ttl)
+
+
+def ip6s_for(fqdn,
+             fail_over=None,
+             recurse=None,
+             ignore_aliases=None,
+             ignore_cnames=None,
+             **kw):
+    '''
+    Get all ipv6 for a domain, try as a FQDN first and then
+    try to append the specified domain
+    We need a local cache to store the ips resolved from different
+    datasource, DO NOT USE QUERY() DIRECTLY HERE
+
+        fail_over
+            If FailOver records exists and no ip was found, it will take this
+            value.
+            If failOver exists and fail_over=true, all ips
+            will be returned
+
+    Warning this method is tightly tied to load_network_infrastructure
+    '''
+    debug = kw.get('debug', None)
+    resips = []
+    data = load_network(debug=debug)
+    if data['raw_db_loading'] is None:
+        data = load_raw_network_infrastructure()
+    cnames = data['cnames']
+    ips = data['ip6s']
+    ips_map = data['ip6s_map']
+    ipsfo = data['ip6sfo']
+    ipsfo_map = data['ip6sfo_map']
+    if recurse is None:
+        recurse = []
+    if ignore_cnames is None:
+        ignore_cnames = []
+    if ignore_aliases is None:
+        ignore_aliases = []
+    if fqdn not in recurse:
+        recurse.append(fqdn)
+
+    # first, search for real baremetal ips
+    if fqdn in ips:
+        resips.extend(ips[fqdn][:])
+
+    # then failover
+    if fail_over:
+        if fqdn in ipsfo:
+            resips.append(ipsfo[fqdn])
+        for ipfo in ipsfo_map.get(fqdn, []):
+            try:
+                resips.append(ipsfo[ipfo])
+            except KeyError:
+                # try map of map
+                if ipfo in ipsfo_map:
+                    [resips.append(a)
+                     for a in ip6s_for(ipfo)
+                     if a not in resips]
+                else:
+                    raise
+
+    # then for ips which are duplicated among other dns names
+    for alias_fqdn in ips_map.get(fqdn, []):
+        # avoid recursion
+        for _fqdn in [fqdn, alias_fqdn]:
+            if _fqdn in ignore_aliases or _fqdn in ignore_cnames:
+                sfqdn = ''
+                if _fqdn != fqdn:
+                    sfqdn = '/{0}'.format(_fqdn)
+                    retrieval_error(
+                        IPRetrievalCycleError((
+                            'Recursion from alias {0}{1}:\n'
+                            ' recurse: {4}\n'
+                            ' ignored aliases: {3}\n'
+                            ' ignored cnames: {2}\n'
+                        ).format(fqdn, sfqdn, ignore_cnames,
+                                 ignore_aliases, recurse)),
+                        fqdn, recurse=recurse)
+        ignore_aliases.append(alias_fqdn)
+        try:
+            alias_ips = ip6s_for(alias_fqdn,
+                                 fail_over=fail_over,
+                                 recurse=recurse,
+                                 ignore_aliases=ignore_aliases,
+                                 ignore_cnames=ignore_cnames)
+        except RuntimeError:
+            retrieval_error(
+                IPRetrievalCycleError(
+                    'Recursion(r) from alias {0}:\n'
+                    ' recurse: {3}\n'
+                    ' ignored cnames: {1}\n'
+                    ' ignored aliases: {2}\n'.format(
+                        alias_fqdn, ignore_cnames, ignore_aliases,
+                        recurse)),
+                fqdn, recurse=recurse)
+        if alias_ips:
+            resips.extend(alias_ips)
+        for _fqdn in [fqdn, alias_fqdn]:
+            for ignore in [ignore_aliases, ignore_cnames]:
+                if _fqdn in ignore:
+                    ignore.pop(ignore.index(_fqdn))
+    for ignore in [ignore_aliases]:
+        if fqdn in ignore:
+            ignore.pop(ignore.index(fqdn))
+
+    # and if still no ip found but cname is present,
+    # try to get ip from cname
+    if (not resips) and fqdn in cnames:
+        alias_cname = cnames[fqdn]
+        try:
+            if alias_cname.endswith('.'):
+                alias_cname = alias_cname[:-1]
+        except:
+            log.error('CNAMES')
+            log.error(cnames)
+            raise
+        # avoid recursion
+        for _fqdn in [alias_cname]:
+            if _fqdn in ignore_aliases or _fqdn in ignore_cnames:
+                sfqdn = ''
+                if _fqdn != fqdn:
+                    sfqdn = '/{0}'.format(_fqdn)
+                retrieval_error(
+                    IPRetrievalCycleError(
+                        'Recursion from cname {0}{1}:\n'
+                        ' recurse: {4}\n'
+                        ' ignored cnames: {2}\n'
+                        ' ignored aliases: {3}\n'.format(
+                            fqdn, sfqdn, ignore_cnames,
+                            ignore_aliases, recurse)),
+                    fqdn, recurse=recurse)
+        ignore_cnames.append(alias_cname)
+        try:
+            alias_ips = ip6s_for(alias_cname,
+                                 fail_over=fail_over,
+                                 recurse=recurse,
+                                 ignore_aliases=ignore_aliases,
+                                 ignore_cnames=ignore_cnames)
+        except RuntimeError:
+            retrieval_error(
+                IPRetrievalCycleError(
+                    'Recursion(r) from cname {0}:\n'
+                    ' recurse: {3}\n'
+                    ' ignored cnames: {1}\n'
+                    ' ignored aliases: {2}\n'.format(
+                        alias_cname, ignore_cnames,
+                        ignore_aliases, recurse)),
+                fqdn, recurse=recurse)
+        if alias_ips:
+            resips.extend(alias_ips)
+        for _fqdn in [fqdn, alias_cname]:
+            for ignore in [ignore_aliases, ignore_cnames]:
+                if _fqdn in ignore:
+                    ignore.pop(ignore.index(_fqdn))
+
+    if not resips:
+        # allow fail over fallback if nothing was specified
+        if fail_over is None:
+            resips = ip6s_for(fqdn, recurse=recurse, fail_over=True)
+        # for upper tld , check the @ RECORD
+        if (
+            (not resips) and
+            ((not fqdn.startswith('@')) and
+             (fqdn.count('.') == 1))
+        ):
+            resips = ip6s_for("@" + fqdn, recurse=recurse, fail_over=True)
+        if not resips:
+            msg = '{0}\n'.format(fqdn)
+            if len(recurse) > 1:
+                msg += 'recurse: {0}\n'.format(recurse)
+            retrieval_error(IPRetrievalError(msg), fqdn, recurse=recurse)
+
+    for ignore in [ignore_aliases, ignore_cnames]:
+        if fqdn in ignore:
+            ignore.pop(ignore.index(fqdn))
+    if (
+        data['raw_db_loaded'] and
+        (not data['extra_info_loaded']) and
+        (data['extra_info_loading'] is None)
+    ):
+        data = load_network_infrastructure()
+        resips = ip6s_for(fqdn,
+                          fail_over=fail_over,
+                          recurse=recurse,
+                          ignore_aliases=ignore_aliases,
+                          ignore_cnames=ignore_cnames,
+                          **kw)
+        if not data['extra_info_loaded']:
+            raise IPRetrievalError(
+                'Pb with {0}: data did not load completly'.format(fqdn))
+    resips = __salt__['mc_utils.uniquify'](resips)
+    return resips
 
 
 def ips_for(fqdn,
@@ -609,15 +805,25 @@ def load_raw_network_infrastructure(ttl=PILLAR_TTL):
     ipsfo = data['ipsfo']
     ips_map = data['ips_map']
     ipsfo_map = data['ipsfo_map']
+    ip6s = data['ip6s']
+    ip6sfo = data['ip6sfo']
+    ip6s_map = data['ip6s_map']
+    ip6sfo_map = data['ip6sfo_map']
     vms = __salt__[__name + '.query']('vms', {})
     cloud_vm_attrs = __salt__[__name + '.query']('cloud_vm_attrs', {})
     dbi = get_db_infrastructure_maps()
     baremetal_hosts = dbi['bms']
 
+    # ipv4
     for fqdn in ipsfo:
         if fqdn in ips:
             continue
         ips[fqdn] = ips_for(fqdn, fail_over=True)
+    # ipv6
+    for fqdn in ip6sfo:
+        if fqdn in ips:
+            continue
+        ip6s[fqdn] = ip6s_for(fqdn, fail_over=True)
 
     # ADD A Mappings for aliased ips (manual) or over ip failover
     cvms = OrderedDict()
@@ -659,6 +865,36 @@ def load_raw_network_infrastructure(ttl=PILLAR_TTL):
                 if ip not in hostips:
                     hostips.append(ip)
 
+    c6values = cvms.values()
+    for host, dn_ip_fos in ip6sfo_map.items():
+        for ip_fo in dn_ip_fos:
+            dn = host.split('.')[0]
+            ipfo_dn = ip_fo.split('.')[0]
+            ip = ip6s_for(ip_fo)[0]
+            if host in cvms:
+                phost = cvms[host]
+                pdn = phost.split('.')[0]
+                ahosts = [host,
+                          '{0}.{1}.{2}'.format(dn, pdn, ip_fo),
+                          '{0}.{1}'.format(dn, ip_fo)]
+            else:
+                ahosts = ['{0}.{1}'.format(dn, ip_fo),
+                          '{1}.{0}'.format(host, ipfo_dn),
+                          'failover.{0}'.format(host)]
+                # only add an A record for a failover ip on something which
+                # is not a vm if this is an host without an entry in
+                # the ip and the vms maps
+                if (
+                    (host not in baremetal_hosts and
+                     host not in c6values) and
+                    host not in ips
+                ):
+                    ahosts.append(host)
+            for ahost in ahosts:
+                hostips = ip6s.setdefault(ahost, [])
+                if ip not in hostips:
+                    hostips.append(ip)
+
     # For all vms:
     # if the vm still does not have yet an ip resolved
     # map a A directly to the host
@@ -668,12 +904,33 @@ def load_raw_network_infrastructure(ttl=PILLAR_TTL):
     # <vm>.<host>.<domain>
     # eg: failover
     # <vm>.<host>.<ipfo_dn>.<domain>
+    errors = {}
     for vm, vm_host in cvms.items():
         if vm not in ips:
-            if vm in ips_map:
-                ips[vm] = ips_for(vm)
-            else:
-                ips[vm] = ips_for(vm_host)
+            try:
+                if vm in ips_map:
+                    ips[vm] = ips_for(vm)
+                else:
+                    ips[vm] = ips_for(vm_host)
+            except (IPRetrievalError,) as exc:
+                errors[vm] = exc
+
+    for vm, vm_host in cvms.items():
+        if vm not in ip6s:
+            try:
+                if vm in ip6s_map:
+                    ip6s[vm] = ip6s_for(vm)
+                else:
+                    ip6s[vm] = ip6s_for(vm_host)
+                # accept ipv6 only conf
+                errors.pop(vm, None)
+            except (IPRetrievalError,) as exc:
+                # accept ipv4 only conf
+                if vm not in ips:
+                    errors[vm] = exc
+
+    if errors:
+        raise IPRetrievalError(' '.join([a for a in errors]))
 
     # tie extra domains of vms to a A record: part1
     # try to resolve ips for vms but let a chance
@@ -684,6 +941,7 @@ def load_raw_network_infrastructure(ttl=PILLAR_TTL):
         domains = _data.get('domains', [])
         if not isinstance(domains, list):
             continue
+        # ipv4
         for domain in domains:
             dips = ips.setdefault(domain, [])
             # never append an ip of a vm is it is already defined
@@ -707,12 +965,42 @@ def load_raw_network_infrastructure(ttl=PILLAR_TTL):
                         dips.append(ip)
             except IPRetrievalError:
                 continue
+        # ipv6
+        for domain in domains:
+            dips = ip6s.setdefault(domain, [])
+            # never append an ip of a vm is it is already defined
+            if len(dips):
+                continue
+            aliases = ip6s_map.get(domain, [])
+            if aliases:
+                for alias in aliases:
+                    try:
+                        for ip in ip6s_for(alias, fail_over=True):
+                            if ip not in dips:
+                                dips.append(ip)
+                    except IPRetrievalError:
+                        continue
+            # never append an ip if it was aliased before
+            if len(dips):
+                continue
+            try:
+                for ip in ip6s_for(vm, fail_over=True):
+                    if ip not in dips:
+                        dips.append(ip)
+            except IPRetrievalError:
+                continue
 
     # add all IPS  from aliased ips to main dict
+    # ipv4
     for fqdn in ips_map:
         if fqdn in ips:
             continue
         ips[fqdn] = ips_for(fqdn)
+    # ipv6
+    for fqdn in ip6s_map:
+        if fqdn in ip6s:
+            continue
+        ip6s[fqdn] = ip6s_for(fqdn)
 
     # tie extra domains of vms to a A record: part2
     # try to resolve leftover ips
@@ -720,6 +1008,7 @@ def load_raw_network_infrastructure(ttl=PILLAR_TTL):
         domains = _data.get('domains', [])
         if not isinstance(domains, list):
             continue
+        errors = {}
         for domain in domains:
             dips = ips.setdefault(domain, [])
             # never append an ip of a vm is it is already defined
@@ -742,6 +1031,38 @@ def load_raw_network_infrastructure(ttl=PILLAR_TTL):
             for ip in ips_for(vm, fail_over=True):
                 if ip not in dips:
                     dips.append(ip)
+        for domain in domains:
+            dips = ip6s.setdefault(domain, [])
+            # never append an ip of a vm is it is already defined
+            if len(dips):
+                continue
+            aliases = ip6s_map.get(domain, [])
+            if aliases:
+                for alias in aliases:
+                    try:
+                        for ip in ip6s_for(alias, fail_over=True):
+                            if ip not in dips:
+                                dips.append(ip)
+                    except IPRetrievalError:
+                        continue
+            # never append an ip if it was aliased before
+            if len(dips):
+                continue
+            # difference with round 1 is that here we fail on
+            # IPRetrievalError
+            try:
+                for ip in ip6s_for(vm, fail_over=True):
+                    if ip not in dips:
+                        dips.append(ip)
+                # accept ipv6 only
+                errors.pop(domain, None)
+            except (IPRetrievalError,) as exc:
+                # accept ipv4 only
+                if domain not in ips:
+                    errors[domain] = exc
+            if errors:
+                raise IPRetrievalError(' '.join([a for a in errors]))
+
     data['raw_db_loading'] = False
     data['raw_db_loaded'] = True
     return data
@@ -762,11 +1083,33 @@ def ips_canfailover_for(*a, **kw):
         return ips_for(*a, **kw)
 
 
+def ip6s_canfailover_for(*a, **kw):
+    '''
+    Get the real ips of a service, and fallback in case on failovers ipv6s
+    but do not return ips + failovers ips if there are real ipv6s.
+    '''
+    try:
+        ips = ip6s_for(*a, **kw)
+        if not ips:
+            raise IPRetrievalError()
+        return ips
+    except IPRetrievalError:
+        kw['fail_over'] = True
+        return ip6s_for(*a, **kw)
+
+
 def ip_canfailover_for(*a, **kw):
     '''
     Wrapper to get the first available ip or failover ip
     '''
     return ips_canfailover_for(*a, **kw)[0]
+
+
+def ip6_canfailover_for(*a, **kw):
+    '''
+    Wrapper to get the first available ip or failover ipv6
+    '''
+    return ip6s_canfailover_for(*a, **kw)[0]
 
 
 def load_network_infrastructure(ttl=PILLAR_TTL):
@@ -782,6 +1125,9 @@ def load_network_infrastructure(ttl=PILLAR_TTL):
     ips = data['ips']
     ips_map = data['ips_map']
     ipsfo_map = data['ipsfo_map']
+    ip6s = data['ip6s']
+    ip6s_map = data['ip6s_map']
+    ip6sfo_map = data['ip6sfo_map']
     mx_map = __salt__[__name + '.query']('mx_map', {})
     managed_dns_zones = __salt__[__name + '.query']('managed_dns_zones', {})
     get_db_infrastructure_maps()
@@ -799,6 +1145,7 @@ def load_network_infrastructure(ttl=PILLAR_TTL):
             # special case
             if '.' in slave and zone not in nsq:
                 continue
+            # ipv4
             if nsq not in ips:
                 if nsq.endswith(zone) and nsq != slave:
                     nsqs = ips.setdefault(nsq, [])
@@ -815,6 +1162,23 @@ def load_network_infrastructure(ttl=PILLAR_TTL):
                 ips[slave] = [ip_canfailover_for(cnames[nsq][:-1])]
             if (nsq in ips or nsq in ips_map) and slave not in ips:
                 ips[slave] = [ip_canfailover_for(nsq)]
+            # ipv6
+            if nsq not in ip6s:
+                if nsq.endswith(zone) and nsq != slave:
+                    nsqs = ip6s.setdefault(nsq, [])
+                    try:
+                        sips = ip6s_canfailover_for(slave)
+                    except IPRetrievalError:
+                        sips = []
+                    for ip in sips:
+                        if ip not in nsqs:
+                            nsqs.append(ip)
+            if slave in cnames and slave not in ip6s:
+                ip6s[slave] = [ip6_canfailover_for(cnames[slave][:-1])]
+            if nsq in cnames and slave not in ip6s:
+                ip6s[slave] = [ip6_canfailover_for(cnames[nsq][:-1])]
+            if (nsq in ip6s or nsq in ip6s_map) and slave not in ip6s:
+                ip6s[slave] = [ip6_canfailover_for(nsq)]
     mxs = []
     for servers in mx_map.values():
         for server in servers:
@@ -829,6 +1193,10 @@ def load_network_infrastructure(ttl=PILLAR_TTL):
         if (fqdn.startswith('@')) or (fqdn in mxs) or (fqdn in nss):
             if fqdn not in ips:
                 ips[fqdn] = ips_for(fqdn, fail_over=True)
+    for fqdn in ip6sfo_map:
+        if (fqdn.startswith('@')) or (fqdn in mxs) or (fqdn in nss):
+            if fqdn not in ip6s:
+                ip6s[fqdn] = ip6s_for(fqdn, fail_over=True)
     data['extra_info_loading'] = False
     data['extra_info_loaded'] = True
     return data
@@ -846,6 +1214,20 @@ def ip_for(fqdn, *args, **kwa1):
             will be returned
     '''
     return ips_for(fqdn, *args, **kwa1)[0]
+
+
+def ip6_for(fqdn, *args, **kwa1):
+    '''
+    Get an ipv6 for a domain, try as a FQDN first and then
+    try to append the specified domain
+
+        fail_over
+            If FailOver records exists and no ip was found, it will take this
+            value.
+            If failOver exists and fail_over=true, all ips
+            will be returned
+    '''
+    return ip6s_for(fqdn, *args, **kwa1)[0]
 
 
 def rr_entry(fqdn, targets, priority='10', record_type='A'):
@@ -892,6 +1274,25 @@ def rr_a(fqdn, fail_over=None, ttl=PILLAR_TTL):
     # return __salt__['mc_utils.memoize_cache'](
     #     _dorr_a, [fqdn, fail_over], {}, cache_key, ttl)
     return _dorr_a(fqdn, fail_over)
+
+
+def rr_aaaa(fqdn, fail_over=None, ttl=PILLAR_TTL):
+    '''
+    Search for explicit A record(s) (fqdn/ip) record on the inputed mappings
+
+        fail_over
+            If FailOver records exists and no ip was found, it will take this
+            value.
+            If failOver exists and fail_over=true, all ips
+            will be returned
+    '''
+    def _dorr_aaaa(fqdn, fail_over):
+        ips = ip6s_for(fqdn, fail_over=fail_over)
+        return rr_entry(fqdn, ips, record_type='AAAA')
+    # cache_key = __name + '.rrs_a_{0}_{1}_{2}'.format(fqdn, fqdn, fail_over) + CACHE_INC_TOKEN
+    # return __salt__['mc_utils.memoize_cache'](
+    #     _dorr_a, [fqdn, fail_over], {}, cache_key, ttl)
+    return _dorr_aaaa(fqdn, fail_over)
 
 
 def whitelisted(dn, ttl=PILLAR_TTL):
@@ -1509,6 +1910,41 @@ def rrs_ns_for(domain, ttl=PILLAR_TTL):
     return _dorrs_ns_for(domain)
 
 
+def rrs_aaaa_for(domain, ttl=PILLAR_TTL):
+    '''
+    Return all configured A records for a domain
+    '''
+    def _dorrs_aaaa_for(domain):
+        db = load_network_infrastructure()
+        rrs_ttls = __salt__[__name + '.query']('rrs_ttls', {})
+        ips = db['ip6s']
+        ip4s = db['ips']
+        all_rrs = OrderedDict()
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
+                               re.M | re.U | re.S | re.I)
+        # add all A from simple ips
+        for fqdn in ips:
+            if domain_re.search(fqdn):
+                rrs = all_rrs.setdefault(fqdn, [])
+                if not ips[fqdn]:
+                    if fqdn in ip4s:
+                        log.trace('{0} has only ipv4 resolution'.format(fqdn))
+                        continue
+                    else:
+                        raise RRError('No ip for {0}'.format(fqdn))
+                for rr in rr_entry(
+                    fqdn, ips[fqdn], rrs_ttls, record_type='AAAA'
+                ).split('\n'):
+                    if rr not in rrs:
+                        rrs.append(rr)
+        rr = filter_rr_str(all_rrs)
+        return rr
+    # cache_key = __name + '.rrs_a_for_{0}'.format(domain) + CACHE_INC_TOKEN
+    # return __salt__['mc_utils.memoize_cache'](
+    #     _dorrs_a_for, [domain], {}, cache_key, ttl)
+    return _dorrs_aaaa_for(domain)
+
+
 def rrs_a_for(domain, ttl=PILLAR_TTL):
     '''
     Return all configured A records for a domain
@@ -1517,6 +1953,7 @@ def rrs_a_for(domain, ttl=PILLAR_TTL):
         db = load_network_infrastructure()
         rrs_ttls = __salt__[__name + '.query']('rrs_ttls', {})
         ips = db['ips']
+
         all_rrs = OrderedDict()
         domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
                                re.M | re.U | re.S | re.I)
@@ -1683,7 +2120,7 @@ def serial_for(domain,
         try:
             db_serial = int(serials.get(domain, serial))
         except (ValueError, TypeError):
-            db_serial = serial
+            db_serial = -1
         tnow = time.time()
         dnow = datetime.datetime.now()
         ttl_key = '{0}__ttl__'.format(domain)
@@ -1763,9 +2200,9 @@ def serial_for(domain,
                                 dns_serial = soa.serial
                     if ns in dns_failures:
                         dns_failures.pop(ns, None)
-            if dns_serial != serial and dns_serial > 0:
-                serial = dns_serial
+            serial = max(serial, dns_serial, db_serial)
         except Exception, ex:
+
             hasns, nsip, failure = True, '', {}
             trace = traceback.format_exc()
             try:
@@ -1829,10 +2266,20 @@ def rrs_for(domain, aslist=False):
         rrs_txt_for(domain) + '\n' +
         rrs_raw_for(domain) + '\n' +
         rrs_mx_for(domain) + '\n' +
-        rrs_srv_for(domain) + '\n' +
-        rrs_a_for(domain) + '\n' +
-        rrs_cnames_for(domain)
+        rrs_srv_for(domain)
     )
+    try:
+        aas = rrs_a_for(domain)
+    except RRError:
+        aas = []
+    try:
+        aaaas = rrs_aaaa_for(domain)
+    except RRError:
+        aaaas = []
+    for aas_ in (aas, aaaas):
+        if aas_:
+            rr = rr + '\n' + aas_ + '\n'
+    rr += rrs_cnames_for(domain)
     if aslist:
         rr = [a.strip() for a in rr.split('\n') if a.strip()]
     return rr
@@ -2696,6 +3143,7 @@ def get_non_supervised_hosts(ttl=PILLAR_TTL):
 
 def get_supervision_objects_defs(id_):
     rdata = {}
+    _s = __salt__
     net = load_network_infrastructure()
     non_supervised_hosts = get_non_supervised_hosts()
     disable_common_checks = {'disk_space': False,
@@ -2704,11 +3152,11 @@ def get_supervision_objects_defs(id_):
                              'ntp_time': False,
                              'swap': False,
                              'ping': False}
-    providers = __salt__['mc_network.providers']()
+    providers = _s['mc_network.providers']()
     physical_hosts_to_check = set()
     host = 'HOST'
     if is_supervision_kind(id_, 'master'):
-        data = __salt__[__name + '.query']('supervision_configurations', {})
+        data = _s[__name + '.query']('supervision_configurations', {})
         defs = data.get('definitions', {})
         sobjs = defs.setdefault('objects', OrderedDict())
         hhosts = defs.setdefault('autoconfigured_hosts', OrderedDict())
@@ -2717,7 +3165,7 @@ def get_supervision_objects_defs(id_):
                 hhosts[hhost].setdefault(i, OrderedDict())
                 if not isinstance(hhosts[hhost][i], dict):
                     hhosts[hhost][i] = OrderedDict()
-        maps = __salt__[__name + '.get_db_infrastructure_maps']()
+        maps = _s[__name + '.get_db_infrastructure_maps']()
         for host, vts in maps['bms'].items():
             if host in non_supervised_hosts:
                 continue
@@ -2750,7 +3198,7 @@ def get_supervision_objects_defs(id_):
             hdata.setdefault('nic_card', ['eth0'])
             if vts:
                 hdata['memory_mode'] = 'large'
-            for vt in __salt__['mc_cloud_compute_node.get_all_vts']():
+            for vt in _s['mc_cloud_compute_node.get_all_vts']():
                 attrs['vars.{0}'.format(vt)] = vt in vts
                 if vt in vts:
                     for i in [
@@ -2766,7 +3214,7 @@ def get_supervision_objects_defs(id_):
                     break
             if not host_provider:
                 for provider in providers:
-                    if __salt__[
+                    if _s[
                         'mc_network.is_{0}'.format(provider)
                     ](attrs['address']):
                         host_provider = provider
@@ -2780,7 +3228,7 @@ def get_supervision_objects_defs(id_):
             for i in ['HG_HOSTS', 'HG_BMS']:
                 if i not in groups:
                     groups.append(i)
-            if host not in __salt__[__name + '.query'](
+            if host not in _s[__name + '.query'](
                 'non_managed_hosts', {}
             ):
                 ds = hdata.setdefault('disk_space', [])
@@ -2799,7 +3247,7 @@ def get_supervision_objects_defs(id_):
             physical_hosts_to_check.add(host)
             vt = vdata['vt']
             host = vdata['target']
-            host_ip = ip_for(host)
+            host_ips = ips_for(host, fail_over=True)
             hdata = hhosts.setdefault(vm, OrderedDict())
             attrs = hdata.setdefault('attrs', OrderedDict())
             sattrs = hdata.setdefault('services_attrs', OrderedDict())
@@ -2829,7 +3277,7 @@ def get_supervision_objects_defs(id_):
             # we in this case access the VMS via their private network IP
             if vm_parent == host:
                 ssh_host = snmp_host = 'localhost'
-                eext_pillar = __salt__['mc_cloud_vm.vm_extpillar'](vm)
+                eext_pillar = _s['mc_cloud_vm.vm_extpillar'](vm)
                 ssh_host = snmp_host = eext_pillar['ip']
             # we can access sshd and snpd on cloud vms
             # thx to special port mappings
@@ -2839,25 +3287,26 @@ def get_supervision_objects_defs(id_):
             if (
                 is_cloud_vm(vm) and
                 vt in ['lxc'] and
-                ((vm_parent != host and tipaddr == host_ip))
+                ((vm_parent != host and tipaddr in host_ips))
             ):
                 ssh_port = (
-                    __salt__['mc_cloud_compute_node.get_ssh_port'](vm))
+                    _s['mc_cloud_compute_node.get_ssh_port'](vm))
                 snmp_port = (
-                    __salt__['mc_cloud_compute_node.get_snmp_port'](vm))
+                    _s['mc_cloud_compute_node.get_snmp_port'](vm))
             no_common_checks = vdata.get('no_common_checks', False)
-            if tipaddr == host_ip and vt in ['lxc']:
+            if tipaddr in host_ips and vt in ['lxc']:
                 no_common_checks = True
             cloud_vm_attrs = query('cloud_vm_attrs')
-            np = cloud_vm_attrs.get('network_profile', {})
+            np = cloud_vm_attrs.get(vm, {}).get('network_profile', {})
             other_ips = []
             if np:
-                other_ips = [a['ipv4'] for ifc, a in six.iteritems(np)
-                             if ifc not in ['eth0']]
-
+                other_ips = [a for a in [a.get('ip', a.get('ipv4', None))
+                                         for ifc, a in six.iteritems(np)
+                                         if ifc not in ['eth0']]
+                             if a]
             if (
-                tipaddr in other_ips and
-                tipaddr != host_ip and
+                ((tipaddr in other_ips) or not other_ips) and
+                tipaddr not in host_ips and
                 vt in ['lxc', 'docker']
             ):
                 # specific ip on lxc, monitor eth1
@@ -2867,7 +3316,7 @@ def get_supervision_objects_defs(id_):
                 if i not in groups:
                     groups.append(i)
             # those checks are useless on lxc
-            if vt in ['lxc'] and vm in __salt__[__name + '.query']('non_managed_hosts', {}):
+            if vt in ['lxc'] and vm in _s[__name + '.query']('non_managed_hosts', {}):
                 no_common_checks = True
             if no_common_checks:
                 hdata.update(disable_common_checks)
@@ -2931,7 +3380,7 @@ def get_supervision_objects_defs(id_):
                 hdata['backup_burp_age'] = False
                 hdata['burp_counters'] = False
             if hdata.get('backup_burp_age', None) is not False:
-                bsm = __salt__[__name + '.query']('backup_server_map', {})
+                bsm = _s[__name + '.query']('backup_server_map', {})
                 burp_default_server = bsm['default']
                 burp_server = bsm.get(host, burp_default_server)
                 burpattrs = sattrs.setdefault('backup_burp_age', {})
@@ -2949,7 +3398,7 @@ def get_supervision_objects_defs(id_):
             if id_ == host:
                 for i in parents[:]:
                     parents.pop()
-            hdata['parents'] = __salt__['mc_utils.uniquify'](parents)
+            hdata['parents'] = _s['mc_utils.uniquify'](parents)
         for g in [a for a in sobjs]:
             if 'HG_PROVIDER_' in g:
                 sobjs[g.replace('HG_PROVIDER_', '')] = {

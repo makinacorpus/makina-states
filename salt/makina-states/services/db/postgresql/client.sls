@@ -14,7 +14,7 @@ pgsql-repo:
     - name: deb http://apt.postgresql.org/pub/repos/apt/ {{settings.dist}}-pgdg main
     - file: {{ locs.conf_dir }}/apt/sources.list.d/pgsql.list
     - keyid: 'ACCC4CF8'
-    - keyserver: {{pkgs.keyserver }}
+    - keyserver: keyserver.ubuntu.com
     - require:
       - mc_proxy: {{orchestrate['base']['prepkg']}}
     - require_in:

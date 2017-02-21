@@ -141,7 +141,7 @@ makina-nginx-virtualhost-{{ small_name }}-restart:
 # Virtualhost status
 makina-nginx-virtualhost-{{ site }}-status:
 {% set vhost_available_file = nginxSettings.basedir + "/sites-available/" + site + ".conf" %}
-{% set vhost_enabled_file = nginxSettings.basedir + "/sites-enabled/" + site + ".conf" %}
+{% set vhost_enabled_file = nginxSettings.basedir + "/conf.d/z_vhost_" + site + ".conf" %}
   cmd.run:
 {% if active %}
     - name: ln -s {{ vhost_available_file }} {{ vhost_enabled_file }}
