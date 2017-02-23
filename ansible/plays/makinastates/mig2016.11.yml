@@ -1,0 +1,20 @@
+---
+- hosts: "{{hosts|default('all')}}"
+  roles: [makinastates_pillar]
+
+- hosts: "{{hosts|default('all')}}"
+  tasks: 
+    - name: MS
+      shell: |
+             set -ex
+             cd /srv/makina-states
+             git pull
+             bin/boot-salt.sh -C --reconfigure -b v2 --salt-branch 2016.11
+    - name: salt
+      shell: |
+             set -ex
+             cd /srv/makina-states/src/salt
+             git fetch --all
+             git checkout origin/2016.11 -b 2016.11 || /bin/true
+             git checkout 2016.11 
+             git reset --hard origin/2016.11

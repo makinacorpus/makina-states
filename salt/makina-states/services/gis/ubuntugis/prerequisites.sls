@@ -9,6 +9,7 @@ include:
 {% if grains['os_family'] in ['Debian'] %}
 ubuntugis-base:
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     - humanname: ubuntugis ppa
     - name: deb http://ppa.launchpad.net/ubuntugis/{{ppa}}/ubuntu {{dist}} main
     - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/ubuntugis.list
@@ -31,6 +32,7 @@ ubuntugis-pgrouting-base:
     - name: sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com ACCC4CF8
     - unless: apt-key list|grep -q ACCC4CF8
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     - humanname: ubuntugis pgrouting ppa
     - name: deb http://ppa.launchpad.net/georepublic/pgrouting/ubuntu {{dist}} main
     - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/pgrouting.list
@@ -57,6 +59,7 @@ ubuntugis-pgrouting-base-2:
     - name: sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com ACCC4CF8
     - unless: apt-key list|grep -q ACCC4CF8
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     - humanname: ubuntugis pgrouting ppa
     - name: deb http://ppa.launchpad.net/georepublic/pgrouting/ubuntu {{dist}} main
     - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/pgrouting2.list

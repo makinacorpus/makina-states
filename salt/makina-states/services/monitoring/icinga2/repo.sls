@@ -17,6 +17,7 @@ icinga2-base:
       - file: icinga2-base
       - mc_proxy: icinga2-pre-repo
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     - humanname: icinga ppa
     - name: deb http://ppa.launchpad.net/formorer/icinga/ubuntu {{pkgssettings.udist}} main
     - dist: {{pkgssettings.udist}}

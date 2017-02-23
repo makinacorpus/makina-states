@@ -4,6 +4,7 @@ include:
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 icinga_web-base:
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     - humanname: icingaweb ppa
     - name: deb http://ppa.launchpad.net/formorer/icinga/ubuntu {{pkgssettings.udist}} main
     - dist: {{pkgssettings.udist}}

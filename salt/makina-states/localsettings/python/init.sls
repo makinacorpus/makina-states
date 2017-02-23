@@ -12,6 +12,7 @@ include:
 {%- if (grains['os'] in ['Ubuntu'])%}
 deadsnakes-ppa:
   pkgrepo.managed:
+    - retry: {attempts: 6, interval: 10}
     - humanname: DeadSnakes PPA
     - name: deb http://ppa.launchpad.net/fkrull/deadsnakes/ubuntu {{udist}} main
     - dist: {{udist}}
