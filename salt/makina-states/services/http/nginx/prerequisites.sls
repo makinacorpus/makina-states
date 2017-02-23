@@ -46,13 +46,20 @@ nginx-base:
       - mc_proxy: nginx-pre-install-hook
     - watch_in:
       - pkgrepo: nginx-base
+  cmd.run:
+    - name: sed -re "/makinacorpus/d" -i /etc/apt/sources.list.d/nginx.list
+    - onlyif: grep -q makinacorpus /etc/apt/sources.list.d/nginx.list
+    - watch:
+      - mc_proxy: nginx-pre-install-hook
+    - watch_in:
+      - pkgrepo: nginx-base
   pkgrepo.managed:
     - retry: {attempts: 6, interval: 10}
     - humanname: nginx ppa
-    - name: deb http://ppa.launchpad.net/makinacorpus/nginx/ubuntu {{pkgssettings.udist}} main
+    - name: deb http://ppa.launchpad.net/corpusops/nginx/ubuntu {{pkgssettings.udist}} main
     - dist: {{pkgssettings.udist}}
     - file: /etc/apt/sources.list.d/nginx.list
-    - keyid: 207A7A4E
+    - keyid: 4420973F
     - keyserver: keyserver.ubuntu.com
     - watch:
       - mc_proxy: nginx-pre-install-hook
