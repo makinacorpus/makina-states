@@ -30,7 +30,7 @@ container-container-pkgs:
   '/sbin/reset-passwords.sh': {"mode": "755"},
   '/etc/systemd/system/lxc-stop.service': {"mode": "644"},
   '/etc/systemd/system/lxc-setup.service': {"mode": "644"},
-  '/usr/bin/ms-lxc-stop.sh': {"mode": "755"}} %}
+  '/usr/bin/lxc-stop.sh': {"mode": "755"}} %}
 {% macro rmacro() %}
     - watch:
       - mc_proxy: makina-lxc-proxy-cfg
