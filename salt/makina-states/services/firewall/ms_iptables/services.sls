@@ -15,7 +15,9 @@ ms_iptables-conflicting-services{{i}}:
         set -ex
         service {{i}} stop || /bin/true;
         if hash -r systemctl;then
-          systemctl disable {{i}};
+          if systemctl is-enabled -q --no-pager {{i}} >/dev/null 2>&1;then
+            systemctl disable {{i}};
+          fi
         fi
         if hash -r update-rc.d;then
           update-rc.d -f {{i}} remove;
