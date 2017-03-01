@@ -1082,6 +1082,15 @@ def init_project_dirs(cfg, ret=None):
             (os.path.dirname(cfg['wired_pillar_root']), '770'),
             (os.path.dirname(cfg['wired_salt_root']), '770'),
             (cfg['data_root'], '770')]
+    dr = cfg['projects_dir']
+    cret = _state_exec(sfile,
+                       'directory',
+                       dr,
+                       makedirs=True,
+                       mode='751')
+    if not cret['result']:
+        raise projects_api.ProjectInitException(
+            'Can\'t manage projects container {0} dir'.format(dr))
     if not cfg['remote_less']:
         dirs.insert(0, (cfg['git_root'], '770'))
     for dr, mode in dirs:
