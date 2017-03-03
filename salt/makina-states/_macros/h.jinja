@@ -250,3 +250,111 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
 {% endif %}
 {% endif %}
 {%endmacro%}
+
+# handle services where service.running cant (missing status function)
+# action: start/stop/none
+# enable: true/false/none
+{% macro toggle_service(service,
+                        prefix='',
+                        suffix='',
+                        action=none,
+                        enable=none,
+                        level=none,
+                        service_function=none,
+                        after_fallback_macro=none,
+                        after_service_macro=none,
+                        before_macro=none,
+                        after_macro=none) %}
+{% set systemd_action = none %}
+{% set sysv_toggle_action = none %}
+{% if action in [True, False] %}
+{%  if action %}{% set action = 'start' %}
+{%  else %}{% set action = 'stop' %}
+{%  endif %}
+{% endif %}
+{% if service_function is none %}
+{%  if action == 'start' %}{% set service_function = 'service.running' %}
+{%  elif action == 'stop' %}{% set service_function = 'service.dead' %}
+{%  endif %}
+{% endif %}
+{% if enable is none %}
+{%  if action == 'stop' %}{%   set enable = False %}
+{%  elif action == 'start' %}{%   set enable = True %}
+{%  endif %}
+{% endif %}
+{% if enable is not none %}
+{%  if enable %}
+{%   set systemd_action = 'enable' %}
+{%   set sysv_toggle_action = 'defaults {0}'.format(level) %}
+{%  else %}
+{%   set systemd_action = 'disable' %}
+{%   set sysv_toggle_action = 'remove' %}
+{%  endif %}
+{% endif %}
+{% if not level %}{%  set level= '99' %}{% endif %}
+{% if before_macro is not none %}{{ before_macro() }}{% endif %}
+{% if service_function %}
+{{prefix}}toggle-service-{{service}}{{suffix}}:
+  {{service_function}}:
+    - name: {{service}}
+    {% if enable is not none %}
+    - enable: {{enable}}
+    {% endif %}
+    - onfail_in:
+      - cmd: {{prefix}}toggle-service-{{service}}{{suffix}}-fallback
+{% if after_service_macro is not none %}{{ after_service_macro() }}{% endif %}
+{% if after_macro is not none %}{{ after_macro() }}{% endif %}
+{% endif %}
+{{prefix}}toggle-service-{{service}}{{suffix}}-fallback:
+  cmd.run:
+    - name: |
+        sret=0;ret=0;vret=0
+        {% if action %}
+          if hash -r service >/dev/null 2>&1;then
+            if ! ( service {{service}} status 2>&1 | egrep -q "unrecognized service" ); then
+              service {{service}} {{action}}
+            fi
+          elif hash -r systemctl >/dev/null 2>&1;then
+            systemctl {{action}} {{service}}
+          fi
+          ret=$?
+          if [ "x${ret}" != "x0" ];then
+            echo "error while {{action}} service {{service}}"
+          fi
+        {% endif %}
+        {% if systemd_action %}
+          if hash -r systemctl >/dev/null 2>&1;then
+            {% set invert_test = '' %}
+            {% if systemd_action == 'enable' %}
+            {%  set invert_test = '!' %}
+            {% endif %}
+            if {{invert_test }} \
+              ( systemctl is-enabled -q --no-pager {{service}} >/dev/null 2>&1 );then
+              systemctl {{systemd_action}} {{service}}
+              sret=$?
+              if [ "x${sret}" != "x0" ];then
+                echo "error while doing: {{systemd_action}} service: {{service}} (systemd)"
+              fi
+            fi
+          fi
+        {% endif %}
+        {% if sysv_toggle_action %}
+          if hash -r update-rc.d;then
+            update-rc.d -f {{service}} {{sysv_toggle_action}}
+            vret=$?
+            if [ "x${vret}" != "x0" ];then
+              echo "error while doing: {{sysv_toggle_action}} service {{service}} (sysv)"
+            fi
+          fi
+        {% endif %}
+        for i in ${ret} ${sret} ${vret};do
+          if [ "x${i}" != "x0" ];then
+            exit ${i}
+          fi
+        done
+        exit 0
+{% if after_fallback_macro is not none %}{{ after_fallback_macro() }}{% endif %}
+{% if after_macro is not none %}{{ after_macro() }}{% endif %}
+{% endmacro%}
+
+{# vim: set nofoldenable #}
