@@ -8,5 +8,4 @@
 # Should sadc collect system activity informations? Valid values
 # are "true" and "false". Please do not put other values, they
 # will be overwritten by debconf!
-ENABLED="{{data.has_sysstat}}"
-
+ENABLED="{{'{0}'.format(data.has_sysstat).lower()}}"
