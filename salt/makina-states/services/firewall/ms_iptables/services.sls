@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 {% set data = salt['mc_ms_iptables.settings']() %}
 include:
   - makina-states.services.firewall.shorewall.disable
@@ -8,26 +9,16 @@ include:
   - makina-states.services.firewall.firewall.configuration
 
 {# service status is borken for all those services ... #}
-{% for i in ['iptables', 'ebtables', 'firewalld', 'shorewall', 'shorewall6']  %}
-ms_iptables-conflicting-services{{i}}:
-  cmd.run:
-    - name: |
-        set -ex
-        service {{i}} stop || /bin/true;
-        if hash -r systemctl;then
-          if systemctl is-enabled -q --no-pager {{i}} >/dev/null 2>&1;then
-            systemctl disable {{i}};
-          fi
-        fi
-        if hash -r update-rc.d;then
-          update-rc.d -f {{i}} remove;
-        fi
+{% macro after_macro() %}
     - require_in:
       - mc_proxy: ms_iptables-conflicting-services
     - watch:
       - mc_proxy: ms_iptables-prerestart
     - watch_in:
       - mc_proxy: ms_iptables-postrestart
+{% endmacro %}
+{% for i in ['iptables', 'ebtables', 'firewalld', 'shorewall', 'shorewall6']  %}
+{{h.toggle_service(i, prefix='ms_iptables', action='stop', after_fallback_macro=after_macro)}}
 {% endfor %}
 
 ms_iptables-conflicting-services:
