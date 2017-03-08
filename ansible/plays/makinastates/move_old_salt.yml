@@ -1,0 +1,8 @@
+- hosts: all
+  tasks:
+    - shell: |
+        set -ex
+        if [ ! -e /srv/old ];then mkdir /srv/old;fi
+        for i in /srv/salt /srv/mastersalt;do
+          if [ -e $i ];then mv $i /srv/old/$(basename $i);fi
+        done
