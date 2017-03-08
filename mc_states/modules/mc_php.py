@@ -450,7 +450,7 @@ def settings():
                     'memcached': 'php{php_ver}-memcached',
                     'mysql': 'php{php_ver}-mysql',
                     'postgresql': 'php{php_ver}-pgsql',
-                    'sqlite': 'php{php_ver}-sqlite',
+                    'sqlite': 'php{php_ver}-sqlite3',
                     'pear': 'php{php_ver}-pear',
                     'soap': 'php{php_ver}-soap',
                     'dev': 'php{php_ver}-dev',

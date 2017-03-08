@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 {%- set data = salt['mc_monitoring.settings']() %}
 {%- set locs = salt['mc_locations.settings']() %}
 {% set dodl=True %}
@@ -63,20 +64,21 @@ monitoring-{{f}}:
     - group: root
     - mode: {{mode}}
     - watch_in:
-      - service: monitoring-sysstat-svc
+      - mc_proxy: monitoring-sysstat-svc
 {% endfor %}
 
-{% if data.has_sysstat %}
 monitoring-sysstat-svc:
-  service.running:
-    - name: sysstat
-    - enable: True
-{% else %}
-monitoring-sysstat-svc:
-  service.dead:
-    - name: sysstat
-    - enable: False
-{% endif %}
+  mc_proxy.hook: []
+
+{% macro smacro() %}
+    - watch:
+      - mc_proxy: monitoring-sysstat-svc
+{% endmacro %}
+
+{{h.toggle_service(prefix='monitoring-sysstat-svc',
+                   service='sysstat',
+                   after_macro=smacro,
+                   action=data.has_sysstat) }}
 
 ms-scripts-d:
   file.directory:

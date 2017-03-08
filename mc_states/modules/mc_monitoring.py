@@ -28,7 +28,7 @@ def settings():
         has_sysstat = not __salt__['mc_nodetypes.is_vm']()
         monitoringData = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.client', {
-                'has_sysstat': has_sysstat and "true" or "false",
+                'has_sysstat': has_sysstat and True or False,
                 'sysstat_rotate_periodicity': '59 23 * * *',
                 'sysstat_periodicity': '*/3 * * * *',
                 'sysstat_rotate_count': '60 2',

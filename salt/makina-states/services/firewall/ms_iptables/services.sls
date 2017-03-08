@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 {% set data = salt['mc_ms_iptables.settings']() %}
 include:
   - makina-states.services.firewall.shorewall.disable
@@ -6,14 +7,23 @@ include:
   - makina-states.services.firewall.firewall.hooks
   - makina-states.localsettings.network
   - makina-states.services.firewall.firewall.configuration
-ms_iptables-conflicting-services:
-  service.dead:
-    - names: [iptables, ebtables, firewalld, shorewall, shorewall6]
-    - enable: false
+
+{# service status is borken for all those services ... #}
+{% macro after_macro() %}
+    - require_in:
+      - mc_proxy: ms_iptables-conflicting-services
     - watch:
       - mc_proxy: ms_iptables-prerestart
     - watch_in:
       - mc_proxy: ms_iptables-postrestart
+{% endmacro %}
+{% for i in ['iptables', 'ebtables', 'firewalld', 'shorewall', 'shorewall6']  %}
+{{h.toggle_service(i, prefix='ms_iptables', action='stop', after_fallback_macro=after_macro)}}
+{% endfor %}
+
+ms_iptables-conflicting-services:
+  mc_proxy.hook: []
+
 {% if data.get('permissive_mode', False) %}
 ms_iptables:
   service.dead:
@@ -22,7 +32,7 @@ ms_iptables:
       - ms_iptables
     - require:
       - mc_proxy: ms_iptables-prerestart
-      - service: ms_iptables-conflicting-services
+      - mc_proxy: ms_iptables-conflicting-services
     - require_in:
       - mc_proxy: ms_iptables-postrestart
 ms_iptables-reapply:
@@ -52,7 +62,7 @@ ms_iptables:
     - names:
       - ms_iptables
     - require:
-      - service: ms_iptables-conflicting-services
+      - mc_proxy: ms_iptables-conflicting-services
       - mc_proxy: ms_iptables-prerestart
       - file: ms_iptables-/usr/bin/ms_iptables.py
       - file: ms_iptables-/etc/ms_iptables.json
