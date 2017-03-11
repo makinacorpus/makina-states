@@ -26,101 +26,101 @@ sock_dir: __MS_MS__/var/run/salt-minion
 search_dirs:
   - __MS_MS__/salt/_search
   - __MS_MS__/mc_states/search
-  - __MS_MS__/modules/search
+  - __MS_MS__/salt/modules/search
 grains_dirs:
   - __MS_MS__/salt/_grains
   - __MS_MS__/mc_states/grains
-  - __MS_MS__/modules/grains
+  - __MS_MS__/salt/modules/grains
 pillar_dirs:
   - __MS_MS__/salt/_pillar
   - __MS_MS__/mc_states/pillar
-  - __MS_MS__/modules/pillar
+  - __MS_MS__/salt/modules/pillar
 sdb_dirs:
   - __MS_MS__/salt/_sdb
   - __MS_MS__/mc_states/sdb
-  - __MS_MS__/modules/sdb
+  - __MS_MS__/salt/modules/sdb
 queue_dirs:
   - __MS_MS__/salt/_queues
   - __MS_MS__/mc_states/queues
-  - __MS_MS__/modules/queues
+  - __MS_MS__/salt/modules/queues
 returner_dirs:
   - __MS_MS__/salt/_returners
   - __MS_MS__/mc_states/returners
-  - __MS_MS__/modules/returners
+  - __MS_MS__/salt/modules/returners
 beacons_dirs:
   - __MS_MS__/salt/_beacons
   - __MS_MS__/mc_states/beacons
-  - __MS_MS__/modules/beacons
+  - __MS_MS__/salt/modules/beacons
 engines_dirs:
   - __MS_MS__/salt/_engines
   - __MS_MS__/mc_states/engines
-  - __MS_MS__/modules/engines
+  - __MS_MS__/salt/modules/engines
 runner_dirs:
   - __MS_MS__/salt/_runners
   - __MS_MS__/mc_states/runners
-  - __MS_MS__/modules/runners
+  - __MS_MS__/salt/modules/runners
 top_dirs:
   - __MS_MS__/salt/_tops
   - __MS_MS__/mc_states/tops
-  - __MS_MS__/modules/tops
+  - __MS_MS__/salt/modules/tops
 wrapper_dirs:
   - __MS_MS__/salt/_wrapper
   - __MS_MS__/mc_states/wrapper
-  - __MS_MS__/modules/wrapper
+  - __MS_MS__/salt/modules/wrapper
 states_dirs:
   - __MS_MS__/salt/_states
   - __MS_MS__/mc_states/states
-  - __MS_MS__/modules/states
+  - __MS_MS__/salt/modules/states
 grain_dirs:
   - __MS_MS__/salt/_grains
   - __MS_MS__/mc_states/grains
-  - __MS_MS__/modules/grains
+  - __MS_MS__/salt/modules/grains
 render_dirs:
   - __MS_MS__/salt/_renderers
   - __MS_MS__/mc_states/renderers
-  - __MS_MS__/modules/renderers
+  - __MS_MS__/salt/modules/renderers
 netapi_dirs:
   - __MS_MS__/salt/_netapi
   - __MS_MS__/mc_states/netapi
-  - __MS_MS__/modules/netapi
+  - __MS_MS__/salt/modules/netapi
 outputter_dirs:
   - __MS_MS__/salt/_output
   - __MS_MS__/mc_states/output
-  - __MS_MS__/modules/output
+  - __MS_MS__/salt/modules/output
 cloud_dirs:
   - __MS_MS__/salt/_clouds
   - __MS_MS__/mc_states/clouds
-  - __MS_MS__/modules/clouds
+  - __MS_MS__/salt/modules/clouds
 module_dirs:
   - __MS_MS__/salt/_modules
   - __MS_MS__/mc_states/modules
-  - __MS_MS__/modules/modules
+  - __MS_MS__/salt/modules/modules
 auth_dirs:
   - __MS_MS__/salt/_auth
   - __MS_MS__/mc_states/auth
-  - __MS_MS__/modules/auth
+  - __MS_MS__/salt/modules/auth
 roster_dirs:
   - __MS_MS__/salt/_roster
   - __MS_MS__/mc_states/roster
-  - __MS_MS__/modules/roster
+  - __MS_MS__/salt/modules/roster
 wheel_dirs:
   - __MS_MS__/salt/_wheel
   - __MS_MS__/mc_states/wheel
-  - __MS_MS__/modules/wheel
+  - __MS_MS__/salt/modules/wheel
 log_handlers_dirs:
   - __MS_MS__/salt/_log_handlers
   - __MS_MS__/mc_states/log_handlers
-  - __MS_MS__/modules/log_handlers
+  - __MS_MS__/salt/modules/log_handlers
 utils_dirs:
   - __MS_MS__/salt/_utils
   - __MS_MS__/mc_states.api
-  - __MS_MS__/modules/utils
+  - __MS_MS__/salt/modules/utils
 fileserver_dirs:
   - __MS_MS__/salt/_fileserver
   - __MS_MS__/mc_states/fileserver
-  - __MS_MS__/modules/fileserver
+  - __MS_MS__/salt/modules/fileserver
 proxy_dirs:
   - __MS_MS__/salt/_proxy
   - __MS_MS__/mc_states/proxy
-  - __MS_MS__/modules/proxy
+  - __MS_MS__/salt/modules/proxy
 # vim:set ft=sls:
