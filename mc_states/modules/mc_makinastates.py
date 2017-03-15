@@ -3,6 +3,16 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+'''
+
+.. _module_mc_makinastates:
+
+mc_makinastates
+===============================================
+
+
+
+'''
 
 import mc_states.api
 import random

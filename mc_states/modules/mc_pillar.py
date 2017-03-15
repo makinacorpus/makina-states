@@ -1706,7 +1706,7 @@ def resolve_ips(name, fail_over=True, dns_query=True, ttl=PILLAR_TTL):
 
 def resolve_ip(name, fail_over=True, dns_query=True):
     '''
-    Get the first resolved IP of ips_resolve(*a)
+    Get the first resolved IP of ips_resolve(\*a)
     '''
     return resolve_ip(name, fail_over=fail_over, dns_query=dns_query)[0]
 
@@ -2084,22 +2084,27 @@ def serial_for(domain,
     '''
     Get the serial for a DNS zone
 
-    If serial is given: we take that as a value
-    Else:
+    - If serial is given:
+
+        - we take that as a value
+
+    - Else:
+
         - the serial defaults to 'YYYYMMDD01'
         - We try to load the serial from db and if
           it is superior to default, we use it
         - We then load a local autosave file
           with mappings of domain/dns serials
-
+        
             - If serial is found and autoinc:
                 this local stored serial is autoincremented
                 by 1
-
+        
             - if this local value is greater than the
               current serial, this becomes the serial,
-        - at the end, we try to reach the nameservers in the wild
-          to adapt our serial if it is too low or too high
+    
+    - at the end, we try to reach the nameservers in the wild
+      to adapt our serial if it is too low or too high
     '''
     def _doserial_for(domain, serial=None, ttl=PILLAR_TTL):
         serials = __salt__[__name + '.query']('dns_serials', {})
@@ -2250,7 +2255,8 @@ def serial_for(domain,
 def rrs_for(domain, aslist=False):
     '''
     Return all configured records for a domain
-    take all rr found for the "ips" & "ipsfo" tables for domain
+    take all rr found for the "ips" & "ipsfo" tables for domain:
+
         - Make NS records for everything in ns_map
         - Make MX records for everything in mx_map
         - Make A records for everything in ips
@@ -4204,14 +4210,17 @@ def get_etc_hosts_conf(id_, ttl=PILLAR_TTL):
 
 def get_passwords_conf(id_, ttl=PILLAR_TTL):
     '''
-    Idea is to have
-    - simple users gaining sudoer access
-    - powerusers known as sysadmin have:
-        - access to sysadmin user via ssh key
-        - access to root user via ssh key
-    - They are also sudoers with their username (trigramme)
-    - ssh accesses are limited though access groups, so we also map here
-      the groups which have access to specific machines
+    Idea is to have:
+
+        - simple users gaining sudoer access
+        - powerusers known as sysadmin have:
+
+            - access to sysadmin user via ssh key
+            - access to root user via ssh key
+
+        - They are also sudoers with their username (trigramme)
+        - ssh accesses are limited though access groups, so we also map here
+          the groups which have access to specific machines
     '''
     def _doget_passwords_conf(id_):
         gconf = get_configuration(id_)

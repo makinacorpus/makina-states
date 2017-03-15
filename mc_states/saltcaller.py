@@ -5,7 +5,7 @@ from __future__ import division
 from __future__ import print_function
 '''
 
-.. _mc_states_saltcaller
+.. _mc_states_saltcaller:
 
 wrappers to salt shell commands
 =================================

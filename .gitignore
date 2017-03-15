@@ -1,9 +1,11 @@
 .*installed.cfg
+/doc/html
 nobackup
 *.swp
 makina.scripts
 MegaSAS.log
 *.sav
+*.tmp
 pep8.log
 pylint.log
 unittest.log
@@ -20,7 +22,6 @@ boot_salt_top
 .bootsalt_need_restart
 .boot_salt_out
 .boot_salt_top
-.buildout
 .coverage*
 .initial_hs
 .lint.log
@@ -37,11 +38,10 @@ boot_salt_top
 .unit.log
 /app
 /baseimage.*
-/buildout/buildout.cfg
 /corpus-*
 /data
 /develop-eggs/
-/doc/build
+/doc/**/build
 /docker/baseimage*xz
 /docker/Dockerfile
 /docker/Dockerfile*s0
@@ -86,6 +86,7 @@ boot_salt_top
 /var/cache
 /var/.first_highstate
 /venv
+/**/venv
 /etc/masterless_pillars/
 /ansible/**/*.retry
 /etc/ansible/inventories

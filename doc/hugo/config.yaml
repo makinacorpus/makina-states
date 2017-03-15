@@ -1,0 +1,111 @@
+---
+baseURL: "/"
+title: "Makina States"
+theme: "hugo-mc-docs"
+# ignoreFiles:
+#   - "\\.foo$"
+defaultContentLanguage: fr
+languageCode: "fr-FR"
+buildDrafts: true
+uglyURLs: false
+canonifyurls: true
+taxonomies:
+  category: "categories"
+  tag: "tags"
+params:
+  brand: "Makina Corpus"
+  organizationname: "Makina Corpus"
+  sitedescription: "docs"
+  release: "1"
+  description: "documentation"
+  logo: "/images/MakinaCorpus_logo_vert_blanc.svg"
+  favicon: "favicon.ico"
+  siteaddress: "https://foo.net"
+  ghrepo: "https://github.com/makinacorpus/makina-states"
+  edit_link: "https://github.com/makinacorpus/makina-states/edit/v2/doc/hugo/content"
+  permalink: "#"
+  includejq: false
+  sitepublishdate: ""
+  twitterhandle: null
+  facebook: null
+  defaultsocialimage: null
+  removefromexternalsearch: true
+  ghdocswiki: null
+  ghdevwiki: null
+  gitter: null
+  forum: null
+  gtmid: ""
+  # Set to true to include a CDN call to FontAwesome
+  # (note that Hugo docs currently hosts its own FA
+  # (see pipeline/scss/_variables.scss))
+  usefontawesome: false
+PygmentsCodeFencesGuessSyntax: true
+PygmentsCodeFences: true
+pygmentsUseClasses: true
+# disableKinds = ["page", "home", "section", "taxonomy", "taxonomyTerm", "RSS", "sitemap", "robotsTXT", "404"]
+PygmentsCodeFencesGuessSyntax: true
+PygmentsCodeFences: true
+pygmentsUseClasses: true
+disablePathToLower: false
+disableLiveReload: false
+disableRSS: false
+disableSitemap: false
+enableGitInfo: true
+enableRobotsTXT: true
+disable404: false
+disableHugoGeneratorInject: true
+enableEmoji: true
+verbose: true
+verboseLog: true
+hrefTargetBlank: true
+blackfriday:
+  hardLineBreak: true
+  footnotes: true
+  definitionLists: true
+  fencedCode: true
+  tables: true
+  smartypants: true
+  fractions: true
+  smartDashes: true
+  plainIDAnchors: true
+# This intelligently adds an "s" to the titles of list pages
+pluralizelisttitles: false
+preserveTaxonomyNames: true
+watch: true
+metaDataFormat: "yaml"
+permalinks:
+  temp: "/:title"
+menu:
+  main:
+    - URL: /
+      Name: "Home"
+      identifier: home
+      weight: 1000
+    - URL: /reference/
+      Name: "Reference"
+      identifier: reference
+      weight: 1500
+    - URL: /install/
+      Name: "Installation"
+      identifier: install
+      weight: 2000
+    - URL: /usage/
+      Name: "Usage"
+      identifier: usage
+      weight: 2400
+    - URL: /topics/
+      Name: "Topics"
+      identifier: topics
+      weight: 2500
+    - URL: /cloud/
+      Name: "Cloud"
+      identifier: cloud
+      weight: 3000
+    - URL: /sphinx/api
+      Name: "API"
+      identifier: sphinx
+      weight: 6000
+
+
+---
+# vim: set et:

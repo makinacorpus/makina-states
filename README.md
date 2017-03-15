@@ -3,7 +3,7 @@ Paas made easy with saltstack, ansible and makina-states
 About
 ------
 
-Please go to this [documentation](https://makina-states.readthedocs.io).
+Please go to this [documentation](http://makinastates.makina-corpus.com/)
 
 | branch  | coverage status                                                                                                                                                      |  build status                                                                                                                                    |
 |---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
