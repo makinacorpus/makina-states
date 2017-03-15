@@ -2,11 +2,19 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-from mc_states.grains import makina_grains
+'''
+
+.. _module_makinagrains:
+
+makinagrains
+===============================================
+
+
+interface for querying grains routines from execution module
 
 '''
-interface for querying grains routines from execution modules
-'''
+
+from mc_states.grains import makina_grains
 
 pgsql_vers = makina_grains._pgsql_vers
 
