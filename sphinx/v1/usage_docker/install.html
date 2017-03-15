@@ -1,0 +1,298 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Install a makina-states docker environement &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Use makina-states in docker" href="index.html"/>
+        <link rel="next" title="Makina-States based docker Images" href="images.html"/>
+        <link rel="prev" title="Use makina-states in docker" href="index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+<ul class="simple">
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Custom states modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/modules/index.html">Execution modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/states/index.html">States modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/grains/index.html">makina-states grains modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/api/index.html">Api  modules</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../usage_index.html">Makina-States usage</a> &raquo;</li>
+      
+          <li><a href="index.html">Use makina-states in docker</a> &raquo;</li>
+      
+    <li>Install a makina-states docker environement</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../_sources/v1/usage_docker/install.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="install-a-makina-states-docker-environement">
+<span id="install-docker"></span><h1>Install a makina-states docker environement<a class="headerlink" href="#install-a-makina-states-docker-environement" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="intro-and-history">
+<h2>Intro and history<a class="headerlink" href="#intro-and-history" title="Permalink to this headline">¶</a></h2>
+<p>Cluster based on LXC/kvm and mastersalt-pillar was the first thing we had,
+This allowed us to have a git/push/deploy to environment workflow.
+It&#8217;s not what you ll have to use to spawn a kubernetes based cluster, as we want
+things to be a lot more immutable.</p>
+<p>We still reuse bits from the past, but we ll input the settings differently as
+it was a bit too hard from end users to use that.</p>
+<p>Idea is to deploy pre-backed containers onto production and do not do heavy configuration at runtime.
+In other words, we just edit some configuration file to wire the container to server the app request, but we do not
+reconfigure it from end to end.</p>
+</div>
+<div class="section" id="basic-development-installation">
+<h2>Basic development installation<a class="headerlink" href="#basic-development-installation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id1">
+<h3>Install docker<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first">If you system is not supported, you can try to run it, but it just untested. you need at least docker, with aufs support.</p>
+</li>
+<li><p class="first">If you do not run ubuntu, run it intro your virtualisation software (Virtualbox, parallell, etc)</p>
+</li>
+<li><p class="first">For ubuntu, you best bet is to use <strong>something &gt;= Ubuntu 14.04</strong> with a <strong>recent kernel extras image</strong>
+(<strong>&gt;=3.19</strong> from enablement stack).
+Verify with</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>uname -ar
+</pre></div>
+</div>
+</li>
+<li><p class="first">At this time of writing, you can upgrade your kernel by issuing the following command</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>apt-get install linux-image-extra-3.19.0-33-generic <span class="c1"># vivid / trusty</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Install lxc-utils &amp; docker by reading your distribution guidelines for that purpose</p>
+<blockquote>
+<div><ul>
+<li><p class="first">Eg on ubuntu:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>apt-get install lxc docker rsync
+</pre></div>
+</div>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Replace docker by makina-corpus version (1.9+),
+We have modified it to allow to use a custom apparmor profile instead of inject it&#8217;s own and broken one.</p>
+<blockquote>
+<div><ul>
+<li><p class="first">The sources are <a class="reference external" href="https://github.com/makinacorpus/docker.git">here&#64;github</a>.</p>
+</li>
+<li><p class="first">We provide a <a class="reference external" href="https://github.com/makinacorpus/docker/releases/download/mc_2/docker">prebuilt binary for linux</a>.:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>cp /usr/bin/docker /usr/bin/docker.dist
+curl -L --insecure -s <span class="se">\</span>
+    https://github.com/makinacorpus/docker/releases/download/mc_1/docker <span class="se">\</span>
+    -o /usr/bin/docker
+<span class="c1"># or wget \</span>
+<span class="c1">#  https://github.com/makinacorpus/docker/releases/download/mc_1/docker \</span>
+<span class="c1">#  -O /usr/bin/docker</span>
+chmod +x /usr/bin/docker
+</pre></div>
+</div>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">If you are on Ubuntu or any system protected by <strong>apparmor</strong>, you ll have to tweak your apparmor installation.
+If you are not configuring your system via makina-states, you can however bring back the profile quite easily</p>
+</li>
+</ul>
+</div>
+<div class="section" id="configure-apparmor">
+<h3>Configure apparmor<a class="headerlink" href="#configure-apparmor" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>mkdir -pv /etc/apparmor.d/abstractions/lxc
+curl -L --insecure -s https://raw.githubusercontent.com/makinacorpus/makina-states/master/files/etc/apparmor.d/abstractions/lxc/powercontainer-base -o /etc/apparmor.d/abstractions/lxc/powercontainer-base
+curl -L --insecure -s https://raw.githubusercontent.com/makinacorpus/makina-states/master/files/etc/apparmor.d/abstractions/dockercontainer -o /etc/apparmor.d/abstractions/dockercontainer
+<span class="nb">cd</span> /tmp
+curl -L --insecure -s https://raw.githubusercontent.com/makinacorpus/makina-states/master/files/etc/apparmor.d/usr.sbin.ntpd.patch -o usr.sbin.ntpd.patch
+curl -L --insecure -s https://raw.githubusercontent.com/makinacorpus/makina-states/master/files/etc/apparmor.d/usr.sbin.ntpd.perms.patch  -o usr.sbin.ntpd.perms.patch
+
+<span class="nb">cd</span> /
+patch -Np2 &lt; /tmp/usr.sbin.ntpd.patch
+patch -Np2 &lt; /tmp/usr.sbin.ntpd.perms.patch
+service apparmor restart
+</pre></div>
+</div>
+</div>
+<div class="section" id="install-the-base-image">
+<h3>Install the base image<a class="headerlink" href="#install-the-base-image" title="Permalink to this headline">¶</a></h3>
+<p>Clone makina-states, even if not installing it on you host</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>mkdir /srv/mastersalt <span class="o">&amp;&amp;</span> <span class="nb">cd</span> /srv/mastersalt
+git clone http://github.com/makinacorpus/makina-states.git
+</pre></div>
+</div>
+<p>Create the base makinacorpus/makina-states image</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span><span class="nb">cd</span> /srv/mastersalt/makina-states
+./docker/build-scratch.sh
+<span class="c1"># at the end of the script, this will output the base image tag</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="images.html" class="btn btn-neutral float-right" title="Makina-States based docker Images">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Use makina-states in docker"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

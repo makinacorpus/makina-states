@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Databasesls on Makina States</title>
+    <link>/tags/databasesls/index.xml</link>
+    <description>Recent content in Databasesls on Makina States</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fr-FR</language>
+    <atom:link href="/tags/databasesls/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Minions managment via database.sls</title>
+      <link>/topics/database/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/topics/database/</guid>
+      <description>
+
+&lt;ul&gt;
+&lt;li&gt;We use a special file: &lt;code&gt;$WC/etcmakina-states/database.sls&lt;/code&gt;. for
+describing our infractrusture and specially how to access to the remote
+systems.&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;At first, you will need to copy &lt;code&gt;$WC/etc/makina-states/database.sls.in&lt;/code&gt; which is a sample, and adapt it to your needs:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;cp etc/makina-states/database.sls.in &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+      etc/makina-states/database.sls
+&lt;span class=&#34;nv&#34;&gt;$EDITOR&lt;/span&gt; etc/makina-states/database.sls
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;The contents of the file is mostly self explainatory.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;This file is then parsed by the mc_pillar module (called via an
+extpillar hook) to get the appropriate pillar for a specific minion id
+that represant a good part of its system configuration from backups to
+ssl, to cloud configuration and so on.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;We heavyly rely on memcached to improve the performance, so first please
+install it this way:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call -lall state.sls makina-states.services.cache.memcached
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;verify-the-pillar-for-a-minion-after-a-database-sls-change&#34;&gt;Verify the pillar for a minion after a database.sls change&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Use this command:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;service memcached restart
+bin/salt-call mc_pillar.ext_pillar &amp;lt;minion_id&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

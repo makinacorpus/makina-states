@@ -1,0 +1,250 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mc_cloud_saltify / cloud related variables &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../../index.html"/>
+        <link rel="up" title="Execution modules" href="index.html"/>
+        <link rel="next" title="mc_dumper / Some useful wrappers to dump/load values" href="mc_dumper.html"/>
+        <link rel="prev" title="mc_cloud / cloud registries &amp; functions" href="mc_cloud.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../index.html#usage">Usage</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../../ref_index.html">Reference</a> &raquo;</li>
+      
+          <li><a href="../index.html">Custom states modules</a> &raquo;</li>
+      
+          <li><a href="index.html">Execution modules</a> &raquo;</li>
+      
+    <li>mc_cloud_saltify / cloud related variables</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../../_sources/v1/ref_states/modules/mc_cloud_saltify.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <span class="target" id="module-mc_states.modules.mc_cloud_saltify"></span><div class="section" id="mc-cloud-saltify-cloud-related-variables">
+<span id="module-mc-cloud-saltify"></span><h1>mc_cloud_saltify / cloud related variables<a class="headerlink" href="#mc-cloud-saltify-cloud-related-variables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li>This contains generate settings around cloud_saltify</li>
+<li>This contains also all targets to be driven using the saltify driver</li>
+<li>LXC driver profile and containers settings are in <a class="reference internal" href="mc_lxc.html#module-mc-lxc"><span>mc_lxc / lxc registry</span></a>.</li>
+</ul>
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_saltify.default_settings">
+<code class="descclassname">mc_states.modules.mc_cloud_saltify.</code><code class="descname">default_settings</code><span class="sig-paren">(</span><em>cloudSettings</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_saltify.default_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Except targets, we take all the default from
+<a class="reference internal" href="mc_cloud.html#module-mc-cloud"><span>mc_cloud / cloud registries &amp; functions</span></a></p>
+<dl class="docutils">
+<dt>bootsalt_args</dt>
+<dd>args to give to bootsalt
+(default to cloudcontroller configured value)</dd>
+<dt>bootsalt_branch</dt>
+<dd>default bootsalt_branch to use
+(default to cloudcontroller configured value)</dd>
+<dt>id</dt>
+<dd>fqdn/minionid of the host to saltify</dd>
+<dt>ssh_gateway</dt>
+<dd>(all the gw params are opt.)
+ssh gateway info</dd>
+<dt>ssh_gateway_port</dt>
+<dd>ssh gateway info</dd>
+<dt>ssh_gateway_user</dt>
+<dd>ssh gateway info</dd>
+<dt>ssh_gateway_key</dt>
+<dd>ssh gateway info and default hosts key to ssh in</dd>
+<dt>ssh_gateway_password</dt>
+<dd>ssh gateway password</dd>
+<dt>ssh_keyfile</dt>
+<dd>use the ssh key (private) instead of using password base
+authentication</dd>
+<dt>name</dt>
+<dd>name of the host if it does not match id
+(do not use...)</dd>
+<dt>ip</dt>
+<dd>eventual ip if dns is not yet accessible</dd>
+<dt>ssh_username</dt>
+<dd>user name to connect as to provision the box</dd>
+<dt>password</dt>
+<dd>password to use (leave empty for key)</dd>
+<dt>no_sudo_password</dt>
+<dd>disable sudo password handling (default: False).
+If the guest system disable sudo password asking, set this
+parameter to true</dd>
+<dt>sudo_password</dt>
+<dd>sudo_password (leave empty to default to password)</dd>
+<dt>sudo</dt>
+<dd>do we use sudo (bool)</dd>
+<dt>targets</dt>
+<dd>List of minionid Targets where to bootstrap salt using the saltcloud
+saltify driver (something accessible via ssh)</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_saltify.target_extpillar">
+<code class="descclassname">mc_states.modules.mc_cloud_saltify.</code><code class="descname">target_extpillar</code><span class="sig-paren">(</span><em>name</em>, <em>c_data=None</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_saltify.target_extpillar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Settings for bootstrapping a target using saltcloud saltify
+driver (something accessible via ssh)
+mappings in the form:</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mc_dumper.html" class="btn btn-neutral float-right" title="mc_dumper / Some useful wrappers to dump/load values">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mc_cloud.html" class="btn btn-neutral" title="mc_cloud / cloud registries &amp; functions"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

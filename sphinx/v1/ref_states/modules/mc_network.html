@@ -1,0 +1,285 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mc_network / network registry &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../../index.html"/>
+        <link rel="up" title="Execution modules" href="index.html"/>
+        <link rel="next" title="mc_nginx / nginx registry" href="mc_nginx.html"/>
+        <link rel="prev" title="mc_nagvis / nagvis functions" href="mc_nagvis.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../index.html#usage">Usage</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../../ref_index.html">Reference</a> &raquo;</li>
+      
+          <li><a href="../index.html">Custom states modules</a> &raquo;</li>
+      
+          <li><a href="index.html">Execution modules</a> &raquo;</li>
+      
+    <li>mc_network / network registry</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../../_sources/v1/ref_states/modules/mc_network.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <span class="target" id="module-mc_states.modules.mc_network"></span><div class="section" id="mc-network-network-registry">
+<span id="module-mc-network"></span><h1>mc_network / network registry<a class="headerlink" href="#mc-network-network-registry" title="Permalink to this headline">¶</a></h1>
+<p>If you alter this module and want to test it, do not forget
+to deploy it on minion using:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>salt &#39;*&#39; saltutil.sync_modules
+</pre></div>
+</div>
+<p>Documentation of this module is available with:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>salt &#39;*&#39; sys.doc mc_network
+</pre></div>
+</div>
+<dl class="function">
+<dt id="mc_states.modules.mc_network.default_net">
+<code class="descclassname">mc_states.modules.mc_network.</code><code class="descname">default_net</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_network.default_net" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to be used on a running system (opposed to settings)
+Use by default a bridge (with main interface as the only first port)
+or the main interface as the link with internet</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_network.ext_ip">
+<code class="descclassname">mc_states.modules.mc_network.</code><code class="descname">ext_ip</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_network.ext_ip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the external IP address</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_network.get_broadcast">
+<code class="descclassname">mc_states.modules.mc_network.</code><code class="descname">get_broadcast</code><span class="sig-paren">(</span><em>dn</em>, <em>ip</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_network.get_broadcast" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a server broadcase
+ipsubnet.255</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_network.get_dnss">
+<code class="descclassname">mc_states.modules.mc_network.</code><code class="descname">get_dnss</code><span class="sig-paren">(</span><em>dn</em>, <em>ip</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_network.get_dnss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get server dnss</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_network.get_fo_broadcast">
+<code class="descclassname">mc_states.modules.mc_network.</code><code class="descname">get_fo_broadcast</code><span class="sig-paren">(</span><em>dn</em>, <em>ip</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_network.get_fo_broadcast" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get broadcast for an ip failover</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_network.get_fo_netmask">
+<code class="descclassname">mc_states.modules.mc_network.</code><code class="descname">get_fo_netmask</code><span class="sig-paren">(</span><em>dn</em>, <em>ip</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_network.get_fo_netmask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get netmask for an ip failover</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_network.get_gateway">
+<code class="descclassname">mc_states.modules.mc_network.</code><code class="descname">get_gateway</code><span class="sig-paren">(</span><em>dn</em>, <em>ip</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_network.get_gateway" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a server gateway
+default to ipsubnet.254
+except for online where the gw == ipsubnet.1</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_network.get_netmask">
+<code class="descclassname">mc_states.modules.mc_network.</code><code class="descname">get_netmask</code><span class="sig-paren">(</span><em>dn</em>, <em>ip</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_network.get_netmask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a server netmask
+default to ipsubnet.255</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_network.ns_whois">
+<code class="descclassname">mc_states.modules.mc_network.</code><code class="descname">ns_whois</code><span class="sig-paren">(</span><em>name</em>, <em>ttl=86400</em>, <em>cache=True</em>, <em>whois_ttl=2592000</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_network.ns_whois" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a whois request and return data
+For evident performance questons,
+We cache whois data for one month!</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_network.settings">
+<code class="descclassname">mc_states.modules.mc_network.</code><code class="descname">settings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_network.settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>network registry</p>
+<dl class="docutils">
+<dt>networkManaged</dt>
+<dd>Do we manage the network configuration</dd>
+<dt>interfaces</dt>
+<dd>Dict of configuration for network interfaces</dd>
+<dt>main_ip</dt>
+<dd>main server ip</dd>
+<dt>hostname</dt>
+<dd>main hostname</dd>
+<dt>domain</dt>
+<dd>main domain</dd>
+<dt>devhost_ip</dt>
+<dd>devhost ip</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_network.whois_data">
+<code class="descclassname">mc_states.modules.mc_network.</code><code class="descname">whois_data</code><span class="sig-paren">(</span><em>ip</em>, <em>ttl=86400</em>, <em>whois_ttl=2592000</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_network.whois_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a whois request and return data
+For evident performance questons,
+We cache whois data for one month!</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mc_nginx.html" class="btn btn-neutral float-right" title="mc_nginx / nginx registry">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mc_nagvis.html" class="btn btn-neutral" title="mc_nagvis / nagvis functions"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

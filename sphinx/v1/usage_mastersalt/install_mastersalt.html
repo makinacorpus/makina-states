@@ -1,0 +1,283 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Installation of a cluster based on mastersalt &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Mastersalt documentation" href="index.html"/>
+        <link rel="next" title="Project management" href="../usage_projects/project_creation.html"/>
+        <link rel="prev" title="Mastersalt documentation" href="index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+<ul class="simple">
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Custom states modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/modules/index.html">Execution modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/states/index.html">States modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/grains/index.html">makina-states grains modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/api/index.html">Api  modules</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../usage_index.html">Makina-States usage</a> &raquo;</li>
+      
+          <li><a href="index.html">Mastersalt documentation</a> &raquo;</li>
+      
+    <li>Installation of a cluster based on mastersalt</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../_sources/v1/usage_mastersalt/install_mastersalt.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="installation-of-a-cluster-based-on-mastersalt">
+<h1>Installation of a cluster based on mastersalt<a class="headerlink" href="#installation-of-a-cluster-based-on-mastersalt" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="briefing">
+<h2>Briefing<a class="headerlink" href="#briefing" title="Permalink to this headline">¶</a></h2>
+<p>Most of mastersalt part is configured via a file: <code class="docutils literal"><span class="pre">/srv/mastersalt/database.sls</span></code>.
+This is a simple YAML (+jinja) file to describe your infra in a very consive
+format.</p>
+<p>This file is then read by the <code class="docutils literal"><span class="pre">mc_pillar</span></code> execution module which is called from the
+<code class="docutils literal"><span class="pre">mc_pillar</span></code> ext_pillar module and assemble pieces of information through
+PILLAR entries</p>
+<p>IOW, The ext pillar will setup the pillar for mastersalt to help to manage
+a whole infractructure:</p>
+<p>This covers those parts:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">CA/SSL certificates generation (on master side)</p>
+</li>
+<li><p class="first">CA/SSL certificates delivery (on minions)</p>
+</li>
+<li><p class="first">Supervision (icinga)</p>
+</li>
+<li><p class="first">Authorising SSH access to boxes and configure SSH servers</p>
+</li>
+<li><p class="first">Manage auto upgrades via unattended</p>
+</li>
+<li><p class="first">Managing PAM &amp; NSSconfiguration</p>
+</li>
+<li><p class="first">backups (client &amp; master) (based burp)</p>
+</li>
+<li><p class="first">DNS (bind)</p>
+</li>
+<li><p class="first">LDAP (openldap)</p>
+</li>
+<li><p class="first">Baremetal and VM network configuration (this include setuping ip faiover
+aliases on baremetal servers)</p>
+</li>
+<li><p class="first">Firewall configuration (<a class="reference external" href="https://github.com/makinacorpus/makina-states/blob/master/files/usr/bin/ms_iptables.py">ms_iptables</a> (simple iptables frontend configured
+via json))</p>
+</li>
+<li><p class="first">repositories managment (APT)</p>
+</li>
+<li><p class="first">locales managment</p>
+</li>
+<li><p class="first">Cloud Controller orchestration</p>
+<blockquote>
+<div><ul class="simple">
+<li>Manage dns entries</li>
+<li>Reverse proxies (haproxy &amp; firewalld (http(s)/ssh/snmp)</li>
+<li>Spawning VMS (kvm, lxc) and managing their lifecycle</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Kernel sysctl managment</p>
+</li>
+<li><p class="first">Configure base machine configurations (editors, base packages &amp; so on)</p>
+</li>
+<li><p class="first">etc.</p>
+</li>
+</ul>
+</div></blockquote>
+<p>The yaml files doesnt exist at first, you have to create it.
+You can get a sample from <a class="reference external" href="https://github.com/makinacorpus/makina-states/blob/stable/files/database.sls">https://github.com/makinacorpus/makina-states/blob/stable/files/database.sls</a> and adapt it to your needs.
+An empty file is generated for you on first install.</p>
+<div class="section" id="install-a-mastersalt-master">
+<h3>Install a mastersalt master<a class="headerlink" href="#install-a-mastersalt-master" title="Permalink to this headline">¶</a></h3>
+<p>Ensure that your local box FQDN is correctly configured by issuing:</p>
+<blockquote>
+<div>hostname -f</div></blockquote>
+<p>You should have something like that in your /etc/hosts:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>127.0.0.1 mastersaltmaster.foo.net mastersaltmaster localhost
+</pre></div>
+</div>
+<p>Then, you can proceed by bootstrapping mastersalt</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>mkdir -p /srv/mastersalt
+apt-get install -y curl git
+git clone https://github.com/makinacorpus/makina-states.git /srv/mastersalt/makina-states
+/srv/mastersalt/makina-states/_scripts/boot-salt.sh --mastersalt-master --mastersalt $(hostname -f)
+</pre></div>
+</div>
+<p>After installation you can begin to edit <strong>/srv/mastersalt-pillar/database.sls</strong> and
+bring up the rest of your new saltstack based infra, piece after piece !:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">vim</span> <span class="o">/</span><span class="n">srv</span><span class="o">/</span><span class="n">mastersalt</span><span class="o">-</span><span class="n">pillar</span><span class="o">/</span><span class="n">database</span><span class="o">.</span><span class="n">sls</span>
+</pre></div>
+</div>
+<p><strong>WARNING</strong> The mastersalt binaries are prefixed with &#8216;master&#8217; like:
+&#8216;mastersalt&#8217;, &#8216;mastersalt-call&#8217;, &#8216;mastersalt-run&#8217;, &#8216;mastersalt-key&#8217;.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../usage_projects/project_creation.html" class="btn btn-neutral float-right" title="Project management">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Mastersalt documentation"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

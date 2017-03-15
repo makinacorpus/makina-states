@@ -1,0 +1,277 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Network configuration &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../../index.html"/>
+        <link rel="up" title="Localsettings" href="index.html"/>
+        <link rel="next" title="Nodejs configuration" href="nodejs.html"/>
+        <link rel="prev" title="rc.local managment" href="localrc.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+<ul class="simple">
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">Custom states modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/modules/index.html">Execution modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/states/index.html">States modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/grains/index.html">makina-states grains modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/api/index.html">Api  modules</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../index.html#usage">Usage</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../../ref_index.html">Reference</a> &raquo;</li>
+      
+          <li><a href="../index.html">Makina-states Formulaes</a> &raquo;</li>
+      
+          <li><a href="index.html">Localsettings</a> &raquo;</li>
+      
+    <li>Network configuration</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../../_sources/v1/ref_formulaes/localsettings/network.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="network-configuration">
+<h1>Network configuration<a class="headerlink" href="#network-configuration" title="Permalink to this headline">¶</a></h1>
+<p>Configure machine physical network based on pillar information.
+This state will only apply if you set to true the config value (grain or pillar): <strong>makina-states.localsettings.network_managed</strong>
+The template is shared with the lxc state, please also look at it.</p>
+<p>Exposed settings:</p>
+<blockquote>
+<div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">makina-states.localsettings.network.managed:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">default: False</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<p>It will look for extra pillar entries suffixed in <strong>-makina-network</strong> as follow</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">makina-states.localsettings.network.interfaces.{{ifname}}</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">auto</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">opt (default</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">True)</span>
+  <span class="l l-Scalar l-Scalar-Plain">mode</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">opt (default</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">dhcp or static if address)</span>
+  <span class="l l-Scalar l-Scalar-Plain">address</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">opt</span>
+  <span class="l l-Scalar l-Scalar-Plain">netmask</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">opt</span>
+  <span class="l l-Scalar l-Scalar-Plain">gateway</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">opt</span>
+  <span class="l l-Scalar l-Scalar-Plain">dnsservers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">opt</span>
+  <span class="l l-Scalar l-Scalar-Plain">pre-up</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">opt</span>
+    <span class="l l-Scalar l-Scalar-Plain">- list of rules non prefixed with post-up</span>
+  <span class="l l-Scalar l-Scalar-Plain">post-up</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">opt</span>
+    <span class="l l-Scalar l-Scalar-Plain">- list of rules non prefixed with post-up</span>
+  <span class="l l-Scalar l-Scalar-Plain">pre-down</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">opt</span>
+    <span class="l l-Scalar l-Scalar-Plain">- list of rules non prefixed with pre-down</span>
+  <span class="l l-Scalar l-Scalar-Plain">post-down</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">opt</span>
+    <span class="l l-Scalar l-Scalar-Plain">- list of rules non prefixed with pre-down</span>
+</pre></div>
+</div>
+<p>EG</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">makina-states.localsettings.network.managed</span> <span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="c1"># manually configured interface</span>
+<span class="l l-Scalar l-Scalar-Plain">makina-states.localsettings.network.interfaces.eth0</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">address</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">8.1.5.4</span>
+  <span class="l l-Scalar l-Scalar-Plain">netmask</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">255.255.255.0</span>
+  <span class="l l-Scalar l-Scalar-Plain">gateway</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">8.1.5.1</span>
+  <span class="l l-Scalar l-Scalar-Plain">dnsservers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">8.8.8.8</span>
+<span class="l l-Scalar l-Scalar-Plain">makina-states.localsettings.network.interfaces.em1</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{}</span> <span class="c1"># -&gt; dhcp based interface</span>
+<span class="l l-Scalar l-Scalar-Plain">makina-states.localsettings.network.interfaces.eth0-ipv6</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">ifname</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">eth0</span>
+  <span class="l l-Scalar l-Scalar-Plain">address</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">2002:42D0:8:2202::1</span>
+  <span class="l l-Scalar l-Scalar-Plain">netmask</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">64</span>
+  <span class="l l-Scalar l-Scalar-Plain">gateway</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">dnsservers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">127.0.0.1 212.126.32.92 8.8.8.8 4.4.4.4</span>
+  <span class="l l-Scalar l-Scalar-Plain">post-up</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">/sbin/ip -f inet6 route add 2002:4120:2:2Fff:ff:ff:ff:ff dev eth0</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">/sbin/ip -f inet6 route add default via 2002:4120:2:2Fff:ff:ff:ff:ff</span>
+  <span class="l l-Scalar l-Scalar-Plain">pre-down</span><span class="p p-Indicator">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">/sbin/ip -f inet6 route del default via 2002:4120:2:2Fff:ff:ff:ff:ff</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">/sbin/ip -f inet6 route del 2002:4120:2:2Fff:ff:ff:ff:ff dev eth0</span>
+</pre></div>
+</div>
+<p>with explicit order</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">makina-states.localsettings.network.ointerfaces</span>
+    <span class="l l-Scalar l-Scalar-Plain">- em1</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{}</span> <span class="c1"># -&gt; dhcp based interface</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">eth0-ipv6</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">ifname</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">eth0</span>
+          <span class="l l-Scalar l-Scalar-Plain">address</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">2002:42D0:8:2202::1</span>
+          <span class="l l-Scalar l-Scalar-Plain">netmask</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">64</span>
+          <span class="l l-Scalar l-Scalar-Plain">gateway</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">dnsservers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">127.0.0.1 212.126.32.92 8.8.8.8 4.4.4.4</span>
+          <span class="l l-Scalar l-Scalar-Plain">post-up</span><span class="p p-Indicator">:</span>
+            <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">/sbin/ip -f inet6 route add 2002:4120:2:2Fff:ff:ff:ff:ff dev eth0</span>
+            <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">/sbin/ip -f inet6 route add default via 2002:4120:2:2Fff:ff:ff:ff:ff</span>
+          <span class="l l-Scalar l-Scalar-Plain">pre-down</span><span class="p p-Indicator">:</span>
+            <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">/sbin/ip -f inet6 route del default via 2002:4120:2:2Fff:ff:ff:ff:ff</span>
+            <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">/sbin/ip -f inet6 route del 2002:4120:2:2Fff:ff:ff:ff:ff dev eth0</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">eth0</span><span class="p p-Indicator">:</span>
+          <span class="l l-Scalar l-Scalar-Plain">address</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">8.1.5.4</span>
+          <span class="l l-Scalar l-Scalar-Plain">netmask</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">255.255.255.0</span>
+          <span class="l l-Scalar l-Scalar-Plain">gateway</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">8.1.5.1</span>
+          <span class="l l-Scalar l-Scalar-Plain">dnsservers</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">8.8.8.8</span>
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="nodejs.html" class="btn btn-neutral float-right" title="Nodejs configuration">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="localrc.html" class="btn btn-neutral" title="rc.local managment"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,340 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Network firewalling and masquerating a makina-states LXC based image &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="lxc makina-states documentation" href="index.html"/>
+        <link rel="next" title="Install the base LXC container" href="install_template.html"/>
+        <link rel="prev" title="lxc makina-states documentation" href="index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+<ul class="simple">
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Custom states modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/modules/index.html">Execution modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/states/index.html">States modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/grains/index.html">makina-states grains modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/api/index.html">Api  modules</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../usage_index.html">Makina-States usage</a> &raquo;</li>
+      
+          <li><a href="index.html">lxc makina-states documentation</a> &raquo;</li>
+      
+    <li>Network firewalling and masquerating a makina-states LXC based image</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../_sources/v1/usage_lxc/firewalls.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="network-firewalling-and-masquerating-a-makina-states-lxc-based-image">
+<span id="lxc-firewall"></span><h1>Network firewalling and masquerating a makina-states LXC based image<a class="headerlink" href="#network-firewalling-and-masquerating-a-makina-states-lxc-based-image" title="Permalink to this headline">¶</a></h1>
+<p>This part is optionnal, and is relevant only if you use a firewall.</p>
+<p>To ensure internet connectivity, you ll have to <code class="docutils literal"><span class="pre">masquerade</span></code> the 10.5/16
+network to ensure the big internet dialog.</p>
+<p>Although if you created the system-D or  upstart job and it does that for you, if you use an aditionnal firewall, you ll have also to double the configuration in it.</p>
+<p>For this, you have plenty of options depending of what firewalling software you
+are using.</p>
+<div class="section" id="the-big-picture">
+<h2>The big picture<a class="headerlink" href="#the-big-picture" title="Permalink to this headline">¶</a></h2>
+<p>The network which will have at the end will look like:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>88.86.85.96   88.5.5.5
+NET  ---------ROUTER-------- YourHOST --- LXCBR1 (10.5.0.1)
+              10.6.1.25      10.6.1.1            |
+                                                 |--- LXC1 (10.5.0.6)
+                                                 |
+                                                 |--- LXC2 (10.5.0.7)
+                                                 |
+                                                 |--- LXC3 (10.5.0.8)
+</pre></div>
+</div>
+<p>The 10.6/16 network is your home or work network, which can be anything like 192.168.x.x or other <strong>rfc1918</strong> network.</p>
+<ul class="simple">
+<li>The first thing will be to allow the traffic to jump from <strong>lxcbr1</strong>
+to the segment in <strong>10.6/0</strong>. This is done by enabling the kernel
+ip forwarding option, see <a class="reference internal" href="../usage_misc/activate_forwarding.html#activate-forwarding"><span>Network route forwarding</span></a>.</li>
+<li>The second thing will be to remap the traffic from <strong>10.5</strong> from coming
+from your internal machine, this is what we call <strong>IPV4 NAT</strong>.
+We do this with the <strong>masquerading</strong> stuff.</li>
+<li>And the third thing will be to <strong>allow</strong> the firewall to let pass the <strong>lxc traffic</strong>.</li>
+</ul>
+<p>Step2 and Step3 are often done with your firewall software.</p>
+</div>
+<div class="section" id="shorewall">
+<span id="install-lxc-shorewall"></span><h2>shorewall<a class="headerlink" href="#shorewall" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Ensure to apply <a class="reference internal" href="../usage_misc/activate_forwarding.html#activate-forwarding"><span>Network route forwarding</span></a>.</li>
+</ul>
+<p>You ll have to allow ip forwarding in <code class="docutils literal"><span class="pre">/etc/shorewall/shorewall.conf</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">IP_FORWARDING</span><span class="o">=</span><span class="n">Yes</span>
+</pre></div>
+</div>
+<p>You ll have to add a <code class="docutils literal"><span class="pre">masq</span></code> in <code class="docutils literal"><span class="pre">/etc/shorewall/masq</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>br0 lxcbr1  -   -   -   -   -
+</pre></div>
+</div>
+<p>Replace br0 with your primary interface like <code class="docutils literal"><span class="pre">eth0</span></code> or <code class="docutils literal"><span class="pre">em1</span></code>?</p>
+<p>You ll have to create a <strong>lxc</strong> zone in <code class="docutils literal"><span class="pre">/etc/shorewall/zones</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>lxc ipv4  -   -   -
+</pre></div>
+</div>
+<p>You ll have then to attach lxcbr1 to a <strong>lxc</strong> zone in <code class="docutils literal"><span class="pre">/etc/shorewall/interfaces</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>lxc lxcbr1  routeback,bridge,tcpflags,nosmurfs
+</pre></div>
+</div>
+<p>Then, you ll mark this lxc zone as trusted in <code class="docutils literal"><span class="pre">/etc/shorewall/policy</span></code>,
+Make sure that the lxc rules are prior to any blocking rules.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>lxc net ACCEPT  -   -
+$FW lxc ACCEPT  -   -
+</pre></div>
+</div>
+<p>Then reload shorewall:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>shorewall safe-restart
+</pre></div>
+</div>
+<p>You may want to continue with:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference internal" href="../usage_quickstart/install_ubuntu.html#lxc-upstart-install-firewalling"><span>Note about firewalling on ubuntu</span></a></li>
+<li><a class="reference internal" href="../usage_quickstart/install_systemd.html#lxc-systemd-install-firewalling"><span>Note about firewalling on a systemD based host</span></a></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="firewalld">
+<span id="install-lxc-firewalld"></span><h2>firewalld<a class="headerlink" href="#firewalld" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Ensure to apply <a class="reference internal" href="../usage_misc/activate_forwarding.html#activate-forwarding"><span>Network route forwarding</span></a>.</li>
+</ul>
+<div class="section" id="identify-and-allow-lxc-traffic">
+<h3>Identify and allow lxc traffic<a class="headerlink" href="#identify-and-allow-lxc-traffic" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">firewall</span><span class="o">-</span><span class="n">cmd</span> <span class="o">--</span><span class="n">add</span><span class="o">-</span><span class="n">zone</span><span class="o">=</span><span class="n">lxc</span> <span class="o">--</span><span class="n">permanent</span>
+<span class="n">firewall</span><span class="o">-</span><span class="n">cmd</span> <span class="o">--</span><span class="n">permanent</span> <span class="o">--</span><span class="n">zone</span><span class="o">=</span><span class="n">lxc</span> <span class="o">--</span><span class="n">add</span><span class="o">-</span><span class="n">interface</span><span class="o">=</span><span class="n">lxcbr1</span>
+<span class="n">firewall</span><span class="o">-</span><span class="n">cmd</span> <span class="o">--</span><span class="n">permanent</span> <span class="o">--</span><span class="n">zone</span><span class="o">=</span><span class="n">lxc</span> <span class="o">--</span><span class="nb">set</span><span class="o">-</span><span class="n">target</span><span class="o">=</span><span class="n">ACCEPT</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="masquerade-public-ip">
+<h3>Masquerade public ip<a class="headerlink" href="#masquerade-public-ip" title="Permalink to this headline">¶</a></h3>
+<p>Masquerade whatever what are your public zones with one or more of the following commands:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">firewall</span><span class="o">-</span><span class="n">cmd</span> <span class="o">--</span><span class="n">permanent</span> <span class="o">--</span><span class="n">zone</span><span class="o">=</span><span class="n">home</span> <span class="o">--</span><span class="n">add</span><span class="o">-</span><span class="n">masquerade</span>
+<span class="n">firewall</span><span class="o">-</span><span class="n">cmd</span> <span class="o">--</span><span class="n">permanent</span> <span class="o">--</span><span class="n">zone</span><span class="o">=</span><span class="n">external</span> <span class="o">--</span><span class="n">add</span><span class="o">-</span><span class="n">masquerade</span>
+<span class="n">firewall</span><span class="o">-</span><span class="n">cmd</span> <span class="o">--</span><span class="n">permanent</span> <span class="o">--</span><span class="n">zone</span><span class="o">=</span><span class="n">public</span> <span class="o">--</span><span class="n">add</span><span class="o">-</span><span class="n">masquerade</span>
+</pre></div>
+</div>
+<p>You may want to continue with:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference internal" href="../usage_quickstart/install_ubuntu.html#lxc-upstart-install-firewalling"><span>Note about firewalling on ubuntu</span></a></li>
+<li><a class="reference internal" href="../usage_quickstart/install_systemd.html#lxc-systemd-install-firewalling"><span>Note about firewalling on a systemD based host</span></a></li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="ufw">
+<span id="install-lxc-ufw"></span><h2>ufw<a class="headerlink" href="#ufw" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Ensure to apply <a class="reference internal" href="../usage_misc/activate_forwarding.html#activate-forwarding"><span>Network route forwarding</span></a>.</li>
+<li>create or edit <code class="docutils literal"><span class="pre">/etc/default/ufw</span></code> and add/update <strong>DEFAULT_FORWARD_POLICY</strong></li>
+</ul>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">DEFAULT_FORWARD_POLICY</span><span class="o">=</span><span class="s2">&quot;ACCEPT&quot;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>Create or edit <code class="docutils literal"><span class="pre">/etc/ufw/before.rules</span></code>
+and add or adapt</li>
+</ul>
+<div class="highlight-python"><div class="highlight"><pre><span></span>*nat
+:POSTROUTING ACCEPT [0:0]
+-A POSTROUTING -s 10.5/16 -o eth0 -j MASQUERADE
+# don&#39;t delete the &#39;COMMIT&#39; line or these nat table rules won&#39;t be processed
+COMMIT
+</pre></div>
+</div>
+<ul class="simple">
+<li>You will have to add here any network you are bridging from the lxcbr1 bridge (and by default we use 10.5/16).</li>
+</ul>
+<p>You may want to continue with:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference internal" href="../usage_quickstart/install_ubuntu.html#lxc-upstart-install-firewalling"><span>Note about firewalling on ubuntu</span></a></li>
+<li><a class="reference internal" href="../usage_quickstart/install_systemd.html#lxc-systemd-install-firewalling"><span>Note about firewalling on a systemD based host</span></a></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="iptables">
+<span id="install-lxc-iptables"></span><h2>iptables<a class="headerlink" href="#iptables" title="Permalink to this headline">¶</a></h2>
+<p>This means that you manage your firewall manually, you are on your own baby, just allow the traffic from and to lxcbr1 (10.5/16) and masquerade it.</p>
+<p>You may want to continue with:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference internal" href="../usage_quickstart/install_ubuntu.html#lxc-upstart-install-firewalling"><span>Note about firewalling on ubuntu</span></a></li>
+<li><a class="reference internal" href="../usage_quickstart/install_systemd.html#lxc-systemd-install-firewalling"><span>Note about firewalling on a systemD based host</span></a></li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="install_template.html" class="btn btn-neutral float-right" title="Install the base LXC container">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="lxc makina-states documentation"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

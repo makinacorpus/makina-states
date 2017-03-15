@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta name="robots" content="noindex"><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LXC containers management | Makina States</title><meta name="description" content="" />
+<meta property="og:type" content="article" />
+<meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
+<meta property="og:article:modified_time" content="0001-01-01 00:00:00 &#43;0000 UTC" /><meta property="og:article:tag" content="cloud" /><meta property="og:article:tag" content="lxc" /><meta property="og:locale" content="en_US">
+<meta property="og:title" content="LXC containers management">
+<meta property="og:image" content="/images/">
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="1500" />
+<meta property="og:image:height" content="800" />
+<meta property="og:description" content=""/>
+<meta property="og:site_name" content="Makina States">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/favicons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/images/favicons/favicon-16x16.png" sizes="16x16">
+<link rel="manifest" href="/images/favicons/manifest.json">
+<link rel="mask-icon" href="/images/favicons/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="msapplication-TileImage" content="/images/favicons/mstile-144x144.png">
+<meta name="theme-color" content="#ffffff">
+<link rel="shortcut icon" href="/images/favicons/favicon.ico">
+<link rel="dns-prefetch" href="/">
+
+<link rel="preconnect" href="/">
+<link rel="canonical" href="/cloud/lxc/">
+
+
+<link rel="prefetch" href="/cloud/">
+<link rel="prerender" href="/cloud/">
+
+
+<link rel="stylesheet" href="/css/style.min.css">
+  
+</head>
+<body>
+	
+<header id="site-header" class="site-header">
+  <div class="hugo-meta" title="Hugo version 1">
+    <a href="/" id="home-link">
+      <img src="/images/MakinaCorpus_logo_vert_blanc.svg" alt="" />
+    </a>
+  </div>
+  <div id="goto-source">
+    <ul>
+      <li>
+        <a href="https://github.com/makinacorpus/makinastates/doc/hugo/content" target="_blank">
+          <i class="icon-github"></i> Source
+        </a>
+      </li>
+    </ul>
+  </div>
+<div id="search-wrapper">
+  <form action="" id="search-form" role="search">
+    <label for="search" class="icon-search" id="search-button"></label>
+    <input type="search" id="search-input" class="site-search"
+        autocomplete="off"
+        aria-label="Search the Makina States website..."
+        placeholder="Search..." required />
+    <input type="hidden" id="search-index" value="/site-index.json"/>
+  </form>
+</div>
+<div id="search-results-wrapper">
+  <div id="search-results-count"></div>
+  <ul id="search-results">
+    
+    
+  </ul>
+</div>
+</header>
+
+  <div class="all-content-wrapper" id="all-content-wrapper">
+		
+<span id="page-top"></span>
+<main class="main">
+	<article class="content" id="lxc-containers-management">
+		<header class="content-header">
+<nav class="breadcrumb">
+	<ul class="breadcrumbs">
+		<li>
+			<a class="crumb" href="/cloud">
+    		<span>Cloud</span>
+  		</a>
+		</li>
+	</ul>
+</nav>
+
+<h1 class="page-title cloud" id="lxc-containers-management">LXC containers management</h1>
+<div class="content-header-links">
+  
+  <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makinastates/doc/hugo/contentedit/master/content/cloud/lxc/index.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
+
+	<ul class="tags">
+		<li class="icon"><i class="icon-tags"></i></li>
+		
+		<li><a class="tag" href="/tags/cloud">cloud</a></li>
+		
+		<li><a class="tag" href="/tags/lxc">lxc</a></li>
+		
+	</ul>
+
+
+		</header>
+		<div class="body-copy" data-section=cloud>
+		
+
+<p>workflow:</p>
+
+<ul>
+<li><p>WARNING currently only those backing store are supported/tested:</p>
+
+<ul>
+<li>dir</li>
+<li>overlayfs</li>
+</ul></li>
+
+<li><p>Go into makina-states folder:</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nb">cd</span> /srv/makina-states
+</code></pre></div></li>
+
+<li><p>If wanted, edit database, specially <code>vms</code>, &amp; <code>cloud_vm_attrs</code>:</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>vim etc/makina-states/database.sls
+</code></pre></div></li>
+
+<li><p>Define shell variable to copy/paste following commands:</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nb">export</span> <span class="nv">controller</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span>hostname -f<span class="k">)</span><span class="s2">&quot;</span>
+<span class="nb">export</span> <span class="nv">cn</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span>hostname -f<span class="k">)</span><span class="s2">&quot;</span>
+<span class="c1"># export cn=&quot;c.foo.net&quot;</span>
+<span class="nb">export</span> <span class="nv">vm</span><span class="o">=</span><span class="s2">&quot;d.foo.net&quot;</span>
+<span class="nb">export</span> <span class="nv">vm_tmpl</span><span class="o">=</span><span class="s2">&quot;makinastates&quot;</span>
+</code></pre></div></li>
+</ul>
+
+<h2 id="preparation-on-the-controller">Preparation on the controller</h2>
+
+<ul>
+<li><p>Refresh cache:</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="c1"># bin/salt-call -lall \</span>
+<span class="c1">#  state.sls makina-states.services.cache.memcached # the first time</span>
+service memcached restart
+_scripts/refresh_makinastates_pillar.sh
+<span class="c1"># or with limit on hosts that the run will be</span>
+<span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$controller</span><span class="s2">,</span><span class="nv">$vm</span><span class="s2">,</span><span class="nv">$cn</span><span class="s2">&quot;</span> _scripts/refresh_makinastates_pillar.sh
+</code></pre></div></li>
+</ul>
+
+<h2 id="preinstalling-makina-states-controller-each-compute-node">Preinstalling makina-states (controller &amp; each compute node)</h2>
+
+<ul>
+<li><p>Installing it:</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$cn</span><span class="s2">&quot;</span> bin/ansible-playbook <span class="se">\</span>
+  ansible/plays/makinastates/install.yml
+</code></pre></div></li>
+</ul>
+
+<h2 id="configure-the-dns-on-a-full-makina-states-infra-with-mc-pillar">Configure the dns on a full makina-states infra with mc_pillar</h2>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$controller</span><span class="s2">&quot;</span> bin/ansible-playbook <span class="se">\</span>
+  ansible/plays/cloud/controller.yml
+</code></pre></div>
+
+<h2 id="compute-node-related-part">Compute node related part</h2>
+
+<ul>
+<li>Configure compute_node with:</li>
+</ul>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$cn</span><span class="s2">&quot;</span> ansible-playbook <span class="se">\</span>
+  ansible/plays/cloud/compute_node.yml
+</code></pre></div>
+
+<h2 id="cooking-and-delivery-of-container-container-templates">Cooking and delivery of container / container templates</h2>
+
+<ul>
+<li><p>Initialise a lxc container that will be the base of our image (after
+creation go edit in it until sastified of the result):</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$controller</span><span class="s2">,lxc</span><span class="nv">$vm_tmpl</span><span class="s2">&quot;</span> bin/ansible-playbook <span class="se">\</span>
+  ansible/plays/cloud/create_container.yml
+</code></pre></div></li>
+
+<li><p>Synchronise it to an offline image, this will copy the container to the
+image, and remove parts from it (like sshkeys) to impersonate it:</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$controller</span><span class="s2">&quot;</span> bin/ansible-playbook <span class="se">\</span>
+  ansible/plays/cloud/snapshot_container.yml -e <span class="s2">&quot;lxc_template=</span><span class="nv">$vm_tmpl</span><span class="s2"> lxc_container_name=lxc</span><span class="nv">$vm_tmpl</span><span class="s2">&quot;</span>
+</code></pre></div>
+
+<ul>
+<li><p>Arguments:</p>
+
+<p>ANSIBLE_TARGETS
+    : compute node where the container resides (must be in
+      ansible inventary)</p>
+
+<p>lxc_template
+    : lxc image to create</p>
+
+<p>lxc_container_name
+    : lxc container which serve as a base for the image</p></li>
+</ul></li>
+
+<li><p>Transfer the template to the compute node where you want to spawn
+containers from that image:</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$cn</span><span class="s2">&quot;</span> ansible-playbook <span class="se">\</span>
+ ansible/plays/cloud/sync_container.yml <span class="se">\</span>
+     -e <span class="s2">&quot;lxc_orig_host=</span><span class="nv">$controller</span><span class="s2"> lxc_container_name=</span><span class="nv">$vm_tmpl</span><span class="s2">&quot;</span>
+</code></pre></div>
+
+<ul>
+<li><p>Arguments:</p>
+
+<p>ANSIBLE_TARGETS
+    : both orig and dest</p>
+
+<p>lxc_host
+    : where to transfer container/template</p>
+
+<p>lxc_orig_host
+    : where from transfer container/template</p>
+
+<p>lxc_container_name
+    : lxc container to transfer</p></li>
+</ul></li>
+</ul>
+
+<h2 id="initialise-a-container">Initialise a container</h2>
+
+<ul>
+<li><p>Initialise and finish the container provisioning (from scratch)</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$cn</span><span class="s2">,</span><span class="nv">$vm</span><span class="s2">&quot;</span> bin/ansible-playbook <span class="se">\</span>
+  ansible/plays/cloud/create_container.yml
+</code></pre></div>
+
+<ul>
+<li><p>Arguments:</p>
+
+<p>ANSIBLE_TARGETS
+    : compute node where the container resides (must be in ansible inventary) &amp; lxc container to create</p>
+
+<p>lxc_from_container
+    : lxc container from which initing the container</p>
+
+<p>lxc_backing_store
+    : (opt) backing store to use</p></li>
+</ul></li>
+
+<li><p>Initialise and finish the container provisioning (from template):</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$cn</span><span class="s2">,vm&quot;</span> bin/ansible-playbook <span class="se">\</span>
+  ansible/plays/cloud/create_container.yml -e <span class="s2">&quot;lxc_from_container=</span><span class="nv">$vm_tmpl</span><span class="s2">&quot;</span>
+</code></pre></div></li>
+
+<li><p>Special case: use overlayfs to create the container:</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$cn</span><span class="s2">,</span><span class="nv">$vm</span><span class="s2">&quot;</span> bin/ansible-playbook <span class="se">\</span>
+ ansible/plays/cloud/create_container.yml <span class="se">\</span>
+  -e <span class="s2">&quot;lxc_from_container=</span><span class="nv">$vm_tmpl</span><span class="s2"> lxc_backing_store=overlayfs&quot;</span>
+</code></pre></div></li>
+</ul>
+
+		</div><div class="last-modified">Last Updated: 0001-01-01</div>
+<footer id="content-footer">
+
+
+<a href="/cloud/" class="cf-link prev-page">
+			<i class="fa fa-chevron-left"></i>
+		<div class="page-info">
+			<span>Previous</span>
+			<h5 class="cloud">Cloud Documentation</h5>
+		</div>
+</a>
+
+
+
+</footer>
+</article>
+</main>
+
+<aside id="toc" class="scroll-fixed-wrapper">
+  <div class="scroll-fixed-wrapper-inner">
+    <header class="toc-header">
+      <a href="#lxc-containers-management">
+        <h3 class="cloud">LXC containers management</h3>
+      </a>
+    </header>
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#preparation-on-the-controller">Preparation on the controller</a></li>
+<li><a href="#preinstalling-makina-states-controller-each-compute-node">Preinstalling makina-states (controller &amp; each compute node)</a></li>
+<li><a href="#configure-the-dns-on-a-full-makina-states-infra-with-mc-pillar">Configure the dns on a full makina-states infra with mc_pillar</a></li>
+<li><a href="#compute-node-related-part">Compute node related part</a></li>
+<li><a href="#cooking-and-delivery-of-container-container-templates">Cooking and delivery of container / container templates</a></li>
+<li><a href="#initialise-a-container">Initialise a container</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+  <div class="fade"></div>
+</aside>
+<a href="#"
+  id="toc-toggle"
+  class="toc-open"
+  title="Toggle Table of contents..."></a>
+
+
+	</div>
+<footer id="site-footer" class="site-footer">
+<div class="footer-content">
+  
+    
+  </div>
+</footer>
+<div class="navbutton__wrapper">
+  <a class="trigger" href="#">
+    <ul class="nav__trigger">
+      <li class="nav__trigger-item nav__trigger-item--first"></li>
+      <li class="nav__trigger-item nav__trigger-item--second"></li>
+      <li class="nav__trigger-item nav__trigger-item--third"></li>
+    </ul>
+  </a>
+</div>
+<nav class="site-navigation navigation-open scroll-fixed-wrapper"
+     id="site-navigation">
+  <div class="site-navigation-inner scroll-fixed-wrapper-inner">
+    
+    
+    
+
+
+<ul class="menu menu-1">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/sphinx/api">API</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/">Home</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/topics/">Topics</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/ansible/">Ansible related configuration</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/configure/">Configuration</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/haproxy/">Haproxy</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/install/">Installation &amp; basic usage</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/ssl/">Manage ssl certificates</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/database/">Minions managment via database.sls</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/cloud/">Cloud</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2 active open" href="/cloud/lxc/">LXC containers management</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+    
+  </div>
+</nav>
+<script src="/js/vendor/jquery-2.2.4.min.js"></script>
+<script src="/js/vendor/lunr.min.js"></script>
+<script src="/js/script.min.js"></script>
+
+
+
+<script async defer src="https://buttons.github.io/buttons.js"></script>
+
+<script>
+(function() {
+  if (window.location.hostname === "localhost") {
+    console.log("Analytics not running on local dev.");
+    return;
+  } else {
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o),
+        m = s.getElementsByTagName(o)[0];
+      a.async = 1;
+      a.src = g;
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+    ga('create', '', 'auto');
+    ga('send', 'pageview');
+    ga('create', '', {
+      'siteSpeedSampleRate': 100
+    });
+  }
+})();
+</script>
+
+	
+</body>
+</html>

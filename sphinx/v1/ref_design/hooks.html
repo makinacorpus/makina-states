@@ -1,0 +1,258 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Hooks &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Design" href="index.html"/>
+        <link rel="next" title="&lt;no title&gt;" href="../ref_qa/index.html"/>
+        <link rel="prev" title="Formulaes" href="formulaes.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+<ul class="simple">
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Custom states modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/modules/index.html">Execution modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/states/index.html">States modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/grains/index.html">makina-states grains modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/api/index.html">Api  modules</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#usage">Usage</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../ref_index.html">Reference</a> &raquo;</li>
+      
+          <li><a href="index.html">Design</a> &raquo;</li>
+      
+    <li>Hooks</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../_sources/v1/ref_design/hooks.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="hooks">
+<h1>Hooks<a class="headerlink" href="#hooks" title="Permalink to this headline">¶</a></h1>
+<p>Hooks in the makina-states meaning have two functions:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Provide a robust orchestration mecanism</li>
+<li>Provide a way to skip a full subset of states by non inclusion of the real states files during different execution modes (standalone, full).</li>
+</ul>
+</div></blockquote>
+<p>Those hooks are just states which use the <strong>mc_proxy.hook</strong> function wich does nothing more forward the changes of acendant of the states to the descendant of this state.
+For example in:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>one:
+    cmd.run:
+        - name: /bin/true
+
+foo:
+    mc_hook.proxy:
+        - require:
+            - cmd: one
+
+two
+    mc_hook.proxy:
+        - require:
+            - mc_proxy: foo
+</pre></div>
+</div>
+<p>As one will return a change, foo will also trigger in turn a change, thus two will see foo as &#8216;changed&#8217;.</p>
+<p>You can also easily skip a full subset of states, imagining the three following files:</p>
+<ul>
+<li><p class="first"><strong>a.sls</strong>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>include:
+    - hooks
+
+one:
+    cmd.run:
+        - name: /bin/true
+        - watch_in
+            - cmd: one
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>hooks.sls</strong>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>foo:
+   mc_hook.proxy: []
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>c.sls</strong>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>include:
+    - hooks
+    {{ if something }}
+    - a
+    {{ endif }}
+
+two
+    mc_hook.proxy:
+        - require:
+            - mc_proxy: foo
+</pre></div>
+</div>
+</li>
+</ul>
+<p>You just discoved the magic of hooks to make custom execution modes without having to clutter your states files with custom require/includes, you just have to subscribe to isolated hooks, and in the real states files, to also subscribe to those hooks. In the listeners, you just have to conditonnaly include the real state file for the job to be correctly executed with the other states.</p>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../ref_qa/index.html" class="btn btn-neutral float-right" title="&lt;no title&gt;">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="formulaes.html" class="btn btn-neutral" title="Formulaes"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

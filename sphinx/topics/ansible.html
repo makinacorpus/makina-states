@@ -1,0 +1,261 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Ansible related configuration &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>Ansible related configuration</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/topics/ansible.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="ansible-related-configuration">
+<h1>Ansible related configuration<a class="headerlink" href="#ansible-related-configuration" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="ansible-wrappers-specifics">
+<h2>Ansible wrappers specifics<a class="headerlink" href="#ansible-wrappers-specifics" title="Permalink to this headline">¶</a></h2>
+<p>To use ansible, please use makina-states wrappers and never
+the ansible original scripts directly.</p>
+<p>see:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible">bin/ansible</a></li>
+<li><a class="reference external" href="https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-galaxy">bin/ansible-galaxy</a></li>
+<li><a class="reference external" href="https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-playbook">bin/ansible-playbook</a></li>
+<li><a class="reference external" href="https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-wrapper-common">bin/ansible-wrapper-common</a></li>
+</ul>
+</div></blockquote>
+<p>We preconfigure in our wrappers a lot of things like:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Loading configuration (roles, playbooks, inventories, plugins) from:<ul>
+<li>./</li>
+<li>./ansible</li>
+<li>./.ansible</li>
+<li>&lt;makinastates_install_dir&gt;/ansible</li>
+<li>/usr/share/ansible (depends of the opt, respects the ansible default configuration)</li>
+<li>/etc/ansible (depends of the opt, respects the ansible default configuration)</li>
+</ul>
+</li>
+<li>When <strong>ANSIBLE_TARGETS</strong> are set, we will limit the play to them unless
+<strong>ANSIBLE_NOLIMIT</strong> is set.</li>
+</ul>
+</div></blockquote>
+<p>Indeed, we use environment variables that are specific to makina-states:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>ANSIBLE_TARGETS</dt>
+<dd>list of hosts that we will act on.
+this will limit the scope of the ext pillars generation
+thus you have to set it to speed up operations.</dd>
+<dt>ANSIBLE_NOLIMIT</dt>
+<dd>if set, we wont limit the scope of ansible to ANSIBLE_TARGETS</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><div class="highlight"><pre><span></span>ANSIBLE_TARGETS=$(hostname) bin/ansible all -m ping
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span>bin/ansible -c local -i &quot;localhost,&quot; all -m ping
+</pre></div>
+</div>
+</div>
+<div class="section" id="calling-makina-states-ansible-from-another-repostory">
+<h2>Calling makina-states ansible from another repostory<a class="headerlink" href="#calling-makina-states-ansible-from-another-repostory" title="Permalink to this headline">¶</a></h2>
+<p>As said previously, we load the current folder (and ./.ansible, ./ansible as
+well), thus you can add roles and plays and to a specific repository but also
+depend on plugins or roles defined in makina-states. Then you ll have to call
+the ansible wrapper FROM your directory where you have your specific ansible
+installation for them to be usable</p>
+<p>For example</p>
+<blockquote>
+<div><ul class="simple">
+<li>if makina-states is installed in /srv/makina-states</li>
+<li>your project is installed inside /srv/projects/foo/project</li>
+</ul>
+</div></blockquote>
+<ul>
+<li><p class="first">You can create your roles inside /srv/projects/foo/project/ansible/roles</p>
+</li>
+<li><p class="first">You can make dependencies of any
+<a class="reference external" href="https://github.com/makinacorpus/makina-states/tree/v2/ansible/roles">makina-states roles</a>
+specially <strong>makinastates_pillar</strong>.</p>
+</li>
+<li><p class="first">To call ansible, do it this way:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>cd /srv/projects/foo/project
+/srv/makina-states/bin/{ansible,ansible-playbook} $args
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="saltcall-wrapper">
+<h2>saltcall Wrapper<a class="headerlink" href="#saltcall-wrapper" title="Permalink to this headline">¶</a></h2>
+<p>We developped a <a class="reference external" href="https://github.com/makinacorpus/makina-states/blob/v2/ansible/library/saltcall.py">special module</a> to call saltcall on remote systems.</p>
+<p>You can use it via ansible:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>ANSIBLE_TARGETS=$(hostname) bin/ansible all \
+  -m saltcall -a &quot;function=test.ping&quot;
+ANSIBLE_TARGETS=$(hostname) bin/ansible all \
+  -m saltcall -a &quot;function=grains.get args=fqdn&quot;
+</pre></div>
+</div>
+<p>Or via a playbook like in
+<a class="reference external" href="https://github.com/makinacorpus/makina-states/blob/v2/ansible/plays/saltcall.yml">our saltcall one</a>
+, usable this way:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>ANSIBLE_TARGETS=$(hostname) bin/ansible-playbook \
+ ansible/plays/saltcall.yml -m saltcall -a &quot;function=test.ping&quot;
+</pre></div>
+</div>
+<p>It&#8217;s better to use the playbook because it call the makinastates_pillar role to
+copy locally on the remote box the pillar computed by the salt+pillar bridge
+before executing the salt command.</p>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

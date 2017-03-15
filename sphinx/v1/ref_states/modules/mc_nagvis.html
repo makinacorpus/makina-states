@@ -1,0 +1,387 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mc_nagvis / nagvis functions &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../../index.html"/>
+        <link rel="up" title="Execution modules" href="index.html"/>
+        <link rel="next" title="mc_network / network registry" href="mc_network.html"/>
+        <link rel="prev" title="mc_mysql / mysql functions" href="mc_mysql.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../index.html#usage">Usage</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../../ref_index.html">Reference</a> &raquo;</li>
+      
+          <li><a href="../index.html">Custom states modules</a> &raquo;</li>
+      
+          <li><a href="index.html">Execution modules</a> &raquo;</li>
+      
+    <li>mc_nagvis / nagvis functions</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../../_sources/v1/ref_states/modules/mc_nagvis.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <span class="target" id="module-mc_states.modules.mc_nagvis"></span><div class="section" id="mc-nagvis-nagvis-functions">
+<span id="module-mc-nagvis"></span><h1>mc_nagvis / nagvis functions<a class="headerlink" href="#mc-nagvis-nagvis-functions" title="Permalink to this headline">¶</a></h1>
+<p>You can add your own key/values in backends,
+rotations and actions subdictionaries.</p>
+<dl class="function">
+<dt id="mc_states.modules.mc_nagvis.add_geomap_settings">
+<code class="descclassname">mc_states.modules.mc_nagvis.</code><code class="descname">add_geomap_settings</code><span class="sig-paren">(</span><em>name</em>, <em>hosts</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_nagvis.add_geomap_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Settings for the add_geomap macro</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_nagvis.add_map_settings">
+<code class="descclassname">mc_states.modules.mc_nagvis.</code><code class="descname">add_map_settings</code><span class="sig-paren">(</span><em>name</em>, <em>_global</em>, <em>objects</em>, <em>keys_mapping</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_nagvis.add_map_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Settings for the add_map macro</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_nagvis.settings">
+<code class="descclassname">mc_states.modules.mc_nagvis.</code><code class="descname">settings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_nagvis.settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>nagvis settings</p>
+<dl class="docutils">
+<dt>location</dt>
+<dd>installation directory</dd>
+<dt>package</dt>
+<dd>list of packages to install navgis</dd>
+<dt>configuration_directory</dt>
+<dd>directory where configuration files are located</dd>
+<dt>root_account</dt>
+<dd><p class="first">dictionary to store root account information.
+It is the account with the userId=1 in the sqlite database</p>
+<dl class="last docutils">
+<dt>login</dt>
+<dd>login for root login on web interface</dd>
+<dt>hashed_password</dt>
+<dd>password for root login on web interface</dd>
+<dt>salt</dt>
+<dd>salt used to hash the password</dd>
+<dt>default_password</dt>
+<dd>the password inserted when nagvis is installed.
+it is to check that the password was not previously modified</dd>
+</dl>
+</dd>
+<dt>nginx</dt>
+<dd><blockquote class="first">
+<div><p>dictionary to store values of nginx configuration</p>
+<dl class="docutils">
+<dt>domain</dt>
+<dd>name of virtualhost created to serve webpages</dd>
+<dt>doc_root</dt>
+<dd>root location of virtualhost</dd>
+<dt>vh_content_source</dt>
+<dd>template file for nginx content file</dd>
+<dt>vh_top_source</dt>
+<dd>template file for nginx top file</dd>
+<dt>nagvis</dt>
+<dd><p class="first">dictionary to store values used in templates given in
+vh_content_source and vh_top_source</p>
+<dl class="last docutils">
+<dt>web_directory</dt>
+<dd>location under which webpages of nagvis will be available</dd>
+<dt>fastcgi_pass</dt>
+<dd>socket used to contact fastcgi server in order
+to interpret php files</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="last docutils">
+<dt>phpfpm</dt>
+<dd><p class="first">dictionary to store values of phpfpm configuration</p>
+<dl class="last docutils">
+<dt>open_basedir</dt>
+<dd>paths to add to open_basedir</dd>
+<dt>doc_root</dt>
+<dd>root location for php-fpm</dd>
+<dt>session_auto_start</dt>
+<dd>must be 0 to run nagvis</dd>
+</dl>
+</dd>
+<dt>global_php</dt>
+<dd><p class="first">dictionary to store values used in global.php</p>
+<dl class="last docutils">
+<dt>AUTH_PASSWORD_SALT</dt>
+<dd>salt used for password. We notice the salt used is
+the same for all passwords which is a security weakness.</dd>
+</dl>
+</dd>
+<dt>nagvis_ini_php</dt>
+<dd><p class="first">dictionary to store values used in nagvis_ini_php
+each subdictionary represents an ini section
+if a key is not present, the directive will
+not be added in the configuration file</p>
+<dl class="last docutils">
+<dt>global</dt>
+<dd><p class="first">dictionary to store values of global section in nagvis_ini_php</p>
+<dl class="last docutils">
+<dt>authmodule</dt>
+<dd>name of authentication module</dd>
+<dt>authorisationmodule</dt>
+<dd>name of authorisation module</dd>
+<dt>file_group</dt>
+<dd>group used to launch nagvis script</dd>
+<dt>file_mode</dt>
+<dd>default file mode for temporary files</dd>
+<dt>geomap_server</dt>
+<dd>url of geomap server</dd>
+<dt>http_proxy</dt>
+<dd>http proxy</dd>
+<dt>http_proxy_auth</dt>
+<dd>auth for http proxy</dd>
+</dl>
+</dd>
+<dt>paths</dt>
+<dd><p class="first">dictionary to store values of paths section in nagvis_ini_php</p>
+<dl class="last docutils">
+<dt>base</dt>
+<dd>location of nagvis installation</dd>
+<dt>htmlbase</dt>
+<dd>location of php files. It should be the same value that
+nginx.nagvis.web_directory</dd>
+</dl>
+</dd>
+<dt>defaults</dt>
+<dd><p class="first">dictionary to store values of defaults section in
+nagvis_ini_php</p>
+<dl class="last docutils">
+<dt>backend</dt>
+<dd>default backend</dd>
+</dl>
+</dd>
+<dt>automap</dt>
+<dd><p class="first">dictionary to store values of automap section in nagvis_ini_php</p>
+<dl class="last docutils">
+<dt>defaultparams</dt>
+<dd>default parameters</dd>
+<dt>defaultroot</dt>
+<dd>default root</dd>
+<dt>graphvizpath</dt>
+<dd>location of graphviz binary</dd>
+</dl>
+</dd>
+<dt>backends</dt>
+<dd><p class="first">dictionary to store values of backends section in
+nagvis_ini_php each subdictionary corresponds to
+a &#8220;backend_foo&#8221; section</p>
+<dl class="last docutils">
+<dt>foo</dt>
+<dd><p class="first">dictionary to store values of foo backend. foo must
+be replaced with the name of the backend
+the keys and values expected depends on the backend type</p>
+<dl class="last docutils">
+<dt>backendtype</dt>
+<dd>type of backend</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>rotations</dt>
+<dd><p class="first">dictionary to store values of rotations section
+in nagvis_ini_php each subdictionary corresponds
+to a &#8220;rotation_foo&#8221; section</p>
+<dl class="last docutils">
+<dt>foo</dt>
+<dd><p class="first">dictionary to store values of foo rotation.
+foo must be replaced with the name of the rotation</p>
+<dl class="last docutils">
+<dt>maps</dt>
+<dd>list of maps which are in the rotation</dd>
+<dt>interval</dt>
+<dd>interval</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>actions</dt>
+<dd><p class="first">dictionary to store values of actions section in nagvis_ini_php
+each subdictionary corresponds to a &#8220;action_foo&#8221; section</p>
+<dl class="last docutils">
+<dt>foo</dt>
+<dd><p class="first">dictionary to store values of foo action.
+foo must be replaced with the name of the action</p>
+<dl class="last docutils">
+<dt>action_type</dt>
+<dd>type of action</dd>
+<dt>obj_type</dt>
+<dd>&#8220;host&#8221; or &#8220;service&#8221; or &#8220;host,service&#8221;</dd>
+<dt>condition</dt>
+<dd>condition to apply the action</dd>
+<dt>domain</dt>
+<dd>domain</dd>
+<dt>username</dt>
+<dd>username</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mc_network.html" class="btn btn-neutral float-right" title="mc_network / network registry">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mc_mysql.html" class="btn btn-neutral" title="mc_mysql / mysql functions"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

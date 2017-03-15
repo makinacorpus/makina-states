@@ -1,0 +1,231 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mc_services_managers / servives managers registries &amp; functions &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../../index.html"/>
+        <link rel="up" title="Execution modules" href="index.html"/>
+        <link rel="next" title="mc_project / project settings regitry switcher and common functions" href="mc_project.html"/>
+        <link rel="prev" title="mc_services / servives registries &amp; functions" href="mc_services.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../index.html#usage">Usage</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../../ref_index.html">Reference</a> &raquo;</li>
+      
+          <li><a href="../index.html">Custom states modules</a> &raquo;</li>
+      
+          <li><a href="index.html">Execution modules</a> &raquo;</li>
+      
+    <li>mc_services_managers / servives managers registries &amp; functions</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../../_sources/v1/ref_states/modules/mc_services_managers.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <span class="target" id="module-mc_states.modules.mc_services_managers"></span><div class="section" id="mc-services-managers-servives-managers-registries-functions">
+<span id="module-mc-services-managers"></span><h1>mc_services_managers / servives managers registries &amp; functions<a class="headerlink" href="#mc-services-managers-servives-managers-registries-functions" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="mc_states.modules.mc_services_managers.get_service_enabled_state">
+<code class="descclassname">mc_states.modules.mc_services_managers.</code><code class="descname">get_service_enabled_state</code><span class="sig-paren">(</span><em>pm=None</em>, <em>enable_toggle=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_services_managers.get_service_enabled_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return if a service should be enabled at boot or not
+depending on the service function.</p>
+<p>if service func is &#8216;running&#8217; -&gt; enabled
+if service func is &#8216;dead&#8217; -&gt; disaabled</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_services_managers.get_service_function">
+<code class="descclassname">mc_states.modules.mc_services_managers.</code><code class="descname">get_service_function</code><span class="sig-paren">(</span><em>pm=None</em>, <em>enable_toggle=None</em>, <em>has_system_services_manager=None</em>, <em>activate_function='service.running'</em>, <em>deactivate_function='service.dead'</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_services_managers.get_service_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the appropriate service function for the activated process manager
+For the API conveniance, we reflect back any service.function.
+If pm is system, or manually forced, we want to return the appropriate
+service function (one of: activate_function/deactivate_function).
+We take care to check not to return any function when we are in a docker
+hence we do not have any system level function, nor the access to the service
+module</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>pm</dt>
+<dd>the processes manager
+(one of none|system|circus|supervisor|service.{running,dead})
+system means to return a function between activate or deactivate</dd>
+<dt>enable_toggle</dt>
+<dd>choose if we are in system mode either to return the &#8216;activate&#8217; or &#8216;deactivate&#8217;
+function, by default we return the activate function</dd>
+<dt>activate_function</dt>
+<dd>salt module function to activate a service (api compatible with service.*)</dd>
+<dt>deactivate_function</dt>
+<dd>salt module function to deactivate a service (api compatible with service.*)</dd>
+<dt>has_system_services_manager</dt>
+<dd>overrides the makina-states detection of the presence of a system services
+manager</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_services_managers.settings">
+<code class="descclassname">mc_states.modules.mc_services_managers.</code><code class="descname">settings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_services_managers.settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Global services registry</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mc_project.html" class="btn btn-neutral float-right" title="mc_project / project settings regitry switcher and common functions">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mc_services.html" class="btn btn-neutral" title="mc_services / servives registries &amp; functions"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Cloud on Makina States</title>
+    <link>/cloud/index.xml</link>
+    <description>Recent content in Cloud on Makina States</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fr-FR</language>
+    <atom:link href="/cloud/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Cloud Documentation</title>
+      <link>/cloud/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/cloud/</guid>
+      <description>&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;lxc&#34;&gt;LXC&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>LXC containers management</title>
+      <link>/cloud/lxc/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/cloud/lxc/</guid>
+      <description>
+
+&lt;p&gt;workflow:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;WARNING currently only those backing store are supported/tested:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;dir&lt;/li&gt;
+&lt;li&gt;overlayfs&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Go into makina-states folder:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; /srv/makina-states
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If wanted, edit database, specially &lt;code&gt;vms&lt;/code&gt;, &amp;amp; &lt;code&gt;cloud_vm_attrs&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;vim etc/makina-states/database.sls
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Define shell variable to copy/paste following commands:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;controller&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname -f&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;cn&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname -f&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;c1&#34;&gt;# export cn=&amp;quot;c.foo.net&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;vm&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;d.foo.net&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;vm_tmpl&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;makinastates&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;preparation-on-the-controller&#34;&gt;Preparation on the controller&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Refresh cache:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;# bin/salt-call -lall \&lt;/span&gt;
+&lt;span class=&#34;c1&#34;&gt;#  state.sls makina-states.services.cache.memcached # the first time&lt;/span&gt;
+service memcached restart
+_scripts/refresh_makinastates_pillar.sh
+&lt;span class=&#34;c1&#34;&gt;# or with limit on hosts that the run will be&lt;/span&gt;
+&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; _scripts/refresh_makinastates_pillar.sh
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;preinstalling-makina-states-controller-each-compute-node&#34;&gt;Preinstalling makina-states (controller &amp;amp; each compute node)&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Installing it:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/makinastates/install.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;configure-the-dns-on-a-full-makina-states-infra-with-mc-pillar&#34;&gt;Configure the dns on a full makina-states infra with mc_pillar&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/controller.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2 id=&#34;compute-node-related-part&#34;&gt;Compute node related part&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Configure compute_node with:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/compute_node.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2 id=&#34;cooking-and-delivery-of-container-container-templates&#34;&gt;Cooking and delivery of container / container templates&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Initialise a lxc container that will be the base of our image (after
+creation go edit in it until sastified of the result):&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,lxc&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/create_container.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Synchronise it to an offline image, this will copy the container to the
+image, and remove parts from it (like sshkeys) to impersonate it:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/snapshot_container.yml -e &lt;span class=&#34;s2&#34;&gt;&amp;quot;lxc_template=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt; lxc_container_name=lxc&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Arguments:&lt;/p&gt;
+
+&lt;p&gt;ANSIBLE_TARGETS
+    : compute node where the container resides (must be in
+      ansible inventary)&lt;/p&gt;
+
+&lt;p&gt;lxc_template
+    : lxc image to create&lt;/p&gt;
+
+&lt;p&gt;lxc_container_name
+    : lxc container which serve as a base for the image&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Transfer the template to the compute node where you want to spawn
+containers from that image:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+ ansible/plays/cloud/sync_container.yml &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+     -e &lt;span class=&#34;s2&#34;&gt;&amp;quot;lxc_orig_host=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt; lxc_container_name=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Arguments:&lt;/p&gt;
+
+&lt;p&gt;ANSIBLE_TARGETS
+    : both orig and dest&lt;/p&gt;
+
+&lt;p&gt;lxc_host
+    : where to transfer container/template&lt;/p&gt;
+
+&lt;p&gt;lxc_orig_host
+    : where from transfer container/template&lt;/p&gt;
+
+&lt;p&gt;lxc_container_name
+    : lxc container to transfer&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;initialise-a-container&#34;&gt;Initialise a container&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Initialise and finish the container provisioning (from scratch)&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/create_container.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Arguments:&lt;/p&gt;
+
+&lt;p&gt;ANSIBLE_TARGETS
+    : compute node where the container resides (must be in ansible inventary) &amp;amp; lxc container to create&lt;/p&gt;
+
+&lt;p&gt;lxc_from_container
+    : lxc container from which initing the container&lt;/p&gt;
+
+&lt;p&gt;lxc_backing_store
+    : (opt) backing store to use&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Initialise and finish the container provisioning (from template):&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,vm&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/create_container.yml -e &lt;span class=&#34;s2&#34;&gt;&amp;quot;lxc_from_container=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Special case: use overlayfs to create the container:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+ ansible/plays/cloud/create_container.yml &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  -e &lt;span class=&#34;s2&#34;&gt;&amp;quot;lxc_from_container=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt; lxc_backing_store=overlayfs&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

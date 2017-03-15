@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta name="robots" content="noindex"><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Configuration | Makina States</title><meta name="description" content="" />
+<meta property="og:type" content="article" />
+<meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
+<meta property="og:article:modified_time" content="0001-01-01 00:00:00 &#43;0000 UTC" /><meta property="og:article:tag" content="topics" /><meta property="og:article:tag" content="ansible" /><meta property="og:locale" content="en_US">
+<meta property="og:title" content="Configuration">
+<meta property="og:image" content="/images/">
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="1500" />
+<meta property="og:image:height" content="800" />
+<meta property="og:description" content=""/>
+<meta property="og:site_name" content="Makina States">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/favicons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/images/favicons/favicon-16x16.png" sizes="16x16">
+<link rel="manifest" href="/images/favicons/manifest.json">
+<link rel="mask-icon" href="/images/favicons/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="msapplication-TileImage" content="/images/favicons/mstile-144x144.png">
+<meta name="theme-color" content="#ffffff">
+<link rel="shortcut icon" href="/images/favicons/favicon.ico">
+<link rel="dns-prefetch" href="/">
+
+<link rel="preconnect" href="/">
+<link rel="canonical" href="/topics/configure.html">
+
+
+<link rel="prefetch" href="/topics/ansible.html">
+<link rel="prerender" href="/topics/ansible.html">
+
+
+<link rel="prefetch" href="/topics/haproxy.html">
+<link rel="prerender" href="/topics/haproxy.html">
+
+<link rel="stylesheet" href="/css/style.min.css">
+  
+</head>
+<body>
+	
+<header id="site-header" class="site-header">
+  <div class="hugo-meta" title="Hugo version 1">
+    <a href="/" id="home-link">
+      <img src="/images/MakinaCorpus_logo_vert_blanc.svg" alt="">
+      </a>
+    </div>
+    <div class="header-content">
+      <div class="header-list">
+        <ul>
+          <li>
+            <a href="https://github.com/makinacorpus/makinastates/doc/hugo"
+              target="_blank"><i class="icon-github"></i> Source</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+</header>
+
+
+<a href="#" id="search-button" role="button">
+	<span> Press <em>S</em> to search</span><i class="icon-search">
+</i>
+</a>
+<form action=""
+	id="site-search"
+	class="search-form"
+	role="search">
+	<a href="#" id="close-search"><i class="icon-cancel"></i></a>
+	<input type="search"
+			id="search-input"
+			aria-label="Search the Makina States website..."
+			class="site-search"
+			autocomplete="off"
+			placeholder="Search documentation..." required>
+		<ul id="search-results">
+	         
+		    
+		</ul>
+    <div class="press-escape"
+         title="Press Escape to Close the Site Search Overlay">Press <em>ESC</em> to close.</div>
+</form>
+
+  <div class="all-content-wrapper" id="all-content-wrapper">
+		
+<span id="page-top"></span>
+<main class="main">
+	<article class="content" id="configuration">
+		<header class="content-header">
+<nav class="breadcrumb">
+	<ul class="breadcrumbs">
+		<li>
+			<a class="crumb" href="/topics">
+    		<span>Topics</span>
+  		</a>
+		</li>
+	</ul>
+</nav>
+
+<h1 class="page-title topics" id="configuration">Configuration</h1>
+<div class="content-header-links">
+  
+  <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makinastates/doc/hugoedit/master/content/topics/configure.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
+
+	<ul class="tags">
+		<li class="icon"><i class="icon-tags"></i></li>
+		
+		<li><a class="tag" href="/tags/topics">topics</a></li>
+		
+		<li><a class="tag" href="/tags/ansible">ansible</a></li>
+		
+	</ul>
+
+
+		</header>
+		<div class="body-copy" data-section=topics>
+		
+
+<h2 id="layout">Layout</h2>
+
+<ul>
+<li><code>$wc</code> is the makina-states top folder.</li>
+</ul>
+
+<pre>
+ bin/ansible                    -> wrapper to ansible
+ bin/ansible-galaxy             -> wrapper to ansible-galaxy
+ bin/ansible-playbook           -> wrapper to ansible-playbook
+ bin/salt-call                  -> wrapper to salt-call
+ ansible                        -> ansible plays, roles, modules & etc
+ etc                            -> configuration
+   etc/ansible                  -> ansible configuration
+   etc/salt                     -> saltstack configuration
+   etc/makina-states            -> makina-states  configuration
+ pillar                         -> saltstack pillar files
+     pillar/pillar.d            -> saltstack pillar files (global)
+     pillar/private.pillar.d    -> saltstack pillar files
+                                  (for the current node)
+     pillar/<$minion>.pillar.d  -> saltstack pillar files
+                                  (for a specific minion)
+ salt/makina-states             -> saltstack states
+   salt/_modules                -> custom salt modules
+   salt/_pillar                 -> custom extpillar modules
+</pre>
+
+<h2 id="salt-pillar">Salt pillar</h2>
+
+<ul>
+<li>Saltstack configuration is based on pillars.</li>
+<li>To facilitate configuration of the Top file, we added those features:
+
+<ul>
+<li>Any <strong>JSON</strong> file can be used as pillar data.</li>
+<li>Any <strong>SLS/json</strong> file dropped inside <code>$wc/pillars.d/</code> will be loaded for all minion as pillar data</li>
+<li>Any <strong>SLS/json</strong> file dropped inside <code>$wc/private.pillars.d</code> will be only loaded for the current node of operation.</li>
+<li>Any <strong>SLS/json</strong> file dropped inside <code>$wc/&lt;$minionid&gt;.pillars.d</code> will be only loaded for the &ldquo;\$minionid&rdquo; host</li>
+</ul></li>
+</ul>
+
+<h2 id="salt-ansible-bridge-notes">Salt + Ansible bridge notes</h2>
+
+<ul>
+<li><p>Makina-states has better to use an <a href="https://github.com/makinacorpus/makina-states/blob/v2/ansible/inventories/makinastates.py">ansible dynamic inventory</a>
+that bridges the salt pillar with ansible via a salt module:
+<a href="https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_remote_pillar.py">mc_remote_plllar</a>.</p></li>
+
+<li><p>This module is pluggable and will search in the salt modules installed
+those who have declared special named functions:</p>
+
+<p><code>get_masterless_makinastates_hosts()</code></p>
+
+<dl>
+<dd>return a list of host to manage</dd>
+<dt><code>get_masterless_makinastates_groups(minionid, pillar)</code></dt>
+<dd>return a list of groups for the specific minion id</dd>
+</dl></li>
+
+<li><p>For each host found by all <code>get_masterless_makinastates_hosts</code> functions:</p>
+
+<ul>
+<li>Get its pillar by calling
+<code>mc_remote_plllar.get_pillar($host)</code></li>
+<li>Extract/generate from informations in the pillar relevant ansible
+host vars for this minion. <strong>saltpillar</strong> ansible hostvar is the
+pillar of this minion.</li>
+<li>Generate ansible groups from those hostvars by calling eac
+<code>get_masterless_makinastates_groups</code> function</li>
+</ul></li>
+
+<li><p>By default, we use the <code>mc_pillar</code> ext pillar which loads a file:
+<strong>etc/makina-states/database.sls</strong> which describe our infractructure and
+this will:</p></li>
+
+<li><p>list all nodes that are configured as ansible targets</p></li>
+
+<li><p>generate pillar info for all nodes</p></li>
+
+<li><p>generate an ansible inventary for each of all those node</p></li>
+</ul>
+
+<h2 id="custom-extpillar">Custom extpillar</h2>
+
+<ul>
+<li>In other words, to add your custom way of managing your hosts:
+
+<ul>
+<li>Create an ext_pillar to complete pillar for a specific minion
+depending on its minion id.</li>
+<li>Create a module that implement the <code>get_masterless_makinastates_hosts</code> &amp;&amp; <code>get_masterless_makinastates_groups</code> functions</li>
+<li>register the pillar and module to the local makina-states installation (see bellow)</li>
+</ul></li>
+
+<li><p>Take example on:</p>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_pillar.py">module</a> : (search for <code>get_masterless_makinastates_groups</code> &amp;&amp; <code>get_masterless_makinastates_hosts</code></li>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/mc_states/pillar/mc_pillar.py">extpillar</a></li>
+</ul></li>
+
+<li><p>To load your extpillar, you ll have to add it to the local salt configuration. You can add a file this way</p></li>
+</ul>
+
+<p><code>$WC/etc/salt/minion.d/99_extpillar.conf</code>:</p>
+
+<pre><code>ext_pillar:
+    - mc_pillar: {}
+    - mc_pillar_jsons: {}
+    - mycustompillar: {}
+</code></pre>
+
+<ul>
+<li>To load your custom module, place it under <code>$WC/salt/_modules</code></li>
+<li>To load your custom pillar, place it under <code>$WC/salt/_pillar</code></li>
+</ul>
+
+<h2 id="verify-the-pillar-for-a-minion">Verify the pillar for a minion</h2>
+
+<ul>
+<li><p>Use this command:</p>
+
+<pre><code class="language-sh">bin/salt-call mc_remote_pillar.get_pillar &lt;minion_id&gt;
+</code></pre></li>
+</ul>
+
+<h2 id="verify-the-groups-for-a-minion">Verify the groups for a minion</h2>
+
+<ul>
+<li><p>Use this command:</p>
+
+<pre><code class="language-sh">bin/salt-call mc_remote_pillar.get_groups &lt;minion_id&gt;
+</code></pre></li>
+</ul>
+
+<h2 id="optional-add-a-cron-to-speed-up-pillar-generation">(OPTIONAL) Add a cron to speed up pillar generation</h2>
+
+<p>To generate regularly the cron for all the configured minion, to speed
+up regular ansible calls (the pillar will already be cached at the call
+time), you can register a cron that does that.</p>
+
+<ul>
+<li><p><code>/etc/cron.d/refresh_ansible</code></p>
+
+<pre>
+15,30,45,00 * * * * root /srv/makina-states/_scripts/refresh_makinastates_pillar.sh
+</pre></li>
+</ul>
+
+		</div><div class="last-modified">Last Updated: 0001-01-01</div>
+<footer id="content-footer">
+
+
+<a href="/topics/ansible.html" class="cf-link prev-page">
+			<i class="fa fa-chevron-left"></i>
+		<div class="page-info">
+			<span>Previous</span>
+			<h5 class="topics">Ansible related configuration</h5>
+		</div>
+</a>
+
+
+	<a href="/topics/haproxy.html" class="cf-link next-page">
+		<div class="page-info">
+			<span>Next</span>
+			<h5 class="topics">Haproxy</h5>
+		</div>
+		<i class="fa fa-chevron-right"></i>
+	</a>
+
+
+</footer>
+</article>
+</main>
+
+<aside id="toc" class="scroll-fixed-wrapper">
+  <div class="scroll-fixed-wrapper-inner">
+    <header class="toc-header">
+      <a href="#configuration">
+        <h3 class="topics">Configuration</h3>
+      </a>
+    </header>
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#layout">Layout</a></li>
+<li><a href="#salt-pillar">Salt pillar</a></li>
+<li><a href="#salt-ansible-bridge-notes">Salt + Ansible bridge notes</a></li>
+<li><a href="#custom-extpillar">Custom extpillar</a></li>
+<li><a href="#verify-the-pillar-for-a-minion">Verify the pillar for a minion</a></li>
+<li><a href="#verify-the-groups-for-a-minion">Verify the groups for a minion</a></li>
+<li><a href="#optional-add-a-cron-to-speed-up-pillar-generation">(OPTIONAL) Add a cron to speed up pillar generation</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+  <div class="fade"></div>
+</aside>
+<a href="#"
+  id="toc-toggle"
+  class="toc-open"
+  title="Toggle Table of contents..."></a>
+
+
+	</div>
+<footer id="site-footer" class="site-footer">
+<div class="footer-content">
+  
+    
+  </div>
+</footer>
+<div class="navbutton__wrapper">
+  <a class="trigger" href="#">
+    <ul class="nav__trigger">
+      <li class="nav__trigger-item nav__trigger-item--first"></li>
+      <li class="nav__trigger-item nav__trigger-item--second"></li>
+      <li class="nav__trigger-item nav__trigger-item--third"></li>
+    </ul>
+  </a>
+</div>
+<nav class="site-navigation navigation-open scroll-fixed-wrapper"
+     id="site-navigation">
+  <div class="site-navigation-inner scroll-fixed-wrapper-inner">
+    
+    
+    
+
+
+<ul class="menu menu-1">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/">Home</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/topics/">Topics</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/ansible.html">Ansible related configuration</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2 active open" href="/topics/configure.html">Configuration</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/haproxy.html">Haproxy</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/install.html">Installation &amp; basic usage</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/ssl.html">Manage ssl certificates</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/database.html">Minions managment via database.sls</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/cloud/">Cloud</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/cloud/lxc.html">LXC containers management</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+    
+  </div>
+</nav>
+<script src="/js/vendor/jquery-2.2.4.min.js"></script>
+<script src="/js/vendor/lunr.min.js"></script>
+<script src="/js/script.min.js"></script>
+
+
+
+<script async defer src="https://buttons.github.io/buttons.js"></script>
+
+<script>
+(function() {
+  if (window.location.hostname === "localhost") {
+    console.log("Analytics not running on local dev.");
+    return;
+  } else {
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o),
+        m = s.getElementsByTagName(o)[0];
+      a.async = 1;
+      a.src = g;
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+    ga('create', '', 'auto');
+    ga('send', 'pageview');
+    ga('create', '', {
+      'siteSpeedSampleRate': 100
+    });
+  }
+})();
+</script>
+
+	
+</body>
+</html>

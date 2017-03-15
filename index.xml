@@ -1,0 +1,1109 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Makina States</title>
+    <link>/index.xml</link>
+    <description>Recent content on Makina States</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fr-FR</language>
+    <lastBuildDate>Thu, 09 Mar 2017 16:04:24 +0100</lastBuildDate>
+    <atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title></title>
+      <link>/json/dummy/</link>
+      <pubDate>Thu, 09 Mar 2017 16:04:24 +0100</pubDate>
+      
+      <guid>/json/dummy/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Ansible related configuration</title>
+      <link>/topics/ansible/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/topics/ansible/</guid>
+      <description>
+
+&lt;h2 id=&#34;ansible-wrappers-specifics&#34;&gt;Ansible wrappers specifics&lt;/h2&gt;
+
+&lt;p&gt;To use ansible, please use makina-states wrappers and never the ansible original scripts directly.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;See:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible&#34;&gt;bin/ansible&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-galaxy&#34;&gt;bin/ansible-galaxy&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-playbook&#34;&gt;bin/ansible-playbook&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-wrapper-common&#34;&gt;bin/ansible-wrapper-common&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;We preconfigure in our wrappers a lot of things like:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Loading configuration (roles, playbooks, inventories, plugins) from:
+
+&lt;ul&gt;
+&lt;li&gt;./&lt;/li&gt;
+&lt;li&gt;./ansible&lt;/li&gt;
+&lt;li&gt;./.ansible&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;&amp;lt;makinastates_install_dir&amp;gt;/ansible&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;/usr/share/ansible (depends of the opt, respects the ansible default configuration)&lt;/li&gt;
+&lt;li&gt;/etc/ansible (depends of the opt, respects the ansible default configuration)&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;When &lt;code&gt;ANSIBLE_TARGETS&lt;/code&gt; are set, we will limit the play to them
+unless &lt;code&gt;ANSIBLE_NOLIMIT&lt;/code&gt; is set.&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Indeed, we use environment variables that are specific to makina-states:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;ANSIBLE_TARGETS&lt;/code&gt;
+    : list of hosts that we will act on. this will limit the scope of
+      the ext pillars generation thus you have to set it to speed
+      up operations.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;ANSIBLE_NOLIMIT&lt;/code&gt;
+    : if set, we wont limit the scope of ansible to ANSIBLE_TARGETS&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;exemple 1&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt; bin/ansible all -m ping
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;exemple 2&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/ansible -c &lt;span class=&#34;nb&#34;&gt;local&lt;/span&gt; -i &lt;span class=&#34;s2&#34;&gt;&amp;quot;localhost,&amp;quot;&lt;/span&gt; all -m ping
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;calling-makina-states-ansible-from-another-repository&#34;&gt;Calling makina-states ansible from another repository&lt;/h2&gt;
+
+&lt;p&gt;As said previously, we load the current folder (and ./.ansible,
+./ansible as well), thus you can add roles and plays and to a specific
+repository but also depend on plugins or roles defined in makina-states.
+Then you ll have to call the ansible wrapper FROM your directory where
+you have your specific ansible installation for them to be usable&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;For example:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;if makina-states is installed in /srv/makina-states&lt;/li&gt;
+&lt;li&gt;your project is installed inside /srv/projects/foo/project&lt;/li&gt;
+&lt;li&gt;You can create your roles inside
+/srv/projects/foo/project/ansible/roles&lt;/li&gt;
+&lt;li&gt;You can make dependencies of any &lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/ansible/roles&#34;&gt;makina-states roles&lt;/a&gt; specially &lt;code&gt;makinastates_pillar&lt;/code&gt;.&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;To call ansible, do it this way:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; /srv/projects/foo/project
+/srv/makina-states/bin/&lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;ansible,ansible-playbook&lt;span class=&#34;o&#34;&gt;}&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;$args&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;saltcall-wrapper&#34;&gt;saltcall Wrapper&lt;/h2&gt;
+
+&lt;p&gt;We developped a &lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/ansible/library/saltcall.py&#34;&gt;special
+module&lt;/a&gt;
+to call saltcall on remote systems.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;You can use it via ansible:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt; bin/ansible all &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  -m saltcall -a &lt;span class=&#34;s2&#34;&gt;&amp;quot;function=test.ping&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt; bin/ansible all &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  -m saltcall -a &lt;span class=&#34;s2&#34;&gt;&amp;quot;function=grains.get args=fqdn&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Or via a playbook like in &lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/ansible/plays/saltcall.yml&#34;&gt;our saltcall one&lt;/a&gt;
+, usable this way:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;```sh
+ANSIBLE_TARGETS=$(hostname) bin/ansible-playbook \
+ ansible/plays/saltcall.yml -m saltcall -a &amp;quot;function=test.ping&amp;quot;
+```
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;It&amp;rsquo;s better to use the playbook because it call the makinastates_pillar
+role to copy locally on the remote box the pillar computed by the
+salt+pillar bridge before executing the salt command.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Cloud Documentation</title>
+      <link>/cloud/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/cloud/</guid>
+      <description>&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;lxc&#34;&gt;LXC&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Configuration</title>
+      <link>/topics/configure/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/topics/configure/</guid>
+      <description>
+
+&lt;h2 id=&#34;layout&#34;&gt;Layout&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;$wc&lt;/code&gt; is the makina-states top folder.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;
+ bin/ansible                    -&gt; wrapper to ansible
+ bin/ansible-galaxy             -&gt; wrapper to ansible-galaxy
+ bin/ansible-playbook           -&gt; wrapper to ansible-playbook
+ bin/salt-call                  -&gt; wrapper to salt-call
+ ansible                        -&gt; ansible plays, roles, modules &amp; etc
+ etc                            -&gt; configuration
+   etc/ansible                  -&gt; ansible configuration
+   etc/salt                     -&gt; saltstack configuration
+   etc/makina-states            -&gt; makina-states  configuration
+ pillar                         -&gt; saltstack pillar files
+     pillar/pillar.d            -&gt; saltstack pillar files (global)
+     pillar/private.pillar.d    -&gt; saltstack pillar files
+                                  (for the current node)
+     pillar/&lt;$minion&gt;.pillar.d  -&gt; saltstack pillar files
+                                  (for a specific minion)
+ salt/makina-states             -&gt; saltstack states
+   salt/_modules                -&gt; custom salt modules
+   salt/_pillar                 -&gt; custom extpillar modules
+&lt;/pre&gt;
+
+&lt;h2 id=&#34;salt-pillar&#34;&gt;Salt pillar&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Saltstack configuration is based on pillars.&lt;/li&gt;
+&lt;li&gt;To facilitate configuration of the Top file, we added those features:
+
+&lt;ul&gt;
+&lt;li&gt;Any &lt;strong&gt;JSON&lt;/strong&gt; file can be used as pillar data.&lt;/li&gt;
+&lt;li&gt;Any &lt;strong&gt;SLS/json&lt;/strong&gt; file dropped inside &lt;code&gt;$wc/pillars.d/&lt;/code&gt; will be loaded for all minion as pillar data&lt;/li&gt;
+&lt;li&gt;Any &lt;strong&gt;SLS/json&lt;/strong&gt; file dropped inside &lt;code&gt;$wc/private.pillars.d&lt;/code&gt; will be only loaded for the current node of operation.&lt;/li&gt;
+&lt;li&gt;Any &lt;strong&gt;SLS/json&lt;/strong&gt; file dropped inside &lt;code&gt;$wc/&amp;lt;$minionid&amp;gt;.pillars.d&lt;/code&gt; will be only loaded for the &amp;ldquo;\$minionid&amp;rdquo; host&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;salt-ansible-bridge-notes&#34;&gt;Salt + Ansible bridge notes&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Makina-states has better to use an &lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/ansible/inventories/makinastates.py&#34;&gt;ansible dynamic inventory&lt;/a&gt;
+that bridges the salt pillar with ansible via a salt module:
+&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_remote_pillar.py&#34;&gt;mc_remote_plllar&lt;/a&gt;.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;This module is pluggable and will search in the salt modules installed
+those who have declared special named functions:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;get_masterless_makinastates_hosts()&lt;/code&gt;&lt;/p&gt;
+
+&lt;dl&gt;
+&lt;dd&gt;return a list of host to manage&lt;/dd&gt;
+&lt;dt&gt;&lt;code&gt;get_masterless_makinastates_groups(minionid, pillar)&lt;/code&gt;&lt;/dt&gt;
+&lt;dd&gt;return a list of groups for the specific minion id&lt;/dd&gt;
+&lt;/dl&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;For each host found by all &lt;code&gt;get_masterless_makinastates_hosts&lt;/code&gt; functions:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Get its pillar by calling
+&lt;code&gt;mc_remote_plllar.get_pillar($host)&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Extract/generate from informations in the pillar relevant ansible
+host vars for this minion. &lt;strong&gt;saltpillar&lt;/strong&gt; ansible hostvar is the
+pillar of this minion.&lt;/li&gt;
+&lt;li&gt;Generate ansible groups from those hostvars by calling eac
+&lt;code&gt;get_masterless_makinastates_groups&lt;/code&gt; function&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;By default, we use the &lt;code&gt;mc_pillar&lt;/code&gt; ext pillar which loads a file:
+&lt;strong&gt;etc/makina-states/database.sls&lt;/strong&gt; which describe our infractructure and
+this will:&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;list all nodes that are configured as ansible targets&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;generate pillar info for all nodes&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;generate an ansible inventary for each of all those node&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;custom-extpillar&#34;&gt;Custom extpillar&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;In other words, to add your custom way of managing your hosts:
+
+&lt;ul&gt;
+&lt;li&gt;Create an ext_pillar to complete pillar for a specific minion
+depending on its minion id.&lt;/li&gt;
+&lt;li&gt;Create a module that implement the &lt;code&gt;get_masterless_makinastates_hosts&lt;/code&gt; &amp;amp;&amp;amp; &lt;code&gt;get_masterless_makinastates_groups&lt;/code&gt; functions&lt;/li&gt;
+&lt;li&gt;register the pillar and module to the local makina-states installation (see bellow)&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Take example on:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_pillar.py&#34;&gt;module&lt;/a&gt; : (search for &lt;code&gt;get_masterless_makinastates_groups&lt;/code&gt; &amp;amp;&amp;amp; &lt;code&gt;get_masterless_makinastates_hosts&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/mc_states/pillar/mc_pillar.py&#34;&gt;extpillar&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;To load your extpillar, you ll have to add it to the local salt configuration. You can add a file this way&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code&gt;$WC/etc/salt/minion.d/99_extpillar.conf&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;ext_pillar:
+    - mc_pillar: {}
+    - mc_pillar_jsons: {}
+    - mycustompillar: {}
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;To load your custom module, place it under &lt;code&gt;$WC/salt/_modules&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;To load your custom pillar, place it under &lt;code&gt;$WC/salt/_pillar&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;verify-the-pillar-for-a-minion&#34;&gt;Verify the pillar for a minion&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Use this command:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call mc_remote_pillar.get_pillar &amp;lt;minion_id&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;verify-the-groups-for-a-minion&#34;&gt;Verify the groups for a minion&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Use this command:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call mc_remote_pillar.get_groups &amp;lt;minion_id&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;optional-add-a-cron-to-speed-up-pillar-generation&#34;&gt;(OPTIONAL) Add a cron to speed up pillar generation&lt;/h2&gt;
+
+&lt;p&gt;To generate regularly the cron for all the configured minion, to speed
+up regular ansible calls (the pillar will already be cached at the call
+time), you can register a cron that does that.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;code&gt;/etc/cron.d/refresh_ansible&lt;/code&gt;&lt;/p&gt;
+
+&lt;pre&gt;
+15,30,45,00 * * * * root /srv/makina-states/_scripts/refresh_makinastates_pillar.sh
+&lt;/pre&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Haproxy</title>
+      <link>/topics/haproxy/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/topics/haproxy/</guid>
+      <description>
+
+&lt;ul&gt;
+&lt;li&gt;the formula is in &lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/proxy/haproxy&#34;&gt;salt/makina-states/services/proxy/haproxy&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;idea&#34;&gt;Idea&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;We provide a facility to auto configure HTTP/HTTPS/REDIS/TCP backends
+via the informations that we can discover in the pillar.&lt;/li&gt;
+&lt;li&gt;We want in an future iteration to add a discovery mecanism, maybe via
+the mine or a discovery service like ETCD, zookeeper or consul.&lt;/li&gt;
+&lt;li&gt;The subkey for configuring proxies is the
+&lt;code&gt;makina-states.haproxy_registrations&lt;/code&gt; top dictionnary.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;how-to-use&#34;&gt;How to use&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Extra HAPROXY configuration can be done by overriding the default
+registry, &lt;strong&gt;mc_haproxy.settings&lt;/strong&gt; via the
+&lt;strong&gt;makina-states.services.proxy.haproxy&lt;/strong&gt; prefix as usual.&lt;/li&gt;
+&lt;li&gt;Look available tweaks by calling &lt;code&gt;salt-call mc_haproxy.settins&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;After, add &lt;code&gt;makina-states.haproxy_registrations.*&lt;/code&gt; entries to
+add proxies.&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;ssl is used and reused from &lt;strong&gt;makina-states.localsettings.ssl&lt;/strong&gt;&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;First, activate haproxy and run the states a first time:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call -lall state.sls makina-states.services.proxy.haproxy
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The most complete form to register a minion with haproxy is as follow&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.&amp;lt;arbitrar id&amp;gt;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;&amp;lt;local_ip of backend&amp;gt;&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;frontends&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+        &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;&amp;lt;frontend_port&amp;gt;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+            &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;to_port&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;&amp;lt;dest_port&amp;gt;,&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;# optional, default to &amp;lt;frontend_port&amp;gt;&lt;/span&gt;
+            &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;mode&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;&amp;lt;http/https/tcp/tcps/redis&amp;gt;&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;hosts&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;&amp;lt;hosts_to_proxy_from&amp;gt;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;      &lt;span class=&#34;c1&#34;&gt;# only useful on http(s) mode&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;regexes&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;&amp;lt;hosts_to_proxy_from&amp;gt;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;    &lt;span class=&#34;c1&#34;&gt;# only useful on http(s) mode&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;wildcards&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;&amp;lt;hosts_to_proxy_from&amp;gt;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;  &lt;span class=&#34;c1&#34;&gt;# only useful on http(s) mode&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;This declaration will help on the haproxy minion side be to configure
+appropriate haproxy &lt;strong&gt;frontends&lt;/strong&gt; and &lt;strong&gt;backends&lt;/strong&gt; objectds.&lt;/p&gt;
+
+&lt;p&gt;Notes:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;The &lt;code&gt;ip&lt;/code&gt; is the local ip of the minion to proxy requests to&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Frontends is a dictionnary of &lt;strong&gt;ports / metadata&lt;/strong&gt; describing how
+to configure haproxy to proxy to the minion:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;code&gt;mode&lt;/code&gt; is node the &lt;strong&gt;haproxy&lt;/strong&gt; mode but a switch for us to
+know how to proxy requests.&lt;/p&gt;
+
+&lt;p&gt;http/https&lt;/p&gt;
+
+&lt;dl&gt;
+&lt;dd&gt;Proxy HTTP(s) requests, depending on an additionnal
+&lt;strong&gt;regexes/wildcards/hosts&lt;/strong&gt; knob
+regexes
+
+&lt;dl&gt;
+&lt;dd&gt;list of regexeses to match in the form
+[host_regex, PATH_URI_regex]
+wildcards&lt;/dd&gt;
+&lt;dd&gt;list to strings which insensitive match if the
+header &lt;code&gt;HOST&lt;/code&gt; endswith
+hosts&lt;/dd&gt;
+&lt;dd&gt;list to strings which insensitive match exactly
+the header &lt;code&gt;HOST&lt;/code&gt;&lt;/dd&gt;
+&lt;/dl&gt;&lt;/dd&gt;
+&lt;dt&gt;tcp/tcps&lt;/dt&gt;
+&lt;dd&gt;configure a tcp based proxy, here
+&lt;strong&gt;regexes/wildcards/hosts&lt;/strong&gt; is useless. Be warn,
+&lt;strong&gt;main_cert&lt;/strong&gt; will be the served ssl certicated as no
+SNI is possible
+redis&lt;/dd&gt;
+&lt;dd&gt;configure a redis frontend (tcp based, so also no use
+of &lt;strong&gt;regexes/wildcards/hosts&lt;/strong&gt;) based on
+&lt;a href=&#34;https://support.pivotal.io/hc/en-us/articles/205309388-How-to-setup-HAProxy-and-Redis-Sentinel-for-automatic-failover-between-Redis-Master-and-Slave-servers&#34;&gt;https://support.pivotal.io/hc/en-us/articles/205309388-How-to-setup-HAProxy-and-Redis-Sentinel-for-automatic-failover-between-Redis-Master-and-Slave-servers&lt;/a&gt;&lt;/dd&gt;
+&lt;/dl&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;code&gt;to_port&lt;/code&gt; can be used to override the port to proxy on the
+minion side if it is not the same that on haproxy side&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If &lt;code&gt;frontends&lt;/code&gt; are not specificied, you need to specify
+&lt;strong&gt;ip&lt;/strong&gt; and one of &lt;strong&gt;hosts/regexes/wildcards&lt;/strong&gt; as we default
+to configure http &amp;amp; https proxies.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If &lt;code&gt;frontends&lt;/code&gt; are specified, you need to respecify all of
+them, no default will be used in this case.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;80 &amp;amp; 443 frontend port modes default to respectivly http &amp;amp; https.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;By default, if no frontends are specified, we setup http &amp;amp; https
+frontends. The SSL backend will try for forward first on 443, then
+on 80.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Acls order for http mode is not predictible yet and will be
+difficult. Prefer to use a sensible configuration for your case
+rather than complicating the ACLS generation algorythm.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;proxy&#34;&gt;proxy&lt;/h3&gt;
+
+&lt;p&gt;If we have a minion haproxy1 and want to proxy to myapp2-1 on http &amp;amp;
+https when a request targeting &amp;ldquo;www.super.com&amp;rdquo; arrise. all we have to do
+is to&lt;/p&gt;
+
+&lt;p&gt;in haproxy1 pillar:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haproxy1&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;hosts&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;www.super.com&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&#34;wildcard&#34;&gt;wildcard&lt;/h3&gt;
+
+&lt;p&gt;Wilcards are also supported via the wildcards key&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haproxy1&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;wildcards&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#39;*.www.super.com&amp;#39;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&#34;regex&#34;&gt;regex&lt;/h3&gt;
+
+&lt;p&gt;regex is also supported via the regexes key&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haproxy1&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;regexes&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#39;my.*supemyappost.com&amp;#39;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;#39;^/api&amp;#39;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;if we want to proxy http to port &amp;ldquo;81&amp;rdquo; of myapp2-1 &amp;amp; https to 444&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haproxy1&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;hosts&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;www.super.com&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;frontends&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;80&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;  &lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;to_port&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;81&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;443&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;to_port&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;444&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&#34;redis&#34;&gt;redis&lt;/h3&gt;
+
+&lt;p&gt;We have a special redis mode to do custom health checks on a redis cluster&lt;/p&gt;
+
+&lt;p&gt;Short form if you use the default port on both ends:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haredis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;# localip of myapp2-1&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;frontends&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;6378&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;  &lt;span class=&#34;p p-Indicator&#34;&gt;{}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&#34;long-forms&#34;&gt;Long forms&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haredis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;frontends&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;66378&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;to_port&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;666&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;mode&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;redis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;6378&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;mode&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;redis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&#34;redis-auth-is-supported-this-way&#34;&gt;Redis auth is supported this way&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haredis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;frontends&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;6378&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;password&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;foobar&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;mode&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;redis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&#34;rabbitmq&#34;&gt;rabbitmq&lt;/h3&gt;
+
+&lt;p&gt;We have a special rabbitmq mode to set sane options on backend for
+rabbitmq Short form if you use the default port on both ends:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haredis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;frontends&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;5672&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;  &lt;span class=&#34;p p-Indicator&#34;&gt;{}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Long forms&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haredis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;frontends&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;55672&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;to_port&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;333&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;mode&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;rabbitmq&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;5672&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;mode&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;rabbitmq&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&#34;register-2-backends-for-one-same-frondend&#34;&gt;Register 2 backends for one same frondend&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.mc_cloud_http1&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+   &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;ip&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;10.5.5.2&amp;quot;&lt;/span&gt;
+     &lt;span class=&#34;s&#34;&gt;&amp;quot;hosts&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;quot;es2.devhost5-1.local&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;
+     &lt;span class=&#34;s&#34;&gt;&amp;quot;frontends&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+       &lt;span class=&#34;s&#34;&gt;&amp;quot;80&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+         &lt;span class=&#34;s&#34;&gt;&amp;quot;mode&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;http&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.mc_cloud_http2&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+   &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;ip&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;10.5.5.666&amp;quot;&lt;/span&gt;
+     &lt;span class=&#34;s&#34;&gt;&amp;quot;hosts&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;quot;es2.devhost5-2.local&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;
+     &lt;span class=&#34;s&#34;&gt;&amp;quot;frontends&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+       &lt;span class=&#34;s&#34;&gt;&amp;quot;80&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+         &lt;span class=&#34;s&#34;&gt;&amp;quot;mode&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;http&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Installation &amp; basic usage</title>
+      <link>/topics/install/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/topics/install/</guid>
+      <description>
+
+&lt;h2 id=&#34;briefing&#34;&gt;Briefing&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;For now, use Ubuntu &amp;gt;= 14.04.&lt;/strong&gt;. Makina-States can be ported to any
+linux based OS, but we here use ubuntu server and this is the only
+supported system for now. It can be used in any flavor, lxc, docker,
+baremetal, kvm, etc.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;To install our base salt installation, you have to choose between
+different modes of operations tweakable via the &lt;strong&gt;nodetype&lt;/strong&gt; setting:
+
+&lt;ul&gt;
+&lt;li&gt;The regular preset modes manages the system configuration from end
+to end, from the system, to makina-states, including the
+saltstack/salt/ansible installation itself.&lt;/li&gt;
+&lt;li&gt;The special &lt;code&gt;scratch&lt;/code&gt; mode manages only the saltstack +
+makina-states configuration by default, so it&amp;rsquo;s up to you to apply
+any other state but do not touch much to the system itself more
+than installing the scripts for wiring makina-states&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;Makina-states do not use regular salt daemons to operate remotely but
+an ansible bridge that copy the pillar and use salt-call locally
+directly on the remote box&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;reminder&#34;&gt;Reminder&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Makina-states was based at fist on &amp;ldquo;nodetypes presets&amp;rdquo; that are prebundled
+collections of makina-states states to apply to the system.
+
+&lt;ul&gt;
+&lt;li&gt;On those nodetypes, we manage &amp;ldquo;controllers&amp;rdquo;, aka the states which
+configure salt &amp;amp; ansible for operation
+
+&lt;ul&gt;
+&lt;li&gt;On those nodetypes, we may configure &amp;ldquo;localsettings&amp;rdquo; like ssl, vim,
+git, &amp;amp; basepackages or network configurations. If any other preset
+than &lt;strong&gt;scratch&lt;/strong&gt; has been activated, many localsettings will be
+applied by default
+(see mc_states/modules/localsettings.py:registry)&lt;/li&gt;
+&lt;li&gt;After all of the previous steps, we may configure services like
+sshd, crond, or databases. If we are on the &lt;strong&gt;scratch&lt;/strong&gt; mode, no
+services are configured by default.&lt;/li&gt;
+&lt;li&gt;Eventually, we may by able to install projects via mc_project. A
+project is just a classical code repository which has a &amp;ldquo;.salt&amp;rdquo;
+and/or ansible playbooks/roles folder commited with enougth
+information on how to deploy it.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;details&#34;&gt;Details&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Just run the &lt;code&gt;_scrits/boot-salt.sh&lt;/code&gt; script as &lt;strong&gt;root&lt;/strong&gt;,&lt;/li&gt;
+&lt;li&gt;Please read next paragraphs before running any command.
+
+&lt;ul&gt;
+&lt;li&gt;All the behavior of the script can be controlled via environment
+variables or command line arguments switches.&lt;/li&gt;
+&lt;li&gt;You will need to tell on what kind of environment you are installing
+on (the nodetype).&lt;/li&gt;
+&lt;li&gt;You&amp;rsquo;ll also have to set the &lt;strong&gt;minion id&lt;/strong&gt;. The default choice for
+&lt;strong&gt;&amp;ndash;minion-id&lt;/strong&gt; is the current machine hostname. You should keep
+this naming scheme unless you have a good reason to change it.&lt;/li&gt;
+&lt;li&gt;Your choice for &lt;code&gt;--nodetype&lt;/code&gt; is certainly one of:
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;scratch&lt;/strong&gt; manages by default only the salt installation and
+configuration. You ll want to activate this mode if you want
+to apply explicitly your states without relying of default
+nodetypes configuration.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;server (default)&lt;/strong&gt; matches a baremetal server, and manage it
+from end to end (base packages, network, locales, sshd, crond,
+logrotate, etc, by default)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;vm&lt;/strong&gt; matches a VM (not baremetal), this is mostly like
+&lt;strong&gt;server&lt;/strong&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;lxccontainer&lt;/strong&gt; matches a VM (not baremetal), this is mostly
+like &lt;strong&gt;server&lt;/strong&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;laptop&lt;/strong&gt; is like server but also install packages for
+working on a developement machine (prebacking a laptop for
+a dev)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;dockercontainer&lt;/strong&gt; matches a VM (not baremetal), this is
+mostly like &lt;strong&gt;server&lt;/strong&gt;, but install &amp;amp; preconfigure circus to
+manage daemons.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;devhost&lt;/strong&gt; is suitable for a development machine enabling
+states to act on that, by example installation of a test
+local-loop mailer.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;vagrantvm&lt;/strong&gt; is suitable to flag vagrant boxes and is a
+subtype of devhost&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;regular-modes-via-boot-salt-sh&#34;&gt;Regular modes (via boot-salt.sh)&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;boot-salt.sh will try to remember how you configured makina-states on
+each run. It stores configs in &lt;code&gt;installdir/etc/makina-states&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Indeed while running, the script try to find enougth information
+(nodetype, salt installs, branch), and will automaticly guess &amp;amp; store
+the parameters by itself.&lt;/li&gt;
+&lt;li&gt;In other words, you will just have to type &lt;strong&gt;boot-salt.sh&lt;/strong&gt;, and verify
+settings the next time you ll use it.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;REMEMBER THAT FOR NOW YOU HAVE TO USE UBUNTU &amp;gt;= 14.04.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;download&#34;&gt;Download&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Get the script:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;git clone http://raw.github.com/makinacorpus/makina-states
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Short overview:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt.sh --help
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Detailed overview:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt.sh --long-help
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;cli-exemples&#34;&gt;CLI Exemples&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;If you want to install only a minion which will be connected to a remote
+mastersalt master:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt.sh
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If you want to manage from end to end your server, select also the &lt;code&gt;laptop&lt;/code&gt; preset nodetype:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt.sh -n laptop&lt;span class=&#34;p&#34;&gt;|&lt;/span&gt;server&lt;span class=&#34;p&#34;&gt;|&lt;/span&gt;kxccontainer&lt;span class=&#34;p&#34;&gt;|&lt;/span&gt;vm
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;To skip the automatic code update/upgrade:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;```sh
+./boot-salt.sh -S
+```
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;To switch on a makina-states branch, like the &lt;strong&gt;v2&lt;/strong&gt; branch in
+production:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;```sh
+./boot-salt.sh -b v2
+```
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&#34;upgrade&#34;&gt;Upgrade&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Upgrade will:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Run predefined &amp;amp; scheduled upgrade code&lt;/li&gt;
+&lt;li&gt;Update makina-states repositories in /srv/salt &amp;amp; /srv/makina-states&lt;/li&gt;
+&lt;li&gt;Update core repositories (like salt code source in /srv/makina-states/src/salt)&lt;/li&gt;
+&lt;li&gt;Do the highstates (salt and masterone if any)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;boot-salt.sh -C --highstates
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;activating-another-nodetype-preset-after-installation&#34;&gt;Activating another nodetype preset after installation&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;If you installed the &lt;strong&gt;scratch&lt;/strong&gt; preset and want to switch to another preset:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;salt-call state.sls makina-states.nodetypes.&amp;lt;your_new_preset&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If you installed a preset and want to switch to another preset:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;edit &lt;strong&gt;etc/makina-states/nodetype&lt;/strong&gt; and put your new preset&lt;/li&gt;
+&lt;li&gt;edit &lt;strong&gt;etc/makina-states/nodetypes.yaml&lt;/strong&gt; and set to false your old preset&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Finally, run:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;salt-call state.sls makina-states.nodetypes.&amp;lt;your_new_preset&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>LXC containers management</title>
+      <link>/cloud/lxc/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/cloud/lxc/</guid>
+      <description>
+
+&lt;p&gt;workflow:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;WARNING currently only those backing store are supported/tested:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;dir&lt;/li&gt;
+&lt;li&gt;overlayfs&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Go into makina-states folder:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; /srv/makina-states
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If wanted, edit database, specially &lt;code&gt;vms&lt;/code&gt;, &amp;amp; &lt;code&gt;cloud_vm_attrs&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;vim etc/makina-states/database.sls
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Define shell variable to copy/paste following commands:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;controller&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname -f&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;cn&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname -f&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;c1&#34;&gt;# export cn=&amp;quot;c.foo.net&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;vm&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;d.foo.net&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;vm_tmpl&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;makinastates&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;preparation-on-the-controller&#34;&gt;Preparation on the controller&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Refresh cache:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;# bin/salt-call -lall \&lt;/span&gt;
+&lt;span class=&#34;c1&#34;&gt;#  state.sls makina-states.services.cache.memcached # the first time&lt;/span&gt;
+service memcached restart
+_scripts/refresh_makinastates_pillar.sh
+&lt;span class=&#34;c1&#34;&gt;# or with limit on hosts that the run will be&lt;/span&gt;
+&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; _scripts/refresh_makinastates_pillar.sh
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;preinstalling-makina-states-controller-each-compute-node&#34;&gt;Preinstalling makina-states (controller &amp;amp; each compute node)&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Installing it:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/makinastates/install.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;configure-the-dns-on-a-full-makina-states-infra-with-mc-pillar&#34;&gt;Configure the dns on a full makina-states infra with mc_pillar&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/controller.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2 id=&#34;compute-node-related-part&#34;&gt;Compute node related part&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Configure compute_node with:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/compute_node.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2 id=&#34;cooking-and-delivery-of-container-container-templates&#34;&gt;Cooking and delivery of container / container templates&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Initialise a lxc container that will be the base of our image (after
+creation go edit in it until sastified of the result):&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,lxc&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/create_container.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Synchronise it to an offline image, this will copy the container to the
+image, and remove parts from it (like sshkeys) to impersonate it:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/snapshot_container.yml -e &lt;span class=&#34;s2&#34;&gt;&amp;quot;lxc_template=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt; lxc_container_name=lxc&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Arguments:&lt;/p&gt;
+
+&lt;p&gt;ANSIBLE_TARGETS
+    : compute node where the container resides (must be in
+      ansible inventary)&lt;/p&gt;
+
+&lt;p&gt;lxc_template
+    : lxc image to create&lt;/p&gt;
+
+&lt;p&gt;lxc_container_name
+    : lxc container which serve as a base for the image&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Transfer the template to the compute node where you want to spawn
+containers from that image:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+ ansible/plays/cloud/sync_container.yml &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+     -e &lt;span class=&#34;s2&#34;&gt;&amp;quot;lxc_orig_host=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt; lxc_container_name=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Arguments:&lt;/p&gt;
+
+&lt;p&gt;ANSIBLE_TARGETS
+    : both orig and dest&lt;/p&gt;
+
+&lt;p&gt;lxc_host
+    : where to transfer container/template&lt;/p&gt;
+
+&lt;p&gt;lxc_orig_host
+    : where from transfer container/template&lt;/p&gt;
+
+&lt;p&gt;lxc_container_name
+    : lxc container to transfer&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;initialise-a-container&#34;&gt;Initialise a container&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Initialise and finish the container provisioning (from scratch)&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/create_container.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Arguments:&lt;/p&gt;
+
+&lt;p&gt;ANSIBLE_TARGETS
+    : compute node where the container resides (must be in ansible inventary) &amp;amp; lxc container to create&lt;/p&gt;
+
+&lt;p&gt;lxc_from_container
+    : lxc container from which initing the container&lt;/p&gt;
+
+&lt;p&gt;lxc_backing_store
+    : (opt) backing store to use&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Initialise and finish the container provisioning (from template):&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,vm&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/create_container.yml -e &lt;span class=&#34;s2&#34;&gt;&amp;quot;lxc_from_container=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Special case: use overlayfs to create the container:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+ ansible/plays/cloud/create_container.yml &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  -e &lt;span class=&#34;s2&#34;&gt;&amp;quot;lxc_from_container=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt; lxc_backing_store=overlayfs&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Manage ssl certificates</title>
+      <link>/topics/ssl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/topics/ssl/</guid>
+      <description>
+
+&lt;h2 id=&#34;general-use&#34;&gt;General use&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Management is done via the pillar, and via the &lt;strong&gt;makina-states.localsettings.ssl&lt;/strong&gt; sls.&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;After configuration, apply it to your system via&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call -l all state.sls makina-states.localsettings.ssl
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Or via ansible (remote host)::&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$hostname&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    ansible/plays/saltcall.yml -e saltargs makina-states.localsettings.ssl
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;add-a-certificate-to-the-system-trust-system-add-a-ca&#34;&gt;Add a certificate to the system trust system (add a &amp;lsquo;ca&amp;rsquo;)&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;pillar/pillar.d/cert.sls&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;#                                   &amp;lt;CN&amp;gt;&lt;/span&gt;
+&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.localsettings.ssl.cas.foobar&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;|&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;-----BEGIN CERTIFICATE-----&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;MIIDejCCAmKgAwIBAgICA+gwDQYJKoZIhvcNAQELBQAwfzELMAkGA1UEBhMCRlIx&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;DDAKBgNVBAgMA1BkTDEPMA0GA1UEBwwGTmFudGVzMRYwFAYDVQQKDA1NYWtpbmEg&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;Q29ycHVzMQ8wDQYDVQQDDAZmb29iYXIxKDAmBgkqhkiG9w0BCQEWGWNvbnRhY3RA&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;bWFraW5hLWNvcnB1cy5jb20wIBcNMTYwNTA0MTA0NjAzWhgPMzAzNDExMDQxMDQ2&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;MDNaMH8xCzAJBgNVBAYTAkZSMQwwCgYDVQQIDANQZEwxDzANBgNVBAcMBk5hbnRl&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;czEWMBQGA1UECgwNTWFraW5hIENvcnB1czEPMA0GA1UEAwwGZm9vYmFyMSgwJgYJ&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;KoZIhvcNAQkBFhljb250YWN0QG1ha2luYS1jb3JwdXMuY29tMIIBIjANBgkqhkiG&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnLYWB4f9lRVc/fbqOvOCNTCefWnNwKehyf9z&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;LKzZ93ki5bHYLKUoI7tWK2UOKNbnADhEfgGiWNcGtdrr9wc4FFLFR43tUfIxMfqe&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;wUcsv06V9IsmIP4Pi+knAPZG5fXystlPfLjom4bCx5mQr2SGIijw2ogYHKAIdgZJ&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;rviDWM2XIbdEx0TIqkOAokKqUtDr8ZEG289P5v5mrHjacAC8GzhxCgg1RWmaJOhW&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;jc6bfdgLEOQCwt3hE92r+qrh0JjxBINVLE6IO8dL1jGxN8O+U/sQdhDvuN1bwyXd&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;8117+FSP8C+nnOK37MI27qv0D+sEZXZXAdEAY6w0WF4EAuY/kwIDAQABMA0GCSqG&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;SIb3DQEBCwUAA4IBAQBHG6MkNhaeXWqMqzcYmLWZQZ6hONfRaK7lZlKmly6yVzLJ&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;Y6v5wPMtWDzE0ALS0K2nhG4dEuEo1D1/dQhdz+zmJC5+xVnCzzWIxfNs0GgQMTVj&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;eEmp3Hl0QBwe66swFaMKPz9+1eiQKaTE4pcwOXGEFwephaJWkswX4Fw0o9CA7NLl&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;z0uIpHB12tcGlxS7joraj6aV4nKj+T3xVzsQqR2x5jbZMzsn/1W4afeSKZkBWiNI&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;Z1cASST8OvDiBkQna7LNqDVfogezK0h/8Wbqp5dipeNIY9xu/L4Hr9+Djb9mOwp+&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;gKtKM4seNltkeKgYrupAUecK3Rs+xiF9j5xiv2X1&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;-----END CERTIFICATE-----&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;add-a-certificate-and-it-s-key-for-reuse-in-makina-states-packages-applications&#34;&gt;Add a certificate and it&amp;rsquo;s key for reuse in makina-states packages applications&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;The certicate can be either a selfsigned certificate or a certificate and its
+authority chain with the certificate itself comes first&lt;/li&gt;
+&lt;li&gt;pillar/pillar.d/cert.sls&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;#                                            &amp;lt;CN&amp;gt;&lt;/span&gt;
+&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.localsettings.ssl.certificates.titi&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+ &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;|&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;-----BEGIN CERTIFICATE-----&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;MIIDdjCCAl6gAwIBAgICA+gwDQYJKoZIhvcNAQELBQAwfTELMAkGA1UEBhMCRlIx&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;DDAKBgNVBAgMA1BkTDEPMA0GA1UEBwwGTmFudGVzMRYwFAYDVQQKDA1NYWtpbmEg&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;Q29ycHVzMQ0wCwYDVQQDDAR0aXRpMSgwJgYJKoZIhvcNAQkBFhljb250YWN0QG1h&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;a2luYS1jb3JwdXMuY29tMCAXDTE2MDUwNDExMDcxNFoYDzMwMzQxMTA0MTEwNzE0&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;WjB9MQswCQYDVQQGEwJGUjEMMAoGA1UECAwDUGRMMQ8wDQYDVQQHDAZOYW50ZXMx&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;FjAUBgNVBAoMDU1ha2luYSBDb3JwdXMxDTALBgNVBAMMBHRpdGkxKDAmBgkqhkiG&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;9w0BCQEWGWNvbnRhY3RAbWFraW5hLWNvcnB1cy5jb20wggEiMA0GCSqGSIb3DQEB&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;AQUAA4IBDwAwggEKAoIBAQDMRnNmGHdSfjmv/HQSLKQ0aIhukNQJP1/pVYfoHN/X&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;BE5pbbM3voZaecq5puJV1CAojYO9XkIY6FFOQnXbr+285ectuTHFHGTQpw/cEtUd&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;uHR7SXdhcfFOMw2og/WcdiOj5+WqEkm5hsT5QWMFTYQxXsRtwWVxx9JzBSStPpzi&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;aJ1bfg51F+iEFvnkAsYN6++CAGp93pKNhKKyPx52fiiSwVH5+7Iouw5BzX68DQK5&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;1i2YoHDRKdZmBJ/wVUgISsuHEf4JhKMfyiQWvfjqNL5FQx4nEnhHbcrYr+/h/2+A&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;7IdscdbpQa4mKK6+5B9EIjR/c/6LKmXhaQuNwg+UaP9JAgMBAAEwDQYJKoZIhvcN&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;AQELBQADggEBAB/egp+ifuMfl7tFiRiO95QeIu6YLNSs6l2ZQ8uHSqlQ6/8GSq/J&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;C1vt/yy4nPZ/14AonlIxWiKMH/1I96Y7W/8KZ5v9DbYsjGwO1TwqNxsqxjjMlW4g&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;Qb1L4vnAq+25HhX0M1xiJWErgPfzMCVTyOhhuVaIPVTZUBhN5GsVtzuzeC4Vpg1O&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;wAhBRgbyi9gxdWoxeaujColAoiwBYgLt6d+jg7I7RSYvd6bIixc00G0J4zY0d8jB&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;ztK3UXbf4G0Bt7R/DcyZ0Tsp51+d5vpD+UjKkpijwhDkUGNC1ljD5M95NlmbCPdp&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;5ODKbWRuHLcUyzEAjzplwC6FpAlvN11SanA=&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;-----END CERTIFICATE-----&lt;/span&gt;
+ &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;|&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;-----BEGIN PRIVATE KEY-----&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDMRnNmGHdSfjmv&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;/HQSLKQ0aIhukNQJP1/pVYfoHN/XBE5pbbM3voZaecq5puJV1CAojYO9XkIY6FFO&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;QnXbr+285ectuTHFHGTQpw/cEtUduHR7SXdhcfFOMw2og/WcdiOj5+WqEkm5hsT5&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;QWMFTYQxXsRtwWVxx9JzBSStPpziaJ1bfg51F+iEFvnkAsYN6++CAGp93pKNhKKy&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;Px52fiiSwVH5+7Iouw5BzX68DQK51i2YoHDRKdZmBJ/wVUgISsuHEf4JhKMfyiQW&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;vfjqNL5FQx4nEnhHbcrYr+/h/2+A7IdscdbpQa4mKK6+5B9EIjR/c/6LKmXhaQuN&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;wg+UaP9JAgMBAAECggEAPkn9RlSPjggPbyp7+k7Cg3icoZpoDanVhUEfgBfN6bLW&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;di+NRqJCNbSNrK7GtYVJiRQd59CmNxIgOMzrQ2ISDFfOdpLSKljOJRHMND9J3RYx&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;7qYoUP59pmrK72fNrTgZBhHgZkvNT1VZGuhlWWiZtrQ/EXi3hkp4UbpvxKQjEqZn&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;o2+vbUYh440dKdw+iJnDAYZi/1yFCqiIxkWUSFFky8gjppQ7CBeQ4LEHKPodd4A2&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;ccnK8op6H5n26Xqdi65G0SR+X39xtEGp8pzUQW8XaXCjEtBNhD95ymGXEmq8KfqG&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;XcN6nBMVp5V9X4+xFg2hBsFPsL6xrT7deASBKyDQAQKBgQD9VG8okA1rd11ttyvi&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;DhIV6PlYBxhEex4lGeqOrjETKMsAFDsJ5Ntlr3MiXiLIuQ0pAcu3tpxNEkTLkcHo&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;e0VpP7HCr14vnCpZyB1B8wTmbBJVMXkD+oaN7pzEJhauaombfDRH4NKd87lgveLG&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;3x/CFHdJfEvxwjRdpER+ZxJvIQKBgQDObaa9WcyZnuB7R109TTiZgSGo1XljF1m9&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;Ji+85sSdV1mHnUyghgszbnW5s8dM1sweY5ZAONFsF9j06iL2h1XnGlgKHBL22UGH&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;o5nc5/oHfuc/YmRdSUCgmwSZixrInFjfvUiE/tR/j4z2AnpEB4/8genEm+elXYIE&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;uodJpj3TKQKBgQChY+FNXjiudmU3OLLkWUJ8Yug3hI2ZUzZpPJGKRL9PDXYGntzd&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;+MctiRE4m/BdIEeaEGLQr630C+d4KWv3yFD4NHPzK/Y9LqhsemjpUwGUKtWjINmQ&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;B1MhqRqGfB2HEKiKPh6wjDKiHlvDnjWTrSJ2asN0NZPMeYUTA0v/m3rLAQKBgFJZ&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;K8sdp6Eg4CxNq8RoqcuS1/qiLmp5RjNOqHyTEpwx3GVdOtROpOk/h3ctYLQmfAcj&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;cyzrfZ/BY6tQO+Jc2sf2mmhuCqKuyJVzjk2xvOyAk3+VoLQWJNHtBUi7VVPyCwI2&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;YFet0NeSTIlXM68v1SDGMptcFmzBgLyiLJYU21UBAoGBAIhSvpsw3z/gAf9nbciZ&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;9puJiPqFBld7DrCp69iaD/ryXzLfzwI3bzWR8M8TuBO6DxApiYx7Zps4QabPQZTN&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;U4UFg0AcdRh27OUXYtGENw7W0ssZKhlII78WB+0haAwe+kQJ4aNpF0eqWXLH7thR&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;zKKdzi+lMlG5NimeR246wBvX&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;-----END PRIVATE KEY-----&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2 id=&#34;add-certificates-via-the-makina-states-ext-pillar&#34;&gt;Add certificates via the makina-states ext_pillar&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;When using mc_pillar deployment, edit your local &lt;strong&gt;etc/makina-states/database.sls&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;Take an example on the &lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/etc/makina-states/database.sls.in&#34;&gt;database.sl&lt;/a&gt; &lt;strong&gt;ssl&lt;/strong&gt; &amp;amp; &lt;strong&gt;ssl_certs&lt;/strong&gt; section.&lt;/li&gt;
+&lt;li&gt;The &lt;strong&gt;ssl_certs&lt;/strong&gt; section is a mapping id / tuples of (certicate, key) mappings.
+certicate can be either a selfsigned certificate or a certificate and all the
+authority, where the certificate of the common name comes first.&lt;/li&gt;
+&lt;li&gt;The &lt;strong&gt;ssl&lt;/strong&gt; section is where you will map certificates described in the
+&lt;strong&gt;ssl_certs&lt;/strong&gt; section to a particular minion id.
+Remember that the special &lt;strong&gt;default&lt;/strong&gt; section has the purpose to map certificate
+to any minion&lt;/li&gt;
+&lt;li&gt;You can add either certificates for a host by specifying them by the &lt;strong&gt;id&lt;/strong&gt; index or
+configure infra wide certs by setting them in the &lt;strong&gt;default&lt;/strong&gt; section.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;reconfigure-the-ssl-system&#34;&gt;Reconfigure the SSL system&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call -lall state.sls makina-states.localsettings.ssl
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2 id=&#34;use-the-ssl-macro-in-a-state-to-register-a-certificate&#34;&gt;Use the ssl macro in a state to register a certificate&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;This add the certificate inside the cloud ssl directories&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Then also may add it to the systemwide ssl trust&lt;br/&gt;
+foo.sls:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-jinja&#34; data-lang=&#34;jinja&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;{%&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;import&lt;/span&gt; &lt;span class=&#34;s2&#34;&gt;&amp;quot;makina-states/localsettings/ssl/macros.jinja&amp;quot;&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;as&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;ssl&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;with context&lt;/span&gt; &lt;span class=&#34;cp&#34;&gt;%}&lt;/span&gt;&lt;span class=&#34;x&#34;&gt;&lt;/span&gt;
+&lt;span class=&#34;cp&#34;&gt;{{&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;ssl.install_certificate&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;
+        &lt;span class=&#34;nv&#34;&gt;cert_string&lt;/span&gt;
+        &lt;span class=&#34;o&#34;&gt;[,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;cert_key_string&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;]]&lt;/span&gt;
+        &lt;span class=&#34;o&#34;&gt;[,&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;trust&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;kp&#34;&gt;True&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;&lt;span class=&#34;kp&#34;&gt;False&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;]]&lt;/span&gt;
+&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;}}&lt;/span&gt;&lt;span class=&#34;x&#34;&gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Parameters:&lt;/p&gt;
+
+&lt;p&gt;cert_string
+    : either a certificate string (full certificate in PEM format)
+      or a path to load a certificate in PEM format
+      or a key inside the mc_ssl.settings.certificates regitry
+      (if you need an authority chain, place the certificate first)&lt;/p&gt;
+
+&lt;p&gt;cert_key_string (optional)
+    : in case of cert_string is neither a certificate inline or a certificate
+      filepath, this will lookup inside the pillar for a matching certificate
+      inside the mc_ssl.settings.certificates key.&lt;/p&gt;
+
+&lt;p&gt;trust (optional)
+    : boolean to tell to register the certificate to the
+      system-wide ssl trusted certe&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Minions managment via database.sls</title>
+      <link>/topics/database/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/topics/database/</guid>
+      <description>
+
+&lt;ul&gt;
+&lt;li&gt;We use a special file: &lt;code&gt;$WC/etcmakina-states/database.sls&lt;/code&gt;. for
+describing our infractrusture and specially how to access to the remote
+systems.&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;At first, you will need to copy &lt;code&gt;$WC/etc/makina-states/database.sls.in&lt;/code&gt; which is a sample, and adapt it to your needs:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;cp etc/makina-states/database.sls.in &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+      etc/makina-states/database.sls
+&lt;span class=&#34;nv&#34;&gt;$EDITOR&lt;/span&gt; etc/makina-states/database.sls
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;The contents of the file is mostly self explainatory.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;This file is then parsed by the mc_pillar module (called via an
+extpillar hook) to get the appropriate pillar for a specific minion id
+that represant a good part of its system configuration from backups to
+ssl, to cloud configuration and so on.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;We heavyly rely on memcached to improve the performance, so first please
+install it this way:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call -lall state.sls makina-states.services.cache.memcached
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;verify-the-pillar-for-a-minion-after-a-database-sls-change&#34;&gt;Verify the pillar for a minion after a database.sls change&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Use this command:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;service memcached restart
+bin/salt-call mc_pillar.ext_pillar &amp;lt;minion_id&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Topics</title>
+      <link>/topics/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/topics/</guid>
+      <description>&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;ansible&#34;&gt;Ansible bridge&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;configure&#34;&gt;Configuration&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;database&#34;&gt;database/extpillar&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;haproxy&#34;&gt;haproxy&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;install&#34;&gt;Installation&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;ssl&#34;&gt;SSL&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

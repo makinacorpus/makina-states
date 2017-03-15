@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Ssl on Makina States</title>
+    <link>/tags/ssl/index.xml</link>
+    <description>Recent content in Ssl on Makina States</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fr-FR</language>
+    <atom:link href="/tags/ssl/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Manage ssl certificates</title>
+      <link>/topics/ssl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/topics/ssl/</guid>
+      <description>
+
+&lt;h2 id=&#34;general-use&#34;&gt;General use&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Management is done via the pillar, and via the &lt;strong&gt;makina-states.localsettings.ssl&lt;/strong&gt; sls.&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;After configuration, apply it to your system via&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call -l all state.sls makina-states.localsettings.ssl
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Or via ansible (remote host)::&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$hostname&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    ansible/plays/saltcall.yml -e saltargs makina-states.localsettings.ssl
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;add-a-certificate-to-the-system-trust-system-add-a-ca&#34;&gt;Add a certificate to the system trust system (add a &amp;lsquo;ca&amp;rsquo;)&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;pillar/pillar.d/cert.sls&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;#                                   &amp;lt;CN&amp;gt;&lt;/span&gt;
+&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.localsettings.ssl.cas.foobar&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;|&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;-----BEGIN CERTIFICATE-----&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;MIIDejCCAmKgAwIBAgICA+gwDQYJKoZIhvcNAQELBQAwfzELMAkGA1UEBhMCRlIx&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;DDAKBgNVBAgMA1BkTDEPMA0GA1UEBwwGTmFudGVzMRYwFAYDVQQKDA1NYWtpbmEg&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;Q29ycHVzMQ8wDQYDVQQDDAZmb29iYXIxKDAmBgkqhkiG9w0BCQEWGWNvbnRhY3RA&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;bWFraW5hLWNvcnB1cy5jb20wIBcNMTYwNTA0MTA0NjAzWhgPMzAzNDExMDQxMDQ2&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;MDNaMH8xCzAJBgNVBAYTAkZSMQwwCgYDVQQIDANQZEwxDzANBgNVBAcMBk5hbnRl&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;czEWMBQGA1UECgwNTWFraW5hIENvcnB1czEPMA0GA1UEAwwGZm9vYmFyMSgwJgYJ&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;KoZIhvcNAQkBFhljb250YWN0QG1ha2luYS1jb3JwdXMuY29tMIIBIjANBgkqhkiG&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnLYWB4f9lRVc/fbqOvOCNTCefWnNwKehyf9z&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;LKzZ93ki5bHYLKUoI7tWK2UOKNbnADhEfgGiWNcGtdrr9wc4FFLFR43tUfIxMfqe&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;wUcsv06V9IsmIP4Pi+knAPZG5fXystlPfLjom4bCx5mQr2SGIijw2ogYHKAIdgZJ&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;rviDWM2XIbdEx0TIqkOAokKqUtDr8ZEG289P5v5mrHjacAC8GzhxCgg1RWmaJOhW&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;jc6bfdgLEOQCwt3hE92r+qrh0JjxBINVLE6IO8dL1jGxN8O+U/sQdhDvuN1bwyXd&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;8117+FSP8C+nnOK37MI27qv0D+sEZXZXAdEAY6w0WF4EAuY/kwIDAQABMA0GCSqG&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;SIb3DQEBCwUAA4IBAQBHG6MkNhaeXWqMqzcYmLWZQZ6hONfRaK7lZlKmly6yVzLJ&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;Y6v5wPMtWDzE0ALS0K2nhG4dEuEo1D1/dQhdz+zmJC5+xVnCzzWIxfNs0GgQMTVj&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;eEmp3Hl0QBwe66swFaMKPz9+1eiQKaTE4pcwOXGEFwephaJWkswX4Fw0o9CA7NLl&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;z0uIpHB12tcGlxS7joraj6aV4nKj+T3xVzsQqR2x5jbZMzsn/1W4afeSKZkBWiNI&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;Z1cASST8OvDiBkQna7LNqDVfogezK0h/8Wbqp5dipeNIY9xu/L4Hr9+Djb9mOwp+&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;gKtKM4seNltkeKgYrupAUecK3Rs+xiF9j5xiv2X1&lt;/span&gt;
+  &lt;span class=&#34;no&#34;&gt;-----END CERTIFICATE-----&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;add-a-certificate-and-it-s-key-for-reuse-in-makina-states-packages-applications&#34;&gt;Add a certificate and it&amp;rsquo;s key for reuse in makina-states packages applications&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;The certicate can be either a selfsigned certificate or a certificate and its
+authority chain with the certificate itself comes first&lt;/li&gt;
+&lt;li&gt;pillar/pillar.d/cert.sls&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;#                                            &amp;lt;CN&amp;gt;&lt;/span&gt;
+&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.localsettings.ssl.certificates.titi&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+ &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;|&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;-----BEGIN CERTIFICATE-----&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;MIIDdjCCAl6gAwIBAgICA+gwDQYJKoZIhvcNAQELBQAwfTELMAkGA1UEBhMCRlIx&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;DDAKBgNVBAgMA1BkTDEPMA0GA1UEBwwGTmFudGVzMRYwFAYDVQQKDA1NYWtpbmEg&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;Q29ycHVzMQ0wCwYDVQQDDAR0aXRpMSgwJgYJKoZIhvcNAQkBFhljb250YWN0QG1h&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;a2luYS1jb3JwdXMuY29tMCAXDTE2MDUwNDExMDcxNFoYDzMwMzQxMTA0MTEwNzE0&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;WjB9MQswCQYDVQQGEwJGUjEMMAoGA1UECAwDUGRMMQ8wDQYDVQQHDAZOYW50ZXMx&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;FjAUBgNVBAoMDU1ha2luYSBDb3JwdXMxDTALBgNVBAMMBHRpdGkxKDAmBgkqhkiG&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;9w0BCQEWGWNvbnRhY3RAbWFraW5hLWNvcnB1cy5jb20wggEiMA0GCSqGSIb3DQEB&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;AQUAA4IBDwAwggEKAoIBAQDMRnNmGHdSfjmv/HQSLKQ0aIhukNQJP1/pVYfoHN/X&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;BE5pbbM3voZaecq5puJV1CAojYO9XkIY6FFOQnXbr+285ectuTHFHGTQpw/cEtUd&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;uHR7SXdhcfFOMw2og/WcdiOj5+WqEkm5hsT5QWMFTYQxXsRtwWVxx9JzBSStPpzi&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;aJ1bfg51F+iEFvnkAsYN6++CAGp93pKNhKKyPx52fiiSwVH5+7Iouw5BzX68DQK5&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;1i2YoHDRKdZmBJ/wVUgISsuHEf4JhKMfyiQWvfjqNL5FQx4nEnhHbcrYr+/h/2+A&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;7IdscdbpQa4mKK6+5B9EIjR/c/6LKmXhaQuNwg+UaP9JAgMBAAEwDQYJKoZIhvcN&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;AQELBQADggEBAB/egp+ifuMfl7tFiRiO95QeIu6YLNSs6l2ZQ8uHSqlQ6/8GSq/J&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;C1vt/yy4nPZ/14AonlIxWiKMH/1I96Y7W/8KZ5v9DbYsjGwO1TwqNxsqxjjMlW4g&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;Qb1L4vnAq+25HhX0M1xiJWErgPfzMCVTyOhhuVaIPVTZUBhN5GsVtzuzeC4Vpg1O&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;wAhBRgbyi9gxdWoxeaujColAoiwBYgLt6d+jg7I7RSYvd6bIixc00G0J4zY0d8jB&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;ztK3UXbf4G0Bt7R/DcyZ0Tsp51+d5vpD+UjKkpijwhDkUGNC1ljD5M95NlmbCPdp&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;5ODKbWRuHLcUyzEAjzplwC6FpAlvN11SanA=&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;-----END CERTIFICATE-----&lt;/span&gt;
+ &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;|&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;-----BEGIN PRIVATE KEY-----&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDMRnNmGHdSfjmv&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;/HQSLKQ0aIhukNQJP1/pVYfoHN/XBE5pbbM3voZaecq5puJV1CAojYO9XkIY6FFO&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;QnXbr+285ectuTHFHGTQpw/cEtUduHR7SXdhcfFOMw2og/WcdiOj5+WqEkm5hsT5&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;QWMFTYQxXsRtwWVxx9JzBSStPpziaJ1bfg51F+iEFvnkAsYN6++CAGp93pKNhKKy&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;Px52fiiSwVH5+7Iouw5BzX68DQK51i2YoHDRKdZmBJ/wVUgISsuHEf4JhKMfyiQW&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;vfjqNL5FQx4nEnhHbcrYr+/h/2+A7IdscdbpQa4mKK6+5B9EIjR/c/6LKmXhaQuN&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;wg+UaP9JAgMBAAECggEAPkn9RlSPjggPbyp7+k7Cg3icoZpoDanVhUEfgBfN6bLW&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;di+NRqJCNbSNrK7GtYVJiRQd59CmNxIgOMzrQ2ISDFfOdpLSKljOJRHMND9J3RYx&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;7qYoUP59pmrK72fNrTgZBhHgZkvNT1VZGuhlWWiZtrQ/EXi3hkp4UbpvxKQjEqZn&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;o2+vbUYh440dKdw+iJnDAYZi/1yFCqiIxkWUSFFky8gjppQ7CBeQ4LEHKPodd4A2&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;ccnK8op6H5n26Xqdi65G0SR+X39xtEGp8pzUQW8XaXCjEtBNhD95ymGXEmq8KfqG&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;XcN6nBMVp5V9X4+xFg2hBsFPsL6xrT7deASBKyDQAQKBgQD9VG8okA1rd11ttyvi&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;DhIV6PlYBxhEex4lGeqOrjETKMsAFDsJ5Ntlr3MiXiLIuQ0pAcu3tpxNEkTLkcHo&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;e0VpP7HCr14vnCpZyB1B8wTmbBJVMXkD+oaN7pzEJhauaombfDRH4NKd87lgveLG&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;3x/CFHdJfEvxwjRdpER+ZxJvIQKBgQDObaa9WcyZnuB7R109TTiZgSGo1XljF1m9&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;Ji+85sSdV1mHnUyghgszbnW5s8dM1sweY5ZAONFsF9j06iL2h1XnGlgKHBL22UGH&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;o5nc5/oHfuc/YmRdSUCgmwSZixrInFjfvUiE/tR/j4z2AnpEB4/8genEm+elXYIE&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;uodJpj3TKQKBgQChY+FNXjiudmU3OLLkWUJ8Yug3hI2ZUzZpPJGKRL9PDXYGntzd&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;+MctiRE4m/BdIEeaEGLQr630C+d4KWv3yFD4NHPzK/Y9LqhsemjpUwGUKtWjINmQ&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;B1MhqRqGfB2HEKiKPh6wjDKiHlvDnjWTrSJ2asN0NZPMeYUTA0v/m3rLAQKBgFJZ&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;K8sdp6Eg4CxNq8RoqcuS1/qiLmp5RjNOqHyTEpwx3GVdOtROpOk/h3ctYLQmfAcj&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;cyzrfZ/BY6tQO+Jc2sf2mmhuCqKuyJVzjk2xvOyAk3+VoLQWJNHtBUi7VVPyCwI2&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;YFet0NeSTIlXM68v1SDGMptcFmzBgLyiLJYU21UBAoGBAIhSvpsw3z/gAf9nbciZ&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;9puJiPqFBld7DrCp69iaD/ryXzLfzwI3bzWR8M8TuBO6DxApiYx7Zps4QabPQZTN&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;U4UFg0AcdRh27OUXYtGENw7W0ssZKhlII78WB+0haAwe+kQJ4aNpF0eqWXLH7thR&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;zKKdzi+lMlG5NimeR246wBvX&lt;/span&gt;
+   &lt;span class=&#34;no&#34;&gt;-----END PRIVATE KEY-----&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2 id=&#34;add-certificates-via-the-makina-states-ext-pillar&#34;&gt;Add certificates via the makina-states ext_pillar&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;When using mc_pillar deployment, edit your local &lt;strong&gt;etc/makina-states/database.sls&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;Take an example on the &lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/etc/makina-states/database.sls.in&#34;&gt;database.sl&lt;/a&gt; &lt;strong&gt;ssl&lt;/strong&gt; &amp;amp; &lt;strong&gt;ssl_certs&lt;/strong&gt; section.&lt;/li&gt;
+&lt;li&gt;The &lt;strong&gt;ssl_certs&lt;/strong&gt; section is a mapping id / tuples of (certicate, key) mappings.
+certicate can be either a selfsigned certificate or a certificate and all the
+authority, where the certificate of the common name comes first.&lt;/li&gt;
+&lt;li&gt;The &lt;strong&gt;ssl&lt;/strong&gt; section is where you will map certificates described in the
+&lt;strong&gt;ssl_certs&lt;/strong&gt; section to a particular minion id.
+Remember that the special &lt;strong&gt;default&lt;/strong&gt; section has the purpose to map certificate
+to any minion&lt;/li&gt;
+&lt;li&gt;You can add either certificates for a host by specifying them by the &lt;strong&gt;id&lt;/strong&gt; index or
+configure infra wide certs by setting them in the &lt;strong&gt;default&lt;/strong&gt; section.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;reconfigure-the-ssl-system&#34;&gt;Reconfigure the SSL system&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call -lall state.sls makina-states.localsettings.ssl
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2 id=&#34;use-the-ssl-macro-in-a-state-to-register-a-certificate&#34;&gt;Use the ssl macro in a state to register a certificate&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;This add the certificate inside the cloud ssl directories&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Then also may add it to the systemwide ssl trust&lt;br/&gt;
+foo.sls:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-jinja&#34; data-lang=&#34;jinja&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;{%&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;import&lt;/span&gt; &lt;span class=&#34;s2&#34;&gt;&amp;quot;makina-states/localsettings/ssl/macros.jinja&amp;quot;&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;as&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;ssl&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;with context&lt;/span&gt; &lt;span class=&#34;cp&#34;&gt;%}&lt;/span&gt;&lt;span class=&#34;x&#34;&gt;&lt;/span&gt;
+&lt;span class=&#34;cp&#34;&gt;{{&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;ssl.install_certificate&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;(&lt;/span&gt;
+        &lt;span class=&#34;nv&#34;&gt;cert_string&lt;/span&gt;
+        &lt;span class=&#34;o&#34;&gt;[,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;cert_key_string&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;]]&lt;/span&gt;
+        &lt;span class=&#34;o&#34;&gt;[,&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;trust&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;kp&#34;&gt;True&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;&lt;span class=&#34;kp&#34;&gt;False&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;]]&lt;/span&gt;
+&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;}}&lt;/span&gt;&lt;span class=&#34;x&#34;&gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Parameters:&lt;/p&gt;
+
+&lt;p&gt;cert_string
+    : either a certificate string (full certificate in PEM format)
+      or a path to load a certificate in PEM format
+      or a key inside the mc_ssl.settings.certificates regitry
+      (if you need an authority chain, place the certificate first)&lt;/p&gt;
+
+&lt;p&gt;cert_key_string (optional)
+    : in case of cert_string is neither a certificate inline or a certificate
+      filepath, this will lookup inside the pillar for a matching certificate
+      inside the mc_ssl.settings.certificates key.&lt;/p&gt;
+
+&lt;p&gt;trust (optional)
+    : boolean to tell to register the certificate to the
+      system-wide ssl trusted certe&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

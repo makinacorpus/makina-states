@@ -1,0 +1,316 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Manage ssl certificates &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>Manage ssl certificates</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/topics/ssl.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="manage-ssl-certificates">
+<h1>Manage ssl certificates<a class="headerlink" href="#manage-ssl-certificates" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="general-use">
+<h2>General use<a class="headerlink" href="#general-use" title="Permalink to this headline">¶</a></h2>
+<p>Management is done via the pillar, and via the
+<strong>makina-states.localsettings.ssl</strong> sls.</p>
+<p>After configuration, apply it to your system via:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>bin/salt-call -l all state.sls makina-states.localsettings.ssl
+</pre></div>
+</div>
+<p>Or via ansible (remote host):</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>ANSIBLE_TARGETS=&quot;$hostname&quot; bin/ansible-playbook \
+    ansible/plays/saltcall.yml -e saltargs makina-states.localsettings.ssl
+</pre></div>
+</div>
+</div>
+<div class="section" id="add-a-certificate-to-the-system-trust-system-add-a-ca">
+<h2>Add a certificate to the system trust system (add a &#8216;ca&#8217;)<a class="headerlink" href="#add-a-certificate-to-the-system-trust-system-add-a-ca" title="Permalink to this headline">¶</a></h2>
+<p>pillar/pillar.d/cert.sls:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>#                                   &lt;CN&gt;
+makina-states.localsettings.ssl.cas.foobar: |
+  -----BEGIN CERTIFICATE-----
+  MIIDejCCAmKgAwIBAgICA+gwDQYJKoZIhvcNAQELBQAwfzELMAkGA1UEBhMCRlIx
+  DDAKBgNVBAgMA1BkTDEPMA0GA1UEBwwGTmFudGVzMRYwFAYDVQQKDA1NYWtpbmEg
+  Q29ycHVzMQ8wDQYDVQQDDAZmb29iYXIxKDAmBgkqhkiG9w0BCQEWGWNvbnRhY3RA
+  bWFraW5hLWNvcnB1cy5jb20wIBcNMTYwNTA0MTA0NjAzWhgPMzAzNDExMDQxMDQ2
+  MDNaMH8xCzAJBgNVBAYTAkZSMQwwCgYDVQQIDANQZEwxDzANBgNVBAcMBk5hbnRl
+  czEWMBQGA1UECgwNTWFraW5hIENvcnB1czEPMA0GA1UEAwwGZm9vYmFyMSgwJgYJ
+  KoZIhvcNAQkBFhljb250YWN0QG1ha2luYS1jb3JwdXMuY29tMIIBIjANBgkqhkiG
+  9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnLYWB4f9lRVc/fbqOvOCNTCefWnNwKehyf9z
+  LKzZ93ki5bHYLKUoI7tWK2UOKNbnADhEfgGiWNcGtdrr9wc4FFLFR43tUfIxMfqe
+  wUcsv06V9IsmIP4Pi+knAPZG5fXystlPfLjom4bCx5mQr2SGIijw2ogYHKAIdgZJ
+  rviDWM2XIbdEx0TIqkOAokKqUtDr8ZEG289P5v5mrHjacAC8GzhxCgg1RWmaJOhW
+  jc6bfdgLEOQCwt3hE92r+qrh0JjxBINVLE6IO8dL1jGxN8O+U/sQdhDvuN1bwyXd
+  8117+FSP8C+nnOK37MI27qv0D+sEZXZXAdEAY6w0WF4EAuY/kwIDAQABMA0GCSqG
+  SIb3DQEBCwUAA4IBAQBHG6MkNhaeXWqMqzcYmLWZQZ6hONfRaK7lZlKmly6yVzLJ
+  Y6v5wPMtWDzE0ALS0K2nhG4dEuEo1D1/dQhdz+zmJC5+xVnCzzWIxfNs0GgQMTVj
+  eEmp3Hl0QBwe66swFaMKPz9+1eiQKaTE4pcwOXGEFwephaJWkswX4Fw0o9CA7NLl
+  z0uIpHB12tcGlxS7joraj6aV4nKj+T3xVzsQqR2x5jbZMzsn/1W4afeSKZkBWiNI
+  Z1cASST8OvDiBkQna7LNqDVfogezK0h/8Wbqp5dipeNIY9xu/L4Hr9+Djb9mOwp+
+  gKtKM4seNltkeKgYrupAUecK3Rs+xiF9j5xiv2X1
+  -----END CERTIFICATE-----
+</pre></div>
+</div>
+</div>
+<div class="section" id="add-a-certificate-and-it-s-key-for-reuse-in-makina-states-packages-applications">
+<h2>Add a certificate and it&#8217;s key for reuse in makina-states packages applications<a class="headerlink" href="#add-a-certificate-and-it-s-key-for-reuse-in-makina-states-packages-applications" title="Permalink to this headline">¶</a></h2>
+<p>The certicate can be either a selfsigned certificate or a certificate and its
+authority chain with the certificate itself comes first.</p>
+<p>pillar/pillar.d/cert.sls:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>#                                            &lt;CN&gt;
+makina-states.localsettings.ssl.certificates.titi:
+ - |
+   -----BEGIN CERTIFICATE-----
+   MIIDdjCCAl6gAwIBAgICA+gwDQYJKoZIhvcNAQELBQAwfTELMAkGA1UEBhMCRlIx
+   DDAKBgNVBAgMA1BkTDEPMA0GA1UEBwwGTmFudGVzMRYwFAYDVQQKDA1NYWtpbmEg
+   Q29ycHVzMQ0wCwYDVQQDDAR0aXRpMSgwJgYJKoZIhvcNAQkBFhljb250YWN0QG1h
+   a2luYS1jb3JwdXMuY29tMCAXDTE2MDUwNDExMDcxNFoYDzMwMzQxMTA0MTEwNzE0
+   WjB9MQswCQYDVQQGEwJGUjEMMAoGA1UECAwDUGRMMQ8wDQYDVQQHDAZOYW50ZXMx
+   FjAUBgNVBAoMDU1ha2luYSBDb3JwdXMxDTALBgNVBAMMBHRpdGkxKDAmBgkqhkiG
+   9w0BCQEWGWNvbnRhY3RAbWFraW5hLWNvcnB1cy5jb20wggEiMA0GCSqGSIb3DQEB
+   AQUAA4IBDwAwggEKAoIBAQDMRnNmGHdSfjmv/HQSLKQ0aIhukNQJP1/pVYfoHN/X
+   BE5pbbM3voZaecq5puJV1CAojYO9XkIY6FFOQnXbr+285ectuTHFHGTQpw/cEtUd
+   uHR7SXdhcfFOMw2og/WcdiOj5+WqEkm5hsT5QWMFTYQxXsRtwWVxx9JzBSStPpzi
+   aJ1bfg51F+iEFvnkAsYN6++CAGp93pKNhKKyPx52fiiSwVH5+7Iouw5BzX68DQK5
+   1i2YoHDRKdZmBJ/wVUgISsuHEf4JhKMfyiQWvfjqNL5FQx4nEnhHbcrYr+/h/2+A
+   7IdscdbpQa4mKK6+5B9EIjR/c/6LKmXhaQuNwg+UaP9JAgMBAAEwDQYJKoZIhvcN
+   AQELBQADggEBAB/egp+ifuMfl7tFiRiO95QeIu6YLNSs6l2ZQ8uHSqlQ6/8GSq/J
+   C1vt/yy4nPZ/14AonlIxWiKMH/1I96Y7W/8KZ5v9DbYsjGwO1TwqNxsqxjjMlW4g
+   Qb1L4vnAq+25HhX0M1xiJWErgPfzMCVTyOhhuVaIPVTZUBhN5GsVtzuzeC4Vpg1O
+   wAhBRgbyi9gxdWoxeaujColAoiwBYgLt6d+jg7I7RSYvd6bIixc00G0J4zY0d8jB
+   ztK3UXbf4G0Bt7R/DcyZ0Tsp51+d5vpD+UjKkpijwhDkUGNC1ljD5M95NlmbCPdp
+   5ODKbWRuHLcUyzEAjzplwC6FpAlvN11SanA=
+   -----END CERTIFICATE-----
+ - |
+   -----BEGIN PRIVATE KEY-----
+   MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDMRnNmGHdSfjmv
+   /HQSLKQ0aIhukNQJP1/pVYfoHN/XBE5pbbM3voZaecq5puJV1CAojYO9XkIY6FFO
+   QnXbr+285ectuTHFHGTQpw/cEtUduHR7SXdhcfFOMw2og/WcdiOj5+WqEkm5hsT5
+   QWMFTYQxXsRtwWVxx9JzBSStPpziaJ1bfg51F+iEFvnkAsYN6++CAGp93pKNhKKy
+   Px52fiiSwVH5+7Iouw5BzX68DQK51i2YoHDRKdZmBJ/wVUgISsuHEf4JhKMfyiQW
+   vfjqNL5FQx4nEnhHbcrYr+/h/2+A7IdscdbpQa4mKK6+5B9EIjR/c/6LKmXhaQuN
+   wg+UaP9JAgMBAAECggEAPkn9RlSPjggPbyp7+k7Cg3icoZpoDanVhUEfgBfN6bLW
+   di+NRqJCNbSNrK7GtYVJiRQd59CmNxIgOMzrQ2ISDFfOdpLSKljOJRHMND9J3RYx
+   7qYoUP59pmrK72fNrTgZBhHgZkvNT1VZGuhlWWiZtrQ/EXi3hkp4UbpvxKQjEqZn
+   o2+vbUYh440dKdw+iJnDAYZi/1yFCqiIxkWUSFFky8gjppQ7CBeQ4LEHKPodd4A2
+   ccnK8op6H5n26Xqdi65G0SR+X39xtEGp8pzUQW8XaXCjEtBNhD95ymGXEmq8KfqG
+   XcN6nBMVp5V9X4+xFg2hBsFPsL6xrT7deASBKyDQAQKBgQD9VG8okA1rd11ttyvi
+   DhIV6PlYBxhEex4lGeqOrjETKMsAFDsJ5Ntlr3MiXiLIuQ0pAcu3tpxNEkTLkcHo
+   e0VpP7HCr14vnCpZyB1B8wTmbBJVMXkD+oaN7pzEJhauaombfDRH4NKd87lgveLG
+   3x/CFHdJfEvxwjRdpER+ZxJvIQKBgQDObaa9WcyZnuB7R109TTiZgSGo1XljF1m9
+   Ji+85sSdV1mHnUyghgszbnW5s8dM1sweY5ZAONFsF9j06iL2h1XnGlgKHBL22UGH
+   o5nc5/oHfuc/YmRdSUCgmwSZixrInFjfvUiE/tR/j4z2AnpEB4/8genEm+elXYIE
+   uodJpj3TKQKBgQChY+FNXjiudmU3OLLkWUJ8Yug3hI2ZUzZpPJGKRL9PDXYGntzd
+   +MctiRE4m/BdIEeaEGLQr630C+d4KWv3yFD4NHPzK/Y9LqhsemjpUwGUKtWjINmQ
+   B1MhqRqGfB2HEKiKPh6wjDKiHlvDnjWTrSJ2asN0NZPMeYUTA0v/m3rLAQKBgFJZ
+   K8sdp6Eg4CxNq8RoqcuS1/qiLmp5RjNOqHyTEpwx3GVdOtROpOk/h3ctYLQmfAcj
+   cyzrfZ/BY6tQO+Jc2sf2mmhuCqKuyJVzjk2xvOyAk3+VoLQWJNHtBUi7VVPyCwI2
+   YFet0NeSTIlXM68v1SDGMptcFmzBgLyiLJYU21UBAoGBAIhSvpsw3z/gAf9nbciZ
+   9puJiPqFBld7DrCp69iaD/ryXzLfzwI3bzWR8M8TuBO6DxApiYx7Zps4QabPQZTN
+   U4UFg0AcdRh27OUXYtGENw7W0ssZKhlII78WB+0haAwe+kQJ4aNpF0eqWXLH7thR
+   zKKdzi+lMlG5NimeR246wBvX
+   -----END PRIVATE KEY-----
+</pre></div>
+</div>
+</div>
+<div class="section" id="add-certificates-via-the-makina-states-ext-pillar">
+<h2>Add certificates via the makina-states ext_pillar<a class="headerlink" href="#add-certificates-via-the-makina-states-ext-pillar" title="Permalink to this headline">¶</a></h2>
+<p>When using mc_pillar deployment, edit your local <strong>etc/makina-states/database.sls</strong></p>
+<p>Take an example on the <a class="reference external" href="https://github.com/makinacorpus/makina-states/blob/v2/etc/makina-states/database.sls.in">database.sls</a> <strong>ssl</strong> &amp; <strong>ssl_certs</strong> section.</p>
+<p>The <strong>ssl_certs</strong> section is a mapping id / tuples of (certicate, key) mappings.
+certicate can be either a selfsigned certificate or a certificate and all the
+authority, where the certificate of the common name comes first.</p>
+<p>The <strong>ssl</strong> section is where you will map certificates described in the
+<strong>ssl_certs</strong> section to a particular minion id.
+Remember that the special <strong>default</strong> section has the purpose to map certificate
+to any minion</p>
+<p>You can add either certificates for a host by specifying them by the <strong>id</strong> index or
+configure infra wide certs by setting them in the <strong>default</strong> section.</p>
+</div>
+<div class="section" id="reconfigure-the-ssl-system">
+<h2>Reconfigure the SSL system<a class="headerlink" href="#reconfigure-the-ssl-system" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><div class="highlight"><pre><span></span>bin/salt-call -lall state.sls makina-states.localsettings.ssl
+</pre></div>
+</div>
+</div>
+<div class="section" id="use-the-ssl-macro-in-a-state-to-register-a-certificate">
+<h2>Use the ssl macro in a state to register a certificate<a class="headerlink" href="#use-the-ssl-macro-in-a-state-to-register-a-certificate" title="Permalink to this headline">¶</a></h2>
+<p>This add the certificate inside the cloud ssl directories
+Then also may add it to the systemwide ssl trust</p>
+<p>foo.sls:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>{% import &quot;makina-states/localsettings/ssl/macros.jinja&quot; as ssl with context %}
+{{ ssl.install_certificate(
+        cert_string
+        [, [cert_key_string]]
+        [, trust=True/False]]
+)}}
+</pre></div>
+</div>
+<p>Parameters:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>cert_string</dt>
+<dd>either a certificate string (full certificate in PEM format)
+or a path to load a certificate in PEM format
+or a key inside the mc_ssl.settings.certificates regitry
+(if you need an authority chain, place the certificate first)</dd>
+<dt>cert_key_string (optional)</dt>
+<dd>in case of cert_string is neither a certificate inline or a certificate
+filepath, this will lookup inside the pillar for a matching certificate
+inside the mc_ssl.settings.certificates key.</dd>
+<dt>trust (optional)</dt>
+<dd>boolean to tell to register the certificate to the
+system-wide ssl trusted certe</dd>
+</dl>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

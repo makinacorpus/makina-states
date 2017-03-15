@@ -1,0 +1,388 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mc_php / php registry &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../../index.html"/>
+        <link rel="up" title="Execution modules" href="index.html"/>
+        <link rel="next" title="mc_pkgs / pkgs registry" href="mc_pkgs.html"/>
+        <link rel="prev" title="mc_phantomjs / phantomjs/npm registry" href="mc_phantomjs.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../index.html#usage">Usage</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../../ref_index.html">Reference</a> &raquo;</li>
+      
+          <li><a href="../index.html">Custom states modules</a> &raquo;</li>
+      
+          <li><a href="index.html">Execution modules</a> &raquo;</li>
+      
+    <li>mc_php / php registry</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../../_sources/v1/ref_states/modules/mc_php.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <span class="target" id="module-mc_states.modules.mc_php"></span><div class="section" id="mc-php-php-registry">
+<span id="module-mc-php"></span><h1>mc_php / php registry<a class="headerlink" href="#mc-php-php-registry" title="Permalink to this headline">¶</a></h1>
+<p>If you alter this module and want to test it, do not forget to deploy it on
+minion using:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>salt &#39;*&#39; saltutil.sync_modules
+</pre></div>
+</div>
+<p>Documentation of this module is available with:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>salt &#39;*&#39; sys.doc mc_php
+</pre></div>
+</div>
+<dl class="function">
+<dt id="mc_states.modules.mc_php.composer_command">
+<code class="descclassname">mc_states.modules.mc_php.</code><code class="descname">composer_command</code><span class="sig-paren">(</span><em>command=None</em>, <em>cwd=None</em>, <em>args=None</em>, <em>composer=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_php.composer_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a composer command.
+Result of the command is in the &#8216;msg&#8217; key of the returnded dictionnary</p>
+<dl class="docutils">
+<dt>composer</dt>
+<dd>full path to composer, defaulting to &#8216;/usr/local/bin/composer&#8217;</dd>
+<dt>command</dt>
+<dd>the command you want in composer.</dd>
+<dt>args</dt>
+<dd>string of command arguments, optionnal</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_php.fpmpool_settings">
+<code class="descclassname">mc_states.modules.mc_php.</code><code class="descname">fpmpool_settings</code><span class="sig-paren">(</span><em>domain</em>, <em>doc_root</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_php.fpmpool_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate options to be given for the pool configuration generation
+Some on the main options:</p>
+<dl class="docutils">
+<dt>session_cookie_domain</dt>
+<dd>Special cookie domain string for cookies (totally optionnal)</dd>
+<dt>listen</dt>
+<dd>Custom listen string for php fpm listen directive
+For example, if you do not want to use the default sockets scheme</dd>
+<dt>pool_name</dt>
+<dd>force the fpm pool name (useful for multiple projects
+to use the same pool)</dd>
+<dt>chroot</dt>
+<dd>Do we run in a fpm chrooted env.
+(certainly defaults to true in current layout)</dd>
+<dt>active</dt>
+<dd>True by default, set to False to disable the
+Virtualhost even if it will be generated.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_php.settings">
+<code class="descclassname">mc_states.modules.mc_php.</code><code class="descname">settings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_php.settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is called from mc_services, loading all PHP default settings</p>
+<p>Settings are merged with grains and pillar via mc_utils.defaults</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>------------------------------------------------
+-------- MODULE ZEND OPCACHE --------------------------
+replacement for APC!
+@see for details of options:
+https://raw.github.com/zendtech/ZendOptimizerPlus/master/README
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span>-------- MODULE APC ---------------------------------
+WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+WARNING : APC is somewhat deprecated and Zend opcache is the replacment
+So the default behavior will not be to install it!!!
+</pre></div>
+</div>
+<p>APC General shared settings</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>shm_segments</dt>
+<dd>seems to perform better with only one shared segment
+but if you cannot upgrade this segment size, then create several
+setting ignored in mmap mode
+(so chances are this will always be 1)</dd>
+</dl>
+</div></blockquote>
+<dl class="docutils">
+<dt>shm_size</dt>
+<dd><p class="first">so here the segment size, but you may need to allow it in your OS
+for 128M Put in /etc/sysctl.conf</p>
+<blockquote>
+<div><ul class="simple">
+<li>kernel.shmmax=134217728</li>
+<li>kernel.shmall=2097152</li>
+</ul>
+</div></blockquote>
+<p class="last">default in most OS is 32M</p>
+</dd>
+<dt>mmap_file_mask</dt>
+<dd>If compiled with MMAP support by using &#8211;enable-mmap this is the
+mktemp-style file_mask to pass to the mmap module
+for determining whether your mmap&#8217;ed memory region is going to be
+file-backed or shared memory backed</dd>
+<dt>APC</dt>
+<dd><dl class="first last docutils">
+<dt>Per virtualhost/php-fpm pool:</dt>
+<dd><dl class="first last docutils">
+<dt>enabled</dt>
+<dd>enabling apc</dd>
+<dt>rfc1867</dt>
+<dd>allow progress upload bars</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>APC</dt>
+<dd><dl class="first last docutils">
+<dt>include_once_override</dt>
+<dd>Optimisation of include/require_once calls</dd>
+<dt>canonicalize</dt>
+<dd>transform paths in absolute ones (no effect
+if apc.stat is not 0), files from stream wrappers (extended
+includes) won&#8217;t be cached if this is activated as they cannot
+be used with php&#8217;s realpath()</dd>
+<dt>stat</dt>
+<dd>In production set it to False, then file changes won&#8217;t be
+observed before apache or php-fpm is restarted, significant
+boost, else file time is stated at each access
+(needed at True in dev)</dd>
+<dt>stat_ctime</dt>
+<dd>avoid problems with rsync or svn not modifying mtime but only
+ctime so if you&#8217;re in production set this to False,
+like for the previous one</dd>
+<dt>num_files_hint</dt>
+<dd>indication on number of files (ZF=1300, nude Drupal 7=1000)</dd>
+<dt>user_entries_hint</dt>
+<dd>indication on the number of cache variables</dd>
+</dl>
+</dd>
+<dt>APC: cache lifetime managmenent</dt>
+<dd><dl class="first last docutils">
+<dt>ttl</dt>
+<dd><p class="first">time (s) we can stay on the cache even when the cache is full</p>
+<dl class="last docutils">
+<dt>Cache full count</dt>
+<dd>that means Garbage Collector is never
+inactivating theses datas before this time is over</dd>
+<dt>&gt;0</dt>
+<dd>old data could stay in the cache while new data wants
+to come, if no data is deprecated</dd>
+<dt>7200</dt>
+<dd>entries older than 2 hours will be thrown to make
+some place</dd>
+<dt>0</dt>
+<dd>emptying full cache when full</dd>
+</dl>
+</dd>
+<dt>user_ttl</dt>
+<dd>same as above, for user cache</dd>
+<dt>gc_ttl</dt>
+<dd>this one is the same but you should note this prevents
+Garbage collecting after each source change.</dd>
+</dl>
+</dd>
+<dt>APC</dt>
+<dd><dl class="first last docutils">
+<dt>filters</dt>
+<dd>could be used to prevent some caching on specific files
+but it&#8217;s better to cache often used files, isn&#8217;t it?
+At least in production</dd>
+<dt>max_file_size</dt>
+<dd>factory default to 1M, files bigger than that won&#8217;t be cached</dd>
+</dl>
+</dd>
+<dt>APC: various things</dt>
+<dd><dl class="first last docutils">
+<dt>write_lock</dt>
+<dd>if True only one process caching a same file
+(better than apc.slam_defense)</dd>
+<dt>file_update_protection</dt>
+<dd>&#8220;2&#8221; prevents caching half written files (by cp for example)
+by waiting x seconds for new files caching.
+set it to 0 if using only rsync or mv</dd>
+<dt>lazy_functions</dt>
+<dd>early versions of APC only
+optimisations from Facebook,
+adding a lazy loding capabilities, so you can parse a lot of
+files and only used things are cached
+NEED TO BE TESTED: DANGEROUS!!</dd>
+<dt>lazy_classes</dt>
+<dd>same as above</dd>
+</dl>
+</dd>
+</dl>
+<p>MODULE XDEBUG:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>php_admin_value[xdebug.default_enable] =   xdebug_default_enable ;
+; http://xdebug.org/docs/all_settings#collect_params (0|1|2|3|4)
+php_admin_value[xdebug.collect_params] = xdebug_collect_params  0;
+php_admin_value[xdebug.profiler_enable] = xdebug_profiler_enable ;
+php_admin_value[xdebug.remote_enable] = xdebug_remote_enable 0;
+php_admin_value[xdebug.remote_host] = xdebug_remote_host localhost;
+php_admin_value[
+    xdebug.profiler_enable_trigger
+] = xdebug_profiler_enable_trigger  0;
+php_admin_value[
+    xdebug.profiler_output_name
+] = xdebug_profiler_output_name  /cachegrind.out.%p;
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mc_pkgs.html" class="btn btn-neutral float-right" title="mc_pkgs / pkgs registry">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mc_phantomjs.html" class="btn btn-neutral" title="mc_phantomjs / phantomjs/npm registry"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

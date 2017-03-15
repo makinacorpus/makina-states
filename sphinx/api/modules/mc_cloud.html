@@ -1,0 +1,323 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mc_cloud / cloud registries &amp; functions &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Execution modules" href="index.html"/>
+        <link rel="next" title="mc_cloud_saltify / cloud related variables" href="mc_cloud_saltify.html"/>
+        <link rel="prev" title="mc_cloud_lxc / lxc registry for compute nodes" href="mc_cloud_lxc.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+<ul class="simple">
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Custom states modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Execution modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../states/index.html">States modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../grains/index.html">makina-states grains modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/index.html">Api  modules</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../v1/index.html">Makina-states V1 documentation (OBSOLETE)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../v1/index.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../v1/index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Custom states modules</a> &raquo;</li>
+      
+          <li><a href="index.html">Execution modules</a> &raquo;</li>
+      
+    <li>mc_cloud / cloud registries &amp; functions</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../_sources/api/modules/mc_cloud.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <span class="target" id="module-mc_states.modules.mc_cloud"></span><div class="section" id="mc-cloud-cloud-registries-functions">
+<span id="module-mc-cloud"></span><h1>mc_cloud / cloud registries &amp; functions<a class="headerlink" href="#mc-cloud-cloud-registries-functions" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud.default_settings">
+<code class="descclassname">mc_states.modules.mc_cloud.</code><code class="descname">default_settings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud.default_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>makina-states cloud global configuration options</p>
+<dl class="docutils">
+<dt>pvdir</dt>
+<dd>salt cloud providers directory</dd>
+<dt>pfdir</dt>
+<dd>salt cloud profile directory</dd>
+<dt>bootsalt_branch</dt>
+<dd>bootsalt branch to use (default: master or prod if prod)</dd>
+<dt>bootsalt_args</dt>
+<dd>makina-states bootsalt args in salt mode</dd>
+<dt>keep_tmp</dt>
+<dd>keep tmp files</dd>
+<dt>ssh_gateway (all the gw params are opt.)</dt>
+<dd>ssh gateway info</dd>
+<dt>ssh_gateway_port</dt>
+<dd>ssh gateway info</dd>
+<dt>ssh_gateway_user</dt>
+<dd>ssh gateway info</dd>
+<dt>ssh_gateway_key</dt>
+<dd>ssh gateway info</dd>
+<dt>ssh_gateway_password</dt>
+<dd>ssh gateway info</dd>
+<dt>is</dt>
+<dd><p class="first">mapping with various informations</p>
+<dl class="last docutils">
+<dt>controller</dt>
+<dd>is this minion a cloud controller</dd>
+<dt>compute_node</dt>
+<dd>is this minion a cloud compute node</dd>
+<dt>vm</dt>
+<dd>is this minion a cloud operating vm</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud.ext_pillar">
+<code class="descclassname">mc_states.modules.mc_cloud.</code><code class="descname">ext_pillar</code><span class="sig-paren">(</span><em>id_</em>, <em>prefixed=True</em>, <em>ttl=32140800</em>, <em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud.ext_pillar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makina-states cloud extpillar</p>
+<dl class="docutils">
+<dt>NOTE</dt>
+<dd>This ext pillar is responsible for taking care of exposing
+other nodes configuration to a particular node if
+we have configured this via the expose/expose_limited settings</dd>
+<dt>expose/exposed</dt>
+<dd><p class="first">list of vm or compute nodes which will have full
+access to the vm infos in via ext_pillar</p>
+<ul class="last simple">
+<li>expose mean give access to other vm conf</li>
+<li>exposed mean take acces on other vm conf</li>
+</ul>
+</dd>
+<dt>expose_limited/exposed_limited</dt>
+<dd><p class="first">dict of vm or compute nodes which will have access
+to the vm infos via the ext_pillar
+Here sensitive info may be filtered, for now,
+nothing is implememted and we give full for now.</p>
+<p>Levels are(only full is really implemented):</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>full</dt>
+<dd>full access to conf</dd>
+<dt>light</dt>
+<dd>all conf but passwords or sensitive</dd>
+<dt>network</dt>
+<dd>network conf only</dd>
+</dl>
+</div></blockquote>
+<p>example of pilar conf settings in database.yaml:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>cloud_vm_attrs:</dt>
+<dd><dl class="first last docutils">
+<dt>myvm:</dt>
+<dd><dl class="first last docutils">
+<dt>expose_limited:</dt>
+<dd>other_vm0: full
+other_vm1: network
+other_vm2: password
+mynode: full</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>cloud_cn_attrs:</dt>
+<dd><dl class="first last docutils">
+<dt>mynode:</dt>
+<dd><dl class="first last docutils">
+<dt>expose_limited:</dt>
+<dd>other_vm1: full
+other_vm2: network
+other_node: password</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
+<p>This can be accessed client side via mc_cloud.settings/expositions</p>
+<blockquote class="last">
+<div>salt-call mc_cloud.settings -&gt; expositions / vms or cns</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud.extpillar_settings">
+<code class="descclassname">mc_states.modules.mc_cloud.</code><code class="descname">extpillar_settings</code><span class="sig-paren">(</span><em>id_=None</em>, <em>ttl=32140800</em>, <em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud.extpillar_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the cloud global configuation</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud.gather_expositions">
+<code class="descclassname">mc_states.modules.mc_cloud.</code><code class="descname">gather_expositions</code><span class="sig-paren">(</span><em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud.gather_expositions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge expositions amongst CN &amp; VM settings
+as a vm can also be a compute node itself</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud.settings">
+<code class="descclassname">mc_states.modules.mc_cloud.</code><code class="descname">settings</code><span class="sig-paren">(</span><em>ttl=60</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud.settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Global cloud configuration</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mc_cloud_saltify.html" class="btn btn-neutral float-right" title="mc_cloud_saltify / cloud related variables">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mc_cloud_lxc.html" class="btn btn-neutral" title="mc_cloud_lxc / lxc registry for compute nodes"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

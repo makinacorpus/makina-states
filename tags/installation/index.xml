@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Installation on Makina States</title>
+    <link>/tags/installation/index.xml</link>
+    <description>Recent content in Installation on Makina States</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fr-FR</language>
+    <atom:link href="/tags/installation/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Installation &amp; basic usage</title>
+      <link>/topics/install/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/topics/install/</guid>
+      <description>
+
+&lt;h2 id=&#34;briefing&#34;&gt;Briefing&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;For now, use Ubuntu &amp;gt;= 14.04.&lt;/strong&gt;. Makina-States can be ported to any
+linux based OS, but we here use ubuntu server and this is the only
+supported system for now. It can be used in any flavor, lxc, docker,
+baremetal, kvm, etc.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;To install our base salt installation, you have to choose between
+different modes of operations tweakable via the &lt;strong&gt;nodetype&lt;/strong&gt; setting:
+
+&lt;ul&gt;
+&lt;li&gt;The regular preset modes manages the system configuration from end
+to end, from the system, to makina-states, including the
+saltstack/salt/ansible installation itself.&lt;/li&gt;
+&lt;li&gt;The special &lt;code&gt;scratch&lt;/code&gt; mode manages only the saltstack +
+makina-states configuration by default, so it&amp;rsquo;s up to you to apply
+any other state but do not touch much to the system itself more
+than installing the scripts for wiring makina-states&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;Makina-states do not use regular salt daemons to operate remotely but
+an ansible bridge that copy the pillar and use salt-call locally
+directly on the remote box&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;reminder&#34;&gt;Reminder&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Makina-states was based at fist on &amp;ldquo;nodetypes presets&amp;rdquo; that are prebundled
+collections of makina-states states to apply to the system.
+
+&lt;ul&gt;
+&lt;li&gt;On those nodetypes, we manage &amp;ldquo;controllers&amp;rdquo;, aka the states which
+configure salt &amp;amp; ansible for operation
+
+&lt;ul&gt;
+&lt;li&gt;On those nodetypes, we may configure &amp;ldquo;localsettings&amp;rdquo; like ssl, vim,
+git, &amp;amp; basepackages or network configurations. If any other preset
+than &lt;strong&gt;scratch&lt;/strong&gt; has been activated, many localsettings will be
+applied by default
+(see mc_states/modules/localsettings.py:registry)&lt;/li&gt;
+&lt;li&gt;After all of the previous steps, we may configure services like
+sshd, crond, or databases. If we are on the &lt;strong&gt;scratch&lt;/strong&gt; mode, no
+services are configured by default.&lt;/li&gt;
+&lt;li&gt;Eventually, we may by able to install projects via mc_project. A
+project is just a classical code repository which has a &amp;ldquo;.salt&amp;rdquo;
+and/or ansible playbooks/roles folder commited with enougth
+information on how to deploy it.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;details&#34;&gt;Details&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Just run the &lt;code&gt;_scrits/boot-salt.sh&lt;/code&gt; script as &lt;strong&gt;root&lt;/strong&gt;,&lt;/li&gt;
+&lt;li&gt;Please read next paragraphs before running any command.
+
+&lt;ul&gt;
+&lt;li&gt;All the behavior of the script can be controlled via environment
+variables or command line arguments switches.&lt;/li&gt;
+&lt;li&gt;You will need to tell on what kind of environment you are installing
+on (the nodetype).&lt;/li&gt;
+&lt;li&gt;You&amp;rsquo;ll also have to set the &lt;strong&gt;minion id&lt;/strong&gt;. The default choice for
+&lt;strong&gt;&amp;ndash;minion-id&lt;/strong&gt; is the current machine hostname. You should keep
+this naming scheme unless you have a good reason to change it.&lt;/li&gt;
+&lt;li&gt;Your choice for &lt;code&gt;--nodetype&lt;/code&gt; is certainly one of:
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;scratch&lt;/strong&gt; manages by default only the salt installation and
+configuration. You ll want to activate this mode if you want
+to apply explicitly your states without relying of default
+nodetypes configuration.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;server (default)&lt;/strong&gt; matches a baremetal server, and manage it
+from end to end (base packages, network, locales, sshd, crond,
+logrotate, etc, by default)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;vm&lt;/strong&gt; matches a VM (not baremetal), this is mostly like
+&lt;strong&gt;server&lt;/strong&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;lxccontainer&lt;/strong&gt; matches a VM (not baremetal), this is mostly
+like &lt;strong&gt;server&lt;/strong&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;laptop&lt;/strong&gt; is like server but also install packages for
+working on a developement machine (prebacking a laptop for
+a dev)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;dockercontainer&lt;/strong&gt; matches a VM (not baremetal), this is
+mostly like &lt;strong&gt;server&lt;/strong&gt;, but install &amp;amp; preconfigure circus to
+manage daemons.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;devhost&lt;/strong&gt; is suitable for a development machine enabling
+states to act on that, by example installation of a test
+local-loop mailer.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;vagrantvm&lt;/strong&gt; is suitable to flag vagrant boxes and is a
+subtype of devhost&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;regular-modes-via-boot-salt-sh&#34;&gt;Regular modes (via boot-salt.sh)&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;boot-salt.sh will try to remember how you configured makina-states on
+each run. It stores configs in &lt;code&gt;installdir/etc/makina-states&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Indeed while running, the script try to find enougth information
+(nodetype, salt installs, branch), and will automaticly guess &amp;amp; store
+the parameters by itself.&lt;/li&gt;
+&lt;li&gt;In other words, you will just have to type &lt;strong&gt;boot-salt.sh&lt;/strong&gt;, and verify
+settings the next time you ll use it.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;REMEMBER THAT FOR NOW YOU HAVE TO USE UBUNTU &amp;gt;= 14.04.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;download&#34;&gt;Download&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Get the script:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;git clone http://raw.github.com/makinacorpus/makina-states
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Short overview:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt.sh --help
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Detailed overview:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt.sh --long-help
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;cli-exemples&#34;&gt;CLI Exemples&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;If you want to install only a minion which will be connected to a remote
+mastersalt master:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt.sh
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If you want to manage from end to end your server, select also the &lt;code&gt;laptop&lt;/code&gt; preset nodetype:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt.sh -n laptop&lt;span class=&#34;p&#34;&gt;|&lt;/span&gt;server&lt;span class=&#34;p&#34;&gt;|&lt;/span&gt;kxccontainer&lt;span class=&#34;p&#34;&gt;|&lt;/span&gt;vm
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;To skip the automatic code update/upgrade:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;```sh
+./boot-salt.sh -S
+```
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;To switch on a makina-states branch, like the &lt;strong&gt;v2&lt;/strong&gt; branch in
+production:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;```sh
+./boot-salt.sh -b v2
+```
+&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&#34;upgrade&#34;&gt;Upgrade&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Upgrade will:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Run predefined &amp;amp; scheduled upgrade code&lt;/li&gt;
+&lt;li&gt;Update makina-states repositories in /srv/salt &amp;amp; /srv/makina-states&lt;/li&gt;
+&lt;li&gt;Update core repositories (like salt code source in /srv/makina-states/src/salt)&lt;/li&gt;
+&lt;li&gt;Do the highstates (salt and masterone if any)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;boot-salt.sh -C --highstates
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;activating-another-nodetype-preset-after-installation&#34;&gt;Activating another nodetype preset after installation&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;If you installed the &lt;strong&gt;scratch&lt;/strong&gt; preset and want to switch to another preset:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;salt-call state.sls makina-states.nodetypes.&amp;lt;your_new_preset&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If you installed a preset and want to switch to another preset:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;edit &lt;strong&gt;etc/makina-states/nodetype&lt;/strong&gt; and put your new preset&lt;/li&gt;
+&lt;li&gt;edit &lt;strong&gt;etc/makina-states/nodetypes.yaml&lt;/strong&gt; and set to false your old preset&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Finally, run:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;salt-call state.sls makina-states.nodetypes.&amp;lt;your_new_preset&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

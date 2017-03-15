@@ -1,0 +1,457 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mc_cloud_compute_node / cloud compute node related functions &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../../index.html"/>
+        <link rel="up" title="Execution modules" href="index.html"/>
+        <link rel="next" title="&lt;no title&gt;" href="mc_cloud_controller.html"/>
+        <link rel="prev" title="mc_circus / circus functions" href="mc_circus.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../index.html#usage">Usage</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../../ref_index.html">Reference</a> &raquo;</li>
+      
+          <li><a href="../index.html">Custom states modules</a> &raquo;</li>
+      
+          <li><a href="index.html">Execution modules</a> &raquo;</li>
+      
+    <li>mc_cloud_compute_node / cloud compute node related functions</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../../_sources/v1/ref_states/modules/mc_cloud_compute_node.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <span class="target" id="module-mc_states.modules.mc_cloud_compute_node"></span><div class="section" id="mc-cloud-compute-node-cloud-compute-node-related-functions">
+<span id="module-mc-cloud-compute-node"></span><h1>mc_cloud_compute_node / cloud compute node related functions<a class="headerlink" href="#mc-cloud-compute-node-cloud-compute-node-related-functions" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.cleanup_allocated_ips">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">cleanup_allocated_ips</code><span class="sig-paren">(</span><em>target</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.cleanup_allocated_ips" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maintenance routine to cleanup ips when ip
+exhaution arrises</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.cleanup_ports_mapping">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">cleanup_ports_mapping</code><span class="sig-paren">(</span><em>target</em>, <em>kind='ssh'</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.cleanup_ports_mapping" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a maintenance routine which can be called to cleanup
+ports when range exhaustion is incoming</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.default_settings">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">default_settings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.default_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default compute node settings</p>
+<dl class="docutils">
+<dt>target</dt>
+<dd>target minion id</dd>
+<dt>expose/expose_limited</dt>
+<dd>expose configuration to other nodes, see mc_cloud.ext_pillar</dd>
+<dt>all_vms</dt>
+<dd><p class="first">contain compute node vms on compute node
+contain all vms on controller
+A mapping indexed by vm minion ids and containing some info:</p>
+<div class="last highlight-python"><div class="highlight"><pre><span></span>{vm name: virt type}
+</pre></div>
+</div>
+</dd>
+<dt>all_targets</dt>
+<dd>a mapping indexed by target minions ids
+containing either only the compute node on compute node
+all the compute nodes on controller</dd>
+<dt>vms</dt>
+<dd>vms on compute node or empty dict</dd>
+<dt>targets</dt>
+<dd>a mapping indexed by target minions ids containing also vms and
+supported vt</dd>
+<dt>reverse_proxies</dt>
+<dd>mapping of reverse proxies info</dd>
+<dt>domains</dt>
+<dd>list of domains served by host</dd>
+<dt>vts</dt>
+<dd>a list of supported virt types (lxc)</dd>
+<dt>has</dt>
+<dd><p class="first">global configuration toggle</p>
+<dl class="last docutils">
+<dt>firewall</dt>
+<dd>global firewall toggle</dd>
+</dl>
+</dd>
+<dt>port_range_start</dt>
+<dd>from where we start to enable ssh NAT ports.
+Default to 40000.</dd>
+</dl>
+<p>port_range_end</p>
+<blockquote>
+<div>from where we end to enable ssh NAT ports.
+Default to 60000.</div></blockquote>
+<p>Basically the compute node needs to:</p>
+<blockquote>
+<div><ul class="simple">
+<li>setup reverse proxying</li>
+<li>setup it&#8217;s local internal addressing dns to point to private ips</li>
+<li>everything else that&#8217;s local to the compute node</li>
+</ul>
+</div></blockquote>
+<p>The computes nodes are often created implicitly by registration of vms
+on specific drivers like LXC but you can get_cloud_confr some manually.</p>
+<p>makina-states.cloud.compute_node.settings.targets.devhost11.local: {}</p>
+<p>To add or modify a value, use the mc_utils.default habitual way of
+modifying the default dict.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.del_conf_for_target">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">del_conf_for_target</code><span class="sig-paren">(</span><em>target</em>, <em>setting</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.del_conf_for_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register a specific setting for a specific target</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.ext_pillar">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">ext_pillar</code><span class="sig-paren">(</span><em>id_</em>, <em>prefixed=True</em>, <em>ttl=32140800</em>, <em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.ext_pillar" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute node extpillar</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.feed_http_reverse_proxy_for_target">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">feed_http_reverse_proxy_for_target</code><span class="sig-paren">(</span><em>target_data</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.feed_http_reverse_proxy_for_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get reverse proxy information mapping for a specicific target
+This return a useful mappings of infos to reverse proxy http
+and ssh services with haproxy</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.feed_network_mappings_for_target">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">feed_network_mappings_for_target</code><span class="sig-paren">(</span><em>target_data</em>, <em>kinds=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.feed_network_mappings_for_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Network mappings are in the form:</p>
+<p>This is the form of the APPCONTAINER SPEC mixin ACI/ACE:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>[
+    {
+        &#39;name&#39;: &#39;default&#39;,
+        &#39;hostPort&#39;: &lt;int&gt;,
+        &#39;to_addr&#39;: &lt;Local IPV4 Address of vm&gt;,
+        &#39;port&#39;: &lt;int&gt;,
+        &#39;count&#39;: &lt;int&gt; (opt),
+        &#39;protocol&#39;: &#39;tcp&#39; / &#39;udp&#39;
+    }
+]
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.find_ip_for_vm">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">find_ip_for_vm</code><span class="sig-paren">(</span><em>vm</em>, <em>default=None</em>, <em>network='10.5.0.0'</em>, <em>netmask='16'</em>, <em>target=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.find_ip_for_vm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Search for:</p>
+<blockquote>
+<div><ul class="simple">
+<li>an ip already allocated</li>
+<li>an random available ip in the range</li>
+</ul>
+</div></blockquote>
+<p>To get and maybe allocate an ip for a vm call</p>
+<blockquote>
+<div>find_ip_for_vm(vmname, target=target)</div></blockquote>
+<p>For force/set an ip use:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">set_allocated_ip</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">vmname</span><span class="p">,</span> <span class="s1">&#39;1.2.3.4&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.find_mac_for_vm">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">find_mac_for_vm</code><span class="sig-paren">(</span><em>vm</em>, <em>default=None</em>, <em>target=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.find_mac_for_vm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate and assign a mac addess to a specific
+vm on a specific host</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.find_password_for_vm">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">find_password_for_vm</code><span class="sig-paren">(</span><em>vm</em>, <em>default=None</em>, <em>pwlen=32</em>, <em>target=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.find_password_for_vm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the vm password after creating it
+the first time</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.get_all_vts">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">get_all_vts</code><span class="sig-paren">(</span><em>supported=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.get_all_vts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get makina-states.cloud VTS</p>
+<blockquote>
+<div><ul class="simple">
+<li>supported=None: all</li>
+<li>supported=True: supported vt</li>
+<li>supported=False: unsupported vt</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.get_allocated_ips">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">get_allocated_ips</code><span class="sig-paren">(</span><em>target</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.get_allocated_ips" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the allocated ips for a specific target</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.get_conf_for_target">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">get_conf_for_target</code><span class="sig-paren">(</span><em>target</em>, <em>setting</em>, <em>default=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.get_conf_for_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the stored specific setting for a specific target</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.get_conf_for_vm">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">get_conf_for_vm</code><span class="sig-paren">(</span><em>vm</em>, <em>setting</em>, <em>default=None</em>, <em>target=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.get_conf_for_vm" title="Permalink to this definition">¶</a></dt>
+<dd><p>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.get_ip_for_vm">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">get_ip_for_vm</code><span class="sig-paren">(</span><em>vm</em>, <em>target=None</em>, <em>default=False</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.get_ip_for_vm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the allocated ip of a vm and return
+either default or raise an error if
+default is not set</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.get_targets">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">get_targets</code><span class="sig-paren">(</span><em>vt=None</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.get_targets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all vms indexed by targets</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.get_vms">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">get_vms</code><span class="sig-paren">(</span><em>vt=None</em>, <em>vm=None</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.get_vms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns vms indexed by name</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.get_vms_for_target">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">get_vms_for_target</code><span class="sig-paren">(</span><em>target</em>, <em>vt=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.get_vms_for_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all vms for a target</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.get_vms_per_type">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">get_vms_per_type</code><span class="sig-paren">(</span><em>target</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.get_vms_per_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all vms indexed by vt for a special target</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.get_vts">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">get_vts</code><span class="sig-paren">(</span><em>supported=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.get_vts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias to get_all_vts
+At the difference of supported is True by default</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.remove_allocated_ip">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">remove_allocated_ip</code><span class="sig-paren">(</span><em>target=None</em>, <em>ip=None</em>, <em>vm=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.remove_allocated_ip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove any ip from the allocated IP registry.
+If vm is specified, it must also match a vm
+which is allocated to this ip.</p>
+<dl class="docutils">
+<dt>target</dt>
+<dd>target to act onto (opt if vm is given)</dd>
+<dt>ip</dt>
+<dd>specifically specify the ip to delete</dd>
+<dt>vm</dt>
+<dd>if given, delete any ip belonging to this
+vm name</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.set_allocated_ip">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">set_allocated_ip</code><span class="sig-paren">(</span><em>vm</em>, <em>ip</em>, <em>target=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.set_allocated_ip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allocate an ip for a vm on a compute node for a specific vt</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">set_allocated_ip</span><span class="p">(</span><span class="s1">&#39;foo.bar.net&#39;</span><span class="p">,</span> <span class="s1">&#39;mybm.bar.net&#39;</span><span class="p">,</span> <span class="s1">&#39;2.2.3.4&#39;</span><span class="p">)</span>         
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.set_conf_for_target">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">set_conf_for_target</code><span class="sig-paren">(</span><em>target</em>, <em>setting</em>, <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.set_conf_for_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register a specific setting for a specific target</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.settings">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">settings</code><span class="sig-paren">(</span><em>ttl=120</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute node related settings</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.target_for_vm">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">target_for_vm</code><span class="sig-paren">(</span><em>vm</em>, <em>target=None</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.target_for_vm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get target for a vm</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_cloud_compute_node.vt_for_vm">
+<code class="descclassname">mc_states.modules.mc_cloud_compute_node.</code><code class="descname">vt_for_vm</code><span class="sig-paren">(</span><em>vm</em>, <em>target=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_cloud_compute_node.vt_for_vm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get VT for a vm</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mc_cloud_controller.html" class="btn btn-neutral float-right" title="&lt;no title&gt;">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mc_circus.html" class="btn btn-neutral" title="mc_circus / circus functions"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

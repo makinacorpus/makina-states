@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta name="robots" content="noindex"><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ansible related configuration | Makina States</title><meta name="description" content="" />
+<meta property="og:type" content="article" />
+<meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
+<meta property="og:article:modified_time" content="0001-01-01 00:00:00 &#43;0000 UTC" /><meta property="og:article:tag" content="topics" /><meta property="og:article:tag" content="ansible" /><meta property="og:locale" content="en_US">
+<meta property="og:title" content="Ansible related configuration">
+<meta property="og:image" content="/images/">
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="1500" />
+<meta property="og:image:height" content="800" />
+<meta property="og:description" content=""/>
+<meta property="og:site_name" content="Makina States">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/favicons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/images/favicons/favicon-16x16.png" sizes="16x16">
+<link rel="manifest" href="/images/favicons/manifest.json">
+<link rel="mask-icon" href="/images/favicons/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="msapplication-TileImage" content="/images/favicons/mstile-144x144.png">
+<meta name="theme-color" content="#ffffff">
+<link rel="shortcut icon" href="/images/favicons/favicon.ico">
+<link rel="dns-prefetch" href="/">
+
+<link rel="preconnect" href="/">
+<link rel="canonical" href="/topics/ansible.html">
+
+
+
+<link rel="prefetch" href="/topics/configure.html">
+<link rel="prerender" href="/topics/configure.html">
+
+<link rel="stylesheet" href="/css/style.min.css">
+  
+</head>
+<body>
+	
+<header id="site-header" class="site-header">
+  <div class="hugo-meta" title="Hugo version 1">
+    <a href="/" id="home-link">
+      <img src="/images/MakinaCorpus_logo_vert_blanc.svg" alt="">
+      </a>
+    </div>
+    <div class="header-content">
+      <div class="header-list">
+        <ul>
+          <li>
+            <a href="https://github.com/makinacorpus/makinastates/doc/hugo"
+              target="_blank"><i class="icon-github"></i> Source</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+</header>
+
+
+<a href="#" id="search-button" role="button">
+	<span> Press <em>S</em> to search</span><i class="icon-search">
+</i>
+</a>
+<form action=""
+	id="site-search"
+	class="search-form"
+	role="search">
+	<a href="#" id="close-search"><i class="icon-cancel"></i></a>
+	<input type="search"
+			id="search-input"
+			aria-label="Search the Makina States website..."
+			class="site-search"
+			autocomplete="off"
+			placeholder="Search documentation..." required>
+		<ul id="search-results">
+	         
+		    
+		</ul>
+    <div class="press-escape"
+         title="Press Escape to Close the Site Search Overlay">Press <em>ESC</em> to close.</div>
+</form>
+
+  <div class="all-content-wrapper" id="all-content-wrapper">
+		
+<span id="page-top"></span>
+<main class="main">
+	<article class="content" id="ansible-related-configuration">
+		<header class="content-header">
+<nav class="breadcrumb">
+	<ul class="breadcrumbs">
+		<li>
+			<a class="crumb" href="/topics">
+    		<span>Topics</span>
+  		</a>
+		</li>
+	</ul>
+</nav>
+
+<h1 class="page-title topics" id="ansible-related-configuration">Ansible related configuration</h1>
+<div class="content-header-links">
+  
+  <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makinastates/doc/hugoedit/master/content/topics/ansible.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
+
+	<ul class="tags">
+		<li class="icon"><i class="icon-tags"></i></li>
+		
+		<li><a class="tag" href="/tags/topics">topics</a></li>
+		
+		<li><a class="tag" href="/tags/ansible">ansible</a></li>
+		
+	</ul>
+
+
+		</header>
+		<div class="body-copy" data-section=topics>
+		
+
+<h2 id="ansible-wrappers-specifics">Ansible wrappers specifics</h2>
+
+<p>To use ansible, please use makina-states wrappers and never the ansible original scripts directly.</p>
+
+<ul>
+<li><p>See:</p>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible">bin/ansible</a></li>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-galaxy">bin/ansible-galaxy</a></li>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-playbook">bin/ansible-playbook</a></li>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-wrapper-common">bin/ansible-wrapper-common</a></li>
+</ul></li>
+
+<li><p>We preconfigure in our wrappers a lot of things like:</p>
+
+<ul>
+<li>Loading configuration (roles, playbooks, inventories, plugins) from:
+
+<ul>
+<li>./</li>
+<li>./ansible</li>
+<li>./.ansible</li>
+<li><code>&lt;makinastates_install_dir&gt;/ansible</code></li>
+<li>/usr/share/ansible (depends of the opt, respects the ansible default configuration)</li>
+<li>/etc/ansible (depends of the opt, respects the ansible default configuration)</li>
+</ul></li>
+<li>When <code>ANSIBLE_TARGETS</code> are set, we will limit the play to them
+unless <code>ANSIBLE_NOLIMIT</code> is set.</li>
+
+<li><p>Indeed, we use environment variables that are specific to makina-states:</p>
+
+<p><code>ANSIBLE_TARGETS</code>
+    : list of hosts that we will act on. this will limit the scope of
+      the ext pillars generation thus you have to set it to speed
+      up operations.</p>
+
+<p><code>ANSIBLE_NOLIMIT</code>
+    : if set, we wont limit the scope of ansible to ANSIBLE_TARGETS</p></li>
+</ul></li>
+</ul>
+
+<h2 id="examples">Examples</h2>
+
+<ul>
+<li><p>exemple 1</p>
+
+<pre><code class="language-sh">ANSIBLE_TARGETS=$(hostname) bin/ansible all -m ping
+</code></pre></li>
+
+<li><p>exemple 2</p>
+
+<pre><code class="language-sh">bin/ansible -c local -i &quot;localhost,&quot; all -m ping
+</code></pre></li>
+</ul>
+
+<h2 id="calling-makina-states-ansible-from-another-repository">Calling makina-states ansible from another repository</h2>
+
+<p>As said previously, we load the current folder (and ./.ansible,
+./ansible as well), thus you can add roles and plays and to a specific
+repository but also depend on plugins or roles defined in makina-states.
+Then you ll have to call the ansible wrapper FROM your directory where
+you have your specific ansible installation for them to be usable</p>
+
+<ul>
+<li><p>For example:</p>
+
+<ul>
+<li>if makina-states is installed in /srv/makina-states</li>
+<li>your project is installed inside /srv/projects/foo/project</li>
+<li>You can create your roles inside
+/srv/projects/foo/project/ansible/roles</li>
+<li>You can make dependencies of any <a href="https://github.com/makinacorpus/makina-states/tree/v2/ansible/roles">makina-states roles</a> specially <code>makinastates_pillar</code>.</li>
+
+<li><p>To call ansible, do it this way:</p>
+
+<pre><code class="language-sh">cd /srv/projects/foo/project
+/srv/makina-states/bin/{ansible,ansible-playbook} $args
+</code></pre></li>
+</ul></li>
+</ul>
+
+<h2 id="saltcall-wrapper">saltcall Wrapper</h2>
+
+<p>We developped a <a href="https://github.com/makinacorpus/makina-states/blob/v2/ansible/library/saltcall.py">special
+module</a>
+to call saltcall on remote systems.</p>
+
+<ul>
+<li><p>You can use it via ansible:</p>
+
+<pre><code class="language-sh">ANSIBLE_TARGETS=$(hostname) bin/ansible all \
+  -m saltcall -a &quot;function=test.ping&quot;
+</code></pre>
+
+<pre><code class="language-sh">ANSIBLE_TARGETS=$(hostname) bin/ansible all \
+  -m saltcall -a &quot;function=grains.get args=fqdn&quot;
+</code></pre></li>
+</ul>
+
+<p>Or via a playbook like in <a href="https://github.com/makinacorpus/makina-states/blob/v2/ansible/plays/saltcall.yml">our saltcall one</a>
+, usable this way:</p>
+
+<pre><code>```sh
+ANSIBLE_TARGETS=$(hostname) bin/ansible-playbook \
+ ansible/plays/saltcall.yml -m saltcall -a &quot;function=test.ping&quot;
+```
+</code></pre>
+
+<p>It&rsquo;s better to use the playbook because it call the makinastates_pillar
+role to copy locally on the remote box the pillar computed by the
+salt+pillar bridge before executing the salt command.</p>
+
+		</div><div class="last-modified">Last Updated: 0001-01-01</div>
+<footer id="content-footer">
+
+
+	
+	<a href="/topics.html" class="cf-link prev-page">
+
+				<i class="fa fa-chevron-left"></i>
+
+			<div class="page-info">
+				<span>Previous</span>
+				<h5 class="topics">Topics</h5>
+			</div>
+	</a>
+	
+
+
+	<a href="/topics/configure.html" class="cf-link next-page">
+		<div class="page-info">
+			<span>Next</span>
+			<h5 class="topics">Configuration</h5>
+		</div>
+		<i class="fa fa-chevron-right"></i>
+	</a>
+
+
+</footer>
+</article>
+</main>
+
+<aside id="toc" class="scroll-fixed-wrapper">
+  <div class="scroll-fixed-wrapper-inner">
+    <header class="toc-header">
+      <a href="#ansible-related-configuration">
+        <h3 class="topics">Ansible related configuration</h3>
+      </a>
+    </header>
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#ansible-wrappers-specifics">Ansible wrappers specifics</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#calling-makina-states-ansible-from-another-repository">Calling makina-states ansible from another repository</a></li>
+<li><a href="#saltcall-wrapper">saltcall Wrapper</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+  <div class="fade"></div>
+</aside>
+<a href="#"
+  id="toc-toggle"
+  class="toc-open"
+  title="Toggle Table of contents..."></a>
+
+
+	</div>
+<footer id="site-footer" class="site-footer">
+<div class="footer-content">
+  
+    
+  </div>
+</footer>
+<div class="navbutton__wrapper">
+  <a class="trigger" href="#">
+    <ul class="nav__trigger">
+      <li class="nav__trigger-item nav__trigger-item--first"></li>
+      <li class="nav__trigger-item nav__trigger-item--second"></li>
+      <li class="nav__trigger-item nav__trigger-item--third"></li>
+    </ul>
+  </a>
+</div>
+<nav class="site-navigation navigation-open scroll-fixed-wrapper"
+     id="site-navigation">
+  <div class="site-navigation-inner scroll-fixed-wrapper-inner">
+    
+    
+    
+
+
+<ul class="menu menu-1">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/">Home</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/topics/">Topics</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2 active open" href="/topics/ansible.html">Ansible related configuration</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/configure.html">Configuration</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/haproxy.html">Haproxy</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/install.html">Installation &amp; basic usage</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/ssl.html">Manage ssl certificates</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/database.html">Minions managment via database.sls</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/cloud/">Cloud</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/cloud/lxc.html">LXC containers management</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+    
+  </div>
+</nav>
+<script src="/js/vendor/jquery-2.2.4.min.js"></script>
+<script src="/js/vendor/lunr.min.js"></script>
+<script src="/js/script.min.js"></script>
+
+
+
+<script async defer src="https://buttons.github.io/buttons.js"></script>
+
+<script>
+(function() {
+  if (window.location.hostname === "localhost") {
+    console.log("Analytics not running on local dev.");
+    return;
+  } else {
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o),
+        m = s.getElementsByTagName(o)[0];
+      a.async = 1;
+      a.src = g;
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+    ga('create', '', 'auto');
+    ga('send', 'pageview');
+    ga('create', '', {
+      'siteSpeedSampleRate': 100
+    });
+  }
+})();
+</script>
+
+	
+</body>
+</html>

@@ -1,0 +1,398 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Cloud on Makina States</title>
+    <link>/tags/cloud/index.xml</link>
+    <description>Recent content in Cloud on Makina States</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fr-FR</language>
+    <atom:link href="/tags/cloud/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Cloud Documentation</title>
+      <link>/cloud/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/cloud/</guid>
+      <description>&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;lxc&#34;&gt;LXC&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Haproxy</title>
+      <link>/topics/haproxy/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/topics/haproxy/</guid>
+      <description>
+
+&lt;ul&gt;
+&lt;li&gt;the formula is in &lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/proxy/haproxy&#34;&gt;salt/makina-states/services/proxy/haproxy&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;idea&#34;&gt;Idea&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;We provide a facility to auto configure HTTP/HTTPS/REDIS/TCP backends
+via the informations that we can discover in the pillar.&lt;/li&gt;
+&lt;li&gt;We want in an future iteration to add a discovery mecanism, maybe via
+the mine or a discovery service like ETCD, zookeeper or consul.&lt;/li&gt;
+&lt;li&gt;The subkey for configuring proxies is the
+&lt;code&gt;makina-states.haproxy_registrations&lt;/code&gt; top dictionnary.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;how-to-use&#34;&gt;How to use&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Extra HAPROXY configuration can be done by overriding the default
+registry, &lt;strong&gt;mc_haproxy.settings&lt;/strong&gt; via the
+&lt;strong&gt;makina-states.services.proxy.haproxy&lt;/strong&gt; prefix as usual.&lt;/li&gt;
+&lt;li&gt;Look available tweaks by calling &lt;code&gt;salt-call mc_haproxy.settins&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;After, add &lt;code&gt;makina-states.haproxy_registrations.*&lt;/code&gt; entries to
+add proxies.&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;ssl is used and reused from &lt;strong&gt;makina-states.localsettings.ssl&lt;/strong&gt;&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;First, activate haproxy and run the states a first time:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call -lall state.sls makina-states.services.proxy.haproxy
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The most complete form to register a minion with haproxy is as follow&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.&amp;lt;arbitrar id&amp;gt;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;&amp;lt;local_ip of backend&amp;gt;&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;frontends&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+        &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;&amp;lt;frontend_port&amp;gt;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+            &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;to_port&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;&amp;lt;dest_port&amp;gt;,&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;# optional, default to &amp;lt;frontend_port&amp;gt;&lt;/span&gt;
+            &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;mode&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;&amp;lt;http/https/tcp/tcps/redis&amp;gt;&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;hosts&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;&amp;lt;hosts_to_proxy_from&amp;gt;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;      &lt;span class=&#34;c1&#34;&gt;# only useful on http(s) mode&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;regexes&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;&amp;lt;hosts_to_proxy_from&amp;gt;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;    &lt;span class=&#34;c1&#34;&gt;# only useful on http(s) mode&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;wildcards&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;&amp;lt;hosts_to_proxy_from&amp;gt;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;  &lt;span class=&#34;c1&#34;&gt;# only useful on http(s) mode&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;This declaration will help on the haproxy minion side be to configure
+appropriate haproxy &lt;strong&gt;frontends&lt;/strong&gt; and &lt;strong&gt;backends&lt;/strong&gt; objectds.&lt;/p&gt;
+
+&lt;p&gt;Notes:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;The &lt;code&gt;ip&lt;/code&gt; is the local ip of the minion to proxy requests to&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Frontends is a dictionnary of &lt;strong&gt;ports / metadata&lt;/strong&gt; describing how
+to configure haproxy to proxy to the minion:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;code&gt;mode&lt;/code&gt; is node the &lt;strong&gt;haproxy&lt;/strong&gt; mode but a switch for us to
+know how to proxy requests.&lt;/p&gt;
+
+&lt;p&gt;http/https&lt;/p&gt;
+
+&lt;dl&gt;
+&lt;dd&gt;Proxy HTTP(s) requests, depending on an additionnal
+&lt;strong&gt;regexes/wildcards/hosts&lt;/strong&gt; knob
+regexes
+
+&lt;dl&gt;
+&lt;dd&gt;list of regexeses to match in the form
+[host_regex, PATH_URI_regex]
+wildcards&lt;/dd&gt;
+&lt;dd&gt;list to strings which insensitive match if the
+header &lt;code&gt;HOST&lt;/code&gt; endswith
+hosts&lt;/dd&gt;
+&lt;dd&gt;list to strings which insensitive match exactly
+the header &lt;code&gt;HOST&lt;/code&gt;&lt;/dd&gt;
+&lt;/dl&gt;&lt;/dd&gt;
+&lt;dt&gt;tcp/tcps&lt;/dt&gt;
+&lt;dd&gt;configure a tcp based proxy, here
+&lt;strong&gt;regexes/wildcards/hosts&lt;/strong&gt; is useless. Be warn,
+&lt;strong&gt;main_cert&lt;/strong&gt; will be the served ssl certicated as no
+SNI is possible
+redis&lt;/dd&gt;
+&lt;dd&gt;configure a redis frontend (tcp based, so also no use
+of &lt;strong&gt;regexes/wildcards/hosts&lt;/strong&gt;) based on
+&lt;a href=&#34;https://support.pivotal.io/hc/en-us/articles/205309388-How-to-setup-HAProxy-and-Redis-Sentinel-for-automatic-failover-between-Redis-Master-and-Slave-servers&#34;&gt;https://support.pivotal.io/hc/en-us/articles/205309388-How-to-setup-HAProxy-and-Redis-Sentinel-for-automatic-failover-between-Redis-Master-and-Slave-servers&lt;/a&gt;&lt;/dd&gt;
+&lt;/dl&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;code&gt;to_port&lt;/code&gt; can be used to override the port to proxy on the
+minion side if it is not the same that on haproxy side&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If &lt;code&gt;frontends&lt;/code&gt; are not specificied, you need to specify
+&lt;strong&gt;ip&lt;/strong&gt; and one of &lt;strong&gt;hosts/regexes/wildcards&lt;/strong&gt; as we default
+to configure http &amp;amp; https proxies.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If &lt;code&gt;frontends&lt;/code&gt; are specified, you need to respecify all of
+them, no default will be used in this case.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;80 &amp;amp; 443 frontend port modes default to respectivly http &amp;amp; https.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;By default, if no frontends are specified, we setup http &amp;amp; https
+frontends. The SSL backend will try for forward first on 443, then
+on 80.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Acls order for http mode is not predictible yet and will be
+difficult. Prefer to use a sensible configuration for your case
+rather than complicating the ACLS generation algorythm.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;proxy&#34;&gt;proxy&lt;/h3&gt;
+
+&lt;p&gt;If we have a minion haproxy1 and want to proxy to myapp2-1 on http &amp;amp;
+https when a request targeting &amp;ldquo;www.super.com&amp;rdquo; arrise. all we have to do
+is to&lt;/p&gt;
+
+&lt;p&gt;in haproxy1 pillar:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haproxy1&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;hosts&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;www.super.com&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&#34;wildcard&#34;&gt;wildcard&lt;/h3&gt;
+
+&lt;p&gt;Wilcards are also supported via the wildcards key&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haproxy1&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;wildcards&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#39;*.www.super.com&amp;#39;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&#34;regex&#34;&gt;regex&lt;/h3&gt;
+
+&lt;p&gt;regex is also supported via the regexes key&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haproxy1&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;regexes&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#39;my.*supemyappost.com&amp;#39;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;#39;^/api&amp;#39;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;if we want to proxy http to port &amp;ldquo;81&amp;rdquo; of myapp2-1 &amp;amp; https to 444&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haproxy1&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;hosts&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;www.super.com&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;frontends&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;80&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;  &lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;to_port&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;81&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;443&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;to_port&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;444&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&#34;redis&#34;&gt;redis&lt;/h3&gt;
+
+&lt;p&gt;We have a special redis mode to do custom health checks on a redis cluster&lt;/p&gt;
+
+&lt;p&gt;Short form if you use the default port on both ends:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haredis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;# localip of myapp2-1&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;frontends&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;6378&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;  &lt;span class=&#34;p p-Indicator&#34;&gt;{}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&#34;long-forms&#34;&gt;Long forms&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haredis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;frontends&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;66378&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;to_port&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;666&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;mode&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;redis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;6378&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;mode&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;redis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h4 id=&#34;redis-auth-is-supported-this-way&#34;&gt;Redis auth is supported this way&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haredis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;frontends&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;6378&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;password&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;foobar&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;mode&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;redis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&#34;rabbitmq&#34;&gt;rabbitmq&lt;/h3&gt;
+
+&lt;p&gt;We have a special rabbitmq mode to set sane options on backend for
+rabbitmq Short form if you use the default port on both ends:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haredis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;frontends&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;5672&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;  &lt;span class=&#34;p p-Indicator&#34;&gt;{}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Long forms&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.haredis&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;10.0.3.14&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;frontends&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;55672&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;to_port&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;333&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;mode&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;rabbitmq&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;5672&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;mode&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;rabbitmq&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&#34;register-2-backends-for-one-same-frondend&#34;&gt;Register 2 backends for one same frondend&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.mc_cloud_http1&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+   &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;ip&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;10.5.5.2&amp;quot;&lt;/span&gt;
+     &lt;span class=&#34;s&#34;&gt;&amp;quot;hosts&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;quot;es2.devhost5-1.local&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;
+     &lt;span class=&#34;s&#34;&gt;&amp;quot;frontends&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+       &lt;span class=&#34;s&#34;&gt;&amp;quot;80&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+         &lt;span class=&#34;s&#34;&gt;&amp;quot;mode&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;http&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.haproxy_registrations.mc_cloud_http2&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+   &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;ip&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;10.5.5.666&amp;quot;&lt;/span&gt;
+     &lt;span class=&#34;s&#34;&gt;&amp;quot;hosts&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;quot;es2.devhost5-2.local&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;]&lt;/span&gt;
+     &lt;span class=&#34;s&#34;&gt;&amp;quot;frontends&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+       &lt;span class=&#34;s&#34;&gt;&amp;quot;80&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+         &lt;span class=&#34;s&#34;&gt;&amp;quot;mode&amp;quot;&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;http&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>LXC containers management</title>
+      <link>/cloud/lxc/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/cloud/lxc/</guid>
+      <description>
+
+&lt;p&gt;workflow:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;WARNING currently only those backing store are supported/tested:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;dir&lt;/li&gt;
+&lt;li&gt;overlayfs&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Go into makina-states folder:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; /srv/makina-states
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If wanted, edit database, specially &lt;code&gt;vms&lt;/code&gt;, &amp;amp; &lt;code&gt;cloud_vm_attrs&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;vim etc/makina-states/database.sls
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Define shell variable to copy/paste following commands:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;controller&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname -f&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;cn&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname -f&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;c1&#34;&gt;# export cn=&amp;quot;c.foo.net&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;vm&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;d.foo.net&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;vm_tmpl&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;makinastates&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;preparation-on-the-controller&#34;&gt;Preparation on the controller&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Refresh cache:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;# bin/salt-call -lall \&lt;/span&gt;
+&lt;span class=&#34;c1&#34;&gt;#  state.sls makina-states.services.cache.memcached # the first time&lt;/span&gt;
+service memcached restart
+_scripts/refresh_makinastates_pillar.sh
+&lt;span class=&#34;c1&#34;&gt;# or with limit on hosts that the run will be&lt;/span&gt;
+&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; _scripts/refresh_makinastates_pillar.sh
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;preinstalling-makina-states-controller-each-compute-node&#34;&gt;Preinstalling makina-states (controller &amp;amp; each compute node)&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Installing it:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/makinastates/install.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;configure-the-dns-on-a-full-makina-states-infra-with-mc-pillar&#34;&gt;Configure the dns on a full makina-states infra with mc_pillar&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/controller.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2 id=&#34;compute-node-related-part&#34;&gt;Compute node related part&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Configure compute_node with:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/compute_node.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2 id=&#34;cooking-and-delivery-of-container-container-templates&#34;&gt;Cooking and delivery of container / container templates&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Initialise a lxc container that will be the base of our image (after
+creation go edit in it until sastified of the result):&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,lxc&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/create_container.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Synchronise it to an offline image, this will copy the container to the
+image, and remove parts from it (like sshkeys) to impersonate it:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/snapshot_container.yml -e &lt;span class=&#34;s2&#34;&gt;&amp;quot;lxc_template=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt; lxc_container_name=lxc&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Arguments:&lt;/p&gt;
+
+&lt;p&gt;ANSIBLE_TARGETS
+    : compute node where the container resides (must be in
+      ansible inventary)&lt;/p&gt;
+
+&lt;p&gt;lxc_template
+    : lxc image to create&lt;/p&gt;
+
+&lt;p&gt;lxc_container_name
+    : lxc container which serve as a base for the image&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Transfer the template to the compute node where you want to spawn
+containers from that image:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+ ansible/plays/cloud/sync_container.yml &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+     -e &lt;span class=&#34;s2&#34;&gt;&amp;quot;lxc_orig_host=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt; lxc_container_name=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Arguments:&lt;/p&gt;
+
+&lt;p&gt;ANSIBLE_TARGETS
+    : both orig and dest&lt;/p&gt;
+
+&lt;p&gt;lxc_host
+    : where to transfer container/template&lt;/p&gt;
+
+&lt;p&gt;lxc_orig_host
+    : where from transfer container/template&lt;/p&gt;
+
+&lt;p&gt;lxc_container_name
+    : lxc container to transfer&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;initialise-a-container&#34;&gt;Initialise a container&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Initialise and finish the container provisioning (from scratch)&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/create_container.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Arguments:&lt;/p&gt;
+
+&lt;p&gt;ANSIBLE_TARGETS
+    : compute node where the container resides (must be in ansible inventary) &amp;amp; lxc container to create&lt;/p&gt;
+
+&lt;p&gt;lxc_from_container
+    : lxc container from which initing the container&lt;/p&gt;
+
+&lt;p&gt;lxc_backing_store
+    : (opt) backing store to use&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Initialise and finish the container provisioning (from template):&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,vm&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/cloud/create_container.yml -e &lt;span class=&#34;s2&#34;&gt;&amp;quot;lxc_from_container=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Special case: use overlayfs to create the container:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+ ansible/plays/cloud/create_container.yml &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  -e &lt;span class=&#34;s2&#34;&gt;&amp;quot;lxc_from_container=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$vm_tmpl&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt; lxc_backing_store=overlayfs&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

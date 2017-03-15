@@ -1,0 +1,265 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Registries &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Design" href="index.html"/>
+        <link rel="next" title="Formulaes" href="formulaes.html"/>
+        <link rel="prev" title="Main states kind segregation" href="organization.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+<ul class="simple">
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Custom states modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/modules/index.html">Execution modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/states/index.html">States modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/grains/index.html">makina-states grains modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/api/index.html">Api  modules</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#usage">Usage</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../ref_index.html">Reference</a> &raquo;</li>
+      
+          <li><a href="index.html">Design</a> &raquo;</li>
+      
+    <li>Registries</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../_sources/v1/ref_design/registries.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="registries">
+<h1>Registries<a class="headerlink" href="#registries" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="registries-types">
+<h2>Registries types<a class="headerlink" href="#registries-types" title="Permalink to this headline">¶</a></h2>
+<p>For each kind of configurations, we use salt execution modules as settings storages to store metadata, configuration settings and state inclusion registry. We have &#8220;global registries&#8221;, inner subregistries and &#8220;sub inner registries&#8221; like &#8220;services&#8221;, &#8220;services.settings&#8221; and &#8220;php.settings&#8221; registries.</p>
+<p>Metadata registry &amp; inclusion registries are only are mandatory for global sub registries.</p>
+<p>Those registries are simple python dictionnaries.</p>
+<p>The modules are many of the mc_states.mc_* modules (mc_services, mc_nodetypes, mc_php, etc)</p>
+<div class="section" id="metadata">
+<h3>Metadata<a class="headerlink" href="#metadata" title="Permalink to this headline">¶</a></h3>
+<p>Registry which stock a name (eg: nodetypes, localsettings, services, controllers) and the global registries to load before this registry.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;controllers&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;bases&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;localsettings&#39;</span><span class="p">],</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="settings">
+<h3>Settings<a class="headerlink" href="#settings" title="Permalink to this headline">¶</a></h3>
+<p>Registry which stock arbitrary configuration settings related to the current registry.
+Eg:</p>
+<blockquote>
+<div><ul class="simple">
+<li>apache: registry.worker -&gt; the mpm worker</li>
+<li>localsettings: locations -&gt; common path prefixes for various loations (/usr/bin, salt root)</li>
+</ul>
+</div></blockquote>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s1">&#39;port&#39;</span><span class="p">:</span> <span class="mi">1234</span><span class="p">,</span>
+    <span class="s1">&#39;password&#39;</span><span class="p">:</span> <span class="s1">&#39;foo&#39;</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="registry">
+<h3>Registry<a class="headerlink" href="#registry" title="Permalink to this headline">¶</a></h3>
+<p>This registry will contain the <strong>states prefix</strong> and <strong>grains prefix</strong> to construct autoinclusion slses files.
+It contains also the &#8216;default inclusion status&#8217; for any linked states in the <strong>defaults</strong> key.
+This registry will load then from configuration the state of inclusion of any included/configured sub state and feed some shortcuts like <strong>actives</strong>, <strong>is</strong> (<strong>has</strong> is a copy/synonym of <strong>is</strong>) and <strong>unactivated</strong> settings.</p>
+<p>For example, if you have php disabled as a default, but have installed or enabled it via the pillar, the registry will load it as &#8216;active&#8217; thus triggering the autoinclusion of &#8216;php&#8217; during an highstate.
+This registry may also be queried from any state field to known if a state is active (eg: querying if we are on a devhost by looking if devhost is in the nodetypes registry.</p>
+<p>This registry lool like:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>{
+    &#39;states_pref&#39;: &#39;makina-states.services&#39;,
+    &#39;grains_pref&#39;: &#39;makina-states.services&#39;,
+    &#39;actives&#39;: [{&#39;php.fpm&#39;:{&#39;active&#39;: True} }],
+     &#39;unactivated&#39; [{&#39;php.modphp&#39;:{&#39;active&#39;: False} }],
+     &#39;defaults&#39;: {
+        &#39;php.fpm&#39;:{&#39;active&#39;: True} },
+        &#39;php.modphp&#39;:{&#39;active&#39;: False},
+     }
+     &#39;is&#39; : {&#39;modphp&#39;: False, &#39;phpfpm&#39;: True},
+     &#39;has&#39; : {&#39;modphp&#39;: False, &#39;phpfpm&#39;: True},
+}
+</pre></div>
+</div>
+<p>The default general order of inclusion is as follow:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Local settings</li>
+<li>Controllers</li>
+<li>Nodes Types</li>
+<li>Services</li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="formulaes.html" class="btn btn-neutral float-right" title="Formulaes">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="organization.html" class="btn btn-neutral" title="Main states kind segregation"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

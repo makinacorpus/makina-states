@@ -1,0 +1,313 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mc_burp / burp functions &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Execution modules" href="index.html"/>
+        <link rel="next" title="mc_casperjs / casperjs/npm registry" href="mc_casperjs.html"/>
+        <link rel="prev" title="mc_bind / named/bind functions" href="mc_bind.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+<ul class="simple">
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Custom states modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Execution modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../states/index.html">States modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../grains/index.html">makina-states grains modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/index.html">Api  modules</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../v1/index.html">Makina-states V1 documentation (OBSOLETE)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../v1/index.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../v1/index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Custom states modules</a> &raquo;</li>
+      
+          <li><a href="index.html">Execution modules</a> &raquo;</li>
+      
+    <li>mc_burp / burp functions</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../_sources/api/modules/mc_burp.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <span class="target" id="module-mc_states.modules.mc_burp"></span><div class="section" id="mc-burp-burp-functions">
+<span id="module-mc-burp"></span><h1>mc_burp / burp functions<a class="headerlink" href="#mc-burp-burp-functions" title="Permalink to this headline">¶</a></h1>
+<p>burp settings</p>
+<dl class="function">
+<dt id="mc_states.modules.mc_burp.settings">
+<code class="descclassname">mc_states.modules.mc_burp.</code><code class="descname">settings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_burp.settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>burp settings
+server generates its ca
+server generate locally the client configuration and push it via rsync
+to clients</p>
+<p>prefix: makina-states.services.backups.burp</p>
+<p>Server opts (prefix: makina-states.services.backups.burp.server_conf)</p>
+<blockquote>
+<div><ul class="simple">
+<li>fqdn</li>
+<li>port</li>
+<li>status_port</li>
+<li>client_port</li>
+<li>client_status_port</li>
+<li>directory</li>
+<li>clientconfdir</li>
+<li>pidfile</li>
+<li>hardlinked_archive</li>
+<li>working_dir_recovery_method</li>
+<li>max_children</li>
+<li>max_status_children</li>
+<li>umask</li>
+<li>syslog</li>
+<li>stdout</li>
+<li>client_can_delete</li>
+<li>client_can_force_backup</li>
+<li>client_can_list</li>
+<li>client_can_restore</li>
+<li>client_can_verify</li>
+<li>version_warn</li>
+<li>keep</li>
+<li>timer_script</li>
+<li>timer_arg</li>
+<li>ca_conf</li>
+<li>ca_name</li>
+<li>ca_server_name</li>
+<li>ca_burp_ca</li>
+<li>ssl_cert</li>
+<li>ssl_key</li>
+<li>ssl_key_password</li>
+<li>ssl_dhfile</li>
+<li>notify_failure_script</li>
+<li>notify_failure_arg</li>
+<li>server_script_pre</li>
+<li>server_script_pre_arg</li>
+<li>server_script_pre_notify</li>
+<li>server_script_post</li>
+<li>server_script_post_arg</li>
+<li>server_script_post_run_on_fail</li>
+<li>server_script_post_notify</li>
+<li>restore_client</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt>client opts (client_common and client.&lt;fqdn&gt;)</dt>
+<dd><ul class="first last simple">
+<li>(prefix: makina-states.services.backups.burp.client_common)</li>
+<li>(prefix: makina-states.services.backups.burp.clients.&lt;fqdn&gt;)</li>
+<li>dedup_group</li>
+<li>mode</li>
+<li>port</li>
+<li>pidfile</li>
+<li>syslog</li>
+<li>stdout</li>
+<li>progress_counter</li>
+<li>ratelimit</li>
+<li>network_timeout</li>
+<li>autoupgrade_dir</li>
+<li>autoupgrade_os</li>
+<li>server_can_restore</li>
+<li>cross_filesystem</li>
+<li>cross_all_filesystems</li>
+<li>encryption_password</li>
+<li>ca_burp_ca</li>
+<li>ca_csr_dir</li>
+<li>ssl_cert</li>
+<li>ssl_key</li>
+<li>ssl_ciphers</li>
+<li>backup_script_pre</li>
+<li>backup_script_post</li>
+<li>restore_script_pre</li>
+<li>restore_script_post</li>
+<li>include</li>
+<li>exclude</li>
+<li>exclude_ext</li>
+<li>exclude_regex</li>
+<li>exclude_fs</li>
+<li>min_file_size</li>
+<li>max_file_size</li>
+<li>nobackup</li>
+<li>read_fifo</li>
+<li>read_all_fifos</li>
+<li>read_blockdev</li>
+<li>read_all_blockdevs</li>
+<li>exclude_comp</li>
+<li>cron_periodicity: automaticly spray all around the hour</li>
+<li>cron_cmd</li>
+<li>restore_client</li>
+<li>ssh_port (default 22)</li>
+<li>ssh_username (default root)</li>
+</ul>
+</dd>
+</dl>
+<p>For each client you can define a ssh gateway
+(eg: for VMs with a private ip)</p>
+<p>Extra params are:</p>
+<blockquote>
+<div><ul class="simple">
+<li>ssh_gateway: ip[:port] (default: 22)</li>
+<li>ssh_gateway_user</li>
+<li>ssh_gateway_key</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mc_casperjs.html" class="btn btn-neutral float-right" title="mc_casperjs / casperjs/npm registry">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mc_bind.html" class="btn btn-neutral" title="mc_bind / named/bind functions"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta name="robots" content="noindex"><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Manage ssl certificates | Makina States</title><meta name="description" content="" />
+<meta property="og:type" content="article" />
+<meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
+<meta property="og:article:modified_time" content="0001-01-01 00:00:00 &#43;0000 UTC" /><meta property="og:article:tag" content="topics" /><meta property="og:article:tag" content="ssl" /><meta property="og:locale" content="en_US">
+<meta property="og:title" content="Manage ssl certificates">
+<meta property="og:image" content="/images/">
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="1500" />
+<meta property="og:image:height" content="800" />
+<meta property="og:description" content=""/>
+<meta property="og:site_name" content="Makina States">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/favicons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/images/favicons/favicon-16x16.png" sizes="16x16">
+<link rel="manifest" href="/images/favicons/manifest.json">
+<link rel="mask-icon" href="/images/favicons/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="msapplication-TileImage" content="/images/favicons/mstile-144x144.png">
+<meta name="theme-color" content="#ffffff">
+<link rel="shortcut icon" href="/images/favicons/favicon.ico">
+<link rel="dns-prefetch" href="/">
+
+<link rel="preconnect" href="/">
+<link rel="canonical" href="/topics/ssl/">
+
+
+<link rel="prefetch" href="/topics/install/">
+<link rel="prerender" href="/topics/install/">
+
+
+<link rel="prefetch" href="/topics/database/">
+<link rel="prerender" href="/topics/database/">
+
+<link rel="stylesheet" href="/css/style.min.css">
+  
+</head>
+<body>
+	
+<header id="site-header" class="site-header">
+  <div class="hugo-meta" title="Hugo version 1">
+    <a href="/" id="home-link">
+      <img src="/images/MakinaCorpus_logo_vert_blanc.svg" alt="" />
+    </a>
+  </div>
+  <div id="goto-source">
+    <ul>
+      <li>
+        <a href="https://github.com/makinacorpus/makinastates/doc/hugo/content" target="_blank">
+          <i class="icon-github"></i> Source
+        </a>
+      </li>
+    </ul>
+  </div>
+<div id="search-wrapper">
+  <form action="" id="search-form" role="search">
+    <label for="search" class="icon-search" id="search-button"></label>
+    <input type="search" id="search-input" class="site-search"
+        autocomplete="off"
+        aria-label="Search the Makina States website..."
+        placeholder="Search..." required />
+    <input type="hidden" id="search-index" value="/site-index.json"/>
+  </form>
+</div>
+<div id="search-results-wrapper">
+  <div id="search-results-count"></div>
+  <ul id="search-results">
+    
+    
+  </ul>
+</div>
+</header>
+
+  <div class="all-content-wrapper" id="all-content-wrapper">
+		
+<span id="page-top"></span>
+<main class="main">
+	<article class="content" id="manage-ssl-certificates">
+		<header class="content-header">
+<nav class="breadcrumb">
+	<ul class="breadcrumbs">
+		<li>
+			<a class="crumb" href="/topics">
+    		<span>Topics</span>
+  		</a>
+		</li>
+	</ul>
+</nav>
+
+<h1 class="page-title topics" id="manage-ssl-certificates">Manage ssl certificates</h1>
+<div class="content-header-links">
+  
+  <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makinastates/doc/hugo/contentedit/master/content/topics/ssl/index.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
+
+	<ul class="tags">
+		<li class="icon"><i class="icon-tags"></i></li>
+		
+		<li><a class="tag" href="/tags/topics">topics</a></li>
+		
+		<li><a class="tag" href="/tags/ssl">ssl</a></li>
+		
+	</ul>
+
+
+		</header>
+		<div class="body-copy" data-section=topics>
+		
+
+<h2 id="general-use">General use</h2>
+
+<ul>
+<li>Management is done via the pillar, and via the <strong>makina-states.localsettings.ssl</strong> sls.</li>
+
+<li><p>After configuration, apply it to your system via</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>bin/salt-call -l all state.sls makina-states.localsettings.ssl
+</code></pre></div></li>
+
+<li><p>Or via ansible (remote host)::</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$hostname</span><span class="s2">&quot;</span> bin/ansible-playbook <span class="se">\</span>
+    ansible/plays/saltcall.yml -e saltargs makina-states.localsettings.ssl
+</code></pre></div></li>
+</ul>
+
+<h2 id="add-a-certificate-to-the-system-trust-system-add-a-ca">Add a certificate to the system trust system (add a &lsquo;ca&rsquo;)</h2>
+
+<ul>
+<li><p>pillar/pillar.d/cert.sls</p>
+<div class="highlight"><pre><code class="language-yaml" data-lang="yaml"><span></span><span class="c1">#                                   &lt;CN&gt;</span>
+<span class="l l-Scalar l-Scalar-Plain">makina-states.localsettings.ssl.cas.foobar</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">|</span>
+  <span class="no">-----BEGIN CERTIFICATE-----</span>
+  <span class="no">MIIDejCCAmKgAwIBAgICA+gwDQYJKoZIhvcNAQELBQAwfzELMAkGA1UEBhMCRlIx</span>
+  <span class="no">DDAKBgNVBAgMA1BkTDEPMA0GA1UEBwwGTmFudGVzMRYwFAYDVQQKDA1NYWtpbmEg</span>
+  <span class="no">Q29ycHVzMQ8wDQYDVQQDDAZmb29iYXIxKDAmBgkqhkiG9w0BCQEWGWNvbnRhY3RA</span>
+  <span class="no">bWFraW5hLWNvcnB1cy5jb20wIBcNMTYwNTA0MTA0NjAzWhgPMzAzNDExMDQxMDQ2</span>
+  <span class="no">MDNaMH8xCzAJBgNVBAYTAkZSMQwwCgYDVQQIDANQZEwxDzANBgNVBAcMBk5hbnRl</span>
+  <span class="no">czEWMBQGA1UECgwNTWFraW5hIENvcnB1czEPMA0GA1UEAwwGZm9vYmFyMSgwJgYJ</span>
+  <span class="no">KoZIhvcNAQkBFhljb250YWN0QG1ha2luYS1jb3JwdXMuY29tMIIBIjANBgkqhkiG</span>
+  <span class="no">9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnLYWB4f9lRVc/fbqOvOCNTCefWnNwKehyf9z</span>
+  <span class="no">LKzZ93ki5bHYLKUoI7tWK2UOKNbnADhEfgGiWNcGtdrr9wc4FFLFR43tUfIxMfqe</span>
+  <span class="no">wUcsv06V9IsmIP4Pi+knAPZG5fXystlPfLjom4bCx5mQr2SGIijw2ogYHKAIdgZJ</span>
+  <span class="no">rviDWM2XIbdEx0TIqkOAokKqUtDr8ZEG289P5v5mrHjacAC8GzhxCgg1RWmaJOhW</span>
+  <span class="no">jc6bfdgLEOQCwt3hE92r+qrh0JjxBINVLE6IO8dL1jGxN8O+U/sQdhDvuN1bwyXd</span>
+  <span class="no">8117+FSP8C+nnOK37MI27qv0D+sEZXZXAdEAY6w0WF4EAuY/kwIDAQABMA0GCSqG</span>
+  <span class="no">SIb3DQEBCwUAA4IBAQBHG6MkNhaeXWqMqzcYmLWZQZ6hONfRaK7lZlKmly6yVzLJ</span>
+  <span class="no">Y6v5wPMtWDzE0ALS0K2nhG4dEuEo1D1/dQhdz+zmJC5+xVnCzzWIxfNs0GgQMTVj</span>
+  <span class="no">eEmp3Hl0QBwe66swFaMKPz9+1eiQKaTE4pcwOXGEFwephaJWkswX4Fw0o9CA7NLl</span>
+  <span class="no">z0uIpHB12tcGlxS7joraj6aV4nKj+T3xVzsQqR2x5jbZMzsn/1W4afeSKZkBWiNI</span>
+  <span class="no">Z1cASST8OvDiBkQna7LNqDVfogezK0h/8Wbqp5dipeNIY9xu/L4Hr9+Djb9mOwp+</span>
+  <span class="no">gKtKM4seNltkeKgYrupAUecK3Rs+xiF9j5xiv2X1</span>
+  <span class="no">-----END CERTIFICATE-----</span>
+</code></pre></div></li>
+</ul>
+
+<h2 id="add-a-certificate-and-it-s-key-for-reuse-in-makina-states-packages-applications">Add a certificate and it&rsquo;s key for reuse in makina-states packages applications</h2>
+
+<ul>
+<li>The certicate can be either a selfsigned certificate or a certificate and its
+authority chain with the certificate itself comes first</li>
+<li>pillar/pillar.d/cert.sls</li>
+</ul>
+<div class="highlight"><pre><code class="language-yaml" data-lang="yaml"><span></span><span class="c1">#                                            &lt;CN&gt;</span>
+<span class="l l-Scalar l-Scalar-Plain">makina-states.localsettings.ssl.certificates.titi</span><span class="p p-Indicator">:</span>
+ <span class="p p-Indicator">-</span> <span class="p p-Indicator">|</span>
+   <span class="no">-----BEGIN CERTIFICATE-----</span>
+   <span class="no">MIIDdjCCAl6gAwIBAgICA+gwDQYJKoZIhvcNAQELBQAwfTELMAkGA1UEBhMCRlIx</span>
+   <span class="no">DDAKBgNVBAgMA1BkTDEPMA0GA1UEBwwGTmFudGVzMRYwFAYDVQQKDA1NYWtpbmEg</span>
+   <span class="no">Q29ycHVzMQ0wCwYDVQQDDAR0aXRpMSgwJgYJKoZIhvcNAQkBFhljb250YWN0QG1h</span>
+   <span class="no">a2luYS1jb3JwdXMuY29tMCAXDTE2MDUwNDExMDcxNFoYDzMwMzQxMTA0MTEwNzE0</span>
+   <span class="no">WjB9MQswCQYDVQQGEwJGUjEMMAoGA1UECAwDUGRMMQ8wDQYDVQQHDAZOYW50ZXMx</span>
+   <span class="no">FjAUBgNVBAoMDU1ha2luYSBDb3JwdXMxDTALBgNVBAMMBHRpdGkxKDAmBgkqhkiG</span>
+   <span class="no">9w0BCQEWGWNvbnRhY3RAbWFraW5hLWNvcnB1cy5jb20wggEiMA0GCSqGSIb3DQEB</span>
+   <span class="no">AQUAA4IBDwAwggEKAoIBAQDMRnNmGHdSfjmv/HQSLKQ0aIhukNQJP1/pVYfoHN/X</span>
+   <span class="no">BE5pbbM3voZaecq5puJV1CAojYO9XkIY6FFOQnXbr+285ectuTHFHGTQpw/cEtUd</span>
+   <span class="no">uHR7SXdhcfFOMw2og/WcdiOj5+WqEkm5hsT5QWMFTYQxXsRtwWVxx9JzBSStPpzi</span>
+   <span class="no">aJ1bfg51F+iEFvnkAsYN6++CAGp93pKNhKKyPx52fiiSwVH5+7Iouw5BzX68DQK5</span>
+   <span class="no">1i2YoHDRKdZmBJ/wVUgISsuHEf4JhKMfyiQWvfjqNL5FQx4nEnhHbcrYr+/h/2+A</span>
+   <span class="no">7IdscdbpQa4mKK6+5B9EIjR/c/6LKmXhaQuNwg+UaP9JAgMBAAEwDQYJKoZIhvcN</span>
+   <span class="no">AQELBQADggEBAB/egp+ifuMfl7tFiRiO95QeIu6YLNSs6l2ZQ8uHSqlQ6/8GSq/J</span>
+   <span class="no">C1vt/yy4nPZ/14AonlIxWiKMH/1I96Y7W/8KZ5v9DbYsjGwO1TwqNxsqxjjMlW4g</span>
+   <span class="no">Qb1L4vnAq+25HhX0M1xiJWErgPfzMCVTyOhhuVaIPVTZUBhN5GsVtzuzeC4Vpg1O</span>
+   <span class="no">wAhBRgbyi9gxdWoxeaujColAoiwBYgLt6d+jg7I7RSYvd6bIixc00G0J4zY0d8jB</span>
+   <span class="no">ztK3UXbf4G0Bt7R/DcyZ0Tsp51+d5vpD+UjKkpijwhDkUGNC1ljD5M95NlmbCPdp</span>
+   <span class="no">5ODKbWRuHLcUyzEAjzplwC6FpAlvN11SanA=</span>
+   <span class="no">-----END CERTIFICATE-----</span>
+ <span class="p p-Indicator">-</span> <span class="p p-Indicator">|</span>
+   <span class="no">-----BEGIN PRIVATE KEY-----</span>
+   <span class="no">MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDMRnNmGHdSfjmv</span>
+   <span class="no">/HQSLKQ0aIhukNQJP1/pVYfoHN/XBE5pbbM3voZaecq5puJV1CAojYO9XkIY6FFO</span>
+   <span class="no">QnXbr+285ectuTHFHGTQpw/cEtUduHR7SXdhcfFOMw2og/WcdiOj5+WqEkm5hsT5</span>
+   <span class="no">QWMFTYQxXsRtwWVxx9JzBSStPpziaJ1bfg51F+iEFvnkAsYN6++CAGp93pKNhKKy</span>
+   <span class="no">Px52fiiSwVH5+7Iouw5BzX68DQK51i2YoHDRKdZmBJ/wVUgISsuHEf4JhKMfyiQW</span>
+   <span class="no">vfjqNL5FQx4nEnhHbcrYr+/h/2+A7IdscdbpQa4mKK6+5B9EIjR/c/6LKmXhaQuN</span>
+   <span class="no">wg+UaP9JAgMBAAECggEAPkn9RlSPjggPbyp7+k7Cg3icoZpoDanVhUEfgBfN6bLW</span>
+   <span class="no">di+NRqJCNbSNrK7GtYVJiRQd59CmNxIgOMzrQ2ISDFfOdpLSKljOJRHMND9J3RYx</span>
+   <span class="no">7qYoUP59pmrK72fNrTgZBhHgZkvNT1VZGuhlWWiZtrQ/EXi3hkp4UbpvxKQjEqZn</span>
+   <span class="no">o2+vbUYh440dKdw+iJnDAYZi/1yFCqiIxkWUSFFky8gjppQ7CBeQ4LEHKPodd4A2</span>
+   <span class="no">ccnK8op6H5n26Xqdi65G0SR+X39xtEGp8pzUQW8XaXCjEtBNhD95ymGXEmq8KfqG</span>
+   <span class="no">XcN6nBMVp5V9X4+xFg2hBsFPsL6xrT7deASBKyDQAQKBgQD9VG8okA1rd11ttyvi</span>
+   <span class="no">DhIV6PlYBxhEex4lGeqOrjETKMsAFDsJ5Ntlr3MiXiLIuQ0pAcu3tpxNEkTLkcHo</span>
+   <span class="no">e0VpP7HCr14vnCpZyB1B8wTmbBJVMXkD+oaN7pzEJhauaombfDRH4NKd87lgveLG</span>
+   <span class="no">3x/CFHdJfEvxwjRdpER+ZxJvIQKBgQDObaa9WcyZnuB7R109TTiZgSGo1XljF1m9</span>
+   <span class="no">Ji+85sSdV1mHnUyghgszbnW5s8dM1sweY5ZAONFsF9j06iL2h1XnGlgKHBL22UGH</span>
+   <span class="no">o5nc5/oHfuc/YmRdSUCgmwSZixrInFjfvUiE/tR/j4z2AnpEB4/8genEm+elXYIE</span>
+   <span class="no">uodJpj3TKQKBgQChY+FNXjiudmU3OLLkWUJ8Yug3hI2ZUzZpPJGKRL9PDXYGntzd</span>
+   <span class="no">+MctiRE4m/BdIEeaEGLQr630C+d4KWv3yFD4NHPzK/Y9LqhsemjpUwGUKtWjINmQ</span>
+   <span class="no">B1MhqRqGfB2HEKiKPh6wjDKiHlvDnjWTrSJ2asN0NZPMeYUTA0v/m3rLAQKBgFJZ</span>
+   <span class="no">K8sdp6Eg4CxNq8RoqcuS1/qiLmp5RjNOqHyTEpwx3GVdOtROpOk/h3ctYLQmfAcj</span>
+   <span class="no">cyzrfZ/BY6tQO+Jc2sf2mmhuCqKuyJVzjk2xvOyAk3+VoLQWJNHtBUi7VVPyCwI2</span>
+   <span class="no">YFet0NeSTIlXM68v1SDGMptcFmzBgLyiLJYU21UBAoGBAIhSvpsw3z/gAf9nbciZ</span>
+   <span class="no">9puJiPqFBld7DrCp69iaD/ryXzLfzwI3bzWR8M8TuBO6DxApiYx7Zps4QabPQZTN</span>
+   <span class="no">U4UFg0AcdRh27OUXYtGENw7W0ssZKhlII78WB+0haAwe+kQJ4aNpF0eqWXLH7thR</span>
+   <span class="no">zKKdzi+lMlG5NimeR246wBvX</span>
+   <span class="no">-----END PRIVATE KEY-----</span>
+</code></pre></div>
+
+<h2 id="add-certificates-via-the-makina-states-ext-pillar">Add certificates via the makina-states ext_pillar</h2>
+
+<ul>
+<li>When using mc_pillar deployment, edit your local <strong>etc/makina-states/database.sls</strong></li>
+<li>Take an example on the <a href="https://github.com/makinacorpus/makina-states/blob/v2/etc/makina-states/database.sls.in">database.sl</a> <strong>ssl</strong> &amp; <strong>ssl_certs</strong> section.</li>
+<li>The <strong>ssl_certs</strong> section is a mapping id / tuples of (certicate, key) mappings.
+certicate can be either a selfsigned certificate or a certificate and all the
+authority, where the certificate of the common name comes first.</li>
+<li>The <strong>ssl</strong> section is where you will map certificates described in the
+<strong>ssl_certs</strong> section to a particular minion id.
+Remember that the special <strong>default</strong> section has the purpose to map certificate
+to any minion</li>
+<li>You can add either certificates for a host by specifying them by the <strong>id</strong> index or
+configure infra wide certs by setting them in the <strong>default</strong> section.</li>
+</ul>
+
+<h2 id="reconfigure-the-ssl-system">Reconfigure the SSL system</h2>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span></span>bin/salt-call -lall state.sls makina-states.localsettings.ssl
+</code></pre></div>
+
+<h2 id="use-the-ssl-macro-in-a-state-to-register-a-certificate">Use the ssl macro in a state to register a certificate</h2>
+
+<ul>
+<li>This add the certificate inside the cloud ssl directories</li>
+
+<li><p>Then also may add it to the systemwide ssl trust<br/>
+foo.sls:</p>
+<div class="highlight"><pre><code class="language-jinja" data-lang="jinja"><span></span><span class="cp">{%</span> <span class="k">import</span> <span class="s2">&quot;makina-states/localsettings/ssl/macros.jinja&quot;</span> <span class="k">as</span> <span class="nv">ssl</span> <span class="k">with context</span> <span class="cp">%}</span><span class="x"></span>
+<span class="cp">{{</span> <span class="nv">ssl.install_certificate</span><span class="o">(</span>
+        <span class="nv">cert_string</span>
+        <span class="o">[,</span> <span class="o">[</span><span class="nv">cert_key_string</span><span class="o">]]</span>
+        <span class="o">[,</span> <span class="nv">trust</span><span class="o">=</span><span class="kp">True</span><span class="o">/</span><span class="kp">False</span><span class="o">]]</span>
+<span class="o">)</span><span class="cp">}}</span><span class="x"></span>
+</code></pre></div></li>
+
+<li><p>Parameters:</p>
+
+<p>cert_string
+    : either a certificate string (full certificate in PEM format)
+      or a path to load a certificate in PEM format
+      or a key inside the mc_ssl.settings.certificates regitry
+      (if you need an authority chain, place the certificate first)</p>
+
+<p>cert_key_string (optional)
+    : in case of cert_string is neither a certificate inline or a certificate
+      filepath, this will lookup inside the pillar for a matching certificate
+      inside the mc_ssl.settings.certificates key.</p>
+
+<p>trust (optional)
+    : boolean to tell to register the certificate to the
+      system-wide ssl trusted certe</p></li>
+</ul>
+
+		</div><div class="last-modified">Last Updated: 0001-01-01</div>
+<footer id="content-footer">
+
+
+<a href="/topics/install/" class="cf-link prev-page">
+			<i class="fa fa-chevron-left"></i>
+		<div class="page-info">
+			<span>Previous</span>
+			<h5 class="topics">Installation &amp; basic usage</h5>
+		</div>
+</a>
+
+
+	<a href="/topics/database/" class="cf-link next-page">
+		<div class="page-info">
+			<span>Next</span>
+			<h5 class="topics">Minions managment via database.sls</h5>
+		</div>
+		<i class="fa fa-chevron-right"></i>
+	</a>
+
+
+</footer>
+</article>
+</main>
+
+<aside id="toc" class="scroll-fixed-wrapper">
+  <div class="scroll-fixed-wrapper-inner">
+    <header class="toc-header">
+      <a href="#manage-ssl-certificates">
+        <h3 class="topics">Manage ssl certificates</h3>
+      </a>
+    </header>
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#general-use">General use</a></li>
+<li><a href="#add-a-certificate-to-the-system-trust-system-add-a-ca">Add a certificate to the system trust system (add a &lsquo;ca&rsquo;)</a></li>
+<li><a href="#add-a-certificate-and-it-s-key-for-reuse-in-makina-states-packages-applications">Add a certificate and it&rsquo;s key for reuse in makina-states packages applications</a></li>
+<li><a href="#add-certificates-via-the-makina-states-ext-pillar">Add certificates via the makina-states ext_pillar</a></li>
+<li><a href="#reconfigure-the-ssl-system">Reconfigure the SSL system</a></li>
+<li><a href="#use-the-ssl-macro-in-a-state-to-register-a-certificate">Use the ssl macro in a state to register a certificate</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+  <div class="fade"></div>
+</aside>
+<a href="#"
+  id="toc-toggle"
+  class="toc-open"
+  title="Toggle Table of contents..."></a>
+
+
+	</div>
+<footer id="site-footer" class="site-footer">
+<div class="footer-content">
+  
+    
+  </div>
+</footer>
+<div class="navbutton__wrapper">
+  <a class="trigger" href="#">
+    <ul class="nav__trigger">
+      <li class="nav__trigger-item nav__trigger-item--first"></li>
+      <li class="nav__trigger-item nav__trigger-item--second"></li>
+      <li class="nav__trigger-item nav__trigger-item--third"></li>
+    </ul>
+  </a>
+</div>
+<nav class="site-navigation navigation-open scroll-fixed-wrapper"
+     id="site-navigation">
+  <div class="site-navigation-inner scroll-fixed-wrapper-inner">
+    
+    
+    
+
+
+<ul class="menu menu-1">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/sphinx/api">API</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/">Home</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/topics/">Topics</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/ansible/">Ansible related configuration</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/configure/">Configuration</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/haproxy/">Haproxy</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/install/">Installation &amp; basic usage</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2 active open" href="/topics/ssl/">Manage ssl certificates</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/database/">Minions managment via database.sls</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/cloud/">Cloud</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/cloud/lxc/">LXC containers management</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+    
+  </div>
+</nav>
+<script src="/js/vendor/jquery-2.2.4.min.js"></script>
+<script src="/js/vendor/lunr.min.js"></script>
+<script src="/js/script.min.js"></script>
+
+
+
+<script async defer src="https://buttons.github.io/buttons.js"></script>
+
+<script>
+(function() {
+  if (window.location.hostname === "localhost") {
+    console.log("Analytics not running on local dev.");
+    return;
+  } else {
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o),
+        m = s.getElementsByTagName(o)[0];
+      a.async = 1;
+      a.src = g;
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+    ga('create', '', 'auto');
+    ga('send', 'pageview');
+    ga('create', '', {
+      'siteSpeedSampleRate': 100
+    });
+  }
+})();
+</script>
+
+	
+</body>
+</html>

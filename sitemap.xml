@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <url>
+    <loc>/json/dummy/</loc>
+    <lastmod>2017-03-09T16:04:24+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/tags/ansible/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/topics/ansible/</loc>
+  </url>
+  
+  <url>
+    <loc>/tags/cloud/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/cloud/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/cloud/</loc>
+  </url>
+  
+  <url>
+    <loc>/topics/configure/</loc>
+  </url>
+  
+  <url>
+    <loc>/tags/databasesls/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/tags/haproxy/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/topics/haproxy/</loc>
+  </url>
+  
+  <url>
+    <loc>/tags/installation/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/topics/install/</loc>
+  </url>
+  
+  <url>
+    <loc>/json/</loc>
+    <lastmod>2017-03-09T16:04:24+01:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/cloud/lxc/</loc>
+  </url>
+  
+  <url>
+    <loc>/tags/lxc/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/</loc>
+    <lastmod>2017-03-09T16:04:24+01:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/topics/ssl/</loc>
+  </url>
+  
+  <url>
+    <loc>/tags/minions/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/topics/database/</loc>
+  </url>
+  
+  <url>
+    <loc>/tags/ssl/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/tags/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/tags/topics/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/topics/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/topics/</loc>
+  </url>
+  
+</urlset>

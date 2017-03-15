@@ -1,0 +1,921 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>RFC: corpus, embedded project configuration with salt &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Reference" href="../ref_index.html"/>
+        <link rel="next" title="Design" href="../ref_design/index.html"/>
+        <link rel="prev" title="Reference" href="../ref_index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+<ul class="simple">
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Custom states modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/modules/index.html">Execution modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/states/index.html">States modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/grains/index.html">makina-states grains modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/api/index.html">Api  modules</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#usage">Usage</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../ref_index.html">Reference</a> &raquo;</li>
+      
+    <li>RFC: corpus, embedded project configuration with salt</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../_sources/v1/usage_projects/project_corpus.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="rfc-corpus-embedded-project-configuration-with-salt">
+<span id="project-corpus"></span><h1>RFC: corpus, embedded project configuration with salt<a class="headerlink" href="#rfc-corpus-embedded-project-configuration-with-salt" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="the-origin">
+<h2>The origin<a class="headerlink" href="#the-origin" title="Permalink to this headline">¶</a></h2>
+<p>Nowoday no one of the P/I/S/aaS existing platforms fit our needs and habits.
+No matter of the gret quality of docker, heroku or openshift, they did&#8217;nt make it for us.
+And, really, those software are great, they inspired corpus a lot !
+Please note also, that in the long run we certainly and surely integrate those
+as plain <strong>corpus</strong> drivers to install our projects on !</p>
+<p>For exemple, this is not a critisism at all, but that&#8217;s why we were not enougth
+to choose one of those platforms (amongst all of the others):</p>
+<blockquote>
+<div><p><a href="#id2"><span class="problematic" id="id3">`heroku`_</span></a></p>
+<blockquote>
+<div>non free</div></blockquote>
+<p><a class="reference external" href="http://docker.io">docker</a></p>
+<blockquote>
+<div><ul class="simple">
+<li>Not enougth stable yet, networking integration is really a problem here.
+It is doable, but just complicated and out of scope.</li>
+<li>do not implement all of our needs, it is more tied to the &#8216;guest&#8217; part
+(see next paragraphs)</li>
+<li>But ! Will certainly replace the LXC guests driver in the near future.</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt><a class="reference external" href="https://www.openshift.com/developers/deploying-and-building-applications">openshift</a></dt>
+<dd>Tied to SElinux and RedHat (we are more on the Debian front ;)).
+However, its great design inspired a lot of the corpus one.</dd>
+<dt><a class="reference external" href="https://www.openstack.org/">openstack</a></dt>
+<dd>Irrelevant and not so incompatible for the PaaS platform, but again
+we didn&#8217;t want locking, openstack would lock us in the first place.
+We want an agnostic PaaS Platform.</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="the-needs">
+<h2>The needs<a class="headerlink" href="#the-needs" title="Permalink to this headline">¶</a></h2>
+<p>That&#8217;s why we created a set of tools to build the best flexible PaaS platform
+ever. That&#8217;s why we call that not a PaaS platform but a Glue PaaS Platform :=).</p>
+<ul>
+<li><p class="first">Indeed, what we want is more of a CloudController + ToolBox + Dashboards +
+API.</p>
+</li>
+<li><p class="first">This one will be in charge of making projects install any kind of compute nodes
+running any kind of VMs smoothly and flawlessly.</p>
+</li>
+<li><p class="first">Those projects will never ever be installed directly on compute nodes but rather
+be isolated.</p>
+<blockquote>
+<div><ul class="simple">
+<li>They will be isolated primarly by isolation-level virtualisation
+systems (LXC, docker, VServer)</li>
+<li>Bue they must also be installable on plain VMs (KVM, Xen) or directly baremetal.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">We don&#8217;t want any PaaS platform to suffer from some sort of lockin.</p>
+</li>
+<li><p class="first">We prefer a generic deployment solution that scale, and better AUTOSCALE !</p>
+</li>
+<li><p class="first">All the glue making the configuration must be centralized and automatically
+orchestrated.</p>
+</li>
+<li><p class="first">This solution must not be tied to a specific tenant (baremetal,
+EC2) nor a guest driver type (LXC, docker, XEN).</p>
+</li>
+<li><p class="first">Corrolary, the <strong>low level</strong> daily tasks consists in managment of:</p>
+<blockquote>
+<div><ul class="simple">
+<li>network ( &lt; <a class="reference external" href="http://en.wikipedia.org/wiki/OSI_model#Layer_3:_network_layer">OSI L3</a>)</li>
+<li>DNS</li>
+<li>Mail</li>
+<li>operationnal supervision</li>
+<li>Security, IDS &amp; Firewalling</li>
+<li>storage</li>
+<li>user management</li>
+<li>baremetal machines</li>
+<li>hybrid clouds</li>
+<li>public clouds</li>
+<li>VMs</li>
+<li>containers (vserver, LXC, docker)</li>
+<li>operationnal supervision</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Eventually, on top of that  orchestrate projects on that infrastructure</p>
+<blockquote>
+<div><ul class="simple">
+<li>installation</li>
+<li>continenous delivery</li>
+<li>intelligent test reports, deployment reports, statistic, delivery &amp; supervision dashboards</li>
+<li>backups</li>
+<li>autoscale</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<p>Here is for now the pieces or technologies we use or are planning or already using to
+achieve all of those goals:</p>
+<ul>
+<li><p class="first">Developer environments</p>
+<ul class="simple">
+<li>makina-corpus/vms + makina-corpus/makina-states + saltstack/salt</li>
+</ul>
+</li>
+<li><p class="first">Bare metal machines provision</p>
+<ul class="simple">
+<li>makina-states + saltstack</li>
+<li>Ubuntu server</li>
+</ul>
+</li>
+<li><p class="first">VMs (guests)</p>
+<blockquote>
+<div><ul class="simple">
+<li>Ubuntu based lxc-utils LXC containers + makina-states + saltstack</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">DNS:</p>
+<blockquote>
+<div><ul class="simple">
+<li>makina-states + bind: local cache dns servers &amp; for the moment dns master
+for all zones</li>
+<li><strong>FUTURE</strong> makina-states + powerdns: dynamic  managment of all DNS zones</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Filesystem Backup</p>
+<blockquote>
+<div><ul class="simple">
+<li>burp</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Database backup</p>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/kiorky/db_smart_backup">db_smart_backup</a></li>
+</ul>
+</li>
+<li><p class="first">Network:</p>
+<blockquote>
+<div><ul class="simple">
+<li>ceph, openvswitch</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Logs, stats:</p>
+<blockquote>
+<div><ul class="simple">
+<li>now: icinga2 / pnp for nagios</li>
+<li>future: icinga2 / logstash / kibana</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Mail</p>
+<blockquote>
+<div><ul class="simple">
+<li>postfix</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">User managment (directory)</p>
+<blockquote>
+<div><ul class="simple">
+<li>Fusion directory + openldap</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Security</p>
+<blockquote>
+<div><ul class="simple">
+<li>at least shorewall &amp; fail2ban</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">CloudController</p>
+<blockquote>
+<div><ul class="simple">
+<li>saltstack</li>
+<li>makina-states + makina-states/mastersalt</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">projects installation, upgrades &amp; contineous delivery</p>
+<blockquote>
+<div><ul class="simple">
+<li>makina-states (mc_project, <a class="reference internal" href="project_creation.html#project-creation"><span>Intro</span></a>)</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">autoscale</p>
+<blockquote>
+<div><ul class="simple">
+<li>makina-states</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="the-whole-idea">
+<h2>The whole idea<a class="headerlink" href="#the-whole-idea" title="Permalink to this headline">¶</a></h2>
+<p>The basic parts of corpus PaaS platform:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">The cloud controller</p>
+</li>
+<li><p class="first">The cloud controller client applications</p>
+</li>
+<li><p class="first">The compute nodes</p>
+<blockquote>
+<div><ul>
+<li><p class="first">Where are hosted guests</p>
+<blockquote>
+<div><ul class="simple">
+<li>Where projects run on</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">The developer environments which are just a special kind of compute nodes</p>
+</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<p>The first thing we will have is a classical makina-states installation in
+mastersalt mode.
+We then will have salt cloud as a cloud controller to control compute nodes
+via <strong>makina-states.services.cloud.{lxc, saltify, ...}</strong> (lxc or saltify)
+Those compute nodes will install guests.
+Those guests will eventually run the final projects pushed by users.</p>
+<p>Hence an api and web interface to the controller we can:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Add one or more ssh key to link to the host</li>
+<li>Request to link a new compute node</li>
+<li>Request to initialize a new compute node</li>
+<li>List compute nodes with their metadata (ip, dns, available slots, guest type)</li>
+<li>Get compute ndoos/container/vms base informations (ssh ip / port, username, pasword, dns names)</li>
+<li>Link more dns to the box</li>
+<li>Manage (add or free) the local storage.</li>
+<li>Destroy a container</li>
+<li>Unlink a compute node</li>
+</ul>
+</div></blockquote>
+<p>The users will just have either:
+- Push the new code to deploy
+- Connect via ssh to do extra manual stuff if any including a manual deployment</p>
+</div>
+<div class="section" id="permission-accesses">
+<h2>Permission accesses<a class="headerlink" href="#permission-accesses" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>We will use an ldap server to perform authentication</li>
+</ul>
+</div>
+<div class="section" id="the-different-environment-platforms">
+<h2>The different environment platforms<a class="headerlink" href="#the-different-environment-platforms" title="Permalink to this headline">¶</a></h2>
+<p>We also want to distinguish at least those 3 environments, so 3 ways for you to
+deploy at least.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">dev:</th><td class="field-body">The developper environments (laptop)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">staging:</th><td class="field-body">the stagings and any other QA platform</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">prod:</th><td class="field-body">the production platform</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="objectives">
+<h2>Objectives<a class="headerlink" href="#objectives" title="Permalink to this headline">¶</a></h2>
+<p>The layout and projects implementation must allow us to</p>
+<ul class="simple">
+<li>Automaticly rollback any unsucessful deployment</li>
+<li>In production and staging, archive application content from N last deployments</li>
+<li>Make the development environment easily editable</li>
+<li>Make the staging environment a production battletest server</li>
+<li>Production can deploy from non complex builds, and the less possible dependant of external services</li>
+</ul>
+<p>For this, we inspired ouselves a lot from <a class="reference external" href="https://www.openshift.com/developers/deploying-and-building-applications">openshift</a> and <a class="reference external" href="https://devcenter.heroku.com/articles/buildpack-api">heroku</a> (custom buildpacks) models.</p>
+</div>
+<div class="section" id="actual-layout">
+<span id="project-spec-layout"></span><h2>Actual layout<a class="headerlink" href="#actual-layout" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="overview-of-the-project-source-code-repositories">
+<h3>Overview of the project source code repositories<a class="headerlink" href="#overview-of-the-project-source-code-repositories" title="Permalink to this headline">¶</a></h3>
+<p>A project will have at least 2 local git repositories:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>/srv/projects/myproject/git/project.git/
+  A repository where lives its sourcecode and deployment recipes
+/srv/projects/myproject/git/pillar.git/
+  A repository where lives its pillar
+</pre></div>
+</div>
+<p>This repository master branch consequently has the minimal following structure:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>master
+    |- what/ever/files/you/want
+    |- .salt -&gt; the salt deployment structure
+    |- .salt/PILLAR.sample     -&gt; default pillar used in the project, this
+    |                             file will be loaded inside your
+    |                             configuration
+    |- .salt/rollback.sls      -&gt; rollback code run in case of problems
+    |- .salt/archive.sls       -&gt; pre save code which is run upon a deploy
+    |                             trigger
+    |- .salt/fixperms.sls      -&gt; reset permissions script run at the end of
+    |                            deployment
+    |- .salt/_modules          -&gt; custom salt modules to add to local salt
+    |       /_runners             install
+    |       /_outputters
+    |       /_states
+    |       /_pillars
+    |       /_renderers
+    |
+    |- .salt/00_DEPLOYMENT.sls -&gt; all other slses will be executed in order
+                                  and are to be provided by th users.
+</pre></div>
+</div>
+<ul>
+<li><p class="first">A private repository with restricted access with any configuration data needed to deploy the
+application on the PAAS platform. This is in our case the project pillar tree:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>pillar master
+   |- init.sls the pillar configuration
+</pre></div>
+</div>
+</li>
+</ul>
+<p>As anyways, you ll push changes to the PAAS platform, no matter what you push,
+the PAAS platform will construct according to the pushed code :).
+So you can even git push -f if you want to force things.</p>
+</div>
+<div class="section" id="overview-of-the-paas-local-directories">
+<h3>Overview of the paas local directories<a class="headerlink" href="#overview-of-the-paas-local-directories" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>/srv/projects/myproject/project/</dt>
+<dd><p class="first">The local clone of the project branch from where we run in all modes.
+In other words, this is where the application runtimes files are.
+In application speaking</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li><strong>django/python ala pip:</strong> the virtualenv &amp; root of runtime generated configuration files</li>
+<li><strong>zope:</strong> this will the root where the bin/instance will be lauched
+and where the buildout.cfg is</li>
+<li><strong>php webapps:</strong> this will be your document root + all resources</li>
+<li><strong>nodejs:</strong> etc, this will be where nginx search for static files and
+where the nodejs app resides.</li>
+</ul>
+</div></blockquote>
+</dd>
+<dt>/srv/projects/myproject/pillar</dt>
+<dd>The project specific states pillar tree local clone.</dd>
+<dt>/srv/projects/myproject/data/</dt>
+<dd>Where must live any persistent data</dd>
+<dt>/srv/pillar/makina-projects/myproject -&gt; /srv/projects/myproject/pillar</dt>
+<dd>pillar symlink for salt integration</dd>
+<dt>/srv/salt/makina-projects/myproject -&gt; /srv/projects/myproject/.salt/&lt;env&gt;</dt>
+<dd>state tree project symlink for salt integration</dd>
+<dt>/srv/salt/{_modules,runners,outputters,states,pilalrs,renderers}/*py -&gt; /srv/projects/myproject/.salt/&lt;typ&gt;/mod.py</dt>
+<dd>custom salt python execution modules</dd>
+</dl>
+<p>The deployment procedure is as simple a running meta slses which in turn
+call your project ones contained in a subfolder of the <strong>.salt</strong> directory
+during the <strong>install</strong> phase.</p>
+<p>The <strong>.salt</strong> directory will contain SLSs executed in lexicographical order.
+You will have to take exemple on another projects inside <strong>makina-states/projects</strong>
+or write your states.  Those slses are in charge to install your project.</p>
+<ul>
+<li><p class="first">The <strong>persistent configuration directories</strong></p>
+<blockquote>
+<div><table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">/etc</span></kbd></td>
+<td><p class="first last">static global configuration (/etc)</p>
+</td></tr>
+</tbody>
+</table>
+</div></blockquote>
+</li>
+<li><dl class="first docutils">
+<dt>The <strong>persistent data directories</strong></dt>
+<dd><p class="first">If you want to deploy something inside, make a new archive in the release
+directory with a dump or a copy of one of those files/directories.</p>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">/var</span></kbd></td>
+<td><p class="first last">Global data directories (data &amp; logs) (/var)
+Minus the package manager cache related directories</p>
+</td></tr>
+</tbody>
+</table>
+<p>/srv/projects/project/data</p>
+<blockquote class="last">
+<div><ul>
+<li><p class="first">Specific application datas (/srv/projects/project/data)</p>
+<blockquote>
+<div><ul class="simple">
+<li>Datafs and logs in zope world</li>
+<li>drupal thumbnails</li>
+<li>mongodb documentroot</li>
+<li>...</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+</dd>
+</dl>
+</li>
+<li><p class="first"><strong>Networkly speaking</strong>, to enable switch of one container to another
+we have some solutions but in any case, <strong>no ports</strong> must be
+<strong>directly</strong> wired to the container. <strong>Never EVER</strong>.</p>
+</li>
+</ul>
+<p>Either:</p>
+<ul class="simple">
+<li>Make the host receive the inbound traffic data and redirect (NAT) it to the underlying container</li>
+<li>Make a proxy container receive all dedicated traffic and then this specific container will redirect the traffic to the real underlying production container.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="procedures">
+<h2>Procedures<a class="headerlink" href="#procedures" title="Permalink to this headline">¶</a></h2>
+<p>Those procedure will be implemented by either:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Manual user operations or commands</li>
+<li>Git hooks</li>
+<li>salt execution modules</li>
+<li>jinja macros (collection of saltstack states)</li>
+</ul>
+</div></blockquote>
+<p>All procedures are tied to a <strong>default</strong> sls inside the <strong>.salt</strong> project
+folder and can per se be overriden.</p>
+<div class="section" id="project-initialization-sync-procedure">
+<h3>Project initialization/sync procedure<a class="headerlink" href="#project-initialization-sync-procedure" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Initiate the project specific user</li>
+<li>Initiate the ssh keys if any</li>
+<li>Initiate the pillar and project bare git repositories inside the git folder</li>
+<li>Clone local copies inside the project, pillar and salt directories</li>
+<li>If the salt folder does not exists, create it</li>
+<li>If any of default slses procedures are not yet present, create them</li>
+<li>Wire the pillar configuration inside the pillar root</li>
+<li>Wire the pillar init.sls file to the global pillar top file</li>
+<li>Wire the salt configuration inside the salt root</li>
+<li>Echo the git remotes to push the new deployement on.</li>
+<li>Wire any salt modules in .salt/{_modules,runners,etc}</li>
+</ul>
+</div>
+<div class="section" id="project-archive-procedure">
+<h3>Project archive procedure<a class="headerlink" href="#project-archive-procedure" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>If size is low, we enlarge the container</li>
+<li>run the pre archive hooks</li>
+<li>archive the <strong>project</strong> directory in an <strong>archive/deployed</strong> subdirectory</li>
+<li>run the post archive hooks (make extra dumps or persistent data copies)</li>
+<li>run the archives rotation job</li>
+</ul>
+</div>
+<div class="section" id="project-release-sync-procedure">
+<h3>Project Release-sync procedure<a class="headerlink" href="#project-release-sync-procedure" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Be sure to sync the last git deploy hook from makina-states</li>
+<li>Fetch the last commits inside the <strong>deploy</strong> directory</li>
+</ul>
+</div>
+<div class="section" id="project-install-procedure">
+<span id="project-spec-proc-install"></span><h3>Project install procedure<a class="headerlink" href="#project-install-procedure" title="Permalink to this headline">¶</a></h3>
+<p>We run all slses in the project <strong>.salt</strong> directory which is not tied to any
+default procedure.</p>
+</div>
+<div class="section" id="project-fixperms-procedure">
+<span id="project-spec-proc-fixperms"></span><h3>Project fixperms  procedure<a class="headerlink" href="#project-fixperms-procedure" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Set &amp; <strong>reset (enforce)</strong> needed user accesses to the filesystem</li>
+</ul>
+</div>
+<div class="section" id="rollback-procedure">
+<h3>Rollback procedure<a class="headerlink" href="#rollback-procedure" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Only run if something have gone wrong</li>
+<li>We move the failed <strong>project</strong> directory in the deployment
+<strong>archives/&lt;UUID&gt;/project.failed</strong> sub directory</li>
+<li>We sync back the previous deployment code to the <strong>project</strong> directory</li>
+<li>We execute the rollback hook (user can input database dumps reload)</li>
+</ul>
+</div>
+</div>
+<div class="section" id="workflows">
+<h2>Workflows<a class="headerlink" href="#workflows" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="full-procedure">
+<span id="project-spec-deploy-proc"></span><h3>Full procedure<a class="headerlink" href="#full-procedure" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>project <strong>deployment</strong> is triggered</li>
+<li>project <strong>archive</strong> procedure</li>
+<li>project <strong>initialization/sync</strong> procedure</li>
+<li>project <strong>release-sync</strong> procedure</li>
+<li>project <strong>fixperms</strong> procedure</li>
+<li>project <strong>install</strong> procedure</li>
+<li>project <strong>fixperms</strong> procedure (yes again)</li>
+<li>In error: <strong>rollback</strong> procedure</li>
+</ul>
+</div>
+</div>
+<div class="section" id="implementation-how-a-project-is-built-and-deployed">
+<h2>IMPLEMENTATION: How a project is built and deployed<a class="headerlink" href="#implementation-how-a-project-is-built-and-deployed" title="Permalink to this headline">¶</a></h2>
+<p>For now, at makinacorpus, we think this way:</p>
+<ul>
+<li><p class="first">Installing somewhere a mastersalt master controlling compute nodes and only accessible by <strong>ops</strong>.</p>
+</li>
+<li><p class="first">Installing elsewhere at least one compute node which will receive project
+nodes (containers):</p>
+<blockquote>
+<div><ul class="simple">
+<li>linked to this mastersalt as a mastersalt minion</li>
+<li>a salt minion linked to a salt master which is probably local
+and controlled by <strong>project members aka devs</strong>, by default these salt minion
+and salt master services are toggled off and the salt-call should be runned <strong>masterless</strong> (salt-call &#8211;local)</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="initialisation-of-a-cloud-controller">
+<h2>Initialisation of a cloud controller<a class="headerlink" href="#initialisation-of-a-cloud-controller" title="Permalink to this headline">¶</a></h2>
+<p>Complex, contact <a class="reference external" href="mailto:sysadmin&#37;&#52;&#48;makina-corpus&#46;com"><span>&#64;</span>makinacorpus</a>.</p>
+<p>This incude:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Setting up the dns master &amp; slaves for the cloud controlled zone.</li>
+<li>Setting up the cloud database</li>
+<li>Setting up at least one compute node to deploy projects</li>
+<li>Deploying vms</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="request-of-a-compute-node-or-a-container">
+<h2>Request of a compute node or a container<a class="headerlink" href="#request-of-a-compute-node-or-a-container" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Edit the mastersalt database file to include your compute node and vms
+configuration.</li>
+<li>Run any appropriate mastersalt runners to deploy &amp; operate your compute
+nodes and vms</li>
+</ul>
+</div>
+<div class="section" id="initialisation-of-a-compute-node">
+<h2>Initialisation of a compute node<a class="headerlink" href="#initialisation-of-a-compute-node" title="Permalink to this headline">¶</a></h2>
+<p>This will in order:</p>
+<ul>
+<li><p class="first">auth user</p>
+</li>
+<li><p class="first">check infos to attach a node via salt cloud</p>
+</li>
+<li><p class="first">Register DNS in the dns master for thie compute node and its related vms</p>
+</li>
+<li><p class="first">generate a new ssh key pair</p>
+</li>
+<li><p class="first">install the guest_type base system (eg: makina-states.services.virt.lxc)</p>
+</li>
+<li><p class="first">Generate root credentials and store them in grains on mastersalt</p>
+</li>
+<li><p class="first">Configure the basic container pillar on mastersalt</p>
+<blockquote>
+<div><ul class="simple">
+<li>root credentials</li>
+<li>dns</li>
+<li>firewall rules</li>
+<li>defaultenv (dev, prod, preprod)</li>
+<li>compute mode override if any (default_env inside /srv/salt/custom.sls)</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Run the mastersalt highstate.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="initialisation-of-a-project-container-environment">
+<h2>Initialisation of a project - container environment<a class="headerlink" href="#initialisation-of-a-project-container-environment" title="Permalink to this headline">¶</a></h2>
+<p>This will in order:</p>
+<ul>
+<li><p class="first">auth user</p>
+</li>
+<li><p class="first">Create a new container on endpoint with those root credentials</p>
+</li>
+<li><p class="first">Create the layout</p>
+</li>
+<li><p class="first">use the desired salt cloud driver to attach the distant host as a new minion</p>
+</li>
+<li><p class="first">install the key pair to access the box as root</p>
+</li>
+<li><p class="first">Generate root credentials and store them in grains on mastersalt</p>
+</li>
+<li><p class="first">Configure the basic container pillar on mastersalt</p>
+<blockquote>
+<div><ul class="simple">
+<li>root credentials</li>
+<li>dns</li>
+<li>firewall rules</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Run the mastersalt highstate</p>
+</li>
+</ul>
+<div class="section" id="initialisation-of-a-project">
+<h3>Initialisation of a project<a class="headerlink" href="#initialisation-of-a-project" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first">We run the initalization/sync project procedure</p>
+</li>
+<li><p class="first">Send a mail to sysadmins, or a  bot, and initial igniter with the infos of the new platform access</p>
+<blockquote>
+<div><ul class="simple">
+<li>basic http &amp; https url access</li>
+<li>ssh accces</li>
+<li>root credentials</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">User create the project</p>
+</li>
+<li><p class="first">Project directories are initialised</p>
+</li>
+</ul>
+</div>
+<div class="section" id="upgrade-of-a-project">
+<h3>upgrade  of a project<a class="headerlink" href="#upgrade-of-a-project" title="Permalink to this headline">¶</a></h3>
+<p>The code is not pull by production server it will be pushed with git to the environment ssh endpoint:</p>
+<ul class="simple">
+<li>Triggered either by an automatted bot (jenkins)</li>
+<li>By the user itself, hence he as enougth access</li>
+</ul>
+<p>In either way, the trigger is a git push.</p>
+</div>
+<div class="section" id="the-nerve-of-the-war-jinja-macros-and-states-and-execution-modules">
+<h3>The nerve of the war: jinja macros and states, and execution modules<a class="headerlink" href="#the-nerve-of-the-war-jinja-macros-and-states-and-execution-modules" title="Permalink to this headline">¶</a></h3>
+<p>Project states writing is done by layering a set of saltstacl <strong>sls</strong> files  in a certain order.
+Those will ensure an automatic deployment from end to end.
+The salt states and macros will abuse of execution modules to gather informations but also act on the underlying system.</p>
+</div>
+<div class="section" id="the-project-common-data-structure">
+<h3>The project common data structure<a class="headerlink" href="#the-project-common-data-structure" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="overview">
+<h4>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li>to factorize the configuration code but also keep track of specific settings, those macros will use a common data mapping structure
+which is good to store defaults but override in a common manner variables via
+pillar.</li>
+<li>all those macros will take as input this <strong>configuration</strong> data structure which is a mapping containing all variables and metadata about your project.</li>
+<li>this common data mapping is not copied over but passed always as a reference, this mean that you can change settings in a macro and see those changes in later macros.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="the-project-configuration-registry-execution-module-helper">
+<h3>The project configuration registry execution module helper<a class="headerlink" href="#the-project-configuration-registry-execution-module-helper" title="Permalink to this headline">¶</a></h3>
+<p>The base execution module used for project management is <a class="reference internal" href="../../api/modules/mc_project.html#module-mc-project"><span>mc_project / project settings regitry switcher and common functions</span></a></p>
+<p>It will call under the hood the latest <strong>API</strong> version of the mc_project module.</p>
+<p>eg: <code class="docutils literal"><span class="pre">mc_project_2.*</span></code></p>
+<p>This will define methods for:</p>
+<ul class="simple">
+<li>Crafting the base <strong>configuration</strong> data structure</li>
+<li>initialising the project filesystem layout, pillar and downloading the base sourcecode for deployment (salt branch)</li>
+<li>deploying and upgrading an already installed project.</li>
+<li>Setting a project configuration</li>
+</ul>
+<p>If there are too many changes in a project layout, obviously a new project API
+module should be created and registered for the others to keep stability.</p>
+</div>
+<div class="section" id="apiv2">
+<h3>APIV2<a class="headerlink" href="#apiv2" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="the-project-execution-module-interface-apiv2">
+<h4>The project execution module interface (APIV2)<a class="headerlink" href="#the-project-execution-module-interface-apiv2" title="Permalink to this headline">¶</a></h4>
+<p>Note that there two parts in the module:</p>
+<ul class="simple">
+<li>One set of methods are the one you are most likely to use handle local deployment</li>
+<li>One another set of methods is able to handle remote deployments over ssh.
+The only requirement for the other host is that makina-states should be installed
+first and ssh access should be configured previously to any deploy call.
+The requirement was to have only a basic ssh access, that why we did not go
+for a RAET or 0Mq salt deployment structure here.</li>
+</ul>
+<p>See <a class="reference internal" href="../../api/modules/mc_project_2.html#module-mc-project-2"><span>mc_project_2 / project settings regitry APIV2</span></a></p>
+</div>
+<div class="section" id="the-project-sls-interface-apiv2">
+<h4>The project sls interface (APIV2)<a class="headerlink" href="#the-project-sls-interface-apiv2" title="Permalink to this headline">¶</a></h4>
+<p>Each project must define a set of common sls which will be the interfaced and
+orchestred by the project execution module.
+Theses sls follow the aforementionned procedures style.</p>
+<p><strong>The important thing to now remember  is that those special sls files cannot be run
+without the project runner execution module</strong></p>
+<p>Indeed, we inject in those sls contextes a special <strong>cfg</strong> variable which is the
+project configuration and without we can&#8217;t deploy correctly.</p>
+<ul>
+<li><p class="first">We have two sets of sls to consider</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>The set of sls providen by a makina-states <strong>installer</strong></dt>
+<dd>this is specified at project creation and stored in configuration for further reference</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>The set of sls providen by the project itself in the .salt directory</dt>
+<dd><strong>this is where the user will customize it&#8217;s deployment steps</strong>.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<p>The installer set is then included by default at the first generation of the
+user installer set at the creation of the project.</p>
+</div>
+</div>
+</div>
+<div class="section" id="project-initialisation-installation">
+<h2>Project initialisation &amp; installation<a class="headerlink" href="#project-initialisation-installation" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Refer to <a class="reference internal" href="project_creation.html#project-creation"><span>Intro</span></a></li>
+<li>Some installers example: <a class="reference internal" href="project_list.html#projects-project-list"><span>Projects list</span></a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../ref_design/index.html" class="btn btn-neutral float-right" title="Design">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../ref_index.html" class="btn btn-neutral" title="Reference"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

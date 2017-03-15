@@ -1,0 +1,302 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Configuration &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Makina-States usage" href="../usage_index.html"/>
+        <link rel="next" title="Use a lxc based makina-states environment" href="../usage_quickstart/index.html"/>
+        <link rel="prev" title="Installation &amp; basic usage" href="install.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+<ul class="simple">
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Custom states modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/modules/index.html">Execution modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/states/index.html">States modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/grains/index.html">makina-states grains modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/api/index.html">Api  modules</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../usage_index.html">Makina-States usage</a> &raquo;</li>
+      
+    <li>Configuration</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../_sources/v1/usage_general/configure.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="configuration">
+<h1>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h1>
+<p>Makina states is a consistent collection of specialized states (or formulaes) that you can
+apply to your system to install and configure it.</p>
+<p>Our saltstack formulaes (the <strong>sls</strong> files)   leverage the use of saltstack execution modules
+(called makina-states registries) to expose
+aggregated variables from different configuration sources where the main ones
+are the grains and the pillarand the local makina-states registries (msgpack or yaml files inside
+/etc/*salt).</p>
+<p>To install something, you can either:</p>
+<blockquote>
+<div><ul class="simple">
+<li>set a key/value in pillar or grains (eg: <strong>makina-states.services.http.nginx: true</strong>) and play the highstate</li>
+<li>Call directly a specific state: <strong>salt-call state.sls makina-states.services.http.nginx</strong>.
+Remember that playing a state may register it and will be called again in
+further highstates.</li>
+<li>Include directly a specific state in a <strong>include:</strong> sls statement from a
+custom state of yours.</li>
+</ul>
+</div></blockquote>
+<p>As soon as those states are run, they will set a flag on the machine having
+the side effect to register them to be <code class="docutils literal"><span class="pre">auto</span> <span class="pre">replayed</span></code>
+on next highstates, implicitly.</p>
+<p>In other word, in the future highstates, they will even run even
+if we have not included them explicitly.</p>
+<p>To sum up, we have made all of those states reacting and setting tags for the system
+to be totally dynamic. All the things you need to do is to set in pillar or in grains
+the appropriate values for your machine to be configured.</p>
+<p>4 levels are available to make install a <code class="docutils literal"><span class="pre">makina</span> <span class="pre">state</span></code> formula.</p>
+<blockquote>
+<div><ul>
+<li><p class="first">Direct inclusion via the &#8216;include:&#8217; statement:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>foo.sls:
+    include:
+      - include makina-states.services.http.nginx
+</pre></div>
+</div>
+</li>
+<li><p class="first">Install directly the state via a salt/salt-call state.sls:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>salt-call state.sls makina-states.services.http.nginx
+</pre></div>
+</div>
+</li>
+<li><p class="first">Relevant grain configuration slug:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>salt-call --local grains.setval makina-states.services.http.nginx true
+salt-call state.highstate
+</pre></div>
+</div>
+</li>
+<li><p class="first">Relevant pillar configuration slug for the highstate to pick up the newly
+registred state:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>/srv/pillar/foo.sls
+makina-states.services.http.nginx: true in an included  pillar file
+</pre></div>
+</div>
+</li>
+</ul>
+</div></blockquote>
+<p>You can indeed imagine there is a lot of variables that can be modified to apply the configuration to a minion.
+To find what to do, we invite you to just read the states and the documentation that seem to be relevant to your needs.
+And to know what flag to modify, find the &#8220;python registry&#8221; and check the param
+to modify, it&#8217;s always the same dance.</p>
+<div class="section" id="best-practise">
+<h2>Best practise<a class="headerlink" href="#best-practise" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="be-careful-with-grains">
+<h3>Be careful with grains<a class="headerlink" href="#be-careful-with-grains" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Grains can be particulary insecures because they are freely set on the client (minion) side,</li>
+<li>Grains are are slow to update.</li>
+<li>You have to pay attention that states and pillar accesses chained by this inheritance
+are only limited to the scope you want and do not expose too many sensitive
+information because a minion setted a particular grain.</li>
+</ul>
+</div>
+<div class="section" id="writing-rules">
+<h3>Writing rules<a class="headerlink" href="#writing-rules" title="Permalink to this headline">¶</a></h3>
+<p>Some rules to write makina-states states:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">When you create a new state, include it in its respective registry.</p>
+</li>
+<li><p class="first">Avoid to write an absolute path, use localsettings.locations.PATH_PREFIX
+or another registry variable.</p>
+</li>
+<li><p class="first">Try to isolate the settings and make a subregistry to regroup them.</p>
+</li>
+<li><p class="first">Never ever use short form of states (states without names, use states unique IDs)</p>
+<p>DO:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>foo-foo:
+    cmd.run
+        name: /foo/foo
+</pre></div>
+</div>
+<p>DONT:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>/foo/foo
+    cmd.run: []
+</pre></div>
+</div>
+</li>
+<li><p class="first">Please use as much as possible require(_in)/watch(_in) to ensure your configuration
+slugs will be correctly ordered during execution.</p>
+</li>
+<li><p class="first">If your states are getting being or need scheduling, please add separate hooks (mc.proxy.hook states)
+files (see developer documentation).</p>
+</li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../usage_quickstart/index.html" class="btn btn-neutral float-right" title="Use a lxc based makina-states environment">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="install.html" class="btn btn-neutral" title="Installation &amp; basic usage"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

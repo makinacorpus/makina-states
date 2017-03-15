@@ -1,0 +1,296 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Main states kind segregation &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Design" href="index.html"/>
+        <link rel="next" title="Registries" href="registries.html"/>
+        <link rel="prev" title="Base Filesystem Layout" href="layout.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+<ul class="simple">
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Custom states modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/modules/index.html">Execution modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/states/index.html">States modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/grains/index.html">makina-states grains modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/api/index.html">Api  modules</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#usage">Usage</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../ref_index.html">Reference</a> &raquo;</li>
+      
+          <li><a href="index.html">Design</a> &raquo;</li>
+      
+    <li>Main states kind segregation</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../_sources/v1/ref_design/organization.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="main-states-kind-segregation">
+<h1>Main states kind segregation<a class="headerlink" href="#main-states-kind-segregation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>In makina states we have organised our states in the following way:</p>
+<blockquote>
+<div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">controllers:</th><td class="field-body">states related to the base salt infrastructure (layout, deamons, permissions)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">nodetypes:</th><td class="field-body">states related only to the hardware, the machine type  or virtualisation facillity</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">localsettings:</th><td class="field-body">states related to the base machine configuration minus all that can looks like a service or a deamon (eg: directories creations, hosts managment, pam, vim but not ssh)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">services:</th><td class="field-body">states related to services configuration (eg: ssh, docker, apache, backups scripts &amp; crons)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">projects:</th><td class="field-body">Set of macros to be externallly included project consumers as the base to setup their projects using makina-states bricks</td>
+</tr>
+<tr class="field-even field"><th class="field-name">cloud:</th><td class="field-body">set of related stuff linked to mastersalt salt cloud integration</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<p>For all those kinds, we have execution modules, sub-execution modules and formulaes containers. to leverage and factorize all variables and have well placed macros.</p>
+<p>For exemple, php users will certainly have to deal the following files:</p>
+<blockquote>
+<div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">mc_states/modules/services.py:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">registries</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">mc_states/services/{http,php}/*.sls:</th></tr>
+<tr class="field-even field"><td>&nbsp;</td><td class="field-body">states files (formulaes)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">/srv/pillar/foo.sls:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">custom settings</td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</div>
+<div class="section" id="wrap-up">
+<h2>Wrap-up<a class="headerlink" href="#wrap-up" title="Permalink to this headline">¶</a></h2>
+<p>Tree of different configuration flavors inheritance:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>Controllers +--&gt; salt-minion &lt;------------------+
+   |        |                                   |
+   |        +--&gt; salt-master --controlling------+
+   |        |
+   |        +--&gt; mastersalt-minion &lt;------------+
+   |        |                                   |
+   |        +--&gt; mastersalt-master -controlling-+
+controllers                                     _________________
+controlling             NODETYPES - INHERITANCE                  |
+ nodetypes             |       server                            |
+   |                   |         |                               |
+---+ ------+           |         +-&gt;vm                           |
+ NODETYPE  |- - - - - -|         |   |                           |
+---+-------+           |         |   +--&gt; lxccontainer           |
+   |                   |         |   |                           |
+   |                   |         |   +--&gt; dockercontainer        |
+configuration          |         |                               |
+installed on           |         +-&gt;devhost                      |
+ a nodetype            |             |                           |
+   |                   |             +-&gt;vagrantvm                |
+   |                   |_________________________________________|
+   |
+---+-----------+
+  server:base  |
+ configuration |                                                ------------------------------
+--+--------+---+                                                |   makina-states.cloud      |
+  |        |                                                    ------------------------------
+  |        |            +---------------+                         |___ generic
+  |        |            |               |  solr                   |___ lxc
+  |     running on &lt;----+ Service:base  |   |                     |___ saltify
+  |                     |               |   |      docker
+LOCALSETTINGS           +-+-------------+  tomcat   |
+=============             |                 |       |
+ldap, nscd, profile     service tree        |      lxc
+vim git sudo localrc      |                java     |
+pkgs pkgmgr shell         |   bacula        |       |
+user (...)                |    |            |     virt
+                          |    |   ntp      |       |
+   _______________________|____|____|_______|_______|_
+    | |    |   |     |       | |  |                   \
+    | ldap | salt/mastersalt | |  |    .-- nginx      |
+    |  |   |                 | |  |   /__ apache      |
+    | nscd |                ssh|  http               php____ phpfpm
+    |      |                   |                         |
+    |      |                   |                         modphp
+    db   mail                  |
+    /\     \                   firewalld
+   /  \     \____ postfix
+pgsql  mysql \
+              \__ dovecot
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="registries.html" class="btn btn-neutral float-right" title="Registries">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="layout.html" class="btn btn-neutral" title="Base Filesystem Layout"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,296 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Install the base LXC container &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="lxc makina-states documentation" href="index.html"/>
+        <link rel="next" title="Create a container" href="create_container.html"/>
+        <link rel="prev" title="Network firewalling and masquerating a makina-states LXC based image" href="firewalls.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+<ul class="simple">
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">Custom states modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/modules/index.html">Execution modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/states/index.html">States modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/grains/index.html">makina-states grains modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/api/index.html">Api  modules</a></li>
+</ul>
+</li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Makina-states V1 documentation (OBSOLETE)</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#usage">Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Makina-states V1 documentation (OBSOLETE)</a> &raquo;</li>
+      
+          <li><a href="../usage_index.html">Makina-States usage</a> &raquo;</li>
+      
+          <li><a href="index.html">lxc makina-states documentation</a> &raquo;</li>
+      
+    <li>Install the base LXC container</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../../_sources/v1/usage_lxc/install_template.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="install-the-base-lxc-container">
+<span id="install-lxc-template"></span><h1>Install the base LXC container<a class="headerlink" href="#install-the-base-lxc-container" title="Permalink to this headline">¶</a></h1>
+<p>First ensure that there is plenty of space on <code class="docutils literal"><span class="pre">/var/lib/lxc</span></code>.
+Plently as at least <strong>10GB</strong>.</p>
+<p>If you do not have enought place on the partition, you may have another mounted
+partition or one that you can create which will provide that extra space.
+Follow the next chapter to add this extra space.</p>
+<p>On other cases, you can directly jump to <a class="reference internal" href="#install-lxc-template-image"><span>Install base LXC Image</span></a>.</p>
+<div class="section" id="make-room-for-space-optional">
+<h2>Make room for space (optional)<a class="headerlink" href="#make-room-for-space-optional" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="mount-your-origin-partition">
+<h3>Mount your origin partition<a class="headerlink" href="#mount-your-origin-partition" title="Permalink to this headline">¶</a></h3>
+<p>When you have this partition, first ensure that it is mounted, and it has a
+relevant entry on your <code class="docutils literal"><span class="pre">/etc/fstab</span></code> for it to be mounted at boot time.</p>
+<p>For example, Imagine that you have mounted your data partition in <code class="docutils literal"><span class="pre">/home</span></code>,
+you will have to have or to add  one like which looks like one on those following entries in your <code class="docutils literal"><span class="pre">/etc/fstab</span></code> file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span># Origin target fstype fsopts * *
+UUID=19710386-5ed2-4b6c-b289-628adac75e5b /home ext4 defaults 0 0
+# those lines are equivalent
+# /dev/sdc4                               /home ext4 default 0 0
+</pre></div>
+</div>
+<p>If you want to use <code class="docutils literal"><span class="pre">UUIDS</span></code>, you can find the uuid belonging to one partition like
+this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>ls /dev/disk/by-uuid/
+</pre></div>
+</div>
+<p>Of course, <strong>xfs</strong> and <strong>ext4</strong> can be any supported filesystem except fat or
+ntfs.</p>
+<p>The options <strong>defaults</strong> can be different on your installation, this is probably not a problem.</p>
+<p>The filesystem can by encrypted, it will obisouly be slowier but it will work.</p>
+</div>
+<div class="section" id="map-your-original-partition-to-var-lib-lxc">
+<h3>Map your original partition to <code class="docutils literal"><span class="pre">/var/lib/lxc</span></code><a class="headerlink" href="#map-your-original-partition-to-var-lib-lxc" title="Permalink to this headline">¶</a></h3>
+<p>Then, you ll have to map this extra big partition to <code class="docutils literal"><span class="pre">/var/lib/lxc</span></code>.
+Wwe will use that as a <code class="docutils literal"><span class="pre">bind</span> <span class="pre">mound</span></code> (a powerfull symlink like
+redirection).</p>
+<p>We will call <code class="docutils literal"><span class="pre">/home</span></code>, this extra big partition mountpoint.</p>
+<p>Remapping a directory from this partition is as simple as:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">Creating the directory on your partition holding the new mountpoint:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">-</span><span class="n">p</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">lxc</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">adding a new entry at the bottom of your fstab:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>/home/var/lib/lxc /var/lib/lxc none bind,defaults,exec 0 0
+</pre></div>
+</div>
+</li>
+</ul>
+</div></blockquote>
+<p>You will obviously replace <code class="docutils literal"><span class="pre">/home</span></code> by the mountpoint location of your extra big data partititon.
+You will obviously replace <code class="docutils literal"><span class="pre">/home/var/lib/lxc</span></code> by the directory you had created previously.</p>
+<p>You can then activate this configuration it with:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">mount</span> <span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">lxc</span>
+</pre></div>
+</div>
+<p>And verify the extra space on it with:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">-</span><span class="n">f</span> <span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">lxc</span>
+</pre></div>
+</div>
+<p>Which should be the same that:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">-</span><span class="n">h</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">lxc</span>
+</pre></div>
+</div>
+<p>As it is now on your fstab, it will survive to reboots.</p>
+<ul class="simple">
+<li>That means that  <code class="docutils literal"><span class="pre">/home/var/lib/lxc</span></code> is mounted in place of <code class="docutils literal"><span class="pre">/var/lib/lxc</span></code></li>
+<li>Anything which is written to or accessed from <code class="docutils literal"><span class="pre">/var/lib/lxc</span></code>
+will instead be written in <code class="docutils literal"><span class="pre">/home/var/lib/lxc</span></code>.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="install-base-lxc-image">
+<span id="install-lxc-template-image"></span><h2>Install base LXC Image<a class="headerlink" href="#install-base-lxc-image" title="Permalink to this headline">¶</a></h2>
+<p>Download and install the lxc container is simplified through a python script.</p>
+<p>Download a copy of makina-states, which contains helpers:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>git clone https://github.com/makinacorpus/makina-states.git -b stable
+</pre></div>
+</div>
+<p>You can do that by issuing as root those following commands:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>cd makina-states
+git checkout stable
+# either sudo, or use a root shell
+sudo ./_scripts/restore_lxc_image.py
+</pre></div>
+</div>
+<p>This will download and install your image in <code class="docutils literal"><span class="pre">/var/lib/lxc</span></code>.</p>
+</div>
+<div class="section" id="finish-installation">
+<h2>Finish installation<a class="headerlink" href="#finish-installation" title="Permalink to this headline">¶</a></h2>
+<p>If you were following the general installation procedure for the LXC procedure, you may go back to the general docuementation by following one of those following links:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference internal" href="../usage_quickstart/install_ubuntu.html#lxc-upstart-install-firewalling"><span>Note about firewalling on ubuntu</span></a></li>
+<li><a class="reference internal" href="../usage_quickstart/install_systemd.html#lxc-systemd-install-firewalling"><span>Note about firewalling on a systemD based host</span></a></li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="create_container.html" class="btn btn-neutral float-right" title="Create a container">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="firewalls.html" class="btn btn-neutral" title="Network firewalling and masquerating a makina-states LXC based image"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

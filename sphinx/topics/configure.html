@@ -1,0 +1,295 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Confguration &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../index.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="../index.html" class="fa fa-home"> Makina States</a>
+        
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="simple">
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>Confguration</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          <a href="../_sources/topics/configure.txt" rel="nofollow"> View page source</a>
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="confguration">
+<h1>Confguration<a class="headerlink" href="#confguration" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="layout">
+<h2>Layout<a class="headerlink" href="#layout" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">$wc</span></code> is the makina-states top folder.</li>
+</ul>
+<div class="highlight-python"><div class="highlight"><pre><span></span>bin/ansible                    -&gt; wrapper to ansible
+bin/ansible-galaxy             -&gt; wrapper to ansible-galaxy
+bin/ansible-playbook           -&gt; wrapper to ansible-playbook
+bin/salt-call                  -&gt; wrapper to salt-call
+ansible                        -&gt; ansible plays, roles, modules &amp; etc
+etc                            -&gt; configuration
+  etc/ansible                  -&gt; ansible configuration
+  etc/salt                     -&gt; saltstack configuration
+  etc/makina-states            -&gt; makina-states  configuration
+pillar                         -&gt; saltstack pillar files
+    pillar/pillar.d            -&gt; saltstack pillar files (global)
+    pillar/private.pillar.d    -&gt; saltstack pillar files
+                                 (for the current node)
+    pillar/&lt;$minion&gt;.pillar.d  -&gt; saltstack pillar files
+                                 (for a specific minion)
+salt/makina-states             -&gt; saltstack states
+  salt/_modules                -&gt; custom salt modules
+  salt/_pillar                 -&gt; custom extpillar modules
+</pre></div>
+</div>
+</div>
+<div class="section" id="salt-pillar">
+<h2>Salt pillar<a class="headerlink" href="#salt-pillar" title="Permalink to this headline">¶</a></h2>
+<p>Saltstack configuration is based on pillars.</p>
+<p>To facilitate configuration of the Top file, we added those features:</p>
+<ul class="simple">
+<li>Any <strong>JSON</strong> file can be used as pillar data.</li>
+<li>Any <strong>SLS/json</strong> file dropped inside <code class="docutils literal"><span class="pre">$wc/pillars.d/</span></code> will be loaded for
+all minion as pillar data</li>
+<li>Any <strong>SLS/json</strong> file dropped inside <code class="docutils literal"><span class="pre">$wc/private.pillars.d</span></code>
+will be only loaded for the current node of operation.</li>
+<li>Any <strong>SLS/json</strong> file dropped inside <code class="docutils literal"><span class="pre">$wc/&lt;$minionid&gt;.pillars.d</span></code>
+will be only loaded for the &#8220;$minionid&#8221; host</li>
+</ul>
+</div>
+<div class="section" id="salt-ansible-bridge-notes">
+<h2>Salt + Ansible bridge notes<a class="headerlink" href="#salt-ansible-bridge-notes" title="Permalink to this headline">¶</a></h2>
+<p>Makina-states use an <a class="reference external" href="https://github.com/makinacorpus/makina-states/blob/v2/ansible/inventories/makinastates.py">ansible dynamic inventory</a> that bridges the salt pillar with ansible via a salt module: <a class="reference external" href="https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_remote_pillar.py">mc_remote_plllar</a>.</p>
+<p>This module is pluggable and will search in the salt modules installed
+those who have declared special named functions:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>get_masterless_makinastates_hosts()</dt>
+<dd>return a list of host to manage</dd>
+<dt>get_masterless_makinastates_groups(minionid, pillar)</dt>
+<dd>return a list of groups for the specific minion id</dd>
+</dl>
+</div></blockquote>
+<p>For each host found by all <strong>get_masterless_makinastates_hosts</strong> functions:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Get its pillar by calling <strong>mc_remote_plllar.get_pillar($host)</strong></li>
+<li>Extract/generate from informations in the pillar relevant
+ansible host vars for this minion.
+<strong>saltpillar</strong> ansible hostvar is the pillar of this minion.</li>
+<li>Generate ansible groups from those hostvars by calling
+eac <strong>get_masterless_makinastates_groups</strong> function</li>
+</ul>
+</div></blockquote>
+<p>By default, we use the <strong>mc_pillar</strong> ext pillar which
+loads a file: <strong>etc/makina-states/database.sls</strong> which
+describe our infractructure and this will:</p>
+<blockquote>
+<div><ul class="simple">
+<li>list all nodes that are configured as ansible targets</li>
+<li>generate pillar info for all nodes</li>
+<li>generate an ansible inventary for each of all those node</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="custom-extpillar">
+<h2>Custom extpillar<a class="headerlink" href="#custom-extpillar" title="Permalink to this headline">¶</a></h2>
+<p>In other words, to add your custom way of managing your hosts:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Create an ext_pillar to complete pillar for a specific minion
+depending on its minion id.</li>
+<li>Create a module that implement
+the <strong>get_masterless_makinastates_hosts</strong>
+&amp;&amp;  <strong>get_masterless_makinastates_groups</strong> functions</li>
+<li>register the pillar and module to the local makina-states installation
+(see bellow)</li>
+</ul>
+</div></blockquote>
+<p>Take example on:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_pillar.py">module</a> : (search for get_masterless_makinastates_groups &amp;&amp; get_masterless_makinastates_hosts)</li>
+<li><a class="reference external" href="https://github.com/makinacorpus/makina-states/blob/v2/mc_states/pillar/mc_pillar.py">extpillar</a></li>
+</ul>
+</div></blockquote>
+<p>To load your ext_pillar, you ll have to add it to the local salt configuration.
+You can add a file this way</p>
+<p>$WC/etc/salt/minion.d/99_extpillar.conf:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>ext_pillar:
+    - mc_pillar: {}
+    - mc_pillar_jsons: {}
+    - mycustompillar: {}
+</pre></div>
+</div>
+<ul class="simple">
+<li>To load your custom module, place it under <code class="docutils literal"><span class="pre">$WC/salt/_modules</span></code></li>
+<li>To load your custom pillar, place it under <code class="docutils literal"><span class="pre">$WC/salt/_pillar</span></code></li>
+</ul>
+</div>
+<div class="section" id="verify-the-pillar-for-a-minion">
+<h2>Verify the pillar for a minion<a class="headerlink" href="#verify-the-pillar-for-a-minion" title="Permalink to this headline">¶</a></h2>
+<p>Use this command:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>bin/salt-call mc_remote_pillar.get_pillar &lt;minion_id&gt;
+</pre></div>
+</div>
+</div>
+<div class="section" id="verify-the-groups-for-a-minion">
+<h2>Verify the groups for a minion<a class="headerlink" href="#verify-the-groups-for-a-minion" title="Permalink to this headline">¶</a></h2>
+<p>Use this command:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>bin/salt-call mc_remote_pillar.get_groups &lt;minion_id&gt;
+</pre></div>
+</div>
+</div>
+<div class="section" id="optional-add-a-cron-to-speed-up-pillar-generation">
+<h2>(OPTIONAL) Add a cron to speed up pillar generation<a class="headerlink" href="#optional-add-a-cron-to-speed-up-pillar-generation" title="Permalink to this headline">¶</a></h2>
+<p>To generate regularly the cron for all the configured minion, to speed up
+regular ansible calls (the pillar will already be cached at the call time),
+you can register a cron that does that.</p>
+<p>/etc/cron.d/refresh_ansible:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>15,30,45,00 * * * * root /srv/makina-states/_scripts/refresh_makinastates_pillar.sh
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+    </p>
+  </div>
+
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
