@@ -1,4 +1,0 @@
-nodetypes kind helpers
-=======================
-
-

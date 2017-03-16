@@ -1,0 +1,312 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mc_states_project / general projects API &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../../index.html"/>
+        <link rel="up" title="api Modules" href="../index.html"/>
+        <link rel="next" title="Convenient functions to use a salt infra as an api" href="saltapi.html"/>
+        <link rel="prev" title="ping" href="ping.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Makina States
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Custom states modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html">api Modules</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="api.html">mc_states_api / general API functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ping.html">ping</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="">mc_states_project / general projects API</a></li>
+<li class="toctree-l3"><a class="reference internal" href="saltapi.html">Convenient functions to use a salt infra as an api</a></li>
+<li class="toctree-l3"><a class="reference internal" href="saltcaller.html">wrappers to salt shell commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="version.html">version</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../modules/index.html">modules Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../states/index.html">states Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../grains/index.html">grains Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../pillars/index.html">pillars Modules</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Custom states modules</a> &raquo;</li>
+      
+          <li><a href="../index.html">api Modules</a> &raquo;</li>
+      
+    <li>mc_states_project / general projects API</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../_sources/api/api/mc_states/project.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-mc_states.project"></span><div class="section" id="mc-states-project-general-projects-api">
+<span id="mc-states-project"></span><h1>mc_states_project / general projects API<a class="headerlink" href="#mc-states-project-general-projects-api" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="mc_states.project.BaseProjectInitException">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">BaseProjectInitException</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.BaseProjectInitException" title="Permalink to this definition">¶</a></dt>
+<dd><p>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mc_states.project.BaseRemoteProjectSyncError">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">BaseRemoteProjectSyncError</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.BaseRemoteProjectSyncError" title="Permalink to this definition">¶</a></dt>
+<dd><p>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mc_states.project.ProjectException">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">ProjectException</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.ProjectException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project global exc</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mc_states.project.ProjectInitException">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">ProjectInitException</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.ProjectInitException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project init exc</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mc_states.project.ProjectNotCleanError">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">ProjectNotCleanError</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.ProjectNotCleanError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project global exc</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mc_states.project.ProjectProcedureException">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">ProjectProcedureException</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.ProjectProcedureException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project init exc</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mc_states.project.RemotePillarInitException">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">RemotePillarInitException</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.RemotePillarInitException" title="Permalink to this definition">¶</a></dt>
+<dd><p>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mc_states.project.RemoteProjectDeployError">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">RemoteProjectDeployError</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.RemoteProjectDeployError" title="Permalink to this definition">¶</a></dt>
+<dd><p>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mc_states.project.RemoteProjectException">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">RemoteProjectException</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.RemoteProjectException" title="Permalink to this definition">¶</a></dt>
+<dd><p>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mc_states.project.RemoteProjectInitException">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">RemoteProjectInitException</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.RemoteProjectInitException" title="Permalink to this definition">¶</a></dt>
+<dd><p>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mc_states.project.RemoteProjectSyncError">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">RemoteProjectSyncError</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.RemoteProjectSyncError" title="Permalink to this definition">¶</a></dt>
+<dd><p>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mc_states.project.RemoteProjectSyncRemoteError">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">RemoteProjectSyncRemoteError</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.RemoteProjectSyncRemoteError" title="Permalink to this definition">¶</a></dt>
+<dd><p>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mc_states.project.RemoteProjectTransferError">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">RemoteProjectTransferError</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.RemoteProjectTransferError" title="Permalink to this definition">¶</a></dt>
+<dd><p>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mc_states.project.RemoteProjectWCSyncError">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">RemoteProjectWCSyncError</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.RemoteProjectWCSyncError" title="Permalink to this definition">¶</a></dt>
+<dd><p>.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="mc_states.project.TooEarlyError">
+<em class="property">class </em><code class="descclassname">mc_states.project.</code><code class="descname">TooEarlyError</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.project.TooEarlyError" title="Permalink to this definition">¶</a></dt>
+<dd><p>.</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="saltapi.html" class="btn btn-neutral float-right" title="Convenient functions to use a salt infra as an api" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="ping.html" class="btn btn-neutral" title="ping" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

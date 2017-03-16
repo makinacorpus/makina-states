@@ -1,4 +1,0 @@
-Mongodb configuration
-======================
-
-

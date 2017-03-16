@@ -1,4 +1,0 @@
-PHPFPM configuration
-===========================
-
-

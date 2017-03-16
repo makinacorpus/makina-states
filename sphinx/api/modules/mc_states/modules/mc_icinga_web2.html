@@ -1,0 +1,477 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mc_icinga_web2 / icinga_web2 functions &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../../../index.html"/>
+        <link rel="up" title="modules Modules" href="../../index.html"/>
+        <link rel="next" title="mc_icinga_web / icinga_web functions" href="mc_icinga_web.html"/>
+        <link rel="prev" title="mc_icinga / icinga functions" href="mc_icinga.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Makina States
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">Custom states modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html">api Modules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">modules Modules</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="makina_grains.html">makinagrains</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_apache.html">mc_apache / apache httpd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_apparmor.html">mc_apparmor / apparmor functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_autoupgrade.html">mc_autoupgrade / packages autoupgrade</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_bind.html">mc_bind / named/bind functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_bootstraps.html">mc_bootstraps / bootstraps related registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_burp.html">mc_burp / burp functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_casperjs.html">mc_casperjs / casperjs/npm registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_circus.html">mc_circus / circus functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_compute_node.html">mc_cloud_compute_node / cloud compute node related functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_controller.html">mc_cloud_controller / cloud related variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_docker.html">mc_cloud_docker / docker registry for compute nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_images.html">mc_cloud_images / cloud images release managment &amp; delivery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_kvm.html">mc_cloud_kvm / kvm registry for compute nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_lxc.html">mc_cloud_lxc / lxc registry for compute nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud.html">mc_cloud / cloud registries &amp; functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_saltify.html">mc_cloud_saltify / cloud related variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_vm.html">mc_cloud_vm / vm registry for compute nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_controllers.html">mc_controllers / controllers related variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cron.html">mc_cron / cron functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dbsmartbackup.html">mc_dbsmartbackup / db_smart_backup functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dbus.html">mc_dbus / dbus functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dhcpd.html">mc_dhcpd / dhcpd registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_djutils.html">mc_djutils / django helpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dnshelpers.html">mc_dnshelpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dns.html">mc_dns / dns settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dumper.html">mc_dumper / Some useful wrappers to dump/load values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_editor.html">mc_editor / editor registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_env.html">mc_env / env registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_etckeeper.html">mc_etckeeper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_etherpad.html">mc_etherpad / etherpad functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_fail2ban.html">mc_fail2ban / fail2ban functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_firewalld.html">mc_firewalld / firewalld functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_golang.html">mc_golang / golang registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_grub.html">mc_grub / grub registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_haproxy.html">mc_haproxy / haproxy functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_icinga2.html">mc_icinga2 / icinga functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_icinga.html">mc_icinga / icinga functions</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="">mc_icinga_web2 / icinga_web2 functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_icinga_web.html">mc_icinga_web / icinga_web functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_insserv.html">mc_inssserv / inssserv functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_java.html">mc_java / java registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_kernel.html">mc_kernel / kernel registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ldap.html">mc_ldap / ldap registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_locales.html">mc_locales / locales registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_localsettings.html">mc_localsettings / localsettings variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_locations.html">mc_locations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_logrotate.html">mc_logrotate / logrotate registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_lxc.html">mc_lxc / lxc registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_macros.html">mc_macros / macros helpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_makinastates.html">mc_makinastates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_memcached.html">mc_memcached / memcached registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_mongodb.html">mc_mongodb / mongodb functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_monitoring.html">mc_monitoring registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ms_iptables.html">mc_ms_iptables / iptables functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_mumble.html">mc_mumble / mumble registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_mvn.html">mc_mvn / mvn registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_mysql.html">mc_mysql / mysql functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nagvis.html">mc_nagvis / nagvis functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_network.html">mc_network / network registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nginx.html">mc_nginx / nginx registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nodejs.html">mc_nodejs / nodejs/npm registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nodetypes.html">mc_nodetypes / nodetypes registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nscd.html">mc_nscd.py / ulogd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ntp.html">mc_ntp / ntp registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_pgsql.html">mc_pgsql / Postgresql related functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_phantomjs.html">mc_phantomjs / phantomjs/npm registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_php.html">mc_php / php registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_pillar.html">mc_pillar / makinastates ext-pillar</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_pkgs.html">mc_pkgs / pkgs registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_pnp4nagios.html">mc_pnp4nagios / pnp4nagios functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_postfix.html">mc_postfix / postfix functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_project_1.html">mc_project_1 / project settings regitry APIV1</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_project_2.html">mc_project_2 / project settings regitry APIV2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_project.html">mc_project / project settings regitry switcher and common functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_provider.html">mc_provider / provider functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_proxy.html">mc_proxy / proxy registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_psad.html">mc_psad / psad functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_pureftpd.html">mc_pureftpd / pureftpd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_python.html">mc_python / python registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_rabbitmq.html">mc_rabbitmq / rabbitmq functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_rdiffbackup.html">mc_rdiff-backup / rdiff-backup functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_redis.html">mc_redis / redis functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_remote_pillar.html">mc_remote_pillar / masterless pillar management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_remote.html">mc_remote / remote execution functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_rsyslog.html">mc_rsyslog / rsyslog functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_rvm.html">mc_rvm / rvm registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_salt.html">mc_salt / salt related helpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_screen.html">mc_screen / screen registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_services_managers.html">mc_services_managers / servives managers registries &amp; functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_services.html">mc_services / servives registries &amp; functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_shorewall.html">mc_shorewall / shorewall functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_slapd.html">mc_slapd / slapd registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_snmpd.html">mc_snmpd / snmpd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ssh.html">mc_ssh / OpenSSH  related functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ssl.html">mc_ssl / ssl registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_state.html">mc_state / module to execute functions on salt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_supervisor.html">mc_supervisor / supervisor functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_test.html">mc_test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_timezone.html">mc_timezone / timezone registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_tomcat.html">mc_tomcat / tomcat functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ubuntugis.html">mc_ubuntugis / ubuntugis registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ulogd.html">mc_ulogd / ulogd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_updatedb.html">mc_updatedb / updatedb functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_usergroup.html">mc_usergroup / usergroup registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_utils.html">mc_utils / Some usefull small tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_uwsgi.html">mc_uwsgi / uwsgi functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_vim.html">mc_vim / vim registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_virtualbox.html">mc_virtualbox / virtualbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_www.html">mc_www / www registry</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../states/index.html">states Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../grains/index.html">grains Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../pillars/index.html">pillars Modules</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Custom states modules</a> &raquo;</li>
+      
+          <li><a href="../../index.html">modules Modules</a> &raquo;</li>
+      
+    <li>mc_icinga_web2 / icinga_web2 functions</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../../_sources/api/modules/mc_states/modules/mc_icinga_web2.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-mc_states.modules.mc_icinga_web2"></span><div class="section" id="mc-icinga-web2-icinga-web2-functions">
+<span id="module-mc-icinga-web2"></span><h1>mc_icinga_web2 / icinga_web2 functions<a class="headerlink" href="#mc-icinga-web2-icinga-web2-functions" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="mc_states.modules.mc_icinga_web2.settings">
+<code class="descclassname">mc_states.modules.mc_icinga_web2.</code><code class="descname">settings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_icinga_web2.settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>icinga_web2 settings</p>
+<dl class="docutils">
+<dt>location</dt>
+<dd>installation directory</dd>
+<dt>package</dt>
+<dd>list of packages to install icinga-web2</dd>
+<dt>configuration_directory</dt>
+<dd>directory where configuration files are located</dd>
+<dt>has_pgsql</dt>
+<dd>install and configure a postgresql service in order
+to store icinga-web2 data
+(no ido2db data)</dd>
+<dt>modules</dt>
+<dd><dl class="first last docutils">
+<dt>nagvis</dt>
+<dd><dl class="first last docutils">
+<dt>enable</dt>
+<dd>enable the nagvis module which add link to nagvis in icinga-web2</dd>
+<dt>cronks_xml</dt>
+<dd>dictionary to store the cronks. The content is added in
+cronks.xml.  The structure is the same that &#8216;cronks_xml&#8217;
+subdictionary.</dd>
+</dl>
+</dd>
+<dt>pnp4nagios</dt>
+<dd><dl class="first last docutils">
+<dt>enable</dt>
+<dd>enable the pnp4nagios module which add links to
+graphs in icinga-web2</dd>
+<dt>package</dt>
+<dd>package to install for pnp4nagios integration</dd>
+<dt>cronks_extensions-templates</dt>
+<dd>dictionary in which, each key is the name of an extension
+template and the content of the dictionary contains the
+values to fill the template
+each &#8216;key&#8217;: &#8220;value&#8221; produce
+a &#8220;&lt;parameter name={{key}}&gt;{{value}}&lt;/parameter&gt;&#8221;.
+The key &#8220;parameter&#8221; or &#8220;parameter_*&#8221; produce
+a &#8220;&lt;parameter&gt;&lt;/parameter&gt;&#8221; tag.
+Each subdictionary add sub parameters tags.</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>root_account</dt>
+<dd><p class="first">Dictionary to store root account information.
+It is the account created on first installation of icinga_web2</p>
+<dl class="last docutils">
+<dt>login</dt>
+<dd>login for root login on web interface</dd>
+<dt>password_hash</dt>
+<dd>password for root login on web interface</dd>
+<dt>salt</dt>
+<dd>salt used to hash the password</dd>
+</dl>
+</dd>
+<dt>nginx</dt>
+<dd><p class="first">dictionary to store values of nginx configuration</p>
+<dl class="last docutils">
+<dt>domain</dt>
+<dd>name of virtualhost created to serve webpages</dd>
+<dt>doc_root</dt>
+<dd>root location of virtualhost</dd>
+<dt>vh_content_source</dt>
+<dd>template file for nginx content file</dd>
+<dt>vh_top_source</dt>
+<dd>template file for nginx top file</dd>
+<dt>icinga_web2</dt>
+<dd><p class="first">dictionary to store values used in templates given in
+vh_content_source and vh_top_source</p>
+<dl class="last docutils">
+<dt>web_directory</dt>
+<dd>location under which webpages of icinga-web2 will be
+available</dd>
+<dt>images_dir</dt>
+<dd>directory where images used by icinga-web2 are stored</dd>
+<dt>styles_dir</dt>
+<dd>directory where css used by icinga-web2 are stored</dd>
+<dt>bpaddon_dir</dt>
+<dd>directory where bpaddon scripts are located</dd>
+<dt>ext3_dir</dt>
+<dd>directory where ext3 scripts are located</dd>
+<dt>fastcgi_pass</dt>
+<dd>socket used to contact fastcgi server in order to
+interpret php files</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>phpfpm</dt>
+<dd><p class="first">dictionary to store values of phpfpm configuration</p>
+<dl class="last docutils">
+<dt>open_basedir</dt>
+<dd>paths to add to open_basedir</dd>
+<dt>extensions_package</dt>
+<dd>additional packages to install (such as php5-pgsql
+or php5-mysql for
+php database connection)</dd>
+<dt>doc_root</dt>
+<dd>root location for php-fpm</dd>
+<dt>session_auto_start</dt>
+<dd>must be 0 to run icinga-web2</dd>
+</dl>
+</dd>
+<dt>databases</dt>
+<dd><p class="first">dictionary to store databases connections parameters</p>
+<dl class="last docutils">
+<dt>ido2db</dt>
+<dd><p class="first">dictionary to store ido2db database connection parameters</p>
+<dl class="last docutils">
+<dt>type</dt>
+<dd>type of sgbd used &#8220;pgsql&#8221; or &#8220;mysql&#8221;</dd>
+<dt>host</dt>
+<dd>host used for connection</dd>
+<dt>port</dt>
+<dd>port used for connection</dd>
+<dt>user</dt>
+<dd>user used for connection</dd>
+<dt>password</dt>
+<dd>password used for connection</dd>
+<dt>name</dt>
+<dd>database name</dd>
+<dt>prefix</dt>
+<dd>prefix used in table&#8217;s names</dd>
+</dl>
+</dd>
+<dt>web</dt>
+<dd><p class="first">dictionary to store icinga-web2 database connection parameters</p>
+<dl class="last docutils">
+<dt>type</dt>
+<dd>type of sgbd used &#8220;pgsql&#8221; or &#8220;mysql&#8221;</dd>
+<dt>host</dt>
+<dd>host used for connection</dd>
+<dt>port</dt>
+<dd>port used for connection</dd>
+<dt>user</dt>
+<dd>user used for connection</dd>
+<dt>password</dt>
+<dd>password used for connection</dd>
+<dt>name</dt>
+<dd>database name</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mc_icinga_web.html" class="btn btn-neutral float-right" title="mc_icinga_web / icinga_web functions" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mc_icinga.html" class="btn btn-neutral" title="mc_icinga / icinga functions" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

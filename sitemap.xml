@@ -87,7 +87,17 @@
   </url>
   
   <url>
+    <loc>/reference/projects/usage/</loc>
+    <lastmod>2017-03-15T23:58:39+01:00</lastmod>
+  </url>
+  
+  <url>
     <loc>/reference/projects/</loc>
+    <lastmod>2017-03-15T23:58:39+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/reference/projects/RFC/</loc>
     <lastmod>2017-03-15T23:58:39+01:00</lastmod>
   </url>
   
@@ -161,6 +171,12 @@
   
   <url>
     <loc>/tags/minions/</loc>
+    <lastmod>2017-03-15T23:58:39+01:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/tags/paas/</loc>
     <lastmod>2017-03-15T23:58:39+01:00</lastmod>
     <priority>0</priority>
   </url>

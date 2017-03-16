@@ -1,4 +1,0 @@
-pureftpd configuration
-=======================
-
-

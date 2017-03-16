@@ -1,0 +1,849 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mc_pillar / makinastates ext-pillar &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../../../index.html"/>
+        <link rel="up" title="modules Modules" href="../../index.html"/>
+        <link rel="next" title="mc_pkgs / pkgs registry" href="mc_pkgs.html"/>
+        <link rel="prev" title="mc_php / php registry" href="mc_php.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Makina States
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">Custom states modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html">api Modules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">modules Modules</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="makina_grains.html">makinagrains</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_apache.html">mc_apache / apache httpd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_apparmor.html">mc_apparmor / apparmor functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_autoupgrade.html">mc_autoupgrade / packages autoupgrade</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_bind.html">mc_bind / named/bind functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_bootstraps.html">mc_bootstraps / bootstraps related registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_burp.html">mc_burp / burp functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_casperjs.html">mc_casperjs / casperjs/npm registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_circus.html">mc_circus / circus functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_compute_node.html">mc_cloud_compute_node / cloud compute node related functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_controller.html">mc_cloud_controller / cloud related variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_docker.html">mc_cloud_docker / docker registry for compute nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_images.html">mc_cloud_images / cloud images release managment &amp; delivery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_kvm.html">mc_cloud_kvm / kvm registry for compute nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_lxc.html">mc_cloud_lxc / lxc registry for compute nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud.html">mc_cloud / cloud registries &amp; functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_saltify.html">mc_cloud_saltify / cloud related variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_vm.html">mc_cloud_vm / vm registry for compute nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_controllers.html">mc_controllers / controllers related variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cron.html">mc_cron / cron functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dbsmartbackup.html">mc_dbsmartbackup / db_smart_backup functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dbus.html">mc_dbus / dbus functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dhcpd.html">mc_dhcpd / dhcpd registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_djutils.html">mc_djutils / django helpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dnshelpers.html">mc_dnshelpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dns.html">mc_dns / dns settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dumper.html">mc_dumper / Some useful wrappers to dump/load values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_editor.html">mc_editor / editor registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_env.html">mc_env / env registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_etckeeper.html">mc_etckeeper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_etherpad.html">mc_etherpad / etherpad functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_fail2ban.html">mc_fail2ban / fail2ban functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_firewalld.html">mc_firewalld / firewalld functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_golang.html">mc_golang / golang registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_grub.html">mc_grub / grub registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_haproxy.html">mc_haproxy / haproxy functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_icinga2.html">mc_icinga2 / icinga functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_icinga.html">mc_icinga / icinga functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_icinga_web2.html">mc_icinga_web2 / icinga_web2 functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_icinga_web.html">mc_icinga_web / icinga_web functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_insserv.html">mc_inssserv / inssserv functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_java.html">mc_java / java registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_kernel.html">mc_kernel / kernel registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ldap.html">mc_ldap / ldap registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_locales.html">mc_locales / locales registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_localsettings.html">mc_localsettings / localsettings variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_locations.html">mc_locations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_logrotate.html">mc_logrotate / logrotate registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_lxc.html">mc_lxc / lxc registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_macros.html">mc_macros / macros helpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_makinastates.html">mc_makinastates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_memcached.html">mc_memcached / memcached registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_mongodb.html">mc_mongodb / mongodb functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_monitoring.html">mc_monitoring registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ms_iptables.html">mc_ms_iptables / iptables functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_mumble.html">mc_mumble / mumble registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_mvn.html">mc_mvn / mvn registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_mysql.html">mc_mysql / mysql functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nagvis.html">mc_nagvis / nagvis functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_network.html">mc_network / network registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nginx.html">mc_nginx / nginx registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nodejs.html">mc_nodejs / nodejs/npm registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nodetypes.html">mc_nodetypes / nodetypes registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nscd.html">mc_nscd.py / ulogd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ntp.html">mc_ntp / ntp registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_pgsql.html">mc_pgsql / Postgresql related functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_phantomjs.html">mc_phantomjs / phantomjs/npm registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_php.html">mc_php / php registry</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="">mc_pillar / makinastates ext-pillar</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_pkgs.html">mc_pkgs / pkgs registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_pnp4nagios.html">mc_pnp4nagios / pnp4nagios functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_postfix.html">mc_postfix / postfix functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_project_1.html">mc_project_1 / project settings regitry APIV1</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_project_2.html">mc_project_2 / project settings regitry APIV2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_project.html">mc_project / project settings regitry switcher and common functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_provider.html">mc_provider / provider functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_proxy.html">mc_proxy / proxy registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_psad.html">mc_psad / psad functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_pureftpd.html">mc_pureftpd / pureftpd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_python.html">mc_python / python registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_rabbitmq.html">mc_rabbitmq / rabbitmq functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_rdiffbackup.html">mc_rdiff-backup / rdiff-backup functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_redis.html">mc_redis / redis functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_remote_pillar.html">mc_remote_pillar / masterless pillar management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_remote.html">mc_remote / remote execution functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_rsyslog.html">mc_rsyslog / rsyslog functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_rvm.html">mc_rvm / rvm registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_salt.html">mc_salt / salt related helpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_screen.html">mc_screen / screen registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_services_managers.html">mc_services_managers / servives managers registries &amp; functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_services.html">mc_services / servives registries &amp; functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_shorewall.html">mc_shorewall / shorewall functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_slapd.html">mc_slapd / slapd registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_snmpd.html">mc_snmpd / snmpd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ssh.html">mc_ssh / OpenSSH  related functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ssl.html">mc_ssl / ssl registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_state.html">mc_state / module to execute functions on salt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_supervisor.html">mc_supervisor / supervisor functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_test.html">mc_test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_timezone.html">mc_timezone / timezone registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_tomcat.html">mc_tomcat / tomcat functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ubuntugis.html">mc_ubuntugis / ubuntugis registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ulogd.html">mc_ulogd / ulogd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_updatedb.html">mc_updatedb / updatedb functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_usergroup.html">mc_usergroup / usergroup registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_utils.html">mc_utils / Some usefull small tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_uwsgi.html">mc_uwsgi / uwsgi functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_vim.html">mc_vim / vim registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_virtualbox.html">mc_virtualbox / virtualbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_www.html">mc_www / www registry</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../states/index.html">states Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../grains/index.html">grains Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../pillars/index.html">pillars Modules</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Custom states modules</a> &raquo;</li>
+      
+          <li><a href="../../index.html">modules Modules</a> &raquo;</li>
+      
+    <li>mc_pillar / makinastates ext-pillar</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../../_sources/api/modules/mc_states/modules/mc_pillar.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-mc_states.modules.mc_pillar"></span><div class="section" id="mc-pillar-makinastates-ext-pillar">
+<span id="module-mc-pillar"></span><h1>mc_pillar / makinastates ext-pillar<a class="headerlink" href="#mc-pillar-makinastates-ext-pillar" title="Permalink to this headline">¶</a></h1>
+<p>Transform the informations contained in database.sls to a whole infrastructure
+mapping.</p>
+<dl class="exception">
+<dt id="mc_states.modules.mc_pillar.DatabaseNotFound">
+<em class="property">exception </em><code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">DatabaseNotFound</code><a class="headerlink" href="#mc_states.modules.mc_pillar.DatabaseNotFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.delete_password_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">delete_password_for</code><span class="sig-paren">(</span><em>id_</em>, <em>user='root'</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.delete_password_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cleanup a password entry from the local password database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_db_infrastructure_maps">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_db_infrastructure_maps</code><span class="sig-paren">(</span><em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_db_infrastructure_maps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a struct:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;bms&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;xx-1.yyy.net&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;lxc&#39;</span><span class="p">],</span>
+         <span class="s1">&#39;xx-4.yyy.net&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;lxc&#39;</span><span class="p">]},</span>
+<span class="s1">&#39;vms&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;zz.yyy&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;target&#39;</span><span class="p">:</span> <span class="s1">&#39;xx.yyy.net&#39;</span><span class="p">,</span>
+                   <span class="s1">&#39;vt&#39;</span><span class="p">:</span> <span class="s1">&#39;kvm&#39;</span><span class="p">},</span>
+        <span class="s1">&#39;vv.yyy.net&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;target&#39;</span><span class="p">:</span> <span class="s1">&#39;xx.yyy.net&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;vt&#39;</span><span class="p">:</span> <span class="s1">&#39;kvm&#39;</span><span class="p">},}}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_ldap">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_ldap</code><span class="sig-paren">(</span><em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_ldap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a map of relationship between name servers
+that is used in the pillar to attribute roles
+and configuration to name servers</p>
+<p>This return a mapping in the form:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>{
+    all: [list of all nameservers],
+    masters: mapping of mappings {master: [list of related slaves]},
+    slaves: mapping of mappings {slave: [list of related masters]},
+}
+</pre></div>
+</div>
+<p>For each zone, if slaves are declared without master,
+the default masters would be added as master for this zone if any defaults.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_ldap_configuration">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_ldap_configuration</code><span class="sig-paren">(</span><em>id_=None</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_ldap_configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ldap client configuration</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_masterless_makinastates_hosts">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_masterless_makinastates_hosts</code><span class="sig-paren">(</span><em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_masterless_makinastates_hosts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expose on salt metadatas on how to connect
+on each part of the infra using ssh</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_nameserver_exposed">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_nameserver_exposed</code><span class="sig-paren">(</span><em>domain</em>, <em>server</em>, <em>nstype=None</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_nameserver_exposed" title="Permalink to this definition">¶</a></dt>
+<dd><p>From a mapped name or a nameserver real name
+return the name of the nameserver if exposed
+or None in othercase</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_ns">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_ns</code><span class="sig-paren">(</span><em>domain</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_ns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the first configured public name server for domain</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_ns_master">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_ns_master</code><span class="sig-paren">(</span><em>id_</em>, <em>dns_servers=None</em>, <em>default=None</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_ns_master" title="Permalink to this definition">¶</a></dt>
+<dd><p>Grab masters in this form:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>dns_servers:
+    zoneid_dn:
+        master: fqfn
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_nss">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_nss</code><span class="sig-paren">(</span><em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_nss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a map of relationship between name servers
+that is used in the pillar to attribute roles
+and configuration to name servers</p>
+<p>This return a mapping in the form:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>{
+    all: [list of all nameservers],
+    masters: mapping of mappings {master: [list of related slaves]},
+    slaves: mapping of mappings {slave: [list of related masters]},
+}
+</pre></div>
+</div>
+<p>For each zone, if slaves are declared without master,
+the default masters would be added as master for this zone if any defaults.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_nss_for_zone">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_nss_for_zone</code><span class="sig-paren">(</span><em>id_</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_nss_for_zone" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all masters and slaves for a zone</p>
+<p>If there is a master but no slaves, the master becomes also the only slave
+for that zone</p>
+<p>Slave in makina-states means a name server which is exposed to outside
+world via an NS record.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_password">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_password</code><span class="sig-paren">(</span><em>id_</em>, <em>user='root'</em>, <em>ttl=32140800</em>, <em>regenerate=False</em>, <em>length=12</em>, <em>force=False</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_password" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return user/password mappings for a particular host from
+a global pillar passwords map. Create it if not done</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_passwords">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_passwords</code><span class="sig-paren">(</span><em>id_</em>, <em>force=False</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_passwords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return user/password mappings for a particular host from
+a global pillar passwords map
+Take in priority pw from the db map
+But if does not exists in the db, lookup inside the local one
+If stiff non found, generate it and store in in local</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_passwords_conf">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_passwords_conf</code><span class="sig-paren">(</span><em>id_</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_passwords_conf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Idea is to have:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">simple users gaining sudoer access</p>
+</li>
+<li><p class="first">powerusers known as sysadmin have:</p>
+<blockquote>
+<div><ul class="simple">
+<li>access to sysadmin user via ssh key</li>
+<li>access to root user via ssh key</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">They are also sudoers with their username (trigramme)</p>
+</li>
+<li><p class="first">ssh accesses are limited though access groups, so we also map here
+the groups which have access to specific machines</p>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_raw_ns_slaves">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_raw_ns_slaves</code><span class="sig-paren">(</span><em>id_</em>, <em>dns_servers=None</em>, <em>default=None</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_raw_ns_slaves" title="Permalink to this definition">¶</a></dt>
+<dd><p>Grab slaves in this form:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>dns_servers:
+    zoneid_dn:
+        slaves:
+            - fqdn (aliased ip name, ip failover name or baremetal
+                     server address name)
+</pre></div>
+</div>
+<p>This returns a map between the NS record name and it&#8217;s associated server
+name:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>ns1.foo.net:
+    moo.foo.net
+ns2.foo.net:
+    foo.foo.net
+ns3.foo.net:
+    boo.foo.net
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_servername_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_servername_for</code><span class="sig-paren">(</span><em>id_or_ip</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_servername_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a given ip, or failover ip, or dns name
+retrieve the server or vm where is directly linked the
+aforementioned id/ip.  Be aware that in cases of VMS, the public ip
+can be associated to the baremetal and not the vm
+and so the returned name can obviously be the baremetal one.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_servername_for_ip">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_servername_for_ip</code><span class="sig-paren">(</span><em>ip</em>, <em>ttl=32140800</em>, <em>no_vm=False</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_servername_for_ip" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a given ip, or failover ip, retrieve the underthehood linked server or
+vm name.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_slapd_conf">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_slapd_conf</code><span class="sig-paren">(</span><em>id_</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_slapd_conf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return pillar information to configure makina-states.services.dns.slapd</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_slaves_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_slaves_for</code><span class="sig-paren">(</span><em>id_</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_slaves_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all public exposed dns servers slaves
+for a specific dns master
+Return something like:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>{
+    all: [all slaves related to this master],
+    z: {
+        {zone domains: [list of slaves related to this zone]
+       }
+}
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.get_ssh_port">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">get_ssh_port</code><span class="sig-paren">(</span><em>id_</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.get_ssh_port" title="Permalink to this definition">¶</a></dt>
+<dd><p>Port without gateway in the middle (use the NATted one in case of vms)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.invalidate_mc_pillar">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">invalidate_mc_pillar</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.invalidate_mc_pillar" title="Permalink to this definition">¶</a></dt>
+<dd><p>if the db changed, invalidate the cache</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.ip6_canfailover_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">ip6_canfailover_for</code><span class="sig-paren">(</span><em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.ip6_canfailover_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper to get the first available ip or failover ipv6</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.ip6_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">ip6_for</code><span class="sig-paren">(</span><em>fqdn</em>, <em>*args</em>, <em>**kwa1</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.ip6_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an ipv6 for a domain, try as a FQDN first and then
+try to append the specified domain</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>fail_over</dt>
+<dd>If FailOver records exists and no ip was found, it will take this
+value.
+If failOver exists and fail_over=true, all ips
+will be returned</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.ip6s_canfailover_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">ip6s_canfailover_for</code><span class="sig-paren">(</span><em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.ip6s_canfailover_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the real ips of a service, and fallback in case on failovers ipv6s
+but do not return ips + failovers ips if there are real ipv6s.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.ip6s_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">ip6s_for</code><span class="sig-paren">(</span><em>fqdn</em>, <em>fail_over=None</em>, <em>recurse=None</em>, <em>ignore_aliases=None</em>, <em>ignore_cnames=None</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.ip6s_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all ipv6 for a domain, try as a FQDN first and then
+try to append the specified domain
+We need a local cache to store the ips resolved from different
+datasource, DO NOT USE QUERY() DIRECTLY HERE</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>fail_over</dt>
+<dd>If FailOver records exists and no ip was found, it will take this
+value.
+If failOver exists and fail_over=true, all ips
+will be returned</dd>
+</dl>
+</div></blockquote>
+<p>Warning this method is tightly tied to load_network_infrastructure</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.ip_canfailover_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">ip_canfailover_for</code><span class="sig-paren">(</span><em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.ip_canfailover_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper to get the first available ip or failover ip</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.ip_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">ip_for</code><span class="sig-paren">(</span><em>fqdn</em>, <em>*args</em>, <em>**kwa1</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.ip_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an ip for a domain, try as a FQDN first and then
+try to append the specified domain</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>fail_over</dt>
+<dd>If FailOver records exists and no ip was found, it will take this
+value.
+If failOver exists and fail_over=true, all ips
+will be returned</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.ips_canfailover_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">ips_canfailover_for</code><span class="sig-paren">(</span><em>*a</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.ips_canfailover_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the real ips of a service, and fallback in case on failovers ips
+but do not return ips + failovers ips if there are real ips.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.ips_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">ips_for</code><span class="sig-paren">(</span><em>fqdn</em>, <em>fail_over=None</em>, <em>recurse=None</em>, <em>ignore_aliases=None</em>, <em>ignore_cnames=None</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.ips_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all ip for a domain, try as a FQDN first and then
+try to append the specified domain
+We need a local cache to store the ips resolved from different
+datasource, DO NOT USE QUERY() DIRECTLY HERE</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>fail_over</dt>
+<dd>If FailOver records exists and no ip was found, it will take this
+value.
+If failOver exists and fail_over=true, all ips
+will be returned</dd>
+</dl>
+</div></blockquote>
+<p>Warning this method is tightly tied to load_network_infrastructure</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.is_managed">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">is_managed</code><span class="sig-paren">(</span><em>id_</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.is_managed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Known in our infra but maybe not a salt minon</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.is_salt_managed">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">is_salt_managed</code><span class="sig-paren">(</span><em>id_</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.is_salt_managed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Known in our infra / and also a salt minion where we expose most
+of the ext_pillars</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.load_network_infrastructure">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">load_network_infrastructure</code><span class="sig-paren">(</span><em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.load_network_infrastructure" title="Permalink to this definition">¶</a></dt>
+<dd><p>This loads the structure while validating it for
+reverse ip lookups
+We need a local cache to store the ips resolved from different
+datasource, DO NOT USE QUERY() DIRECTLY HERE</p>
+<p>Warning this method is tightly tied to ips_for</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.manage_bridged_fo_kvm_network">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">manage_bridged_fo_kvm_network</code><span class="sig-paren">(</span><em>fqdn</em>, <em>host</em>, <em>ipsfo</em>, <em>ipsfo_map</em>, <em>ips</em>, <em>thisip=None</em>, <em>ifc='eth0'</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.manage_bridged_fo_kvm_network" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#8216;
+setup the network adapters configuration
+for a kvm vm on an ip failover setup</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.mmid">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">mmid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.mmid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.resolve_ip">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">resolve_ip</code><span class="sig-paren">(</span><em>name</em>, <em>fail_over=True</em>, <em>dns_query=True</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.resolve_ip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the first resolved IP of ips_resolve(*a)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.resolve_ips">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">resolve_ips</code><span class="sig-paren">(</span><em>name</em>, <em>fail_over=True</em>, <em>dns_query=True</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.resolve_ips" title="Permalink to this definition">¶</a></dt>
+<dd><p>Try to resolve the ips of a name
+either by the database and maybe on a DNS query fallback
+if not found</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.rr_a">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">rr_a</code><span class="sig-paren">(</span><em>fqdn</em>, <em>fail_over=None</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.rr_a" title="Permalink to this definition">¶</a></dt>
+<dd><p>Search for explicit A record(s) (fqdn/ip) record on the inputed mappings</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>fail_over</dt>
+<dd>If FailOver records exists and no ip was found, it will take this
+value.
+If failOver exists and fail_over=true, all ips
+will be returned</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.rr_aaaa">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">rr_aaaa</code><span class="sig-paren">(</span><em>fqdn</em>, <em>fail_over=None</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.rr_aaaa" title="Permalink to this definition">¶</a></dt>
+<dd><p>Search for explicit A record(s) (fqdn/ip) record on the inputed mappings</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>fail_over</dt>
+<dd>If FailOver records exists and no ip was found, it will take this
+value.
+If failOver exists and fail_over=true, all ips
+will be returned</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.rrs_a_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">rrs_a_for</code><span class="sig-paren">(</span><em>domain</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.rrs_a_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all configured A records for a domain</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.rrs_aaaa_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">rrs_aaaa_for</code><span class="sig-paren">(</span><em>domain</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.rrs_aaaa_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all configured A records for a domain</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.rrs_cnames_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">rrs_cnames_for</code><span class="sig-paren">(</span><em>domain</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.rrs_cnames_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all configured CNAME records for a domain</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.rrs_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">rrs_for</code><span class="sig-paren">(</span><em>domain</em>, <em>aslist=False</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.rrs_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all configured records for a domain
+take all rr found for the &#8220;ips&#8221; &amp; &#8220;ipsfo&#8221; tables for domain:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Make NS records for everything in ns_map</li>
+<li>Make MX records for everything in mx_map</li>
+<li>Make A records for everything in ips</li>
+<li>Make A records for everything in ips_map</li>
+<li>Make A records for everything in ipsfo</li>
+<li>Make CNAME records for baremetal or vms if they are
+in the ipsfo_map hashtable.</li>
+<li>Add the related TTL for each record matched inside
+the rrs_ttls hashstable</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.rrs_mx_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">rrs_mx_for</code><span class="sig-paren">(</span><em>domain</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.rrs_mx_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all configured MX records for a domain</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.rrs_ns_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">rrs_ns_for</code><span class="sig-paren">(</span><em>domain</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.rrs_ns_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all configured NS records for a domain</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.rrs_raw_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">rrs_raw_for</code><span class="sig-paren">(</span><em>domain</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.rrs_raw_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all configured TXT records for a domain</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.rrs_srv_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">rrs_srv_for</code><span class="sig-paren">(</span><em>domain</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.rrs_srv_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all configured TXT records for a domain</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.rrs_txt_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">rrs_txt_for</code><span class="sig-paren">(</span><em>domain</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.rrs_txt_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all configured NS records for a domain</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.serial_for">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">serial_for</code><span class="sig-paren">(</span><em>domain</em>, <em>serial=None</em>, <em>autoinc=True</em>, <em>force_serial=None</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.serial_for" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the serial for a DNS zone</p>
+<ul>
+<li><p class="first">If serial is given:</p>
+<blockquote>
+<div><ul class="simple">
+<li>we take that as a value</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Else:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">the serial defaults to &#8216;YYYYMMDD01&#8217;</p>
+</li>
+<li><p class="first">We try to load the serial from db and if
+it is superior to default, we use it</p>
+</li>
+<li><p class="first">We then load a local autosave file
+with mappings of domain/dns serials</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>If serial is found and autoinc:</dt>
+<dd>this local stored serial is autoincremented
+by 1</dd>
+</dl>
+</li>
+<li>if this local value is greater than the
+current serial, this becomes the serial,</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">at the end, we try to reach the nameservers in the wild
+to adapt our serial if it is too low or too high</p>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="mc_states.modules.mc_pillar.whitelisted">
+<code class="descclassname">mc_states.modules.mc_pillar.</code><code class="descname">whitelisted</code><span class="sig-paren">(</span><em>dn</em>, <em>ttl=32140800</em><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_pillar.whitelisted" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all configured NS records for a domain</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mc_pkgs.html" class="btn btn-neutral float-right" title="mc_pkgs / pkgs registry" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mc_php.html" class="btn btn-neutral" title="mc_php / php registry" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

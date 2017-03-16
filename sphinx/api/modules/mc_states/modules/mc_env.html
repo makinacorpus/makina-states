@@ -1,0 +1,345 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mc_env / env registry &mdash; Makina States 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Makina States 1.0 documentation" href="../../../../index.html"/>
+        <link rel="up" title="modules Modules" href="../../index.html"/>
+        <link rel="next" title="mc_etckeeper" href="mc_etckeeper.html"/>
+        <link rel="prev" title="mc_editor / editor registry" href="mc_editor.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Makina States
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../../index.html">Custom states modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../api/index.html">api Modules</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html">modules Modules</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="makina_grains.html">makinagrains</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_apache.html">mc_apache / apache httpd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_apparmor.html">mc_apparmor / apparmor functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_autoupgrade.html">mc_autoupgrade / packages autoupgrade</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_bind.html">mc_bind / named/bind functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_bootstraps.html">mc_bootstraps / bootstraps related registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_burp.html">mc_burp / burp functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_casperjs.html">mc_casperjs / casperjs/npm registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_circus.html">mc_circus / circus functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_compute_node.html">mc_cloud_compute_node / cloud compute node related functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_controller.html">mc_cloud_controller / cloud related variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_docker.html">mc_cloud_docker / docker registry for compute nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_images.html">mc_cloud_images / cloud images release managment &amp; delivery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_kvm.html">mc_cloud_kvm / kvm registry for compute nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_lxc.html">mc_cloud_lxc / lxc registry for compute nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud.html">mc_cloud / cloud registries &amp; functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_saltify.html">mc_cloud_saltify / cloud related variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cloud_vm.html">mc_cloud_vm / vm registry for compute nodes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_controllers.html">mc_controllers / controllers related variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_cron.html">mc_cron / cron functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dbsmartbackup.html">mc_dbsmartbackup / db_smart_backup functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dbus.html">mc_dbus / dbus functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dhcpd.html">mc_dhcpd / dhcpd registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_djutils.html">mc_djutils / django helpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dnshelpers.html">mc_dnshelpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dns.html">mc_dns / dns settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_dumper.html">mc_dumper / Some useful wrappers to dump/load values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_editor.html">mc_editor / editor registry</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="">mc_env / env registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_etckeeper.html">mc_etckeeper</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_etherpad.html">mc_etherpad / etherpad functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_fail2ban.html">mc_fail2ban / fail2ban functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_firewalld.html">mc_firewalld / firewalld functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_golang.html">mc_golang / golang registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_grub.html">mc_grub / grub registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_haproxy.html">mc_haproxy / haproxy functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_icinga2.html">mc_icinga2 / icinga functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_icinga.html">mc_icinga / icinga functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_icinga_web2.html">mc_icinga_web2 / icinga_web2 functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_icinga_web.html">mc_icinga_web / icinga_web functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_insserv.html">mc_inssserv / inssserv functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_java.html">mc_java / java registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_kernel.html">mc_kernel / kernel registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ldap.html">mc_ldap / ldap registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_locales.html">mc_locales / locales registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_localsettings.html">mc_localsettings / localsettings variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_locations.html">mc_locations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_logrotate.html">mc_logrotate / logrotate registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_lxc.html">mc_lxc / lxc registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_macros.html">mc_macros / macros helpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_makinastates.html">mc_makinastates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_memcached.html">mc_memcached / memcached registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_mongodb.html">mc_mongodb / mongodb functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_monitoring.html">mc_monitoring registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ms_iptables.html">mc_ms_iptables / iptables functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_mumble.html">mc_mumble / mumble registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_mvn.html">mc_mvn / mvn registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_mysql.html">mc_mysql / mysql functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nagvis.html">mc_nagvis / nagvis functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_network.html">mc_network / network registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nginx.html">mc_nginx / nginx registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nodejs.html">mc_nodejs / nodejs/npm registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nodetypes.html">mc_nodetypes / nodetypes registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_nscd.html">mc_nscd.py / ulogd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ntp.html">mc_ntp / ntp registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_pgsql.html">mc_pgsql / Postgresql related functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_phantomjs.html">mc_phantomjs / phantomjs/npm registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_php.html">mc_php / php registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_pillar.html">mc_pillar / makinastates ext-pillar</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_pkgs.html">mc_pkgs / pkgs registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_pnp4nagios.html">mc_pnp4nagios / pnp4nagios functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_postfix.html">mc_postfix / postfix functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_project_1.html">mc_project_1 / project settings regitry APIV1</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_project_2.html">mc_project_2 / project settings regitry APIV2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_project.html">mc_project / project settings regitry switcher and common functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_provider.html">mc_provider / provider functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_proxy.html">mc_proxy / proxy registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_psad.html">mc_psad / psad functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_pureftpd.html">mc_pureftpd / pureftpd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_python.html">mc_python / python registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_rabbitmq.html">mc_rabbitmq / rabbitmq functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_rdiffbackup.html">mc_rdiff-backup / rdiff-backup functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_redis.html">mc_redis / redis functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_remote_pillar.html">mc_remote_pillar / masterless pillar management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_remote.html">mc_remote / remote execution functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_rsyslog.html">mc_rsyslog / rsyslog functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_rvm.html">mc_rvm / rvm registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_salt.html">mc_salt / salt related helpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_screen.html">mc_screen / screen registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_services_managers.html">mc_services_managers / servives managers registries &amp; functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_services.html">mc_services / servives registries &amp; functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_shorewall.html">mc_shorewall / shorewall functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_slapd.html">mc_slapd / slapd registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_snmpd.html">mc_snmpd / snmpd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ssh.html">mc_ssh / OpenSSH  related functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ssl.html">mc_ssl / ssl registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_state.html">mc_state / module to execute functions on salt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_supervisor.html">mc_supervisor / supervisor functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_test.html">mc_test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_timezone.html">mc_timezone / timezone registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_tomcat.html">mc_tomcat / tomcat functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ubuntugis.html">mc_ubuntugis / ubuntugis registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_ulogd.html">mc_ulogd / ulogd functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_updatedb.html">mc_updatedb / updatedb functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_usergroup.html">mc_usergroup / usergroup registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_utils.html">mc_utils / Some usefull small tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_uwsgi.html">mc_uwsgi / uwsgi functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_vim.html">mc_vim / vim registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_virtualbox.html">mc_virtualbox / virtualbox</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mc_www.html">mc_www / www registry</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../states/index.html">states Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../grains/index.html">grains Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../pillars/index.html">pillars Modules</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">Makina States</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Custom states modules</a> &raquo;</li>
+      
+          <li><a href="../../index.html">modules Modules</a> &raquo;</li>
+      
+    <li>mc_env / env registry</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../../../_sources/api/modules/mc_states/modules/mc_env.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-mc_states.modules.mc_env"></span><div class="section" id="mc-env-env-registry">
+<span id="module-mc-env"></span><h1>mc_env / env registry<a class="headerlink" href="#mc-env-env-registry" title="Permalink to this headline">¶</a></h1>
+<p>If you alter this module and want to test it, do not forget
+to deploy it on minion using:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>salt &#39;*&#39; saltutil.sync_modules
+</pre></div>
+</div>
+<p>Documentation of this module is available with:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>salt &#39;*&#39; sys.doc mc_env
+</pre></div>
+</div>
+<dl class="function">
+<dt id="mc_states.modules.mc_env.settings">
+<code class="descclassname">mc_states.modules.mc_env.</code><code class="descname">settings</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mc_states.modules.mc_env.settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>env registry</p>
+<dl class="docutils">
+<dt>default_env</dt>
+<dd>Environment defaults (one of: dev/prod/preprod)</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mc_etckeeper.html" class="btn btn-neutral float-right" title="mc_etckeeper" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mc_editor.html" class="btn btn-neutral" title="mc_editor / editor registry" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014 -&gt; 2017, Mathieu Le Marec Pasquet, Régis Leroy &amp; Makina Corpus folks.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

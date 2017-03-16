@@ -1,4 +1,0 @@
-LXC orchestration hooks
-===========================
-
-

@@ -1,4 +1,0 @@
-bacula-fd configuration
-========================
-
-

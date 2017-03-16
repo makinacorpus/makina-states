@@ -1,4 +1,0 @@
-Bootstrap registries related helpers
-====================================
-
-

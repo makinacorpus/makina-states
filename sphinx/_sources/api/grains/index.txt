@@ -1,8 +1,8 @@
-makina-states grains modules
-=============================
+grains Modules
+==========================================================
 .. toctree::
    :maxdepth: 2
 
-   makina_grains.rst
+   mc_states/grains/makina_grains.rst
 
 
