@@ -2,11 +2,11 @@
 <html lang="en"><head>
 <meta name="robots" content="noindex"><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Configuration | Makina States</title><meta name="description" content="" />
+<title>Configuration/Layout | Makina States</title><meta name="description" content="" />
 <meta property="og:type" content="article" />
 <meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
-<meta property="og:article:modified_time" content="2017-03-15 23:58:39 &#43;0100 CET" /><meta property="og:article:tag" content="topics" /><meta property="og:article:tag" content="ansible" /><meta property="og:locale" content="en_US">
-<meta property="og:title" content="Configuration">
+<meta property="og:article:modified_time" content="0001-01-01 00:00:00 &#43;0000 UTC" /><meta property="og:article:tag" content="topics" /><meta property="og:article:tag" content="ansible" /><meta property="og:locale" content="en_US">
+<meta property="og:title" content="Configuration/Layout">
 <meta property="og:image" content="/images/">
 <meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:width" content="1500" />
@@ -32,8 +32,8 @@
 <link rel="prerender" href="/topics/ansible/">
 
 
-<link rel="prefetch" href="/topics/haproxy/">
-<link rel="prerender" href="/topics/haproxy/">
+<link rel="prefetch" href="/topics/ssl/">
+<link rel="prerender" href="/topics/ssl/">
 
 <link rel="stylesheet" href="/css/style.min.css">
   
@@ -78,7 +78,7 @@
 		
 <span id="page-top"></span>
 <main class="main">
-	<article class="content" id="configuration">
+	<article class="content" id="configuration/layout">
 		<header class="content-header">
 <nav class="breadcrumb">
 	<ul class="breadcrumbs">
@@ -90,7 +90,7 @@
 	</ul>
 </nav>
 
-<h1 class="page-title topics" id="configuration">Configuration</h1>
+<h1 class="page-title topics" id="configuration/layout">Configuration/Layout</h1>
 <div class="content-header-links">
   
   <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makinastates/edit/v2/doc/hugo/content/topics/configure/index.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
@@ -172,7 +172,7 @@ those who have declared special named functions:</p>
 
 <ul>
 <li>Get its pillar by calling
-<code>mc_remote_plllar.get_pillar($host)</code></li>
+<code>mc_remote_pillar.get_pillar($host)</code></li>
 <li>Extract/generate from informations in the pillar relevant ansible
 host vars for this minion. <strong>saltpillar</strong> ansible hostvar is the
 pillar of this minion.</li>
@@ -181,14 +181,14 @@ pillar of this minion.</li>
 </ul></li>
 
 <li><p>By default, we use the <code>mc_pillar</code> ext pillar which loads a file:
-<strong>etc/makina-states/database.sls</strong> which describe our infractructure and
-this will:</p></li>
+<code>etc/makina-states/database.sls</code> which describe our infractructure and
+this will:</p>
 
-<li><p>list all nodes that are configured as ansible targets</p></li>
-
-<li><p>generate pillar info for all nodes</p></li>
-
-<li><p>generate an ansible inventary for each of all those node</p></li>
+<ul>
+<li>list all nodes that are configured as ansible targets</li>
+<li>generate pillar info for all nodes (and per se fall inside
+the ansible inventory of those related hosts.</li>
+</ul></li>
 </ul>
 
 <h2 id="custom-extpillar">Custom extpillar</h2>
@@ -197,8 +197,9 @@ this will:</p></li>
 <li>In other words, to add your custom way of managing your hosts:
 
 <ul>
-<li>Create an ext_pillar to complete pillar for a specific minion
-depending on its minion id.</li>
+<li>Create an ext_pillar to complete the pillar for a specific minion
+depending on its <code>minion id</code> and that&rsquo;s why the easiest way
+is to adopt a minionid/hostname naming scheme.</li>
 <li>Create a module that implement the <code>get_masterless_makinastates_hosts</code> &amp;&amp; <code>get_masterless_makinastates_groups</code> functions</li>
 <li>register the pillar and module to the local makina-states installation (see bellow)</li>
 </ul></li>
@@ -210,19 +211,18 @@ depending on its minion id.</li>
 <li><a href="https://github.com/makinacorpus/makina-states/blob/v2/mc_states/pillar/mc_pillar.py">extpillar</a></li>
 </ul></li>
 
-<li><p>To load your extpillar, you ll have to add it to the local salt configuration. You can add a file this way</p></li>
-</ul>
+<li><p>To load your extpillar, you ll have to add it to the local salt configuration. <br/>
+You can add a file this way</p>
+<div class="highlight"><pre><code class="language-yaml" data-lang="yaml"><span></span><span class="l l-Scalar l-Scalar-Plain">$WC/etc/salt/minion.d/99_extpillar.conf</span> 
+    <span class="l l-Scalar l-Scalar-Plain">ext_pillar</span><span class="p p-Indicator">:</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mc_pillar</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{}</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mc_pillar_jsons</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{}</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">mycustompillar</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{}</span>
+</code></pre></div></li>
 
-<p><code>$WC/etc/salt/minion.d/99_extpillar.conf</code>:</p>
-<div class="highlight"><pre><span></span>ext_pillar:
-    - mc_pillar: {}
-    - mc_pillar_jsons: {}
-    - mycustompillar: {}
-</pre></div>
+<li><p>To load your custom module, place it under <code>$WC/salt/_modules</code></p></li>
 
-<ul>
-<li>To load your custom module, place it under <code>$WC/salt/_modules</code></li>
-<li>To load your custom pillar, place it under <code>$WC/salt/_pillar</code></li>
+<li><p>To load your custom pillar, place it under <code>$WC/salt/_pillar</code></p></li>
 </ul>
 
 <h2 id="verify-the-pillar-for-a-minion">Verify the pillar for a minion</h2>
@@ -243,11 +243,11 @@ depending on its minion id.</li>
 
 <h2 id="optional-add-a-cron-to-speed-up-pillar-generation">(OPTIONAL) Add a cron to speed up pillar generation</h2>
 
-<p>To generate regularly the cron for all the configured minion, to speed
-up regular ansible calls (the pillar will already be cached at the call
-time), you can register a cron that does that.</p>
-
 <ul>
+<li>To generate regularly the cron for all the configured minion, to speed
+up regular ansible calls (the pillar will already be cached at the call
+time), you can register a cron that does that.</li>
+
 <li><p><code>/etc/cron.d/refresh_ansible</code></p>
 
 <pre>
@@ -255,7 +255,7 @@ time), you can register a cron that does that.</p>
 </pre></li>
 </ul>
 
-		</div><div class="last-modified">Last Updated: 2017-03-15</div>
+		</div><div class="last-modified">Last Updated: 0001-01-01</div>
 <footer id="content-footer">
 
 
@@ -263,15 +263,15 @@ time), you can register a cron that does that.</p>
 			<i class="fa fa-chevron-left"></i>
 		<div class="page-info">
 			<span>Previous</span>
-			<h5 class="topics">Ansible related configuration</h5>
+			<h5 class="topics">Using bundled ansible</h5>
 		</div>
 </a>
 
 
-	<a href="/topics/haproxy/" class="cf-link next-page">
+	<a href="/topics/ssl/" class="cf-link next-page">
 		<div class="page-info">
 			<span>Next</span>
-			<h5 class="topics">Haproxy</h5>
+			<h5 class="topics">Manage ssl certificates</h5>
 		</div>
 		<i class="fa fa-chevron-right"></i>
 	</a>
@@ -284,8 +284,8 @@ time), you can register a cron that does that.</p>
 <aside id="toc" class="scroll-fixed-wrapper">
   <div class="scroll-fixed-wrapper-inner">
     <header class="toc-header">
-      <a href="#configuration">
-        <h3 class="topics">Configuration</h3>
+      <a href="#configuration%2flayout">
+        <h3 class="topics">Configuration/Layout</h3>
       </a>
     </header>
     <nav id="TableOfContents">
@@ -344,7 +344,7 @@ time), you can register a cron that does that.</p>
 
 <li class="menu-item menu-item-1">
   <a
-    class="list-icon menu-item-link menu-item-link-1" href="/sphinx/api">API</a>
+    class="list-icon menu-item-link menu-item-link-1" href="/">Home</a>
   
 </li>
 
@@ -359,7 +359,117 @@ time), you can register a cron that does that.</p>
 
 <li class="menu-item menu-item-1">
   <a
-    class="list-icon menu-item-link menu-item-link-1" href="/">Home</a>
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/reference/">Reference</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/sumup/">Order of operation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/nodetypes/">Nodetypes</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/localsettings/">LocalSettings</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/services/">Services</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/install/">Installation &amp; usage</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/install/usage/">Usage</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
   
 </li>
 
@@ -389,7 +499,32 @@ time), you can register a cron that does that.</p>
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/topics/ansible/">Ansible related configuration</a>
+    class="list-icon menu-item-link menu-item-link-2 has-children" href="/topics/ansible/">Using bundled ansible</a>
+  
+  
+  
+
+
+<ul class="menu menu-3">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-3">
+  <a
+    class="list-icon menu-item-link menu-item-link-3" href="/topics/ansible/saltcall/">Ansible saltcall module</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
   
 </li>
 
@@ -404,37 +539,7 @@ time), you can register a cron that does that.</p>
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2 active open" href="/topics/configure/">Configuration</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2" href="/topics/haproxy/">Haproxy</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2" href="/topics/install/">Installation &amp; basic usage</a>
+    class="list-icon menu-item-link menu-item-link-2 active open" href="/topics/configure/">Configuration/Layout</a>
   
 </li>
 
@@ -465,6 +570,21 @@ time), you can register a cron that does that.</p>
 <li class="menu-item menu-item-2">
   <a
     class="list-icon menu-item-link menu-item-link-2" href="/topics/database/">Minions managment via database.sls</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/haproxy/">Haproxy</a>
   
 </li>
 
@@ -504,7 +624,7 @@ time), you can register a cron that does that.</p>
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/cloud/lxc/">LXC containers management</a>
+    class="list-icon menu-item-link menu-item-link-2" href="/cloud/lxc/">LXC</a>
   
 </li>
 
@@ -515,6 +635,21 @@ time), you can register a cron that does that.</p>
 </ul>
 
   
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/sphinx/api">API</a>
   
 </li>
 

@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta name="robots" content="noindex"><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Using bundled ansible | Makina States</title><meta name="description" content="" />
+<meta property="og:type" content="article" />
+<meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
+<meta property="og:article:modified_time" content="0001-01-01 00:00:00 &#43;0000 UTC" /><meta property="og:article:tag" content="topics" /><meta property="og:article:tag" content="ansible" /><meta property="og:locale" content="en_US">
+<meta property="og:title" content="Using bundled ansible">
+<meta property="og:image" content="/images/">
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="1500" />
+<meta property="og:image:height" content="800" />
+<meta property="og:description" content=""/>
+<meta property="og:site_name" content="Makina States">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/favicons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/images/favicons/favicon-16x16.png" sizes="16x16">
+<link rel="manifest" href="/images/favicons/manifest.json">
+<link rel="mask-icon" href="/images/favicons/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="msapplication-TileImage" content="/images/favicons/mstile-144x144.png">
+<meta name="theme-color" content="#ffffff">
+<link rel="shortcut icon" href="/images/favicons/favicon.ico">
+<link rel="dns-prefetch" href="/">
+
+<link rel="preconnect" href="/">
+<link rel="canonical" href="/install/ansible/">
+
+
+<link rel="prefetch" href="/install/ansible/saltcall/">
+<link rel="prerender" href="/install/ansible/saltcall/">
+
+
+<link rel="stylesheet" href="/css/style.min.css">
+  
+</head>
+<body>
+	
+<header id="site-header" class="site-header">
+  <div class="hugo-meta" title="Hugo version 1">
+    <a href="/" id="home-link">
+      <img src="/images/MakinaCorpus_logo_vert_blanc.svg" alt="" />
+    </a>
+  </div>
+  <div id="goto-source">
+    <ul>
+      <li>
+        <a href="https://github.com/makinacorpus/makinastates" target="_blank">
+          <i class="icon-github"></i> Source
+        </a>
+      </li>
+    </ul>
+  </div>
+<div id="search-wrapper">
+  <form action="" id="search-form" role="search">
+    <label for="search" class="icon-search" id="search-button"></label>
+    <input type="search" id="search-input" class="site-search"
+        autocomplete="off"
+        aria-label="Search the Makina States website..."
+        placeholder="Search..." required />
+    <input type="hidden" id="search-index" value="/site-index.json"/>
+  </form>
+</div>
+<div id="search-results-wrapper">
+  <div id="search-results-count"></div>
+  <ul id="search-results">
+    
+    
+  </ul>
+</div>
+</header>
+
+  <div class="all-content-wrapper" id="all-content-wrapper">
+		
+<span id="page-top"></span>
+<main class="main">
+	<article class="content" id="using-bundled-ansible">
+		<header class="content-header">
+<nav class="breadcrumb">
+	<ul class="breadcrumbs">
+		<li>
+			<a class="crumb" href="/install">
+    		<span>Install</span>
+  		</a>
+		</li>
+	</ul>
+</nav>
+
+<h1 class="page-title install" id="using-bundled-ansible">Using bundled ansible</h1>
+<div class="content-header-links">
+  
+  <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makinastates/edit/v2/doc/hugo/content/install/ansible/index.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
+
+	<ul class="tags">
+		<li class="icon"><i class="icon-tags"></i></li>
+		
+		<li><a class="tag" href="/tags/topics">topics</a></li>
+		
+		<li><a class="tag" href="/tags/ansible">ansible</a></li>
+		
+	</ul>
+
+
+		</header>
+		<div class="body-copy" data-section=install>
+		
+
+<h2 id="leaving-localhost">Leaving localhost</h2>
+
+<ul>
+<li>When you want to execute saltstack states (makina-states) remotly,<br>
+here is the prefligh list to do:
+
+<ul>
+<li>declare your host in the <code>database.sls</code></li>
+<li>Ensure that the target is reachable from ansible</li>
+<li>Bootstrap makina-states on the remote box, via the providen makinastates role</li>
+</ul></li>
+</ul>
+
+<h2 id="ansible-wrappers-specifics">Ansible wrappers specifics</h2>
+
+<ul>
+<li>To use ansible, please use makina-states wrappers and <br/>
+<b>never EVER</b> the ansible original scripts directly.<br/></li>
+
+<li><p>If you are using the database.sls, we use <strong><em>environment variables</em></strong> that are specific to makina-states and
+tell the ext pillar (local saltstack side) for which environment to gather information for.</p>
+
+<p><code>ANSIBLE_TARGETS</code>
+    : list of hosts that we will act on. this will limit the scope of
+      the ext pillars generation thus you have to set it to speed
+      up operations.
+<code>ANSIBLE_NOLIMIT</code>
+    : if set, we wont limit the scope of ansible to ANSIBLE_TARGETS</p></li>
+</ul>
+
+<h3 id="examples">Examples</h3>
+
+<ul>
+<li><p>exemple 1</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="k">$(</span>hostname<span class="k">)</span> bin/ansible all -m ping
+</code></pre></div></li>
+
+<li><p>exemple 2</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>bin/ansible -c <span class="nb">local</span> -i <span class="s2">&quot;localhost,&quot;</span> all -m ping
+</code></pre></div></li>
+</ul>
+
+<h3 id="examples-with-salt">Examples with salt</h3>
+
+<ul>
+<li><p>Call a state.sls run</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="k">$(</span>hostname<span class="k">)</span> bin/ansible all -m shell <span class="se">\</span>
+    -a salt-call --retcode-passthrough state.sls foobar
+</code></pre></div></li>
+</ul>
+
+<h3 id="details">Details</h3>
+
+<ul>
+<li><p>See:</p>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible">bin/ansible</a></li>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-galaxy">bin/ansible-galaxy</a></li>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-playbook">bin/ansible-playbook</a></li>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-wrapper-common">bin/ansible-wrapper-common</a></li>
+</ul></li>
+
+<li><p>We preconfigure in our wrappers a lot of things like:</p>
+
+<ul>
+<li>Loading configuration (roles, playbooks, inventories, plugins) from:
+
+<ul>
+<li><code>./</code></li>
+<li><code>./ansible</code></li>
+<li><code>./.ansible</code></li>
+<li><code>&lt;makinastates_install_dir&gt;/ansible</code></li>
+<li><code>/usr/share/ansible</code> (depends of the opt, respects the ansible default configuration)</li>
+<li><code>/etc/ansible</code> (depends of the opt, respects the ansible default configuration)</li>
+</ul></li>
+<li>When <code>ANSIBLE_TARGETS</code> are set, we will limit the play to them
+unless <code>ANSIBLE_NOLIMIT</code> is set.</li>
+</ul></li>
+</ul>
+
+<h2 id="calling-makina-states-s-flavored-ansible-from-another-repository">Calling makina-states&rsquo;s flavored  ansible from another repository</h2>
+
+<p>As said previously, we load the current folder (and ./.ansible,
+./ansible as well).<br/>
+This clever trick will let you can add roles and plays to a specific
+repository but also be able to depend on plugins or roles defined in makina-states.<br/>
+This mean that you ll be able to call the ansible wrapper FROM your directory where
+you have your specific ansible installation and the whole will assemble nicely.</p>
+
+<ul>
+<li><p>For example:</p>
+
+<ul>
+<li>if makina-states is installed in <code>/srv/makina-states</code></li>
+<li>your project is installed inside <code>/srv/projects/foo/project</code></li>
+<li>You can create your roles inside <code>/srv/projects/foo/project/ansible/roles</code></li>
+<li>You can make dependencies of any <a href="https://github.com/makinacorpus/makina-states/tree/v2/ansible/roles">makina-states roles</a> specially <code>makinastates_pillar</code> that
+deploy the locally gather pillar for a box to the remote if you are
+not acting on <code>localhost</code>.</li>
+
+<li><p>You ll have to call <code>ansible</code> or <code>ansible-playbook</code>, do it this way:</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nb">cd</span> /srv/projects/foo/project
+/srv/makina-states/bin/<span class="o">{</span>ansible,ansible-playbook<span class="o">}</span> <span class="nv">$args</span>
+</code></pre></div></li>
+</ul></li>
+</ul>
+
+<h2 id="related">Related</h2>
+
+<ul>
+<li><a href="saltcall">salt call module</a></li>
+</ul>
+
+		</div><div class="last-modified">Last Updated: 0001-01-01</div>
+<footer id="content-footer">
+
+
+<a href="/install/ansible/saltcall/" class="cf-link prev-page">
+			<i class="fa fa-chevron-left"></i>
+		<div class="page-info">
+			<span>Previous</span>
+			<h5 class="install">Ansible saltcall module</h5>
+		</div>
+</a>
+
+
+
+</footer>
+</article>
+</main>
+
+<aside id="toc" class="scroll-fixed-wrapper">
+  <div class="scroll-fixed-wrapper-inner">
+    <header class="toc-header">
+      <a href="#using-bundled-ansible">
+        <h3 class="install">Using bundled ansible</h3>
+      </a>
+    </header>
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#leaving-localhost">Leaving localhost</a></li>
+<li><a href="#ansible-wrappers-specifics">Ansible wrappers specifics</a>
+<ul>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#examples-with-salt">Examples with salt</a></li>
+<li><a href="#details">Details</a></li>
+</ul></li>
+<li><a href="#calling-makina-states-s-flavored-ansible-from-another-repository">Calling makina-states&rsquo;s flavored  ansible from another repository</a></li>
+<li><a href="#related">Related</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+  <div class="fade"></div>
+</aside>
+<a href="#"
+  id="toc-toggle"
+  class="toc-open"
+  title="Toggle Table of contents..."></a>
+
+
+	</div>
+<footer id="site-footer" class="site-footer">
+<div class="footer-content">
+  
+    
+  </div>
+</footer>
+<div class="navbutton__wrapper">
+  <a class="trigger" href="#">
+    <ul class="nav__trigger">
+      <li class="nav__trigger-item nav__trigger-item--first"></li>
+      <li class="nav__trigger-item nav__trigger-item--second"></li>
+      <li class="nav__trigger-item nav__trigger-item--third"></li>
+    </ul>
+  </a>
+</div>
+<nav class="site-navigation navigation-open scroll-fixed-wrapper"
+     id="site-navigation">
+  <div class="site-navigation-inner scroll-fixed-wrapper-inner">
+    
+    
+    
+
+
+<ul class="menu menu-1">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/">Home</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/reference/">Reference</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/sumup/">Order of operation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/nodetypes/">Nodetypes</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/localsettings/">LocalSettings</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/services/">Services</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/install/">Installation &amp; usage</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/install/usage/">Usage</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/install/configure/">Configuration/Layout</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/install/databasesls/">database.sls</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2 has-children active open" href="/install/ansible/">Using bundled ansible</a>
+  
+  
+  
+
+
+<ul class="menu menu-3">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-3">
+  <a
+    class="list-icon menu-item-link menu-item-link-3" href="/install/ansible/saltcall/">Ansible saltcall module</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/topics/">Topics</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/ssl/">Manage ssl certificates</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/haproxy/">Haproxy</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/cloud/">Cloud</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/cloud/lxc/">LXC</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/sphinx/api">API</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+    
+  </div>
+</nav>
+<script src="/js/vendor/jquery-2.2.4.min.js"></script>
+<script src="/js/vendor/lunr.min.js"></script>
+<script src="/js/script.min.js"></script>
+
+
+
+<script async defer src="https://buttons.github.io/buttons.js"></script>
+
+<script>
+(function() {
+  if (window.location.hostname === "localhost") {
+    console.log("Analytics not running on local dev.");
+    return;
+  } else {
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o),
+        m = s.getElementsByTagName(o)[0];
+      a.async = 1;
+      a.src = g;
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+    ga('create', '', 'auto');
+    ga('send', 'pageview');
+    ga('create', '', {
+      'siteSpeedSampleRate': 100
+    });
+  }
+})();
+</script>
+
+	
+</body>
+</html>

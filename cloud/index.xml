@@ -1,24 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Cloud on Makina States</title>
+    <title>Cloud Documentation on Makina States</title>
     <link>/cloud/index.xml</link>
-    <description>Recent content in Cloud on Makina States</description>
+    <description>Recent content in Cloud Documentation on Makina States</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fr-FR</language>
     <atom:link href="/cloud/index.xml" rel="self" type="application/rss+xml" />
-    
-    <item>
-      <title>Cloud Documentation</title>
-      <link>/cloud/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>/cloud/</guid>
-      <description>&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;lxc&#34;&gt;LXC&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-    </item>
     
     <item>
       <title>LXC containers management</title>
@@ -27,6 +15,8 @@
       
       <guid>/cloud/lxc/</guid>
       <description>
+
+&lt;hr /&gt;
 
 &lt;p&gt;workflow:&lt;/p&gt;
 

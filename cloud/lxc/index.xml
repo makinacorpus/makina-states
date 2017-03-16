@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>LXC containers management on Makina States</title>
+    <link>/cloud/lxc/index.xml</link>
+    <description>Recent content in LXC containers management on Makina States</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fr-FR</language>
+    <atom:link href="/cloud/lxc/index.xml" rel="self" type="application/rss+xml" />
+    
+  </channel>
+</rss>

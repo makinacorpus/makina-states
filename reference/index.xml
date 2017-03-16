@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Reference on Makina States</title>
+    <link>/reference/index.xml</link>
+    <description>Recent content in Reference on Makina States</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fr-FR</language>
+    <atom:link href="/reference/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Order of operation</title>
+      <link>/reference/sumup/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/reference/sumup/</guid>
+      <description>
+
+&lt;h2 id=&#34;history&#34;&gt;History&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Makina-states was based at fist on &lt;code&gt;nodetypes presets&lt;/code&gt; that were preselected collections of makina-states states to apply to the system&lt;br/&gt;This is from where the &lt;code&gt;highstate&lt;/code&gt; will start to run.&lt;/li&gt;
+&lt;li&gt;Recently we cutted off this behavior, and now you must apply them explicitly.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;workflow&#34;&gt;Workflow&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;On nodetypes, we manage &lt;code&gt;controllers&lt;/code&gt;, aka the states which
+configure salt &amp;amp; ansible for operation&lt;/li&gt;
+&lt;li&gt;On those nodetypes, we may configure &lt;code&gt;localsettings&lt;/code&gt; like ssl, vim,
+git, &amp;amp; basepackages or network configurations. If any other preset
+than &lt;strong&gt;scratch&lt;/strong&gt; has been activated, many localsettings will be
+applied by default
+(see mc_states/modules/localsettings.py:registry)&lt;/li&gt;
+&lt;li&gt;After all of the previous steps, we may configure &lt;code&gt;services&lt;/code&gt; like
+sshd, crond, or databases. If we are on the &lt;strong&gt;scratch&lt;/strong&gt; mode, no
+services are configured by default.&lt;/li&gt;
+&lt;li&gt;Eventually, we may by able to install projects via &lt;code&gt;mc_project&lt;/code&gt;. &lt;br/&gt;
+A project is just a classical code repository which has a &amp;ldquo;.salt&amp;rdquo;
+and/or ansible playbooks/roles folder commited with enougth
+information on how to deploy it.&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Nodetypes</title>
+      <link>/reference/nodetypes/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/reference/nodetypes/</guid>
+      <description>
+
+&lt;h2 id=&#34;nodetypes&#34;&gt;Nodetypes&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Your choice for &lt;code&gt;--nodetype&lt;/code&gt; is certainly one of:
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;scratch (default)&lt;/code&gt; only manage the ansible/salt installation and
+configuration. You ll want to activate this mode if you want
+to apply explicitly your states without relying of default
+nodetypes configuration.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;server&lt;/code&gt; matches a baremetal server, and manage it
+from end to end (base packages, network, locales, sshd, crond,
+logrotate, etc, by default)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;vm&lt;/code&gt; matches a VM (not baremetal), this is mostly like
+&lt;strong&gt;server&lt;/strong&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;lxccontainer&lt;/code&gt; matches a VM (not baremetal), this is mostly
+like &lt;strong&gt;server&lt;/strong&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;laptop&lt;/code&gt; is like server but also install packages for
+working on a developement machine (prebacking a laptop for
+a dev)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;dockercontainer&lt;/code&gt; matches a VM (not baremetal), this is
+mostly like &lt;strong&gt;server&lt;/strong&gt;, but install &amp;amp; preconfigure circus to
+manage daemons.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;devhost&lt;/code&gt; is suitable for a development machine enabling
+states to act on that, by example installation of a test
+local-loop mailer.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;vagrantvm&lt;/code&gt; is suitable to flag vagrant boxes and is a
+subtype of devhost&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;switching-to-another-nodetype-on-an-already-installed-environment&#34;&gt;Switching to another nodetype on an already installed environment&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;If you installed the &lt;strong&gt;scratch&lt;/strong&gt; preset and want to switch to another preset:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;salt-call state.sls makina-states.nodetypes.&amp;lt;your_new_preset&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If you installed a preset and want to switch to another preset:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;edit &lt;code&gt;etc/makina-states/nodetype&lt;/code&gt; and put your new preset&lt;/li&gt;
+&lt;li&gt;edit &lt;code&gt;etc/makina-states/nodetypes.yaml&lt;/code&gt; and set to false your old preset&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Finally, run:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;salt-call state.sls makina-states.nodetypes.&amp;lt;your_new_preset&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>LocalSettings</title>
+      <link>/reference/localsettings/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/reference/localsettings/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Services</title>
+      <link>/reference/services/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/reference/services/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

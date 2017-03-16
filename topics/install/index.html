@@ -5,7 +5,7 @@
 <title>Installation &amp; basic usage | Makina States</title><meta name="description" content="" />
 <meta property="og:type" content="article" />
 <meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
-<meta property="og:article:modified_time" content="2017-03-15 23:58:39 &#43;0100 CET" /><meta property="og:article:tag" content="topics" /><meta property="og:article:tag" content="installation" /><meta property="og:locale" content="en_US">
+<meta property="og:article:modified_time" content="0001-01-01 00:00:00 &#43;0000 UTC" /><meta property="og:article:tag" content="topics" /><meta property="og:article:tag" content="installation" /><meta property="og:locale" content="en_US">
 <meta property="og:title" content="Installation &amp; basic usage">
 <meta property="og:image" content="/images/">
 <meta property="og:image:type" content="image/jpeg" />
@@ -28,12 +28,9 @@
 <link rel="canonical" href="/topics/install/">
 
 
-<link rel="prefetch" href="/topics/haproxy/">
-<link rel="prerender" href="/topics/haproxy/">
 
-
-<link rel="prefetch" href="/topics/ssl/">
-<link rel="prerender" href="/topics/ssl/">
+<link rel="prefetch" href="/topics/ansible/saltcall/">
+<link rel="prerender" href="/topics/ansible/saltcall/">
 
 <link rel="stylesheet" href="/css/style.min.css">
   
@@ -109,157 +106,76 @@
 		<div class="body-copy" data-section=topics>
 		
 
-<h2 id="briefing">Briefing</h2>
-
-<p><strong>For now, use Ubuntu &gt;= 14.04.</strong>. Makina-States can be ported to any
-linux based OS, but we here use ubuntu server and this is the only
-supported system for now. It can be used in any flavor, lxc, docker,
-baremetal, kvm, etc.</p>
-
-<ul>
-<li>To install our base salt installation, you have to choose between
-different modes of operations tweakable via the <strong>nodetype</strong> setting:
-
-<ul>
-<li>The regular preset modes manages the system configuration from end
-to end, from the system, to makina-states, including the
-saltstack/salt/ansible installation itself.</li>
-<li>The special <code>scratch</code> mode manages only the saltstack +
-makina-states configuration by default, so it&rsquo;s up to you to apply
-any other state but do not touch much to the system itself more
-than installing the scripts for wiring makina-states</li>
-</ul></li>
-</ul>
-
-<p><strong>Makina-states do not use regular salt daemons to operate remotely but
-an ansible bridge that copy the pillar and use salt-call locally
-directly on the remote box</strong></p>
-
-<h2 id="reminder">Reminder</h2>
-
-<ul>
-<li>Makina-states was based at fist on &ldquo;nodetypes presets&rdquo; that are prebundled
-collections of makina-states states to apply to the system.
-
-<ul>
-<li>On those nodetypes, we manage &ldquo;controllers&rdquo;, aka the states which
-configure salt &amp; ansible for operation
-
-<ul>
-<li>On those nodetypes, we may configure &ldquo;localsettings&rdquo; like ssl, vim,
-git, &amp; basepackages or network configurations. If any other preset
-than <strong>scratch</strong> has been activated, many localsettings will be
-applied by default
-(see mc_states/modules/localsettings.py:registry)</li>
-<li>After all of the previous steps, we may configure services like
-sshd, crond, or databases. If we are on the <strong>scratch</strong> mode, no
-services are configured by default.</li>
-<li>Eventually, we may by able to install projects via mc_project. A
-project is just a classical code repository which has a &ldquo;.salt&rdquo;
-and/or ansible playbooks/roles folder commited with enougth
-information on how to deploy it.</li>
-</ul></li>
-</ul></li>
-</ul>
-
-<h2 id="details">Details</h2>
-
-<ul>
-<li>Just run the <code>_scrits/boot-salt.sh</code> script as <strong>root</strong>,</li>
-<li>Please read next paragraphs before running any command.
-
-<ul>
-<li>All the behavior of the script can be controlled via environment
-variables or command line arguments switches.</li>
-<li>You will need to tell on what kind of environment you are installing
-on (the nodetype).</li>
-<li>You&rsquo;ll also have to set the <strong>minion id</strong>. The default choice for
-<strong>&ndash;minion-id</strong> is the current machine hostname. You should keep
-this naming scheme unless you have a good reason to change it.</li>
-<li>Your choice for <code>--nodetype</code> is certainly one of:
-
-<ul>
-<li><strong>scratch</strong> manages by default only the salt installation and
-configuration. You ll want to activate this mode if you want
-to apply explicitly your states without relying of default
-nodetypes configuration.</li>
-<li><strong>server (default)</strong> matches a baremetal server, and manage it
-from end to end (base packages, network, locales, sshd, crond,
-logrotate, etc, by default)</li>
-<li><strong>vm</strong> matches a VM (not baremetal), this is mostly like
-<strong>server</strong>.</li>
-<li><strong>lxccontainer</strong> matches a VM (not baremetal), this is mostly
-like <strong>server</strong>.</li>
-<li><strong>laptop</strong> is like server but also install packages for
-working on a developement machine (prebacking a laptop for
-a dev)</li>
-<li><strong>dockercontainer</strong> matches a VM (not baremetal), this is
-mostly like <strong>server</strong>, but install &amp; preconfigure circus to
-manage daemons.</li>
-<li><strong>devhost</strong> is suitable for a development machine enabling
-states to act on that, by example installation of a test
-local-loop mailer.</li>
-<li><strong>vagrantvm</strong> is suitable to flag vagrant boxes and is a
-subtype of devhost</li>
-</ul></li>
-</ul></li>
-</ul>
-
-<h2 id="regular-modes-via-boot-salt-sh">Regular modes (via boot-salt.sh)</h2>
-
-<ul>
-<li>boot-salt.sh will try to remember how you configured makina-states on
-each run. It stores configs in <code>installdir/etc/makina-states</code></li>
-<li>Indeed while running, the script try to find enougth information
-(nodetype, salt installs, branch), and will automaticly guess &amp; store
-the parameters by itself.</li>
-<li>In other words, you will just have to type <strong>boot-salt.sh</strong>, and verify
-settings the next time you ll use it.</li>
-</ul>
-
 <p><strong>REMEMBER THAT FOR NOW YOU HAVE TO USE UBUNTU &gt;= 14.04.</strong></p>
 
 <h3 id="download">Download</h3>
 
 <ul>
-<li><p>Get the script:</p>
+<li><p>Get MakinaStates by cloning it from github</p>
 <div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>git clone http://raw.github.com/makinacorpus/makina-states
 </code></pre></div></li>
+</ul>
+
+<h3 id="boot-salt2-sh-the-makina-states-installer-manager">boot-salt2.sh, the makina-states installer &amp; manager</h3>
+
+<ul>
+<li><p><code>boot-salt2.sh</code> will try to remember how you configured makina-states on
+each run. It stores configs in <code>installdir/etc/makina-states</code></p></li>
 
 <li><p>Short overview:</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt.sh --help
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh --help
 </code></pre></div></li>
 
 <li><p>Detailed overview:</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt.sh --long-help
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh --long-help
+</code></pre></div></li>
+
+<li><p>If you want to install  with default options (scratch)<br/>
+<code>as root</code></p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh -C
 </code></pre></div></li>
 </ul>
 
-<h3 id="cli-exemples">CLI Exemples</h3>
+<h2 id="optional-post-install-steps">Optional post install steps</h2>
 
 <ul>
-<li><p>If you want to install only a minion which will be connected to a remote
-mastersalt master:</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt.sh
+<li><p>Install the logrotate to rotate salt logs</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh -C --install-logrotate
 </code></pre></div></li>
 
-<li><p>If you want to manage from end to end your server, select also the <code>laptop</code> preset nodetype:</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt.sh -n laptop<span class="p">|</span>server<span class="p">|</span>kxccontainer<span class="p">|</span>vm
+<li><p>Install the cron that refresh makina-states code every since and then (15min)</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh -C --install-crons
+</code></pre></div></li>
+
+<li><p>Install the salt &amp; ansible binaries to /usr/local/bin</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh -C --install-links
+</code></pre></div>
+
+<h3 id="cli-exemples">CLI Exemples</h3></li>
+
+<li><p>Full fledged install</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh -C --install-logrotate --install-crons --install-links
+</code></pre></div></li>
+
+<li><p>To switch on a makina-states branch, like the <strong>v2</strong> branch in
+production:</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh -b v2
+</code></pre></div></li>
+
+<li><p>To sync makinastates code</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh -C -S
 </code></pre></div></li>
 </ul>
 
-<p>To skip the automatic code update/upgrade:</p>
-<div class="highlight"><pre><span></span>```sh
-./boot-salt.sh -S
-```
-</pre></div>
+<h3 id="running-makinastates-in-highstate-mode">Running makinastates in highstate mode</h3>
 
-<p>To switch on a makina-states branch, like the <strong>v2</strong> branch in
-production:</p>
-<div class="highlight"><pre><span></span>```sh
-./boot-salt.sh -b v2
-```
-</pre></div>
+<ul>
+<li><p>To install all enabled makinastates services after having configured
+your pillar</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh -n laptop<span class="p">|</span>server<span class="p">|</span>lxccontainer<span class="p">|</span>vm -C <span class="o">&amp;&amp;</span> <span class="se">\</span>
+    salt-call --retcode-passthrough state.sls makina-states.top
+</code></pre></div></li>
+</ul>
 
 <h4 id="upgrade">Upgrade</h4>
 
@@ -272,46 +188,32 @@ production:</p>
 <li>Update core repositories (like salt code source in /srv/makina-states/src/salt)</li>
 <li>Do the highstates (salt and masterone if any)</li>
 </ul>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>boot-salt.sh -C --highstates
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>boot-salt2.sh -C --S  <span class="o">&amp;&amp;</span> <span class="se">\</span>
+    salt-call --retcode-passthrough state.sls makina-states.top
 </code></pre></div></li>
 </ul>
 
-<h3 id="activating-another-nodetype-preset-after-installation">Activating another nodetype preset after installation</h3>
-
-<ul>
-<li><p>If you installed the <strong>scratch</strong> preset and want to switch to another preset:</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>salt-call state.sls makina-states.nodetypes.&lt;your_new_preset&gt;
-</code></pre></div></li>
-
-<li><p>If you installed a preset and want to switch to another preset:</p>
-
-<ul>
-<li>edit <strong>etc/makina-states/nodetype</strong> and put your new preset</li>
-<li>edit <strong>etc/makina-states/nodetypes.yaml</strong> and set to false your old preset</li>
-
-<li><p>Finally, run:</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>salt-call state.sls makina-states.nodetypes.&lt;your_new_preset&gt;
-</code></pre></div></li>
-</ul></li>
-</ul>
-
-		</div><div class="last-modified">Last Updated: 2017-03-15</div>
+		</div><div class="last-modified">Last Updated: 0001-01-01</div>
 <footer id="content-footer">
 
 
-<a href="/topics/haproxy/" class="cf-link prev-page">
-			<i class="fa fa-chevron-left"></i>
-		<div class="page-info">
-			<span>Previous</span>
-			<h5 class="topics">Haproxy</h5>
-		</div>
-</a>
+	
+	<a href="/topics/" class="cf-link prev-page">
+
+				<i class="fa fa-chevron-left"></i>
+
+			<div class="page-info">
+				<span>Previous</span>
+				<h5 class="topics">Topics</h5>
+			</div>
+	</a>
+	
 
 
-	<a href="/topics/ssl/" class="cf-link next-page">
+	<a href="/topics/ansible/saltcall/" class="cf-link next-page">
 		<div class="page-info">
 			<span>Next</span>
-			<h5 class="topics">Manage ssl certificates</h5>
+			<h5 class="topics">Ansible saltcall module</h5>
 		</div>
 		<i class="fa fa-chevron-right"></i>
 	</a>
@@ -332,17 +234,18 @@ production:</p>
 <ul>
 <li>
 <ul>
-<li><a href="#briefing">Briefing</a></li>
-<li><a href="#reminder">Reminder</a></li>
-<li><a href="#details">Details</a></li>
-<li><a href="#regular-modes-via-boot-salt-sh">Regular modes (via boot-salt.sh)</a>
+<li>
 <ul>
 <li><a href="#download">Download</a></li>
-<li><a href="#cli-exemples">CLI Exemples</a>
+<li><a href="#boot-salt2-sh-the-makina-states-installer-manager">boot-salt2.sh, the makina-states installer &amp; manager</a></li>
+</ul></li>
+<li><a href="#optional-post-install-steps">Optional post install steps</a>
+<ul>
+<li><a href="#cli-exemples">CLI Exemples</a></li>
+<li><a href="#running-makinastates-in-highstate-mode">Running makinastates in highstate mode</a>
 <ul>
 <li><a href="#upgrade">Upgrade</a></li>
 </ul></li>
-<li><a href="#activating-another-nodetype-preset-after-installation">Activating another nodetype preset after installation</a></li>
 </ul></li>
 </ul></li>
 </ul>
@@ -389,7 +292,7 @@ production:</p>
 
 <li class="menu-item menu-item-1">
   <a
-    class="list-icon menu-item-link menu-item-link-1" href="/sphinx/api">API</a>
+    class="list-icon menu-item-link menu-item-link-1" href="/">Home</a>
   
 </li>
 
@@ -404,7 +307,92 @@ production:</p>
 
 <li class="menu-item menu-item-1">
   <a
-    class="list-icon menu-item-link menu-item-link-1" href="/">Home</a>
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/reference/">Reference</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/sumup/">Order of operation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/nodetypes/">Nodetypes</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/localsettings/">LocalSettings</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/services/">Services</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/install/">Installation &amp; usage</a>
   
 </li>
 
@@ -434,52 +422,62 @@ production:</p>
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/topics/ansible/">Ansible related configuration</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2" href="/topics/configure/">Configuration</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2" href="/topics/haproxy/">Haproxy</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
     class="list-icon menu-item-link menu-item-link-2 active open" href="/topics/install/">Installation &amp; basic usage</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2 has-children" href="/topics/ansible/">Using bundled ansible</a>
+  
+  
+  
+
+
+<ul class="menu menu-3">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-3">
+  <a
+    class="list-icon menu-item-link menu-item-link-3" href="/topics/ansible/saltcall/">Ansible saltcall module</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/configure/">Configuration/Layout</a>
   
 </li>
 
@@ -510,6 +508,21 @@ production:</p>
 <li class="menu-item menu-item-2">
   <a
     class="list-icon menu-item-link menu-item-link-2" href="/topics/database/">Minions managment via database.sls</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/haproxy/">Haproxy</a>
   
 </li>
 
@@ -549,7 +562,7 @@ production:</p>
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/cloud/lxc/">LXC containers management</a>
+    class="list-icon menu-item-link menu-item-link-2" href="/cloud/lxc/">LXC</a>
   
 </li>
 
@@ -560,6 +573,21 @@ production:</p>
 </ul>
 
   
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/sphinx/api">API</a>
   
 </li>
 

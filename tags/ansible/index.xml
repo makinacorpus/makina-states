@@ -9,91 +9,12 @@
     <atom:link href="/tags/ansible/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
-      <title>Ansible related configuration</title>
-      <link>/topics/ansible/</link>
+      <title>Ansible saltcall module</title>
+      <link>/install/ansible/saltcall/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>/topics/ansible/</guid>
+      <guid>/install/ansible/saltcall/</guid>
       <description>
-
-&lt;h2 id=&#34;ansible-wrappers-specifics&#34;&gt;Ansible wrappers specifics&lt;/h2&gt;
-
-&lt;p&gt;To use ansible, please use makina-states wrappers and never the ansible original scripts directly.&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;p&gt;See:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible&#34;&gt;bin/ansible&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-galaxy&#34;&gt;bin/ansible-galaxy&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-playbook&#34;&gt;bin/ansible-playbook&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-wrapper-common&#34;&gt;bin/ansible-wrapper-common&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;We preconfigure in our wrappers a lot of things like:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Loading configuration (roles, playbooks, inventories, plugins) from:
-
-&lt;ul&gt;
-&lt;li&gt;./&lt;/li&gt;
-&lt;li&gt;./ansible&lt;/li&gt;
-&lt;li&gt;./.ansible&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;&amp;lt;makinastates_install_dir&amp;gt;/ansible&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;/usr/share/ansible (depends of the opt, respects the ansible default configuration)&lt;/li&gt;
-&lt;li&gt;/etc/ansible (depends of the opt, respects the ansible default configuration)&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;li&gt;When &lt;code&gt;ANSIBLE_TARGETS&lt;/code&gt; are set, we will limit the play to them
-unless &lt;code&gt;ANSIBLE_NOLIMIT&lt;/code&gt; is set.&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Indeed, we use environment variables that are specific to makina-states:&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;ANSIBLE_TARGETS&lt;/code&gt;
-    : list of hosts that we will act on. this will limit the scope of
-      the ext pillars generation thus you have to set it to speed
-      up operations.&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;ANSIBLE_NOLIMIT&lt;/code&gt;
-    : if set, we wont limit the scope of ansible to ANSIBLE_TARGETS&lt;/p&gt;&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&#34;examples&#34;&gt;Examples&lt;/h2&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;p&gt;exemple 1&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt; bin/ansible all -m ping
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;exemple 2&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/ansible -c &lt;span class=&#34;nb&#34;&gt;local&lt;/span&gt; -i &lt;span class=&#34;s2&#34;&gt;&amp;quot;localhost,&amp;quot;&lt;/span&gt; all -m ping
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&#34;calling-makina-states-ansible-from-another-repository&#34;&gt;Calling makina-states ansible from another repository&lt;/h2&gt;
-
-&lt;p&gt;As said previously, we load the current folder (and ./.ansible,
-./ansible as well), thus you can add roles and plays and to a specific
-repository but also depend on plugins or roles defined in makina-states.
-Then you ll have to call the ansible wrapper FROM your directory where
-you have your specific ansible installation for them to be usable&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;p&gt;For example:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;if makina-states is installed in /srv/makina-states&lt;/li&gt;
-&lt;li&gt;your project is installed inside /srv/projects/foo/project&lt;/li&gt;
-&lt;li&gt;You can create your roles inside
-/srv/projects/foo/project/ansible/roles&lt;/li&gt;
-&lt;li&gt;You can make dependencies of any &lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/ansible/roles&#34;&gt;makina-states roles&lt;/a&gt; specially &lt;code&gt;makinastates_pillar&lt;/code&gt;.&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;To call ansible, do it this way:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; /srv/projects/foo/project
-/srv/makina-states/bin/&lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;ansible,ansible-playbook&lt;span class=&#34;o&#34;&gt;}&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;$args&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;/ul&gt;
 
 &lt;h2 id=&#34;saltcall-wrapper&#34;&gt;saltcall Wrapper&lt;/h2&gt;
 
@@ -109,15 +30,12 @@ to call saltcall on remote systems.&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt; bin/ansible all &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
   -m saltcall -a &lt;span class=&#34;s2&#34;&gt;&amp;quot;function=grains.get args=fqdn&amp;quot;&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-&lt;/ul&gt;
 
-&lt;p&gt;Or via a playbook like in &lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/ansible/plays/saltcall.yml&#34;&gt;our saltcall one&lt;/a&gt;
-, usable this way:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;```sh
-ANSIBLE_TARGETS=$(hostname) bin/ansible-playbook \
- ansible/plays/saltcall.yml -m saltcall -a &amp;quot;function=test.ping&amp;quot;
-```
-&lt;/pre&gt;&lt;/div&gt;
+&lt;li&gt;&lt;p&gt;Or via a playbook like in &lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/ansible/plays/saltcall.yml&#34;&gt;our saltcall one&lt;/a&gt; , usable this way:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+ ansible/plays/saltcall.yml -m saltcall -a &lt;span class=&#34;s2&#34;&gt;&amp;quot;function=test.ping&amp;quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
 
 &lt;p&gt;It&amp;rsquo;s better to use the playbook because it call the makinastates_pillar
 role to copy locally on the remote box the pillar computed by the
@@ -126,11 +44,11 @@ salt+pillar bridge before executing the salt command.&lt;/p&gt;
     </item>
     
     <item>
-      <title>Configuration</title>
-      <link>/topics/configure/</link>
+      <title>Configuration/Layout</title>
+      <link>/install/configure/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>/topics/configure/</guid>
+      <guid>/install/configure/</guid>
       <description>
 
 &lt;h2 id=&#34;layout&#34;&gt;Layout&lt;/h2&gt;
@@ -196,7 +114,7 @@ those who have declared special named functions:&lt;/p&gt;
 
 &lt;ul&gt;
 &lt;li&gt;Get its pillar by calling
-&lt;code&gt;mc_remote_plllar.get_pillar($host)&lt;/code&gt;&lt;/li&gt;
+&lt;code&gt;mc_remote_pillar.get_pillar($host)&lt;/code&gt;&lt;/li&gt;
 &lt;li&gt;Extract/generate from informations in the pillar relevant ansible
 host vars for this minion. &lt;strong&gt;saltpillar&lt;/strong&gt; ansible hostvar is the
 pillar of this minion.&lt;/li&gt;
@@ -205,14 +123,14 @@ pillar of this minion.&lt;/li&gt;
 &lt;/ul&gt;&lt;/li&gt;
 
 &lt;li&gt;&lt;p&gt;By default, we use the &lt;code&gt;mc_pillar&lt;/code&gt; ext pillar which loads a file:
-&lt;strong&gt;etc/makina-states/database.sls&lt;/strong&gt; which describe our infractructure and
-this will:&lt;/p&gt;&lt;/li&gt;
+&lt;code&gt;etc/makina-states/database.sls&lt;/code&gt; which describe our infractructure and
+this will:&lt;/p&gt;
 
-&lt;li&gt;&lt;p&gt;list all nodes that are configured as ansible targets&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;generate pillar info for all nodes&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;generate an ansible inventary for each of all those node&lt;/p&gt;&lt;/li&gt;
+&lt;ul&gt;
+&lt;li&gt;list all nodes that are configured as ansible targets&lt;/li&gt;
+&lt;li&gt;generate pillar info for all nodes (and per se fall inside
+the ansible inventory of those related hosts.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;h2 id=&#34;custom-extpillar&#34;&gt;Custom extpillar&lt;/h2&gt;
@@ -221,8 +139,9 @@ this will:&lt;/p&gt;&lt;/li&gt;
 &lt;li&gt;In other words, to add your custom way of managing your hosts:
 
 &lt;ul&gt;
-&lt;li&gt;Create an ext_pillar to complete pillar for a specific minion
-depending on its minion id.&lt;/li&gt;
+&lt;li&gt;Create an ext_pillar to complete the pillar for a specific minion
+depending on its &lt;code&gt;minion id&lt;/code&gt; and that&amp;rsquo;s why the easiest way
+is to adopt a minionid/hostname naming scheme.&lt;/li&gt;
 &lt;li&gt;Create a module that implement the &lt;code&gt;get_masterless_makinastates_hosts&lt;/code&gt; &amp;amp;&amp;amp; &lt;code&gt;get_masterless_makinastates_groups&lt;/code&gt; functions&lt;/li&gt;
 &lt;li&gt;register the pillar and module to the local makina-states installation (see bellow)&lt;/li&gt;
 &lt;/ul&gt;&lt;/li&gt;
@@ -234,19 +153,18 @@ depending on its minion id.&lt;/li&gt;
 &lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/mc_states/pillar/mc_pillar.py&#34;&gt;extpillar&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;&lt;/li&gt;
 
-&lt;li&gt;&lt;p&gt;To load your extpillar, you ll have to add it to the local salt configuration. You can add a file this way&lt;/p&gt;&lt;/li&gt;
-&lt;/ul&gt;
+&lt;li&gt;&lt;p&gt;To load your extpillar, you ll have to add it to the local salt configuration. &lt;br/&gt;
+You can add a file this way&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;$WC/etc/salt/minion.d/99_extpillar.conf&lt;/span&gt; 
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ext_pillar&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+        &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;mc_pillar&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{}&lt;/span&gt;
+        &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;mc_pillar_jsons&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{}&lt;/span&gt;
+        &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;mycustompillar&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 
-&lt;p&gt;&lt;code&gt;$WC/etc/salt/minion.d/99_extpillar.conf&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;ext_pillar:
-    - mc_pillar: {}
-    - mc_pillar_jsons: {}
-    - mycustompillar: {}
-&lt;/pre&gt;&lt;/div&gt;
+&lt;li&gt;&lt;p&gt;To load your custom module, place it under &lt;code&gt;$WC/salt/_modules&lt;/code&gt;&lt;/p&gt;&lt;/li&gt;
 
-&lt;ul&gt;
-&lt;li&gt;To load your custom module, place it under &lt;code&gt;$WC/salt/_modules&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;To load your custom pillar, place it under &lt;code&gt;$WC/salt/_pillar&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;To load your custom pillar, place it under &lt;code&gt;$WC/salt/_pillar&lt;/code&gt;&lt;/p&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;h2 id=&#34;verify-the-pillar-for-a-minion&#34;&gt;Verify the pillar for a minion&lt;/h2&gt;
@@ -267,16 +185,140 @@ depending on its minion id.&lt;/li&gt;
 
 &lt;h2 id=&#34;optional-add-a-cron-to-speed-up-pillar-generation&#34;&gt;(OPTIONAL) Add a cron to speed up pillar generation&lt;/h2&gt;
 
-&lt;p&gt;To generate regularly the cron for all the configured minion, to speed
-up regular ansible calls (the pillar will already be cached at the call
-time), you can register a cron that does that.&lt;/p&gt;
-
 &lt;ul&gt;
+&lt;li&gt;To generate regularly the cron for all the configured minion, to speed
+up regular ansible calls (the pillar will already be cached at the call
+time), you can register a cron that does that.&lt;/li&gt;
+
 &lt;li&gt;&lt;p&gt;&lt;code&gt;/etc/cron.d/refresh_ansible&lt;/code&gt;&lt;/p&gt;
 
 &lt;pre&gt;
 15,30,45,00 * * * * root /srv/makina-states/_scripts/refresh_makinastates_pillar.sh
 &lt;/pre&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Using bundled ansible</title>
+      <link>/install/ansible/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/install/ansible/</guid>
+      <description>
+
+&lt;h2 id=&#34;leaving-localhost&#34;&gt;Leaving localhost&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;When you want to execute saltstack states (makina-states) remotly,&lt;br&gt;
+here is the prefligh list to do:
+
+&lt;ul&gt;
+&lt;li&gt;declare your host in the &lt;code&gt;database.sls&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Ensure that the target is reachable from ansible&lt;/li&gt;
+&lt;li&gt;Bootstrap makina-states on the remote box, via the providen makinastates role&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;ansible-wrappers-specifics&#34;&gt;Ansible wrappers specifics&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;To use ansible, please use makina-states wrappers and &lt;br/&gt;
+&lt;b&gt;never EVER&lt;/b&gt; the ansible original scripts directly.&lt;br/&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If you are using the database.sls, we use &lt;strong&gt;&lt;em&gt;environment variables&lt;/em&gt;&lt;/strong&gt; that are specific to makina-states and
+tell the ext pillar (local saltstack side) for which environment to gather information for.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;ANSIBLE_TARGETS&lt;/code&gt;
+    : list of hosts that we will act on. this will limit the scope of
+      the ext pillars generation thus you have to set it to speed
+      up operations.
+&lt;code&gt;ANSIBLE_NOLIMIT&lt;/code&gt;
+    : if set, we wont limit the scope of ansible to ANSIBLE_TARGETS&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;examples&#34;&gt;Examples&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;exemple 1&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt; bin/ansible all -m ping
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;exemple 2&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/ansible -c &lt;span class=&#34;nb&#34;&gt;local&lt;/span&gt; -i &lt;span class=&#34;s2&#34;&gt;&amp;quot;localhost,&amp;quot;&lt;/span&gt; all -m ping
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;examples-with-salt&#34;&gt;Examples with salt&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Call a state.sls run&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt; bin/ansible all -m shell &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    -a salt-call --retcode-passthrough state.sls foobar
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;details&#34;&gt;Details&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;See:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible&#34;&gt;bin/ansible&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-galaxy&#34;&gt;bin/ansible-galaxy&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-playbook&#34;&gt;bin/ansible-playbook&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-wrapper-common&#34;&gt;bin/ansible-wrapper-common&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;We preconfigure in our wrappers a lot of things like:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Loading configuration (roles, playbooks, inventories, plugins) from:
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;./&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;./ansible&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;./.ansible&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;&amp;lt;makinastates_install_dir&amp;gt;/ansible&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;/usr/share/ansible&lt;/code&gt; (depends of the opt, respects the ansible default configuration)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;/etc/ansible&lt;/code&gt; (depends of the opt, respects the ansible default configuration)&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;When &lt;code&gt;ANSIBLE_TARGETS&lt;/code&gt; are set, we will limit the play to them
+unless &lt;code&gt;ANSIBLE_NOLIMIT&lt;/code&gt; is set.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;calling-makina-states-s-flavored-ansible-from-another-repository&#34;&gt;Calling makina-states&amp;rsquo;s flavored  ansible from another repository&lt;/h2&gt;
+
+&lt;p&gt;As said previously, we load the current folder (and ./.ansible,
+./ansible as well).&lt;br/&gt;
+This clever trick will let you can add roles and plays to a specific
+repository but also be able to depend on plugins or roles defined in makina-states.&lt;br/&gt;
+This mean that you ll be able to call the ansible wrapper FROM your directory where
+you have your specific ansible installation and the whole will assemble nicely.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;For example:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;if makina-states is installed in &lt;code&gt;/srv/makina-states&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;your project is installed inside &lt;code&gt;/srv/projects/foo/project&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;You can create your roles inside &lt;code&gt;/srv/projects/foo/project/ansible/roles&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;You can make dependencies of any &lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/ansible/roles&#34;&gt;makina-states roles&lt;/a&gt; specially &lt;code&gt;makinastates_pillar&lt;/code&gt; that
+deploy the locally gather pillar for a box to the remote if you are
+not acting on &lt;code&gt;localhost&lt;/code&gt;.&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;You ll have to call &lt;code&gt;ansible&lt;/code&gt; or &lt;code&gt;ansible-playbook&lt;/code&gt;, do it this way:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; /srv/projects/foo/project
+/srv/makina-states/bin/&lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;ansible,ansible-playbook&lt;span class=&#34;o&#34;&gt;}&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;$args&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;related&#34;&gt;Related&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;saltcall&#34;&gt;salt call module&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </description>
     </item>

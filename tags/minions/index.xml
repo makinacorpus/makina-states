@@ -9,16 +9,16 @@
     <atom:link href="/tags/minions/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
-      <title>Minions managment via database.sls</title>
-      <link>/topics/database/</link>
+      <title>database.sls</title>
+      <link>/install/databasesls/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>/topics/database/</guid>
+      <guid>/install/databasesls/</guid>
       <description>
 
 &lt;ul&gt;
 &lt;li&gt;We use a special file: &lt;code&gt;$WC/etcmakina-states/database.sls&lt;/code&gt;. for
-describing our infractrusture and specially how to access to the remote
+describing our infrastructure and specially how to access to the remote
 systems.&lt;/li&gt;
 
 &lt;li&gt;&lt;p&gt;At first, you will need to copy &lt;code&gt;$WC/etc/makina-states/database.sls.in&lt;/code&gt; which is a sample, and adapt it to your needs:&lt;/p&gt;

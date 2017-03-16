@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Configure on Makina States</title>
+    <link>/configure/index.xml</link>
+    <description>Recent content in Configure on Makina States</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fr-FR</language>
+    <atom:link href="/configure/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Configuration/Layout</title>
+      <link>/configure/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/configure/</guid>
+      <description>
+
+&lt;h2 id=&#34;layout&#34;&gt;Layout&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;$wc&lt;/code&gt; is the makina-states top folder.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;
+ bin/ansible                    -&gt; wrapper to ansible
+ bin/ansible-galaxy             -&gt; wrapper to ansible-galaxy
+ bin/ansible-playbook           -&gt; wrapper to ansible-playbook
+ bin/salt-call                  -&gt; wrapper to salt-call
+ ansible                        -&gt; ansible plays, roles, modules &amp; etc
+ etc                            -&gt; configuration
+   etc/ansible                  -&gt; ansible configuration
+   etc/salt                     -&gt; saltstack configuration
+   etc/makina-states            -&gt; makina-states  configuration
+ pillar                         -&gt; saltstack pillar files
+     pillar/pillar.d            -&gt; saltstack pillar files (global)
+     pillar/private.pillar.d    -&gt; saltstack pillar files
+                                  (for the current node)
+     pillar/&lt;$minion&gt;.pillar.d  -&gt; saltstack pillar files
+                                  (for a specific minion)
+ salt/makina-states             -&gt; saltstack states
+   salt/_modules                -&gt; custom salt modules
+   salt/_pillar                 -&gt; custom extpillar modules
+&lt;/pre&gt;
+
+&lt;h2 id=&#34;salt-pillar&#34;&gt;Salt pillar&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Saltstack configuration is based on pillars.&lt;/li&gt;
+&lt;li&gt;To facilitate configuration of the Top file, we added those features:
+
+&lt;ul&gt;
+&lt;li&gt;Any &lt;strong&gt;JSON&lt;/strong&gt; file can be used as pillar data.&lt;/li&gt;
+&lt;li&gt;Any &lt;strong&gt;SLS/json&lt;/strong&gt; file dropped inside &lt;code&gt;$wc/pillars.d/&lt;/code&gt; will be loaded for all minion as pillar data&lt;/li&gt;
+&lt;li&gt;Any &lt;strong&gt;SLS/json&lt;/strong&gt; file dropped inside &lt;code&gt;$wc/private.pillars.d&lt;/code&gt; will be only loaded for the current node of operation.&lt;/li&gt;
+&lt;li&gt;Any &lt;strong&gt;SLS/json&lt;/strong&gt; file dropped inside &lt;code&gt;$wc/&amp;lt;$minionid&amp;gt;.pillars.d&lt;/code&gt; will be only loaded for the &amp;ldquo;\$minionid&amp;rdquo; host&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;salt-ansible-bridge-notes&#34;&gt;Salt + Ansible bridge notes&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Makina-states has better to use an &lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/ansible/inventories/makinastates.py&#34;&gt;ansible dynamic inventory&lt;/a&gt;
+that bridges the salt pillar with ansible via a salt module:
+&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_remote_pillar.py&#34;&gt;mc_remote_plllar&lt;/a&gt;.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;This module is pluggable and will search in the salt modules installed
+those who have declared special named functions:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;get_masterless_makinastates_hosts()&lt;/code&gt;&lt;/p&gt;
+
+&lt;dl&gt;
+&lt;dd&gt;return a list of host to manage&lt;/dd&gt;
+&lt;dt&gt;&lt;code&gt;get_masterless_makinastates_groups(minionid, pillar)&lt;/code&gt;&lt;/dt&gt;
+&lt;dd&gt;return a list of groups for the specific minion id&lt;/dd&gt;
+&lt;/dl&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;For each host found by all &lt;code&gt;get_masterless_makinastates_hosts&lt;/code&gt; functions:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Get its pillar by calling
+&lt;code&gt;mc_remote_pillar.get_pillar($host)&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Extract/generate from informations in the pillar relevant ansible
+host vars for this minion. &lt;strong&gt;saltpillar&lt;/strong&gt; ansible hostvar is the
+pillar of this minion.&lt;/li&gt;
+&lt;li&gt;Generate ansible groups from those hostvars by calling eac
+&lt;code&gt;get_masterless_makinastates_groups&lt;/code&gt; function&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;By default, we use the &lt;code&gt;mc_pillar&lt;/code&gt; ext pillar which loads a file:
+&lt;code&gt;etc/makina-states/database.sls&lt;/code&gt; which describe our infractructure and
+this will:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;list all nodes that are configured as ansible targets&lt;/li&gt;
+&lt;li&gt;generate pillar info for all nodes (and per se fall inside
+the ansible inventory of those related hosts.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;custom-extpillar&#34;&gt;Custom extpillar&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;In other words, to add your custom way of managing your hosts:
+
+&lt;ul&gt;
+&lt;li&gt;Create an ext_pillar to complete the pillar for a specific minion
+depending on its &lt;code&gt;minion id&lt;/code&gt; and that&amp;rsquo;s why the easiest way
+is to adopt a minionid/hostname naming scheme.&lt;/li&gt;
+&lt;li&gt;Create a module that implement the &lt;code&gt;get_masterless_makinastates_hosts&lt;/code&gt; &amp;amp;&amp;amp; &lt;code&gt;get_masterless_makinastates_groups&lt;/code&gt; functions&lt;/li&gt;
+&lt;li&gt;register the pillar and module to the local makina-states installation (see bellow)&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Take example on:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_pillar.py&#34;&gt;module&lt;/a&gt; : (search for &lt;code&gt;get_masterless_makinastates_groups&lt;/code&gt; &amp;amp;&amp;amp; &lt;code&gt;get_masterless_makinastates_hosts&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/mc_states/pillar/mc_pillar.py&#34;&gt;extpillar&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;To load your extpillar, you ll have to add it to the local salt configuration. &lt;br/&gt;
+You can add a file this way&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;$WC/etc/salt/minion.d/99_extpillar.conf&lt;/span&gt; 
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ext_pillar&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+        &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;mc_pillar&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{}&lt;/span&gt;
+        &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;mc_pillar_jsons&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{}&lt;/span&gt;
+        &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;mycustompillar&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;To load your custom module, place it under &lt;code&gt;$WC/salt/_modules&lt;/code&gt;&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;To load your custom pillar, place it under &lt;code&gt;$WC/salt/_pillar&lt;/code&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;verify-the-pillar-for-a-minion&#34;&gt;Verify the pillar for a minion&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Use this command:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call mc_remote_pillar.get_pillar &amp;lt;minion_id&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;verify-the-groups-for-a-minion&#34;&gt;Verify the groups for a minion&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Use this command:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call mc_remote_pillar.get_groups &amp;lt;minion_id&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;optional-add-a-cron-to-speed-up-pillar-generation&#34;&gt;(OPTIONAL) Add a cron to speed up pillar generation&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;To generate regularly the cron for all the configured minion, to speed
+up regular ansible calls (the pillar will already be cached at the call
+time), you can register a cron that does that.&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;code&gt;/etc/cron.d/refresh_ansible&lt;/code&gt;&lt;/p&gt;
+
+&lt;pre&gt;
+15,30,45,00 * * * * root /srv/makina-states/_scripts/refresh_makinastates_pillar.sh
+&lt;/pre&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

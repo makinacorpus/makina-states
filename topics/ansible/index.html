@@ -2,11 +2,11 @@
 <html lang="en"><head>
 <meta name="robots" content="noindex"><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ansible related configuration | Makina States</title><meta name="description" content="" />
+<title>Using bundled ansible | Makina States</title><meta name="description" content="" />
 <meta property="og:type" content="article" />
 <meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
-<meta property="og:article:modified_time" content="2017-03-15 23:58:39 &#43;0100 CET" /><meta property="og:article:tag" content="topics" /><meta property="og:article:tag" content="ansible" /><meta property="og:locale" content="en_US">
-<meta property="og:title" content="Ansible related configuration">
+<meta property="og:article:modified_time" content="0001-01-01 00:00:00 &#43;0000 UTC" /><meta property="og:article:tag" content="topics" /><meta property="og:article:tag" content="ansible" /><meta property="og:locale" content="en_US">
+<meta property="og:title" content="Using bundled ansible">
 <meta property="og:image" content="/images/">
 <meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:width" content="1500" />
@@ -28,9 +28,12 @@
 <link rel="canonical" href="/topics/ansible/">
 
 
+<link rel="prefetch" href="/topics/ansible/saltcall/">
+<link rel="prerender" href="/topics/ansible/saltcall/">
 
-<link rel="prefetch" href="/topics/configure/">
-<link rel="prerender" href="/topics/configure/">
+
+<link rel="prefetch" href="/topics/ssl/">
+<link rel="prerender" href="/topics/ssl/">
 
 <link rel="stylesheet" href="/css/style.min.css">
   
@@ -75,7 +78,7 @@
 		
 <span id="page-top"></span>
 <main class="main">
-	<article class="content" id="ansible-related-configuration">
+	<article class="content" id="using-bundled-ansible">
 		<header class="content-header">
 <nav class="breadcrumb">
 	<ul class="breadcrumbs">
@@ -87,7 +90,7 @@
 	</ul>
 </nav>
 
-<h1 class="page-title topics" id="ansible-related-configuration">Ansible related configuration</h1>
+<h1 class="page-title topics" id="using-bundled-ansible">Using bundled ansible</h1>
 <div class="content-header-links">
   
   <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makinastates/edit/v2/doc/hugo/content/topics/ansible/index.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
@@ -106,9 +109,58 @@
 		<div class="body-copy" data-section=topics>
 		
 
+<h2 id="leaving-localhost">Leaving localhost</h2>
+
+<ul>
+<li>When you want to execute saltstack states (makina-states) remotly,<br>
+here is the prefligh list to do:
+
+<ul>
+<li>declare your host in the <code>database.sls</code></li>
+<li>Ensure that the target is reachable from ansible</li>
+<li>Bootstrap makina-states on the remote box, via the providen makinastates role</li>
+</ul></li>
+</ul>
+
 <h2 id="ansible-wrappers-specifics">Ansible wrappers specifics</h2>
 
-<p>To use ansible, please use makina-states wrappers and never the ansible original scripts directly.</p>
+<ul>
+<li>To use ansible, please use makina-states wrappers and <br/>
+<b>never EVER</b> the ansible original scripts directly.<br/></li>
+
+<li><p>If you are using the database.sls, we use <strong><em>environment variables</em></strong> that are specific to makina-states and
+tell the ext pillar (local saltstack side) for which environment to gather information for.</p>
+
+<p><code>ANSIBLE_TARGETS</code>
+    : list of hosts that we will act on. this will limit the scope of
+      the ext pillars generation thus you have to set it to speed
+      up operations.
+<code>ANSIBLE_NOLIMIT</code>
+    : if set, we wont limit the scope of ansible to ANSIBLE_TARGETS</p></li>
+</ul>
+
+<h3 id="examples">Examples</h3>
+
+<ul>
+<li><p>exemple 1</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="k">$(</span>hostname<span class="k">)</span> bin/ansible all -m ping
+</code></pre></div></li>
+
+<li><p>exemple 2</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>bin/ansible -c <span class="nb">local</span> -i <span class="s2">&quot;localhost,&quot;</span> all -m ping
+</code></pre></div></li>
+</ul>
+
+<h3 id="examples-with-salt">Examples with salt</h3>
+
+<ul>
+<li><p>Call a state.sls run</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="k">$(</span>hostname<span class="k">)</span> bin/ansible all -m shell <span class="se">\</span>
+    -a salt-call --retcode-passthrough state.sls foobar
+</code></pre></div></li>
+</ul>
+
+<h3 id="details">Details</h3>
 
 <ul>
 <li><p>See:</p>
@@ -126,114 +178,68 @@
 <li>Loading configuration (roles, playbooks, inventories, plugins) from:
 
 <ul>
-<li>./</li>
-<li>./ansible</li>
-<li>./.ansible</li>
+<li><code>./</code></li>
+<li><code>./ansible</code></li>
+<li><code>./.ansible</code></li>
 <li><code>&lt;makinastates_install_dir&gt;/ansible</code></li>
-<li>/usr/share/ansible (depends of the opt, respects the ansible default configuration)</li>
-<li>/etc/ansible (depends of the opt, respects the ansible default configuration)</li>
+<li><code>/usr/share/ansible</code> (depends of the opt, respects the ansible default configuration)</li>
+<li><code>/etc/ansible</code> (depends of the opt, respects the ansible default configuration)</li>
 </ul></li>
 <li>When <code>ANSIBLE_TARGETS</code> are set, we will limit the play to them
 unless <code>ANSIBLE_NOLIMIT</code> is set.</li>
-
-<li><p>Indeed, we use environment variables that are specific to makina-states:</p>
-
-<p><code>ANSIBLE_TARGETS</code>
-    : list of hosts that we will act on. this will limit the scope of
-      the ext pillars generation thus you have to set it to speed
-      up operations.</p>
-
-<p><code>ANSIBLE_NOLIMIT</code>
-    : if set, we wont limit the scope of ansible to ANSIBLE_TARGETS</p></li>
 </ul></li>
 </ul>
 
-<h2 id="examples">Examples</h2>
-
-<ul>
-<li><p>exemple 1</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="k">$(</span>hostname<span class="k">)</span> bin/ansible all -m ping
-</code></pre></div></li>
-
-<li><p>exemple 2</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>bin/ansible -c <span class="nb">local</span> -i <span class="s2">&quot;localhost,&quot;</span> all -m ping
-</code></pre></div></li>
-</ul>
-
-<h2 id="calling-makina-states-ansible-from-another-repository">Calling makina-states ansible from another repository</h2>
+<h2 id="calling-makina-states-s-flavored-ansible-from-another-repository">Calling makina-states&rsquo;s flavored  ansible from another repository</h2>
 
 <p>As said previously, we load the current folder (and ./.ansible,
-./ansible as well), thus you can add roles and plays and to a specific
-repository but also depend on plugins or roles defined in makina-states.
-Then you ll have to call the ansible wrapper FROM your directory where
-you have your specific ansible installation for them to be usable</p>
+./ansible as well).<br/>
+This clever trick will let you can add roles and plays to a specific
+repository but also be able to depend on plugins or roles defined in makina-states.<br/>
+This mean that you ll be able to call the ansible wrapper FROM your directory where
+you have your specific ansible installation and the whole will assemble nicely.</p>
 
 <ul>
 <li><p>For example:</p>
 
 <ul>
-<li>if makina-states is installed in /srv/makina-states</li>
-<li>your project is installed inside /srv/projects/foo/project</li>
-<li>You can create your roles inside
-/srv/projects/foo/project/ansible/roles</li>
-<li>You can make dependencies of any <a href="https://github.com/makinacorpus/makina-states/tree/v2/ansible/roles">makina-states roles</a> specially <code>makinastates_pillar</code>.</li>
+<li>if makina-states is installed in <code>/srv/makina-states</code></li>
+<li>your project is installed inside <code>/srv/projects/foo/project</code></li>
+<li>You can create your roles inside <code>/srv/projects/foo/project/ansible/roles</code></li>
+<li>You can make dependencies of any <a href="https://github.com/makinacorpus/makina-states/tree/v2/ansible/roles">makina-states roles</a> specially <code>makinastates_pillar</code> that
+deploy the locally gather pillar for a box to the remote if you are
+not acting on <code>localhost</code>.</li>
 
-<li><p>To call ansible, do it this way:</p>
+<li><p>You ll have to call <code>ansible</code> or <code>ansible-playbook</code>, do it this way:</p>
 <div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nb">cd</span> /srv/projects/foo/project
 /srv/makina-states/bin/<span class="o">{</span>ansible,ansible-playbook<span class="o">}</span> <span class="nv">$args</span>
 </code></pre></div></li>
 </ul></li>
 </ul>
 
-<h2 id="saltcall-wrapper">saltcall Wrapper</h2>
-
-<p>We developped a <a href="https://github.com/makinacorpus/makina-states/blob/v2/ansible/library/saltcall.py">special
-module</a>
-to call saltcall on remote systems.</p>
+<h2 id="related">Related</h2>
 
 <ul>
-<li><p>You can use it via ansible:</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="k">$(</span>hostname<span class="k">)</span> bin/ansible all <span class="se">\</span>
-  -m saltcall -a <span class="s2">&quot;function=test.ping&quot;</span>
-</code></pre></div>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="k">$(</span>hostname<span class="k">)</span> bin/ansible all <span class="se">\</span>
-  -m saltcall -a <span class="s2">&quot;function=grains.get args=fqdn&quot;</span>
-</code></pre></div></li>
+<li><a href="saltcall">salt call module</a></li>
 </ul>
 
-<p>Or via a playbook like in <a href="https://github.com/makinacorpus/makina-states/blob/v2/ansible/plays/saltcall.yml">our saltcall one</a>
-, usable this way:</p>
-<div class="highlight"><pre><span></span>```sh
-ANSIBLE_TARGETS=$(hostname) bin/ansible-playbook \
- ansible/plays/saltcall.yml -m saltcall -a &quot;function=test.ping&quot;
-```
-</pre></div>
-
-<p>It&rsquo;s better to use the playbook because it call the makinastates_pillar
-role to copy locally on the remote box the pillar computed by the
-salt+pillar bridge before executing the salt command.</p>
-
-		</div><div class="last-modified">Last Updated: 2017-03-15</div>
+		</div><div class="last-modified">Last Updated: 0001-01-01</div>
 <footer id="content-footer">
 
 
-	
-	<a href="/topics/" class="cf-link prev-page">
-
-				<i class="fa fa-chevron-left"></i>
-
-			<div class="page-info">
-				<span>Previous</span>
-				<h5 class="topics">Topics</h5>
-			</div>
-	</a>
-	
+<a href="/topics/ansible/saltcall/" class="cf-link prev-page">
+			<i class="fa fa-chevron-left"></i>
+		<div class="page-info">
+			<span>Previous</span>
+			<h5 class="topics">Ansible saltcall module</h5>
+		</div>
+</a>
 
 
-	<a href="/topics/configure/" class="cf-link next-page">
+	<a href="/topics/ssl/" class="cf-link next-page">
 		<div class="page-info">
 			<span>Next</span>
-			<h5 class="topics">Configuration</h5>
+			<h5 class="topics">Manage ssl certificates</h5>
 		</div>
 		<i class="fa fa-chevron-right"></i>
 	</a>
@@ -246,18 +252,23 @@ salt+pillar bridge before executing the salt command.</p>
 <aside id="toc" class="scroll-fixed-wrapper">
   <div class="scroll-fixed-wrapper-inner">
     <header class="toc-header">
-      <a href="#ansible-related-configuration">
-        <h3 class="topics">Ansible related configuration</h3>
+      <a href="#using-bundled-ansible">
+        <h3 class="topics">Using bundled ansible</h3>
       </a>
     </header>
     <nav id="TableOfContents">
 <ul>
 <li>
 <ul>
-<li><a href="#ansible-wrappers-specifics">Ansible wrappers specifics</a></li>
+<li><a href="#leaving-localhost">Leaving localhost</a></li>
+<li><a href="#ansible-wrappers-specifics">Ansible wrappers specifics</a>
+<ul>
 <li><a href="#examples">Examples</a></li>
-<li><a href="#calling-makina-states-ansible-from-another-repository">Calling makina-states ansible from another repository</a></li>
-<li><a href="#saltcall-wrapper">saltcall Wrapper</a></li>
+<li><a href="#examples-with-salt">Examples with salt</a></li>
+<li><a href="#details">Details</a></li>
+</ul></li>
+<li><a href="#calling-makina-states-s-flavored-ansible-from-another-repository">Calling makina-states&rsquo;s flavored  ansible from another repository</a></li>
+<li><a href="#related">Related</a></li>
 </ul></li>
 </ul>
 </nav>
@@ -303,7 +314,7 @@ salt+pillar bridge before executing the salt command.</p>
 
 <li class="menu-item menu-item-1">
   <a
-    class="list-icon menu-item-link menu-item-link-1" href="/sphinx/api">API</a>
+    class="list-icon menu-item-link menu-item-link-1" href="/">Home</a>
   
 </li>
 
@@ -318,7 +329,132 @@ salt+pillar bridge before executing the salt command.</p>
 
 <li class="menu-item menu-item-1">
   <a
-    class="list-icon menu-item-link menu-item-link-1" href="/">Home</a>
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/reference/">Reference</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/sumup/">Order of operation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/nodetypes/">Nodetypes</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/localsettings/">LocalSettings</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/services/">Services</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/install/">Installation &amp; usage</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/install/usage/">Usage</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/install/configure/">Configuration/Layout</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
   
 </li>
 
@@ -348,7 +484,22 @@ salt+pillar bridge before executing the salt command.</p>
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2 active open" href="/topics/ansible/">Ansible related configuration</a>
+    class="list-icon menu-item-link menu-item-link-2 has-children active open" href="/topics/ansible/">Using bundled ansible</a>
+  
+  
+  
+
+
+<ul class="menu menu-3">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-3">
+  <a
+    class="list-icon menu-item-link menu-item-link-3" href="/topics/ansible/saltcall/">Ansible saltcall module</a>
   
 </li>
 
@@ -356,44 +507,9 @@ salt+pillar bridge before executing the salt command.</p>
   
   
 
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2" href="/topics/configure/">Configuration</a>
-  
-</li>
+</ul>
 
   
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2" href="/topics/haproxy/">Haproxy</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2" href="/topics/install/">Installation &amp; basic usage</a>
   
 </li>
 
@@ -424,6 +540,21 @@ salt+pillar bridge before executing the salt command.</p>
 <li class="menu-item menu-item-2">
   <a
     class="list-icon menu-item-link menu-item-link-2" href="/topics/database/">Minions managment via database.sls</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/haproxy/">Haproxy</a>
   
 </li>
 
@@ -463,7 +594,7 @@ salt+pillar bridge before executing the salt command.</p>
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/cloud/lxc/">LXC containers management</a>
+    class="list-icon menu-item-link menu-item-link-2" href="/cloud/lxc/">LXC</a>
   
 </li>
 
@@ -474,6 +605,21 @@ salt+pillar bridge before executing the salt command.</p>
 </ul>
 
   
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/sphinx/api">API</a>
   
 </li>
 
