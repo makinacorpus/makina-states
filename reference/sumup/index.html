@@ -5,7 +5,7 @@
 <title>Order of operation | Makina States</title><meta name="description" content="" />
 <meta property="og:type" content="article" />
 <meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
-<meta property="og:article:modified_time" content="0001-01-01 00:00:00 &#43;0000 UTC" /><meta property="og:article:tag" content="reference" /><meta property="og:article:tag" content="installation" /><meta property="og:locale" content="en_US">
+<meta property="og:article:modified_time" content="2017-03-15 23:58:39 &#43;0100 CET" /><meta property="og:article:tag" content="reference" /><meta property="og:article:tag" content="installation" /><meta property="og:locale" content="en_US">
 <meta property="og:title" content="Order of operation">
 <meta property="og:image" content="/images/">
 <meta property="og:image:type" content="image/jpeg" />
@@ -28,9 +28,12 @@
 <link rel="canonical" href="/reference/sumup/">
 
 
+<link rel="prefetch" href="/reference/preamble/">
+<link rel="prerender" href="/reference/preamble/">
 
-<link rel="prefetch" href="/reference/nodetypes/">
-<link rel="prerender" href="/reference/nodetypes/">
+
+<link rel="prefetch" href="/reference/layout/">
+<link rel="prerender" href="/reference/layout/">
 
 <link rel="stylesheet" href="/css/style.min.css">
   
@@ -90,7 +93,7 @@
 <h1 class="page-title reference" id="order-of-operation">Order of operation</h1>
 <div class="content-header-links">
   
-  <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makina-states/edit/v2/doc/hugo/content/reference/sumup.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
+  <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makina-states/edit/v2/doc/hugo/content/reference/sumup/index.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
 
 	<ul class="tags">
 		<li class="icon"><i class="icon-tags"></i></li>
@@ -106,23 +109,17 @@
 		<div class="body-copy" data-section=reference>
 		
 
-<h2 id="history">History</h2>
+<h2 id="organisation-workflow">Organisation &amp; Workflow</h2>
 
 <ul>
-<li>Makina-states was based at fist on <code>nodetypes presets</code> that were preselected collections of makina-states states to apply to the system<br/>This is from where the <code>highstate</code> will start to run.</li>
-<li>Recently we cutted off this behavior, and now you must apply them explicitly.</li>
-</ul>
-
-<h2 id="workflow">Workflow</h2>
+<li>makina-states primarely use salt to deploy on the targeted environment.<br></li>
+<li>Our salt states are thought to be used in a special order,<br/>
+and specially when you call salt via the <strong>sls</strong>: <a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/top.sls"><code>makina-states.top</code></a>.
 
 <ul>
-<li>On nodetypes, we manage <code>controllers</code>, aka the states which
-configure salt &amp; ansible for operation</li>
-<li>On those nodetypes, we may configure <code>localsettings</code> like ssl, vim,
-git, &amp; basepackages or network configurations. If any other preset
-than <strong>scratch</strong> has been activated, many localsettings will be
-applied by default
-(see mc_states/modules/localsettings.py:registry)</li>
+<li>We apply first the <a href="../nodetype">nodetype</a> configuration.</li>
+<li>Then, we will apply the <a href="../controllers">controllers</a> configuration.<br/></li>
+<li>Then, we will apply <a href="../localsettings">localsettings</a> states</li>
 <li>After all of the previous steps, we may configure <code>services</code> like
 sshd, crond, or databases. If we are on the <strong>scratch</strong> mode, no
 services are configured by default.</li>
@@ -130,29 +127,50 @@ services are configured by default.</li>
 A project is just a classical code repository which has a &ldquo;.salt&rdquo;
 and/or ansible playbooks/roles folder commited with enougth
 information on how to deploy it.</li>
+</ul></li>
 </ul>
 
-		</div><div class="last-modified">Last Updated: 0001-01-01</div>
+<h2 id="registries">Registries</h2>
+
+<ul>
+<li>The configuration of any of the formulas (nodetypes, controllers, localsettings,
+services) is handled via Makina-States <a href="../registries">registries</a>.</li>
+</ul>
+
+<h2 id="history">History</h2>
+
+<ul>
+<li>Makina-States was first using the salt HighState principle of configuring
+everything.</li>
+<li>was based at fist on <code>nodetypes presets</code> that were preselected collections of <a href="https://docs.saltstack.com/en/latest/topics/tutorials/starting_states.html">salt states</a> to apply to the system<br/></li>
+<li>This is from where the <a href="https://docs.saltstack.com/en/latest/ref/states/highstate.html">highstate</a> will start to run.</li>
+<li>Recently we cutted off this behavior, and now you must apply them explicitly.<br/>
+Indeed:
+
+<ul>
+<li>highstate tend to grow and when you decide to reapply it you may
+accidentaly deliver things you forgotten of.</li>
+<li>It&rsquo;s long, very long to wait to reapply everything for small changes.</li>
+</ul></li>
+</ul>
+
+		</div><div class="last-modified">Last Updated: 2017-03-15</div>
 <footer id="content-footer">
 
 
-	
-	<a href="/reference/" class="cf-link prev-page">
-
-				<i class="fa fa-chevron-left"></i>
-
-			<div class="page-info">
-				<span>Previous</span>
-				<h5 class="reference">Reference</h5>
-			</div>
-	</a>
-	
+<a href="/reference/preamble/" class="cf-link prev-page">
+			<i class="fa fa-chevron-left"></i>
+		<div class="page-info">
+			<span>Previous</span>
+			<h5 class="reference">Preamble</h5>
+		</div>
+</a>
 
 
-	<a href="/reference/nodetypes/" class="cf-link next-page">
+	<a href="/reference/layout/" class="cf-link next-page">
 		<div class="page-info">
 			<span>Next</span>
-			<h5 class="reference">Nodetypes</h5>
+			<h5 class="reference">Layout</h5>
 		</div>
 		<i class="fa fa-chevron-right"></i>
 	</a>
@@ -173,8 +191,9 @@ information on how to deploy it.</li>
 <ul>
 <li>
 <ul>
+<li><a href="#organisation-workflow">Organisation &amp; Workflow</a></li>
+<li><a href="#registries">Registries</a></li>
 <li><a href="#history">History</a></li>
-<li><a href="#workflow">Workflow</a></li>
 </ul></li>
 </ul>
 </nav>
@@ -250,7 +269,67 @@ information on how to deploy it.</li>
 
 <li class="menu-item menu-item-2">
   <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/preamble/">Preamble</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
     class="list-icon menu-item-link menu-item-link-2 active open" href="/reference/sumup/">Order of operation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/databasesls/">database.sls</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/layout/">Layout</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/registries/">Registries &amp; Configuration</a>
   
 </li>
 
@@ -280,7 +359,7 @@ information on how to deploy it.</li>
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/reference/localsettings/">LocalSettings</a>
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/controllers/">Controllers</a>
   
 </li>
 
@@ -296,6 +375,81 @@ information on how to deploy it.</li>
 <li class="menu-item menu-item-2">
   <a
     class="list-icon menu-item-link menu-item-link-2" href="/reference/services/">Services</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/servicesmanagers/">Services Managers</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/localsettings/">LocalSettings</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/macros/">Macros</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/projects/">Projects</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/templates/">Templates</a>
   
 </li>
 
@@ -320,7 +474,22 @@ information on how to deploy it.</li>
 
 <li class="menu-item menu-item-1">
   <a
-    class="list-icon menu-item-link menu-item-link-1 has-children" href="/install/">Installation &amp; usage</a>
+    class="list-icon menu-item-link menu-item-link-1" href="/install/">Installation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/usage/">Usage</a>
   
   
   
@@ -335,7 +504,7 @@ information on how to deploy it.</li>
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/usage/">Usage</a>
+    class="list-icon menu-item-link menu-item-link-2" href="/usage/salt/">Salt</a>
   
 </li>
 
@@ -350,37 +519,7 @@ information on how to deploy it.</li>
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/configure/">Configuration/Layout</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/databasesls/">database.sls</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2 has-children" href="/install/ansible/">Using bundled ansible</a>
+    class="list-icon menu-item-link menu-item-link-2 has-children" href="/usage/ansible/">Ansible</a>
   
   
   
@@ -395,7 +534,7 @@ information on how to deploy it.</li>
 
 <li class="menu-item menu-item-3">
   <a
-    class="list-icon menu-item-link menu-item-link-3" href="/install/ansible/saltcall/">Ansible saltcall module</a>
+    class="list-icon menu-item-link menu-item-link-3" href="/usage/ansible/saltcall/">Ansible saltcall module</a>
   
 </li>
 

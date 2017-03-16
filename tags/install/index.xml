@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Install on Makina States</title>
+    <link>/tags/install/index.xml</link>
+    <description>Recent content in Install on Makina States</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fr-FR</language>
+    <atom:link href="/tags/install/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Installation</title>
+      <link>/install/</link>
+      <pubDate>Wed, 15 Mar 2017 23:58:39 +0100</pubDate>
+      
+      <guid>/install/</guid>
+      <description>
+
+&lt;p&gt;&lt;strong&gt;REMEMBER THAT FOR NOW YOU HAVE TO USE UBUNTU &amp;gt;= 14.04.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Use root unless you understand well how it works to handle user install&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;download&#34;&gt;Download&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Get MakinaStates by cloning it from github&lt;br/&gt;
+Usually we install it in &lt;code&gt;/srv/makina-states&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;git clone http://raw.github.com/makinacorpus/makina-states /srv/makina-states
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2 id=&#34;common-install-command&#34;&gt;Common install command&lt;/h2&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Install with &lt;code&gt;scratch&lt;/code&gt; node, with refresh cron, logrotate.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin,/boot-salt2.sh -C --install-logrotate --install-crons
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;boot-salt2-sh-the-makina-states-installer-manager&#34;&gt;boot-salt2.sh, the makina-states installer &amp;amp; manager&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;code&gt;boot-salt2.sh&lt;/code&gt; will try to remember how you configured makina-states on
+each run. It stores configs in &lt;code&gt;&amp;lt;clone_dir&amp;gt;/etc/makina-states&lt;/code&gt;&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;You can see the help this way:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh --help  &lt;span class=&#34;c1&#34;&gt;# Short overview:&lt;/span&gt;
+bin/boot-salt2.sh --long-help  &lt;span class=&#34;c1&#34;&gt;# Detailed overview:&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If you want to install  with default options (scratch)&lt;br/&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh -C
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;optional-post-install-steps&#34;&gt;Optional post install steps&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Install the logrotate to rotate salt logs&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh -C --install-logrotate
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Install the cron that refresh makina-states code every since and then (15min)&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh -C --install-crons
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Install the salt &amp;amp; ansible binaries to /usr/local/bin.&lt;br/&gt;
+&lt;strong&gt;THIS IS NOT RECOMMENDED ANYMORE, AND EVEN HARMFULL&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh -C --install-links
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;related-documents&#34;&gt;Related documents&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;../usage&#34;&gt;Usage&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;../reference/layout&#34;&gt;Layout&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;../reference/databasesls&#34;&gt;database.sls&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;../reference/nodetypes&#34;&gt;nodetypes&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

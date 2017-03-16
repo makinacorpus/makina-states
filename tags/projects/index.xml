@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Projects on Makina States</title>
+    <link>/tags/projects/index.xml</link>
+    <description>Recent content in Projects on Makina States</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fr-FR</language>
+    <atom:link href="/tags/projects/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Templates</title>
+      <link>/reference/templates/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/reference/templates/</guid>
+      <description>
+
+&lt;p&gt;Those projects can be used as-is or as a kickstarter for your own projects
+based on makina-states either by copying or inspiring yourself to create your own&lt;/p&gt;
+
+&lt;h1 id=&#34;project-skeletons-compliant-with-makina-states&#34;&gt;Project skeletons compliant with makina-states&lt;/h1&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-drupal&#34;&gt;corpus-drupal&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-php&#34;&gt;corpus-php&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-django&#34;&gt;corpus-django&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-zope-plone&#34;&gt;corpus-zope-plone&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-staticwww&#34;&gt;corpus-staticwww&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&#34;databases&#34;&gt;databases&lt;/h1&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-solr&#34;&gt;corpus-solr&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-mysql&#34;&gt;corpus-mysql&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-elasticsearch&#34;&gt;corpus-elasticsearch&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-mongodb&#34;&gt;corpus-mongodb&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-rabbitmq&#34;&gt;corpus-rabbitmq&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-pgsql&#34;&gt;corpus-pgsql&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&#34;webapps&#34;&gt;webapps&lt;/h1&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-seafile&#34;&gt;corpus-seafile&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-redmine&#34;&gt;corpus-redmine&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-vaultier&#34;&gt;corpus-vaultier&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-fusiondirectory&#34;&gt;corpus-fusiondirectory&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-sabnzbd&#34;&gt;corpus-sabnzbd&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-legacyenketo&#34;&gt;corpus-legacyenketo&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-odoo&#34;&gt;corpus-odoo&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-piwik&#34;&gt;corpus-piwik&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&#34;osm&#34;&gt;Osm&lt;/h1&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-osmdb&#34;&gt;corpus-osmdb&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-osmrender&#34;&gt;corpus-osmrender&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-tilemill&#34;&gt;corpus-tilemill&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&#34;code-ci&#34;&gt;Code &amp;amp; CI&lt;/h1&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-gitlab&#34;&gt;corpus-gitlab&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-jenkins&#34;&gt;corpus-jenkins&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-jenkins-slave&#34;&gt;corpus-jenkins-slave&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-svn&#34;&gt;corpus-svn&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-gitlabrunner&#34;&gt;corpus-gitlabrunner&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&#34;misc&#34;&gt;Misc&lt;/h1&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-mumble&#34;&gt;corpus-mumble&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-irssi&#34;&gt;corpus-irssi&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&#34;mail&#34;&gt;Mail&lt;/h1&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/corpus-mailman3&#34;&gt;corpus-mailman3&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

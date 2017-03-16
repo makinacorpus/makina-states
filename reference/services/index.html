@@ -5,7 +5,7 @@
 <title>Services | Makina States</title><meta name="description" content="" />
 <meta property="og:type" content="article" />
 <meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
-<meta property="og:article:modified_time" content="0001-01-01 00:00:00 &#43;0000 UTC" /><meta property="og:article:tag" content="reference" /><meta property="og:article:tag" content="installation" /><meta property="og:locale" content="en_US">
+<meta property="og:article:modified_time" content="2017-03-15 23:58:39 &#43;0100 CET" /><meta property="og:article:tag" content="reference" /><meta property="og:article:tag" content="installation" /><meta property="og:locale" content="en_US">
 <meta property="og:title" content="Services">
 <meta property="og:image" content="/images/">
 <meta property="og:image:type" content="image/jpeg" />
@@ -31,6 +31,9 @@
 <link rel="prefetch" href="/reference/localsettings/">
 <link rel="prerender" href="/reference/localsettings/">
 
+
+<link rel="prefetch" href="/reference/servicesmanagers/">
+<link rel="prerender" href="/reference/servicesmanagers/">
 
 <link rel="stylesheet" href="/css/style.min.css">
   
@@ -90,7 +93,7 @@
 <h1 class="page-title reference" id="services">Services</h1>
 <div class="content-header-links">
   
-  <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makina-states/edit/v2/doc/hugo/content/reference/services.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
+  <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makina-states/edit/v2/doc/hugo/content/reference/services/index.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
 
 	<ul class="tags">
 		<li class="icon"><i class="icon-tags"></i></li>
@@ -105,7 +108,353 @@
 		</header>
 		<div class="body-copy" data-section=reference>
 		
-		</div><div class="last-modified">Last Updated: 0001-01-01</div>
+
+<ul>
+<li>Salt States dedicated to install services on the targeted environment</li>
+</ul>
+
+<h2 id="states">States</h2>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services">services States</a></li>
+<li>non exhaustive shortcuts:</li>
+</ul>
+
+<h3 id="backup">backup</h3>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/backup/bacula">services/backup/bacula</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/backup/dbsmartbackup">services/backup/dbsmartbackup</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/backup/burp">services/backup/burp</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/backup/rdiff-backup">services/backup/rdiff-backup</a></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="base">base</h3>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/base/cron">services/base/cron</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/base/ntp">services/base/ntp</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/base/dbus">services/base/dbus</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/base/ssh">services/base/ssh</a></td>
+</tr>
+
+<tr>
+<td></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/cache/memcached">services/cache/memcached</a></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="misc">misc</h3>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/collab/etherpad">services/collab/etherpad</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/queue/rabbitmq">services/queue/rabbitmq</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/sound/mumble">services/sound/mumble</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/ftp/pureftpd">services/ftp/pureftpd</a></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="db">db</h3>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/db/mongodb">services/db/mongodb</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/db/postgresql">services/db/postgresql</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/db/mysql">services/db/mysql</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/db/redis">services/db/redis</a></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="dns">dns</h3>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/dns/dhcpd">services/dns/dhcpd</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/dns/slapd">services/dns/slapd</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/dns/bind">services/dns/bind</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="firewall">firewall</h3>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/firewall/shorewall">services/firewall/shorewall</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/firewall/firewalld">services/firewall/firewalld</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/firewall/firewall">services/firewall/firewall</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/firewall/ms_iptables">services/firewall/ms_iptables</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/firewall/fail2ban">services/firewall/fail2ban</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/firewall/psad">services/firewall/psad</a></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="gis">gis</h3>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/gis/postgis">services/gis/postgis</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/gis/ubuntugis">services/gis/ubuntugis</a></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="http">http</h3>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/http/nginx">services/http/nginx</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/http/apache_modfastcgi">services/http/apache_modfastcgi</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/http/apache">services/http/apache</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/http/apache_modfcgid">services/http/apache_modfcgid</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/java/tomcat">services/java/tomcat</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/http/apache_modproxy">services/http/apache_modproxy</a></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="log">log</h3>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/log/rsyslog">services/log/rsyslog</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/log/ulogd">services/log/ulogd</a></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="mail">Mail</h3>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/mail/dovecot">services/mail/dovecot</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/mail/postfix">services/mail/postfix</a></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="monitoring">Monitoring</h3>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/client">services/monitoring/client</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/icinga_web2">services/monitoring/icinga_web2</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/icinga">services/monitoring/icinga</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/nagvis">services/monitoring/nagvis</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/icinga2">services/monitoring/icinga2</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/pnp4nagios">services/monitoring/pnp4nagios</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/icinga_web">services/monitoring/icinga_web</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/snmpd">services/monitoring/snmpd</a></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="php">php</h3>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/php/common">services/php/common</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/php/modphp">services/php/modphp</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/php/phpfpm">services/php/phpfpm</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/php/phpfpm_with_apache">services/php/phpfpm_with_apache</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/php/phpfpm_with_nginx">services/php/phpfpm_with_nginx</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="proxy">Proxy</h3>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/proxy/haproxy">services/proxy/haproxy</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/proxy/uwsgi">services/proxy/uwsgi</a></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="virt">virt</h3>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/virt/docker">services/virt/docker</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/virt/kvm">services/virt/kvm</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/virt/lxc">services/virt/lxc</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/virt/virtualbox">services/virt/virtualbox</a></td>
+</tr>
+</tbody>
+</table>
+
+		</div><div class="last-modified">Last Updated: 2017-03-15</div>
 <footer id="content-footer">
 
 
@@ -117,6 +466,14 @@
 		</div>
 </a>
 
+
+	<a href="/reference/servicesmanagers/" class="cf-link next-page">
+		<div class="page-info">
+			<span>Next</span>
+			<h5 class="reference">Services Managers</h5>
+		</div>
+		<i class="fa fa-chevron-right"></i>
+	</a>
 
 
 </footer>
@@ -130,7 +487,30 @@
         <h3 class="reference">Services</h3>
       </a>
     </header>
-    
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#states">States</a>
+<ul>
+<li><a href="#backup">backup</a></li>
+<li><a href="#base">base</a></li>
+<li><a href="#misc">misc</a></li>
+<li><a href="#db">db</a></li>
+<li><a href="#dns">dns</a></li>
+<li><a href="#firewall">firewall</a></li>
+<li><a href="#gis">gis</a></li>
+<li><a href="#http">http</a></li>
+<li><a href="#log">log</a></li>
+<li><a href="#mail">Mail</a></li>
+<li><a href="#monitoring">Monitoring</a></li>
+<li><a href="#php">php</a></li>
+<li><a href="#proxy">Proxy</a></li>
+<li><a href="#virt">virt</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
   </div>
   <div class="fade"></div>
 </aside>
@@ -203,7 +583,67 @@
 
 <li class="menu-item menu-item-2">
   <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/preamble/">Preamble</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
     class="list-icon menu-item-link menu-item-link-2" href="/reference/sumup/">Order of operation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/databasesls/">database.sls</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/layout/">Layout</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/registries/">Registries &amp; Configuration</a>
   
 </li>
 
@@ -233,7 +673,7 @@
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/reference/localsettings/">LocalSettings</a>
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/controllers/">Controllers</a>
   
 </li>
 
@@ -249,6 +689,81 @@
 <li class="menu-item menu-item-2">
   <a
     class="list-icon menu-item-link menu-item-link-2 active open" href="/reference/services/">Services</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/servicesmanagers/">Services Managers</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/localsettings/">LocalSettings</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/macros/">Macros</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/projects/">Projects</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/templates/">Templates</a>
   
 </li>
 
@@ -273,7 +788,22 @@
 
 <li class="menu-item menu-item-1">
   <a
-    class="list-icon menu-item-link menu-item-link-1 has-children" href="/install/">Installation &amp; usage</a>
+    class="list-icon menu-item-link menu-item-link-1" href="/install/">Installation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/usage/">Usage</a>
   
   
   
@@ -288,7 +818,7 @@
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/usage/">Usage</a>
+    class="list-icon menu-item-link menu-item-link-2" href="/usage/salt/">Salt</a>
   
 </li>
 
@@ -303,37 +833,7 @@
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/configure/">Configuration/Layout</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/databasesls/">database.sls</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2 has-children" href="/install/ansible/">Using bundled ansible</a>
+    class="list-icon menu-item-link menu-item-link-2 has-children" href="/usage/ansible/">Ansible</a>
   
   
   
@@ -348,7 +848,7 @@
 
 <li class="menu-item menu-item-3">
   <a
-    class="list-icon menu-item-link menu-item-link-3" href="/install/ansible/saltcall/">Ansible saltcall module</a>
+    class="list-icon menu-item-link menu-item-link-3" href="/usage/ansible/saltcall/">Ansible saltcall module</a>
   
 </li>
 

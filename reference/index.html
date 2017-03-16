@@ -5,7 +5,7 @@
 <title>Reference | Makina States</title><meta name="description" content="" />
 <meta property="og:type" content="article" />
 <meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
-<meta property="og:article:modified_time" content="0001-01-01 00:00:00 &#43;0000 UTC" /><meta property="og:article:tag" content="topics" /><meta property="og:article:tag" content="installation" /><meta property="og:locale" content="en_US">
+<meta property="og:article:modified_time" content="2017-03-15 23:58:39 &#43;0100 CET" /><meta property="og:article:tag" content="topics" /><meta property="og:article:tag" content="installation" /><meta property="og:locale" content="en_US">
 <meta property="og:title" content="Reference">
 <meta property="og:image" content="/images/">
 <meta property="og:image:type" content="image/jpeg" />
@@ -94,44 +94,22 @@
 
     </header>
     <div class="body-copy">
-    
-
-<h2 id="briefing">Briefing</h2>
-
-<ul>
-<li><p>Makinastates at a whole is a combination of ansible and saltstack
-aiming at operating a cluster.</p></li>
-
-<li><p><strong>Makina-states do not use regular salt daemons to operate remotely but
-an ansible bridge that copy the pillar and use salt-call locally
-directly on the remote box via SSH</strong></p></li>
-
-<li><p>Ansible get the information from makinastates by getting the salt pillar
-th rough a custom dynamic inventory.</p></li>
-</ul>
-
-<h2 id="compatiblity">Compatiblity</h2>
-
-<ul>
-<li><strong>For now, use Ubuntu &gt;= 14.04.</strong>.<br/>
-Makina-States can be ported to any
-linux based OS, but we, here, use ubuntu server and this is the only
-supported system for now. It can be used in any flavor, lxc, docker,
-baremetal, kvm, etc.</li>
+    <ul>
+<li><a href="preamble">See here</a></li>
 </ul>
 
     </div>
-    <div class="last-modified">Last Updated: 0001-01-01</div>
+    <div class="last-modified">Last Updated: 2017-03-15</div>
 <footer id="content-footer">
 
 
 
 
 	
-	<a href="/reference/sumup/" class="cf-link next-page">
+	<a href="/reference/preamble/" class="cf-link next-page">
 	  <div class="page-info">
 	    <span>Next</span>
-	    <h5 class="reference">Order of operation</h5>
+	    <h5 class="reference">Preamble</h5>
 	  </div>
 
 	  	<i class="fa fa-chevron-right"></i>
@@ -207,7 +185,67 @@ baremetal, kvm, etc.</li>
 
 <li class="menu-item menu-item-2">
   <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/preamble/">Preamble</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
     class="list-icon menu-item-link menu-item-link-2" href="/reference/sumup/">Order of operation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/databasesls/">database.sls</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/layout/">Layout</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/registries/">Registries &amp; Configuration</a>
   
 </li>
 
@@ -237,7 +275,7 @@ baremetal, kvm, etc.</li>
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/reference/localsettings/">LocalSettings</a>
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/controllers/">Controllers</a>
   
 </li>
 
@@ -253,6 +291,81 @@ baremetal, kvm, etc.</li>
 <li class="menu-item menu-item-2">
   <a
     class="list-icon menu-item-link menu-item-link-2" href="/reference/services/">Services</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/servicesmanagers/">Services Managers</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/localsettings/">LocalSettings</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/macros/">Macros</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/projects/">Projects</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/templates/">Templates</a>
   
 </li>
 
@@ -277,7 +390,22 @@ baremetal, kvm, etc.</li>
 
 <li class="menu-item menu-item-1">
   <a
-    class="list-icon menu-item-link menu-item-link-1 has-children" href="/install/">Installation &amp; usage</a>
+    class="list-icon menu-item-link menu-item-link-1" href="/install/">Installation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/usage/">Usage</a>
   
   
   
@@ -292,7 +420,7 @@ baremetal, kvm, etc.</li>
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/usage/">Usage</a>
+    class="list-icon menu-item-link menu-item-link-2" href="/usage/salt/">Salt</a>
   
 </li>
 
@@ -307,37 +435,7 @@ baremetal, kvm, etc.</li>
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/configure/">Configuration/Layout</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/databasesls/">database.sls</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2 has-children" href="/install/ansible/">Using bundled ansible</a>
+    class="list-icon menu-item-link menu-item-link-2 has-children" href="/usage/ansible/">Ansible</a>
   
   
   
@@ -352,7 +450,7 @@ baremetal, kvm, etc.</li>
 
 <li class="menu-item menu-item-3">
   <a
-    class="list-icon menu-item-link menu-item-link-3" href="/install/ansible/saltcall/">Ansible saltcall module</a>
+    class="list-icon menu-item-link menu-item-link-3" href="/usage/ansible/saltcall/">Ansible saltcall module</a>
   
 </li>
 

@@ -2,11 +2,11 @@
 <html lang="en"><head>
 <meta name="robots" content="noindex"><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Installation &amp; basic usage | Makina States</title><meta name="description" content="" />
+<title>Installation | Makina States</title><meta name="description" content="" />
 <meta property="og:type" content="article" />
 <meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
-<meta property="og:article:modified_time" content="2017-03-15 23:58:39 &#43;0100 CET" /><meta property="og:article:tag" content="topics" /><meta property="og:article:tag" content="installation" /><meta property="og:locale" content="en_US">
-<meta property="og:title" content="Installation &amp; basic usage">
+<meta property="og:article:modified_time" content="2017-03-15 23:58:39 &#43;0100 CET" /><meta property="og:article:tag" content="installation" /><meta property="og:article:tag" content="install" /><meta property="og:article:tag" content="upgrade" /><meta property="og:locale" content="en_US">
+<meta property="og:title" content="Installation">
 <meta property="og:image" content="/images/">
 <meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:width" content="1500" />
@@ -76,7 +76,7 @@
     <header class="content-header">
       
 
-      <h1 class="page-title " id="installation--basic-usage">Installation &amp; basic usage</h1>
+      <h1 class="page-title " id="installation">Installation</h1>
       <div class="content-header-links">
   
   <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makina-states/edit/v2/doc/hugo/content/install/_index.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
@@ -85,9 +85,11 @@
 	<ul class="tags">
 		<li class="icon"><i class="icon-tags"></i></li>
 		
-		<li><a class="tag" href="/tags/topics">topics</a></li>
-		
 		<li><a class="tag" href="/tags/installation">installation</a></li>
+		
+		<li><a class="tag" href="/tags/install">install</a></li>
+		
+		<li><a class="tag" href="/tags/upgrade">upgrade</a></li>
 		
 	</ul>
 
@@ -98,11 +100,20 @@
 
 <p><strong>REMEMBER THAT FOR NOW YOU HAVE TO USE UBUNTU &gt;= 14.04.</strong></p>
 
+<p><strong>Use root unless you understand well how it works to handle user install</strong></p>
+
 <h3 id="download">Download</h3>
 
 <ul>
-<li><p>Get MakinaStates by cloning it from github</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>git clone http://raw.github.com/makinacorpus/makina-states
+<li><p>Get MakinaStates by cloning it from github<br/>
+Usually we install it in <code>/srv/makina-states</code></p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>git clone http://raw.github.com/makinacorpus/makina-states /srv/makina-states
+</code></pre></div>
+
+<h2 id="common-install-command">Common install command</h2></li>
+
+<li><p>Install with <code>scratch</code> node, with refresh cron, logrotate.</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>bin,/boot-salt2.sh -C --install-logrotate --install-crons
 </code></pre></div></li>
 </ul>
 
@@ -110,19 +121,15 @@
 
 <ul>
 <li><p><code>boot-salt2.sh</code> will try to remember how you configured makina-states on
-each run. It stores configs in <code>installdir/etc/makina-states</code></p></li>
+each run. It stores configs in <code>&lt;clone_dir&gt;/etc/makina-states</code></p></li>
 
-<li><p>Short overview:</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh --help
+<li><p>You can see the help this way:</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>bin/boot-salt2.sh --help  <span class="c1"># Short overview:</span>
+bin/boot-salt2.sh --long-help  <span class="c1"># Detailed overview:</span>
 </code></pre></div></li>
 
-<li><p>Detailed overview:</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh --long-help
-</code></pre></div></li>
-
-<li><p>If you want to install  with default options (scratch)<br/>
-<code>as root</code></p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh -C
+<li><p>If you want to install  with default options (scratch)<br/></p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>bin/boot-salt2.sh -C
 </code></pre></div></li>
 </ul>
 
@@ -130,24 +137,26 @@ each run. It stores configs in <code>installdir/etc/makina-states</code></p></li
 
 <ul>
 <li><p>Install the logrotate to rotate salt logs</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh -C --install-logrotate
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>bin/boot-salt2.sh -C --install-logrotate
 </code></pre></div></li>
 
 <li><p>Install the cron that refresh makina-states code every since and then (15min)</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh -C --install-crons
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>bin/boot-salt2.sh -C --install-crons
 </code></pre></div></li>
 
-<li><p>Install the salt &amp; ansible binaries to /usr/local/bin</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>./boot-salt2.sh -C --install-links
+<li><p>Install the salt &amp; ansible binaries to /usr/local/bin.<br/>
+<strong>THIS IS NOT RECOMMENDED ANYMORE, AND EVEN HARMFULL</strong></p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>bin/boot-salt2.sh -C --install-links
 </code></pre></div></li>
 </ul>
 
 <h2 id="related-documents">Related documents</h2>
 
 <ul>
-<li><a href="usage">Usage</a></li>
-<li><a href="configure">Configure</a></li>
-<li><a href="databasesls">database.sls</a></li>
+<li><a href="../usage">Usage</a></li>
+<li><a href="../reference/layout">Layout</a></li>
+<li><a href="../reference/databasesls">database.sls</a></li>
+<li><a href="../reference/nodetypes">nodetypes</a></li>
 </ul>
 
     </div>
@@ -157,16 +166,6 @@ each run. It stores configs in <code>installdir/etc/makina-states</code></p></li
 
 
 
-	
-	<a href="/install/usage/" class="cf-link next-page">
-	  <div class="page-info">
-	    <span>Next</span>
-	    <h5 class="install">Usage</h5>
-	  </div>
-
-	  	<i class="fa fa-chevron-right"></i>
-
-	</a>
 	
 
 </footer>
@@ -237,7 +236,67 @@ each run. It stores configs in <code>installdir/etc/makina-states</code></p></li
 
 <li class="menu-item menu-item-2">
   <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/preamble/">Preamble</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
     class="list-icon menu-item-link menu-item-link-2" href="/reference/sumup/">Order of operation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/databasesls/">database.sls</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/layout/">Layout</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/registries/">Registries &amp; Configuration</a>
   
 </li>
 
@@ -267,7 +326,7 @@ each run. It stores configs in <code>installdir/etc/makina-states</code></p></li
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/reference/localsettings/">LocalSettings</a>
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/controllers/">Controllers</a>
   
 </li>
 
@@ -283,6 +342,81 @@ each run. It stores configs in <code>installdir/etc/makina-states</code></p></li
 <li class="menu-item menu-item-2">
   <a
     class="list-icon menu-item-link menu-item-link-2" href="/reference/services/">Services</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/servicesmanagers/">Services Managers</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/localsettings/">LocalSettings</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/macros/">Macros</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/projects/">Projects</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/templates/">Templates</a>
   
 </li>
 
@@ -307,7 +441,22 @@ each run. It stores configs in <code>installdir/etc/makina-states</code></p></li
 
 <li class="menu-item menu-item-1">
   <a
-    class="list-icon menu-item-link menu-item-link-1 has-children active open" href="/install/">Installation &amp; usage</a>
+    class="list-icon menu-item-link menu-item-link-1 active open" href="/install/">Installation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/usage/">Usage</a>
   
   
   
@@ -322,7 +471,7 @@ each run. It stores configs in <code>installdir/etc/makina-states</code></p></li
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/usage/">Usage</a>
+    class="list-icon menu-item-link menu-item-link-2" href="/usage/salt/">Salt</a>
   
 </li>
 
@@ -337,37 +486,7 @@ each run. It stores configs in <code>installdir/etc/makina-states</code></p></li
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/configure/">Configuration/Layout</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/databasesls/">database.sls</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2 has-children" href="/install/ansible/">Using bundled ansible</a>
+    class="list-icon menu-item-link menu-item-link-2 has-children" href="/usage/ansible/">Ansible</a>
   
   
   
@@ -382,7 +501,7 @@ each run. It stores configs in <code>installdir/etc/makina-states</code></p></li
 
 <li class="menu-item menu-item-3">
   <a
-    class="list-icon menu-item-link menu-item-link-3" href="/install/ansible/saltcall/">Ansible saltcall module</a>
+    class="list-icon menu-item-link menu-item-link-3" href="/usage/ansible/saltcall/">Ansible saltcall module</a>
   
 </li>
 

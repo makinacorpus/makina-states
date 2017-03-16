@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta name="robots" content="noindex"><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Macros | Makina States</title><meta name="description" content="" />
+<meta property="og:type" content="article" />
+<meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
+<meta property="og:article:modified_time" content="2017-03-15 23:58:39 &#43;0100 CET" /><meta property="og:article:tag" content="reference" /><meta property="og:article:tag" content="installation" /><meta property="og:locale" content="en_US">
+<meta property="og:title" content="Macros">
+<meta property="og:image" content="/images/">
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="1500" />
+<meta property="og:image:height" content="800" />
+<meta property="og:description" content=""/>
+<meta property="og:site_name" content="Makina States">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/favicons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="/images/favicons/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/images/favicons/favicon-16x16.png" sizes="16x16">
+<link rel="manifest" href="/images/favicons/manifest.json">
+<link rel="mask-icon" href="/images/favicons/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="msapplication-TileImage" content="/images/favicons/mstile-144x144.png">
+<meta name="theme-color" content="#ffffff">
+<link rel="shortcut icon" href="/images/favicons/favicon.ico">
+<link rel="dns-prefetch" href="/">
+
+<link rel="preconnect" href="/">
+<link rel="canonical" href="/reference/macros/">
+
+
+<link rel="prefetch" href="/reference/servicesmanagers/">
+<link rel="prerender" href="/reference/servicesmanagers/">
+
+
+<link rel="prefetch" href="/reference/projects/">
+<link rel="prerender" href="/reference/projects/">
+
+<link rel="stylesheet" href="/css/style.min.css">
+  
+</head>
+<body>
+	
+<header id="site-header" class="site-header">
+  <div class="hugo-meta" title="Hugo version 1">
+    <a href="/" id="home-link">
+      <img src="/images/MakinaCorpus_logo_vert_blanc.svg" alt="" />
+    </a>
+  </div>
+  <div id="goto-source">
+    <ul>
+      <li>
+        <a href="https://github.com/makinacorpus/makina-states" target="_blank">
+          <i class="icon-github"></i> Source
+        </a>
+      </li>
+    </ul>
+  </div>
+<div id="search-wrapper">
+  <form action="" id="search-form" role="search">
+    <label for="search" class="icon-search" id="search-button"></label>
+    <input type="search" id="search-input" class="site-search"
+        autocomplete="off"
+        aria-label="Search the Makina States website..."
+        placeholder="Search..." required />
+    <input type="hidden" id="search-index" value="/site-index.json"/>
+  </form>
+</div>
+<div id="search-results-wrapper">
+  <div id="search-results-count"></div>
+  <ul id="search-results">
+    
+    
+  </ul>
+</div>
+</header>
+
+  <div class="all-content-wrapper" id="all-content-wrapper">
+		
+<span id="page-top"></span>
+<main class="main">
+	<article class="content" id="macros">
+		<header class="content-header">
+<nav class="breadcrumb">
+	<ul class="breadcrumbs">
+		<li>
+			<a class="crumb" href="/reference">
+    		<span>Reference</span>
+  		</a>
+		</li>
+	</ul>
+</nav>
+
+<h1 class="page-title reference" id="macros">Macros</h1>
+<div class="content-header-links">
+  
+  <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makina-states/edit/v2/doc/hugo/content/reference/macros/index.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
+
+	<ul class="tags">
+		<li class="icon"><i class="icon-tags"></i></li>
+		
+		<li><a class="tag" href="/tags/reference">reference</a></li>
+		
+		<li><a class="tag" href="/tags/installation">installation</a></li>
+		
+	</ul>
+
+
+		</header>
+		<div class="body-copy" data-section=reference>
+		
+
+<p>Here are a non exhaustive list of macros that makina-states provides and you
+may use in your states.</p>
+
+<h2 id="helpers">Helpers</h2>
+
+<ul>
+<li><p><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/_macros/h.jinja">h(helpers)</a></p>
+
+<ul>
+<li><strong>deliver_deliver_config_files</strong>: push  configuration files</li>
+<li><strong>service_restart_reload</strong>: aim to restart or reload service
+but handle the case where services mis implement the status
+function and mess salt modules.</li>
+<li><strong>toggle_service</strong>: helper to call <strong>service_restart_reload</strong></li>
+</ul></li>
+</ul>
+
+<h2 id="nginx">nginx</h2>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/http/nginx/macros.sls">nginx</a>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/http/nginx/macros.sls#L31">nginx.vhost</a></li>
+</ul></li>
+</ul>
+
+<h2 id="apache">apache</h2>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/http/apache/macros.sls">apache</a>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/http/apache/macros.sls#L48">apache.vhost</a></li>
+</ul></li>
+</ul>
+
+<h2 id="php">php</h2>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/php/macros.sls">php</a>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/php/macros.sls#L60">php.fpm_pool</a></li>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/php/macros.sls#L135">php.minimal_index</a></li>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/php/macros.sls#L153">php.toggle_ext</a></li>
+</ul></li>
+</ul>
+
+<h2 id="mysql">mysql</h2>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/db/mysql/init.sls">macros</a>
+
+<ul>
+<li>mysql_db</li>
+<li>mysql_group</li>
+</ul></li>
+</ul>
+
+<h2 id="postgresql">postgresql</h2>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/db/postgresql/init.sls">macros</a>
+
+<ul>
+<li>postgresql_db</li>
+<li>postgresql_user</li>
+<li>postgresql_group</li>
+<li>install_pg_exts</li>
+<li>install_pg_ext</li>
+</ul></li>
+</ul>
+
+<h2 id="circusd">circusd</h2>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services_managers/circus/macros.jinja">macros</a>
+
+<ul>
+<li>circusAddWatcher</li>
+</ul></li>
+</ul>
+
+<h2 id="supervisord">supervisord</h2>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services_managers/supervisor/macros.jinja">macros</a>
+
+<ul>
+<li>supervisorAddProgram</li>
+</ul></li>
+</ul>
+
+<h2 id="mongodb">mongodb</h2>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/db/mongodb/macros.sls">macros</a>
+
+<ul>
+<li>mongodb_db</li>
+<li>mongodb_user</li>
+</ul></li>
+</ul>
+
+<h2 id="uwsgi">uwsgi</h2>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/proxy/uwsgi">macros</a>
+
+<ul>
+<li>config</li>
+</ul></li>
+</ul>
+
+<h2 id="rabbitmq">rabbitmq</h2>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/queue/rabbitmq/macros.sls">macros</a>
+
+<ul>
+<li>rabbitmq_vhost</li>
+</ul></li>
+</ul>
+
+		</div><div class="last-modified">Last Updated: 2017-03-15</div>
+<footer id="content-footer">
+
+
+<a href="/reference/servicesmanagers/" class="cf-link prev-page">
+			<i class="fa fa-chevron-left"></i>
+		<div class="page-info">
+			<span>Previous</span>
+			<h5 class="reference">Services Managers</h5>
+		</div>
+</a>
+
+
+	<a href="/reference/projects/" class="cf-link next-page">
+		<div class="page-info">
+			<span>Next</span>
+			<h5 class="reference">Projects</h5>
+		</div>
+		<i class="fa fa-chevron-right"></i>
+	</a>
+
+
+</footer>
+</article>
+</main>
+
+<aside id="toc" class="scroll-fixed-wrapper">
+  <div class="scroll-fixed-wrapper-inner">
+    <header class="toc-header">
+      <a href="#macros">
+        <h3 class="reference">Macros</h3>
+      </a>
+    </header>
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#helpers">Helpers</a></li>
+<li><a href="#nginx">nginx</a></li>
+<li><a href="#apache">apache</a></li>
+<li><a href="#php">php</a></li>
+<li><a href="#mysql">mysql</a></li>
+<li><a href="#postgresql">postgresql</a></li>
+<li><a href="#circusd">circusd</a></li>
+<li><a href="#supervisord">supervisord</a></li>
+<li><a href="#mongodb">mongodb</a></li>
+<li><a href="#uwsgi">uwsgi</a></li>
+<li><a href="#rabbitmq">rabbitmq</a></li>
+</ul></li>
+</ul>
+</nav>
+  </div>
+  <div class="fade"></div>
+</aside>
+<a href="#"
+  id="toc-toggle"
+  class="toc-open"
+  title="Toggle Table of contents..."></a>
+
+
+	</div>
+<footer id="site-footer" class="site-footer">
+<div class="footer-content">
+  
+    
+  </div>
+</footer>
+<div class="navbutton__wrapper">
+  <a class="trigger" href="#">
+    <ul class="nav__trigger">
+      <li class="nav__trigger-item nav__trigger-item--first"></li>
+      <li class="nav__trigger-item nav__trigger-item--second"></li>
+      <li class="nav__trigger-item nav__trigger-item--third"></li>
+    </ul>
+  </a>
+</div>
+<nav class="site-navigation navigation-open scroll-fixed-wrapper"
+     id="site-navigation">
+  <div class="site-navigation-inner scroll-fixed-wrapper-inner">
+    
+    
+    
+
+
+<ul class="menu menu-1">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/">Home</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/reference/">Reference</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/preamble/">Preamble</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/sumup/">Order of operation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/databasesls/">database.sls</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/layout/">Layout</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/registries/">Registries &amp; Configuration</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/nodetypes/">Nodetypes</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/controllers/">Controllers</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/services/">Services</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/servicesmanagers/">Services Managers</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/localsettings/">LocalSettings</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2 active open" href="/reference/macros/">Macros</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/projects/">Projects</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/templates/">Templates</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/install/">Installation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/usage/">Usage</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/usage/salt/">Salt</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2 has-children" href="/usage/ansible/">Ansible</a>
+  
+  
+  
+
+
+<ul class="menu menu-3">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-3">
+  <a
+    class="list-icon menu-item-link menu-item-link-3" href="/usage/ansible/saltcall/">Ansible saltcall module</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/topics/">Topics</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/ssl/">Manage ssl certificates</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/topics/haproxy/">Haproxy</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/cloud/">Cloud</a>
+  
+  
+  
+
+
+<ul class="menu menu-2">
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/cloud/lxc/">LXC</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+  
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1" href="/sphinx/api">API</a>
+  
+</li>
+
+  
+  
+  
+
+</ul>
+
+    
+  </div>
+</nav>
+<script src="/js/vendor/jquery-2.2.4.min.js"></script>
+<script src="/js/vendor/lunr.min.js"></script>
+<script src="/js/script.min.js"></script>
+
+
+
+<script async defer src="https://buttons.github.io/buttons.js"></script>
+
+<script>
+(function() {
+  if (window.location.hostname === "localhost") {
+    console.log("Analytics not running on local dev.");
+    return;
+  } else {
+    (function(i, s, o, g, r, a, m) {
+      i['GoogleAnalyticsObject'] = r;
+      i[r] = i[r] || function() {
+        (i[r].q = i[r].q || []).push(arguments)
+      }, i[r].l = 1 * new Date();
+      a = s.createElement(o),
+        m = s.getElementsByTagName(o)[0];
+      a.async = 1;
+      a.src = g;
+      m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+    ga('create', '', 'auto');
+    ga('send', 'pageview');
+    ga('create', '', {
+      'siteSpeedSampleRate': 100
+    });
+  }
+})();
+</script>
+
+	
+</body>
+</html>

@@ -5,7 +5,7 @@
 <title>LocalSettings | Makina States</title><meta name="description" content="" />
 <meta property="og:type" content="article" />
 <meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
-<meta property="og:article:modified_time" content="0001-01-01 00:00:00 &#43;0000 UTC" /><meta property="og:article:tag" content="reference" /><meta property="og:article:tag" content="installation" /><meta property="og:locale" content="en_US">
+<meta property="og:article:modified_time" content="2017-03-15 23:58:39 &#43;0100 CET" /><meta property="og:article:tag" content="reference" /><meta property="og:article:tag" content="installation" /><meta property="og:locale" content="en_US">
 <meta property="og:title" content="LocalSettings">
 <meta property="og:image" content="/images/">
 <meta property="og:image:type" content="image/jpeg" />
@@ -28,8 +28,8 @@
 <link rel="canonical" href="/reference/localsettings/">
 
 
-<link rel="prefetch" href="/reference/nodetypes/">
-<link rel="prerender" href="/reference/nodetypes/">
+<link rel="prefetch" href="/reference/controllers/">
+<link rel="prerender" href="/reference/controllers/">
 
 
 <link rel="prefetch" href="/reference/services/">
@@ -93,7 +93,7 @@
 <h1 class="page-title reference" id="localsettings">LocalSettings</h1>
 <div class="content-header-links">
   
-  <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makina-states/edit/v2/doc/hugo/content/reference/localsettings.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
+  <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makina-states/edit/v2/doc/hugo/content/reference/localsettings/index.md"><i class="icon-pencil" aria-hidden="true"></i></a></div>
 
 	<ul class="tags">
 		<li class="icon"><i class="icon-tags"></i></li>
@@ -108,15 +108,131 @@
 		</header>
 		<div class="body-copy" data-section=reference>
 		
-		</div><div class="last-modified">Last Updated: 0001-01-01</div>
+
+<ul>
+<li><p>LocalSettings states are related to the low level configuration of an environment<br/>
+EG:</p>
+
+<ul>
+<li>locales</li>
+<li>network</li>
+<li>low level configuration](hardrive, etc)</li>
+<li>installing compilers &amp; language interpreters</li>
+<li>configuring base tools &amp; editors</li>
+<li>configuring SSH client</li>
+<li>distributing SSL certificates</li>
+</ul></li>
+
+<li><p>If any other preset than <code>scratch</code> has been activated, <br/>
+Many localsettings will be applied by default, see <a href="https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_localsettings.py#L113">mc_localsettings:registry</a></p></li>
+</ul>
+
+<h2 id="states">States</h2>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings">localsettings States</a></li>
+<li>non exhaustive shortcuts:</li>
+</ul>
+
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>State</th>
+<th>State</th>
+<th>State</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/apparmor">localsettings/apparmor</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/nodejs">localsettings/nodejs</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/hostname">localsettings/hostname</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/sudo">localsettings/sudo</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/autoupgrade">localsettings/autoupgrade</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/npm">localsettings/npm</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/hosts">localsettings/hosts</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/sysctl">localsettings/sysctl</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/casperjs">localsettings/casperjs</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/nscd">localsettings/nscd</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/init.sls">localsettings/init.sls</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/systemd">localsettings/systemd</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/check_raid">localsettings/check_raid</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/phantomjs">localsettings/phantomjs</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/insserv">localsettings/insserv</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/timezone">localsettings/timezone</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/desktoptools">localsettings/desktoptools</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/pkgs">localsettings/pkgs</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/jdk">localsettings/jdk</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/updatedb">localsettings/updatedb</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/dns">localsettings/dns</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/python">localsettings/python</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/ldap">localsettings/ldap</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/users">localsettings/users</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/editor">localsettings/editor</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/reconfigure-network">localsettings/reconfigure-network</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/locales">localsettings/locales</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/vim">localsettings/vim</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/env">localsettings/env</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/repository_dotdeb">localsettings/repository_dotdeb</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/localrc">localsettings/localrc</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/mvn">localsettings/mvn</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/etckeeper">localsettings/etckeeper</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/rvm">localsettings/rvm</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/grub">localsettings/grub</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/ssl">localsettings/ssl</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/git">localsettings/git</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/screen">localsettings/screen</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/golang">localsettings/golang</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/shell">localsettings/shell</a></td>
+</tr>
+
+<tr>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/groups">localsettings/groups</a></td>
+<td><a href="https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/sshkeys">localsettings/sshkeys</a></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+		</div><div class="last-modified">Last Updated: 2017-03-15</div>
 <footer id="content-footer">
 
 
-<a href="/reference/nodetypes/" class="cf-link prev-page">
+<a href="/reference/controllers/" class="cf-link prev-page">
 			<i class="fa fa-chevron-left"></i>
 		<div class="page-info">
 			<span>Previous</span>
-			<h5 class="reference">Nodetypes</h5>
+			<h5 class="reference">Controllers</h5>
 		</div>
 </a>
 
@@ -141,7 +257,14 @@
         <h3 class="reference">LocalSettings</h3>
       </a>
     </header>
-    
+    <nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#states">States</a></li>
+</ul></li>
+</ul>
+</nav>
   </div>
   <div class="fade"></div>
 </aside>
@@ -214,7 +337,67 @@
 
 <li class="menu-item menu-item-2">
   <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/preamble/">Preamble</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
     class="list-icon menu-item-link menu-item-link-2" href="/reference/sumup/">Order of operation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/databasesls/">database.sls</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/layout/">Layout</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/registries/">Registries &amp; Configuration</a>
   
 </li>
 
@@ -244,7 +427,7 @@
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2 active open" href="/reference/localsettings/">LocalSettings</a>
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/controllers/">Controllers</a>
   
 </li>
 
@@ -260,6 +443,81 @@
 <li class="menu-item menu-item-2">
   <a
     class="list-icon menu-item-link menu-item-link-2" href="/reference/services/">Services</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/servicesmanagers/">Services Managers</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2 active open" href="/reference/localsettings/">LocalSettings</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/macros/">Macros</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/projects/">Projects</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-2">
+  <a
+    class="list-icon menu-item-link menu-item-link-2" href="/reference/templates/">Templates</a>
   
 </li>
 
@@ -284,7 +542,22 @@
 
 <li class="menu-item menu-item-1">
   <a
-    class="list-icon menu-item-link menu-item-link-1 has-children" href="/install/">Installation &amp; usage</a>
+    class="list-icon menu-item-link menu-item-link-1" href="/install/">Installation</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-1">
+  <a
+    class="list-icon menu-item-link menu-item-link-1 has-children" href="/usage/">Usage</a>
   
   
   
@@ -299,7 +572,7 @@
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/usage/">Usage</a>
+    class="list-icon menu-item-link menu-item-link-2" href="/usage/salt/">Salt</a>
   
 </li>
 
@@ -314,37 +587,7 @@
 
 <li class="menu-item menu-item-2">
   <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/configure/">Configuration/Layout</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2" href="/install/databasesls/">database.sls</a>
-  
-</li>
-
-  
-  
-  
-
-  
-  
-  
-
-
-<li class="menu-item menu-item-2">
-  <a
-    class="list-icon menu-item-link menu-item-link-2 has-children" href="/install/ansible/">Using bundled ansible</a>
+    class="list-icon menu-item-link menu-item-link-2 has-children" href="/usage/ansible/">Ansible</a>
   
   
   
@@ -359,7 +602,7 @@
 
 <li class="menu-item menu-item-3">
   <a
-    class="list-icon menu-item-link menu-item-link-3" href="/install/ansible/saltcall/">Ansible saltcall module</a>
+    class="list-icon menu-item-link menu-item-link-3" href="/usage/ansible/saltcall/">Ansible saltcall module</a>
   
 </li>
 

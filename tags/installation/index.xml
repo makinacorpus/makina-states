@@ -9,7 +9,31 @@
     <atom:link href="/tags/installation/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
-      <title>Installation &amp; basic usage</title>
+      <title>Controllers</title>
+      <link>/reference/controllers/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/reference/controllers/</guid>
+      <description>&lt;ul&gt;
+&lt;li&gt;controllers states purpose is mainly to check:
+
+&lt;ul&gt;
+&lt;li&gt;our bundled salt &amp;amp; ansible binaries are ready for operation&lt;/li&gt;
+&lt;li&gt;the cloned code is up to date and clean&lt;/li&gt;
+&lt;li&gt;If the user selected them:
+
+&lt;ul&gt;
+&lt;li&gt;crons are in place&lt;/li&gt;
+&lt;li&gt;install links (&lt;code&gt;/usr/local/bin&lt;/code&gt;) are present&lt;/li&gt;
+&lt;li&gt;RollingRealse updater crons are in place&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Installation</title>
       <link>/install/</link>
       <pubDate>Wed, 15 Mar 2017 23:58:39 +0100</pubDate>
       
@@ -18,11 +42,20 @@
 
 &lt;p&gt;&lt;strong&gt;REMEMBER THAT FOR NOW YOU HAVE TO USE UBUNTU &amp;gt;= 14.04.&lt;/strong&gt;&lt;/p&gt;
 
+&lt;p&gt;&lt;strong&gt;Use root unless you understand well how it works to handle user install&lt;/strong&gt;&lt;/p&gt;
+
 &lt;h3 id=&#34;download&#34;&gt;Download&lt;/h3&gt;
 
 &lt;ul&gt;
-&lt;li&gt;&lt;p&gt;Get MakinaStates by cloning it from github&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;git clone http://raw.github.com/makinacorpus/makina-states
+&lt;li&gt;&lt;p&gt;Get MakinaStates by cloning it from github&lt;br/&gt;
+Usually we install it in &lt;code&gt;/srv/makina-states&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;git clone http://raw.github.com/makinacorpus/makina-states /srv/makina-states
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2 id=&#34;common-install-command&#34;&gt;Common install command&lt;/h2&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Install with &lt;code&gt;scratch&lt;/code&gt; node, with refresh cron, logrotate.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin,/boot-salt2.sh -C --install-logrotate --install-crons
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
@@ -30,19 +63,15 @@
 
 &lt;ul&gt;
 &lt;li&gt;&lt;p&gt;&lt;code&gt;boot-salt2.sh&lt;/code&gt; will try to remember how you configured makina-states on
-each run. It stores configs in &lt;code&gt;installdir/etc/makina-states&lt;/code&gt;&lt;/p&gt;&lt;/li&gt;
+each run. It stores configs in &lt;code&gt;&amp;lt;clone_dir&amp;gt;/etc/makina-states&lt;/code&gt;&lt;/p&gt;&lt;/li&gt;
 
-&lt;li&gt;&lt;p&gt;Short overview:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt2.sh --help
+&lt;li&gt;&lt;p&gt;You can see the help this way:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh --help  &lt;span class=&#34;c1&#34;&gt;# Short overview:&lt;/span&gt;
+bin/boot-salt2.sh --long-help  &lt;span class=&#34;c1&#34;&gt;# Detailed overview:&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 
-&lt;li&gt;&lt;p&gt;Detailed overview:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt2.sh --long-help
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;If you want to install  with default options (scratch)&lt;br/&gt;
-&lt;code&gt;as root&lt;/code&gt;&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt2.sh -C
+&lt;li&gt;&lt;p&gt;If you want to install  with default options (scratch)&lt;br/&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh -C
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
@@ -50,24 +79,26 @@ each run. It stores configs in &lt;code&gt;installdir/etc/makina-states&lt;/code
 
 &lt;ul&gt;
 &lt;li&gt;&lt;p&gt;Install the logrotate to rotate salt logs&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt2.sh -C --install-logrotate
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh -C --install-logrotate
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 
 &lt;li&gt;&lt;p&gt;Install the cron that refresh makina-states code every since and then (15min)&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt2.sh -C --install-crons
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh -C --install-crons
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 
-&lt;li&gt;&lt;p&gt;Install the salt &amp;amp; ansible binaries to /usr/local/bin&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt2.sh -C --install-links
+&lt;li&gt;&lt;p&gt;Install the salt &amp;amp; ansible binaries to /usr/local/bin.&lt;br/&gt;
+&lt;strong&gt;THIS IS NOT RECOMMENDED ANYMORE, AND EVEN HARMFULL&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh -C --install-links
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;h2 id=&#34;related-documents&#34;&gt;Related documents&lt;/h2&gt;
 
 &lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;usage&#34;&gt;Usage&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;configure&#34;&gt;Configure&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;databasesls&#34;&gt;database.sls&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;../usage&#34;&gt;Usage&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;../reference/layout&#34;&gt;Layout&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;../reference/databasesls&#34;&gt;database.sls&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;../reference/nodetypes&#34;&gt;nodetypes&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </description>
     </item>
@@ -78,7 +109,258 @@ each run. It stores configs in &lt;code&gt;installdir/etc/makina-states&lt;/code
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>/reference/localsettings/</guid>
-      <description></description>
+      <description>
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;LocalSettings states are related to the low level configuration of an environment&lt;br/&gt;
+EG:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;locales&lt;/li&gt;
+&lt;li&gt;network&lt;/li&gt;
+&lt;li&gt;low level configuration](hardrive, etc)&lt;/li&gt;
+&lt;li&gt;installing compilers &amp;amp; language interpreters&lt;/li&gt;
+&lt;li&gt;configuring base tools &amp;amp; editors&lt;/li&gt;
+&lt;li&gt;configuring SSH client&lt;/li&gt;
+&lt;li&gt;distributing SSL certificates&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;If any other preset than &lt;code&gt;scratch&lt;/code&gt; has been activated, &lt;br/&gt;
+Many localsettings will be applied by default, see &lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_localsettings.py#L113&#34;&gt;mc_localsettings:registry&lt;/a&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;states&#34;&gt;States&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings&#34;&gt;localsettings States&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;non exhaustive shortcuts:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/apparmor&#34;&gt;localsettings/apparmor&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/nodejs&#34;&gt;localsettings/nodejs&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/hostname&#34;&gt;localsettings/hostname&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/sudo&#34;&gt;localsettings/sudo&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/autoupgrade&#34;&gt;localsettings/autoupgrade&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/npm&#34;&gt;localsettings/npm&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/hosts&#34;&gt;localsettings/hosts&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/sysctl&#34;&gt;localsettings/sysctl&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/casperjs&#34;&gt;localsettings/casperjs&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/nscd&#34;&gt;localsettings/nscd&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/init.sls&#34;&gt;localsettings/init.sls&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/systemd&#34;&gt;localsettings/systemd&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/check_raid&#34;&gt;localsettings/check_raid&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/phantomjs&#34;&gt;localsettings/phantomjs&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/insserv&#34;&gt;localsettings/insserv&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/timezone&#34;&gt;localsettings/timezone&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/desktoptools&#34;&gt;localsettings/desktoptools&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/pkgs&#34;&gt;localsettings/pkgs&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/jdk&#34;&gt;localsettings/jdk&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/updatedb&#34;&gt;localsettings/updatedb&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/dns&#34;&gt;localsettings/dns&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/python&#34;&gt;localsettings/python&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/ldap&#34;&gt;localsettings/ldap&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/users&#34;&gt;localsettings/users&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/editor&#34;&gt;localsettings/editor&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/reconfigure-network&#34;&gt;localsettings/reconfigure-network&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/locales&#34;&gt;localsettings/locales&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/vim&#34;&gt;localsettings/vim&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/env&#34;&gt;localsettings/env&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/repository_dotdeb&#34;&gt;localsettings/repository_dotdeb&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/localrc&#34;&gt;localsettings/localrc&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/mvn&#34;&gt;localsettings/mvn&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/etckeeper&#34;&gt;localsettings/etckeeper&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/rvm&#34;&gt;localsettings/rvm&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/grub&#34;&gt;localsettings/grub&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/ssl&#34;&gt;localsettings/ssl&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/git&#34;&gt;localsettings/git&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/screen&#34;&gt;localsettings/screen&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/golang&#34;&gt;localsettings/golang&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/shell&#34;&gt;localsettings/shell&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/groups&#34;&gt;localsettings/groups&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/localsettings/sshkeys&#34;&gt;localsettings/sshkeys&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Macros</title>
+      <link>/reference/macros/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/reference/macros/</guid>
+      <description>
+
+&lt;p&gt;Here are a non exhaustive list of macros that makina-states provides and you
+may use in your states.&lt;/p&gt;
+
+&lt;h2 id=&#34;helpers&#34;&gt;Helpers&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/_macros/h.jinja&#34;&gt;h(helpers)&lt;/a&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;deliver_deliver_config_files&lt;/strong&gt;: push  configuration files&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;service_restart_reload&lt;/strong&gt;: aim to restart or reload service
+but handle the case where services mis implement the status
+function and mess salt modules.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;toggle_service&lt;/strong&gt;: helper to call &lt;strong&gt;service_restart_reload&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;nginx&#34;&gt;nginx&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/http/nginx/macros.sls&#34;&gt;nginx&lt;/a&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/http/nginx/macros.sls#L31&#34;&gt;nginx.vhost&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;apache&#34;&gt;apache&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/http/apache/macros.sls&#34;&gt;apache&lt;/a&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/http/apache/macros.sls#L48&#34;&gt;apache.vhost&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;php&#34;&gt;php&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/php/macros.sls&#34;&gt;php&lt;/a&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/php/macros.sls#L60&#34;&gt;php.fpm_pool&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/php/macros.sls#L135&#34;&gt;php.minimal_index&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/php/macros.sls#L153&#34;&gt;php.toggle_ext&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;mysql&#34;&gt;mysql&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/db/mysql/init.sls&#34;&gt;macros&lt;/a&gt;
+
+&lt;ul&gt;
+&lt;li&gt;mysql_db&lt;/li&gt;
+&lt;li&gt;mysql_group&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;postgresql&#34;&gt;postgresql&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/db/postgresql/init.sls&#34;&gt;macros&lt;/a&gt;
+
+&lt;ul&gt;
+&lt;li&gt;postgresql_db&lt;/li&gt;
+&lt;li&gt;postgresql_user&lt;/li&gt;
+&lt;li&gt;postgresql_group&lt;/li&gt;
+&lt;li&gt;install_pg_exts&lt;/li&gt;
+&lt;li&gt;install_pg_ext&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;circusd&#34;&gt;circusd&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services_managers/circus/macros.jinja&#34;&gt;macros&lt;/a&gt;
+
+&lt;ul&gt;
+&lt;li&gt;circusAddWatcher&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;supervisord&#34;&gt;supervisord&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services_managers/supervisor/macros.jinja&#34;&gt;macros&lt;/a&gt;
+
+&lt;ul&gt;
+&lt;li&gt;supervisorAddProgram&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;mongodb&#34;&gt;mongodb&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/db/mongodb/macros.sls&#34;&gt;macros&lt;/a&gt;
+
+&lt;ul&gt;
+&lt;li&gt;mongodb_db&lt;/li&gt;
+&lt;li&gt;mongodb_user&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;uwsgi&#34;&gt;uwsgi&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/proxy/uwsgi&#34;&gt;macros&lt;/a&gt;
+
+&lt;ul&gt;
+&lt;li&gt;config&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;rabbitmq&#34;&gt;rabbitmq&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/queue/rabbitmq/macros.sls&#34;&gt;macros&lt;/a&gt;
+
+&lt;ul&gt;
+&lt;li&gt;rabbitmq_vhost&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
     </item>
     
     <item>
@@ -92,32 +374,47 @@ each run. It stores configs in &lt;code&gt;installdir/etc/makina-states&lt;/code
 &lt;h2 id=&#34;nodetypes&#34;&gt;Nodetypes&lt;/h2&gt;
 
 &lt;ul&gt;
-&lt;li&gt;Your choice for &lt;code&gt;--nodetype&lt;/code&gt; is certainly one of:
+&lt;li&gt;&lt;p&gt;Your choice for &lt;code&gt;nodetype&lt;/code&gt; is one of:&lt;/p&gt;
 
-&lt;ul&gt;
-&lt;li&gt;&lt;code&gt;scratch (default)&lt;/code&gt; only manage the ansible/salt installation and
-configuration. You ll want to activate this mode if you want
-to apply explicitly your states without relying of default
-nodetypes configuration.&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;server&lt;/code&gt; matches a baremetal server, and manage it
-from end to end (base packages, network, locales, sshd, crond,
-logrotate, etc, by default)&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;vm&lt;/code&gt; matches a VM (not baremetal), this is mostly like
-&lt;strong&gt;server&lt;/strong&gt;.&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;lxccontainer&lt;/code&gt; matches a VM (not baremetal), this is mostly
-like &lt;strong&gt;server&lt;/strong&gt;.&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;laptop&lt;/code&gt; is like server but also install packages for
-working on a developement machine (prebacking a laptop for
-a dev)&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;dockercontainer&lt;/code&gt; matches a VM (not baremetal), this is
-mostly like &lt;strong&gt;server&lt;/strong&gt;, but install &amp;amp; preconfigure circus to
-manage daemons.&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;devhost&lt;/code&gt; is suitable for a development machine enabling
-states to act on that, by example installation of a test
-local-loop mailer.&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;vagrantvm&lt;/code&gt; is suitable to flag vagrant boxes and is a
-subtype of devhost&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
+&lt;p&gt;&lt;strong&gt;scratch (default)&lt;/strong&gt;
+ :   only manage the ansible/salt installation and
+     configuration. You ll want to activate this mode if you want
+     to apply explicitly your states without relying of default
+     nodetypes configuration.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;server&lt;/strong&gt;
+ :   matches a baremetal server, and manage it
+     from end to end (base packages, network, locales, sshd, crond,
+     logrotate, etc, by default)&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;vm&lt;/strong&gt;
+ :   VM (not baremetal), this is mostly like &lt;strong&gt;server&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;lxccontainer&lt;/strong&gt;
+ :   matches a lxc container mostly like &lt;strong&gt;server&lt;/strong&gt;
+     but install and fix lxc boot scripts&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;laptop&lt;/strong&gt;
+ :   mostly like &lt;strong&gt;server&lt;/strong&gt; but also install packages for
+     working on a developement machine (prebacking a laptop for
+     a dev&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;dockercontainer&lt;/strong&gt;
+ :   matches a VM (not baremetal), this is
+     mostly like &lt;strong&gt;server&lt;/strong&gt;, but install &amp;amp; preconfigure circus to
+     manage daemons.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;devhost&lt;/strong&gt;
+ :   development machine enabling
+     states to act on that, by example installation of a test
+     local-loop mailer.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;vagrantvm&lt;/strong&gt;
+ :    flag vagrant boxes and is a subtype of devhost&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;You can tell &lt;code&gt;boot-salt2.sh&lt;/code&gt; which nodetype to use via the &lt;code&gt;--nodetype&lt;/code&gt; switch&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;boot-salt2.sh --nodetype server --reconfigure
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;h3 id=&#34;switching-to-another-nodetype-on-an-already-installed-environment&#34;&gt;Switching to another nodetype on an already installed environment&lt;/h3&gt;
@@ -137,6 +434,10 @@ subtype of devhost&lt;/li&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;salt-call state.sls makina-states.nodetypes.&amp;lt;your_new_preset&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 &lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;And finally:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;boot-salt2.sh --nodetype &amp;lt;your_new_preset&amp;gt; --reconfigure
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </description>
     </item>
@@ -149,23 +450,17 @@ subtype of devhost&lt;/li&gt;
       <guid>/reference/sumup/</guid>
       <description>
 
-&lt;h2 id=&#34;history&#34;&gt;History&lt;/h2&gt;
+&lt;h2 id=&#34;organisation-workflow&#34;&gt;Organisation &amp;amp; Workflow&lt;/h2&gt;
 
 &lt;ul&gt;
-&lt;li&gt;Makina-states was based at fist on &lt;code&gt;nodetypes presets&lt;/code&gt; that were preselected collections of makina-states states to apply to the system&lt;br/&gt;This is from where the &lt;code&gt;highstate&lt;/code&gt; will start to run.&lt;/li&gt;
-&lt;li&gt;Recently we cutted off this behavior, and now you must apply them explicitly.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&#34;workflow&#34;&gt;Workflow&lt;/h2&gt;
+&lt;li&gt;makina-states primarely use salt to deploy on the targeted environment.&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;Our salt states are thought to be used in a special order,&lt;br/&gt;
+and specially when you call salt via the &lt;strong&gt;sls&lt;/strong&gt;: &lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/top.sls&#34;&gt;&lt;code&gt;makina-states.top&lt;/code&gt;&lt;/a&gt;.
 
 &lt;ul&gt;
-&lt;li&gt;On nodetypes, we manage &lt;code&gt;controllers&lt;/code&gt;, aka the states which
-configure salt &amp;amp; ansible for operation&lt;/li&gt;
-&lt;li&gt;On those nodetypes, we may configure &lt;code&gt;localsettings&lt;/code&gt; like ssl, vim,
-git, &amp;amp; basepackages or network configurations. If any other preset
-than &lt;strong&gt;scratch&lt;/strong&gt; has been activated, many localsettings will be
-applied by default
-(see mc_states/modules/localsettings.py:registry)&lt;/li&gt;
+&lt;li&gt;We apply first the &lt;a href=&#34;../nodetype&#34;&gt;nodetype&lt;/a&gt; configuration.&lt;/li&gt;
+&lt;li&gt;Then, we will apply the &lt;a href=&#34;../controllers&#34;&gt;controllers&lt;/a&gt; configuration.&lt;br/&gt;&lt;/li&gt;
+&lt;li&gt;Then, we will apply &lt;a href=&#34;../localsettings&#34;&gt;localsettings&lt;/a&gt; states&lt;/li&gt;
 &lt;li&gt;After all of the previous steps, we may configure &lt;code&gt;services&lt;/code&gt; like
 sshd, crond, or databases. If we are on the &lt;strong&gt;scratch&lt;/strong&gt; mode, no
 services are configured by default.&lt;/li&gt;
@@ -173,6 +468,81 @@ services are configured by default.&lt;/li&gt;
 A project is just a classical code repository which has a &amp;ldquo;.salt&amp;rdquo;
 and/or ansible playbooks/roles folder commited with enougth
 information on how to deploy it.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;registries&#34;&gt;Registries&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;The configuration of any of the formulas (nodetypes, controllers, localsettings,
+services) is handled via Makina-States &lt;a href=&#34;../registries&#34;&gt;registries&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;history&#34;&gt;History&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Makina-States was first using the salt HighState principle of configuring
+everything.&lt;/li&gt;
+&lt;li&gt;was based at fist on &lt;code&gt;nodetypes presets&lt;/code&gt; that were preselected collections of &lt;a href=&#34;https://docs.saltstack.com/en/latest/topics/tutorials/starting_states.html&#34;&gt;salt states&lt;/a&gt; to apply to the system&lt;br/&gt;&lt;/li&gt;
+&lt;li&gt;This is from where the &lt;a href=&#34;https://docs.saltstack.com/en/latest/ref/states/highstate.html&#34;&gt;highstate&lt;/a&gt; will start to run.&lt;/li&gt;
+&lt;li&gt;Recently we cutted off this behavior, and now you must apply them explicitly.&lt;br/&gt;
+Indeed:
+
+&lt;ul&gt;
+&lt;li&gt;highstate tend to grow and when you decide to reapply it you may
+accidentaly deliver things you forgotten of.&lt;/li&gt;
+&lt;li&gt;It&amp;rsquo;s long, very long to wait to reapply everything for small changes.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Preamble</title>
+      <link>/reference/preamble/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/reference/preamble/</guid>
+      <description>
+
+&lt;h2 id=&#34;briefing&#34;&gt;Briefing&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;MakinaStates at a whole is a combination of &lt;a href=&#34;https://www.ansible.com/&#34;&gt;ansible&lt;/a&gt; and &lt;a href=&#34;https://docs.saltstack.com/en/latest/&#34;&gt;salt&lt;/a&gt; aiming at operating a cluster from baremetal to projects
+delivery.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Note that makina-states &lt;b&gt;do not use regular salt daemons(minion/master) to operate remotely &lt;br/&gt;
+but an ansible bridge that copy the pillar and use salt-call locally
+directly on the remote box via SSH&lt;/b&gt;&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Ansible get the information from makinastates by getting the salt pillar
+for a particular through a custom dynamic inventory.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;compatibility&#34;&gt;Compatibility&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;For now, you will have to use &lt;b&gt;Ubuntu &amp;gt;= 14.04&lt;/b&gt;.&lt;br/&gt;
+Makina-States can be ported to any
+linux based OS, but we, here, use ubuntu server and this is the only
+supported system for now. &lt;br/&gt;
+It can be used in any flavor: lxc, docker, baremetal, kvm, etc.&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Projects</title>
+      <link>/reference/projects/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/reference/projects/</guid>
+      <description>
+
+&lt;h2 id=&#34;list-of-templates-for-inspiration&#34;&gt;List of templates for inspiration&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;../templates&#34;&gt;Templates&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </description>
     </item>
@@ -180,33 +550,84 @@ information on how to deploy it.&lt;/li&gt;
     <item>
       <title>Reference</title>
       <link>/reference/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <pubDate>Wed, 15 Mar 2017 23:58:39 +0100</pubDate>
       
       <guid>/reference/</guid>
-      <description>
-
-&lt;h2 id=&#34;briefing&#34;&gt;Briefing&lt;/h2&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;p&gt;Makinastates at a whole is a combination of ansible and saltstack
-aiming at operating a cluster.&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;Makina-states do not use regular salt daemons to operate remotely but
-an ansible bridge that copy the pillar and use salt-call locally
-directly on the remote box via SSH&lt;/strong&gt;&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Ansible get the information from makinastates by getting the salt pillar
-th rough a custom dynamic inventory.&lt;/p&gt;&lt;/li&gt;
+      <description>&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;preamble&#34;&gt;See here&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
-
-&lt;h2 id=&#34;compatiblity&#34;&gt;Compatiblity&lt;/h2&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Registries &amp; Configuration</title>
+      <link>/reference/registries/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/reference/registries/</guid>
+      <description>&lt;ul&gt;
+&lt;li&gt;We needed a way, in our &lt;strong&gt;salt&lt;/strong&gt; states:
 
 &lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;For now, use Ubuntu &amp;gt;= 14.04.&lt;/strong&gt;.&lt;br/&gt;
-Makina-States can be ported to any
-linux based OS, but we, here, use ubuntu server and this is the only
-supported system for now. It can be used in any flavor, lxc, docker,
-baremetal, kvm, etc.&lt;/li&gt;
+&lt;li&gt;To deduplicate the cumbersome handling of variables&lt;/li&gt;
+&lt;li&gt;To make cleaner jinja code&lt;/li&gt;
+&lt;li&gt;For a configuration knob, aggregate values from difference sources, by precedence.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;For this, we decided to abstract this in python code&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;So, a &lt;strong&gt;registry&lt;/strong&gt; in the Makina-States vocabulary is a
+&lt;a href=&#34;https://docs.saltstack.com/en/latest/ref/modules/&#34;&gt;salt execution module&lt;/a&gt; that returns a python dictionnary:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;containing various configuration knobs&lt;/li&gt;
+&lt;li&gt;with &lt;strong&gt;sane defaults&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;overridable at will by the user via the &lt;strong&gt;pillar&lt;/strong&gt; or the &lt;strong&gt;grains&lt;/strong&gt;.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;The idea was then to use dedicated saltstack execution modules to provide
+a way to have dictionnaries of data aggregated with this precedence:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Pillar (&lt;strong&gt;&lt;strong&gt;pillar&lt;/strong&gt;&lt;/strong&gt;)&lt;/li&gt;
+&lt;li&gt;Grains (&lt;strong&gt;&lt;strong&gt;grains&lt;/strong&gt;&lt;/strong&gt;)&lt;/li&gt;
+&lt;li&gt;Configuration of the minion (&lt;strong&gt;&lt;strong&gt;opts&lt;/strong&gt;&lt;/strong&gt;)&lt;/li&gt;
+&lt;li&gt;Configuration of the minion (&lt;strong&gt;&lt;strong&gt;opts&lt;/strong&gt;[&amp;lsquo;master]&amp;rsquo;]&lt;/strong&gt;)&lt;/li&gt;
+&lt;li&gt;Exemples:
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_apache.py&#34;&gt;mc_apache&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_nginx.py&#34;&gt;mc_nginx&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_mysql.py&#34;&gt;mc_mysql&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Those registries rely on an heavily used function &lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_utils.py#L681&#34;&gt;&lt;code&gt;mc_utils.default&lt;/code&gt;&lt;/a&gt; that will do the job of gathering for the &lt;code&gt;configuration prefix&lt;/code&gt; all the knobs
+from the various pieces of data we want (pillar, grains, opts)&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Thus, by example, you want to install the mysql service:&lt;br&gt;
+You will use this sls:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;  bin/salt-call -linfo --retcode-passthrough &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    state.sls makina-states.servies.db.mysql
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Reading the code of &lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/db/mysql/configuration.sls#L11&#34;&gt;mysql formula&lt;/a&gt;, you see that it calls &lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_mysql.py#L157&#34;&gt;mc_mysql&lt;/a&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;To override the &lt;code&gt;port&lt;/code&gt; (default: 3306), you can do this in the pillar
+or the grains those ways&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Flat Method(preferred): &lt;strong&gt;pillar/pillar.d/mysql.sls&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.services.db.mysql.port&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;3306&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Nested Method: &lt;strong&gt;pillar/pillar.d/mysql.sls&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-states.services.db.mysql&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;port&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;3306&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </description>
     </item>
@@ -217,45 +638,412 @@ baremetal, kvm, etc.&lt;/li&gt;
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>/reference/services/</guid>
-      <description></description>
+      <description>
+
+&lt;ul&gt;
+&lt;li&gt;Salt States dedicated to install services on the targeted environment&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;states&#34;&gt;States&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services&#34;&gt;services States&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;non exhaustive shortcuts:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;backup&#34;&gt;backup&lt;/h3&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/backup/bacula&#34;&gt;services/backup/bacula&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/backup/dbsmartbackup&#34;&gt;services/backup/dbsmartbackup&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/backup/burp&#34;&gt;services/backup/burp&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/backup/rdiff-backup&#34;&gt;services/backup/rdiff-backup&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&#34;base&#34;&gt;base&lt;/h3&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/base/cron&#34;&gt;services/base/cron&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/base/ntp&#34;&gt;services/base/ntp&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/base/dbus&#34;&gt;services/base/dbus&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/base/ssh&#34;&gt;services/base/ssh&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/cache/memcached&#34;&gt;services/cache/memcached&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&#34;misc&#34;&gt;misc&lt;/h3&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/collab/etherpad&#34;&gt;services/collab/etherpad&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/queue/rabbitmq&#34;&gt;services/queue/rabbitmq&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/sound/mumble&#34;&gt;services/sound/mumble&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/ftp/pureftpd&#34;&gt;services/ftp/pureftpd&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&#34;db&#34;&gt;db&lt;/h3&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/db/mongodb&#34;&gt;services/db/mongodb&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/db/postgresql&#34;&gt;services/db/postgresql&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/db/mysql&#34;&gt;services/db/mysql&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/db/redis&#34;&gt;services/db/redis&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&#34;dns&#34;&gt;dns&lt;/h3&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/dns/dhcpd&#34;&gt;services/dns/dhcpd&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/dns/slapd&#34;&gt;services/dns/slapd&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/dns/bind&#34;&gt;services/dns/bind&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&#34;firewall&#34;&gt;firewall&lt;/h3&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/firewall/shorewall&#34;&gt;services/firewall/shorewall&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/firewall/firewalld&#34;&gt;services/firewall/firewalld&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/firewall/firewall&#34;&gt;services/firewall/firewall&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/firewall/ms_iptables&#34;&gt;services/firewall/ms_iptables&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/firewall/fail2ban&#34;&gt;services/firewall/fail2ban&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/firewall/psad&#34;&gt;services/firewall/psad&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&#34;gis&#34;&gt;gis&lt;/h3&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/gis/postgis&#34;&gt;services/gis/postgis&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/gis/ubuntugis&#34;&gt;services/gis/ubuntugis&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&#34;http&#34;&gt;http&lt;/h3&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/http/nginx&#34;&gt;services/http/nginx&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/http/apache_modfastcgi&#34;&gt;services/http/apache_modfastcgi&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/http/apache&#34;&gt;services/http/apache&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/http/apache_modfcgid&#34;&gt;services/http/apache_modfcgid&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/java/tomcat&#34;&gt;services/java/tomcat&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/http/apache_modproxy&#34;&gt;services/http/apache_modproxy&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&#34;log&#34;&gt;log&lt;/h3&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/log/rsyslog&#34;&gt;services/log/rsyslog&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/log/ulogd&#34;&gt;services/log/ulogd&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&#34;mail&#34;&gt;Mail&lt;/h3&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/mail/dovecot&#34;&gt;services/mail/dovecot&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/mail/postfix&#34;&gt;services/mail/postfix&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&#34;monitoring&#34;&gt;Monitoring&lt;/h3&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/client&#34;&gt;services/monitoring/client&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/icinga_web2&#34;&gt;services/monitoring/icinga_web2&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/icinga&#34;&gt;services/monitoring/icinga&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/nagvis&#34;&gt;services/monitoring/nagvis&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/icinga2&#34;&gt;services/monitoring/icinga2&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/pnp4nagios&#34;&gt;services/monitoring/pnp4nagios&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/icinga_web&#34;&gt;services/monitoring/icinga_web&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/monitoring/snmpd&#34;&gt;services/monitoring/snmpd&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&#34;php&#34;&gt;php&lt;/h3&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/php/common&#34;&gt;services/php/common&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/php/modphp&#34;&gt;services/php/modphp&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/php/phpfpm&#34;&gt;services/php/phpfpm&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/php/phpfpm_with_apache&#34;&gt;services/php/phpfpm_with_apache&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/php/phpfpm_with_nginx&#34;&gt;services/php/phpfpm_with_nginx&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&#34;proxy&#34;&gt;Proxy&lt;/h3&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/proxy/haproxy&#34;&gt;services/proxy/haproxy&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/proxy/uwsgi&#34;&gt;services/proxy/uwsgi&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&#34;virt&#34;&gt;virt&lt;/h3&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;th&gt;State&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/virt/docker&#34;&gt;services/virt/docker&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/virt/kvm&#34;&gt;services/virt/kvm&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/virt/lxc&#34;&gt;services/virt/lxc&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/virt/virtualbox&#34;&gt;services/virt/virtualbox&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Services Managers</title>
+      <link>/reference/servicesmanagers/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/reference/servicesmanagers/</guid>
+      <description>
+
+&lt;ul&gt;
+&lt;li&gt;In makina-states services managers act on top of services to manage
+their lifecycle (start/stop/restart/reload).&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;systemd&#34;&gt;systemd&lt;/h2&gt;
+
+&lt;h2 id=&#34;circus&#34;&gt;circus&lt;/h2&gt;
+
+&lt;h2 id=&#34;supervisor&#34;&gt;supervisor&lt;/h2&gt;
+</description>
     </item>
     
     <item>
       <title>Usage</title>
-      <link>/install/usage/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <link>/usage/</link>
+      <pubDate>Wed, 15 Mar 2017 23:58:39 +0100</pubDate>
       
-      <guid>/install/usage/</guid>
+      <guid>/usage/</guid>
       <description>
 
-&lt;h3 id=&#34;cli-exemples&#34;&gt;CLI Exemples&lt;/h3&gt;
+&lt;h2 id=&#34;switch-makina-states-branch&#34;&gt;Switch makina-states branch&lt;/h2&gt;
 
 &lt;ul&gt;
-&lt;li&gt;&lt;p&gt;Full fledged install&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt2.sh -C --install-logrotate --install-crons --install-links
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-
 &lt;li&gt;&lt;p&gt;To switch on a makina-states branch, like the &lt;strong&gt;v2&lt;/strong&gt; branch in
 production:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt2.sh -b v2
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;To sync makinastates code&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt2.sh -C -S
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh -b v2
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;h3 id=&#34;running-makinastates-in-highstate-mode&#34;&gt;Running makinastates in highstate mode&lt;/h3&gt;
+&lt;h2 id=&#34;update-makina-states-local-copy&#34;&gt;Update makina-states local copy&lt;/h2&gt;
 
 &lt;ul&gt;
-&lt;li&gt;&lt;p&gt;To install all enabled makinastates services after having configured
-your pillar&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./boot-salt2.sh -n laptop&lt;span class=&#34;p&#34;&gt;|&lt;/span&gt;server&lt;span class=&#34;p&#34;&gt;|&lt;/span&gt;lxccontainer&lt;span class=&#34;p&#34;&gt;|&lt;/span&gt;vm -C &lt;span class=&#34;o&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
-    salt-call --retcode-passthrough state.sls makina-states.top
+&lt;li&gt;&lt;p&gt;To sync makinastates code&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh -C -S
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;h4 id=&#34;upgrade&#34;&gt;Upgrade&lt;/h4&gt;
+&lt;h2 id=&#34;running-makinastates-in-highstate-mode&#34;&gt;Running makinastates in highstate mode&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;To install all enabled makina-states services after having configured
+your pillar up&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh -n laptop&lt;span class=&#34;p&#34;&gt;|&lt;/span&gt;server&lt;span class=&#34;p&#34;&gt;|&lt;/span&gt;lxccontainer&lt;span class=&#34;p&#34;&gt;|&lt;/span&gt;vm -C &lt;span class=&#34;o&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    bin/salt-call --retcode-passthrough state.sls makina-states.top
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;upgrade&#34;&gt;Upgrade&lt;/h2&gt;
 
 &lt;ul&gt;
 &lt;li&gt;&lt;p&gt;Upgrade will:&lt;/p&gt;
@@ -266,9 +1054,15 @@ your pillar&lt;/p&gt;
 &lt;li&gt;Update core repositories (like salt code source in /srv/makina-states/src/salt)&lt;/li&gt;
 &lt;li&gt;Do the highstates (salt and masterone if any)&lt;/li&gt;
 &lt;/ul&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;boot-salt2.sh -C --S  &lt;span class=&#34;o&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
-    salt-call --retcode-passthrough state.sls makina-states.top
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh -C --S  &lt;span class=&#34;o&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    bin/salt-call --retcode-passthrough state.sls makina-states.top
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2 id=&#34;use-ansible-salt&#34;&gt;use ansible &amp;amp; salt&lt;/h2&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;salt&#34;&gt;Salt&lt;/a&gt;&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;ansible&#34;&gt;Ansible&lt;/a&gt;&lt;/p&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </description>
     </item>
