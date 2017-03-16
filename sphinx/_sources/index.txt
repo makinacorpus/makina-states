@@ -11,6 +11,8 @@ API
 
    api/index.rst
 
+- `Return to main (narrative) documentation <..>`_
+
 Indices and tables
 ==================
 
