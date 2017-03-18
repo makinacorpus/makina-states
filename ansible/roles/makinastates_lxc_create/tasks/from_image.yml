@@ -1,9 +1,10 @@
 ---
 - name: lxc {{lxc_from_container}} config test
   stat:
-    path: "{{lxc_path}}/{{lxc_from_container}}/config"
+    path: "{{lxc_path}}/{{lxc_container_name}}/config"
   register: lxc_config_test
-  tags: makinastates_lxc_create,makinastates_lxc_create_fstab
+  failed_when: False
+  tags: makinastates_lxc_create,makinastates_lxc_clone_lxc
 - name: "get rootfs of {{lxc_from_container}}"
   shell: |-
     set -ex

@@ -24,8 +24,8 @@
     dest: "{{lxc_path}}/{{lxc_container_name}}/config"
     mode: "600"
   notify:
-    - "LXC RestartContainer {{lxc_container_name}}"
-    - "LXC Registerip {{lxc_container_name}}"
+    - "LXC RestartContainer"
+    - "LXC Registerip"
   tags: makinastates_lxc_create,makinastates_lxc_create_lxc
 - name: lxc reset script
   template:
