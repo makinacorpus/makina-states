@@ -2,7 +2,7 @@
 - name: lxc {{lxc_from_container}} config test
   stat:
     path: "{{lxc_path}}/{{lxc_from_container}}/config"
-  register: lxc_fstab_test
+  register: lxc_config_test
   tags: makinastates_lxc_create,makinastates_lxc_create_fstab
 - name: "get rootfs of {{lxc_from_container}}"
   shell: |-
@@ -25,5 +25,5 @@
          {% if lxc_clone_snapshot in [True, 'true', 'True']%}-s{% endif %}\
          ;
     fi
-  when: 'makinastates_lxc_create_lxc_test.stdout != "0"'
+  when: 'makinastates_lxc_create_lxc_test.stdout != "0" and not lxc_config_test.stat.exists'
   tags: makinastates_lxc_create,makinastates_lxc_clone_lxc
