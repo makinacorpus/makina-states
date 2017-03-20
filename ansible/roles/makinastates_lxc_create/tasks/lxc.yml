@@ -2,7 +2,7 @@
 - copy:
     src: '~/.ssh/id_rsa.pub'
     dest: '/tmp/ansible_master.pub'
-    mode: 644
+    mode: "644"
   tags: makinastates_lxc_create
 - debug: {msg: {foo: "{{lxc_from_container}}"}}
   tags: makinastates_lxc_create
@@ -22,7 +22,7 @@
   template:
     src: "../templates/lxc.conf"
     dest: "{{lxc_path}}/{{lxc_container_name}}/config"
-    mode: 600
+    mode: "600"
   notify:
     - "LXC RestartContainer {{lxc_container_name}}"
     - "LXC Registerip {{lxc_container_name}}"
@@ -31,7 +31,7 @@
   template:
     src: '../../../../files/usr/bin/reset-host.py'
     dest: "{{lxc_path}}/{{lxc_container_name}}/reset-host.py"
-    mode: 755
+    mode: "755"
   tags: makinastates_lxc_create,makinastates_lxc_create_scripts
 - name: lxc manual_lxc_conf init test
   stat:
@@ -42,7 +42,7 @@
   template:
     src: '../templates/{{item}}'
     dest: "{{lxc_path}}/{{lxc_container_name}}/{{item}}"
-    mode: 644
+    mode: "644"
   with_items:
     - manual_lxc.conf
   when: not lxc_manual_lxc_conf_test.stat.exists
@@ -56,7 +56,7 @@
   template:
     src: '../templates/{{item}}'
     dest: "{{lxc_path}}/{{lxc_container_name}}/{{item}}"
-    mode: 644
+    mode: "644"
   with_items:
     - fstab
   when: not lxc_fstab_test.stat.exists
@@ -65,7 +65,7 @@
   template:
     src: '../templates/{{item}}'
     dest: "{{lxc_path}}/{{lxc_container_name}}/{{item}}"
-    mode: 755
+    mode: "755"
   with_items:
     - init.sh
     - prereqs.sh
