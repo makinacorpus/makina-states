@@ -138,7 +138,10 @@ def installed(name,
               use_vt=False,
               loglevel='debug',
               runas=None,
-              output_loglevel=None):
+              output_loglevel=None,
+              buildout_egg_ver=None,
+              setuptools_egg_ver=None
+             ):
     '''
     Install buildout in a specific directory
 
@@ -208,6 +211,12 @@ def installed(name,
 
     loglevel
         loglevel for buildout commands
+
+    setuptools_egg_ver
+        setuptools egg version
+
+    buildout_egg_ver
+        setuptools egg version
     '''
     ret = {}
     if output_loglevel and not loglevel:
@@ -257,7 +266,9 @@ def installed(name,
         onlyif=onlyif,
         unless=unless,
         use_vt=use_vt,
-        loglevel=loglevel
+        loglevel=loglevel,
+        buildout_egg_ver=buildout_egg_ver,
+        setuptools_egg_ver=setuptools_egg_ver
     )
     ret.update(_ret_status(func(**kwargs), name, quiet=quiet))
     return ret
