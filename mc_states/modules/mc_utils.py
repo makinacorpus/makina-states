@@ -42,6 +42,7 @@ _CACHE = {'mid': None}
 _default_marker = object()
 _marker = object()
 log = logging.getLogger(__name__)
+is_really_a_var = re.compile('(\{[^:}]+\})', re.M | re.U)
 
 
 def empty_caches(extras=None):
@@ -280,7 +281,10 @@ def unresolved(data):
     ret = None
     if isinstance(data, six.string_types):
         if '{' in data and '}' in data:
-            ret = True
+            if is_really_a_var.search(data):
+                ret = True
+            else:
+                ret = False
         else:
             ret = False
     elif isinstance(data, dict):
