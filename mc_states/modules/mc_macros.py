@@ -270,28 +270,28 @@ def _get_local_registry(name,
     to_load = ['context']
 
     def _do(name, to_load, registry_format):
-        registryfs = get_registry_paths()
-        registry = OrderedDict()
-        for prefix in to_load:
-            registryf = registryfs[prefix]
-            rp = get_registry_path(
-                name, registry_format=registry_format,
-                registryf=registryf)
-            if os.path.exists(rp):
-                data = __salt__[
-                    'mc_macros.{0}_load_local_registry'.format(
-                        registry_format)](name, registryf)
-                registry = __salt__['mc_utils.dictupdate'](registry, data)
-            _unprefix(registry, name)
-        return registry
+        with mc_states.api.wait_lock(lockp):
+            registryfs = get_registry_paths()
+            registry = OrderedDict()
+            for prefix in to_load:
+                registryf = registryfs[prefix]
+                rp = get_registry_path(
+                    name, registry_format=registry_format,
+                    registryf=registryf)
+                if os.path.exists(rp):
+                    data = __salt__[
+                        'mc_macros.{0}_load_local_registry'.format(
+                            registry_format)](name, registryf)
+                    registry = __salt__['mc_utils.dictupdate'](registry, data)
+                _unprefix(registry, name)
+            return registry
     cache_key = RKEY.format(key, registry_format)
     force_run = not cached
     lockp = get_lock_name(name, registry_format)
-    with mc_states.api.wait_lock(lockp):
-        return __salt__['mc_utils.memoize_cache'](
-            _do, [name, to_load, registry_format], {},
-            cache_key, cachetime, use_memcache=False,
-            force_run=force_run)
+    return __salt__['mc_utils.memoize_cache'](
+        _do, [name, to_load, registry_format], {},
+        cache_key, cachetime, use_memcache=False,
+        force_run=force_run)
 
 
 def _unprefix(registry, name):
