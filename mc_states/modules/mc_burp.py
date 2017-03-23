@@ -298,6 +298,9 @@ def settings():
                         " {user} /etc/burp/cron.sh 1>/dev/null 2>&1"
                     )
                 },
+                'whitelist': [
+                    # list of sources ip to allow connection
+                ],
                 'clients': {
                     # mapping of clients confs (defined in pillar),
                 }

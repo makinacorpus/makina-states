@@ -2095,14 +2095,14 @@ def serial_for(domain,
           it is superior to default, we use it
         - We then load a local autosave file
           with mappings of domain/dns serials
-        
+
             - If serial is found and autoinc:
                 this local stored serial is autoincremented
                 by 1
-        
+
             - if this local value is greater than the
               current serial, this becomes the serial,
-    
+
     - at the end, we try to reach the nameservers in the wild
       to adapt our serial if it is too low or too high
     '''
@@ -2993,6 +2993,7 @@ def backup_server_settings_for(id_, ttl=PILLAR_TTL):
         server_conf = data.setdefault('server_conf',
                                       _s[__name + '.backup_server'](id_))
         confs = data.setdefault('confs', {})
+        whitelist = []
         for host in bms + vms + manual_hosts:
             if host in backup_excluded:
                 continue
@@ -3003,6 +3004,10 @@ def backup_server_settings_for(id_, ttl=PILLAR_TTL):
             # for vms, set the vm host as the gateway by default (if
             # not defined)
             if host in vms and host not in non_managed_hosts:
+                other_ips = get_other_ips(host)
+                for i in other_ips:
+                    if i not in whitelist:
+                        whitelist.append(i)
                 conf.setdefault('ssh_gateway', db['vms'][host]['target'])
                 conf.setdefault('ssh_gateway_port', '22')
             elif host in bms:
@@ -3011,8 +3016,9 @@ def backup_server_settings_for(id_, ttl=PILLAR_TTL):
             type_ = conf.get('backup_type', server_conf['default_type'])
             confs[host] = {'type': type_, 'conf': conf}
         data['confs'] = confs
+        data['whitelist'] = whitelist
         return data
-    cache_key = __name + '.backup_server_settings_for{0}'.format(id_)
+    cache_key = __name + '.backup_server_settings_for02{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](
         _dobackup_server_settings_for, [id_], {}, cache_key, ttl)
 
@@ -3145,6 +3151,18 @@ def get_non_supervised_hosts(ttl=PILLAR_TTL):
     cache_key = __name + '.get_non_supervised_hosts'
     return __salt__['mc_utils.memoize_cache'](
         _doget_non_supervised_hosts, [], {}, cache_key, ttl)
+
+
+def get_other_ips(vm):
+    cloud_vm_attrs = query('cloud_vm_attrs')
+    other_ips = []
+    np = cloud_vm_attrs.get(vm, {}).get('network_profile', {})
+    if np:
+        other_ips = [a for a in [a.get('ip', a.get('ipv4', None))
+                                 for ifc, a in six.iteritems(np)
+                                 if ifc not in ['eth0']]
+                     if a]
+    return other_ips
 
 
 def get_supervision_objects_defs(id_):
@@ -3302,14 +3320,7 @@ def get_supervision_objects_defs(id_):
             no_common_checks = vdata.get('no_common_checks', False)
             if tipaddr in host_ips and vt in ['lxc']:
                 no_common_checks = True
-            cloud_vm_attrs = query('cloud_vm_attrs')
-            np = cloud_vm_attrs.get(vm, {}).get('network_profile', {})
-            other_ips = []
-            if np:
-                other_ips = [a for a in [a.get('ip', a.get('ipv4', None))
-                                         for ifc, a in six.iteritems(np)
-                                         if ifc not in ['eth0']]
-                             if a]
+            other_ips = get_other_ips(vm)
             if (
                 ((tipaddr in other_ips) or not other_ips) and
                 tipaddr not in host_ips and
@@ -4275,6 +4286,11 @@ def get_burp_server_conf(id_, ttl=PILLAR_TTL):
                         'makina-states.services.'
                         'backup.burp.{0}'.format(i)
                     ] = val
+            if conf.get('whitelist', None):
+                rdata[
+                    'makina-states.services.'
+                    'backup.burp.whitelist'
+                ] = conf['whitelist']
             for host, conf in conf['confs'].items():
                 if conf['type'] in ['burp']:
                     rdata[
@@ -4282,7 +4298,7 @@ def get_burp_server_conf(id_, ttl=PILLAR_TTL):
                         'backup.burp.clients.{0}'.format(host)
                     ] = conf['conf']
         return rdata
-    cache_key = __name + '.get_burp_server_conf{0}'.format(id_) + CACHE_INC_TOKEN
+    cache_key = __name + '.get_burp_server_conf1{0}'.format(id_) + CACHE_INC_TOKEN
     return __salt__['mc_utils.memoize_cache'](
         _doget_burp_server_conf, [id_], {}, cache_key, ttl)
 

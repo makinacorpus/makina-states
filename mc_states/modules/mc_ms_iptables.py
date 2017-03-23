@@ -288,6 +288,8 @@ def add_services_policies(data=None):
     if not data.get('no_burp', False):
         if services_registry['is']['backup.burp.server']:
             sources = [a for a in burpsettings['clients']]
+            sources += [a for a in burpsettings.get(
+                'whitelist', [])]
             if not sources:
                 sources = ['127.0.0.1']
             if not sources:
