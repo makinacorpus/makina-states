@@ -115,6 +115,7 @@
             for i in {{ ' '.join(pkgs) }};do
               apt-cache madison $i
             done
+    - onfail_stop: false
     - onfail:
       - {{install_module}}: {{pref}}{{name}}{{suf}}
     - {{require_knob}}:
@@ -129,6 +130,7 @@
     {% if fromrepo %}
     - fromrepo: {{ fromrepo }}
     {% endif %}
+    - onfail_stop: false
     - onfail:
       - {{install_module}}: {{pref}}{{name}}{{suf}}
     {% if rmacro %}
@@ -191,12 +193,14 @@ makina-{{pref}}-{{unit}}-service:
 fail-makina-{{pref}}-{{unit}}-service:
   cmd.run:
     - name: systemctl daemon-reload
+    - onfail_stop: false
     - onlyif: "systemctl show {{unit}}"
   {% if reload_macro %}{{reload_macro()}}{%endif%}
   {{service_function}}:
     - name: {{unit}}
     - enable: {{enable}}
     - reload: true
+    - onfail_stop: false
     - require:
       - cmd: fail-makina-{{pref}}-{{unit}}-service
   {% if reload_macro %}{{reload_macro()}}{%endif%}
@@ -237,6 +241,7 @@ makina-{{pref}}-{{unit}}-restart-service:
 fail-makina-{{pref}}-{{unit}}-restart-service:
   cmd.run:
     - name: systemctl daemon-reload
+    - onfail_stop: false
     - onlyif: |
               if ! which systemctl >/dev/null 2>&1;then exit 1;fi
               systemctl show {{unit}}
@@ -244,6 +249,7 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
   {{service_function}}:
     - name: {{unit}}
     - enable: {{enable}}
+    - onfail_stop: false
     - require:
       - cmd: fail-makina-{{pref}}-{{unit}}-restart-service
   {% if restart_macro %}{{restart_macro()}}{%endif%}
