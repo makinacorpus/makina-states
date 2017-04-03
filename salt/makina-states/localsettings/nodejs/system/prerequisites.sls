@@ -1,4 +1,4 @@
-{#
+#
 # nodejs configuration
 # see:
 #   - makina-states/doc/ref/formulaes/localsettings/nodejs.rst
@@ -65,3 +65,44 @@ nodejs-pkgs:
       - mc_proxy: nodejs-post-system-install
     - pkgs:
       - nodejs
+
+node-js-install-yarn:
+  cmd.run:
+    - onlyif: {% if settings.yarn_install %}true{%else%}false{%endif %}
+    - shell: /bin/bash
+    - watch:
+      - pkg: nodejs-pkgs
+      - mc_proxy: nodejs-pre-system-install
+    - watch_in:
+      - mc_proxy: nodejs-post-system-install
+    - name: |
+        export YARN_VERSION=${YARN_VERSION:-{{settings.yarn_version}}}
+        export YARN_ARCHIVE=yarn-v$YARN_VERSION.tar.gz
+        export KEYSERVER=${KEYSERVER:-keyserver.ubuntu.com}
+        export APP_PATH=${APP_PATH:-/usr/local}
+        vv () { echo "$@">&2; "${@}"; }
+        die_in_error_() { if [ "x${1-$?}" != "x0" ];then echo "FAILED: $@">&2; exit 1; fi }
+        die_in_error() { die_in_error_ $? $@; }
+        jv() { gpg -q --batch --verify $YARN_ARCHIVE.asc $YARN_ARCHIVE 2>/dev/null; }
+        if [ ! -e ${APP_PATH} ];then mkdir -p ${APP_PATH};fi
+        cd $APP_PATH
+        die_in_error no $APP_PATH
+        keys="{{' '.join(settings.gpg)}}"
+        gpg -q --keyserver "$KEYSERVER" --recv-keys "$keys" 2>/dev/null
+        die_in_error gpg keys
+        if ! jv;then
+            vv curl -fSL -O \
+                "https://yarnpkg.com/downloads/$YARN_VERSION/$YARN_ARCHIVE.asc" &&\
+            vv curl -fSL -O "https://yarnpkg.com/downloads/$YARN_VERSION/$YARN_ARCHIVE"
+            die_in_error yarn download
+        fi
+        jv
+        die_in_error yarn integrity
+        tar -xzf "$YARN_ARCHIVE" --strip-components=1
+        die_in_error yarn unpack
+        for i in "${yarn_candidate}";do
+            test -f "${i}"
+        done
+        chmod +x "${APP_PATH}"/bin/yarn*
+        ls -1 "${APP_PATH}/bin/"yarn*
+  
