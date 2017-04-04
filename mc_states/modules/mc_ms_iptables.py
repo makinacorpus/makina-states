@@ -84,9 +84,6 @@ def default_settings():
         'extra_confs': {
             '/etc/default/ms_iptables': {},
             '/etc/ms_iptables.json': {'mode': '644'},
-            '/etc/init.d/ms_iptables': {'mode': '755'},
-            '/etc/systemd/system/ms_iptables.service': {'mode': '644'},
-            '/usr/bin/ms_iptables.py': {'mode': '755', 'template': False}
         }
     }
     data = _s['mc_utils.defaults'](PREFIX, DEFAULTS)

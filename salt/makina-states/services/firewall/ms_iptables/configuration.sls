@@ -1,3 +1,4 @@
+{%- set locs = salt['mc_locations.settings']() %}
 {% import "makina-states/_macros/h.jinja" as h with context %}
 {% set data = salt['mc_ms_iptables.settings']() %}
 include:
@@ -10,8 +11,15 @@ include:
     - watch_in:
       - mc_proxy: ms_iptables-postconf
 {% endmacro %}
+
 {{ h.deliver_config_files(
      data.get('extra_confs', {}), after_macro=rmacro, prefix='ms_iptables-')}}
+
+ms_iptabmes_run_install:
+  cmd.run:
+    - stateful: true
+    - name: "{{locs.apps_dir}}/ms_iptables/install.sh"
+    {{rmacro()}}
 
 ms_iptables-forward:
   sysctl.present:
