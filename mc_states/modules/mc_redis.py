@@ -63,6 +63,7 @@ def settings():
                     #('/etc/systemd/system/redis-server.service', {'mode': '644'}),
                     ('/etc/systemd/system/redis-server.service.d/redis-server.conf', {'mode': '644'}),
                     ('/usr/bin/redis-server-wrapper.sh', {'mode': '755'}),
+                    ('/etc/init.d/redis-server', {'mode': '755'}),
                     ('/etc/redis/redis.conf', {})]),
                 'packages':  [
                     'redis-server',

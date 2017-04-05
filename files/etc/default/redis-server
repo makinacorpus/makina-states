@@ -10,3 +10,10 @@
 {% if data.get('ulimit', 0) %}
 ULIMIT={{data.ulimit}}
 {% endif%}
+
+{% set data = salt['mc_redis.settings']() %}
+{% if data.redis.daemonize in [False, 'no'] %}
+DAEMONIZE=1
+{% else %}
+DAEMONIZE=
+{% endif %}
