@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 include:
   - makina-states.services.firewall.firewalld.hooks
   - makina-states.services.firewall.firewall.hooks
@@ -11,19 +12,22 @@ firewalld-disable-makinastates-firewalld:
       - mc_proxy: firewalld-predisable
     - watch_in:
       - mc_proxy: firewalld-postdisable
-firewalld-stop-firewalld:
-  service.dead:
-    - names: [firewalld]
+
+{% macro after_macro() %}
     - watch:
       - file: firewalld-disable-makinastates-firewalld
       - mc_proxy: firewalld-predisable
     - watch_in:
       - mc_proxy: firewalld-postdisable
+      - pkg: firewalld-purge-firewalld
+{% endmacro %}
+{% for i in ['firewalld'] %}
+{{h.toggle_service(i, prefix='firewalld_disable', action='stop', after_fallback_macro=after_macro)}}
+{% endfor %}
 firewalld-purge-firewalld:
   pkg.purged:
     - pkgs: [firewalld]
     - watch:
-      - service: firewalld-stop-firewalld
       - file: firewalld-disable-makinastates-firewalld
       - mc_proxy: firewalld-predisable
     - watch_in:
