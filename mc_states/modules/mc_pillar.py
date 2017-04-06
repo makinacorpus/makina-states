@@ -3798,12 +3798,11 @@ def get_sysnet_conf(id_, ttl=PILLAR_TTL):
                 'ointerfaces')
         net_ext_pillar = query('network_settings', {}).get(id_, {})
         if net_ext_pillar and rdata.get(pref, None):
-            for i in range(len(rdata[pref])):
-                for ifc in [
-                    ifc for ifc in net_ext_pillar if ifc in rdata[pref][i]
-                ]:
+            for ifc in [ifc for ifc in net_ext_pillar]:
+                for i in range(len(rdata[pref])):
                     rdata[pref][i][ifc] = _s['mc_utils.dictupdate'](
-                        rdata[pref][i][ifc], net_ext_pillar[ifc])
+                        rdata[pref][i].get(ifc, {}),
+                        net_ext_pillar[ifc])
         return rdata
     # cache_key = __name + '.get_sysnet_conf{0}'.format(id_) + CACHE_INC_TOKEN
     # return __salt__['mc_utils.memoize_cache'](
