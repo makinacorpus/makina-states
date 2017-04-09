@@ -313,6 +313,7 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
 {% endif %}
 {{prefix}}toggle-service-{{service}}{{suffix}}-fallback:
   cmd.run:
+    - onfail_stop: false
     - name: |
         sret=0;ret=0;vret=0
         systemd_exists=""
