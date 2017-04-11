@@ -7,13 +7,31 @@ menu:
     identifier: cloud_lxc
     Name: LXC
 ---
----
 
-workflow:
+- makinastates lxc container integration consists in:
+    - spawning lxc containers including static ip allocation and port mapping
+    - providing NAT, DHCP & DNS (dnsmasq & makinastates magicbridge)
+    - configuring reverse proxies on the baremetal using:
+        - a frontal haproxy proxy incoming https(s) requests
+        - iptable to reverse proxy ssh requests
 
-- WARNING currently only those backing store are supported/tested:
-    - dir
-    - overlayfs
+- WARNING currently only those backing store are supported/tested: `dir`, `overlayfs`.
+
+- We name:
+
+    ``$controller``
+        : the station from where we will operate to controll other resources
+
+    ``$cn``
+        : the compute node where we will spawn LXC containers
+
+    ``$vm``
+        : the LXC container to spawn
+
+    ``$vm_tmpl``
+        : the name of the container to clone from
+
+## Preliminary configuration
 
 - Go into makina-states folder:
 
@@ -21,11 +39,36 @@ workflow:
     cd /srv/makina-states
     ```
 
-- If wanted, edit database, specially ``vms``, & ``cloud_vm_attrs``:
+- Edit [database.sls](/reference/databasesls/), specially ``ips``, ``vms``, & ``cloud_vm_attrs``:
 
     ```sh
-    vim etc/makina-states/database.sls
+    $EDITOR etc/makina-states/database.sls
     ```
+
+    - ``ips`` should container the ips for ``$controller (usually localhost)``, and the ``$cn``
+
+        ```yaml
+        ips:
+            mycontainer.foo.loc: 1.2.3.4
+        ```
+
+    - ``vms`` should contain a reference to indicate where we will spawn your container
+
+        ```yaml
+        vms:
+          lxc:
+            mycontainer.foo.loc:  # <- baremetal
+              - foocontainer.truc.foo # <- container
+        ```
+
+    - ``cloud_vm_attrs`` should certainly contain domains to proxy http requests to underlyiung containers
+
+        ```yaml
+        cloud_vm_attrs:
+          foocontainer.truc.foo:
+            domains:
+              superapp.truc.foo
+        ```
 
 - Define shell variable to copy/paste following commands:
 
@@ -50,7 +93,13 @@ workflow:
     ```
 
 ## Preinstalling makina-states (controller & each compute node)
-- Installing it:
+- Installing it on controller:
+
+    ```sh
+    ANSIBLE_TARGETS="$controller" bin/ansible-playbook \
+      ansible/plays/makinastates/install.yml
+    ```
+- Installing it on compute nodes:
 
     ```sh
     ANSIBLE_TARGETS="$cn" bin/ansible-playbook \
@@ -60,7 +109,7 @@ workflow:
 ## Configure the dns on a full makina-states infra with mc\_pillar
 
 ```sh
-ANSIBLE_TARGETS="$controller" bin/ansible-playbook \
+ANSIBLE_TARGETS="$DNS_MASTER" bin/ansible-playbook \
   ansible/plays/cloud/controller.yml
 ```
 
@@ -89,14 +138,14 @@ image, and remove parts from it (like sshkeys) to impersonate it:
     ```
     - Arguments:
 
-        ANSIBLE_TARGETS
+        `ANSIBLE_TARGETS`
             : compute node where the container resides (must be in
-              ansible inventary)
+              ansible inventory)
 
-        lxc_template
+        `lxc_template`
             : lxc image to create
 
-        lxc_container_name
+        `lxc_container_name`
             : lxc container which serve as a base for the image
 
 - Transfer the template to the compute node where you want to spawn
@@ -110,16 +159,16 @@ image, and remove parts from it (like sshkeys) to impersonate it:
 
     - Arguments:
 
-        ANSIBLE_TARGETS
+        `ANSIBLE_TARGETS`
             : both orig and dest
 
-        lxc_host
+        `lxc_host`
             : where to transfer container/template
 
-        lxc_orig_host
+        `lxc_orig_host`
             : where from transfer container/template
 
-        lxc_container_name
+        `lxc_container_name`
             : lxc container to transfer
 
 Initialise a container
@@ -133,13 +182,13 @@ Initialise a container
 
     - Arguments:
 
-        ANSIBLE_TARGETS
+        `ANSIBLE_TARGETS`
             : compute node where the container resides (must be in ansible inventary) & lxc container to create
 
-        lxc_from_container
+        `lxc_from_container`
             : lxc container from which initing the container
 
-        lxc_backing_store
+        `lxc_backing_store`
             : (opt) backing store to use
 
 - Initialise and finish the container provisioning (from template):

@@ -8,13 +8,13 @@ menu:
     identifier: reference_nodetypes
 ---
 
-## Nodetypes
+### Nodetypes
 
 - Your choice for ``nodetype`` is one of:
 
      **scratch (default)**
-     :   only manage the ansible/salt installation and
-         configuration. You ll want to activate this mode if you want
+     :   only manage the ansible/salt installation and configuration.<br/>
+         You ll want to activate this mode if you want
          to apply explicitly your states without relying of default
          nodetypes configuration.
 
@@ -50,7 +50,7 @@ menu:
 
 
 
-- You can tell ``boot-salt2.sh`` which nodetype to use via the ``--nodetype`` switch
+- You can tell [``boot-salt2.sh``](/usage/) which nodetype to use via the ``--nodetype`` switch
 
     ```sh
     boot-salt2.sh --nodetype server --reconfigure
@@ -60,22 +60,22 @@ menu:
 - If you installed the **scratch** preset and want to switch to another preset:
 
     ```sh
-    salt-call state.sls makina-states.nodetypes.<your_new_preset>
+    bin/salt-call state.sls makina-states.nodetypes.<your_new_preset>
     ```
 
 - If you installed a preset and want to switch to another preset:
     - edit ``etc/makina-states/nodetype`` and put your new preset
     - edit ``etc/makina-states/nodetypes.yaml`` and set to false your old preset
+    - Ask bootsalt to remember
+
+        ```sh
+        boot-salt2.sh --nodetype <your_new_preset> --reconfigure
+        ```
+
     - Finally, run:
 
         ```sh
-        salt-call state.sls makina-states.nodetypes.<your_new_preset>
+        bin/salt-call state.sls makina-states.nodetypes.<your_new_preset>
         ```
-
-- And finally:
-
-    ```sh
-    boot-salt2.sh --nodetype <your_new_preset> --reconfigure
-    ```
 
 

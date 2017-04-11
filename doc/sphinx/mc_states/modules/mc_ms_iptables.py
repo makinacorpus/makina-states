@@ -84,9 +84,6 @@ def default_settings():
         'extra_confs': {
             '/etc/default/ms_iptables': {},
             '/etc/ms_iptables.json': {'mode': '644'},
-            '/etc/init.d/ms_iptables': {'mode': '755'},
-            '/etc/systemd/system/ms_iptables.service': {'mode': '644'},
-            '/usr/bin/ms_iptables.py': {'mode': '755', 'template': False}
         }
     }
     data = _s['mc_utils.defaults'](PREFIX, DEFAULTS)
@@ -285,9 +282,15 @@ def add_services_policies(data=None):
     if not data.get('no_bind', False):
         if services_registry['is']['dns.bind']:
             add_ports('53', protocols=['tcp', 'udp'], rules=rules)
+    if not data.get('no_dhcp', False):
+        if services_registry['is']['dns.dhcpd']:
+            add_ports('67', protocols=['tcp', 'udp'], rules=rules)
+            add_ports('68', protocols=['tcp', 'udp'], rules=rules)
     if not data.get('no_burp', False):
         if services_registry['is']['backup.burp.server']:
             sources = [a for a in burpsettings['clients']]
+            sources += [a for a in burpsettings.get(
+                'whitelist', [])]
             if not sources:
                 sources = ['127.0.0.1']
             if not sources:

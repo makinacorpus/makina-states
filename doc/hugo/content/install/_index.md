@@ -9,17 +9,17 @@ weight: 100
 **Use root unless you understand well how it works to handle user install**
 
 ### Download
-- Get MakinaStates by cloning it from github<br/>
+- Get MakinaStates by cloning it [from github](https://github.com/makinacorpus/makina-states)<br/>
   Usually we install it in ``/srv/makina-states``
 
     ```sh
     git clone http://raw.github.com/makinacorpus/makina-states /srv/makina-states
     ```
 ## Common install command
-- Install with ``scratch`` node, with refresh cron, logrotate.
+- Install with ``scratch`` [nodetype](/reference/nodetypes/), with refresh cron, logrotate.
 
     ```sh
-    bin,/boot-salt2.sh -C --install-logrotate --install-crons
+    bin/boot-salt2.sh -C --install-logrotate --install-crons
     ```
 
 ### boot-salt2.sh, the makina-states installer & manager
@@ -52,7 +52,7 @@ weight: 100
     ```
 
 - Install the salt & ansible binaries to /usr/local/bin.<br/>
-  **THIS IS NOT RECOMMENDED ANYMORE, AND EVEN HARMFULL**
+  **THIS IS NOT RECOMMENDED ANYMORE, AND CAN EVEN BE HARMFULL**
     ```sh
     bin/boot-salt2.sh -C --install-links
     ```

@@ -592,4 +592,4 @@ def get_zone(zone):
                          zdata['fqdn'],
                          defaults['config_dir']))
     zdata = __salt__['mc_utils.format_resolve'](zdata)
-    return zdatagggg
+    return zdata

@@ -1,6 +1,6 @@
 ---
 title: Projects
-tags: [reference, installation]
+tags: [reference, projects]
 weight: 40000
 menu:
   main:

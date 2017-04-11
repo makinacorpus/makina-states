@@ -21,8 +21,12 @@ may use in your states.
       function and mess salt modules.
 	- **toggle_service**: helper to call **service_restart_reload**
 
-## nginx
+## ssl
+- [macros](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/localsettings/ssl/macros.jinja)
+    - install_certificate
+    - install_cert_in_dir
 
+## nginx
 - [nginx](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/http/nginx/macros.sls)
     - [nginx.vhost](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/http/nginx/macros.sls#L31)
 
