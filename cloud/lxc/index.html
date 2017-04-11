@@ -5,7 +5,7 @@
 <title>LXC containers management | Makina States</title><meta name="description" content="" />
 <meta property="og:type" content="article" />
 <meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
-<meta property="og:article:modified_time" content="2017-04-11 18:04:55 &#43;0200 CEST" /><meta property="og:article:tag" content="cloud" /><meta property="og:article:tag" content="lxc" /><meta property="og:locale" content="en_US">
+<meta property="og:article:modified_time" content="2017-04-11 18:14:50 &#43;0200 CEST" /><meta property="og:article:tag" content="cloud" /><meta property="og:article:tag" content="lxc" /><meta property="og:locale" content="en_US">
 <meta property="og:title" content="LXC containers management">
 <meta property="og:image" content="/images/">
 <meta property="og:image:type" content="image/jpeg" />
@@ -278,6 +278,23 @@ containers from that image:</p>
 </ul></li>
 </ul>
 
+<h2 id="lxc-template-creation">lxc template creation</h2>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">release</span><span class="o">=</span>vivid  <span class="c1"># choose your distrib here</span>
+lxc-create -t ubuntu -n <span class="si">${</span><span class="nv">release</span><span class="si">}</span>
+lxc-clone -n lxcmakinastates<span class="si">${</span><span class="nv">release</span><span class="si">}</span> -o <span class="si">${</span><span class="nv">release</span><span class="si">}</span> -- -r <span class="si">${</span><span class="nv">release</span><span class="si">}</span>
+lxc-attach -n lxcmakinastates<span class="si">${</span><span class="nv">release</span><span class="si">}</span>
+apt-get install git python ca-certificates
+git clone https://github.com/makinacorpus/makina-states.git /srv/makina-states
+/srv/makina-states/_scripts/boot-salt.sh -C -n lxccontainer --highstates <span class="o">||</span> <span class="o">(</span> <span class="se">\</span>
+    <span class="o">&amp;&amp;</span> <span class="se">\</span>
+    . /srv/makina-states/venv/bin/activate <span class="o">&amp;&amp;</span><span class="se">\</span>
+    pip install --upgrade pip <span class="o">&amp;&amp;</span><span class="se">\</span>
+    deactivate <span class="o">&amp;&amp;</span><span class="se">\</span>
+    /srv/makina-states/_scripts/boot-salt.sh -C --highstates<span class="o">)</span>
+<span class="c1"># any additionnal stuff to complete the image</span>
+<span class="c1"># cmd1</span>
+</code></pre></div>
+
 <h2 id="initialise-a-container">Initialise a container</h2>
 
 <ul>
@@ -350,6 +367,7 @@ containers from that image:</p>
 <li><a href="#configure-the-dns-on-a-full-makina-states-infra-with-mc-pillar">Configure the dns on a full makina-states infra with mc_pillar</a></li>
 <li><a href="#compute-node-related-part">Compute node related part</a></li>
 <li><a href="#cooking-and-delivery-of-container-container-templates">Cooking and delivery of container / container templates</a></li>
+<li><a href="#lxc-template-creation">lxc template creation</a></li>
 <li><a href="#initialise-a-container">Initialise a container</a></li>
 </ul></li>
 </ul>

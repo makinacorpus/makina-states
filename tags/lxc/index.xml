@@ -194,6 +194,23 @@ containers from that image:&lt;/p&gt;
 &lt;/ul&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
+&lt;h2 id=&#34;lxc-template-creation&#34;&gt;lxc template creation&lt;/h2&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;release&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;vivid  &lt;span class=&#34;c1&#34;&gt;# choose your distrib here&lt;/span&gt;
+lxc-create -t ubuntu -n &lt;span class=&#34;si&#34;&gt;${&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;release&lt;/span&gt;&lt;span class=&#34;si&#34;&gt;}&lt;/span&gt;
+lxc-clone -n lxcmakinastates&lt;span class=&#34;si&#34;&gt;${&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;release&lt;/span&gt;&lt;span class=&#34;si&#34;&gt;}&lt;/span&gt; -o &lt;span class=&#34;si&#34;&gt;${&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;release&lt;/span&gt;&lt;span class=&#34;si&#34;&gt;}&lt;/span&gt; -- -r &lt;span class=&#34;si&#34;&gt;${&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;release&lt;/span&gt;&lt;span class=&#34;si&#34;&gt;}&lt;/span&gt;
+lxc-attach -n lxcmakinastates&lt;span class=&#34;si&#34;&gt;${&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;release&lt;/span&gt;&lt;span class=&#34;si&#34;&gt;}&lt;/span&gt;
+apt-get install git python ca-certificates
+git clone https://github.com/makinacorpus/makina-states.git /srv/makina-states
+/srv/makina-states/_scripts/boot-salt.sh -C -n lxccontainer --highstates &lt;span class=&#34;o&#34;&gt;||&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;(&lt;/span&gt; &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    . /srv/makina-states/venv/bin/activate &lt;span class=&#34;o&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    pip install --upgrade pip &lt;span class=&#34;o&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    deactivate &lt;span class=&#34;o&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    /srv/makina-states/_scripts/boot-salt.sh -C --highstates&lt;span class=&#34;o&#34;&gt;)&lt;/span&gt;
+&lt;span class=&#34;c1&#34;&gt;# any additionnal stuff to complete the image&lt;/span&gt;
+&lt;span class=&#34;c1&#34;&gt;# cmd1&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;h2 id=&#34;initialise-a-container&#34;&gt;Initialise a container&lt;/h2&gt;
 
 &lt;ul&gt;
