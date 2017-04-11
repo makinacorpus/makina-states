@@ -385,14 +385,14 @@ or the grains those ways&lt;/p&gt;
       <guid>/reference/nodetypes/</guid>
       <description>
 
-&lt;h2 id=&#34;nodetypes&#34;&gt;Nodetypes&lt;/h2&gt;
+&lt;h3 id=&#34;nodetypes&#34;&gt;Nodetypes&lt;/h3&gt;
 
 &lt;ul&gt;
 &lt;li&gt;&lt;p&gt;Your choice for &lt;code&gt;nodetype&lt;/code&gt; is one of:&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;scratch (default)&lt;/strong&gt;
- :   only manage the ansible/salt installation and
-     configuration. You ll want to activate this mode if you want
+ :   only manage the ansible/salt installation and configuration.&lt;br/&gt;
+     You ll want to activate this mode if you want
      to apply explicitly your states without relying of default
      nodetypes configuration.&lt;/p&gt;
 
@@ -426,7 +426,7 @@ or the grains those ways&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;vagrantvm&lt;/strong&gt;
  :    flag vagrant boxes and is a subtype of devhost&lt;/p&gt;&lt;/li&gt;
 
-&lt;li&gt;&lt;p&gt;You can tell &lt;code&gt;boot-salt2.sh&lt;/code&gt; which nodetype to use via the &lt;code&gt;--nodetype&lt;/code&gt; switch&lt;/p&gt;
+&lt;li&gt;&lt;p&gt;You can tell &lt;a href=&#34;/usage/&#34;&gt;&lt;code&gt;boot-salt2.sh&lt;/code&gt;&lt;/a&gt; which nodetype to use via the &lt;code&gt;--nodetype&lt;/code&gt; switch&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;boot-salt2.sh --nodetype server --reconfigure
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 &lt;/ul&gt;
@@ -435,7 +435,7 @@ or the grains those ways&lt;/p&gt;
 
 &lt;ul&gt;
 &lt;li&gt;&lt;p&gt;If you installed the &lt;strong&gt;scratch&lt;/strong&gt; preset and want to switch to another preset:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;salt-call state.sls makina-states.nodetypes.&amp;lt;your_new_preset&amp;gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call state.sls makina-states.nodetypes.&amp;lt;your_new_preset&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 
 &lt;li&gt;&lt;p&gt;If you installed a preset and want to switch to another preset:&lt;/p&gt;
@@ -444,15 +444,519 @@ or the grains those ways&lt;/p&gt;
 &lt;li&gt;edit &lt;code&gt;etc/makina-states/nodetype&lt;/code&gt; and put your new preset&lt;/li&gt;
 &lt;li&gt;edit &lt;code&gt;etc/makina-states/nodetypes.yaml&lt;/code&gt; and set to false your old preset&lt;/li&gt;
 
-&lt;li&gt;&lt;p&gt;Finally, run:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;salt-call state.sls makina-states.nodetypes.&amp;lt;your_new_preset&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;And finally:&lt;/p&gt;
+&lt;li&gt;&lt;p&gt;Ask bootsalt to remember&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;boot-salt2.sh --nodetype &amp;lt;your_new_preset&amp;gt; --reconfigure
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Finally, run:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call state.sls makina-states.nodetypes.&amp;lt;your_new_preset&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
 &lt;/ul&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Usage</title>
+      <link>/reference/projects/usage/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/reference/projects/usage/</guid>
+      <description>
+
+&lt;h2 id=&#34;specification&#34;&gt;Specification&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;A project in &lt;strong&gt;corpus / makina-states&lt;/strong&gt; is a &lt;strong&gt;git repository&lt;/strong&gt; checkout
+which contains the code and &lt;br/&gt;
+a well known saltstack based procedure
+to deploy it from end to end in the &lt;strong&gt;.salt&lt;/strong&gt; folder.&lt;/li&gt;
+&lt;li&gt;Bear in mind the &lt;a href=&#34;/reference/projects/usage/#structure&#34;&gt;project layout&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;You may have a look to the (now outdatedà original &lt;a href=&#34;/reference/projects/RFC/&#34;&gt;project_corpus&lt;/a&gt; specification&lt;/li&gt;
+&lt;li&gt;A good sumup of the spec is as follow:
+
+&lt;ul&gt;
+&lt;li&gt;There is a separate repo distributed along the project named
+&lt;strong&gt;pillar&lt;/strong&gt; to store configuration variables, passwords and so on.&lt;/li&gt;
+&lt;li&gt;Projects are deployed via instructions based on saltstack which
+are contained into the &lt;strong&gt;.salt&lt;/strong&gt; folder along the codebase.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Projects can be deployed in two modes:
+
+&lt;ul&gt;
+&lt;li&gt;via a git push on a local, separated git repository where some hooks are wired to launch the deployment&lt;/li&gt;
+&lt;li&gt;If no remotes, deploy the code source we have locally&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;The deployment folder, &lt;code&gt;.salt&lt;/code&gt;, that you will provide along your codebase will describe how to deploy your project.
+
+&lt;ul&gt;
+&lt;li&gt;Deployment consist in &lt;code&gt;META&lt;/code&gt; deployment phases:
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;archive&lt;/strong&gt; &lt;code&gt;.salt/archive.sls&lt;/code&gt;: synchronnise the project to the &lt;code&gt;archive&lt;/code&gt; folder before deploying&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;sync code&lt;/strong&gt; from remotes if there are remotes: if any remotes, synchronise both the pillar and the project
+git folder to their corresponding checkouted working copies&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;sync/install custom salt modules&lt;/strong&gt; (exec, states, etc) from the codebase if any from the &lt;code&gt;.salt&lt;/code&gt; folder&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;fixperms&lt;/strong&gt; (&lt;code&gt;.salt/fixperms.sls&lt;/code&gt;): enforce filesystem permissions&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;install&lt;/strong&gt; (&lt;code&gt;.salt/install.sls&lt;/code&gt;): Run project deployment procedure
+
+&lt;ul&gt;
+&lt;li&gt;Run any &lt;code&gt;sls&lt;/code&gt; in the &lt;code&gt;.salt&lt;/code&gt; folder (alphanum sorted) which:
+
+&lt;ul&gt;
+&lt;li&gt;Is not a main procedure sls&lt;/li&gt;
+&lt;li&gt;Is not a task (beginning with &lt;code&gt;task&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;the convention is to name them &lt;code&gt;\d\d\d_NAME.sls&lt;/code&gt;  (&lt;code&gt;000_prereqs.sls&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;fixperms&lt;/strong&gt; (&lt;code&gt;.salt/fixperms.sls&lt;/code&gt;): enforce filesystem permissions&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;rollback&lt;/strong&gt; (&lt;code&gt;.salt/rollback.sls&lt;/code&gt;): if error, rollback procedure (by default sync from &lt;code&gt;archived&lt;/code&gt; folder&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;notify&lt;/strong&gt; OPTIONNAL/LEGACY (&lt;code&gt;.salt/notify.sls&lt;/code&gt;): after deployment, notify commands&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;All other sls found at &lt;strong&gt;toplevel&lt;/strong&gt; of the &lt;code&gt;.salt&lt;/code&gt; folder  which are not those ones are
+executed in lexicographical order (alphanum) and&lt;/li&gt;
+&lt;li&gt;The &lt;code&gt;.salt/PILLAR.sample&lt;/code&gt; file contains default configuration variable for
+your project and helps you to know what variable to override in your
+custom pillar.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;structure&#34;&gt;Structure&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;This empty structure respects the aforementioned corpus reactor
+layout, and is just an useless helloword project which should look like:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;srv&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;projects&lt;span class=&#34;o&#34;&gt;/&amp;lt;&lt;/span&gt;project_name&lt;span class=&#34;o&#34;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; pillar&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;init.sls&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; override values &lt;span class=&#34;kr&#34;&gt;in&lt;/span&gt; PILLAR.sample and define
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;                   any other arbitrary pillar DATA.
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; data&lt;span class=&#34;o&#34;&gt;/:&lt;/span&gt; anything which is persisted to disk must live here
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;         from drupal sites&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;default&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;files&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; python eggs&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; buildouts parts&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;         gems cache&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; sqlite files&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; static files&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; docroots&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; etc.
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; project&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;-&lt;/span&gt; a checkout or your project
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;   &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt;  &lt;span class=&#34;m&#34;&gt;.&lt;/span&gt;git
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;   &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt;  codebase
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;   &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt;  &lt;span class=&#34;m&#34;&gt;.&lt;/span&gt;salt
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; _modules &lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; custom salt python exec modules
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; _states  &lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; custom salt python states modules
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; _runners &lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; custom salt python runners modules
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; _&lt;span class=&#34;kc&#34;&gt;...&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; PILLAR.sample
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; task_foo.sls
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;00&lt;/span&gt;_deploy.sls
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
+    &lt;span class=&#34;p&#34;&gt;[&lt;/span&gt; If &lt;span class=&#34;s&#34;&gt;&amp;quot;remote_less&amp;quot;&lt;/span&gt; is False &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;default&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; git&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;project.git&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; bare git repos synchronnized &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;bi&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;directional&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;                   with project&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; used by git push style deployment
+    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; git&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;pillar.git&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt;  bare git repos synchronnized &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;bi&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;directional&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;                   with pillar&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; used by git push style deployment
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; arhives&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;-&lt;/span&gt; past deployment archive folders
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt;U&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;U&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;kp&#34;&gt;I&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;D1&lt;span class=&#34;o&#34;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt;U&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;U&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;kp&#34;&gt;I&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;D2&lt;span class=&#34;o&#34;&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;What you want to do is to replace the &lt;code&gt;project&lt;/code&gt; folder by your repo.&lt;br/&gt;
+This one contains your code, as asual, plus the &lt;strong&gt;.salt&lt;/strong&gt; folder.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;WELL Understand&lt;/strong&gt; what is :&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;a &lt;a href=&#34;http://docs.saltstack.com/en/latest/topics/tutorials/starting_states.html#moving-beyond-a-single-sls&#34;&gt;salt SLS&lt;/a&gt;, it is the nerve of the war.&lt;/li&gt;
+&lt;li&gt;the &lt;a href=&#34;http://docs.saltstack.com/en/latest/topics/tutorials/pillar.html&#34;&gt;Pillar of salt&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;be ware&lt;/strong&gt;, on the production server the &lt;code&gt;.git/config&lt;/code&gt; is linked
+with the makina-states machinery, &lt;strong&gt;NEVER MESS WITH ORIGIN AND MASTER BRANCH&lt;/strong&gt;.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Ensure to to have at least in your project git folder:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;.salt/PILLAR.sample&lt;/code&gt;: configuration default values to use in
+SLSes&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;.salt/archive.sls&lt;/code&gt;: archive step&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;.salt/fixperms.sls&lt;/code&gt;: fixperm step&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;.salt/rollback.sls&lt;/code&gt;: rollback step&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;You can then add as many SLSes as you want, and the ones directly in
+&lt;strong&gt;.salt&lt;/strong&gt; will be executed in alphabetical order except the ones
+beginning with &lt;strong&gt;task_&lt;/strong&gt; (task_foo.sls). Indeed the ones beginning
+with &lt;strong&gt;task_&lt;/strong&gt; are different beasts and are intended to be either
+included by your other slses to factor code out or to be executed
+manually via the &lt;code&gt;mc_project.run_task&lt;/code&gt; command.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;You can and must have a look for inspiration on &lt;a href=&#34;/reference/templates/&#34;&gt;project templates&lt;/a&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;deployment-workflows&#34;&gt;Deployment workflows&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;To build and deploy your project we provide two styles of doing style
+that should be appropriate for most use cases.
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;/reference/projects/usage/#the-local-build-workflow&#34;&gt;A local build workflow&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;/projects/usage/#the-git-push-to-prod-deploy-workflow&#34;&gt;A distant git-push style workflow&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;the-local-build-workflow&#34;&gt;The local build workflow&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;INITIALLY:
+
+&lt;ul&gt;
+&lt;li&gt;use &lt;code&gt;mc_project.init_project&lt;/code&gt; to create the structure to host your project&lt;/li&gt;
+&lt;li&gt;use &lt;code&gt;mc_project.report&lt;/code&gt; to verify things are in place&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Then
+
+&lt;ul&gt;
+&lt;li&gt;Edit/Place code in the pillar  folder: &lt;code&gt;/srv/projects/&amp;lt;project&amp;gt;/pillar&lt;/code&gt; to configure the project&lt;/li&gt;
+&lt;li&gt;Edit/Place code in the project folder: &lt;code&gt;/srv/projects/&amp;lt;project&amp;gt;/project&lt;/code&gt; and manually launch the deploy&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Wash, Rince, Repeat&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;the-git-push-to-prod-deploy-workflow&#34;&gt;The git push to prod deploy workflow&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;INITIALLY:
+
+&lt;ul&gt;
+&lt;li&gt;use &lt;code&gt;mc_project.init_project&lt;/code&gt; to create the structure to host your project&lt;/li&gt;
+&lt;li&gt;use &lt;code&gt;mc_project.report&lt;/code&gt; to verify things are in place&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Then
+
+&lt;ul&gt;
+&lt;li&gt;git push/or edit then push the pillar &lt;code&gt;host:/srv/projects/&amp;lt;project&amp;gt;/git/pillar.git&lt;/code&gt; to configure the project&lt;/li&gt;
+&lt;li&gt;git push/or edit then push the code inside &lt;code&gt;host:/srv/projects/&amp;lt;project&amp;gt;/git/project.git&lt;/code&gt; which triggers the deploy&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Wash, Rince, Repeat&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;deployment-stategy&#34;&gt;Deployment stategy&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;To sum all that up, when beginning a project you will:
+
+&lt;ul&gt;
+&lt;li&gt;Initialize if not done a project structure with&lt;br/&gt;
+&lt;code&gt;salt-call mc_project.init_project project&lt;/code&gt;
+
+&lt;ul&gt;
+&lt;li&gt;If you do not want git remotes, you can alternativly use&lt;br/&gt;
+&lt;code&gt;salt-call mc_project.init_project project remote_less=true&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;add a &lt;strong&gt;.salt&lt;/strong&gt; folder alongside your project codebase (in it&amp;rsquo;s
+git repo).&lt;/li&gt;
+&lt;li&gt;deploy it, either by:
+
+&lt;ul&gt;
+&lt;li&gt;In &lt;strong&gt;remote_less=True&lt;/strong&gt; mode or connected to the remote host to deploy onto:
+
+&lt;ul&gt;
+&lt;li&gt;edit/commit/push in &lt;code&gt;host:/srv/projects/&amp;lt;project&amp;gt;/pillar&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;edit/commit/push/push to force in &lt;code&gt;host:/srv/projects/&amp;lt;project&amp;gt;/project&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Launch the &lt;code&gt;salt-call mc_project.deploy &amp;lt;project&amp;gt; only=install,fixperms,sync_modules&lt;/code&gt; dance&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;In &lt;strong&gt;remote_less=False&lt;/strong&gt; mode:
+
+&lt;ul&gt;
+&lt;li&gt;git push your &lt;strong&gt;pillar&lt;/strong&gt; files to&lt;br/&gt;
+&lt;code&gt;host:/srv/projects/&amp;lt;project&amp;gt;/git/pillar.git&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;git push your &lt;strong&gt;project code&lt;/strong&gt; to&lt;br/&gt;
+&lt;code&gt;host:/srv/projects/&amp;lt;project&amp;gt;/git/project.git&lt;/code&gt;&lt;br/&gt;
+(this last push triggers a deploy on the remote server)&lt;/li&gt;
+&lt;li&gt;Your can use &lt;code&gt;--force&lt;/code&gt; as the deploy system only await the
+&lt;code&gt;.salt&lt;/code&gt; folder. As long as the folder is present of the
+working copy you are sending, the deploy system will be happy.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Wash, Rince, Repeat&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;initialize-the-project-layout&#34;&gt;Initialize the project layout&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;The first thing to do when deploying a project is to create a &lt;strong&gt;nest&lt;/strong&gt; from it:&lt;br/&gt;
+&lt;strong&gt;IF IT IS NOT ALREADY DONE&lt;/strong&gt; (just &lt;code&gt;ls /srv/projects&lt;/code&gt; to check):&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call --local --retcode-passthrough -lall mc_project.init_project &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    &amp;lt;project_name&amp;gt; &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;remote_less&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;false/true&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Dont be long, and dont use &lt;code&gt;-&lt;/code&gt; &amp;amp; &lt;code&gt;_&lt;/code&gt; for the &lt;code&gt;project name&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;(opt) &lt;code&gt;remote_less&lt;/code&gt; instructs to deploy with or without the git
+repos that allow users to use (or not) a &lt;strong&gt;git push to prod to deploy&lt;/strong&gt; workflow.
+
+&lt;ul&gt;
+&lt;li&gt;If &lt;code&gt;remote_less=true&lt;/code&gt;, the git repos wont be created, and you
+will have to use only the the &lt;code&gt;local build workflow&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;If &lt;code&gt;remote_less=false&lt;/code&gt;, you can use both the &lt;code&gt;local build workflow&lt;/code&gt;
+and the &lt;code&gt;git push to prod deploy workflow&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;--local -lall&lt;/code&gt; instructs to run in masterless mode and extra verbosity&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;mc_project.init_project $project&lt;/code&gt; instructs to create the layout of
+the name &lt;code&gt;$project&lt;/code&gt; project living into &lt;code&gt;/srv/projects/$project/project&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;running-deployment-procedure&#34;&gt;Running deployment procedure&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;The following command is the nerve of the war:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call --local --retcode-passthrough -lall &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+     mc_project.deploy &lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+      &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;only&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;step2&lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;,step1&lt;span class=&#34;o&#34;&gt;]]&lt;/span&gt; &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+      &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;only_steps&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;step2&lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;,step1&lt;span class=&#34;o&#34;&gt;]]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;code&gt;mc_project.deploy $project&lt;/code&gt; instructs to deploy the name &lt;code&gt;$project&lt;/code&gt;
+project living into &lt;code&gt;/srv/projects/$project/project&lt;/code&gt;&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;(opt) &lt;code&gt;only&lt;/code&gt; instructs to execute only the named global phases, and
+when deploying directly onto a machine, you will certainly have to
+use &lt;code&gt;only=install,fixperms,sync_modules&lt;/code&gt; to avoid the
+archive/sync/rollback steps.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;(opt) &lt;code&gt;only_steps&lt;/code&gt; instruct to execute only a specific or multiple
+specific sls from the &lt;strong&gt;.salt&lt;/strong&gt; folder during the &lt;strong&gt;install&lt;/strong&gt; phase.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;tutorial&#34;&gt;Tutorial&lt;/h2&gt;
+
+&lt;h3 id=&#34;projects-reminder-tool&#34;&gt;Projects reminder tool&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;WARNING&lt;/strong&gt;: you can use it only if you provisionned your project
+with attached remotes (the default)&lt;/li&gt;
+&lt;li&gt;Remember use the remotes inside &lt;code&gt;/srv/projects/&amp;lt;project&amp;gt;/git&lt;/code&gt; and
+not directly the working copies&lt;/li&gt;
+&lt;li&gt;If you push on the pillar, it does not trigger a deploy&lt;/li&gt;
+&lt;li&gt;If you push on the project, it triggers the full deploy procedure
+including archive/sync/rollback.&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;To get useful push informations, on the remote server to deploy to,
+just do&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;salt-call -lall mc_project.report
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;using-local-build-workflow&#34;&gt;Using local build workflow&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;/install&#34;&gt;install makinastates&lt;/a&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Initialise the layout (only the first time)&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;ssh root@remoteserver
+&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;project&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;foo&amp;quot;&lt;/span&gt;
+salt-call mc_project.init_project &lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;remote_less&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;true&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Edit the pillar&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; /srv/projects/&lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt;/pillar
+&lt;span class=&#34;nv&#34;&gt;$EDITOR&lt;/span&gt; init.sls
+git commit -am up
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Add your project code&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;project&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;foo&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; /srv/projects/&lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt;/project
+&lt;span class=&#34;c1&#34;&gt;# if not already done, add your project repo remote&lt;/span&gt;
+git remote add o https://github.com/o/myproject.git
+&lt;span class=&#34;c1&#34;&gt;# in any cases, update your code&lt;/span&gt;
+git fetch --all
+git reset --hard remotes/o/&amp;lt;the branch to deploy&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Run the deployment procedure, &lt;strong&gt;skipping archive/rollback&lt;/strong&gt; as you are connected and live editing&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;salt-call mc_project.deploy &lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;only&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;install,fixperms,sync_modules
+&lt;span class=&#34;c1&#34;&gt;# or to deploy only a specific sls&lt;/span&gt;
+salt-call &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    mc_project.deploy &lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt; &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+    &lt;span class=&#34;nv&#34;&gt;only&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;install,fixperms,sync_modules &lt;span class=&#34;nv&#34;&gt;only_steps&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;000_foo.sls
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;When you want to commit your changes&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;project&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;foo&amp;quot;&lt;/span&gt;
+&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; vms/VM/srv/&lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt;/project
+git push o HEAD:&amp;lt;master&amp;gt; &lt;span class=&#34;c1&#34;&gt;# replace master by the branch you want to push&lt;/span&gt;
+                         &lt;span class=&#34;c1&#34;&gt;# back onto your forge&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;using-git-push-to-prod-deploy-workflow&#34;&gt;Using git push to prod deploy workflow&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;/install&#34;&gt;install makinastates&lt;/a&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;The following lines edit the pillar, and push it, this does not trigger a deploy&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;$WORKSPACE&lt;/span&gt;/myproject
+git clone host:/srv/projects/project/git/pillar.git
+&lt;span class=&#34;nv&#34;&gt;$EDITOR&lt;/span&gt; pillar/init.sls
+&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; pillar&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;git commit -am up&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;git push&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; ..
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;The following lines prepare a clone of your project codebase to be able
+to be deployed onto production or staging servers&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;$WORKSPACE&lt;/span&gt;/myproject
+git clone git@github.com/makinacorpus/myawsomeproject.git
+git remote add prod /srv/projects/project/git/project.git
+git fetch --all
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;To trigger a remote deployment, now you can do:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;git push &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;--force&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt; prod &amp;lt;mybranch&amp;gt;:master
+eg: git push &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;--force&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt; prod &amp;lt;mybranch&amp;gt;:master
+eg: git push &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;--force&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt; prod awsome_feature:master
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;REMINDER&lt;/strong&gt;:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;DONT MESS WITH THE &lt;strong&gt;ORIGIN&lt;/strong&gt; REMOTE when your are connected
+to your server in any of the &lt;code&gt;pillar&lt;/code&gt; or
+&lt;code&gt;project&lt;/code&gt; directory..&lt;/li&gt;
+&lt;li&gt;The &lt;code&gt;&amp;lt;branchname&amp;gt;:master&lt;/code&gt; is really important as everything
+in the production git repositories is wired on the &lt;code&gt;master&lt;/code&gt;
+branch. You can push any branch you want from your original
+repository, but in production, there is only &lt;strong&gt;master&lt;/strong&gt;.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;configuration-pillar-variables&#34;&gt;Configuration pillar &amp;amp; variables&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;We provide in &lt;strong&gt;mc_project&lt;/strong&gt; a powerfull mecanism to define configuration
+variables used in your deployments that you can safely override in the
+salt pillar files.&lt;br/&gt;
+This means that you can set some default values for,
+eg a domain name or a password, and input the production values that you
+won&amp;rsquo;t commit along side your project codebase.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Default values have to be stored inside the &lt;strong&gt;PILLAR.sample&lt;/strong&gt; file.&lt;/li&gt;
+&lt;li&gt;Some of those variables, the one at the first level are mostly read
+only and setup by makina-states itself.&lt;br/&gt;
+The most important are:
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;name&lt;/code&gt;: project name&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;user&lt;/code&gt;: the system user of your project&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;group&lt;/code&gt;: the system group of your project&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;data&lt;/code&gt;: top level free variables mapping&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;project_root&lt;/code&gt;: project root absolute path&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;data_root&lt;/code&gt;: persistent folder absolute path&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;default_env&lt;/code&gt;: environment (staging/prod/dev)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;pillar_root&lt;/code&gt;: absolute path to the pillar&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;fqdn&lt;/code&gt;: machine FQDN&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;The only variables that you can edit at the first level are:
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;remote_less&lt;/strong&gt;: is this project using git remotes for triggering deployments&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;default_env&lt;/strong&gt;: environement (valid values are staging/dev/prod)&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;The other variables, members of the &lt;strong&gt;data&lt;/strong&gt; sub entry are free for you to add/edit.&lt;/li&gt;
+&lt;li&gt;Anything defined in the pillar &lt;code&gt;pillar/init.sls&lt;/code&gt; overloads what is in &lt;code&gt;project/.salt/PILLAR.sample&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;You can get and consult the result of the configuration assemblage like
+this:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;  bin/salt-call --retcode-passthrough mc_project.get_configuration &amp;lt;project_name&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Remember that projects have a name, and the pillar key to configure
+and overload your project configuration is based on this key.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;EG: If your project is name &lt;strong&gt;foo&lt;/strong&gt;, you ll have to use
+&lt;strong&gt;makina-projects.foo&lt;/strong&gt; in place of &lt;strong&gt;makina-projects.example&lt;/strong&gt;.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;example&#34;&gt;Example:&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;in &lt;code&gt;project/.salt/PILLAR.sample&lt;/code&gt;, you have:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-projects.projectname&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;data&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;start_cmd&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;#39;myprog&amp;#39;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;in &lt;code&gt;pillar/init.sls&lt;/code&gt;, you have:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-projects.foo&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+   &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;data&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+     &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;start_cmd&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;#39;myprog2&amp;#39;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;In your states files, you can access the configuration via the magic &lt;code&gt;opts.ms_project&lt;/code&gt; variable.&lt;/li&gt;
+&lt;li&gt;In your modules or file templates, you can access the configuration via &lt;code&gt;salt[&#39;mc_project.get_configuration&#39;(name)&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;A tip for loading the configuration from a template is doing something like that:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;c1&#34;&gt;# project/.salt/00_deploy.sls&lt;/span&gt;
+&lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;%&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;set cfg = opts.ms_project %&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;toto&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;file.managed&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;name&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;quot;source://makina-projects/{{cfg.name}}/files/etc/foo&amp;quot;&lt;/span&gt;
+      &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;target&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;/etc/foo&lt;/span&gt;
+      &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;user {{cfg.user}}&lt;/span&gt;
+      &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;group {{cfg.user}}&lt;/span&gt;
+      &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;defaults&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+          &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;project&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;p p-Indicator&#34;&gt;{{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;cfg.name&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}}&lt;/span&gt;
+
+&lt;span class=&#34;c1&#34;&gt;# project/.salt/files/etc/foo&lt;/span&gt;
+&lt;span class=&#34;p p-Indicator&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;err&#34;&gt;%&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;set cfg = opts.ms_project %&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;}&lt;/span&gt;
+&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;My Super Template of {{cfg.name}} will run {{cfg.data.start_cmd}}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2 id=&#34;saltstack-integration&#34;&gt;SaltStack integration&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;As you know makina-states embeds its own virtualenv and salt codebase.&lt;br/&gt;
+In makina-states, we use by default:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;makina states itself: &lt;code&gt;/srv/makina-states&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;a virtualenv inside &lt;code&gt;/srv/makina-states/venv&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makina-corpus/salt.git&#34;&gt;salt from a fork&lt;/a&gt; installed inside &lt;code&gt;$makinastates/venv/src/salt&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;As you see, the project layout seems not integration on those following
+folders, but in fact, the project initialisation routines made symlinks
+to integrate it which look like:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;$makinastates/salt/makina-projects/&amp;lt;project_name&amp;gt;&amp;gt;&lt;/code&gt; -&amp;gt; &lt;code&gt;/srv/projects/&amp;lt;project_name&amp;gt;/project§/.salt&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;$makinastates/pillar/pillar.d/makina-projects/&amp;lt;project_name&amp;gt;&lt;/code&gt; -&amp;gt; &lt;code&gt;/srv/projects/&amp;lt;project_name&amp;gt;/pillar&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;The pillar is auto included in the &lt;strong&gt;pillar top&lt;/strong&gt; (&lt;code&gt;/srv/pîllar/top.sls&lt;/code&gt;).&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;The project salt files are not and &lt;strong&gt;must not&lt;/strong&gt; be included in the
+salt &lt;strong&gt;top&lt;/strong&gt; for further highstates unless you know what you are doing.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;You can unlink your project from salt with:&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;   bin/salt-call --retcode-passthrough mc_project.unlink &amp;lt;project_name&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;You can link project from salt with:&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;   bin/salt-call --retcode-passthrough mc_project.link &amp;lt;project_name&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 </description>
     </item>
     
@@ -1006,6 +1510,17 @@ function and mess salt modules.&lt;/li&gt;
 &lt;/ul&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
+&lt;h2 id=&#34;ssl&#34;&gt;ssl&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/localsettings/ssl/macros.jinja&#34;&gt;macros&lt;/a&gt;
+
+&lt;ul&gt;
+&lt;li&gt;install_certificate&lt;/li&gt;
+&lt;li&gt;install_cert_in_dir&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
 &lt;h2 id=&#34;nginx&#34;&gt;nginx&lt;/h2&gt;
 
 &lt;ul&gt;
@@ -1113,597 +1628,6 @@ function and mess salt modules.&lt;/li&gt;
 &lt;li&gt;rabbitmq_vhost&lt;/li&gt;
 &lt;/ul&gt;&lt;/li&gt;
 &lt;/ul&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Usage</title>
-      <link>/reference/projects/usage/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>/reference/projects/usage/</guid>
-      <description>
-
-&lt;h2 id=&#34;intro&#34;&gt;Intro&lt;/h2&gt;
-
-&lt;ul&gt;
-&lt;li&gt;See formulaes exemples:
-
-&lt;ul&gt;
-&lt;li&gt;&lt;a href=&#34;https://docs.saltstack.com/en/latest/ref/states/&#34;&gt;saltstack doc about states
-formulaes&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://docs.saltstack.com/en/latest/topics/tutorials/states_pt1.html&#34;&gt;saltstack doc about states
-formulaes2&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/master/localsettings&#34;&gt;the
-localsettings&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/makinacorpus/makina-states/tree/master/services&#34;&gt;the
-services&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&#34;specifications&#34;&gt;Specifications&lt;/h2&gt;
-
-&lt;ul&gt;
-&lt;li&gt;See the original specification &amp;lt;project_corpus&amp;gt;, and specially
-the layout &amp;lt;project_spec_layout&amp;gt;, the
-install &amp;lt;project_spec_proc_install&amp;gt; procedure, and the
-fixperms&amp;lt;project_spec_proc_fixperms&amp;gt; procedure.&lt;/li&gt;
-&lt;li&gt;A good sumup of the spec is as follow, but please read it once&amp;hellip;
-
-&lt;ul&gt;
-&lt;li&gt;There is a separate repo distributed along the project named
-&lt;strong&gt;pillar&lt;/strong&gt; to store configuration variables, passwords and so on.&lt;/li&gt;
-&lt;li&gt;Projects are deployed via instructions based on saltstack which
-are contained into the &lt;strong&gt;.salt&lt;/strong&gt; folder inside the codebase.&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;li&gt;The deployment includes global phases in this order:
-
-&lt;ul&gt;
-&lt;li&gt;archive &lt;code&gt;archive.sls&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;sync code from remotes if there are remotes&lt;/li&gt;
-&lt;li&gt;sync/install custom salt modules (exec, states, etc) from the
-codebase if any&lt;/li&gt;
-&lt;li&gt;fixperms (&lt;code&gt;fixperms.sls&lt;/code&gt;)&lt;/li&gt;
-&lt;li&gt;install (&lt;code&gt;install.sls&lt;/code&gt;)&lt;/li&gt;
-&lt;li&gt;fixperms&lt;/li&gt;
-&lt;li&gt;rollback (&lt;code&gt;rollback.sls&lt;/code&gt;)if error&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;li&gt;Some of those phases can be edited via the user, and some other not
-(install, &amp;amp; sync steps).&lt;/li&gt;
-&lt;li&gt;That will explain that in your &lt;strong&gt;.salt&lt;/strong&gt; folder, you have at least
-&lt;code&gt;install.sls&lt;/code&gt;, &lt;code&gt;fixperms.sls&lt;/code&gt;, &lt;code&gt;rollback.sls&lt;/code&gt;, and for old projects
-&lt;code&gt;notify.sls&lt;/code&gt;.&lt;/li&gt;
-&lt;li&gt;All other sls found at &lt;strong&gt;toplevel&lt;/strong&gt; which are not those ones are
-executed in lexicographical order (alphanum) and the convention is to
-name them &lt;code&gt;\d\d\d_NAME.sls&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;The &lt;code&gt;PILLAR.sample&lt;/code&gt; file contains default configuration variable for
-your project and helps you to know what variable to override in your
-custom pillar.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&#34;initialization&#34;&gt;Initialization&lt;/h3&gt;
-
-&lt;ul&gt;
-&lt;li&gt;a project in corpus / makina-states is a git repository checkout
-which contains the code and a well known saltstack based procedure
-to deploy it from end to end in the &lt;strong&gt;.salt&lt;/strong&gt; folder.&lt;/li&gt;
-&lt;li&gt;By default the project procedure is done via a &lt;a href=&#34;http://docs.saltstack.com/en/latest/topics/tutorials/quickstart.html&#34;&gt;masterless salt
-call&lt;/a&gt;.&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;The first thing to do is to create a &lt;strong&gt;nest&lt;/strong&gt; from such a project,
-&lt;strong&gt;IF IT IS NOT ALREADY DONE&lt;/strong&gt; (just ls /srv/projects to check):&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/salt-call --retcode-passthrough mc_project.deploy &amp;lt;project_name&amp;gt; &lt;span class=&#34;c1&#34;&gt;# dont be long, dont use - &amp;amp; _&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;This empty structure respects the aforementioned corpus reactor
-anatomy, and is just an useless helloword project which should look
-like:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;srv&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;projects&lt;span class=&#34;o&#34;&gt;/&amp;lt;&lt;/span&gt;project_name&lt;span class=&#34;o&#34;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
-    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; pillar&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;init.sls&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; override values &lt;span class=&#34;kr&#34;&gt;in&lt;/span&gt; PILLAR.sample and define
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;                   any other arbitrary pillar DATA.
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
-    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; data&lt;span class=&#34;o&#34;&gt;/:&lt;/span&gt; anything which is persisted to disk must live here
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;         from drupal sites&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;default&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;files&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; python eggs&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; buildouts parts&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;         gems cache&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; sqlite files&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; static files&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; docroots&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; etc.
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
-    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; project&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;-&lt;/span&gt; a checkout or your project
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;   &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt;  &lt;span class=&#34;m&#34;&gt;.&lt;/span&gt;git
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;   &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt;  codebase
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;   &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt;  &lt;span class=&#34;m&#34;&gt;.&lt;/span&gt;salt
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; _modules &lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; custom salt python exec modules
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; _states  &lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; custom salt python states modules
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; _runners &lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; custom salt python runners modules
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; _sdb     &lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; custom salt python sdb modules
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; _&lt;span class=&#34;kc&#34;&gt;...&lt;/span&gt;
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; PILLAR.sample
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; task_foo.sls
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;00&lt;/span&gt;_deploy.sls
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
-    &lt;span class=&#34;p&#34;&gt;[&lt;/span&gt; If &lt;span class=&#34;s&#34;&gt;&amp;quot;remote_less&amp;quot;&lt;/span&gt; is False &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;default&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
-    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; git&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;project.git&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; bare git repos synchronnized &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;bi&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;directional&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
-    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;                   with project&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; used by git push style deployment
-    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; git&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;pillar.git&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt;  bare git repos synchronnized &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;bi&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;directional&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
-                        with pillar&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; used by git push style deployment
-&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;What you want to do is to replace the &lt;code&gt;project&lt;/code&gt; folder by your repo.
-This one contains your code, as asual, plus the &lt;strong&gt;.salt&lt;/strong&gt; folder,&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;WELL Understand&lt;/strong&gt; what is :&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;a &lt;a href=&#34;http://docs.saltstack.com/en/latest/topics/tutorials/starting_states.html#moving-beyond-a-single-sls&#34;&gt;salt
-SLS&lt;/a&gt;
-, it is the nerve of the war.&lt;/li&gt;
-&lt;li&gt;the &lt;a href=&#34;http://docs.saltstack.com/en/latest/topics/tutorials/pillar.html&#34;&gt;Pillar of
-salt&lt;/a&gt;.&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;&lt;strong&gt;be ware&lt;/strong&gt;, on the production server the &lt;code&gt;.git/config&lt;/code&gt; is linked
-with the makina-states machinery and you cannot replace it blindly,
-you must use git foo to do it.&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Ensure to to have at least in your project git folder:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;code&gt;.salt/PILLAR.sample&lt;/code&gt;: configuration default values to use in
-SLSes&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;.salt/archive.sls&lt;/code&gt;: archive step&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;.salt/fixperms.sls&lt;/code&gt;: fixperm step&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;.salt/rollback.sls&lt;/code&gt;: rollback step&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;You can then add as many SLSes as you want, and the ones directly in
-&lt;strong&gt;.salt&lt;/strong&gt; will be executed in alphabetical order except the ones
-beginning with &lt;strong&gt;task_&lt;/strong&gt; (task_foo.sls). Indeed the ones beginning
-with &lt;strong&gt;task_&lt;/strong&gt; are different beasts and are intended to be either
-included by your other slses to factor code out or to be executed
-manually via the &lt;code&gt;mc_project.run_task&lt;/code&gt; command.&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;You can and must have a look for inspiration on
-projects_project_list&lt;/p&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&#34;deploying-two-ways-of-doing-things&#34;&gt;Deploying, two ways of doing things&lt;/h2&gt;
-
-&lt;ul&gt;
-&lt;li&gt;To build and deploy your project we provide two styles of doing style
-that should be appropriate for most use cases.&lt;/li&gt;
-&lt;li&gt;The common workflow is:
-
-&lt;ul&gt;
-&lt;li&gt;use &lt;code&gt;mc_project.init_project&lt;/code&gt; to create the structure to host your
-project&lt;/li&gt;
-&lt;li&gt;use &lt;code&gt;mc_project.report&lt;/code&gt; to verify things are in place&lt;/li&gt;
-&lt;li&gt;git push/or edit then push the pillar
-&lt;code&gt;/srv/projects/&amp;lt;project&amp;gt;/pillar&lt;/code&gt; to configure the project&lt;/li&gt;
-&lt;li&gt;git push/or edit then push the code inside
-&lt;code&gt;/srv/projects/&amp;lt;project&amp;gt;/project&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;launch the deploy&lt;/li&gt;
-&lt;li&gt;Wash, Rince, Repeat&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&#34;mc-project-init-project-initialize-the-layout&#34;&gt;mc_project.init_project: initialize the layout&lt;/h3&gt;
-
-&lt;p&gt;The following command is the nerve of the war:&lt;/p&gt;
-
-&lt;p&gt;bin/salt-call &amp;ndash;retcode-passthrough &lt;br /&gt;
-        -lall &lt;br /&gt;
-        mc_project.init_project $project [remote_less=false/true]&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;code&gt;--local -lall&lt;/code&gt; instructs to run in masterless mode and extra
-verbosity&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;mc_project.init_project $project&lt;/code&gt; instructs to create the layout of
-the name &lt;code&gt;$project&lt;/code&gt; project living into
-&lt;code&gt;/srv/projects/$project/project&lt;/code&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;(opt) &lt;code&gt;remote_less&lt;/code&gt; instructs to deploy with or without the git
-repos that allow users to use (or not) a &lt;strong&gt;git push to prod to
-deploy&lt;/strong&gt; workflow.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;ul&gt;
-&lt;li&gt;If &lt;code&gt;remote_less=true&lt;/code&gt;, the git repos wont be created, and you
-wont be able to push to git remotes to deploy your project
-(you ll have to do it directly on the server, by
-the hand procedure &amp;lt;project_hand_procedure&amp;gt;.&lt;/li&gt;
-&lt;li&gt;If &lt;code&gt;remote_less=false&lt;/code&gt;, you ll also be able to use
-the push to prod feature &amp;lt;project_git_push_procedure&amp;gt;.&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/blockquote&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&#34;mc-project-deploy-the-main-entry-point&#34;&gt;mc_project.deploy, the main entry point&lt;/h3&gt;
-
-&lt;p&gt;The following command is the nerve of the war:&lt;/p&gt;
-
-&lt;p&gt;bin/salt-call &amp;ndash;retcode-passthrough &lt;br /&gt;
-        -lall &lt;br /&gt;
-        mc_project.deploy $project&lt;br /&gt;
-         [only=step2[,step1]] &lt;br /&gt;
-         [only_steps=step2[,step1]]&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;code&gt;--local -lall&lt;/code&gt; instructs to run in masterless mode and extra
-verbosity&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;mc_project.deploy $project&lt;/code&gt; instructs to deploy the name &lt;code&gt;$project&lt;/code&gt;
-project living into &lt;code&gt;/srv/projects/$project/project&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;(opt) &lt;code&gt;only&lt;/code&gt; instructs to execute only the named global phases, and
-when deploying directly onto a machine, you will certainly have to
-use &lt;code&gt;only=install,fixperms,sync_modules&lt;/code&gt; to avoid the
-archive/sync/rollback steps.&lt;/li&gt;
-&lt;li&gt;(opt) &lt;code&gt;only_steps&lt;/code&gt; instruct to execute only a specific or multiple
-specific sls from the &lt;strong&gt;.salt&lt;/strong&gt; folder during the &lt;strong&gt;install&lt;/strong&gt; phase.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&#34;directly-on-the-remote-server-by-hand&#34;&gt;Directly on the remote server, by hand&lt;/h3&gt;
-
-&lt;p&gt;Either directly from the deployment host as root:&lt;/p&gt;
-
-&lt;p&gt;Initialise the layout (only the first time)&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;ssh root@remoteserver
-&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;project&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;foo&amp;quot;&lt;/span&gt;
-salt-call mc_project.init_project &lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;Edit the pillar&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;ssh root@remoteserver
-&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;project&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;foo&amp;quot;&lt;/span&gt;
-&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; /srv/projects/&lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt;
-&lt;span class=&#34;c1&#34;&gt;# maybe you want to edit before pillar deploy&lt;/span&gt;
-$ÊDITOR pillar/init.sls
-&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; pillar&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;git commit -m foo&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;git push&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; ..
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;Update the project code base from git&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;ssh root@remoteserver
-&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;project&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;foo&amp;quot;&lt;/span&gt;
-&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; /srv/projects/&lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt;/project
-&lt;span class=&#34;c1&#34;&gt;# if not already done, add your project repo remote&lt;/span&gt;
-git remote add g https://github.com/o/myproject.git
-&lt;span class=&#34;c1&#34;&gt;# in any cases, update your code&lt;/span&gt;
-git fetch --all
-git reset --hard remotes/g/&amp;lt;the branch to deploy&amp;gt;
-git push --force origin HEAD:master
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;Launch deploy&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;ssh root@remoteserver
-&lt;span class=&#34;c1&#34;&gt;# launch the deployment&lt;/span&gt;
-&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;project&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;foo&amp;quot;&lt;/span&gt;
-salt-call &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
-    mc_project.deploy &lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt; &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
-    &lt;span class=&#34;nv&#34;&gt;only&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;install,fixperms,sync_modules
-&lt;span class=&#34;c1&#34;&gt;# or to deploy only a specific sls&lt;/span&gt;
-salt-call &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
-    mc_project.deploy &lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt; &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
-    &lt;span class=&#34;nv&#34;&gt;only&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;install,fixperms,sync_modules &lt;span class=&#34;nv&#34;&gt;only_steps&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;000_foo.sls
-git push o HEAD:&amp;lt;master&amp;gt; &lt;span class=&#34;c1&#34;&gt;# replace master by the branch you want to push&lt;/span&gt;
-                         &lt;span class=&#34;c1&#34;&gt;# back onto your forge&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;h4 id=&#34;variant-deploy-by-hand-on-a-vagrant-vm&#34;&gt;VARIANT: Deploy by hand, on a vagrant VM&lt;/h4&gt;
-
-&lt;p&gt;We generally setup environments based on
-&lt;a href=&#34;https://github.com/makinacorpus/vms&#34;&gt;makina-states/vms&lt;/a&gt; that we share
-amongst our developers.&lt;/p&gt;
-
-&lt;p&gt;In development, our best practises are not to pull from our private git
-repositories directly from inside the VM.&lt;/p&gt;
-
-&lt;p&gt;The HOST on which the virtualbox is running, is on the contrary
-controlled by the developer and it&amp;rsquo;s more safe to pull/push the code
-from here.&lt;/p&gt;
-
-&lt;p&gt;To sum up, any &lt;strong&gt;git push/pull&lt;/strong&gt; operation has to be done &lt;strong&gt;from the
-localhost&lt;/strong&gt; and not the vm.&lt;/p&gt;
-
-&lt;p&gt;In other words, the HOST can access any of the VM files with the help of
-a shared &lt;strong&gt;sshfs&lt;/strong&gt; mountpoint &lt;code&gt;./VM&lt;/code&gt;. And the HOST can also access the
-outside repositories. So the host in the interface that will push code
-inside the VM.&lt;/p&gt;
-
-&lt;p&gt;This setup involves using the &lt;code&gt;remote_less&lt;/code&gt; feature of &lt;code&gt;mc_project&lt;/code&gt;
-where we do not deploy via a &lt;code&gt;git push&lt;/code&gt; nor use &lt;code&gt;archive/rollback&lt;/code&gt;
-mechanims.&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;p&gt;Initialise/launch a
-&lt;a href=&#34;https://github.com/makinacorpus/vms&#34;&gt;makina-states/vms&lt;/a&gt; box (this will
-take some time, specially the first time)&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;git clone https://github.com/makinacorpus/vms
-&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; vms
-./manage.sh init
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Open one console connected to the VM as &lt;strong&gt;root&lt;/strong&gt;&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;./manage.sh ssh
-sudo su &lt;span class=&#34;c1&#34;&gt;# (default password: vagrant)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Initialise the layout (only the first time)&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;ssh root@remoteserver
-&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;project&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;foo&amp;quot;&lt;/span&gt;
-salt-call mc_project.init_project &lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;remote_less&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;true&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Edit the pillar&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; /srv/projects/&lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt;/pillar
-&lt;span class=&#34;nv&#34;&gt;$EDITOR&lt;/span&gt; init.sls
-git commit -am up
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Open a second shell, on your local machine ( &lt;strong&gt;not on the VM&lt;/strong&gt; ) where
-you ll update the project code base from git.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;project&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;foo&amp;quot;&lt;/span&gt;
-&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; vms/VM/srv/projects/&lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt;/project
-&lt;span class=&#34;c1&#34;&gt;# if not already done, add your project repo remote&lt;/span&gt;
-git remote add o https://github.com/o/myproject.git
-&lt;span class=&#34;c1&#34;&gt;# in any cases, update your code&lt;/span&gt;
-git fetch --all
-git reset --hard remotes/o/&amp;lt;the branch to deploy&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;On the former shell ssh-connected to the vagrant box, launch deploy&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;salt-call mc_project.deploy &lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;only&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;install,fixperms,sync_modules
-&lt;span class=&#34;c1&#34;&gt;# or to deploy only a specific sls&lt;/span&gt;
-salt-call &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
-    mc_project.deploy &lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt; &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
-    &lt;span class=&#34;nv&#34;&gt;only&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;install,fixperms,sync_modules &lt;span class=&#34;nv&#34;&gt;only_steps&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;000_foo.sls
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;When you want to commit your changes, return to the second shell, on
-your local machine&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;project&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;foo&amp;quot;&lt;/span&gt;
-&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; vms/VM/srv/&lt;span class=&#34;nv&#34;&gt;$project&lt;/span&gt;/project
-git push o HEAD:&amp;lt;master&amp;gt; &lt;span class=&#34;c1&#34;&gt;# replace master by the branch you want to push&lt;/span&gt;
-                         &lt;span class=&#34;c1&#34;&gt;# back onto your forge&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&#34;deploy-with-git-instructions&#34;&gt;Deploy with git instructions&lt;/h3&gt;
-
-&lt;h4 id=&#34;reminder&#34;&gt;Reminder&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;WARNING&lt;/strong&gt;: you can use it only if you provisionned your project
-with attached remotes (the default)&lt;/li&gt;
-&lt;li&gt;Remember use the remotes inside &lt;code&gt;/srv/projects/&amp;lt;project&amp;gt;/git&lt;/code&gt; and
-not directly the working copies&lt;/li&gt;
-&lt;li&gt;If you push on the pillar, it does not trigger a deploy&lt;/li&gt;
-&lt;li&gt;If you push on the project, it triggers the full deploy procedure
-including archive/sync/rollback.&lt;/li&gt;
-&lt;li&gt;To get useful push informations, on the remote server to deploy to,
-just do&lt;/li&gt;
-&lt;/ul&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;salt-call -lall mc_project.report
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;h4 id=&#34;deploy&#34;&gt;Deploy&lt;/h4&gt;
-
-&lt;p&gt;The following lines edit the pillar, and push it, this does not trigger
-a deploy&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;$WORKSPACE&lt;/span&gt;/myproject
-git clone host:/srv/projects/project/git/pillar.git
-&lt;span class=&#34;nv&#34;&gt;$EDITOR&lt;/span&gt; pillar/init.sls
-&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; pillar&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;git commit -am up&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;git push&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; ..
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;The following lines prepare a clone of your project codebase to be able
-to be deployed onto production or staging servers&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;$WORKSPACE&lt;/span&gt;/myproject
-git clone git@github.com/makinacorpus/myawsomeproject.git
-git remote add prod /srv/projects/project/git/project.git
-git fetch --all
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;To trigger a remote deployment, now you can do:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;git push &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;--force&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt; prod &amp;lt;mybranch&amp;gt;:master
-eg: git push &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;--force&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt; prod &amp;lt;mybranch&amp;gt;:master
-eg: git push &lt;span class=&#34;o&#34;&gt;[&lt;/span&gt;--force&lt;span class=&#34;o&#34;&gt;]&lt;/span&gt; prod awsome_feature:master
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;REMINDER&lt;/strong&gt;:
-
-&lt;ul&gt;
-&lt;li&gt;DONT MESS WITH THE &lt;strong&gt;ORIGIN&lt;/strong&gt; REMOTE when your are connected
-to your server in any of the &lt;code&gt;pillar&lt;/code&gt; or
-&lt;code&gt;project&lt;/code&gt; directory..&lt;/li&gt;
-&lt;li&gt;The &lt;code&gt;&amp;lt;branchname&amp;gt;:master&lt;/code&gt; is really important as everything
-in the production git repositories is wired on the &lt;code&gt;master&lt;/code&gt;
-branch. You can push any branch you want from your original
-    repository, but in production, there is only &lt;strong&gt;master&lt;/strong&gt;.&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&#34;sumup&#34;&gt;Sumup&lt;/h3&gt;
-
-&lt;ul&gt;
-&lt;li&gt;To sum all that up, when beginning project you will:
-
-&lt;ul&gt;
-&lt;li&gt;Initialize if not done a project structure with
-&lt;code&gt;salt-call mc_project.init_project project&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;If you do not want git remotes, you can alternativly use
-&lt;code&gt;salt-call mc_project.init_project project remote_less=true&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;add a &lt;strong&gt;.salt&lt;/strong&gt; folder alongside your project codebase (in it&amp;rsquo;s
-git repo).&lt;/li&gt;
-&lt;li&gt;deploy it, either by:
-
-&lt;ul&gt;
-&lt;li&gt;git push your &lt;strong&gt;pillar&lt;/strong&gt; files to
-&lt;code&gt;host:/srv/projects/&amp;lt;project&amp;gt;/git/pillar.git&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;git push your &lt;strong&gt;project code&lt;/strong&gt; to
-&lt;code&gt;host:/srv/projects/&amp;lt;project&amp;gt;/git/project.git&lt;/code&gt; (this last push
-triggers a deploy on the remote server)&lt;/li&gt;
-&lt;li&gt;Your can use &lt;code&gt;--force&lt;/code&gt; as the deploy system only await the
-&lt;code&gt;.salt&lt;/code&gt; folder. As long as the folder is present of the
-working copy you are sending, the deploy system will be happy.&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;li&gt;or connected to the remote host to deploy onto
-
-&lt;ul&gt;
-&lt;li&gt;edit/commit/push in &lt;code&gt;host:/srv/projects/&amp;lt;project&amp;gt;/pillar&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;edit/commit/push/push to force in
-&lt;code&gt;host:/srv/projects/&amp;lt;project&amp;gt;&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;Launch the
-&lt;code&gt;salt-call mc_project.deploy &amp;lt;name&amp;gt; only=install,fixperms,sync_modules&lt;/code&gt;
-dance&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;li&gt;Wash, Rince, Repeat&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&#34;configuration-pillar-variables&#34;&gt;Configuration pillar &amp;amp; variables&lt;/h3&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;p&gt;We provide in &lt;strong&gt;mc_project&lt;/strong&gt; a powerfull mecanism to define default
-variables used in your deployments. hat you can safely override in the
-salt pillar files. This means that you can set some default values for,
-eg a domain name or a password, and input the production values that you
-won&amp;rsquo;t commit along side your project codebase.&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;Default values have to be stored inside the &lt;strong&gt;PILLAR.sample&lt;/strong&gt; file.&lt;/li&gt;
-&lt;li&gt;Some of those variables, the one at the first level are mostly read
-only and setup by makina-states itself. The most important are:
-
-&lt;ul&gt;
-&lt;li&gt;&lt;code&gt;name&lt;/code&gt;: project name&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;user&lt;/code&gt;: the system user of your project&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;group&lt;/code&gt;: the system group of your project&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;data&lt;/code&gt;: top level free variables mapping&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;project_root&lt;/code&gt;: project root absolute path&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;data_root&lt;/code&gt;: persistent folder absolute path&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;default_env&lt;/code&gt;: environment (staging/prod/dev)&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;pillar_root&lt;/code&gt;: absolute path to the pillar&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;fqdn&lt;/code&gt;: machine FQDN&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;li&gt;The only variables that you can edit at the first level are:
-
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;remote_less&lt;/strong&gt;: is this project using git remotes for
-triggering deployments&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;default_env&lt;/strong&gt;: environement (valid values
-are staging/dev/prod)&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;env_defaults&lt;/strong&gt;: indexed by &lt;strong&gt;env&lt;/strong&gt; dict that overloads data
-(pillar will still have the priority)&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;os_defaults&lt;/strong&gt;: indexed by &lt;strong&gt;os&lt;/strong&gt; dict that overloads data
-(pillar will still have the priority)&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-&lt;li&gt;The other variables, members of the &lt;strong&gt;data&lt;/strong&gt; sub entry are free for
-you to add/edit.&lt;/li&gt;
-&lt;li&gt;Any thing in the pillar &lt;code&gt;pillar/init.sls&lt;/code&gt; overloads what is in
-&lt;code&gt;project/.salt/PILLAR.sample&lt;/code&gt;.&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;You can get and consult the result of the configuration assemblage like
-this:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;  bin/salt-call --retcode-passthrough mc_project.get_configuration &amp;lt;project_name&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Remember that projects have a name, and the pillar key to configure
-and overload your project configuration is based on this key.&lt;/p&gt;
-
-&lt;p&gt;If your project is name &lt;strong&gt;foo&lt;/strong&gt;, you ll have to use
-&lt;strong&gt;makina-projects.foo&lt;/strong&gt; in place of &lt;strong&gt;makina-projects.example&lt;/strong&gt;.&lt;/p&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Example&lt;/p&gt;
-
-&lt;p&gt;in &lt;code&gt;project/.salt/PILLAR.sample&lt;/code&gt;, you have:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;makina-projects.projectname&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
-  &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;data&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
-    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;start_cmd&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;#39;myprog&amp;#39;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;in &lt;code&gt;pillar/init.sls&lt;/code&gt;, you have:&lt;/p&gt;
-
-&lt;p&gt;``yaml
-makina-projects.foo:
-   data:
-     start_cmd: &amp;lsquo;myprog2&amp;rsquo;&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;x&#34;&gt;-   In your states files, you can access the configuration via the magic&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;    `opts.ms_project` variable.&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;-   In your modules or file templates, you can access the configuration&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;    via `salt[&amp;#39;mc_project.get_configuration&amp;#39;(name)`.&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;-   A tip for loading the configuration from a template is doing&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;    something like that:&lt;/span&gt;
-
-&lt;span class=&#34;x&#34;&gt;```yaml&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;# project/.salt/00_deploy.sls&lt;/span&gt;
-&lt;span class=&#34;cp&#34;&gt;{%&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;set&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;cfg&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;opts.ms_project&lt;/span&gt; &lt;span class=&#34;cp&#34;&gt;%}&lt;/span&gt;&lt;span class=&#34;x&#34;&gt;&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;toto:&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;  file.managed:&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;      - name: &amp;quot;source://makina-projects/&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;{{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;cfg.name&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;}}&lt;/span&gt;&lt;span class=&#34;x&#34;&gt;/files/etc/foo&amp;quot;&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;      - target: /etc/foo&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;      - user &lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;{{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;cfg.user&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;}}&lt;/span&gt;&lt;span class=&#34;x&#34;&gt;&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;      - group &lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;{{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;cfg.user&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;}}&lt;/span&gt;&lt;span class=&#34;x&#34;&gt;&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;      - defaults:&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;          project: &lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;{{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;cfg.name&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;}}&lt;/span&gt;&lt;span class=&#34;x&#34;&gt;&lt;/span&gt;
-
-&lt;span class=&#34;x&#34;&gt;# project/.salt/files/etc/foo&lt;/span&gt;
-&lt;span class=&#34;cp&#34;&gt;{%&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;set&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;cfg&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;opts.ms_project&lt;/span&gt; &lt;span class=&#34;cp&#34;&gt;%}&lt;/span&gt;&lt;span class=&#34;x&#34;&gt;&lt;/span&gt;
-&lt;span class=&#34;x&#34;&gt;My Super Template of &lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;{{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;cfg.name&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;}}&lt;/span&gt;&lt;span class=&#34;x&#34;&gt; will run &lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;{{&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;cfg.data.start_cmd&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;}}&lt;/span&gt;&lt;span class=&#34;x&#34;&gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-
-&lt;h2 id=&#34;what-s-happen-when-there-is-a-deploy&#34;&gt;What&amp;rsquo;s happen when there is a deploy ?&lt;/h2&gt;
-
-&lt;ul&gt;
-&lt;li&gt;When you do a git push, you have the full procedure, see
-spec doc &amp;lt;project_spec_deploy_proc&amp;gt;&lt;/li&gt;
-&lt;li&gt;When you use &lt;code&gt;only=install,fixperms,sync_modules&lt;/code&gt; it only do some
-the install &amp;lt;project_spec_proc_install&amp;gt; &amp;amp;
-fixperms &amp;lt;project_spec_proc_fixperms&amp;gt; procedures.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&#34;saltstack-integration&#34;&gt;SaltStack integration&lt;/h2&gt;
-
-&lt;ul&gt;
-&lt;li&gt;&lt;p&gt;As you know in makina-states, there are 2 concurrent salt installs, one
-for &lt;strong&gt;salt&lt;/strong&gt;, the one that you use, and one for &lt;strong&gt;mastersalt&lt;/strong&gt; for the
-devil ops. In makina-states, we use by default:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;a virtualenv inside &lt;code&gt;/salt-venv/salt&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href=&#34;https://github.com/makina-corpus/salt.git&#34;&gt;salt from a fork&lt;/a&gt;
-installed inside &lt;code&gt;/salt-venv/salt/src/salt&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;the salt file root resides, as usual, in &lt;code&gt;/srv/salt&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;the salt pillar root resides, as usual, in &lt;code&gt;/srv/pillar&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;the salt configuration root resides, as usual, in &lt;code&gt;/etc/salt&lt;/code&gt;&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;As you see, the project layout seems not integration on those following
-folders, but in fact, the project initialisation routines made symlinks
-to integrate it which look like:&lt;/p&gt;
-
-&lt;ul&gt;
-&lt;li&gt;/srv/salt/makina-projects/&lt;project_name&gt;&amp;gt;  -&amp;gt; /srv/projects/&lt;project_name&gt;/project§/.salt&lt;/li&gt;
-&lt;li&gt;/srv/pillar/makina-projects/&lt;project_name&gt; -&amp;gt; /srv/projects/&lt;project_name&gt;/pillar&lt;/li&gt;
-&lt;/ul&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;The pillar is auto included in the &lt;strong&gt;pillar top&lt;/strong&gt;
-(&lt;code&gt;/srv/pîllar/top.sls&lt;/code&gt;).&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;The project salt files are not and &lt;strong&gt;must not&lt;/strong&gt; be included in the
-salt &lt;strong&gt;top&lt;/strong&gt; for further highstates unless you know what you
-are doing.&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;You can unlink your project from salt with:&lt;/p&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;   bin/salt-call --retcode-passthrough mc_project.unlink &amp;lt;project_name&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;ul&gt;
-&lt;li&gt;You can link project from salt with:&lt;/li&gt;
-&lt;/ul&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;   bin/salt-call --retcode-passthrough mc_project.link &amp;lt;project_name&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 </description>
     </item>
     

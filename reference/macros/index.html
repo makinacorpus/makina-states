@@ -5,7 +5,7 @@
 <title>Macros | Makina States</title><meta name="description" content="" />
 <meta property="og:type" content="article" />
 <meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
-<meta property="og:article:modified_time" content="2017-03-15 23:58:39 &#43;0100 CET" /><meta property="og:article:tag" content="reference" /><meta property="og:article:tag" content="installation" /><meta property="og:locale" content="en_US">
+<meta property="og:article:modified_time" content="2017-04-11 18:04:55 &#43;0200 CEST" /><meta property="og:article:tag" content="reference" /><meta property="og:article:tag" content="installation" /><meta property="og:locale" content="en_US">
 <meta property="og:title" content="Macros">
 <meta property="og:image" content="/images/">
 <meta property="og:image:type" content="image/jpeg" />
@@ -32,8 +32,8 @@
 <link rel="prerender" href="/reference/servicesmanagers/">
 
 
-<link rel="prefetch" href="/reference/projects/usage/">
-<link rel="prerender" href="/reference/projects/usage/">
+<link rel="prefetch" href="/reference/projects/">
+<link rel="prerender" href="/reference/projects/">
 
 <link rel="stylesheet" href="/css/style.min.css">
   
@@ -132,6 +132,17 @@ may use in your states.</p>
 but handle the case where services mis implement the status
 function and mess salt modules.</li>
 <li><strong>toggle_service</strong>: helper to call <strong>service_restart_reload</strong></li>
+</ul></li>
+</ul>
+
+<h2 id="ssl">ssl</h2>
+
+<ul>
+<li><a href="https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/localsettings/ssl/macros.jinja">macros</a>
+
+<ul>
+<li>install_certificate</li>
+<li>install_cert_in_dir</li>
 </ul></li>
 </ul>
 
@@ -243,7 +254,7 @@ function and mess salt modules.</li>
 </ul></li>
 </ul>
 
-		</div><div class="last-modified">Last Updated: 2017-03-15</div>
+		</div><div class="last-modified">Last Updated: 2017-04-11</div>
 <footer id="content-footer">
 
 
@@ -256,10 +267,10 @@ function and mess salt modules.</li>
 </a>
 
 
-	<a href="/reference/projects/usage/" class="cf-link next-page">
+	<a href="/reference/projects/" class="cf-link next-page">
 		<div class="page-info">
 			<span>Next</span>
-			<h5 class="reference">Usage</h5>
+			<h5 class="reference">Projects</h5>
 		</div>
 		<i class="fa fa-chevron-right"></i>
 	</a>
@@ -281,6 +292,7 @@ function and mess salt modules.</li>
 <li>
 <ul>
 <li><a href="#helpers">Helpers</a></li>
+<li><a href="#ssl">ssl</a></li>
 <li><a href="#nginx">nginx</a></li>
 <li><a href="#apache">apache</a></li>
 <li><a href="#php">php</a></li>

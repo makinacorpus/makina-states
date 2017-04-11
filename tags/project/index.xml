@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Project on Makina States</title>
+    <link>/tags/project/index.xml</link>
+    <description>Recent content in Project on Makina States</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fr-FR</language>
+    <atom:link href="/tags/project/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Specification</title>
+      <link>/reference/projects/spec/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/reference/projects/spec/</guid>
+      <description>
+
+&lt;h2 id=&#34;specification&#34;&gt;Specification&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;A project in &lt;strong&gt;corpus / makina-states&lt;/strong&gt; is a &lt;strong&gt;git repository&lt;/strong&gt; checkout
+which contains the code and &lt;br/&gt;
+a well known saltstack based procedure
+to deploy it from end to end in the &lt;strong&gt;.salt&lt;/strong&gt; folder.&lt;/li&gt;
+&lt;li&gt;Bear in mind the &lt;a href=&#34;/reference/projects/usage/#structure&#34;&gt;project layout&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;You may have a look to the (now outdatedà original &lt;a href=&#34;/reference/projects/RFC/&#34;&gt;project_corpus&lt;/a&gt; specification&lt;/li&gt;
+&lt;li&gt;A good sumup of the spec is as follow:
+
+&lt;ul&gt;
+&lt;li&gt;There is a separate repo distributed along the project named
+&lt;strong&gt;pillar&lt;/strong&gt; to store configuration variables, passwords and so on.&lt;/li&gt;
+&lt;li&gt;Projects are deployed via instructions based on saltstack which
+are contained into the &lt;strong&gt;.salt&lt;/strong&gt; folder along the codebase.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Projects can be deployed in two modes:
+
+&lt;ul&gt;
+&lt;li&gt;via a git push on a local, separated git repository where some hooks are wired to launch the deployment&lt;/li&gt;
+&lt;li&gt;If no remotes, deploy the code source we have locally&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;The deployment folder, &lt;code&gt;.salt&lt;/code&gt;, that you will provide along your codebase will describe how to deploy your project.
+
+&lt;ul&gt;
+&lt;li&gt;Deployment consist in &lt;code&gt;META&lt;/code&gt; deployment phases:
+
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;archive&lt;/strong&gt; &lt;code&gt;.salt/archive.sls&lt;/code&gt;: synchronnise the project to the &lt;code&gt;archive&lt;/code&gt; folder before deploying&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;sync code&lt;/strong&gt; from remotes if there are remotes: if any remotes, synchronise both the pillar and the project
+git folder to their corresponding checkouted working copies&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;sync/install custom salt modules&lt;/strong&gt; (exec, states, etc) from the codebase if any from the &lt;code&gt;.salt&lt;/code&gt; folder&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;fixperms&lt;/strong&gt; (&lt;code&gt;.salt/fixperms.sls&lt;/code&gt;): enforce filesystem permissions&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;install&lt;/strong&gt; (&lt;code&gt;.salt/install.sls&lt;/code&gt;): Run project deployment procedure
+
+&lt;ul&gt;
+&lt;li&gt;Run any &lt;code&gt;sls&lt;/code&gt; in the &lt;code&gt;.salt&lt;/code&gt; folder (alphanum sorted) which:
+
+&lt;ul&gt;
+&lt;li&gt;Is not a main procedure sls&lt;/li&gt;
+&lt;li&gt;Is not a task (beginning with &lt;code&gt;task&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;the convention is to name them &lt;code&gt;\d\d\d_NAME.sls&lt;/code&gt;  (&lt;code&gt;000_prereqs.sls&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;fixperms&lt;/strong&gt; (&lt;code&gt;.salt/fixperms.sls&lt;/code&gt;): enforce filesystem permissions&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;rollback&lt;/strong&gt; (&lt;code&gt;.salt/rollback.sls&lt;/code&gt;): if error, rollback procedure (by default sync from &lt;code&gt;archived&lt;/code&gt; folder&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;notify&lt;/strong&gt; OPTIONNAL/LEGACY (&lt;code&gt;.salt/notify.sls&lt;/code&gt;): after deployment, notify commands&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;All other sls found at &lt;strong&gt;toplevel&lt;/strong&gt; of the &lt;code&gt;.salt&lt;/code&gt; folder  which are not those ones are
+executed in lexicographical order (alphanum) and&lt;/li&gt;
+&lt;li&gt;The &lt;code&gt;.salt/PILLAR.sample&lt;/code&gt; file contains default configuration variable for
+your project and helps you to know what variable to override in your
+custom pillar.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;structure&#34;&gt;Structure&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;This empty structure respects the aforementioned corpus reactor
+layout, and is just an useless helloword project which should look like:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;srv&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;projects&lt;span class=&#34;o&#34;&gt;/&amp;lt;&lt;/span&gt;project_name&lt;span class=&#34;o&#34;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; pillar&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;init.sls&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; override values &lt;span class=&#34;kr&#34;&gt;in&lt;/span&gt; PILLAR.sample and define
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;                   any other arbitrary pillar DATA.
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; data&lt;span class=&#34;o&#34;&gt;/:&lt;/span&gt; anything which is persisted to disk must live here
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;         from drupal sites&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;default&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;files&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; python eggs&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; buildouts parts&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;         gems cache&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; sqlite files&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; static files&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; docroots&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; etc.
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; project&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;-&lt;/span&gt; a checkout or your project
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;   &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt;  &lt;span class=&#34;m&#34;&gt;.&lt;/span&gt;git
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;   &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt;  codebase
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;   &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt;  &lt;span class=&#34;m&#34;&gt;.&lt;/span&gt;salt
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; _modules &lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; custom salt python exec modules
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; _states  &lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; custom salt python states modules
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; _runners &lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; custom salt python runners modules
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; _&lt;span class=&#34;kc&#34;&gt;...&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; PILLAR.sample
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; task_foo.sls
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;00&lt;/span&gt;_deploy.sls
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
+    &lt;span class=&#34;p&#34;&gt;[&lt;/span&gt; If &lt;span class=&#34;s&#34;&gt;&amp;quot;remote_less&amp;quot;&lt;/span&gt; is False &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;default&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; git&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;project.git&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt; bare git repos synchronnized &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;bi&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;directional&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;                   with project&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; used by git push style deployment
+    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; git&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt;pillar.git&lt;span class=&#34;o&#34;&gt;:&lt;/span&gt;  bare git repos synchronnized &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;bi&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;directional&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;                   with pillar&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; used by git push style deployment
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; arhives&lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;-&lt;/span&gt; past deployment archive folders
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt;U&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;U&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;kp&#34;&gt;I&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;D1&lt;span class=&#34;o&#34;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&#34;o&#34;&gt;|&lt;/span&gt;     &lt;span class=&#34;o&#34;&gt;|-&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt;U&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;U&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;kp&#34;&gt;I&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;D2&lt;span class=&#34;o&#34;&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;What you want to do is to replace the &lt;code&gt;project&lt;/code&gt; folder by your repo.&lt;br/&gt;
+This one contains your code, as asual, plus the &lt;strong&gt;.salt&lt;/strong&gt; folder.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;strong&gt;WELL Understand&lt;/strong&gt; what is :&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;a &lt;a href=&#34;http://docs.saltstack.com/en/latest/topics/tutorials/starting_states.html#moving-beyond-a-single-sls&#34;&gt;salt SLS&lt;/a&gt;, it is the nerve of the war.&lt;/li&gt;
+&lt;li&gt;the &lt;a href=&#34;http://docs.saltstack.com/en/latest/topics/tutorials/pillar.html&#34;&gt;Pillar of salt&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;be ware&lt;/strong&gt;, on the production server the &lt;code&gt;.git/config&lt;/code&gt; is linked
+with the makina-states machinery, &lt;strong&gt;NEVER MESS WITH ORIGIN AND MASTER BRANCH&lt;/strong&gt;.&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Ensure to to have at least in your project git folder:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;.salt/PILLAR.sample&lt;/code&gt;: configuration default values to use in
+SLSes&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;.salt/archive.sls&lt;/code&gt;: archive step&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;.salt/fixperms.sls&lt;/code&gt;: fixperm step&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;.salt/rollback.sls&lt;/code&gt;: rollback step&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;You can then add as many SLSes as you want, and the ones directly in
+&lt;strong&gt;.salt&lt;/strong&gt; will be executed in alphabetical order except the ones
+beginning with &lt;strong&gt;task_&lt;/strong&gt; (task_foo.sls). Indeed the ones beginning
+with &lt;strong&gt;task_&lt;/strong&gt; are different beasts and are intended to be either
+included by your other slses to factor code out or to be executed
+manually via the &lt;code&gt;mc_project.run_task&lt;/code&gt; command.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;You can and must have a look for inspiration on &lt;a href=&#34;/reference/templates/&#34;&gt;project templates&lt;/a&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;deployment-workflows&#34;&gt;Deployment workflows&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;To build and deploy your project we provide two styles of doing style
+that should be appropriate for most use cases.
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;/reference/projects/usage/#the-local-build-workflow&#34;&gt;A local build workflow&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;/projects/usage/#the-git-push-to-prod-deploy-workflow&#34;&gt;A distant git-push style workflow&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;the-local-build-workflow&#34;&gt;The local build workflow&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;INITIALLY:
+
+&lt;ul&gt;
+&lt;li&gt;use &lt;code&gt;mc_project.init_project&lt;/code&gt; to create the structure to host your project&lt;/li&gt;
+&lt;li&gt;use &lt;code&gt;mc_project.report&lt;/code&gt; to verify things are in place&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Then
+
+&lt;ul&gt;
+&lt;li&gt;Edit/Place code in the pillar  folder: &lt;code&gt;/srv/projects/&amp;lt;project&amp;gt;/pillar&lt;/code&gt; to configure the project&lt;/li&gt;
+&lt;li&gt;Edit/Place code in the project folder: &lt;code&gt;/srv/projects/&amp;lt;project&amp;gt;/project&lt;/code&gt; and manually launch the deploy&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Wash, Rince, Repeat&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&#34;the-git-push-to-prod-deploy-workflow&#34;&gt;The git push to prod deploy workflow&lt;/h3&gt;
+
+&lt;ul&gt;
+&lt;li&gt;INITIALLY:
+
+&lt;ul&gt;
+&lt;li&gt;use &lt;code&gt;mc_project.init_project&lt;/code&gt; to create the structure to host your project&lt;/li&gt;
+&lt;li&gt;use &lt;code&gt;mc_project.report&lt;/code&gt; to verify things are in place&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Then
+
+&lt;ul&gt;
+&lt;li&gt;git push/or edit then push the pillar &lt;code&gt;host:/srv/projects/&amp;lt;project&amp;gt;/git/pillar.git&lt;/code&gt; to configure the project&lt;/li&gt;
+&lt;li&gt;git push/or edit then push the code inside &lt;code&gt;host:/srv/projects/&amp;lt;project&amp;gt;/git/project.git&lt;/code&gt; which triggers the deploy&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;Wash, Rince, Repeat&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

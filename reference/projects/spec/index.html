@@ -2,11 +2,11 @@
 <html lang="en"><head>
 <meta name="robots" content="noindex"><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Usage | Makina States</title><meta name="description" content="" />
+<title>Specification | Makina States</title><meta name="description" content="" />
 <meta property="og:type" content="article" />
 <meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
-<meta property="og:article:modified_time" content="2017-04-11 18:04:55 &#43;0200 CEST" /><meta property="og:article:tag" content="reference" /><meta property="og:article:tag" content="projects" /><meta property="og:locale" content="en_US">
-<meta property="og:title" content="Usage">
+<meta property="og:article:modified_time" content="0001-01-01 00:00:00 &#43;0000 UTC" /><meta property="og:article:tag" content="reference" /><meta property="og:article:tag" content="projects" /><meta property="og:locale" content="en_US">
+<meta property="og:title" content="Specification">
 <meta property="og:image" content="/images/">
 <meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:width" content="1500" />
@@ -25,15 +25,15 @@
 <link rel="dns-prefetch" href="/">
 
 <link rel="preconnect" href="/">
-<link rel="canonical" href="/reference/projects/usage/">
+<link rel="canonical" href="/reference/projects/spec/">
+
+
+<link rel="prefetch" href="/reference/registries/">
+<link rel="prerender" href="/reference/registries/">
 
 
 <link rel="prefetch" href="/reference/nodetypes/">
 <link rel="prerender" href="/reference/nodetypes/">
-
-
-<link rel="prefetch" href="/reference/controllers/">
-<link rel="prerender" href="/reference/controllers/">
 
 <link rel="stylesheet" href="/css/style.min.css">
   
@@ -78,7 +78,7 @@
 		
 <span id="page-top"></span>
 <main class="main">
-  <article class="content" id="usage">
+  <article class="content" id="specification">
     <header class="content-header">
 <nav class="breadcrumb">
 	<ul class="breadcrumbs">
@@ -104,10 +104,10 @@
 <div class="page-title-wrapper">
   <h1
     class="page-title reference"
-    id="usage">Usage<span class="content-header-links-wrapper">
+    id="specification">Specification<span class="content-header-links-wrapper">
 <span class="content-header-links">
   
-  <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makina-states/edit/v2/doc/hugo/content/reference/projects/usage.md"><i class="icon-pencil" aria-hidden="true"></i></a></span>
+  <a target="_blank" class="tooltip right edit-link" data-tooltip="Edit this page on GitHub" href="https://github.com/makinacorpus/makina-states/edit/v2/doc/hugo/content/reference/projects/spec.md"><i class="icon-pencil" aria-hidden="true"></i></a></span>
 </span>
 
   </h1>
@@ -293,342 +293,23 @@ that should be appropriate for most use cases.
 <li>Wash, Rince, Repeat</li>
 </ul>
 
-<h2 id="deployment-stategy">Deployment stategy</h2>
-
-<ul>
-<li>To sum all that up, when beginning a project you will:
-
-<ul>
-<li>Initialize if not done a project structure with<br/>
-<code>salt-call mc_project.init_project project</code>
-
-<ul>
-<li>If you do not want git remotes, you can alternativly use<br/>
-<code>salt-call mc_project.init_project project remote_less=true</code></li>
-</ul></li>
-<li>add a <strong>.salt</strong> folder alongside your project codebase (in it&rsquo;s
-git repo).</li>
-<li>deploy it, either by:
-
-<ul>
-<li>In <strong>remote_less=True</strong> mode or connected to the remote host to deploy onto:
-
-<ul>
-<li>edit/commit/push in <code>host:/srv/projects/&lt;project&gt;/pillar</code></li>
-<li>edit/commit/push/push to force in <code>host:/srv/projects/&lt;project&gt;/project</code></li>
-<li>Launch the <code>salt-call mc_project.deploy &lt;project&gt; only=install,fixperms,sync_modules</code> dance</li>
-</ul></li>
-<li>In <strong>remote_less=False</strong> mode:
-
-<ul>
-<li>git push your <strong>pillar</strong> files to<br/>
-<code>host:/srv/projects/&lt;project&gt;/git/pillar.git</code></li>
-<li>git push your <strong>project code</strong> to<br/>
-<code>host:/srv/projects/&lt;project&gt;/git/project.git</code><br/>
-(this last push triggers a deploy on the remote server)</li>
-<li>Your can use <code>--force</code> as the deploy system only await the
-<code>.salt</code> folder. As long as the folder is present of the
-working copy you are sending, the deploy system will be happy.</li>
-</ul></li>
-</ul></li>
-</ul></li>
-<li>Wash, Rince, Repeat</li>
-</ul>
-
-<h2 id="initialize-the-project-layout">Initialize the project layout</h2>
-
-<ul>
-<li><p>The first thing to do when deploying a project is to create a <strong>nest</strong> from it:<br/>
-<strong>IF IT IS NOT ALREADY DONE</strong> (just <code>ls /srv/projects</code> to check):</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>bin/salt-call --local --retcode-passthrough -lall mc_project.init_project <span class="se">\</span>
-    &lt;project_name&gt; <span class="se">\</span>
-    <span class="o">[</span><span class="nv">remote_less</span><span class="o">=</span>false/true<span class="o">]</span>
-</code></pre></div>
-
-<ul>
-<li>Dont be long, and dont use <code>-</code> &amp; <code>_</code> for the <code>project name</code></li>
-<li>(opt) <code>remote_less</code> instructs to deploy with or without the git
-repos that allow users to use (or not) a <strong>git push to prod to deploy</strong> workflow.
-
-<ul>
-<li>If <code>remote_less=true</code>, the git repos wont be created, and you
-will have to use only the the <code>local build workflow</code>.</li>
-<li>If <code>remote_less=false</code>, you can use both the <code>local build workflow</code>
-and the <code>git push to prod deploy workflow</code>.</li>
-</ul></li>
-<li><code>--local -lall</code> instructs to run in masterless mode and extra verbosity</li>
-<li><code>mc_project.init_project $project</code> instructs to create the layout of
-the name <code>$project</code> project living into <code>/srv/projects/$project/project</code></li>
-</ul></li>
-</ul>
-
-<h2 id="running-deployment-procedure">Running deployment procedure</h2>
-
-<ul>
-<li><p>The following command is the nerve of the war:</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>bin/salt-call --local --retcode-passthrough -lall <span class="se">\</span>
-     mc_project.deploy <span class="nv">$project</span><span class="se">\</span>
-      <span class="o">[</span><span class="nv">only</span><span class="o">=</span>step2<span class="o">[</span>,step1<span class="o">]]</span> <span class="se">\</span>
-      <span class="o">[</span><span class="nv">only_steps</span><span class="o">=</span>step2<span class="o">[</span>,step1<span class="o">]]</span>
-</code></pre></div></li>
-
-<li><p><code>mc_project.deploy $project</code> instructs to deploy the name <code>$project</code>
-project living into <code>/srv/projects/$project/project</code></p></li>
-
-<li><p>(opt) <code>only</code> instructs to execute only the named global phases, and
-when deploying directly onto a machine, you will certainly have to
-use <code>only=install,fixperms,sync_modules</code> to avoid the
-archive/sync/rollback steps.</p></li>
-
-<li><p>(opt) <code>only_steps</code> instruct to execute only a specific or multiple
-specific sls from the <strong>.salt</strong> folder during the <strong>install</strong> phase.</p></li>
-</ul>
-
-<h2 id="tutorial">Tutorial</h2>
-
-<h3 id="projects-reminder-tool">Projects reminder tool</h3>
-
-<ul>
-<li><strong>WARNING</strong>: you can use it only if you provisionned your project
-with attached remotes (the default)</li>
-<li>Remember use the remotes inside <code>/srv/projects/&lt;project&gt;/git</code> and
-not directly the working copies</li>
-<li>If you push on the pillar, it does not trigger a deploy</li>
-<li>If you push on the project, it triggers the full deploy procedure
-including archive/sync/rollback.</li>
-
-<li><p>To get useful push informations, on the remote server to deploy to,
-just do</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>salt-call -lall mc_project.report
-</code></pre></div></li>
-</ul>
-
-<h3 id="using-local-build-workflow">Using local build workflow</h3>
-
-<ul>
-<li><a href="/install">install makinastates</a></li>
-
-<li><p>Initialise the layout (only the first time)</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>ssh root@remoteserver
-<span class="nb">export</span> <span class="nv">project</span><span class="o">=</span><span class="s2">&quot;foo&quot;</span>
-salt-call mc_project.init_project <span class="nv">$project</span> <span class="nv">remote_less</span><span class="o">=</span><span class="nb">true</span>
-</code></pre></div></li>
-
-<li><p>Edit the pillar</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nb">cd</span> /srv/projects/<span class="nv">$project</span>/pillar
-<span class="nv">$EDITOR</span> init.sls
-git commit -am up
-</code></pre></div></li>
-
-<li><p>Add your project code</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nb">export</span> <span class="nv">project</span><span class="o">=</span><span class="s2">&quot;foo&quot;</span>
-<span class="nb">cd</span> /srv/projects/<span class="nv">$project</span>/project
-<span class="c1"># if not already done, add your project repo remote</span>
-git remote add o https://github.com/o/myproject.git
-<span class="c1"># in any cases, update your code</span>
-git fetch --all
-git reset --hard remotes/o/&lt;the branch to deploy&gt;
-</code></pre></div></li>
-
-<li><p>Run the deployment procedure, <strong>skipping archive/rollback</strong> as you are connected and live editing</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>salt-call mc_project.deploy <span class="nv">$project</span> <span class="nv">only</span><span class="o">=</span>install,fixperms,sync_modules
-<span class="c1"># or to deploy only a specific sls</span>
-salt-call <span class="se">\</span>
-    mc_project.deploy <span class="nv">$project</span> <span class="se">\</span>
-    <span class="nv">only</span><span class="o">=</span>install,fixperms,sync_modules <span class="nv">only_steps</span><span class="o">=</span>000_foo.sls
-</code></pre></div></li>
-
-<li><p>When you want to commit your changes</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nb">export</span> <span class="nv">project</span><span class="o">=</span><span class="s2">&quot;foo&quot;</span>
-<span class="nb">cd</span> vms/VM/srv/<span class="nv">$project</span>/project
-git push o HEAD:&lt;master&gt; <span class="c1"># replace master by the branch you want to push</span>
-                         <span class="c1"># back onto your forge</span>
-</code></pre></div></li>
-</ul>
-
-<h3 id="using-git-push-to-prod-deploy-workflow">Using git push to prod deploy workflow</h3>
-
-<ul>
-<li><a href="/install">install makinastates</a></li>
-
-<li><p>The following lines edit the pillar, and push it, this does not trigger a deploy</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nb">cd</span> <span class="nv">$WORKSPACE</span>/myproject
-git clone host:/srv/projects/project/git/pillar.git
-<span class="nv">$EDITOR</span> pillar/init.sls
-<span class="nb">cd</span> pillar<span class="p">;</span>git commit -am up<span class="p">;</span>git push<span class="p">;</span><span class="nb">cd</span> ..
-</code></pre></div></li>
-
-<li><p>The following lines prepare a clone of your project codebase to be able
-to be deployed onto production or staging servers</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nb">cd</span> <span class="nv">$WORKSPACE</span>/myproject
-git clone git@github.com/makinacorpus/myawsomeproject.git
-git remote add prod /srv/projects/project/git/project.git
-git fetch --all
-</code></pre></div></li>
-
-<li><p>To trigger a remote deployment, now you can do:</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>git push <span class="o">[</span>--force<span class="o">]</span> prod &lt;mybranch&gt;:master
-eg: git push <span class="o">[</span>--force<span class="o">]</span> prod &lt;mybranch&gt;:master
-eg: git push <span class="o">[</span>--force<span class="o">]</span> prod awsome_feature:master
-</code></pre></div></li>
-
-<li><p><strong>REMINDER</strong>:</p>
-
-<ul>
-<li>DONT MESS WITH THE <strong>ORIGIN</strong> REMOTE when your are connected
-to your server in any of the <code>pillar</code> or
-<code>project</code> directory..</li>
-<li>The <code>&lt;branchname&gt;:master</code> is really important as everything
-in the production git repositories is wired on the <code>master</code>
-branch. You can push any branch you want from your original
-repository, but in production, there is only <strong>master</strong>.</li>
-</ul></li>
-</ul>
-
-<h2 id="configuration-pillar-variables">Configuration pillar &amp; variables</h2>
-
-<ul>
-<li><p>We provide in <strong>mc_project</strong> a powerfull mecanism to define configuration
-variables used in your deployments that you can safely override in the
-salt pillar files.<br/>
-This means that you can set some default values for,
-eg a domain name or a password, and input the production values that you
-won&rsquo;t commit along side your project codebase.</p>
-
-<ul>
-<li>Default values have to be stored inside the <strong>PILLAR.sample</strong> file.</li>
-<li>Some of those variables, the one at the first level are mostly read
-only and setup by makina-states itself.<br/>
-The most important are:
-
-<ul>
-<li><code>name</code>: project name</li>
-<li><code>user</code>: the system user of your project</li>
-<li><code>group</code>: the system group of your project</li>
-<li><code>data</code>: top level free variables mapping</li>
-<li><code>project_root</code>: project root absolute path</li>
-<li><code>data_root</code>: persistent folder absolute path</li>
-<li><code>default_env</code>: environment (staging/prod/dev)</li>
-<li><code>pillar_root</code>: absolute path to the pillar</li>
-<li><code>fqdn</code>: machine FQDN</li>
-</ul></li>
-<li>The only variables that you can edit at the first level are:
-
-<ul>
-<li><strong>remote_less</strong>: is this project using git remotes for triggering deployments</li>
-<li><strong>default_env</strong>: environement (valid values are staging/dev/prod)</li>
-</ul></li>
-<li>The other variables, members of the <strong>data</strong> sub entry are free for you to add/edit.</li>
-<li>Anything defined in the pillar <code>pillar/init.sls</code> overloads what is in <code>project/.salt/PILLAR.sample</code>.</li>
-</ul></li>
-
-<li><p>You can get and consult the result of the configuration assemblage like
-this:</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>  bin/salt-call --retcode-passthrough mc_project.get_configuration &lt;project_name&gt;
-</code></pre></div></li>
-
-<li><p>Remember that projects have a name, and the pillar key to configure
-and overload your project configuration is based on this key.</p>
-
-<ul>
-<li>EG: If your project is name <strong>foo</strong>, you ll have to use
-<strong>makina-projects.foo</strong> in place of <strong>makina-projects.example</strong>.</li>
-</ul></li>
-</ul>
-
-<h3 id="example">Example:</h3>
-
-<ul>
-<li>in <code>project/.salt/PILLAR.sample</code>, you have:</li>
-</ul>
-<div class="highlight"><pre><code class="language-yaml" data-lang="yaml"><span></span><span class="l l-Scalar l-Scalar-Plain">makina-projects.projectname</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">data</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">start_cmd</span><span class="p p-Indicator">:</span> <span class="s">&#39;myprog&#39;</span>
-</code></pre></div>
-
-<ul>
-<li>in <code>pillar/init.sls</code>, you have:</li>
-</ul>
-<div class="highlight"><pre><code class="language-yaml" data-lang="yaml"><span></span><span class="l l-Scalar l-Scalar-Plain">makina-projects.foo</span><span class="p p-Indicator">:</span>
-   <span class="l l-Scalar l-Scalar-Plain">data</span><span class="p p-Indicator">:</span>
-     <span class="l l-Scalar l-Scalar-Plain">start_cmd</span><span class="p p-Indicator">:</span> <span class="s">&#39;myprog2&#39;</span>
-</code></pre></div>
-
-<ul>
-<li>In your states files, you can access the configuration via the magic <code>opts.ms_project</code> variable.</li>
-<li>In your modules or file templates, you can access the configuration via <code>salt['mc_project.get_configuration'(name)</code>.</li>
-<li>A tip for loading the configuration from a template is doing something like that:</li>
-</ul>
-<div class="highlight"><pre><code class="language-yaml" data-lang="yaml"><span></span><span class="c1"># project/.salt/00_deploy.sls</span>
-<span class="p p-Indicator">{</span><span class="err">%</span> <span class="nv">set cfg = opts.ms_project %</span><span class="p p-Indicator">}</span>
-<span class="l l-Scalar l-Scalar-Plain">toto</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">file.managed</span><span class="p p-Indicator">:</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;source://makina-projects/{{cfg.name}}/files/etc/foo&quot;</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">target</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">/etc/foo</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">user {{cfg.user}}</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">group {{cfg.user}}</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">defaults</span><span class="p p-Indicator">:</span>
-          <span class="l l-Scalar l-Scalar-Plain">project</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">{{</span><span class="nv">cfg.name</span><span class="p p-Indicator">}}</span>
-
-<span class="c1"># project/.salt/files/etc/foo</span>
-<span class="p p-Indicator">{</span><span class="err">%</span> <span class="nv">set cfg = opts.ms_project %</span><span class="p p-Indicator">}</span>
-<span class="l l-Scalar l-Scalar-Plain">My Super Template of {{cfg.name}} will run {{cfg.data.start_cmd}}</span>
-</code></pre></div>
-
-<h2 id="saltstack-integration">SaltStack integration</h2>
-
-<ul>
-<li><p>As you know makina-states embeds its own virtualenv and salt codebase.<br/>
-In makina-states, we use by default:</p>
-
-<ul>
-<li>makina states itself: <code>/srv/makina-states</code></li>
-<li>a virtualenv inside <code>/srv/makina-states/venv</code></li>
-<li><a href="https://github.com/makina-corpus/salt.git">salt from a fork</a> installed inside <code>$makinastates/venv/src/salt</code></li>
-</ul></li>
-
-<li><p>As you see, the project layout seems not integration on those following
-folders, but in fact, the project initialisation routines made symlinks
-to integrate it which look like:</p>
-
-<ul>
-<li><code>$makinastates/salt/makina-projects/&lt;project_name&gt;&gt;</code> -&gt; <code>/srv/projects/&lt;project_name&gt;/project§/.salt</code></li>
-<li><code>$makinastates/pillar/pillar.d/makina-projects/&lt;project_name&gt;</code> -&gt; <code>/srv/projects/&lt;project_name&gt;/pillar</code></li>
-</ul></li>
-
-<li><p>The pillar is auto included in the <strong>pillar top</strong> (<code>/srv/pîllar/top.sls</code>).</p></li>
-
-<li><p>The project salt files are not and <strong>must not</strong> be included in the
-salt <strong>top</strong> for further highstates unless you know what you are doing.</p></li>
-
-<li><p>You can unlink your project from salt with:</p></li>
-</ul>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>   bin/salt-call --retcode-passthrough mc_project.unlink &lt;project_name&gt;
-</code></pre></div>
-
-<ul>
-<li>You can link project from salt with:</li>
-</ul>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>   bin/salt-call --retcode-passthrough mc_project.link &lt;project_name&gt;
-</code></pre></div>
-
-		</div><div class="last-modified">Last Updated: 2017-04-11</div>
+		</div><div class="last-modified">Last Updated: 0001-01-01</div>
 <footer id="content-footer">
 
 
-<a href="/reference/nodetypes/" class="cf-link prev-page">
+<a href="/reference/registries/" class="cf-link prev-page">
 			<i class="fa fa-chevron-left"></i>
 		<div class="page-info">
 			<span>Previous</span>
-			<h5 class="reference">Nodetypes</h5>
+			<h5 class="reference">Registries &amp; Configuration</h5>
 		</div>
 </a>
 
 
-	<a href="/reference/controllers/" class="cf-link next-page">
+	<a href="/reference/nodetypes/" class="cf-link next-page">
 		<div class="page-info">
 			<span>Next</span>
-			<h5 class="reference">Controllers</h5>
+			<h5 class="reference">Nodetypes</h5>
 		</div>
 		<i class="fa fa-chevron-right"></i>
 	</a>
@@ -641,8 +322,8 @@ salt <strong>top</strong> for further highstates unless you know what you are do
 <aside id="toc" class="scroll-fixed-wrapper">
   <div class="scroll-fixed-wrapper-inner">
     <header class="toc-header">
-      <a href="#usage">
-        <h3 class="reference">Usage</h3>
+      <a href="#specification">
+        <h3 class="reference">Specification</h3>
       </a>
     </header>
     <nav id="TableOfContents">
@@ -658,20 +339,6 @@ salt <strong>top</strong> for further highstates unless you know what you are do
 <li><a href="#the-local-build-workflow">The local build workflow</a></li>
 <li><a href="#the-git-push-to-prod-deploy-workflow">The git push to prod deploy workflow</a></li>
 </ul></li>
-<li><a href="#deployment-stategy">Deployment stategy</a></li>
-<li><a href="#initialize-the-project-layout">Initialize the project layout</a></li>
-<li><a href="#running-deployment-procedure">Running deployment procedure</a></li>
-<li><a href="#tutorial">Tutorial</a>
-<ul>
-<li><a href="#projects-reminder-tool">Projects reminder tool</a></li>
-<li><a href="#using-local-build-workflow">Using local build workflow</a></li>
-<li><a href="#using-git-push-to-prod-deploy-workflow">Using git push to prod deploy workflow</a></li>
-</ul></li>
-<li><a href="#configuration-pillar-variables">Configuration pillar &amp; variables</a>
-<ul>
-<li><a href="#example">Example:</a></li>
-</ul></li>
-<li><a href="#saltstack-integration">SaltStack integration</a></li>
 </ul></li>
 </ul>
 </nav>
@@ -927,7 +594,22 @@ salt <strong>top</strong> for further highstates unless you know what you are do
 
 <li class="menu-item menu-item-3">
   <a
-    class="list-icon menu-item-link menu-item-link-3 active open" href="/reference/projects/usage/">Usage</a>
+    class="list-icon menu-item-link menu-item-link-3 active open" href="/reference/projects/spec/">Specification</a>
+  
+</li>
+
+  
+  
+  
+
+  
+  
+  
+
+
+<li class="menu-item menu-item-3">
+  <a
+    class="list-icon menu-item-link menu-item-link-3" href="/reference/projects/usage/">Usage</a>
   
 </li>
 

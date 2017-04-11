@@ -5,7 +5,7 @@
 <title>LXC containers management | Makina States</title><meta name="description" content="" />
 <meta property="og:type" content="article" />
 <meta property="og:article:published_time" content="0001-01-01T00:00:00Z" />
-<meta property="og:article:modified_time" content="2017-03-15 23:58:39 &#43;0100 CET" /><meta property="og:article:tag" content="cloud" /><meta property="og:article:tag" content="lxc" /><meta property="og:locale" content="en_US">
+<meta property="og:article:modified_time" content="2017-04-11 18:04:55 &#43;0200 CEST" /><meta property="og:article:tag" content="cloud" /><meta property="og:article:tag" content="lxc" /><meta property="og:locale" content="en_US">
 <meta property="og:title" content="LXC containers management">
 <meta property="og:image" content="/images/">
 <meta property="og:image:type" content="image/jpeg" />
@@ -112,25 +112,68 @@
          data-section=cloud>
 		
 
-<hr />
-
-<p>workflow:</p>
+<ul>
+<li><p>makinastates lxc container integration consists in:</p>
 
 <ul>
-<li><p>WARNING currently only those backing store are supported/tested:</p>
+<li>spawning lxc containers including static ip allocation and port mapping</li>
+<li>providing NAT, DHCP &amp; DNS (dnsmasq &amp; makinastates magicbridge)</li>
+<li>configuring reverse proxies on the baremetal using:
 
 <ul>
-<li>dir</li>
-<li>overlayfs</li>
+<li>a frontal haproxy proxy incoming https(s) requests</li>
+<li>iptable to reverse proxy ssh requests</li>
+</ul></li>
 </ul></li>
 
+<li><p>WARNING currently only those backing store are supported/tested: <code>dir</code>, <code>overlayfs</code>.</p></li>
+
+<li><p>We name:</p>
+
+<p><code>$controller</code>
+    : the station from where we will operate to controll other resources</p>
+
+<p><code>$cn</code>
+    : the compute node where we will spawn LXC containers</p>
+
+<p><code>$vm</code>
+    : the LXC container to spawn</p>
+
+<p><code>$vm_tmpl</code>
+    : the name of the container to clone from</p></li>
+</ul>
+
+<h2 id="preliminary-configuration">Preliminary configuration</h2>
+
+<ul>
 <li><p>Go into makina-states folder:</p>
 <div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nb">cd</span> /srv/makina-states
 </code></pre></div></li>
 
-<li><p>If wanted, edit database, specially <code>vms</code>, &amp; <code>cloud_vm_attrs</code>:</p>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span>vim etc/makina-states/database.sls
+<li><p>Edit <a href="/reference/databasesls/">database.sls</a>, specially <code>ips</code>, <code>vms</code>, &amp; <code>cloud_vm_attrs</code>:</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">$EDITOR</span> etc/makina-states/database.sls
+</code></pre></div>
+
+<ul>
+<li><p><code>ips</code> should container the ips for <code>$controller (usually localhost)</code>, and the <code>$cn</code></p>
+<div class="highlight"><pre><code class="language-yaml" data-lang="yaml"><span></span><span class="l l-Scalar l-Scalar-Plain">ips</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">mycontainer.foo.loc</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1.2.3.4</span>
 </code></pre></div></li>
+
+<li><p><code>vms</code> should contain a reference to indicate where we will spawn your container</p>
+<div class="highlight"><pre><code class="language-yaml" data-lang="yaml"><span></span><span class="l l-Scalar l-Scalar-Plain">vms</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">lxc</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">mycontainer.foo.loc</span><span class="p p-Indicator">:</span>  <span class="c1"># &lt;- baremetal</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">foocontainer.truc.foo</span> <span class="c1"># &lt;- container</span>
+</code></pre></div></li>
+
+<li><p><code>cloud_vm_attrs</code> should certainly contain domains to proxy http requests to underlyiung containers</p>
+<div class="highlight"><pre><code class="language-yaml" data-lang="yaml"><span></span><span class="l l-Scalar l-Scalar-Plain">cloud_vm_attrs</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">foocontainer.truc.foo</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">domains</span><span class="p p-Indicator">:</span>
+      <span class="l l-Scalar l-Scalar-Plain">superapp.truc.foo</span>
+</code></pre></div></li>
+</ul></li>
 
 <li><p>Define shell variable to copy/paste following commands:</p>
 <div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nb">export</span> <span class="nv">controller</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span>hostname -f<span class="k">)</span><span class="s2">&quot;</span>
@@ -157,14 +200,19 @@ _scripts/refresh_makinastates_pillar.sh
 <h2 id="preinstalling-makina-states-controller-each-compute-node">Preinstalling makina-states (controller &amp; each compute node)</h2>
 
 <ul>
-<li><p>Installing it:</p>
+<li><p>Installing it on controller:</p>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$controller</span><span class="s2">&quot;</span> bin/ansible-playbook <span class="se">\</span>
+  ansible/plays/makinastates/install.yml
+</code></pre></div></li>
+
+<li><p>Installing it on compute nodes:</p>
 <div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$cn</span><span class="s2">&quot;</span> bin/ansible-playbook <span class="se">\</span>
   ansible/plays/makinastates/install.yml
 </code></pre></div></li>
 </ul>
 
 <h2 id="configure-the-dns-on-a-full-makina-states-infra-with-mc-pillar">Configure the dns on a full makina-states infra with mc_pillar</h2>
-<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$controller</span><span class="s2">&quot;</span> bin/ansible-playbook <span class="se">\</span>
+<div class="highlight"><pre><code class="language-sh" data-lang="sh"><span></span><span class="nv">ANSIBLE_TARGETS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$DNS_MASTER</span><span class="s2">&quot;</span> bin/ansible-playbook <span class="se">\</span>
   ansible/plays/cloud/controller.yml
 </code></pre></div>
 
@@ -195,14 +243,14 @@ image, and remove parts from it (like sshkeys) to impersonate it:</p>
 <ul>
 <li><p>Arguments:</p>
 
-<p>ANSIBLE_TARGETS
+<p><code>ANSIBLE_TARGETS</code>
     : compute node where the container resides (must be in
-      ansible inventary)</p>
+      ansible inventory)</p>
 
-<p>lxc_template
+<p><code>lxc_template</code>
     : lxc image to create</p>
 
-<p>lxc_container_name
+<p><code>lxc_container_name</code>
     : lxc container which serve as a base for the image</p></li>
 </ul></li>
 
@@ -216,16 +264,16 @@ containers from that image:</p>
 <ul>
 <li><p>Arguments:</p>
 
-<p>ANSIBLE_TARGETS
+<p><code>ANSIBLE_TARGETS</code>
     : both orig and dest</p>
 
-<p>lxc_host
+<p><code>lxc_host</code>
     : where to transfer container/template</p>
 
-<p>lxc_orig_host
+<p><code>lxc_orig_host</code>
     : where from transfer container/template</p>
 
-<p>lxc_container_name
+<p><code>lxc_container_name</code>
     : lxc container to transfer</p></li>
 </ul></li>
 </ul>
@@ -241,13 +289,13 @@ containers from that image:</p>
 <ul>
 <li><p>Arguments:</p>
 
-<p>ANSIBLE_TARGETS
+<p><code>ANSIBLE_TARGETS</code>
     : compute node where the container resides (must be in ansible inventary) &amp; lxc container to create</p>
 
-<p>lxc_from_container
+<p><code>lxc_from_container</code>
     : lxc container from which initing the container</p>
 
-<p>lxc_backing_store
+<p><code>lxc_backing_store</code>
     : (opt) backing store to use</p></li>
 </ul></li>
 
@@ -263,7 +311,7 @@ containers from that image:</p>
 </code></pre></div></li>
 </ul>
 
-		</div><div class="last-modified">Last Updated: 2017-03-15</div>
+		</div><div class="last-modified">Last Updated: 2017-04-11</div>
 <footer id="content-footer">
 
 
@@ -296,6 +344,7 @@ containers from that image:</p>
 <ul>
 <li>
 <ul>
+<li><a href="#preliminary-configuration">Preliminary configuration</a></li>
 <li><a href="#preparation-on-the-controller">Preparation on the controller</a></li>
 <li><a href="#preinstalling-makina-states-controller-each-compute-node">Preinstalling makina-states (controller &amp; each compute node)</a></li>
 <li><a href="#configure-the-dns-on-a-full-makina-states-infra-with-mc-pillar">Configure the dns on a full makina-states infra with mc_pillar</a></li>

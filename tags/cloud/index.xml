@@ -243,25 +243,68 @@ rabbitmq Short form if you use the default port on both ends:&lt;/p&gt;
       <guid>/cloud/lxc/</guid>
       <description>
 
-&lt;hr /&gt;
-
-&lt;p&gt;workflow:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;makinastates lxc container integration consists in:&lt;/p&gt;
 
 &lt;ul&gt;
-&lt;li&gt;&lt;p&gt;WARNING currently only those backing store are supported/tested:&lt;/p&gt;
+&lt;li&gt;spawning lxc containers including static ip allocation and port mapping&lt;/li&gt;
+&lt;li&gt;providing NAT, DHCP &amp;amp; DNS (dnsmasq &amp;amp; makinastates magicbridge)&lt;/li&gt;
+&lt;li&gt;configuring reverse proxies on the baremetal using:
 
 &lt;ul&gt;
-&lt;li&gt;dir&lt;/li&gt;
-&lt;li&gt;overlayfs&lt;/li&gt;
+&lt;li&gt;a frontal haproxy proxy incoming https(s) requests&lt;/li&gt;
+&lt;li&gt;iptable to reverse proxy ssh requests&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
 &lt;/ul&gt;&lt;/li&gt;
 
+&lt;li&gt;&lt;p&gt;WARNING currently only those backing store are supported/tested: &lt;code&gt;dir&lt;/code&gt;, &lt;code&gt;overlayfs&lt;/code&gt;.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;We name:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$controller&lt;/code&gt;
+    : the station from where we will operate to controll other resources&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$cn&lt;/code&gt;
+    : the compute node where we will spawn LXC containers&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$vm&lt;/code&gt;
+    : the LXC container to spawn&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$vm_tmpl&lt;/code&gt;
+    : the name of the container to clone from&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;preliminary-configuration&#34;&gt;Preliminary configuration&lt;/h2&gt;
+
+&lt;ul&gt;
 &lt;li&gt;&lt;p&gt;Go into makina-states folder:&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; /srv/makina-states
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 
-&lt;li&gt;&lt;p&gt;If wanted, edit database, specially &lt;code&gt;vms&lt;/code&gt;, &amp;amp; &lt;code&gt;cloud_vm_attrs&lt;/code&gt;:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;vim etc/makina-states/database.sls
+&lt;li&gt;&lt;p&gt;Edit &lt;a href=&#34;/reference/databasesls/&#34;&gt;database.sls&lt;/a&gt;, specially &lt;code&gt;ips&lt;/code&gt;, &lt;code&gt;vms&lt;/code&gt;, &amp;amp; &lt;code&gt;cloud_vm_attrs&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$EDITOR&lt;/span&gt; etc/makina-states/database.sls
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;code&gt;ips&lt;/code&gt; should container the ips for &lt;code&gt;$controller (usually localhost)&lt;/code&gt;, and the &lt;code&gt;$cn&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;ips&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;mycontainer.foo.loc&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;1.2.3.4&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;code&gt;vms&lt;/code&gt; should contain a reference to indicate where we will spawn your container&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;vms&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;lxc&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;mycontainer.foo.loc&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;  &lt;span class=&#34;c1&#34;&gt;# &amp;lt;- baremetal&lt;/span&gt;
+      &lt;span class=&#34;p p-Indicator&#34;&gt;-&lt;/span&gt; &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;foocontainer.truc.foo&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;# &amp;lt;- container&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;code&gt;cloud_vm_attrs&lt;/code&gt; should certainly contain domains to proxy http requests to underlyiung containers&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;cloud_vm_attrs&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+  &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;foocontainer.truc.foo&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+    &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;domains&lt;/span&gt;&lt;span class=&#34;p p-Indicator&#34;&gt;:&lt;/span&gt;
+      &lt;span class=&#34;l l-Scalar l-Scalar-Plain&#34;&gt;superapp.truc.foo&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
 
 &lt;li&gt;&lt;p&gt;Define shell variable to copy/paste following commands:&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;controller&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;hostname -f&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;
@@ -288,14 +331,19 @@ _scripts/refresh_makinastates_pillar.sh
 &lt;h2 id=&#34;preinstalling-makina-states-controller-each-compute-node&#34;&gt;Preinstalling makina-states (controller &amp;amp; each compute node)&lt;/h2&gt;
 
 &lt;ul&gt;
-&lt;li&gt;&lt;p&gt;Installing it:&lt;/p&gt;
+&lt;li&gt;&lt;p&gt;Installing it on controller:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+  ansible/plays/makinastates/install.yml
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Installing it on compute nodes:&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$cn&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
   ansible/plays/makinastates/install.yml
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;h2 id=&#34;configure-the-dns-on-a-full-makina-states-infra-with-mc-pillar&#34;&gt;Configure the dns on a full makina-states infra with mc_pillar&lt;/h2&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$controller&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;ANSIBLE_TARGETS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$DNS_MASTER&lt;/span&gt;&lt;span class=&#34;s2&#34;&gt;&amp;quot;&lt;/span&gt; bin/ansible-playbook &lt;span class=&#34;se&#34;&gt;\&lt;/span&gt;
   ansible/plays/cloud/controller.yml
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
@@ -326,14 +374,14 @@ image, and remove parts from it (like sshkeys) to impersonate it:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;p&gt;Arguments:&lt;/p&gt;
 
-&lt;p&gt;ANSIBLE_TARGETS
+&lt;p&gt;&lt;code&gt;ANSIBLE_TARGETS&lt;/code&gt;
     : compute node where the container resides (must be in
-      ansible inventary)&lt;/p&gt;
+      ansible inventory)&lt;/p&gt;
 
-&lt;p&gt;lxc_template
+&lt;p&gt;&lt;code&gt;lxc_template&lt;/code&gt;
     : lxc image to create&lt;/p&gt;
 
-&lt;p&gt;lxc_container_name
+&lt;p&gt;&lt;code&gt;lxc_container_name&lt;/code&gt;
     : lxc container which serve as a base for the image&lt;/p&gt;&lt;/li&gt;
 &lt;/ul&gt;&lt;/li&gt;
 
@@ -347,16 +395,16 @@ containers from that image:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;p&gt;Arguments:&lt;/p&gt;
 
-&lt;p&gt;ANSIBLE_TARGETS
+&lt;p&gt;&lt;code&gt;ANSIBLE_TARGETS&lt;/code&gt;
     : both orig and dest&lt;/p&gt;
 
-&lt;p&gt;lxc_host
+&lt;p&gt;&lt;code&gt;lxc_host&lt;/code&gt;
     : where to transfer container/template&lt;/p&gt;
 
-&lt;p&gt;lxc_orig_host
+&lt;p&gt;&lt;code&gt;lxc_orig_host&lt;/code&gt;
     : where from transfer container/template&lt;/p&gt;
 
-&lt;p&gt;lxc_container_name
+&lt;p&gt;&lt;code&gt;lxc_container_name&lt;/code&gt;
     : lxc container to transfer&lt;/p&gt;&lt;/li&gt;
 &lt;/ul&gt;&lt;/li&gt;
 &lt;/ul&gt;
@@ -372,13 +420,13 @@ containers from that image:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;p&gt;Arguments:&lt;/p&gt;
 
-&lt;p&gt;ANSIBLE_TARGETS
+&lt;p&gt;&lt;code&gt;ANSIBLE_TARGETS&lt;/code&gt;
     : compute node where the container resides (must be in ansible inventary) &amp;amp; lxc container to create&lt;/p&gt;
 
-&lt;p&gt;lxc_from_container
+&lt;p&gt;&lt;code&gt;lxc_from_container&lt;/code&gt;
     : lxc container from which initing the container&lt;/p&gt;
 
-&lt;p&gt;lxc_backing_store
+&lt;p&gt;&lt;code&gt;lxc_backing_store&lt;/code&gt;
     : (opt) backing store to use&lt;/p&gt;&lt;/li&gt;
 &lt;/ul&gt;&lt;/li&gt;
 

@@ -11,7 +11,7 @@
     <item>
       <title>Installation</title>
       <link>/install/</link>
-      <pubDate>Wed, 15 Mar 2017 23:58:39 +0100</pubDate>
+      <pubDate>Tue, 11 Apr 2017 18:04:55 +0200</pubDate>
       
       <guid>/install/</guid>
       <description>
@@ -23,15 +23,15 @@
 &lt;h3 id=&#34;download&#34;&gt;Download&lt;/h3&gt;
 
 &lt;ul&gt;
-&lt;li&gt;&lt;p&gt;Get MakinaStates by cloning it from github&lt;br/&gt;
+&lt;li&gt;&lt;p&gt;Get MakinaStates by cloning it &lt;a href=&#34;https://github.com/makinacorpus/makina-states&#34;&gt;from github&lt;/a&gt;&lt;br/&gt;
 Usually we install it in &lt;code&gt;/srv/makina-states&lt;/code&gt;&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;git clone http://raw.github.com/makinacorpus/makina-states /srv/makina-states
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
 &lt;h2 id=&#34;common-install-command&#34;&gt;Common install command&lt;/h2&gt;&lt;/li&gt;
 
-&lt;li&gt;&lt;p&gt;Install with &lt;code&gt;scratch&lt;/code&gt; node, with refresh cron, logrotate.&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin,/boot-salt2.sh -C --install-logrotate --install-crons
+&lt;li&gt;&lt;p&gt;Install with &lt;code&gt;scratch&lt;/code&gt; &lt;a href=&#34;/reference/nodetypes/&#34;&gt;nodetype&lt;/a&gt;, with refresh cron, logrotate.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh -C --install-logrotate --install-crons
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
@@ -63,7 +63,7 @@ bin/boot-salt2.sh --long-help  &lt;span class=&#34;c1&#34;&gt;# Detailed overvie
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 
 &lt;li&gt;&lt;p&gt;Install the salt &amp;amp; ansible binaries to /usr/local/bin.&lt;br/&gt;
-&lt;strong&gt;THIS IS NOT RECOMMENDED ANYMORE, AND EVEN HARMFULL&lt;/strong&gt;&lt;/p&gt;
+&lt;strong&gt;THIS IS NOT RECOMMENDED ANYMORE, AND CAN EVEN BE HARMFULL&lt;/strong&gt;&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;pre&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span&gt;&lt;/span&gt;bin/boot-salt2.sh -C --install-links
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
 &lt;/ul&gt;
