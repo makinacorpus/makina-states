@@ -171,8 +171,28 @@ image, and remove parts from it (like sshkeys) to impersonate it:
         `lxc_container_name`
             : lxc container to transfer
 
-Initialise a container
-----------------------
+
+
+## lxc template creation
+```sh
+release=vivid  # choose your distrib here
+lxc-create -t ubuntu -n ${release}
+lxc-clone -n lxcmakinastates${release} -o ${release} -- -r ${release}
+lxc-attach -n lxcmakinastates${release}
+apt-get install git python ca-certificates
+git clone https://github.com/makinacorpus/makina-states.git /srv/makina-states
+/srv/makina-states/_scripts/boot-salt.sh -C -n lxccontainer --highstates || ( \
+    && \
+    . /srv/makina-states/venv/bin/activate &&\
+    pip install --upgrade pip &&\
+    deactivate &&\
+    /srv/makina-states/_scripts/boot-salt.sh -C --highstates)
+# any additionnal stuff to complete the image
+# cmd1
+```
+
+
+## Initialise a container
 - Initialise and finish the container provisioning (from scratch)
 
     ```sh
@@ -205,3 +225,4 @@ Initialise a container
      ansible/plays/cloud/create_container.yml \
       -e "lxc_from_container=$vm_tmpl lxc_backing_store=overlayfs"
     ```
+
