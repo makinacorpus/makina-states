@@ -130,11 +130,10 @@ configurations:
     #        application_secret: "xxx
     #        consumer_key: "xxx"
 {% macro nopillar() %}
-    manage_backups: true
-    manage_packages: true
-    manage_shorewall: true
-    manage_autoupgrades: true
-    supervision_client: true
+    manage_backups: false
+    manage_packages: false
+    manage_autoupgrades: false
+    supervision_client: false
     cloud_control_kvm: false
     cloud_control_lxc: false
     cloud_master: false
@@ -142,6 +141,7 @@ configurations:
     ldap_client: false
     manage_firewalld: false
     manage_backup_server: false
+    manage_shorewall: false
     manage_check_raid: false
     manage_custompillar: false
     manage_dhcp: false
