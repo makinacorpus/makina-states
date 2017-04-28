@@ -1861,9 +1861,9 @@ def get_nameserver_exposed(domain, server, nstype=None):
         default_exposed = not ns_servers['slaves']
     else:
         default_exposed = True
-    domain_exposed = nss_conf.get(domain, {}).get('exposed', {})
-    default_exposed = nss_conf.get('default', {}).get('exposed', {})
-    exposed = domain_exposed.get(ns, default_exposed.get(ns, default_exposed))
+    domain_exposed_conf = nss_conf.get(domain, {}).get('exposed', {})
+    default_exposed_conf = nss_conf.get('default', {}).get('exposed', {})
+    exposed = domain_exposed_conf.get(ns, default_exposed_conf.get(ns, default_exposed))
     if not exposed:
         ns = None
     return ns
