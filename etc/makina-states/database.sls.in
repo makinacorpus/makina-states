@@ -468,6 +468,8 @@ ssh_groups:
 # CNAMES to declare in a zone file
 # ATTENTION, you will certainly need the ending "." in the target !
 # PLEASE USE CNAMES ONLY UNDER TORTURE
+# dnames:
+#   AABBCC.www.mydomain.com: AABBCC.comodoca.com.
 # cnames:
 #   AABBCC.www.mydomain.com: AABBCC.comodoca.com.
 

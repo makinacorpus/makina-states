@@ -230,7 +230,7 @@ def load_network(ttl=PILLAR_TTL, debug=None):
         for i in [
             'ip6s', 'ip6s_map', 'ip6sfo', 'ip6sfo_map',
             'ips', 'ipsfo', 'ips_map', 'ipsfo_map',
-            'cnames',
+            'cnames', 'dnames',
         ]:
             data[i] = copy.deepcopy(__salt__[__name + '.query'](i, {}))
         return data
@@ -437,6 +437,7 @@ def ip6s_for(fqdn,
     data = load_network(debug=debug)
     if data['raw_db_loading'] is None:
         data = load_raw_network_infrastructure()
+    dnames = data['dnames']
     cnames = data['cnames']
     ips = data['ip6s']
     ips_map = data['ip6s_map']
@@ -517,53 +518,61 @@ def ip6s_for(fqdn,
 
     # and if still no ip found but cname is present,
     # try to get ip from cname
-    if (not resips) and fqdn in cnames:
-        alias_cname = cnames[fqdn]
-        try:
-            if alias_cname.endswith('.'):
-                alias_cname = alias_cname[:-1]
-        except:
-            log.error('CNAMES')
-            log.error(cnames)
-            raise
-        # avoid recursion
-        for _fqdn in [alias_cname]:
-            if _fqdn in ignore_aliases or _fqdn in ignore_cnames:
-                sfqdn = ''
-                if _fqdn != fqdn:
-                    sfqdn = '/{0}'.format(_fqdn)
+    for cnames_ in [cnames, dnames]:
+        if (not resips) and fqdn in cnames_:
+            alias_cname = cnames_[fqdn]
+            try:
+                if alias_cname.endswith('.'):
+                    alias_cname = alias_cname[:-1]
+            except:
+                log.error('ip6 cname retrieval')
+                log.erro(fqdn)
+                log.error('CNAMES')
+                log.error(cnames)
+                log.error('DNAMES')
+                log.error(dnames)
+                raise
+            # avoid recursion
+            for _fqdn in [alias_cname]:
+                if (
+                    _fqdn in ignore_aliases or
+                    _fqdn in ignore_cnames
+                ):
+                    sfqdn = ''
+                    if _fqdn != fqdn:
+                        sfqdn = '/{0}'.format(_fqdn)
+                    retrieval_error(
+                        IPRetrievalCycleError(
+                            'Recursion from cname {0}{1}:\n'
+                            ' recurse: {4}\n'
+                            ' ignored cnames: {2}\n'
+                            ' ignored aliases: {3}\n'.format(
+                                fqdn, sfqdn, ignore_cnames,
+                                ignore_aliases, recurse)),
+                        fqdn, recurse=recurse)
+            ignore_cnames.append(alias_cname)
+            try:
+                alias_ips = ip6s_for(alias_cname,
+                                     fail_over=fail_over,
+                                     recurse=recurse,
+                                     ignore_aliases=ignore_aliases,
+                                     ignore_cnames=ignore_cnames)
+            except RuntimeError:
                 retrieval_error(
                     IPRetrievalCycleError(
-                        'Recursion from cname {0}{1}:\n'
-                        ' recurse: {4}\n'
-                        ' ignored cnames: {2}\n'
-                        ' ignored aliases: {3}\n'.format(
-                            fqdn, sfqdn, ignore_cnames,
+                        'Recursion(r) from cname {0}:\n'
+                        ' recurse: {3}\n'
+                        ' ignored cnames: {1}\n'
+                        ' ignored aliases: {2}\n'.format(
+                            alias_cname, ignore_cnames,
                             ignore_aliases, recurse)),
                     fqdn, recurse=recurse)
-        ignore_cnames.append(alias_cname)
-        try:
-            alias_ips = ip6s_for(alias_cname,
-                                 fail_over=fail_over,
-                                 recurse=recurse,
-                                 ignore_aliases=ignore_aliases,
-                                 ignore_cnames=ignore_cnames)
-        except RuntimeError:
-            retrieval_error(
-                IPRetrievalCycleError(
-                    'Recursion(r) from cname {0}:\n'
-                    ' recurse: {3}\n'
-                    ' ignored cnames: {1}\n'
-                    ' ignored aliases: {2}\n'.format(
-                        alias_cname, ignore_cnames,
-                        ignore_aliases, recurse)),
-                fqdn, recurse=recurse)
-        if alias_ips:
-            resips.extend(alias_ips)
-        for _fqdn in [fqdn, alias_cname]:
-            for ignore in [ignore_aliases, ignore_cnames]:
-                if _fqdn in ignore:
-                    ignore.pop(ignore.index(_fqdn))
+            if alias_ips:
+                resips.extend(alias_ips)
+            for _fqdn in [fqdn, alias_cname]:
+                for ignore in [ignore_aliases, ignore_cnames]:
+                    if _fqdn in ignore:
+                        ignore.pop(ignore.index(_fqdn))
 
     if not resips:
         # allow fail over fallback if nothing was specified
@@ -630,6 +639,7 @@ def ips_for(fqdn,
     if data['raw_db_loading'] is None:
         data = load_raw_network_infrastructure()
     cnames = data['cnames']
+    dnames = data['dnames']
     ips = data['ips']
     ips_map = data['ips_map']
     ipsfo = data['ipsfo']
@@ -667,7 +677,10 @@ def ips_for(fqdn,
     for alias_fqdn in ips_map.get(fqdn, []):
         # avoid recursion
         for _fqdn in [fqdn, alias_fqdn]:
-            if _fqdn in ignore_aliases or _fqdn in ignore_cnames:
+            if (
+                _fqdn in ignore_aliases or
+                _fqdn in ignore_cnames
+            ):
                 sfqdn = ''
                 if _fqdn != fqdn:
                     sfqdn = '/{0}'.format(_fqdn)
@@ -707,55 +720,63 @@ def ips_for(fqdn,
         if fqdn in ignore:
             ignore.pop(ignore.index(fqdn))
 
-    # and if still no ip found but cname is present,
+    # and if still no ip found but dname/cname is present,
     # try to get ip from cname
-    if (not resips) and fqdn in cnames:
-        alias_cname = cnames[fqdn]
-        try:
-            if alias_cname.endswith('.'):
-                alias_cname = alias_cname[:-1]
-        except:
-            log.error('CNAMES')
-            log.error(cnames)
-            raise
-        # avoid recursion
-        for _fqdn in [alias_cname]:
-            if _fqdn in ignore_aliases or _fqdn in ignore_cnames:
-                sfqdn = ''
-                if _fqdn != fqdn:
-                    sfqdn = '/{0}'.format(_fqdn)
+    for cnames_ in [cnames, dnames]:
+        if (not resips) and fqdn in cnames_:
+            alias_cname = cnames_[fqdn]
+            try:
+                if alias_cname.endswith('.'):
+                    alias_cname = alias_cname[:-1]
+            except:
+                log.error('CNAME retrieval')
+                log.error(fqdn)
+                log.error('CNAMES')
+                log.error(cnames)
+                log.error('DNAMES')
+                log.error(dnames)
+                raise
+            # avoid recursion
+            for _fqdn in [alias_cname]:
+                if (
+                    _fqdn in ignore_aliases or
+                    _fqdn in ignore_cnames
+                ):
+                    sfqdn = ''
+                    if _fqdn != fqdn:
+                        sfqdn = '/{0}'.format(_fqdn)
+                    retrieval_error(
+                        IPRetrievalCycleError(
+                            'Recursion from cname {0}{1}:\n'
+                            ' recurse: {4}\n'
+                            ' ignored cnames: {2}\n'
+                            ' ignored aliases: {3}\n'.format(
+                                fqdn, sfqdn, ignore_cnames,
+                                ignore_aliases, recurse)),
+                        fqdn, recurse=recurse)
+            ignore_cnames.append(alias_cname)
+            try:
+                alias_ips = ips_for(alias_cname,
+                                    fail_over=fail_over,
+                                    recurse=recurse,
+                                    ignore_aliases=ignore_aliases,
+                                    ignore_cnames=ignore_cnames)
+            except RuntimeError:
                 retrieval_error(
                     IPRetrievalCycleError(
-                        'Recursion from cname {0}{1}:\n'
-                        ' recurse: {4}\n'
-                        ' ignored cnames: {2}\n'
-                        ' ignored aliases: {3}\n'.format(
-                            fqdn, sfqdn, ignore_cnames,
-                            ignore_aliases, recurse)),
+                        'Recursion(r) from cname {0}:\n'
+                        ' recurse: {3}\n'
+                        ' ignored cnames: {1}\n'
+                        ' ignored aliases: {2}\n'.format(
+                            alias_cname, ignore_cnames,
+                            ignore_aliases, recurse, ignore_cnames)),
                     fqdn, recurse=recurse)
-        ignore_cnames.append(alias_cname)
-        try:
-            alias_ips = ips_for(alias_cname,
-                                fail_over=fail_over,
-                                recurse=recurse,
-                                ignore_aliases=ignore_aliases,
-                                ignore_cnames=ignore_cnames)
-        except RuntimeError:
-            retrieval_error(
-                IPRetrievalCycleError(
-                    'Recursion(r) from cname {0}:\n'
-                    ' recurse: {3}\n'
-                    ' ignored cnames: {1}\n'
-                    ' ignored aliases: {2}\n'.format(
-                        alias_cname, ignore_cnames,
-                        ignore_aliases, recurse)),
-                fqdn, recurse=recurse)
-        if alias_ips:
-            resips.extend(alias_ips)
-        for _fqdn in [fqdn, alias_cname]:
-            for ignore in [ignore_aliases, ignore_cnames]:
-                if _fqdn in ignore:
-                    ignore.pop(ignore.index(_fqdn))
+            if alias_ips:
+                resips.extend(alias_ips)
+            for _fqdn in [fqdn, alias_cname]:
+                for ignore in [ignore_aliases, ignore_cnames]:
+                    if _fqdn in ignore:
+                        ignore.pop(ignore.index(_fqdn))
 
     if not resips:
         # allow fail over fallback if nothing was specified
@@ -2076,6 +2097,81 @@ def rrs_cnames_for(domain, ttl=PILLAR_TTL):
     return _dorrs_cnames_for(domain)
 
 
+def rrs_dnames_for(domain, ttl=PILLAR_TTL):
+    '''
+    Return all configured DNAME records for a domain
+    '''
+    def _dorrs_dnames_for(domain):
+        db = load_network_infrastructure()
+        managed_dns_zones = __salt__[
+            __name + '.query']('managed_dns_zones', {})
+        rrs_ttls = __salt__[__name + '.query']('rrs_ttls', {})
+        ipsfo = db['ipsfo']
+        ipsfo_map = db['ipsfo_map']
+        ips_map = db['ips_map']
+        dnames = db['dnames']
+        ips = db['ips']
+        all_rrs = OrderedDict()
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
+                               re.M | re.U | re.S | re.I)
+
+        # filter out DNAME which have also A records
+        for dname in [a for a in dnames]:
+            if dname in ips:
+                dnames.pop(dname)
+
+        # add all dnames
+        for dname, rr in dnames.items():
+            tdname, trr = dname, rr
+            if tdname.endswith('.'):
+                tdname = tdname[:-1]
+            if trr.endswith('.'):
+                trr = trr[:-1]
+            if domain_re.search(dname):
+                # on the same domain validate if the dname SOURCE or
+                # ENDPOINT are tied to real ip
+                # and raise exception if not found
+                checks = []
+                if trr.endswith(domain):
+                    checks.append(trr)
+                    if (
+                        tdname.endswith(domain) and (
+                            tdname in ips_map or
+                            tdname in ipsfo_map or
+                            tdname in ipsfo)
+                    ):
+                        checks.append(tdname)
+                for atest in checks:
+                    # raise exc if not found
+                    # but only if we manage the domain of the targeted
+                    # rr
+                    try:
+                        ips_for(atest, fail_over=True)
+                    except IPRetrievalError, exc:
+                        do_raise = False
+                        fqdmns = get_fqdn_domains(exc.fqdn)
+                        for dmn in fqdmns:
+                            if dmn in managed_dns_zones:
+                                do_raise = True
+                        if do_raise:
+                            raise
+                rrs = all_rrs.setdefault(dname, [])
+                ddname = dname
+                if dname.endswith(domain) and not dname.endswith('.'):
+                    ddname = '{0}.'.format(ddname)
+                ttl = rrs_ttls.get(dname, '')
+                entry = '{0} {1} DNAME {2}'.format(
+                    ddname, ttl, rr)
+                if entry not in rrs:
+                    rrs.append(entry)
+        rr = filter_rr_str(all_rrs)
+        return rr
+    # cache_key = __name + '.rrs_dnames_for_{0}'.format(domain) + CACHE_INC_TOKEN
+    # return __salt__['mc_utils.memoize_cache'](
+    #     _dorrs_dnames_for, [domain], {}, cache_key, ttl)
+    return _dorrs_dnames_for(domain)
+
+
 def serial_for(domain,
                serial=None,
                autoinc=True,
@@ -2285,6 +2381,7 @@ def rrs_for(domain, aslist=False):
     for aas_ in (aas, aaaas):
         if aas_:
             rr = rr + '\n' + aas_ + '\n'
+    rr += rrs_dnames_for(domain) + '\n'
     rr += rrs_cnames_for(domain)
     if aslist:
         rr = [a.strip() for a in rr.split('\n') if a.strip()]
