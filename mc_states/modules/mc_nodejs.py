@@ -64,7 +64,7 @@ def settings():
                         "ce9b62baa993b385b1efd66058503ea215a08389"),
                 },
                 'yarn_install': True,
-                'yarn_version': '0.22.0',
+                'yarn_version': '0.23.0',
                 'gpg':  ['9D41F3C3',
                          '6A010C5166006599AA17F08146C2130DFD2497F5',
                          '9554F04D7259F04124DE6B476D5A82AC7E37093B',
