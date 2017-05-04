@@ -4990,7 +4990,7 @@ def loaded():
         if ret and not has_db():
             ret = False
     except Exception:
-        ret = Falss
+        ret = False
     return ret
 
 
