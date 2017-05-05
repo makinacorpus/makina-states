@@ -4057,7 +4057,7 @@ def get_packages_conf(id_, ttl=PILLAR_TTL):
             rdata[pref + item] = val
         for item, val in {
             pref + "apt.ubuntu.mirror": (
-                "http://mirror.ovh.net/ftp.ubuntu.com/"),
+                "http://mirror.ovh.net/ftp.ubuntu.com/ubuntu/"),
             pref + "apt.debian.mirror": (
                 "http://mirror.ovh.net/ftp.debian.org/debian/")
         }.items():

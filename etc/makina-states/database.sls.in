@@ -980,7 +980,7 @@ backup_configurations:
 #   foo.makina-corpus.net:
 #     apt.ubuntu.mirror: http://ubuntu-archive.mirrors.proxad.net/ubuntu/
 #   default:
-#     apt.ubuntu.mirror: http://mirror.ovh.net/ftp.ubuntu.com/
+#     apt.ubuntu.mirror: http://mirror.ovh.net/ftp.ubuntu.com/ubuntu/
 
 # Configuration overrides for makina-states's shorewall integration
 # We install shorewall everywhere by default.
