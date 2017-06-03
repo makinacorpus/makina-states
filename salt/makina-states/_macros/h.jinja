@@ -373,17 +373,45 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
 {% if after_macro is not none %}{{ after_macro() }}{% endif %}
 {% endmacro%}
 
-{% macro install_via_cops(role, configure) %}
+{% macro cops_default_install(role) %}
+            if [ -e {{cops}}/roles/corpusops.roles/{{role}} ];then
+              cd {{cops}}/roles/corpusops.roles/{{role}}
+            fi
+            if [ -e {{cops}}/roles/{{role}} ];then
+              cd {{cops}}/roles/{{role}}
+            fi
+            {{cops}}/bin/cops_apply_role role.yml -e @makinastates.yml
+{% endmacro%}
+
+{% macro install_via_cops(role, configure=none, install=none) %}
+{% if install is none %}{% set install = cops_default_install %}{%endif %}
+
+{{role}}-upgrade:
+  cmd.run:
+    - name: {{cops}}/bin/install.sh -C -s
+    - onlyif: test ! -e {{cops}}/roles/corpusops.roles/{{role}} && test ! -e {{cops}}/roles/{{role}}
+{% if configure is not none %}
 {{role}}-config-via-corpusops:
   file.managed:
     - name: {{cops}}/roles/corpusops.roles/localsettings_nodejs/makinastates.yml
     - mode: 640
 {{ configure() }}
-{{role}}-install-node-via-corpusops:
+{% endif %}
+{{role}}-install-via-corpusops:
   cmd.run:
-    - name: ../../../bin/cops_apply_role role.yml -e @makinastates.yml
-    - cwd: {{cops}}/roles/corpusops.roles/localsettings_nodejs
+    - name: |
+{{ install(role) }}
     - watch:
+      - mc_proxy: corpusops-checkouts-post
+      - cmd: {{role}}-upgrade
+{% if configure is not none %}
       - file: {{role}}-config-via-corpusops
+{% endif %}
+{{role}}-install-node-via-corpusops-retry:
+  cmd.run:
+    - name: ../bin/install.sh -C -s && ../../../bin/cops_apply_role role.yml -e @makinastates.yml
+    - onfail_stop: false
+    - onfail:
+      - cmd: {{role}}-install-via-corpusops
 {% endmacro %}
 {# vim: set nofoldenable #}
