@@ -85,7 +85,7 @@ def settings():
                     'system': [],
                     CUR_VER: [],
                 },
-                'repo': 'node_4.x',
+                'repo': 'node_6.x',
                 'npmPackages': [],
                 'systemNpmPackages': [],
             }
