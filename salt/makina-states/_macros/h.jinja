@@ -1,3 +1,4 @@
+{% set cops = salt['mc_locations.settings']().cops %}
 {% macro deliver_config_files(confs,
                               prefix='config-',
                               dir='makina-states/files',
@@ -372,4 +373,17 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
 {% if after_macro is not none %}{{ after_macro() }}{% endif %}
 {% endmacro%}
 
+{% macro install_via_cops(role, configure) %}
+{{role}}-config-via-corpusops:
+  file.managed:
+    - name: {{cops}}/roles/corpusops.roles/localsettings_nodejs/makinastates.yml
+    - mode: 640
+{{ configure() }}
+{{role}}-install-node-via-corpusops:
+  cmd.run:
+    - name: ../../../bin/cops_apply_role role.yml -e @makinastates.yml
+    - cwd: {{cops}}/roles/corpusops.roles/localsettings_nodejs
+    - watch:
+      - file: {{role}}-config-via-corpusops
+{% endmacro %}
 {# vim: set nofoldenable #}
