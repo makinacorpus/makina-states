@@ -30,6 +30,7 @@ default_locs = {
     'sbin_dir': '{usr_dir}/sbin',
     'share_dir': '{usr_dir}/share',
     'srv_dir': '{root_dir}srv',
+    'cops': '{srv_dir}/corpusops/corpusops.bootstrap',
     'sysadmins_home_dir': '{home_dir}',
     'tmp_dir': '{root_dir}tmp',
     'upstart_dir': '{conf_dir}/init',
