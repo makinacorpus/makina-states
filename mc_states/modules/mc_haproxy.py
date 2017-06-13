@@ -120,7 +120,7 @@ def settings():
                     'option http-keep-alive',
                     'option httpchk',
                     'option log-health-checks',
-					'http-check expect rstatus (2|3|4|5)[0-9][0-9]'],
+                    'http-check expect rstatus (2|3|4|5)[0-9][0-9]'],
                 'https': [
                     'balance roundrobin',
                     'option forwardfor',
@@ -128,7 +128,7 @@ def settings():
                     'http-request set-header X-SSL %[ssl_fc]',
                     'option httpchk',
                     'option log-health-checks',
-					'http-check expect rstatus (2|3|4|5)[0-9][0-9]'],
+                    'http-check expect rstatus (2|3|4|5)[0-9][0-9]'],
                 'tcp': ['balance roundrobin'],
                 'rabbitmq': [
                     "balance roundrobin",
@@ -433,19 +433,25 @@ def register_frontend(port,
                     'regex': (
                         ['acl rgx_{sane_match}'
                          ' hdr_reg(host) -i {match[0]} url_reg'
-                         ' -i {match[1]}'],
+                         ' -i {match[1]}',
+                         'acl rgx_{sane_match}'
+                         ' hdr_reg(host) -i {match[0]} url_reg'
+                         ' -i {match[1]}:{port}'],
                         ['use_backend {bck_name} if rgx_{sane_match}']),
                     'wildcard': (
-                        ['acl wc_{sane_match} hdr_end(host) -i {match}'],
+                        ['acl wc_{sane_match} hdr_end(host) -i {match}',
+                         'acl wc_{sane_match} hdr_end(host) -i {match}:{port}',],
                         ['use_backend {bck_name} if wc_{sane_match}']),
                     'host': (
-                        ['acl host_{sane_match} hdr(host) -i {match}'],
+                        ['acl host_{sane_match} hdr(host) -i {match}:{port}',
+                         'acl host_{sane_match} hdr(host) -i {match}'],
                         ['use_backend {bck_name} if host_{sane_match}']),
                 }
                 aclsdefs = cfgentries.get(aclmode, cfgentries['default'])
                 for acls in aclsdefs:
                     for cfgentry in acls:
                         cfgentry = cfgentry.format(
+                            port=port,
                             match=(aclmode == 'wildcard' and
                                    match[2:] or
                                    match),
