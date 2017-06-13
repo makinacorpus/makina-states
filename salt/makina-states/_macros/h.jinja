@@ -380,20 +380,25 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
             if [ -e {{cops}}/roles/{{role}} ];then
               cd {{cops}}/roles/{{role}}
             fi
-            {{cops}}/bin/cops_apply_role role.yml -e @makinastates.yml
+            {{cops}}/bin/cops_apply_role role.yml -e @local/makinastates.yml
 {% endmacro%}
 
 {% macro install_via_cops(role, configure=none, install=none) %}
+{{role}}-dummy-pre:
+  mc_proxy.hook: []
 {% if install is none %}{% set install = cops_default_install %}{%endif %}
 
 {{role}}-upgrade:
   cmd.run:
     - name: {{cops}}/bin/install.sh -C -s
+    - require:
+      - mc_proxy: {{role}}-dummy-pre 
     - onlyif: test ! -e {{cops}}/roles/corpusops.roles/{{role}} && test ! -e {{cops}}/roles/{{role}}
 {% if configure is not none %}
 {{role}}-config-via-corpusops:
   file.managed:
     - name: {{cops}}/roles/corpusops.roles/localsettings_nodejs/local/makinastates.yml
+    - makedirs: true
     - mode: 640
 {{ configure() }}
 {% endif %}
@@ -401,6 +406,10 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
   cmd.run:
     - name: |
 {{ install(role) }}
+    - require:
+      - mc_proxy: {{role}}-dummy-pre  
+    - require_in:
+      - mc_proxy: {{role}}-dummy-post
     - watch:
       - mc_proxy: corpusops-checkouts-post
       - cmd: {{role}}-upgrade
@@ -413,5 +422,9 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
     - onfail_stop: false
     - onfail:
       - cmd: {{role}}-install-via-corpusops
+    - require_in:
+      - mc_proxy: {{role}}-dummy-post
+{{role}}-dummy-post:
+  mc_proxy.hook: []
 {% endmacro %}
 {# vim: set nofoldenable #}
