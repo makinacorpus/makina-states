@@ -393,7 +393,7 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
 {% if configure is not none %}
 {{role}}-config-via-corpusops:
   file.managed:
-    - name: {{cops}}/roles/corpusops.roles/localsettings_nodejs/makinastates.yml
+    - name: {{cops}}/roles/corpusops.roles/localsettings_nodejs/local/makinastates.yml
     - mode: 640
 {{ configure() }}
 {% endif %}
@@ -409,7 +409,7 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
 {% endif %}
 {{role}}-install-node-via-corpusops-retry:
   cmd.run:
-    - name: ../bin/install.sh -C -s && ../../../bin/cops_apply_role role.yml -e @makinastates.yml
+    - name: ../bin/install.sh -C -s && ../../../bin/cops_apply_role role.yml -e @local/makinastates.yml
     - onfail_stop: false
     - onfail:
       - cmd: {{role}}-install-via-corpusops
