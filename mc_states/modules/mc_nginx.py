@@ -248,6 +248,7 @@ def settings():
                 'logdir': '/var/log/nginx',
                 'access_log': '{logdir}/access.log',
                 'sendfile': sendfile,
+                'proxy_temp_path': '/var/lib/nginx/proxy',
                 'tcp_nodelay': True,
                 'tcp_nopush': True,
                 'reset_timedout_connection': 'on',
