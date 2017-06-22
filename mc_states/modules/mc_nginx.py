@@ -250,6 +250,7 @@ def settings():
                 'access_log': '{logdir}/access.log',
                 'sendfile': sendfile,
                 'proxy_temp_path': '/var/lib/nginx/proxy',
+                'cache_folder': '/var/lib/nginx/cache',
                 'tcp_nodelay': True,
                 'tcp_nopush': True,
                 'reset_timedout_connection': 'on',

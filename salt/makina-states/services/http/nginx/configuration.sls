@@ -4,6 +4,19 @@ include:
   - makina-states.services.http.nginx.services
   - makina-states.services.http.nginx.vhosts
 {% set settings = salt['mc_nginx.settings']() %}
+nginx-vhost-dirs-runtime:
+  file.directory:
+    - names:
+      {% if settings.proxy_temp_path%}- {{settings.proxy_temp_path}}{%endif %}
+      - {{settings.cache_folder}}
+    - mode: 755
+    - makedirs: true
+    - user: {{settings.user}}
+    - group: {{settings.group}}
+    - watch_in:
+      - mc_proxy: nginx-pre-conf-hook
+    - watch_in:
+      - mc_proxy: nginx-post-conf-hook
 nginx-vhost-dirs:
   file.directory:
     - names:
