@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 {% set data = salt['mc_rsyslog.settings']() %}
 include:
   - makina-states.services.log.rsyslog.hooks
@@ -12,36 +13,13 @@ makina-rsyslog-configuration-check:
     - watch_in:
       - mc_proxy: rsyslog-pre-restart-hook
 
-{% set sdata =salt['mc_utils.json_dump'](data) %}
-{% set files = [
-  '/etc/rsyslog.conf',
-  '/etc/rsyslog.d/20-ufw.conf',
-  '/etc/rsyslog.d/49-udp.conf',
-  '/etc/rsyslog.d/50-default.conf',
-  '/etc/rsyslog.d/haproxy.conf',
-  '/etc/rsyslog.d/postfix.conf',
-] %}
-{% if grains['os'] in ['Debian'] %}
-{%  do files.append('/etc/init.d/rsyslog') %}
-{% endif %}
-{% for f in files  %}
-makina-rsyslog-{{f}}:
-  file.managed:
-    - name: {{f}}
-    - makedirs: true
-    - source: salt://makina-states/files{{f}}
-    - user: root
-    - group: root
-    - mode: 755
-    - template: jinja
-    - defaults:
-      data: |
-            {{sdata}}
+{% macro rmacro() %}
     - watch:
       - mc_proxy: rsyslog-pre-conf-hook
     - watch_in:
       - mc_proxy: rsyslog-post-conf-hook
-{% endfor %}
+{% endmacro %}
+{{ h.deliver_config_files(data.configs, mode='0755', after_macro=rmacro, prefix='rsyslogd-')}}
 
 rsyslog-spool:
   file.directory:
