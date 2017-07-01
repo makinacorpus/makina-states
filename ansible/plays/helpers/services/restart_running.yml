@@ -3,8 +3,8 @@
   tasks:
     - name: "is {{service}} already running?"
       shell: service {{service}} status warn=false
-      register: _svc_{{service}}
-      failed_when: _svc_{{service}}.rc != 0 and ("unrecognized service" not in _svc_{{service}}.stderr)
+      register: _svc_service
+      failed_when: _svc_service.rc != 0 and ("unrecognized service" not in _svc_service.stderr)
       ignore_errors: true
     - name: "is {{service}} already running v2?"
       shell: |
@@ -30,11 +30,11 @@
              }
              test $(filter_host_pids $(ps afux|grep "{{process_name|default(service)}}"|grep -v grep|awk '{print $2}') | wc -w) -gt 0
              exit $?
-      register: _svc_{{service}}_2
+      register: _svc_service_2
       ignore_errors: true
     - name: "restart {{service}}_2 if running"
       service: name={{service}} state=restarted
-      when: "_svc_{{service}}.rc == 0 or _svc_{{service}}_2.rc == 0"
+      when: "_svc_service.rc == 0 or _svc_service_2.rc == 0"
 
 # VARIABLES:
 #   - service
