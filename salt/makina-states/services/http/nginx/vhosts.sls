@@ -29,7 +29,7 @@ nginx-remove-def2:
 {{ nginx.virtualhost(
     'localhost',
     doc_root=nginxSettings.doc_root,
-    default_server=True,
+    default_server=nginxSettings.default_vhost_is_default_server,
     vh_content_source=nginxSettings.vhost_default_content)}}
 {% else %}
 removedef-nginx-default-test1:

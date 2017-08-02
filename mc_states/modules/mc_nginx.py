@@ -226,6 +226,7 @@ def settings():
                 'is_reverse_proxied': is_rp,
                 'reverse_proxy_addresses': reverse_proxy_addresses,
                 'default_vhost': True,
+                'default_vhost_is_default_server': True,
                 'use_real_ip': True,
                 'proxy_headers_hash_max_size': '1024',
                 'proxy_headers_hash_bucket_size': '128',
