@@ -473,13 +473,16 @@ def register_servers_to_backends(port,
                                  wildcards=None,
                                  regexes=None,
                                  hosts=None,
-                                 haproxy=None):
+                                 haproxy=None,
+                                 http_fallback=None):
     '''
     Register a specific minion as a backend server
     where haproxy will forward requests to
     '''
     # if we proxy some https? traffic, we rely on host to choose a backend
     # and in other cases, we assume to proxy to a TCPs? backend
+    if http_fallback is None:
+        http_fallback = True
     if haproxy is None:
         haproxy = settings()
     backends = haproxy.setdefault('backends', {})
@@ -495,12 +498,13 @@ def register_servers_to_backends(port,
         hmode = 'http'
         #  we try first a backend over https, and if not present on http #}
         if mode.startswith('https'):
-            servers = [{'name': 'srv_{0}_clear'.format(sane_ip),
-                        'bind': '{0}:{1}'.format(ip, 80),
-                        'opts': 'check weight 50 backup'},
-                       {'name': 'srv_{0}_ssl'.format(sane_ip),
+            servers = [{'name': 'srv_{0}_ssl'.format(sane_ip),
                         'bind': '{0}:{1}'.format(ip, to_port),
                         'opts': 'check weight 100 ssl verify none'}]
+            if http_fallback:
+                servers.insert(0, {'name': 'srv_{0}_clear'.format(sane_ip),
+                                   'bind': '{0}:{1}'.format(ip, 80),
+                                   'opts': 'check weight 50 backup'})
         else:
             servers = [{'name': 'srv_{0}'.format(sane_ip),
                         'bind': '{0}:{1}'.format(ip, to_port),
@@ -572,6 +576,7 @@ def make_registrations(data=None, haproxy=None):
                 to_port = int(fdata.get('to_port', port))
                 user = fdata.get('user', None)
                 password = fdata.get('password', None)
+                http_fallback = fdata.get('http_fallback', None)
                 mode = fdata.get('mode',
                                  haproxy['proxy_modes'].get(port, 'tcp'))
                 register_frontend(port, mode, hosts=hosts,
@@ -583,7 +588,7 @@ def make_registrations(data=None, haproxy=None):
                     to_port=to_port, mode=mode,
                     user=user, password=password,
                     hosts=hosts, wildcards=wildcards,
-                    regexes=regexes,
+                    regexes=regexes, http_fallback = http_fallback,
                     haproxy=haproxy)
     return haproxy
 # vim:set et sts=4 ts=4 tw=80:
