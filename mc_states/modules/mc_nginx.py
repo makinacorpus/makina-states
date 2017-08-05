@@ -37,6 +37,7 @@ LDAP_STEST = re.compile('^\s*ldap_server ', re.M)
 
 def ldap_support():
     ret = False
+    fret = False
     try:
         with open('/etc/nginx/nginx.conf') as fic:
             content = fic.read()
