@@ -19,12 +19,40 @@ Documentation of this module is available with::
 # Import python libs
 import logging
 import copy
+import re
+
 import mc_states.api
+
 from salt.utils.pycrypto import secure_password
+import subprocess
 
 __name = 'nginx'
 
 log = logging.getLogger(__name__)
+
+
+LDAP_TEST = re.compile('^\s*auth_ldap_cache_enabled', re.M)
+LDAP_STEST = re.compile('^\s*ldap_server ', re.M)
+
+
+def ldap_support():
+    ret = False
+    try:
+        with open('/etc/nginx/nginx.conf') as fic:
+            content = fic.read()
+            if LDAP_TEST.search(content):
+                fret = True
+        # test if running conf also has support for nginx
+        # and default disable in other cases
+        try:
+            nret = subprocess.check_output("nginx -T", shell=True)
+            if fret and LDAP_STEST.search(nret):
+                ret = True
+        except subprocess.CalledProcessError:
+            pass
+    except IOError:
+        pass
+    return ret
 
 
 def is_reverse_proxied():
@@ -185,6 +213,7 @@ def settings():
         www_reg = _s['mc_www.settings']()
 
         # fix virtualbox bad support of sendfile
+        _ldap_support = ldap_support()
         sendfile = True
         if __grains__.get('virtual', None) == 'VirtualBox':
             sendfile = False
@@ -245,7 +274,8 @@ def settings():
                 'server_names_hash_bucket_size': '78',
                 'variables_hash_bucket_size': '1024',
                 'loglevel': 'crit',
-                'ldap_cache': True,
+                'ldap_support': _ldap_support,
+                'ldap_cache': _ldap_support,
                 'logdir': '/var/log/nginx',
                 'access_log': '{logdir}/access.log',
                 'sendfile': sendfile,
