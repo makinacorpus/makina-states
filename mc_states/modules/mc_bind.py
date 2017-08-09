@@ -214,6 +214,29 @@ def settings():
         listen_ifs = ";".join(listen_ifs)
         if not listen_ifs.endswith(';'):
             listen_ifs += ";"
+        listen_if6s = ["::1"]
+        for ifc, ips in six.iteritems(__grains__.get('ip6_interfaces', {})):
+            if True in [
+                ifc.startswith(i)
+                for i in ['veth', 'lxcbr', 'docker',
+                          'mgc', 'lo', 'vibr', 'xenbr']
+            ]:
+                continue
+            for ip in ips:
+                if True in [
+                    ip.startswith(s)
+                    for s in [
+                        'fe80:',
+                    ]
+                ]:
+                    continue
+                if ip not in listen_if6s:
+                    listen_if6s.append(ip)
+        listen_if6s = ";".join(listen_if6s)
+        if not listen_if6s:
+            listen_if6s = 'any';
+        if not listen_if6s.endswith(';'):
+            listen_if6s += ";"
         os_defaults = __salt__['grains.filter_by']({
             'Debian': {
                 'pkgs': ['bind9',
@@ -284,7 +307,7 @@ def settings():
                     }),
                 ]),
                 'ipv4': listen_ifs,
-                'ipv6': 'any;',
+                'ipv6': listen_if6s,
                 'loglevel': {
                     'default': 'error',
                     'general': 'error',
