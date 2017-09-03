@@ -508,11 +508,11 @@ def register_servers_to_backends(port,
                 slug = ''
             servers = [{'name': 'srv_{0}_ssl'.format(sane_ip),
                         'bind': '{0}:{1}'.format(ip, to_port),
-                        'opts': 'check weight 100{0}'.format(slug)}]
+                        'opts': 'check weight 100 inter 1s{0}'.format(slug)}]
             if http_fallback:
                 servers.insert(0, {'name': 'srv_{0}_clear'.format(sane_ip),
                                    'bind': '{0}:{1}'.format(ip, 80),
-                                   'opts': 'check weight 50 backup'})
+                                   'opts': 'check weight 50 inter 1s backup'})
         else:
             servers = [{'name': 'srv_{0}'.format(sane_ip),
                         'bind': '{0}:{1}'.format(ip, to_port),
