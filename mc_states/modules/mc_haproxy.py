@@ -111,6 +111,7 @@ def settings():
                     'balance roundrobin',
                     'option forwardfor',
                     'option http-keep-alive',
+                    'http-request set-header X-FORWARDED-SSL %[ssl_fc]',
                     'http-request set-header X-SSL %[ssl_fc]',
                     'option httpchk',
                     'option log-health-checks'],
@@ -125,6 +126,7 @@ def settings():
                     'balance roundrobin',
                     'option forwardfor',
                     'option http-keep-alive',
+                    'http-request set-header X-FORWARDED-SSL %[ssl_fc]',
                     'http-request set-header X-SSL %[ssl_fc]',
                     'option httpchk',
                     'option log-health-checks',
@@ -474,6 +476,7 @@ def register_servers_to_backends(port,
                                  regexes=None,
                                  hosts=None,
                                  haproxy=None,
+                                 ssl_terminated=None,
                                  http_fallback=None):
     '''
     Register a specific minion as a backend server
@@ -481,6 +484,8 @@ def register_servers_to_backends(port,
     '''
     # if we proxy some https? traffic, we rely on host to choose a backend
     # and in other cases, we assume to proxy to a TCPs? backend
+    if ssl_terminated is None:
+        ssl_terminated = False
     if http_fallback is None:
         http_fallback = True
     if haproxy is None:
@@ -498,9 +503,12 @@ def register_servers_to_backends(port,
         hmode = 'http'
         #  we try first a backend over https, and if not present on http #}
         if mode.startswith('https'):
+            slug = ' ssl verify none'
+            if ssl_terminated:
+                slug = ''
             servers = [{'name': 'srv_{0}_ssl'.format(sane_ip),
                         'bind': '{0}:{1}'.format(ip, to_port),
-                        'opts': 'check weight 100 ssl verify none'}]
+                        'opts': 'check weight 100{0}'.format(slug)}]
             if http_fallback:
                 servers.insert(0, {'name': 'srv_{0}_clear'.format(sane_ip),
                                    'bind': '{0}:{1}'.format(ip, 80),
@@ -576,6 +584,7 @@ def make_registrations(data=None, haproxy=None):
                 to_port = int(fdata.get('to_port', port))
                 user = fdata.get('user', None)
                 password = fdata.get('password', None)
+                ssl_terminated = fdata.get('ssl_terminated', None)
                 http_fallback = fdata.get('http_fallback', None)
                 mode = fdata.get('mode',
                                  haproxy['proxy_modes'].get(port, 'tcp'))
@@ -588,7 +597,9 @@ def make_registrations(data=None, haproxy=None):
                     to_port=to_port, mode=mode,
                     user=user, password=password,
                     hosts=hosts, wildcards=wildcards,
-                    regexes=regexes, http_fallback = http_fallback,
+                    regexes=regexes,
+                    ssl_terminated = ssl_terminated,
+                    http_fallback = http_fallback,
                     haproxy=haproxy)
     return haproxy
 # vim:set et sts=4 ts=4 tw=80:
