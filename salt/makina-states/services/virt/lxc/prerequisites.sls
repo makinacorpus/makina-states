@@ -34,7 +34,8 @@ lxc-repo:
   pkgrepo.managed:
     - retry: {attempts: 6, interval: 10}
     #- name: deb http://ppa.launchpad.net/ubuntu-lxc/daily/ubuntu {{pkgssettings.udist}} main
-    - name: deb http://ppa.launchpad.net/ubuntu-lxc/stable/ubuntu {{pkgssettings.udist}} main
+    #- name: deb http://ppa.launchpad.net/ubuntu-lxc/stable/ubuntu {{pkgssettings.udist}} main
+    - name: deb http://ppa.launchpad.net/ubuntu-lxc/lts/ubuntu {{pkgssettings.udist}} main
     - file: {{locs.conf_dir}}/apt/sources.list.d/lxc.list
     - keyid: 7635B973
     - keyserver: keyserver.ubuntu.com
