@@ -35,6 +35,8 @@ Salt States
 - [x] localsettings/vim
 - [x] localsettings/casperjs
 - [x] localsettings/phantomjs
+- [x] services/firewall/ms_iptables
+- services/firewall/fail2ban
 - localsettings/systemd
 - localsettings/updatedb
 - localsettings/python
