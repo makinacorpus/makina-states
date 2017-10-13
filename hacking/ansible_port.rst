@@ -53,8 +53,6 @@ Salt States
 - localsettings/hostname
 - localsettings/hosts
 - localsettings/insserv
-- localsettings/ldap
-- localsettings/localrc
 - localsettings/network
 - services/db/mongodb
 - localsettings/ssl
@@ -124,6 +122,8 @@ Project helpers
 Wont be ported yet
 ------------------
 - services/http/common
+- localsettings/ldap
+- localsettings/localrc
 - localsettings/groups
 - services/firewall/firewalld
 - services/firewall/psad
