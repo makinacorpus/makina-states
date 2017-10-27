@@ -115,7 +115,8 @@ makina-pureftpd-shell-contents:
     - require_in:
       - file: makina-pureftpd-shell-block
     - filename: {{ locs.conf_dir }}/shells
-    - text: /bin/ftponly
+    - text: |
+        /bin/ftponly
     - watch:
       - mc_proxy: ftpd-pre-configuration-hook
     - watch_in:
@@ -128,7 +129,7 @@ makina-pureftpd-shell-block:
     - marker_start: "#-- start pureftpd salt managed zonestart -- PLEASE, DO NOT EDIT"
     - marker_end: "#-- end salt pureftpd managed zonestart --"
     - content: ''
-    - prepend_if_not_found: True
+    - append_if_not_found: true
     - backup: '.bak'
     - show_changes: True
     - watch:
