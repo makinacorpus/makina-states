@@ -29,6 +29,11 @@ STARTUP_LOG="/var/log/icinga2/startup.log"
 PIDFILE="{{data.pidfile}}"
 SCRIPTNAME=/etc/init.d/$NAME
 
+# Block/ignore SIGPIPE inside Icinga2
+# Workaround for a known bug in 2.6.0
+# see https://dev.icinga.com/issues/13567#note-19
+trap '' 13 # SIGPIPE
+
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
 
@@ -196,10 +201,11 @@ case "$1" in
     esac
     ;;
   status)
-    status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
-    ;;
+    status_of_proc -p "$PIDFILE" "$DAEMON" "$NAME" && exit 0 || exit $?
+  ;;
   reload|force-reload)
     do_check_config
+    status_of_proc -p "$PIDFILE" "$DAEMON" "$NAME" || exit $?
     log_daemon_msg "Reloading $DESC" "$NAME"
     do_reload
     log_end_msg $?
