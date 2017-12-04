@@ -4055,13 +4055,13 @@ def get_packages_conf(id_, ttl=PILLAR_TTL):
         rdata = OrderedDict()
         for item, val in conf.items():
             rdata[pref + item] = val
-        for item, val in {
-            pref + "apt.ubuntu.mirror": (
-                "http://mirror.ovh.net/ftp.ubuntu.com/ubuntu/"),
-            pref + "apt.debian.mirror": (
-                "http://mirror.ovh.net/ftp.debian.org/debian/")
-        }.items():
-            rdata.setdefault(item, val)
+        # for item, val in {
+        #     pref + "apt.ubuntu.mirror": (
+        #         "http://mirror.ovh.net/ftp.ubuntu.com/ubuntu/"),
+        #     pref + "apt.debian.mirror": (
+        #         "http://mirror.ovh.net/ftp.debian.org/debian/")
+        # }.items():
+        #     rdata.setdefault(item, val)
         return rdata
     # cache_key = __name + '.get_packages_conf{0}'.format(id_) + CACHE_INC_TOKEN
     # return __salt__['mc_utils.memoize_cache'](
