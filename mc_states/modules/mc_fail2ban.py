@@ -191,14 +191,6 @@ def settings():
                 'extra_confs': {
                     '/etc/fail2ban/fail2ban.conf': {'mode': '750'},
                     # not yet in trusty !
-                    '/etc/fail2ban/action.d/firewallcmd-allports.conf': {
-                        'mode': '750'},
-                    '/etc/fail2ban/action.d/firewallcmd-ipset.conf': {
-                        'mode': '750'},
-                    '/etc/fail2ban/action.d/firewallcmd-multiport.conf': {
-                        'mode': '750'},
-                    '/etc/fail2ban/action.d/firewallcmd-new.conf': {
-                        'mode': '751'},
                     '/etc/fail2ban/jail.conf': {'mode': '750'},
                     '/etc/init.d/fail2ban': {'mode': '750'},
                     '/etc/systemd/system/fail2ban.service': {'mode': '644'},
