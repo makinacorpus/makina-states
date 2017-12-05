@@ -404,7 +404,7 @@ def vhost_settings(domain, doc_root, **kwargs):
 
     # to disable ssl, ssl_cert must be a empty string
     if nginxSettings.get('ssl_cert', None) != '':
-        ssldomain = domain
+        ssldomain = nginxSettings.get('ssl_common_name', None) or domain
         if ssldomain in ['default']:
             ssldomain = _g['fqdn']
         lcert, lkey, lchain = __salt__[
