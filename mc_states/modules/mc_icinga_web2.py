@@ -308,6 +308,7 @@ def settings():
                         ":/var/run/icinga2/cmd/"
                         ":/var/cache/icingaweb2/"
                         ":/var/log/icingaweb2/"),
+                    'etcdir': '/etc/php/5.6',
                     'extensions_packages': ['php5-pgsql'],
                     'doc_root': '{doc_root}',
                     'session_auto_start': 0,

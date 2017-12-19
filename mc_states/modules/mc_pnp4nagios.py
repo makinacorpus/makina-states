@@ -151,6 +151,7 @@ def settings():
                         ":/usr/share/php/kohana2/system/config/"
                         ":/var/lib/pnp4nagios/perfdata/"),
                     'doc_root': '/usr/share/pnp4nagios/',
+                    'etcdir': '/etc/php/5.6',
                     'session_auto_start': 0,
                     'extensions_packages': ['php5-gd'],
                 },
