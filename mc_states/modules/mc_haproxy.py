@@ -188,7 +188,7 @@ def settings():
                     'logfacility': 'local0',
                     # upgrade to info to debug # activation of keepalive
                     # in cloud confs
-                    'loglevel': 'info',
+                    'loglevel': 'warning',
                     'loghost': '127.0.0.1',
                     'nbproc': '',
                     'node': _g['id'],
