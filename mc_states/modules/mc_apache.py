@@ -229,7 +229,9 @@ def settings():
                     "processSlack": 5,
                 },
                 'fastcgi_shared_mode': True,
-                'fastcgi_enabled': True
+                'fastcgi_enabled': True,
+                'no_options_log': True,
+                'use_cronolog': True
             },
             __salt__['grains.filter_by'](
                 {
