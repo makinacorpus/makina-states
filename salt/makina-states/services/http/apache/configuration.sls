@@ -224,15 +224,6 @@ makina-apache-main-extra-settings-example:
     - watch_in:
       - file: makina-apache-settings
 
-makina-apache-fix-log:
-  file.absent:
-    - names:
-      - /etc/apache2/conf-enabled/other-vhosts-access-log.conf
-    - watch:
-       - mc_proxy: makina-apache-post-inst
-    - watch_in:
-       - mc_proxy: makina-apache-pre-conf
-
 makina-apache-mod-status-settings:
   file.managed:
     - name: {{ apacheSettings.confdir }}/mods-available/status.conf
