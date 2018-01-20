@@ -1,3 +1,4 @@
+{% import "makina-states/_macros/h.jinja" as h with context %}
 {#-
 # icinga2
 #
@@ -207,23 +208,19 @@ icinga2-configuration-add-auto-host-confs:
       - mc_proxy: icinga2-configuration-post-object-conf
     - template: jinja
 
-{% for i in [
-  '/usr/bin/icinga-service-irc.sh',
-  '/usr/bin/icinga-host-irc.sh', 
-  '/usr/bin/icinga-service-mail.sh',
-  '/usr/bin/icinga-host-mail.sh',
-] %}
-icinga2-configuration-scripts-{{i}}:
-  file.managed:
-    - name: {{i}}
-    - source: salt://makina-states/files{{i}}
-    - user: root
-    - group: root
-    - mode: 755
-    - makedirs: True
+{% macro rmacro() %}
     - watch:
       - mc_proxy: icinga2-configuration-pre-object-conf
     - watch_in:
       - mc_proxy: icinga2-configuration-post-object-conf
-    - template: jinja
-{% endfor%}
+
+{% endmacro %}
+{% set extra_confs = {
+'/usr/bin/icinga_matrix.sh': {'mode': '755'},
+'/usr/bin/icinga-service-irc.sh': {'mode': '755'},
+'/usr/bin/icinga-host-irc.sh': {'mode': '755'},
+'/usr/bin/icinga-service-mail.sh': {'mode': '755'},
+'/usr/bin/icinga-host-mail.sh': {'mode': '755'},
+'/usr/bin/icinga_matrix.sh': {'mode': '755'}
+} %}
+{{ h.deliver_config_files(extra_confs, after_macro=rmacro, prefix='icinga2-conf-')}}
