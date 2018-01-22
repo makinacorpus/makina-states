@@ -163,7 +163,7 @@ case "$1" in
     restart|force-reload)
         test "$STANDALONE_OR_INETD" = standalone || exit 0
         do_config
-        do_stop && sleep 1 do_start
+        do_stop && sleep 1 && do_start
         exit $?
         ;;
     status)
