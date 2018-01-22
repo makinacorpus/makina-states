@@ -1,10 +1,15 @@
 #!/bin/sh
+set -x
+exec 3>&1 4>&2 >>foo 2>&1
+
 #managed by salt -- do not edit
 
 ### BEGIN INIT INFO
 # Provides:	  nginx
 # Required-Start:    $local_fs $remote_fs $network
 # Required-Stop:     $local_fs $remote_fs $network
+# Should-Start:      resolvconf $named
+# Should-Stop:       resolvconf $named
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: starts the nginx web server
@@ -48,9 +53,22 @@ start_nginx() {
 	#   2 if daemon could not be started
 	start-stop-daemon --start --quiet --pidfile $PID --exec $DAEMON --test > /dev/null \
 		|| return 1
-	start-stop-daemon --start --quiet --pidfile $PID --exec $DAEMON -- \
-		$DAEMON_OPTS 2>/dev/null \
-		|| return 2
+    ret=2
+    nolog=y
+    # nginx can fail to boot in case of DNS errors on startup, try to wait a bit
+    for i in $(seq 5);do
+        if [ "x$nolog" = "x" ];then
+            start-stop-daemon --start --quiet --pidfile $PID --exec $DAEMON -- $DAEMON_OPTS 2>/dev/null
+        else
+            start-stop-daemon --start --quiet --pidfile $PID --exec $DAEMON -- $DAEMON_OPTS
+        fi
+        ret=$?
+        if [ "x$ret" = "x0" ];then
+            break
+        fi
+        sleep 1
+    done
+    return $ret
 }
 
 test_config() {
