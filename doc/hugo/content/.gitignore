@@ -1,0 +1,12 @@
+.project
+*.swp
+/pipeline/node_modules
+/var
+/cache
+!salt/files/*
+/public
+/bin/node
+/bin/nodejs
+/bin/npm
+/bin/yarn
+/Dockerfile

@@ -68,7 +68,6 @@ format: 1
 # Activating an extpillar does not mean that it will totally enable a feature
 # but disabling it will totally remove any exposed information of the function
 # key values informations
-#   - backup_mode: backup method for this host
 #   - backup_mode: backup mode to use, only avalaible for now is 'burp', see burp_configurations
 #   - cloud_master: switch to configure this host as a cloud master
 #   - default_env: prod
@@ -106,7 +105,6 @@ format: 1
 #   - cloud_control_kvm: signals that this cluster master will be abl to orchetrate kvms vms
 #   - cloud_control_lxc: signals that this cluster master will be abl to orchetrate lxc vms
 #   - cloud_master: signals that this host is a cluster master
-#   - cloud_master: signals that this host is a master (singleton)
 #    manage_exposed_glocal_conf: expose global conf flags via pillar
 configurations:
   default: {}
@@ -130,29 +128,28 @@ configurations:
     #        application_secret: "xxx
     #        consumer_key: "xxx"
 {% macro nopillar() %}
-    manage_backups: true
-    manage_packages: true
-    manage_shorewall: true
-    manage_autoupgrades: true
-    supervision_client: true
     cloud_control_kvm: false
     cloud_control_lxc: false
     cloud_master: false
-    manage_exposed_glocal_conf: false
     ldap_client: false
-    manage_firewalld: false
+    manage_autoupgrades: false
     manage_backup_server: false
+    manage_backups: false
     manage_check_raid: false
     manage_custompillar: false
     manage_dhcp: false
     manage_dns_resolvers: false
     manage_dns_server: false
+    manage_exposed_glocal_conf: false
     manage_fail2ban: false
+    manage_firewalld: false
     manage_hosts: false
     manage_mails: false
     manage_network: false
     manage_ntp_server: false
+    manage_packages: false
     manage_passwords: false
+    manage_shorewall: false
     manage_slapd: false
     manage_snmpd: false
     manage_ssh_groups: false
@@ -162,6 +159,7 @@ configurations:
     manage_ssl: false
     manage_sudoers: false
     master: false
+    supervision_client: false
 {% endmacro %}
   msr-lxc-ref-precise.foo.net:
     {{nopillar()}}
@@ -470,6 +468,8 @@ ssh_groups:
 # CNAMES to declare in a zone file
 # ATTENTION, you will certainly need the ending "." in the target !
 # PLEASE USE CNAMES ONLY UNDER TORTURE
+# dnames:
+#   AABBCC.www.mydomain.com: AABBCC.comodoca.com.
 # cnames:
 #   AABBCC.www.mydomain.com: AABBCC.comodoca.com.
 
@@ -980,7 +980,7 @@ backup_configurations:
 #   foo.makina-corpus.net:
 #     apt.ubuntu.mirror: http://ubuntu-archive.mirrors.proxad.net/ubuntu/
 #   default:
-#     apt.ubuntu.mirror: http://mirror.ovh.net/ftp.ubuntu.com/
+#     apt.ubuntu.mirror: http://mirror.ovh.net/ftp.ubuntu.com/ubuntu/
 
 # Configuration overrides for makina-states's shorewall integration
 # We install shorewall everywhere by default.

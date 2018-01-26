@@ -1,5 +1,5 @@
 include:
-  - makina-states.localsettings.network
+  - makina-states.localsettings.network.hooks
 shorewall-preinstall:
   mc_proxy.hook:
     - watch:

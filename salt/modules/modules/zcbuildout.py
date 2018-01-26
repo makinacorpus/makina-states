@@ -562,7 +562,9 @@ def bootstrap(directory='.',
               offline=False,
               new_st=None,
               use_vt=False,
-              loglevel=None):
+              loglevel=None,
+              buildout_egg_ver=None,
+              setuptools_egg_ver=None):
     '''
     Run the buildout bootstrap dance (python bootstrap.py).
 
@@ -604,6 +606,12 @@ def bootstrap(directory='.',
 
     use_vt
         Use the new salt VT to stream output [experimental]
+
+    setuptools_egg_ver
+        setuptools egg version
+
+    buildout_egg_ver
+        setuptools egg version
 
     CLI Example:
 
@@ -742,6 +750,12 @@ def bootstrap(directory='.',
         bootstrap_args += ' --accept-buildout-test-releases'
     if config and '"-c"' in content:
         bootstrap_args += ' -c {0}'.format(config)
+    if setuptools_egg_ver:
+        bootstrap_args += ' --setuptools-version={0}'.format(
+            setuptools_egg_ver)
+    if buildout_egg_ver:
+        bootstrap_args += ' --buildout-version={0}'.format(
+            buildout_egg_ver)
     # be sure that the bootstrap belongs to the running user
     try:
         if runas:
@@ -932,7 +946,9 @@ def buildout(directory='.',
              onlyif=None,
              unless=None,
              use_vt=False,
-             loglevel=None):
+             loglevel=None,
+             buildout_egg_ver=None,
+             setuptools_egg_ver=None):
     '''
     Run buildout in a directory.
 
@@ -986,6 +1002,12 @@ def buildout(directory='.',
     use_vt
         Use the new salt VT to stream output [experimental]
 
+    setuptools_egg_ver
+      setuptools egg version
+
+    buildout_egg_ver
+        setuptools egg version
+
     CLI Example:
 
     .. code-block:: bash
@@ -1004,7 +1026,9 @@ def buildout(directory='.',
                          distribute=distribute,
                          python=python,
                          use_vt=use_vt,
-                         loglevel=loglevel)
+                         loglevel=loglevel,
+                         buildout_egg_ver=buildout_egg_ver,
+                         setuptools_egg_ver=setuptools_egg_ver)
     buildout_ret = run_buildout(directory=directory,
                                 config=config,
                                 parts=parts,

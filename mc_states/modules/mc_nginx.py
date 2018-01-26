@@ -19,12 +19,41 @@ Documentation of this module is available with::
 # Import python libs
 import logging
 import copy
+import re
+
 import mc_states.api
+
 from salt.utils.pycrypto import secure_password
+import subprocess
 
 __name = 'nginx'
 
 log = logging.getLogger(__name__)
+
+
+LDAP_TEST = re.compile('^\s*auth_ldap_cache_enabled', re.M)
+LDAP_STEST = re.compile('^\s*ldap_server ', re.M)
+
+
+def ldap_support():
+    ret = False
+    fret = False
+    try:
+        with open('/etc/nginx/nginx.conf') as fic:
+            content = fic.read()
+            if LDAP_TEST.search(content):
+                fret = True
+        # test if running conf also has support for nginx
+        # and default disable in other cases
+        try:
+            nret = subprocess.check_output("nginx -T", shell=True)
+            if fret and LDAP_STEST.search(nret):
+                ret = True
+        except subprocess.CalledProcessError:
+            pass
+    except IOError:
+        pass
+    return ret
 
 
 def is_reverse_proxied():
@@ -185,6 +214,7 @@ def settings():
         www_reg = _s['mc_www.settings']()
 
         # fix virtualbox bad support of sendfile
+        _ldap_support = ldap_support()
         sendfile = True
         if __grains__.get('virtual', None) == 'VirtualBox':
             sendfile = False
@@ -197,6 +227,7 @@ def settings():
                 'is_reverse_proxied': is_rp,
                 'reverse_proxy_addresses': reverse_proxy_addresses,
                 'default_vhost': True,
+                'default_vhost_is_default_server': True,
                 'use_real_ip': True,
                 'proxy_headers_hash_max_size': '1024',
                 'proxy_headers_hash_bucket_size': '128',
@@ -205,7 +236,7 @@ def settings():
                 'logformats': logformats,
                 'v6': False,
                 'allowed_hosts': [],
-                'donotlog_options_requests': False,
+                'donotlog_options_requests': True,
                 'ulimit': ulimit,
                 'client_max_body_size': www_reg[
                     'upload_max_filesize'],
@@ -242,12 +273,16 @@ def settings():
                 'multi_accept': True,
                 'user': 'www-data',
                 'group': 'www-data',
-                'server_names_hash_bucket_size': '64',
+                'server_names_hash_bucket_size': '78',
+                'variables_hash_bucket_size': '1024',
                 'loglevel': 'crit',
-                'ldap_cache': True,
+                'ldap_support': _ldap_support,
+                'ldap_cache': _ldap_support,
                 'logdir': '/var/log/nginx',
                 'access_log': '{logdir}/access.log',
                 'sendfile': sendfile,
+                'proxy_temp_path': '/var/lib/nginx/proxy',
+                'cache_folder': '/var/lib/nginx/cache',
                 'tcp_nodelay': True,
                 'tcp_nopush': True,
                 'reset_timedout_connection': 'on',
@@ -369,7 +404,7 @@ def vhost_settings(domain, doc_root, **kwargs):
 
     # to disable ssl, ssl_cert must be a empty string
     if nginxSettings.get('ssl_cert', None) != '':
-        ssldomain = domain
+        ssldomain = nginxSettings.get('ssl_common_name', None) or domain
         if ssldomain in ['default']:
             ssldomain = _g['fqdn']
         lcert, lkey, lchain = __salt__[

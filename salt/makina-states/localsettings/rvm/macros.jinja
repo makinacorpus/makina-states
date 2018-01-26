@@ -10,7 +10,9 @@
 {% macro install_ruby(version, suf='') %}
 rvm-{{version}}{{suf}}:
   cmd.run:
-    - name: {{locs.rvm}} install {{version}} && {{locs.rvm}} fix-permissions
+    - name: >
+        {{locs.rvm}} install {{version}}
+        && {{locs.rvm}} fix-permissions
     - use_vt: true
     - unless: test -e {{locs.rvm_path}}/rubies/*{{version}}*/bin
     - require:
@@ -23,12 +25,15 @@ rvm-{{version}}{{suf}}:
              gemset='global', user='root', vt=True) %}
 {{state}}:
   cmd.run:
-    - name: >
-            bash --login -c ". /etc/profile
-            && . /usr/local/rvm/scripts/rvm
-            && rvm --create use {{version.strip()}}@{{gemset.strip()}}
-            && {{cmd}}"
+    - name: |
+            R="{{version.strip()}}@{{gemset.strip()}}";
+            bash --login -c ". /etc/profile &&
+            . /usr/local/rvm/scripts/rvm &&
+            if ! ( bundle --version; );then
+              rvm $R do gem install bundler rake rvm;
+            fi && rvm --create use $R && {{cmd}}"
     {% if vt %}
     - use_vt: {{vt}}
     {%endif%}
 {% endmacro %}
+

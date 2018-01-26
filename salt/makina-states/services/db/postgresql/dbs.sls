@@ -78,7 +78,7 @@ include:
     - group: root
     - template: jinja
     - contents: |
-                SELECT 'ALTER DATABASE {{db}} OWNER TO {{owner}}'
+                SELECT 'ALTER DATABASE {{db}} OWNER TO {{owner}};'
                 FROM PG_DATABASE d, pg_roles r
                 WHERE d.DATNAME = '{{db}}'
                 AND d.datdba = r.oid

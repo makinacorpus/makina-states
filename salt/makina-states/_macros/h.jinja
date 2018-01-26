@@ -1,3 +1,4 @@
+{% set cops = salt['mc_locations.settings']().cops %}
 {% macro deliver_config_files(confs,
                               prefix='config-',
                               dir='makina-states/files',
@@ -115,6 +116,7 @@
             for i in {{ ' '.join(pkgs) }};do
               apt-cache madison $i
             done
+    - onfail_stop: false
     - onfail:
       - {{install_module}}: {{pref}}{{name}}{{suf}}
     - {{require_knob}}:
@@ -129,6 +131,7 @@
     {% if fromrepo %}
     - fromrepo: {{ fromrepo }}
     {% endif %}
+    - onfail_stop: false
     - onfail:
       - {{install_module}}: {{pref}}{{name}}{{suf}}
     {% if rmacro %}
@@ -191,12 +194,14 @@ makina-{{pref}}-{{unit}}-service:
 fail-makina-{{pref}}-{{unit}}-service:
   cmd.run:
     - name: systemctl daemon-reload
+    - onfail_stop: false
     - onlyif: "systemctl show {{unit}}"
   {% if reload_macro %}{{reload_macro()}}{%endif%}
   {{service_function}}:
     - name: {{unit}}
     - enable: {{enable}}
     - reload: true
+    - onfail_stop: false
     - require:
       - cmd: fail-makina-{{pref}}-{{unit}}-service
   {% if reload_macro %}{{reload_macro()}}{%endif%}
@@ -237,6 +242,7 @@ makina-{{pref}}-{{unit}}-restart-service:
 fail-makina-{{pref}}-{{unit}}-restart-service:
   cmd.run:
     - name: systemctl daemon-reload
+    - onfail_stop: false
     - onlyif: |
               if ! which systemctl >/dev/null 2>&1;then exit 1;fi
               systemctl show {{unit}}
@@ -244,6 +250,7 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
   {{service_function}}:
     - name: {{unit}}
     - enable: {{enable}}
+    - onfail_stop: false
     - require:
       - cmd: fail-makina-{{pref}}-{{unit}}-restart-service
   {% if restart_macro %}{{restart_macro()}}{%endif%}
@@ -307,14 +314,23 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
 {% endif %}
 {{prefix}}toggle-service-{{service}}{{suffix}}-fallback:
   cmd.run:
+    - onfail_stop: false
     - name: |
         sret=0;ret=0;vret=0
+        systemd_exists=""
         {% if action %}
+          if hash -r systemctl >/dev/null 2>&1;then
+            systemd_exists="1"
+            if systemctl is-enabled -q --no-pager {{service}} 2>&1 \
+            | egrep -q "Failed to get unit file|not-found|unrecognized service|Unit .*service not loaded"; then
+              systemd_exists=""
+            fi
+          fi
           if hash -r service >/dev/null 2>&1;then
-            if ! ( service {{service}} status 2>&1 | egrep -q "unrecognized service" ); then
+            if ! ( service {{service}} status 2>&1 | egrep -q "not-found|unrecognized service|Unit .*service not loaded" ); then
               service {{service}} {{action}}
             fi
-          elif hash -r systemctl >/dev/null 2>&1;then
+          elif [ "x${systemd_exists}" != "x" ];then
             systemctl {{action}} {{service}}
           fi
           ret=$?
@@ -328,7 +344,7 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
             {% if systemd_action == 'enable' %}
             {%  set invert_test = '!' %}
             {% endif %}
-            if {{invert_test }} \
+            if [ "x${systemd_exists}" != "x"  ] && {{invert_test }} \
               ( systemctl is-enabled -q --no-pager {{service}} >/dev/null 2>&1 );then
               systemctl {{systemd_action}} {{service}}
               sret=$?
@@ -357,4 +373,71 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
 {% if after_macro is not none %}{{ after_macro() }}{% endif %}
 {% endmacro%}
 
+{% macro cops_default_install(role, configure) %}
+            if [ -e {{cops}}/roles/corpusops.roles/{{role}} ];then
+              cd {{cops}}/roles/corpusops.roles/{{role}}
+            fi
+            if [ -e {{cops}}/roles/{{role}} ];then
+              cd {{cops}}/roles/{{role}}
+            fi
+            {{cops}}/bin/cops_apply_role role.yml \
+               {% if configure is not none %}-e @local/makinastates.yml {% endif %}
+{% endmacro%}
+
+{% macro install_via_cops(role, configure=none, install=none) %}
+{{role}}-dummy-pre:
+  mc_proxy.hook: []
+{% if install is none %}{% set install = cops_default_install %}{%endif %}
+
+{{role}}-upgrade:
+  cmd.run:
+    - name: {{cops}}/bin/install.sh -C -s
+    - require:
+      - mc_proxy: {{role}}-dummy-pre
+    - onlyif: test ! -e {{cops}}/roles/corpusops.roles/{{role}} && test ! -e {{cops}}/roles/{{role}}
+{{role}}-config1-via-corpusops:
+  file.managed:
+    - name: {{cops}}/roles/{{role}}/local/makinastates.yml
+    - onlyif: test -e {{cops}}/roles/{{role}}
+    - makedirs: true
+    - mode: 640
+    - require:
+      - mc_proxy: {{role}}-dummy-pre
+{% if configure is not none %}{{ configure() }}{% endif %}
+{{role}}-config2-via-corpusops:
+  file.managed:
+    - name: {{cops}}/roles/corpusops.roles/{{role}}/local/makinastates.yml
+    - onlyif: test -e {{cops}}/roles/corpusops.roles/{{role}}
+    - makedirs: true
+    - mode: 640
+    - require:
+      - mc_proxy: {{role}}-dummy-pre
+{% if configure is not none %}{{ configure() }}{% endif %}
+{{role}}-install-via-corpusops:
+  cmd.run:
+    - name: |
+{{ install(role, configure) }}
+    - require:
+      - mc_proxy: {{role}}-dummy-pre
+    - require_in:
+      - mc_proxy: {{role}}-dummy-post
+    - watch:
+      - mc_proxy: corpusops-checkouts-post
+      - cmd: {{role}}-upgrade
+{% if configure is not none %}
+      - file: {{role}}-config1-via-corpusops
+      - file: {{role}}-config2-via-corpusops
+{% endif %}
+{{role}}-install-node-via-corpusops-retry:
+  cmd.run:
+    - name: |
+{{ install(role, configure) }}
+    - onfail_stop: false
+    - onfail:
+      - cmd: {{role}}-install-via-corpusops
+    - require_in:
+      - mc_proxy: {{role}}-dummy-post
+{{role}}-dummy-post:
+  mc_proxy.hook: []
+{% endmacro %}
 {# vim: set nofoldenable #}

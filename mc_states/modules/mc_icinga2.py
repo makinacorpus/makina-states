@@ -3,7 +3,7 @@
 .. _module_mc_icinga2:
 
 mc_icinga2 / icinga functions
-============================
+=============================
 
 
 
@@ -510,13 +510,20 @@ def settings():
                     'SSHKEY': '\"/var/lib/nagios/id_rsa_supervision\"',
                     'ZoneName': "\"NodeName\"",
                 },
+                'matrix': {
+                    'room': '',
+                    'server': '',
+                    'room': '#makinacorpus:matrix.makina-corpus.net',
+                    'token': '',
+                    'enabled': False,
+                },
                 'irc': {
                     'channel': '#test',
                     'ssl': 'False',
                     'key': '',
                     'server_name': 'freenode',
                     'server': 'irc.freenode.net:6667',
-                    'enabled': True,
+                    'enabled': False,
                     'nick': 'makina_icinga',
                     'server_password': '',
                 },
@@ -687,17 +694,23 @@ def add_notification(attrs,
         # search for our special notification
         default_notification = None
         default_irc_notification = None
+        default_matrix_notification = None
         for i in onotifications:
             if i.get('vars.default_email_notification', False):
                 default_notification = i
             if i.get('vars.default_irc_notification', False):
                 default_irc_notification = i
-            if None not in [default_notification, default_irc_notification]:
+            if i.get('vars.default_matrix_notification', False):
+                default_matrix_notification = i
+            if None not in [default_notification, default_irc_notification,
+                            default_matrix_notification]:  # noqa
                 break
         if default_notification is None:
             default_notification = {}
         if default_irc_notification is None:
             default_irc_notification = {}
+        if default_matrix_notification is None:
+            default_matrix_notification = {}
         # if notifications were defined for the object
         # but we did not found any notication, take the first
         # as the default one
@@ -715,10 +728,12 @@ def add_notification(attrs,
         if is_host:
             default_import = 'NT_HOST'
             default_irc_import = 'NT_HOST_IRC'
+            default_matrix_import = 'NT_HOST_MATRIX'
         #     intv = 'host.vars.n_interval + ""'
         if is_service:
             default_import = 'NT_SERVICE'
             default_irc_import = 'NT_SERVICE_IRC'
+            default_matrix_import = 'NT_SERVICE_MATRIX'
         #     intv = 'service.vars.n_interval + ""'
         # conditionnal notification interval based on underlying
         # service or host does not work that way yet, searching ...
@@ -736,6 +751,27 @@ def add_notification(attrs,
             users = default_notification.setdefault(ntyp, [])
             if notifier not in users:
                 users.append(notifier)
+        if icingaSettings['matrix']['enabled']:
+            if not default_matrix_notification:
+                # take the second, here !
+                if len(onotifications) > 1:
+                    default_matrix_notification = onotifications[1]
+                else:
+                    default_matrix_notification = {}
+                    default_matrix_notification.setdefault('import', [])
+                    onotifications.append(default_matrix_notification)
+                default_matrix_notification[
+                    'vars.default_matrix_notification'] = True
+            default_matrix_notification.setdefault(
+                'vars.n_name', 'matrix_notification')
+            users = default_matrix_notification.setdefault('users', [])
+            if 'U_matrixbot' not in users:
+                users.append('U_matrixbot')
+            matrix_imports = default_matrix_notification.setdefault('import', [])
+            default_matrix_notification.setdefault('interval', intv)
+            for simport in ['NT_BASE', default_matrix_import]:
+                if simport not in matrix_imports:
+                    matrix_imports.append(simport)
         if icingaSettings['irc']['enabled']:
             if not default_irc_notification:
                 # take the second, here !

@@ -3,6 +3,8 @@
 {% set settings=salt['mc_utils.json_dump'](salt['mc_dbsmartbackup.settings']()) %}
 
 db_smart_backup:
+  pkg.installed:
+    - name: jq
   file.directory:
     - name: {{locs.apps_dir}}/db_smart_backup
     - user: root

@@ -1,8 +1,17 @@
 ---
-- name: "LXC RestartContainer {{lxc_container_name}}"
-  include: ../tasks/restart.yml
+# restart
+- listen: "LXC RestartContainer"
+  shell: "{{lxc_path}}/{{lxc_container_name}}/manage.sh restart"
   tags: makinastates_lxc_create,makinastates_lxc_create_restart
-  notify: "LXC Registerip {{lxc_container_name}}"
-- name: "LXC Registerip {{lxc_container_name}}"
-  include: ../tasks/register_ip.yml
-  tags: makinastates_lxc_create,makinastates_lxc_create_restart
+
+# register IP
+- name: get ip
+  listen: "LXC Registerip"
+  shell: |
+    lxc-attach -P {{lxc_path}} -n {{lxc_container_name}} -- ip addr show eth0|grep inet|grep -v :|awk '{print $2}'|sed "s|/.*||g"
+  register: makinastates_lxc_create_ip
+  tags: makinastates_lxc_create,makinastates_lxc_create_ip
+- name: show ip
+  listen: "LXC Registerip"
+  debug: {msg: {eth0ip: "{{makinastates_lxc_create_ip}}"}}
+  tags: makinastates_lxc_create,makinastates_lxc_create_ip

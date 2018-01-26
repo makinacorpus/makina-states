@@ -22,33 +22,38 @@ Salt States
 - [x] services/base/cron
 - [x] services/base/ssh/server
 - [x] services/base/ssh/client
-- localsettings/jdk
-- localsettings/nodejs
-- localsettings/npm
-- localsettings/timezone
+- [x] localsettings/jdk
+- [x] localsettings/nodejs
+- [x] localsettings/npm
+- [x] localsettings/timezone
+- (x] services/db/postgresql
+- (x] services/virt/docker
+- [x] services/gis/ubuntugis
+- [x] services/gis/postgis
+- [x] services/virt/lxc
+- [x] services/http/nginx
+- [x] localsettings/vim
+- [x] localsettings/casperjs
+- [x] localsettings/phantomjs
+- [x] services/firewall/ms_iptables
+- services/firewall/fail2ban
 - localsettings/systemd
 - localsettings/updatedb
 - localsettings/python
 - services/base/ssh/rootkey
 - services/log/rsyslog
 - services/log/ulogd
-- services/http/common
-- services/http/nginx
 - services/php/common
 - services/php/phpfpm
 - services/php/phpfpm_with_nginx
 - services/db/mysql
 - services/db/redis
 - services/proxy/haproxy
-- services/virt/lxc
 - localsettings/grub
 - localsettings/hostname
 - localsettings/hosts
 - localsettings/insserv
-- localsettings/ldap
-- localsettings/localrc
 - localsettings/network
-- services/db/postgresql
 - services/db/mongodb
 - localsettings/ssl
 - localsettings/reconfigure-network
@@ -64,8 +69,6 @@ Salt States
 - services/http/apache_modproxy
 - services/php/phpfpm_with_apache
 - services/php/modphp
-- services/gis/ubuntugis
-- services/gis/postgis
 - services/gis/qgis
 - services/ftp/pureftpd
 - services/mail/dovecot
@@ -82,7 +85,6 @@ Salt States
 - services/monitoring/icinga_web2
 - services/monitoring/client
 - services/java/tomcat
-- services/virt/docker
 - services/virt/kvm
 - services/queue/rabbitmq
 - services/proxy/uwsgi
@@ -94,36 +96,35 @@ Infra Workflow
 ------------------------
 - This is sometwhat a rethinking of mc_pillar:
 
-  - provision servers [doing]
-  - manage ssh keys
+  - [x] provision servers
+  - [x] manage ssh keys
   - de/register DNS entries
   - de/register backup clients to their server
   - manage dns servers
   - manage ldap servers
-  - manage superision
+  - manage supervision
 
 Main helpers
 ------------
+- [x] nginx vhost
+- [x] pgsql db, group & users
+- [x] es db & users
 - circus workers
 - supervisor workers
 - apache vhost
-- nginx vhost
 - phpfpm workflow
 - mysql db, group & users
-- pgsql db, group & users
-- es db & users
-- es2 db & user
 
 Project helpers
 ---------------
-- port mc_project to ansible roles
+- [x] port mc_project to ansible roles
 
 Wont be ported yet
 ------------------
+- services/http/common
+- localsettings/ldap
+- localsettings/localrc
 - localsettings/groups
-- localsettings/vim
-- localsettings/casperjs
-- localsettings/phantomjs
 - services/firewall/firewalld
 - services/firewall/psad
 - services/firewall/shorewall

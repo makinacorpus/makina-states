@@ -3,8 +3,8 @@
 # Provides:          fail2ban
 # Required-Start:    $local_fs $remote_fs
 # Required-Stop:     $local_fs $remote_fs
-# Should-Start:      $time $network $syslog iptables firehol shorewall ipmasq arno-iptables-firewall iptables-persistent ferm
-# Should-Stop:       $network $syslog iptables firehol shorewall ipmasq arno-iptables-firewall iptables-persistent ferm
+# Should-Start:      $time $network $syslog        iptables firehol shorewall ipmasq arno-iptables-firewall iptables-persistent ferm ufw
+# Should-Stop:       $network $syslog $named       iptables firehol shorewall ipmasq arno-iptables-firewall iptables-persistent ferm ufw
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Start/stop fail2ban
@@ -17,6 +17,10 @@
 #  reindented + minor corrections + to work on sarge without modifications
 # Modified: by Glenn Aaldering <glenn@openvideo.nl>
 #  added exit codes for status command
+# Modified: by Juan Karlo de Guzman <jkarlodg@gmail.com>
+#  corrected the DAEMON's path and the SOCKFILE
+#  rename this file: (sudo) mv /etc/init.d/fail2ban.init /etc/init.d/fail2ban
+#  same with the logrotate file: (sudo) mv /etc/logrotate.d/fail2ban.logrotate /etc/logrotate.d/fail2ban
 #
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 DESC="authentication failure monitor"
@@ -30,7 +34,7 @@ SCRIPTNAME=/etc/init.d/$NAME
 # Ad-hoc way to parse out socket file name
 SOCKFILE=`grep -h '^[^#]*socket *=' /etc/$NAME/$NAME.conf /etc/$NAME/$NAME.local 2>/dev/null \
           | tail -n 1 | sed -e 's/.*socket *= *//g' -e 's/ *$//g'`
-[ -z "$SOCKFILE" ] && SOCKFILE='/tmp/fail2ban.sock'
+[ -z "$SOCKFILE" ] && SOCKFILE='/var/run/fail2ban.sock'
 
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
@@ -45,20 +49,23 @@ DAEMON_ARGS="$FAIL2BAN_OPTS"
 # Load the VERBOSE setting and other rcS variables
 [ -f /etc/default/rcS ] && . /etc/default/rcS
 
-is_lxc() {
-    echo  "$(cat -e /proc/1/environ |grep container=lxc|wc -l|sed -e "s/ //g")"
+is_container() {
+    cat -e /proc/1/environ 2>/dev/null|grep -q container=
+    echo "${?}"
 }
 
 filter_host_pids() {
-    if [ "x$(is_lxc)" != "x0" ];then
-        echo "${@}"
+    pids=""
+    if [ "x$(is_container)" = "x0" ];then
+        pids="${pids} $(echo "${@}")"
     else
         for pid in ${@};do
-            if [ "x$(grep -q lxc /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
-                 echo ${pid}
-             fi
+            if [ "x$(grep -q /lxc/ /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
+                pids="${pids} $(echo "${pid}")"
+            fi
          done
     fi
+    echo "${pids}" | sed -e "s/\(^ \+\)\|\( \+$\)//g"
 }
 
 # Predefine what can be missing from lsb source later on -- necessary to run

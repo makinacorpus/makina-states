@@ -64,7 +64,6 @@ ms_iptables:
     - require:
       - mc_proxy: ms_iptables-conflicting-services
       - mc_proxy: ms_iptables-prerestart
-      - file: ms_iptables-/usr/bin/ms_iptables.py
       - file: ms_iptables-/etc/ms_iptables.json
     - require_in:
       - mc_proxy: ms_iptables-postrestart

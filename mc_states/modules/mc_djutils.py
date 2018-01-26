@@ -50,7 +50,7 @@ echo "SELECT 1 FROM pg_database WHERE datname='{db_name}';" | \\
     su postgres -c "psql -v ON_ERROR_STOP=1" | grep -q 1
 if [ "x$?" = "x0" ]
 then
-    su postgres -c "pg_dump {db_name} -f {dump_filename}"
+    su postgres -c "pg_dump --no-privileges {db_name} -f {dump_filename}"
 fi
 """
 

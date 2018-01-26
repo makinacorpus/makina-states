@@ -5,7 +5,7 @@ from __future__ import division
 from __future__ import print_function
 '''
 
-.. _mc_states_saltcaller
+.. _mc_states_saltcaller:
 
 wrappers to salt shell commands
 =================================
@@ -135,11 +135,20 @@ def terminate(process):
             pass
 
 
-def do_validate_states(data):
+def do_validate_states(data, retcode_passthrough=None, retcode=None):
     if not data:
         return NODATA_RETCODE
     if not isinstance(data, dict):
         return NODICT_RETCODE
+    try:
+        # if we set rc_passthrough(default)
+        # and we got a well known return code, then use it
+        rc = int(retcode)
+        assert rc in [0, 2] and retcode_passthrough
+        return rc
+    except AssertionError:
+        pass
+    # else try to get ourselves if everything did gone well
     for i, rdata in data.items():
         if not isinstance(rdata, dict):
             return NO_INNER_DICT_RETCODE
@@ -147,7 +156,8 @@ def do_validate_states(data):
             if not isinstance(statedata, dict):
                 return STATE_RET_IS_NOT_A_DICT_RETCODE
             elif statedata.get('result', None) is False:
-                return STATE_FAILED_RETCODE
+                if not retcode_passthrough:
+                    return STATE_FAILED_RETCODE
     return 0
 
 
@@ -403,6 +413,7 @@ def call(func,
          output_queue=None,
          validate_states=None,
          retcode_passthrough=None,
+         no_retcode_passthrough=None,
          no_quote=None,
          sleep_interval=None,
          local=False,
@@ -426,7 +437,11 @@ def call(func,
         executable = 'salt-call'
     if retcode_passthrough is None:
         retcode_passthrough = True
+    if no_retcode_passthrough is None:
+        no_retcode_passthrough = False
     eargs = []
+    if no_retcode_passthrough:
+        retcode_passthrough = False
     for test, argpart in [
         (True, [executable]),
         (local, ['--local']),
@@ -467,8 +482,10 @@ def call(func,
                     validate_states is not False and
                     func in ['state.highstate', 'state.sls']
                 ):
-                    src = do_validate_states(dout)
-                    if src and (ret['retcode'] == 0):
+                    src = do_validate_states(dout,
+                                             retcode_passthrough=retcode_passthrough,
+                                             retcode=ret['retcode'])
+                    if src != 0 and (ret['retcode'] == 0):
                         ret['retcode'] = src
                 if [a for a in dout] == ['local']:
                     dout = dout['local']
@@ -516,6 +533,8 @@ def main():
                         help='use --local when calling salt-call',
                         action='store_true')
     parser.add_argument('--retcode-passthrough', default=None,
+                        action='store_true')
+    parser.add_argument('--no-retcode-passthrough', default=None,
                         action='store_true')
     parser.add_argument('--out', default=None)
     parser.add_argument('-l', '--loglevel')

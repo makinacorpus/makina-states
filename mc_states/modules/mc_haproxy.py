@@ -111,6 +111,7 @@ def settings():
                     'balance roundrobin',
                     'option forwardfor',
                     'option http-keep-alive',
+                    'http-request set-header X-FORWARDED-SSL %[ssl_fc]',
                     'http-request set-header X-SSL %[ssl_fc]',
                     'option httpchk',
                     'option log-health-checks'],
@@ -120,15 +121,16 @@ def settings():
                     'option http-keep-alive',
                     'option httpchk',
                     'option log-health-checks',
-					'http-check expect rstatus (2|3|4|5)[0-9][0-9]'],
+                    'http-check expect rstatus (2|3|4|5)[0-9][0-9]'],
                 'https': [
                     'balance roundrobin',
                     'option forwardfor',
                     'option http-keep-alive',
+                    'http-request set-header X-FORWARDED-SSL %[ssl_fc]',
                     'http-request set-header X-SSL %[ssl_fc]',
                     'option httpchk',
                     'option log-health-checks',
-					'http-check expect rstatus (2|3|4|5)[0-9][0-9]'],
+                    'http-check expect rstatus (2|3|4|5)[0-9][0-9]'],
                 'tcp': ['balance roundrobin'],
                 'rabbitmq': [
                     "balance roundrobin",
@@ -186,7 +188,7 @@ def settings():
                     'logfacility': 'local0',
                     # upgrade to info to debug # activation of keepalive
                     # in cloud confs
-                    'loglevel': 'info',
+                    'loglevel': 'warning',
                     'loghost': '127.0.0.1',
                     'nbproc': '',
                     'node': _g['id'],
@@ -433,19 +435,25 @@ def register_frontend(port,
                     'regex': (
                         ['acl rgx_{sane_match}'
                          ' hdr_reg(host) -i {match[0]} url_reg'
-                         ' -i {match[1]}'],
+                         ' -i {match[1]}',
+                         'acl rgx_{sane_match}'
+                         ' hdr_reg(host) -i {match[0]} url_reg'
+                         ' -i {match[1]}:{port}'],
                         ['use_backend {bck_name} if rgx_{sane_match}']),
                     'wildcard': (
-                        ['acl wc_{sane_match} hdr_end(host) -i {match}'],
+                        ['acl wc_{sane_match} hdr_end(host) -i {match}',
+                         'acl wc_{sane_match} hdr_end(host) -i {match}:{port}',],
                         ['use_backend {bck_name} if wc_{sane_match}']),
                     'host': (
-                        ['acl host_{sane_match} hdr(host) -i {match}'],
+                        ['acl host_{sane_match} hdr(host) -i {match}:{port}',
+                         'acl host_{sane_match} hdr(host) -i {match}'],
                         ['use_backend {bck_name} if host_{sane_match}']),
                 }
                 aclsdefs = cfgentries.get(aclmode, cfgentries['default'])
                 for acls in aclsdefs:
                     for cfgentry in acls:
                         cfgentry = cfgentry.format(
+                            port=port,
                             match=(aclmode == 'wildcard' and
                                    match[2:] or
                                    match),
@@ -467,13 +475,19 @@ def register_servers_to_backends(port,
                                  wildcards=None,
                                  regexes=None,
                                  hosts=None,
-                                 haproxy=None):
+                                 haproxy=None,
+                                 ssl_terminated=None,
+                                 http_fallback=None):
     '''
     Register a specific minion as a backend server
     where haproxy will forward requests to
     '''
     # if we proxy some https? traffic, we rely on host to choose a backend
     # and in other cases, we assume to proxy to a TCPs? backend
+    if ssl_terminated is None:
+        ssl_terminated = False
+    if http_fallback is None:
+        http_fallback = True
     if haproxy is None:
         haproxy = settings()
     backends = haproxy.setdefault('backends', {})
@@ -489,12 +503,16 @@ def register_servers_to_backends(port,
         hmode = 'http'
         #  we try first a backend over https, and if not present on http #}
         if mode.startswith('https'):
-            servers = [{'name': 'srv_{0}_clear'.format(sane_ip),
-                        'bind': '{0}:{1}'.format(ip, 80),
-                        'opts': 'check weight 50 backup'},
-                       {'name': 'srv_{0}_ssl'.format(sane_ip),
+            slug = ' ssl verify none'
+            if ssl_terminated:
+                slug = ''
+            servers = [{'name': 'srv_{0}_ssl'.format(sane_ip),
                         'bind': '{0}:{1}'.format(ip, to_port),
-                        'opts': 'check weight 100 ssl verify none'}]
+                        'opts': 'check weight 100 inter 1s{0}'.format(slug)}]
+            if http_fallback:
+                servers.insert(0, {'name': 'srv_{0}_clear'.format(sane_ip),
+                                   'bind': '{0}:{1}'.format(ip, 80),
+                                   'opts': 'check weight 50 inter 1s backup'})
         else:
             servers = [{'name': 'srv_{0}'.format(sane_ip),
                         'bind': '{0}:{1}'.format(ip, to_port),
@@ -566,6 +584,8 @@ def make_registrations(data=None, haproxy=None):
                 to_port = int(fdata.get('to_port', port))
                 user = fdata.get('user', None)
                 password = fdata.get('password', None)
+                ssl_terminated = fdata.get('ssl_terminated', None)
+                http_fallback = fdata.get('http_fallback', None)
                 mode = fdata.get('mode',
                                  haproxy['proxy_modes'].get(port, 'tcp'))
                 register_frontend(port, mode, hosts=hosts,
@@ -578,6 +598,8 @@ def make_registrations(data=None, haproxy=None):
                     user=user, password=password,
                     hosts=hosts, wildcards=wildcards,
                     regexes=regexes,
+                    ssl_terminated = ssl_terminated,
+                    http_fallback = http_fallback,
                     haproxy=haproxy)
     return haproxy
 # vim:set et sts=4 ts=4 tw=80:

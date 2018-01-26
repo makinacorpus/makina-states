@@ -230,7 +230,7 @@ def load_network(ttl=PILLAR_TTL, debug=None):
         for i in [
             'ip6s', 'ip6s_map', 'ip6sfo', 'ip6sfo_map',
             'ips', 'ipsfo', 'ips_map', 'ipsfo_map',
-            'cnames',
+            'cnames', 'dnames',
         ]:
             data[i] = copy.deepcopy(__salt__[__name + '.query'](i, {}))
         return data
@@ -437,6 +437,7 @@ def ip6s_for(fqdn,
     data = load_network(debug=debug)
     if data['raw_db_loading'] is None:
         data = load_raw_network_infrastructure()
+    dnames = data['dnames']
     cnames = data['cnames']
     ips = data['ip6s']
     ips_map = data['ip6s_map']
@@ -517,53 +518,61 @@ def ip6s_for(fqdn,
 
     # and if still no ip found but cname is present,
     # try to get ip from cname
-    if (not resips) and fqdn in cnames:
-        alias_cname = cnames[fqdn]
-        try:
-            if alias_cname.endswith('.'):
-                alias_cname = alias_cname[:-1]
-        except:
-            log.error('CNAMES')
-            log.error(cnames)
-            raise
-        # avoid recursion
-        for _fqdn in [alias_cname]:
-            if _fqdn in ignore_aliases or _fqdn in ignore_cnames:
-                sfqdn = ''
-                if _fqdn != fqdn:
-                    sfqdn = '/{0}'.format(_fqdn)
+    for cnames_ in [cnames, dnames]:
+        if (not resips) and fqdn in cnames_:
+            alias_cname = cnames_[fqdn]
+            try:
+                if alias_cname.endswith('.'):
+                    alias_cname = alias_cname[:-1]
+            except:
+                log.error('ip6 cname retrieval')
+                log.erro(fqdn)
+                log.error('CNAMES')
+                log.error(cnames)
+                log.error('DNAMES')
+                log.error(dnames)
+                raise
+            # avoid recursion
+            for _fqdn in [alias_cname]:
+                if (
+                    _fqdn in ignore_aliases or
+                    _fqdn in ignore_cnames
+                ):
+                    sfqdn = ''
+                    if _fqdn != fqdn:
+                        sfqdn = '/{0}'.format(_fqdn)
+                    retrieval_error(
+                        IPRetrievalCycleError(
+                            'Recursion from cname {0}{1}:\n'
+                            ' recurse: {4}\n'
+                            ' ignored cnames: {2}\n'
+                            ' ignored aliases: {3}\n'.format(
+                                fqdn, sfqdn, ignore_cnames,
+                                ignore_aliases, recurse)),
+                        fqdn, recurse=recurse)
+            ignore_cnames.append(alias_cname)
+            try:
+                alias_ips = ip6s_for(alias_cname,
+                                     fail_over=fail_over,
+                                     recurse=recurse,
+                                     ignore_aliases=ignore_aliases,
+                                     ignore_cnames=ignore_cnames)
+            except RuntimeError:
                 retrieval_error(
                     IPRetrievalCycleError(
-                        'Recursion from cname {0}{1}:\n'
-                        ' recurse: {4}\n'
-                        ' ignored cnames: {2}\n'
-                        ' ignored aliases: {3}\n'.format(
-                            fqdn, sfqdn, ignore_cnames,
+                        'Recursion(r) from cname {0}:\n'
+                        ' recurse: {3}\n'
+                        ' ignored cnames: {1}\n'
+                        ' ignored aliases: {2}\n'.format(
+                            alias_cname, ignore_cnames,
                             ignore_aliases, recurse)),
                     fqdn, recurse=recurse)
-        ignore_cnames.append(alias_cname)
-        try:
-            alias_ips = ip6s_for(alias_cname,
-                                 fail_over=fail_over,
-                                 recurse=recurse,
-                                 ignore_aliases=ignore_aliases,
-                                 ignore_cnames=ignore_cnames)
-        except RuntimeError:
-            retrieval_error(
-                IPRetrievalCycleError(
-                    'Recursion(r) from cname {0}:\n'
-                    ' recurse: {3}\n'
-                    ' ignored cnames: {1}\n'
-                    ' ignored aliases: {2}\n'.format(
-                        alias_cname, ignore_cnames,
-                        ignore_aliases, recurse)),
-                fqdn, recurse=recurse)
-        if alias_ips:
-            resips.extend(alias_ips)
-        for _fqdn in [fqdn, alias_cname]:
-            for ignore in [ignore_aliases, ignore_cnames]:
-                if _fqdn in ignore:
-                    ignore.pop(ignore.index(_fqdn))
+            if alias_ips:
+                resips.extend(alias_ips)
+            for _fqdn in [fqdn, alias_cname]:
+                for ignore in [ignore_aliases, ignore_cnames]:
+                    if _fqdn in ignore:
+                        ignore.pop(ignore.index(_fqdn))
 
     if not resips:
         # allow fail over fallback if nothing was specified
@@ -630,6 +639,7 @@ def ips_for(fqdn,
     if data['raw_db_loading'] is None:
         data = load_raw_network_infrastructure()
     cnames = data['cnames']
+    dnames = data['dnames']
     ips = data['ips']
     ips_map = data['ips_map']
     ipsfo = data['ipsfo']
@@ -667,7 +677,10 @@ def ips_for(fqdn,
     for alias_fqdn in ips_map.get(fqdn, []):
         # avoid recursion
         for _fqdn in [fqdn, alias_fqdn]:
-            if _fqdn in ignore_aliases or _fqdn in ignore_cnames:
+            if (
+                _fqdn in ignore_aliases or
+                _fqdn in ignore_cnames
+            ):
                 sfqdn = ''
                 if _fqdn != fqdn:
                     sfqdn = '/{0}'.format(_fqdn)
@@ -707,55 +720,63 @@ def ips_for(fqdn,
         if fqdn in ignore:
             ignore.pop(ignore.index(fqdn))
 
-    # and if still no ip found but cname is present,
+    # and if still no ip found but dname/cname is present,
     # try to get ip from cname
-    if (not resips) and fqdn in cnames:
-        alias_cname = cnames[fqdn]
-        try:
-            if alias_cname.endswith('.'):
-                alias_cname = alias_cname[:-1]
-        except:
-            log.error('CNAMES')
-            log.error(cnames)
-            raise
-        # avoid recursion
-        for _fqdn in [alias_cname]:
-            if _fqdn in ignore_aliases or _fqdn in ignore_cnames:
-                sfqdn = ''
-                if _fqdn != fqdn:
-                    sfqdn = '/{0}'.format(_fqdn)
+    for cnames_ in [cnames, dnames]:
+        if (not resips) and fqdn in cnames_:
+            alias_cname = cnames_[fqdn]
+            try:
+                if alias_cname.endswith('.'):
+                    alias_cname = alias_cname[:-1]
+            except:
+                log.error('CNAME retrieval')
+                log.error(fqdn)
+                log.error('CNAMES')
+                log.error(cnames)
+                log.error('DNAMES')
+                log.error(dnames)
+                raise
+            # avoid recursion
+            for _fqdn in [alias_cname]:
+                if (
+                    _fqdn in ignore_aliases or
+                    _fqdn in ignore_cnames
+                ):
+                    sfqdn = ''
+                    if _fqdn != fqdn:
+                        sfqdn = '/{0}'.format(_fqdn)
+                    retrieval_error(
+                        IPRetrievalCycleError(
+                            'Recursion from cname {0}{1}:\n'
+                            ' recurse: {4}\n'
+                            ' ignored cnames: {2}\n'
+                            ' ignored aliases: {3}\n'.format(
+                                fqdn, sfqdn, ignore_cnames,
+                                ignore_aliases, recurse)),
+                        fqdn, recurse=recurse)
+            ignore_cnames.append(alias_cname)
+            try:
+                alias_ips = ips_for(alias_cname,
+                                    fail_over=fail_over,
+                                    recurse=recurse,
+                                    ignore_aliases=ignore_aliases,
+                                    ignore_cnames=ignore_cnames)
+            except RuntimeError:
                 retrieval_error(
                     IPRetrievalCycleError(
-                        'Recursion from cname {0}{1}:\n'
-                        ' recurse: {4}\n'
-                        ' ignored cnames: {2}\n'
-                        ' ignored aliases: {3}\n'.format(
-                            fqdn, sfqdn, ignore_cnames,
-                            ignore_aliases, recurse)),
+                        'Recursion(r) from cname {0}:\n'
+                        ' recurse: {3}\n'
+                        ' ignored cnames: {1}\n'
+                        ' ignored aliases: {2}\n'.format(
+                            alias_cname, ignore_cnames,
+                            ignore_aliases, recurse, ignore_cnames)),
                     fqdn, recurse=recurse)
-        ignore_cnames.append(alias_cname)
-        try:
-            alias_ips = ips_for(alias_cname,
-                                fail_over=fail_over,
-                                recurse=recurse,
-                                ignore_aliases=ignore_aliases,
-                                ignore_cnames=ignore_cnames)
-        except RuntimeError:
-            retrieval_error(
-                IPRetrievalCycleError(
-                    'Recursion(r) from cname {0}:\n'
-                    ' recurse: {3}\n'
-                    ' ignored cnames: {1}\n'
-                    ' ignored aliases: {2}\n'.format(
-                        alias_cname, ignore_cnames,
-                        ignore_aliases, recurse)),
-                fqdn, recurse=recurse)
-        if alias_ips:
-            resips.extend(alias_ips)
-        for _fqdn in [fqdn, alias_cname]:
-            for ignore in [ignore_aliases, ignore_cnames]:
-                if _fqdn in ignore:
-                    ignore.pop(ignore.index(_fqdn))
+            if alias_ips:
+                resips.extend(alias_ips)
+            for _fqdn in [fqdn, alias_cname]:
+                for ignore in [ignore_aliases, ignore_cnames]:
+                    if _fqdn in ignore:
+                        ignore.pop(ignore.index(_fqdn))
 
     if not resips:
         # allow fail over fallback if nothing was specified
@@ -1706,7 +1727,7 @@ def resolve_ips(name, fail_over=True, dns_query=True, ttl=PILLAR_TTL):
 
 def resolve_ip(name, fail_over=True, dns_query=True):
     '''
-    Get the first resolved IP of ips_resolve(*a)
+    Get the first resolved IP of ips_resolve(\*a)
     '''
     return resolve_ip(name, fail_over=fail_over, dns_query=dns_query)[0]
 
@@ -1861,9 +1882,9 @@ def get_nameserver_exposed(domain, server, nstype=None):
         default_exposed = not ns_servers['slaves']
     else:
         default_exposed = True
-    domain_exposed = nss_conf.get(domain, {}).get('exposed', {})
-    default_exposed = nss_conf.get('default', {}).get('exposed', {})
-    exposed = domain_exposed.get(ns, default_exposed.get(ns, default_exposed))
+    domain_exposed_conf = nss_conf.get(domain, {}).get('exposed', {})
+    default_exposed_conf = nss_conf.get('default', {}).get('exposed', {})
+    exposed = domain_exposed_conf.get(ns, default_exposed_conf.get(ns, default_exposed))
     if not exposed:
         ns = None
     return ns
@@ -2076,6 +2097,81 @@ def rrs_cnames_for(domain, ttl=PILLAR_TTL):
     return _dorrs_cnames_for(domain)
 
 
+def rrs_dnames_for(domain, ttl=PILLAR_TTL):
+    '''
+    Return all configured DNAME records for a domain
+    '''
+    def _dorrs_dnames_for(domain):
+        db = load_network_infrastructure()
+        managed_dns_zones = __salt__[
+            __name + '.query']('managed_dns_zones', {})
+        rrs_ttls = __salt__[__name + '.query']('rrs_ttls', {})
+        ipsfo = db['ipsfo']
+        ipsfo_map = db['ipsfo_map']
+        ips_map = db['ips_map']
+        dnames = db['dnames']
+        ips = db['ips']
+        all_rrs = OrderedDict()
+        domain_re = re.compile(DOTTED_DOMAIN_PATTERN.format(domain=domain),
+                               re.M | re.U | re.S | re.I)
+
+        # filter out DNAME which have also A records
+        for dname in [a for a in dnames]:
+            if dname in ips:
+                dnames.pop(dname)
+
+        # add all dnames
+        for dname, rr in dnames.items():
+            tdname, trr = dname, rr
+            if tdname.endswith('.'):
+                tdname = tdname[:-1]
+            if trr.endswith('.'):
+                trr = trr[:-1]
+            if domain_re.search(dname):
+                # on the same domain validate if the dname SOURCE or
+                # ENDPOINT are tied to real ip
+                # and raise exception if not found
+                checks = []
+                if trr.endswith(domain):
+                    checks.append(trr)
+                    if (
+                        tdname.endswith(domain) and (
+                            tdname in ips_map or
+                            tdname in ipsfo_map or
+                            tdname in ipsfo)
+                    ):
+                        checks.append(tdname)
+                for atest in checks:
+                    # raise exc if not found
+                    # but only if we manage the domain of the targeted
+                    # rr
+                    try:
+                        ips_for(atest, fail_over=True)
+                    except IPRetrievalError, exc:
+                        do_raise = False
+                        fqdmns = get_fqdn_domains(exc.fqdn)
+                        for dmn in fqdmns:
+                            if dmn in managed_dns_zones:
+                                do_raise = True
+                        if do_raise:
+                            raise
+                rrs = all_rrs.setdefault(dname, [])
+                ddname = dname
+                if dname.endswith(domain) and not dname.endswith('.'):
+                    ddname = '{0}.'.format(ddname)
+                ttl = rrs_ttls.get(dname, '')
+                entry = '{0} {1} DNAME {2}'.format(
+                    ddname, ttl, rr)
+                if entry not in rrs:
+                    rrs.append(entry)
+        rr = filter_rr_str(all_rrs)
+        return rr
+    # cache_key = __name + '.rrs_dnames_for_{0}'.format(domain) + CACHE_INC_TOKEN
+    # return __salt__['mc_utils.memoize_cache'](
+    #     _dorrs_dnames_for, [domain], {}, cache_key, ttl)
+    return _dorrs_dnames_for(domain)
+
+
 def serial_for(domain,
                serial=None,
                autoinc=True,
@@ -2084,8 +2180,12 @@ def serial_for(domain,
     '''
     Get the serial for a DNS zone
 
-    If serial is given: we take that as a value
-    Else:
+    - If serial is given:
+
+        - we take that as a value
+
+    - Else:
+
         - the serial defaults to 'YYYYMMDD01'
         - We try to load the serial from db and if
           it is superior to default, we use it
@@ -2098,8 +2198,9 @@ def serial_for(domain,
 
             - if this local value is greater than the
               current serial, this becomes the serial,
-        - at the end, we try to reach the nameservers in the wild
-          to adapt our serial if it is too low or too high
+
+    - at the end, we try to reach the nameservers in the wild
+      to adapt our serial if it is too low or too high
     '''
     def _doserial_for(domain, serial=None, ttl=PILLAR_TTL):
         serials = __salt__[__name + '.query']('dns_serials', {})
@@ -2250,7 +2351,8 @@ def serial_for(domain,
 def rrs_for(domain, aslist=False):
     '''
     Return all configured records for a domain
-    take all rr found for the "ips" & "ipsfo" tables for domain
+    take all rr found for the "ips" & "ipsfo" tables for domain:
+
         - Make NS records for everything in ns_map
         - Make MX records for everything in mx_map
         - Make A records for everything in ips
@@ -2279,6 +2381,7 @@ def rrs_for(domain, aslist=False):
     for aas_ in (aas, aaaas):
         if aas_:
             rr = rr + '\n' + aas_ + '\n'
+    rr += rrs_dnames_for(domain) + '\n'
     rr += rrs_cnames_for(domain)
     if aslist:
         rr = [a.strip() for a in rr.split('\n') if a.strip()]
@@ -2987,6 +3090,7 @@ def backup_server_settings_for(id_, ttl=PILLAR_TTL):
         server_conf = data.setdefault('server_conf',
                                       _s[__name + '.backup_server'](id_))
         confs = data.setdefault('confs', {})
+        whitelist = []
         for host in bms + vms + manual_hosts:
             if host in backup_excluded:
                 continue
@@ -2997,6 +3101,10 @@ def backup_server_settings_for(id_, ttl=PILLAR_TTL):
             # for vms, set the vm host as the gateway by default (if
             # not defined)
             if host in vms and host not in non_managed_hosts:
+                other_ips = get_other_ips(host)
+                for i in other_ips:
+                    if i not in whitelist:
+                        whitelist.append(i)
                 conf.setdefault('ssh_gateway', db['vms'][host]['target'])
                 conf.setdefault('ssh_gateway_port', '22')
             elif host in bms:
@@ -3005,8 +3113,9 @@ def backup_server_settings_for(id_, ttl=PILLAR_TTL):
             type_ = conf.get('backup_type', server_conf['default_type'])
             confs[host] = {'type': type_, 'conf': conf}
         data['confs'] = confs
+        data['whitelist'] = whitelist
         return data
-    cache_key = __name + '.backup_server_settings_for{0}'.format(id_)
+    cache_key = __name + '.backup_server_settings_for02{0}'.format(id_)
     return __salt__['mc_utils.memoize_cache'](
         _dobackup_server_settings_for, [id_], {}, cache_key, ttl)
 
@@ -3139,6 +3248,18 @@ def get_non_supervised_hosts(ttl=PILLAR_TTL):
     cache_key = __name + '.get_non_supervised_hosts'
     return __salt__['mc_utils.memoize_cache'](
         _doget_non_supervised_hosts, [], {}, cache_key, ttl)
+
+
+def get_other_ips(vm):
+    cloud_vm_attrs = query('cloud_vm_attrs')
+    other_ips = []
+    np = cloud_vm_attrs.get(vm, {}).get('network_profile', {})
+    if np:
+        other_ips = [a for a in [a.get('ip', a.get('ipv4', None))
+                                 for ifc, a in six.iteritems(np)
+                                 if ifc not in ['eth0']]
+                     if a]
+    return other_ips
 
 
 def get_supervision_objects_defs(id_):
@@ -3296,14 +3417,7 @@ def get_supervision_objects_defs(id_):
             no_common_checks = vdata.get('no_common_checks', False)
             if tipaddr in host_ips and vt in ['lxc']:
                 no_common_checks = True
-            cloud_vm_attrs = query('cloud_vm_attrs')
-            np = cloud_vm_attrs.get(vm, {}).get('network_profile', {})
-            other_ips = []
-            if np:
-                other_ips = [a for a in [a.get('ip', a.get('ipv4', None))
-                                         for ifc, a in six.iteritems(np)
-                                         if ifc not in ['eth0']]
-                             if a]
+            other_ips = get_other_ips(vm)
             if (
                 ((tipaddr in other_ips) or not other_ips) and
                 tipaddr not in host_ips and
@@ -3781,12 +3895,11 @@ def get_sysnet_conf(id_, ttl=PILLAR_TTL):
                 'ointerfaces')
         net_ext_pillar = query('network_settings', {}).get(id_, {})
         if net_ext_pillar and rdata.get(pref, None):
-            for i in range(len(rdata[pref])):
-                for ifc in [
-                    ifc for ifc in net_ext_pillar if ifc in rdata[pref][i]
-                ]:
+            for ifc in [ifc for ifc in net_ext_pillar]:
+                for i in range(len(rdata[pref])):
                     rdata[pref][i][ifc] = _s['mc_utils.dictupdate'](
-                        rdata[pref][i][ifc], net_ext_pillar[ifc])
+                        rdata[pref][i].get(ifc, {}),
+                        net_ext_pillar[ifc])
         return rdata
     # cache_key = __name + '.get_sysnet_conf{0}'.format(id_) + CACHE_INC_TOKEN
     # return __salt__['mc_utils.memoize_cache'](
@@ -3942,13 +4055,13 @@ def get_packages_conf(id_, ttl=PILLAR_TTL):
         rdata = OrderedDict()
         for item, val in conf.items():
             rdata[pref + item] = val
-        for item, val in {
-            pref + "apt.ubuntu.mirror": (
-                "http://mirror.ovh.net/ftp.ubuntu.com/"),
-            pref + "apt.debian.mirror": (
-                "http://mirror.ovh.net/ftp.debian.org/debian/")
-        }.items():
-            rdata.setdefault(item, val)
+        # for item, val in {
+        #     pref + "apt.ubuntu.mirror": (
+        #         "http://mirror.ovh.net/ftp.ubuntu.com/ubuntu/"),
+        #     pref + "apt.debian.mirror": (
+        #         "http://mirror.ovh.net/ftp.debian.org/debian/")
+        # }.items():
+        #     rdata.setdefault(item, val)
         return rdata
     # cache_key = __name + '.get_packages_conf{0}'.format(id_) + CACHE_INC_TOKEN
     # return __salt__['mc_utils.memoize_cache'](
@@ -4204,14 +4317,17 @@ def get_etc_hosts_conf(id_, ttl=PILLAR_TTL):
 
 def get_passwords_conf(id_, ttl=PILLAR_TTL):
     '''
-    Idea is to have
-    - simple users gaining sudoer access
-    - powerusers known as sysadmin have:
-        - access to sysadmin user via ssh key
-        - access to root user via ssh key
-    - They are also sudoers with their username (trigramme)
-    - ssh accesses are limited though access groups, so we also map here
-      the groups which have access to specific machines
+    Idea is to have:
+
+        - simple users gaining sudoer access
+        - powerusers known as sysadmin have:
+
+            - access to sysadmin user via ssh key
+            - access to root user via ssh key
+
+        - They are also sudoers with their username (trigramme)
+        - ssh accesses are limited though access groups, so we also map here
+          the groups which have access to specific machines
     '''
     def _doget_passwords_conf(id_):
         gconf = get_configuration(id_)
@@ -4266,6 +4382,11 @@ def get_burp_server_conf(id_, ttl=PILLAR_TTL):
                         'makina-states.services.'
                         'backup.burp.{0}'.format(i)
                     ] = val
+            if conf.get('whitelist', None):
+                rdata[
+                    'makina-states.services.'
+                    'backup.burp.whitelist'
+                ] = conf['whitelist']
             for host, conf in conf['confs'].items():
                 if conf['type'] in ['burp']:
                     rdata[
@@ -4273,7 +4394,7 @@ def get_burp_server_conf(id_, ttl=PILLAR_TTL):
                         'backup.burp.clients.{0}'.format(host)
                     ] = conf['conf']
         return rdata
-    cache_key = __name + '.get_burp_server_conf{0}'.format(id_) + CACHE_INC_TOKEN
+    cache_key = __name + '.get_burp_server_conf1{0}'.format(id_) + CACHE_INC_TOKEN
     return __salt__['mc_utils.memoize_cache'](
         _doget_burp_server_conf, [id_], {}, cache_key, ttl)
 
@@ -4869,7 +4990,7 @@ def loaded():
         if ret and not has_db():
             ret = False
     except Exception:
-        ret = Falss
+        ret = False
     return ret
 
 

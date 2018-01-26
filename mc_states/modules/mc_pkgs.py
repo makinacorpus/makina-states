@@ -91,13 +91,18 @@ def settings():
         mirrors = {
             # deb_mirror = 'http://ftp.de.debian.org/debian'
             'mirrors_debian_archive': 'http://archive.debian.org/debian/',
-            'mirrors_debian_dist': 'http://mirror.ovh.net/ftp.debian.org/debian/',
-            'mirrors_ubuntu_dist': 'http://archive.ubuntu.com/ubuntu/',
+            'mirrors_debian_dist': 'http://ftp.fr.debian.org/debian/',
+            'mirrors_debian_ovh': 'http://mirror.ovh.net/ftp.debian.org/debian/',
             'mirrors_ubuntu_dist_fr': 'http://fr.archive.ubuntu.com/ubuntu/',
-            'mirrors_ubuntu_ovh': 'http://mirror.ovh.net/ftp.ubuntu.com/',
+            'mirrors_ubuntu_dist': 'http://archive.ubuntu.com/ubuntu/',
+            'mirrors_ubuntu_ovh': 'http://mirror.ovh.net/ftp.ubuntu.com/ubuntu/',
             'mirrors_ubuntu_online': 'http://ftp.free.fr/mirrors/ftp.ubuntu.com/ubuntu/',
             'mirrors_ubuntu_plus': 'http://mirror.plusserver.com/ubuntu/ubuntu/',
             'mirrors_ubuntu_ircam': 'http://mirrors.ircam.fr/pub/ubuntu/archive/'}
+        # ovh is too much down
+        mirrors['mirrors_ubuntu_dist'] = mirrors['mirrors_ubuntu_dist_fr']
+        mirrors['mirrors_ubuntu_ovh'] = mirrors['mirrors_ubuntu_dist_fr']
+        mirrors['mirrors_debian_ovh'] = mirrors['mirrors_debian_dist']
         # so you start
         mirrors['mirrors_ubuntu_sys'] = mirrors['mirrors_ubuntu_ovh']
         umirror = mirrors['mirrors_ubuntu_plus']
@@ -115,7 +120,7 @@ def settings():
                 umirror = '{mirrors_ubuntu_ircam}'
             elif _g['osrelease'] >= '15.04':
                 # umirror = mirrors['dist']
-                umirror = '{mirrors_ubuntu_ovh}'
+                umirror = '{mirrors_ubuntu_dist_fr}'
             elif _s['mc_nodetypes.is_travis']():
                 umirror = '{mirrors_ubuntu_dist}'
 
@@ -284,6 +289,7 @@ def settings():
         # retrocompat
         data['ppa_dist'] = data['udist']
         data['pkg_data'] = pkg_data
+        data = _s['mc_utils.format_resolve'](data)
         return data
     return _settings()
 # vim:set et sts=4 ts=4 tw=80:

@@ -112,7 +112,7 @@ def filter_host_pids(pids):
 
 def memcached_running():
     if filter_host_pids(
-        subprocess.check_output('pgrep memcached',
+        subprocess.check_output('pgrep memcached || /bin/true',
                                 shell=True).split()
     ):
         return True
