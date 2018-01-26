@@ -4,7 +4,7 @@ include:
   - makina-states.services.firewall.ms_iptables.hooks
 {% if salt['mc_services.registry']()['has'].get('virt.lxc') %}
 # restart bridge upon install
-  - makina-states.services.virt.lxc.services
+  - makina-states.services.virt.lxc
 {% endif %}
   - makina-states.services.firewall.shorewall.disable
   - makina-states.services.firewall.firewalld.disable
