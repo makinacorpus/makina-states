@@ -185,10 +185,11 @@ def settings():
 
         php_ver = '7.0'
         use_ppa = False
-        if (
-            _g['os'] in ['Ubuntu'] and
-            LooseVersion(_g['osrelease']) < LooseVersion('16.04')
-        ):
+        trusty_onward = (_g['os'] in ['Ubuntu'] and
+                         LooseVersion(_g['osrelease']) < LooseVersion('16.04'))
+        xenial_onward = (_g['os'] in ['Ubuntu'] and
+                         LooseVersion(_g['osrelease']) >= LooseVersion('16.04'))
+        if trusty_onward and not xenial_onward:
             use_ppa = True
             php_ver = '5.6'
 
@@ -438,7 +439,7 @@ def settings():
                 'gmp': 'php-gmp',
             }
 
-            if use_ppa:
+            if use_ppa or xenial_onward:
                 packages.update({
                     'main':'php{php_ver}',
                     'php_fpm': 'php{php_ver}-fpm',
@@ -463,6 +464,7 @@ def settings():
                     'ldap': 'php{php_ver}-ldap',
                     'mcrypt': 'php{php_ver}-mcrypt',
                     'mbstring': 'php{php_ver}-mcrypt',
+                    'sqlite3': 'php{php_ver}-sqlite3',
                     'redis': 'php{php_ver}-redis',
                     'gmp': 'php{php_ver}-gmp',
                 })
