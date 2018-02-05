@@ -130,7 +130,7 @@ def settings():
         _g, _s, _p = __grains__, __salt__, __pillar__
         pkgs = __salt__['mc_pkgs.settings']()
         dist = pkgs['lts_dist']
-        defaultPgVersion = '9.6'
+        defaultPgVersion = '10'
         # default activated postgresql versions & settings:
         defaultVersions = []
         found_ports = []
@@ -161,7 +161,7 @@ def settings():
                 },
             },
         }
-        for i in ['9.6', '9.5', '9.4', '9.3', '9.2', '9.1']:
+        for i in ['10', '9.6', '9.5', '9.4', '9.3', '9.2', '9.1']:
             # if we have old wrappers, include the old versions
             # to list of installed pgsql
             pgconf = '/etc/postgresql/{0}/main/postgresql.conf'.format(i)
@@ -252,9 +252,11 @@ def settings():
                         postgis_pkgs.append(p)
 
         for version in pgSettings['versions']:
-            if LooseVersion(version) >= '9.6':
+            if LooseVersion(version) >= LooseVersion('10'):
+                pgis_version = '2.4'
+            elif LooseVersion(version) >= LooseVersion('9.6'):
                 pgis_version = '2.3'
-            elif LooseVersion(version) >= '9.4':
+            elif LooseVersion(version) >= LooseVersion('9.4'):
                 pgis_version = '2.2'
             else:
                 pgis_version = '2.1'
