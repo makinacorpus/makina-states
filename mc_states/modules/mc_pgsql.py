@@ -242,7 +242,7 @@ def settings():
 
         postgis_pkgs = []
         client_pkgs = ['libpq-dev']
-        packages = ['libpq-dev', 'postgresql-contrib']
+        packages = ['libpq-dev', 'postgresql-contrib-{version}']
         postgis = {}
 
         if __grains__.get('os', '') == 'Ubuntu':
