@@ -100,9 +100,10 @@ include:
 {{proxy(preuser, '''
     - watch:
       - mc_proxy: {0}
+      - mc_proxy: {2}
     - watch_in:
       - mc_proxy: {1}
-'''.format(postbase, postinst))}}
+'''.format(postbase, postinst, postgroup))}}
 {{proxy(postuser)}}
 {{proxy(prefixowner, '''
     - watch:
