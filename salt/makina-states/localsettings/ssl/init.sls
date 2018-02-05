@@ -34,7 +34,32 @@ makina-ssl-etc-cloud-user:
       - mc_proxy: ssl-certs-post-install
     - watch_in:
       - mc_proxy: ssl-certs-pre-hook
-
+makina-ssl-etc-cloud-cert-sys-dirs:
+  file.directory:
+    - makedirs: true
+    - mode: 755
+    - user: {{settings.user}}
+    - group: {{settings.group}}
+    - names:
+      - {{settings.ssl_dir}}/certs
+    - watch:
+      - user: makina-ssl-etc-cloud-user
+      - mc_proxy: ssl-certs-post-install
+    - watch_in:
+      - mc_proxy: ssl-certs-pre-hook
+makina-ssl-etc-cloud-cert-sys-private-dirs:
+  file.directory:
+    - makedirs: true
+    - mode: 750
+    - user: {{settings.user}}
+    - group: {{settings.group}}
+    - names:
+      - {{settings.ssl_dir}}/private
+    - watch:
+      - user: makina-ssl-etc-cloud-user
+      - mc_proxy: ssl-certs-post-install
+    - watch_in:
+      - mc_proxy: ssl-certs-pre-hook
 makina-ssl-etc-cloud-cert-dirs:
   file.directory:
     - makedirs: true

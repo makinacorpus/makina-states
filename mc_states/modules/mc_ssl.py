@@ -729,6 +729,7 @@ def common_settings(ttl=60):
                     'OU': None,
                     'emailAddress': 'contact@makina-corpus.com',
                 },
+                'ssl_dir': '/etc/ssl',
                 'config_dir': '/etc/ssl/cloud',
                 'user': 'root',
                 'group': 'ssl-cert',
