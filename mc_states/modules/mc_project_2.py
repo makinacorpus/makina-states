@@ -2343,6 +2343,7 @@ def deploy(name, *args, **kwargs):
     guarded_step(cfg, 'notify', ret=ret, *args, **kwargs)
     ret['result'] = result
     _force_cli_retcode(ret)
+    _check_proc('Deploy failed', 'deploy', ret)
     return _filter_ret(ret, cfg['raw_console_return'])
 
 
@@ -2387,6 +2388,7 @@ def run_task(name, only_steps, *args, **kwargs):
     # notifications should not modify the result status even failed
     msplitstrip(ret)
     _force_cli_retcode(ret)
+    _check_proc('Run task failed', 'run task', ret)
     return _filter_ret(ret, cfg['raw_console_return'])
 
 
