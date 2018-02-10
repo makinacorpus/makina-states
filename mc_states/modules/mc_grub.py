@@ -37,13 +37,16 @@ def settings():
         grains = __grains__
         pillar = __pillar__
         locations = __salt__['mc_locations.settings']()
+        cmddefault = "quiet splash biosdevname=0 net.ifnames=0"
         grubData = __salt__['mc_utils.defaults'](
             'makina-states.localsettings.grub', {
+                "cmd_line": cmddefault,
+                'defaults': mc_states.api.OrderedDict([
+                    ('GRUB_CMDLINE_LINUX_DEFAULT', "{cmd_line}"),
+                    ('GRUB_CMDLINE_LINUX', "{cmd_line}"),
+                ])
             }
         )
         return grubData
     return _settings()
-
-
-
 #
