@@ -59,6 +59,8 @@ etc-burp-burp-server.conf-{{f}}:
   '/etc/default/burp-server',
   '/etc/init.d/burp-server',
   '/etc/init.d/burp-restore',
+  '/etc/systemd/system/burp-server.service',
+  '/etc/systemd/system/burp-restore.service',
   '/etc/default/burp-restore',
   '/etc/burp/burp-restore.conf',
   '/etc/burp/burp-server.conf',
