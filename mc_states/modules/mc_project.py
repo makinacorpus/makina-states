@@ -13,6 +13,7 @@ see  :ref:`module_mc_project_2`
 
 from mc_states.project import LAST_PROJECT_API_VERSION
 from mc_states import api
+import sys
 import salt.utils
 
 
@@ -149,7 +150,20 @@ def _api_switcher(module, *args, **kwargs):
             api_ver = LAST_PROJECT_API_VERSION
     mod = APIS[module]["{0}".format(api_ver)]
     kwargs = salt.utils.clean_kwargs(**kwargs)
-    return __salt__[mod](*args, **kwargs)
+    func = __salt__[mod]
+    ret = func(*args, **kwargs)
+    # correctly forward dunder of wrapped func
+    try:
+        mod = sys.modules[func.__module__]
+        try:
+            context = mod.__context__
+            if context:
+                __context__.update(context)
+        except AttributeError:
+            pass
+    except KeyError:
+        pass
+    return  ret
 
 
 def get_configuration(name, *args, **kwargs):
