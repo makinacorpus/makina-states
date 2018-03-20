@@ -21,27 +21,11 @@ nginx-clean:
 {# clean typo in old confs #}
 nginx-base:
   file.managed:
-    - name: /etc/apt/preferences.d/99_nginx.pref
-    - contents: |
-                # ppa.launchpad.net/makinacorpus/nginx/ubuntu
-                Package: nginx
-                Pin: origin "ppa.launchpad.net"
-                Pin-Priority: 9999
-
-                Package: nginx*
-                Pin: origin "ppa.launchpad.net"
-                Pin-Priority: 9999
-
-                Package: nginx-common
-                Pin: origin "ppa.launchpad.net"
-                Pin-Priority: 9999
-
-                Package: nginx-full
-                Pin: origin "ppa.launchpad.net"
-                Pin-Priority: 9999
-
+    - name: "/etc/apt/preferences.d/99_nginx.pref"
+    - source: "salt://makina-states/files/etc/apt/preferences.d/99_nginx.pref"
     - mode: 644
     - makedirs: true
+    - template: jinja
     - watch:
       - mc_proxy: nginx-pre-install-hook
     - watch_in:
