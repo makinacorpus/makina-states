@@ -440,6 +440,7 @@ set_vars() {
     fi
     TMPDIR="${TMPDIR:-"/tmp"}"
     BASE_PACKAGES="python-software-properties curl python-virtualenv git rsync bzip2"
+    BASE_PACKAGES="${BASE_PACKAGES} python-pyasn1 python-urllib3 python-openssl"
     BASE_PACKAGES="${BASE_PACKAGES} acl build-essential m4 libtool pkg-config autoconf gettext"
     BASE_PACKAGES="${BASE_PACKAGES} groff man-db automake tcl8.5 debconf-utils swig"
     BASE_PACKAGES="${BASE_PACKAGES} libsigc++-2.0-dev libssl-dev libgmp3-dev python-dev python-six"
@@ -1048,6 +1049,8 @@ setup_virtualenv() {
         else
             copt="--cache-dir"
         fi
+        pip install $copt "${PIP_CACHE}" backports.ssl_match_hostname urllib3 \
+                      pyopenssl ndg-httpsclient pyasn1
         pip install -U $copt "${PIP_CACHE}" -r requirements/requirements.txt
         die_in_error "requirements/requirements.txt doesnt install"
         if [ "x${install_git}" != "x" ]; then
