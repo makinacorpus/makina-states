@@ -195,6 +195,7 @@ def settings():
 
         phpData = {
             'php_ver': php_ver,
+            'php_ppa_ver': '{php_ver}',
             'use_ppa': use_ppa,
             'coinstallable_php': None,  # computed
             'php7_onward': None,  # computed
@@ -439,34 +440,36 @@ def settings():
                 'gmp': 'php-gmp',
             }
 
+            if xenial_onward and not use_ppa:
+                phpData['php_ppa_ver' ] = ''
             if use_ppa or xenial_onward:
                 packages.update({
-                    'main':'php{php_ver}',
-                    'php_fpm': 'php{php_ver}-fpm',
-                    'apc': 'php{php_ver}-apc',
-                    'cli': 'php{php_ver}-cli',
-                    'cas': 'php{php_ver}-cas',
-                    'imagemagick': 'php{php_ver}-imagick',
-                    'memcache': 'php{php_ver}-memcache',
-                    'memcached': 'php{php_ver}-memcached',
-                    'mysql': 'php{php_ver}-mysql',
-                    'postgresql': 'php{php_ver}-pgsql',
-                    'sqlite': 'php{php_ver}-sqlite3',
-                    'pear': 'php{php_ver}-pear',
-                    'soap': 'php{php_ver}-soap',
-                    'dev': 'php{php_ver}-dev',
-                    'snmp': 'php{php_ver}-snmp',
-                    'xmlrpc': 'php{php_ver}-xmlrpc',
-                    'json': 'php{php_ver}-json',
-                    'xdebug': 'php{php_ver}-xdebug',
-                    'curl': 'php{php_ver}-curl',
-                    'gd': 'php{php_ver}-gd',
-                    'ldap': 'php{php_ver}-ldap',
-                    'mcrypt': 'php{php_ver}-mcrypt',
-                    'mbstring': 'php{php_ver}-mcrypt',
-                    'sqlite3': 'php{php_ver}-sqlite3',
-                    'redis': 'php{php_ver}-redis',
-                    'gmp': 'php{php_ver}-gmp',
+                    'main':'php{php_ppa_ver}',
+                    'php_fpm': 'php{php_ppa_ver}-fpm',
+                    'apc': 'php{php_ppa_ver}-apc',
+                    'cli': 'php{php_ppa_ver}-cli',
+                    'cas': 'php{php_ppa_ver}-cas',
+                    'imagemagick': 'php{php_ppa_ver}-imagick',
+                    'memcache': 'php{php_ppa_ver}-memcache',
+                    'memcached': 'php{php_ppa_ver}-memcached',
+                    'mysql': 'php{php_ppa_ver}-mysql',
+                    'postgresql': 'php{php_ppa_ver}-pgsql',
+                    'sqlite': 'php{php_ppa_ver}-sqlite3',
+                    'pear': 'php{php_ppa_ver}-pear',
+                    'soap': 'php{php_ppa_ver}-soap',
+                    'dev': 'php{php_ppa_ver}-dev',
+                    'snmp': 'php{php_ppa_ver}-snmp',
+                    'xmlrpc': 'php{php_ppa_ver}-xmlrpc',
+                    'json': 'php{php_ppa_ver}-json',
+                    'xdebug': 'php{php_ppa_ver}-xdebug',
+                    'curl': 'php{php_ppa_ver}-curl',
+                    'gd': 'php{php_ppa_ver}-gd',
+                    'ldap': 'php{php_ppa_ver}-ldap',
+                    'mcrypt': 'php{php_ppa_ver}-mcrypt',
+                    'mbstring': 'php{php_ppa_ver}-mcrypt',
+                    'sqlite3': 'php{php_ppa_ver}-sqlite3',
+                    'redis': 'php{php_ppa_ver}-redis',
+                    'gmp': 'php{php_ppa_ver}-gmp',
                 })
             customsettings1 = _s['mc_utils.dictupdate'](
                 customsettings1, {
