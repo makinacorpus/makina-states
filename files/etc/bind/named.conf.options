@@ -12,10 +12,11 @@ options {
         transfers-out {{data.transfers_out }};
         transfers-in {{data.transfers_out }};
         allow-transfer {"none";};
-        {% if data.forwarders%}
-        forwarders {
-            {%for f in data.forwarders %}{{f}};{%endfor%}
-        };
+        {% if data.forwarders and not data.root_zones %}
+        {% if data.forward_only %}
+        forward only;
+        {% endif %}
+        forwarders { {%for f in data.forwarders %}{{f}};{%endfor%} };
         {% endif%}
 };
 // vim: set ft=named:

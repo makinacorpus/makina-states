@@ -244,6 +244,8 @@ def settings():
                          'bind9-host'],
                 'transfers_out': '20000',
                 'transfers_in': '20000',
+                'root_zones': True,
+                'forward_only': False,
                 'forwarders': [],
                 'config_dir':
                 '{conf_dir}/bind'.format(**locs),
