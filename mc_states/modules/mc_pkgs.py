@@ -84,7 +84,7 @@ def settings():
         debian_stable = "wheezy"
         ddist = debian_stable
         ubuntu_old_lts = "trusty"
-        ubuntu_lts = "xenial"
+        ubuntu_lts = "bionic"
         ubuntu_last = "yakkety"
         lts_dist = debian_stable
         os = _g['os'].lower()
@@ -109,7 +109,7 @@ def settings():
         if _g['os'] in ['Ubuntu']:
             lts_dist = ubuntu_lts
             if LooseVersion(_g['osrelease']) >= LooseVersion('16.04'):
-                lts_dist = ubuntu_lts = 'xenial'
+                lts_dist = ubuntu_lts = 'bionic'
             elif LooseVersion(_g['osrelease']) >= LooseVersion('14.04'):
                 lts_dist = ubuntu_lts = 'trusty'
             elif LooseVersion(_g['osrelease']) >= LooseVersion('12.04'):

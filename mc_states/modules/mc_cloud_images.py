@@ -51,21 +51,25 @@ PREFIX = 'makina-states.cloud.images'
 IMG_URL = ('https://downloads.sourceforge.net/makinacorpus'
            '/makina-states/'
            '{img}-{flavor}-{ver}.tar.xz')
-LXC_IMAGES = OrderedDict([('makina-states-xenial', {}),
+LXC_IMAGES = OrderedDict([('makina-states-bionic', {}),
+                          ('makina-states-xenial', {}),
                           ('makina-states-vivid', {}),
                           ('makina-states-trusty', {}),
                           ('makina-states-precise', {})])
 DEFAULT_OS = 'ubuntu'
 RELEASES = {
     'ubuntu': {
-        'default': 'xenial',
-        'releases': ['wily', 'utopic', 'vivid', 'trusty', 'precise']
+        'default': 'bionic',
+        'releases': ['xenial', 'wily', 'utopic', 'vivid', 'trusty', 'precise']
     }
 
 }
 # THIS IS A NON FINISHEP WIP TO REFACTOR IMAGE SETTINGS
 IMAGES = OrderedDict([
     ('lxc', OrderedDict([
+        ('ubuntu-bionic', {
+            'create': '-t ubuntu -- -r bionic --mirror {mirror}'
+        }),
         ('ubuntu-xenial', {
             'create': '-t ubuntu -- -r xenial --mirror {mirror}'
         }),
@@ -77,6 +81,8 @@ IMAGES = OrderedDict([
             'bootsalt': True}),
     ])),
     ('docker', OrderedDict([
+        ('makina-states/ubuntu-bionic-raw', {
+            'from_lxc': 'makina-states-vivid'}),
         ('makina-states/ubuntu-xenial-raw', {
             'from_lxc': 'makina-states-vivid'}),
         ('makina-states/ubuntu-vivid-raw', {
@@ -319,7 +325,7 @@ def get_vars(**kwargs):
     if kwargs:
         data.update(copy.deepcopy(kwargs))
     data.setdefault('flavor', 'standalone')
-    data.setdefault('container', 'makina-states-xenial')
+    data.setdefault('container', 'makina-states-bionic')
     data['container'] = data['container'].replace('imgbuild-', '')
     data = _s['mc_utils.format_resolve'](data)
     try:

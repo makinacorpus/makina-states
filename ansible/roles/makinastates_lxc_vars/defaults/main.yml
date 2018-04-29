@@ -8,7 +8,7 @@ lxc_backing_store: dir
 lxc_backing_snapshot: null
 
 lxc_template: ubuntu
-lxc_os_release: xenial
+lxc_os_release: bionic
 lxc_os_mirror: "http://archive.ubuntu.com/ubuntu/"
 lxc_template_options: '-r {lxc_os_release} --mirror "{lxc_os_mirror}"'
 
