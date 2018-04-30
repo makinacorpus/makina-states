@@ -139,7 +139,11 @@ sys-pkgs:
       - unzip
       - zip
       {% if grains['os_family'] == 'Debian' -%}
+      {% if (salt['mc_utils.loose_version'](grains.get('osrelease', '')) >= salt['mc_utils.loose_version']('17.10') and grains['os'].lower() in ['ubuntu']) %}
+      - software-properties-common
+      {% else %}
       - python-software-properties
+      {% endif %}
       - debconf-utils
       - at
       {%- endif %}

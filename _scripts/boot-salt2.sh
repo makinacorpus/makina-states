@@ -439,7 +439,15 @@ set_vars() {
         DO_VERSION="no"
     fi
     TMPDIR="${TMPDIR:-"/tmp"}"
-    BASE_PACKAGES="python-software-properties curl python-virtualenv git rsync bzip2"
+    BASE_PACKAGES=""
+    if echo ${DISTRIB_ID} |egrep -iq "ubuntu|mint|debian";then
+        for i in python-software-properties software-properties-common;do
+            if ( export LC_ALL=C LANG=C;apt-get install -s $i &> /dev/null );then
+                BASE_PACKAGES="$BASE_PACKAGES $i"
+            fi
+        done
+    fi
+    BASE_PACKAGES="${BASE_PACKAGES} zlib1g-dev curl python-virtualenv git rsync bzip2 net-tools"
     BASE_PACKAGES="${BASE_PACKAGES} python-pyasn1 python-urllib3 python-openssl"
     BASE_PACKAGES="${BASE_PACKAGES} acl build-essential m4 libtool pkg-config autoconf gettext"
     BASE_PACKAGES="${BASE_PACKAGES} groff man-db automake tcl8.5 debconf-utils swig"

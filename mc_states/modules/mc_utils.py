@@ -37,12 +37,17 @@ from salt.utils.odict import OrderedDict
 from salt.ext import six as six
 from mc_states import api
 import mc_states.api
+from distutils.version import LooseVersion
 
 _CACHE = {'mid': None}
 _default_marker = object()
 _marker = object()
 log = logging.getLogger(__name__)
 is_really_a_var = re.compile('(\{[^:}]+\})', re.M | re.U)
+
+
+def loose_version(*args, **kw):
+    return LooseVersion(*args, **kw)
 
 
 def empty_caches(extras=None):
