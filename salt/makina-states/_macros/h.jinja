@@ -319,15 +319,15 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
         sret=0;ret=0;vret=0
         systemd_exists=""
         {% if action %}
-          if hash -r systemctl >/dev/null 2>&1;then
+          if ( hash -r systemctl >/dev/null 2>&1 );then
             systemd_exists="1"
-            if systemctl is-enabled -q --no-pager {{service}} 2>&1 \
-            | egrep -q "Failed to get unit file|not-found|unrecognized service|Unit .*service not loaded"; then
+            if ( systemctl is-enabled -q --no-pager {{service}} 2>&1 \
+                  | egrep -q "Failed to get unit file|not-found|unrecognized service|Unit .*service not loaded" ); then
               systemd_exists=""
             fi
           fi
-          if hash -r service >/dev/null 2>&1;then
-            if ! ( service {{service}} status 2>&1 | egrep -q "not-found|unrecognized service|Unit .*service not loaded" ); then
+          if ( hash -r service >/dev/null 2>&1 );then 
+            if ! ( service {{service}} status 2>&1 | egrep -q "could not be found|not-found|unrecognized service|Unit .*service not loaded" ); then
               service {{service}} {{action}}
             fi
           elif [ "x${systemd_exists}" != "x" ];then
@@ -339,7 +339,7 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
           fi
         {% endif %}
         {% if systemd_action %}
-          if hash -r systemctl >/dev/null 2>&1;then
+          if ( hash -r systemctl >/dev/null 2>&1 );then
             {% set invert_test = '' %}
             {% if systemd_action == 'enable' %}
             {%  set invert_test = '!' %}
@@ -355,7 +355,7 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
           fi
         {% endif %}
         {% if sysv_toggle_action %}
-          if hash -r update-rc.d;then
+          if ( hash -r update-rc.d );then
             update-rc.d -f {{service}} {{sysv_toggle_action}}
             vret=$?
             if [ "x${vret}" != "x0" ];then
