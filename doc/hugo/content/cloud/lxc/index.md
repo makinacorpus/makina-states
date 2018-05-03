@@ -151,9 +151,15 @@ image, and remove parts from it (like sshkeys) to impersonate it:
 - bionic dhcp netplan conf:
   
   ```sh
-    root@lxcmakinastates:/# cat /etc/netplan/net.yaml
-    network: {version: 2, ethernets: {eth0: {dhcp4: true, match: {name: "eth0*"}}}            
-    ```
+  root@lxcmakinastates:/# cat /etc/systemd/network/20-wired.network
+  [Match]
+  Name=eth*
+  
+  [Network]
+  DHCP=ipv4
+  root@lxcmakinastates:/# systemctl enable systemd-networkd
+  root@lxcmakinastates:/# systemctl restart systemd-networkd  
+  ```
 
 - Transfer the template to the compute node where you want to spawn
   containers from that image:
