@@ -147,6 +147,13 @@ image, and remove parts from it (like sshkeys) to impersonate it:
 
         `lxc_container_name`
             : lxc container which serve as a base for the image
+            
+- bionic dhcp netplan conf:
+  
+  ```sh
+    root@lxcmakinastates:/# cat /etc/netplan/net.yaml
+    network: {version: 2, ethernets: {eth0: {dhcp4: true, match: {name: "eth0*"}}}            
+    ```
 
 - Transfer the template to the compute node where you want to spawn
   containers from that image:
