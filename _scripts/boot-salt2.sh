@@ -1057,9 +1057,15 @@ setup_virtualenv() {
         else
             copt="--cache-dir"
         fi
-        pip install $copt "${PIP_CACHE}" backports.ssl_match_hostname urllib3 \
-                      pyopenssl ndg-httpsclient pyasn1
-        pip install -U $copt "${PIP_CACHE}" -r requirements/requirements.txt
+        # six & urllib3 must be reinstalled and not shared with sys py
+        # the rest should not replace themselves us totally not to it
+        # shared libs bugs
+        # https://github.com/pypa/pip/issues/5366
+        pip install $copt "${PIP_CACHE}" -U pip six \
+        && pip install $copt "${PIP_CACHE}" backports.ssl_match_hostname urllib3 \
+                      pyopenssl ndg-httpsclient pyasn1 \
+        && pip install $copt "${PIP_CACHE}" -I six urllib3 \
+        && pip install -U $copt "${PIP_CACHE}" -r requirements/requirements.txt
         die_in_error "requirements/requirements.txt doesnt install"
         if [ "x${install_git}" != "x" ]; then
             ${SED} -r \
