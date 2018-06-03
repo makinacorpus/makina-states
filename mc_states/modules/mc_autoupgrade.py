@@ -33,6 +33,7 @@ def settings():
         data = _s['mc_utils.defaults'](
             'makina-states.localsettings.autoupgrade', {
                 'enable': True,
+                "devrelease": "true",
                 "unattended": {
                     "activated": "1",
                     "autoclean": "7",
