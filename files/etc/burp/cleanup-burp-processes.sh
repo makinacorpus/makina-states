@@ -42,7 +42,7 @@ kill_old_syncs() {
             seconds=$((now - starttime))
             # 8 minutes
             if [ "${seconds}" -gt "${TIMEOUT}" ];then
-                echo "Something was wrong with last backup, killing old sync processes: $pid"
+                echo "Something was wrong with last backup ($seconds vs $TIMEOUT), killing old sync processes: $pid"
                 echo "${psline}"
                 kill -9 "${pid}"
                 todo="y"
