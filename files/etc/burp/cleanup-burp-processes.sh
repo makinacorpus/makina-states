@@ -1,19 +1,26 @@
 #!/usr/bin/env bash
 PS="ps"
-is_lxc() {
-    echo  "$(cat -e /proc/1/environ |grep container=lxc|wc -l|sed -e "s/ //g")"
+TIMEOUT=$((60*60*24*2))
+
+is_container() {
+    cat -e /proc/1/environ 2>/dev/null|grep -q container=
+    echo "${?}"
 }
+
 filter_host_pids() {
-    if [ "x$(is_lxc)" != "x0" ];then
-        echo "${@}"
+    pids=""
+    if [ "x$(is_container)" = "x0" ];then
+        pids="${pids} $(echo "${@}")"
     else
         for pid in ${@};do
-            if [ "x$(grep -q lxc /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
-                 echo ${pid}
-             fi
+            if [ "x$(grep -q /lxc/ /proc/${pid}/cgroup 2>/dev/null;echo "${?}")" != "x0" ];then
+                pids="${pids} $(echo "${pid}")"
+            fi
          done
     fi
+    echo "${pids}" | sed -e "s/\(^ \+\)\|\( \+$\)//g"
 }
+
 burp_client() {
     filter_host_pids $(${PS} aux|grep burp|grep -- "-a t"|grep -v grep|awk '{print $2}')|wc -w|sed -e "s/ //g"
 }
@@ -34,7 +41,7 @@ kill_old_syncs() {
 
             seconds=$((now - starttime))
             # 8 minutes
-            if [ "${seconds}" -gt "72000" ];then
+            if [ "${seconds}" -gt "${TIMEOUT}" ];then
                 echo "Something was wrong with last backup, killing old sync processes: $pid"
                 echo "${psline}"
                 kill -9 "${pid}"
