@@ -629,6 +629,16 @@ backup_configurations:
       - /var/makina
       - /vmlinuz
       - /initrd.img
+      # - /var/lib/docker/vfs
+      # - /var/lib/docker/overlay
+      # - /var/lib/docker/overlay2
+      # - /var/lib/docker/aufs
+      - /var/lib/docker/containers
+      - /var/lib/docker/network
+      - /var/lib/docker/plugins
+      - /var/lib/docker/swarm
+      - /var/lib/docker/trust
+      - /var/lib/docker/volumes
     cross_filesystem:
       - /boot
       - /backup
@@ -647,6 +657,10 @@ backup_configurations:
       - /var/www
       - /var/makina
     exclude_regex:
+      - ".*var.*lib.*docker.*vfs"
+      - ".*var.*lib.*docker.*overlay"
+      - ".*var.*lib.*docker.*overlay2"
+      - ".*var.*lib.*docker.*aufs"
       - ".*usr.*src.*linux-headers.*"
       - ".*var.*lib.*libvirt.*images.*"
       - ".*data.*burp.*"
@@ -705,7 +719,17 @@ backup_configurations:
       - /var
       - /var/www
       - /var/makina
+      - /var/lib/docker/containers
+      - /var/lib/docker/network
+      - /var/lib/docker/plugins
+      - /var/lib/docker/swarm
+      - /var/lib/docker/trust
+      - /var/lib/docker/volumes
     exclude_regex:
+      - ".*var.*lib.*docker.*vfs"
+      - ".*var.*lib.*docker.*overlay"
+      - ".*var.*lib.*docker.*overlay2"
+      - ".*var.*lib.*docker.*aufs"
       - ".*usr.*src.*linux-headers.*"
       - ".*data.*burp.*"
       - ".*nobackup.*"
