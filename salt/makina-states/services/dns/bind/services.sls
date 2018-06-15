@@ -26,6 +26,8 @@ bind-deactivate-dnsmask:
     - name: |
             service dnsmasq stop;
             update-rc.d -f dnsmasq remove;
+            systemctl disable dnsmasq || /bin/true;
+            systemctl stop dnsmasq || /bin/true;
             if [ -e /etc/NetworkManager/NetworkManager.conf ];then
               sed -i -e "s/^dns=dnsmasq/#dns=dnsmasq/g" /etc/NetworkManager/NetworkManager.conf;
             fi;
@@ -33,7 +35,7 @@ bind-deactivate-dnsmask:
               sed -i -e "s/^ENABLED.*/ENABLED=0/g" /etc/default/dnsmasq;
             fi;
             /bin/true;
-    - onlyif: egrep -q "^ENABLED=1" /etc/default/dnsmasq
+    - onlyif: 'egrep -q "^ENABLED=1" /etc/default/dnsmasq || ( netstat -pnlt|egrep "127.0.0.1:53.*dnsmasq" ; )'
     - watch:
       - mc_proxy: bind-pre-conf
     - watch_in:
