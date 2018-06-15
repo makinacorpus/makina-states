@@ -2,6 +2,17 @@
 {% set pkgssettings = salt['mc_pkgs.settings']() %}
 include:
   - makina-states.services.dns.slapd.hooks
+slapd_removedebpkg:
+  file.absent:
+    - names:
+        - "{{settings.slapd_directory}}/cn=config/olcBackend={0}mdb.ldif"
+        - "{{settings.slapd_directory}}/cn=config/olcDatabase={1}mdb.ldif"
+    - watch:
+      - mc_proxy: slapd-pre-install
+    - watch_in:
+      - mc_proxy: slapd-post-install
+      - pkg: slapd-pkgs
+
 slapd-pkgs:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
     - pkgs: {{settings.pkgs}}
