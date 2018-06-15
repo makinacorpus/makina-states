@@ -8,7 +8,11 @@
 {% set data = zones[zone] %}
 dns-rzones-{{zone}}-{{data.fpath}}:
   file.managed:
-    - name: {{ data.fpath}}
+    - names:
+      - {{ data.fpath}}
+      {% for v in settings['views'] %}
+      - {{ data.fpath}}__{{v}}
+      {% endfor %}
     {% if data.server_type == 'slave' %}
     - source: ''
     {% else %}

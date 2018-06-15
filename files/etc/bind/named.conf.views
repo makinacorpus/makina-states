@@ -34,7 +34,7 @@ zone "{{ zdata.fqdn }}" {
   {%- endfor %}
   };
   {% endif %}
-  file "{{file}}";
+  file "{{file}}__{{v}}";
 {%- if zdata.allow_query %}
   allow-query {
     {%-for m in zdata.allow_query %}{% if m not in allow_query%}{% do allow_query.append(m) %}{%endif%}
