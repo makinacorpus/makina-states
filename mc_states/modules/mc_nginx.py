@@ -302,6 +302,7 @@ def settings():
                 'ssl_port': '443',
                 'ssl_protocols': 'TLSv1 TLSv1.1 TLSv1.2',
                 'ssl_redirect': False,
+                'ssl_disabled': False,
                 'ssl_cacert_first': False,
                 'ssl_session_cache': 'shared:SSL:10m',
                 'ssl_session_timeout': '10m',
