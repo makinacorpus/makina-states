@@ -43,6 +43,8 @@ def settings():
                 'requirements': [
                     'circus==0.12.1',
                     'circus-web==0.5',
+                    "PyZMQ<17.0",
+                    "tornado<5.0"
                 ],
                 'services': ['circusd'],
                 'configs': {
