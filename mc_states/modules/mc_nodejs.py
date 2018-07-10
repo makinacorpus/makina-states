@@ -67,7 +67,7 @@ def settings():
                 'yarn_version': '0.24.6',
                 #'yarn_version_via_corpusops': None,
                 #'version_via_corpusops': None,
-                'yarn_version_via_corpusops': '0.24.6',
+                'yarn_version_via_corpusops': '1.7.0',
                 'version_via_corpusops': '7.10.0',
                 'gpg':  ['9D41F3C3',
                          '6A010C5166006599AA17F08146C2130DFD2497F5',
