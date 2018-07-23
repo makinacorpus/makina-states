@@ -36,7 +36,7 @@ else
 fi
 
 pids=$(filter_host_pids $(ps aux|grep ntpd|grep -v grep|awk '{print $2}'))
-if [ "x${NTPSYNC}" != "xno" ] && [ "x$(is_container)" = "x0" ] && [ "x${pids}" != "x" ];then
+if [ "x${NTPSYNC}" != "xno" ] && ( ! is_container )  && [ "x${pids}" != "x" ];then
     ${svc}ntp stop 2>&1
     ntpdate "${NTPSERVERS}" 2>&1
     ${svc}ntp start 2>&1
