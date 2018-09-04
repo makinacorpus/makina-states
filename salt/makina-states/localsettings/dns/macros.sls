@@ -42,7 +42,11 @@ bind-set-defaultdns-{{suf}}-1:
     - user: root
     {# only if dnsmasq/resolvconf is there #}
     - name: /bin/true
+    {% if (dnsservers or search) %}
     - unless: /usr/bin/ms-resolv-conf.sh
+    {% else %}
+    - unless: /bin/true
+    {% endif %}
     - env:
         DNS_SERVERS: "{{dnsservers}}"
         DNS_SEARCH: "{{search}}"
