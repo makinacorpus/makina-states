@@ -286,6 +286,9 @@ def add_services_policies(data=None):
         if services_registry['is']['dns.dhcpd']:
             add_ports('67', protocols=['tcp', 'udp'], rules=rules)
             add_ports('68', protocols=['tcp', 'udp'], rules=rules)
+        if services_registry['is']['dns.dhcpd6']:
+            add_ports('546', protocols=['tcp', 'udp'], rules=rules, binaries=['ip6tables'])
+            add_ports('547', protocols=['tcp', 'udp'], rules=rules, binaries=['ip6tables'])
     if not data.get('no_burp', False):
         if services_registry['is']['backup.burp.server']:
             sources = [a for a in burpsettings['clients']]

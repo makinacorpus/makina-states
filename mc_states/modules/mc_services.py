@@ -99,6 +99,7 @@ def registry():
                 'base.ssh': {'force': True, 'active': core_en},
                 'base.cron': {'force': True, 'active': core_en},
                 'dns.dhcpd': {'active': False},
+                'dns.dhcpd6': {'active': False},
                 'dns.bind': {'force': True, 'active': binden},
                 'dns.slapd': {'active': False},
                 'db.mongodb': {'active': False},
