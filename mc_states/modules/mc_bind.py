@@ -203,11 +203,14 @@ def settings():
                 if True in [
                     ip.startswith(s)
                     for s in [
-                        '10.',  # makina-states net
+                        '10.5',  # makina-states lxc net
+                        '10.8',  # makina-states lxc net
                         '172.',  # docker net
                         '192.168.122'  # libvirt/kvm
                     ]
                 ]:
+                    continue
+                if ':' in ip:
                     continue
                 if ip not in listen_ifs:
                     listen_ifs.append(ip)
@@ -223,12 +226,15 @@ def settings():
             ]:
                 continue
             for ip in ips:
+
                 if True in [
                     ip.startswith(s)
                     for s in [
                         'fe80:',
                     ]
                 ]:
+                    continue
+                if '.' in ip:
                     continue
                 if ip not in listen_if6s:
                     listen_if6s.append(ip)
