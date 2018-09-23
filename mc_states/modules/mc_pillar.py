@@ -3314,7 +3314,7 @@ def get_supervision_objects_defs(id_):
             hdata.setdefault('inotify', True)
             hdata.setdefault('sar',
                              ['cpu', 'task', 'queueln_load',
-                              'io_transfer', 'memory_stat', 'memory_util',
+                              'io_transfer', 'memory_util',
                               'pagestat'])
             hdata.setdefault('nic_card', ['eth0'])
             if vts:
