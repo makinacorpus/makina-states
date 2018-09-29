@@ -218,10 +218,15 @@ def settings():
                     },
                 }
             },
+            'letsencrypt_registrations': [
+                {'letsencrypt': True},
+            ],
+            'registrations': OrderedDict(),
             'listeners': OrderedDict(),
             'backends': OrderedDict(),
             'frontends': OrderedDict(),
             'dispatchers': OrderedDict(),
+            'letsencrypt': True,
             'no_ipv6': False,
         }
         data['listeners']['stats'] = {
@@ -368,6 +373,11 @@ def ordered_frontend_opts(opts=None):
             pref += 50
             if 'wildcard' in opt:
                 pref += 1
+        if 'letsencrypt' in opt and (
+            'acl ' in opt or
+            'use_backend ' in opt
+        ):
+            pref = 90
         return '{0:04d}_{1}'.format(pref, opt)
 
     opts.sort(key=sort)
@@ -379,7 +389,8 @@ def register_frontend(port,
                       hosts=None,
                       wildcards=None,
                       regexes=None,
-                      haproxy=None):
+                      haproxy=None,
+                      letsencrypt=False):
     if haproxy is None:
         haproxy = settings()
     sbind = '*:{0}'.format(port)
@@ -461,6 +472,16 @@ def register_frontend(port,
                             bck_name=bck_name)
                         if cfgentry not in opts:
                             opts.append(cfgentry)
+    if letsencrypt and not frontend.get('letsencrypt_activated'):
+        opts.append('acl letsencrypt'
+                    ' path_beg /.well-known/acme-challenge/')
+        if has['ssl']:
+            letsb = 'bck_letsencrypts'
+        else:
+            letsb = 'bck_letsencrypt'
+        opts.append(
+            'use_backend {0} if letsencrypt'.format(letsb))
+        frontend['letsencrypt_activated'] = True
     if has['ssl'] and not has['main_cert'] or not has['backend']:
         frontends.pop(fr, None)
     return haproxy
@@ -477,11 +498,21 @@ def register_servers_to_backends(port,
                                  hosts=None,
                                  haproxy=None,
                                  ssl_terminated=None,
-                                 http_fallback=None):
+                                 http_fallback=None,
+                                 letsencrypt=None,
+                                 letsencrypt_host=None,
+                                 letsencrypt_http_port=None,
+                                 letsencrypt_tls_port=None):
     '''
     Register a specific minion as a backend server
     where haproxy will forward requests to
     '''
+    if letsencrypt_host is None:
+        letsencrypt_host = '127.0.0.1'
+    if letsencrypt_http_port is None:
+        letsencrypt_http_port = 54080
+    if letsencrypt_tls_port is None:
+        letsencrypt_tls_port = 54443
     # if we proxy some https? traffic, we rely on host to choose a backend
     # and in other cases, we assume to proxy to a TCPs? backend
     if ssl_terminated is None:
@@ -533,6 +564,23 @@ def register_servers_to_backends(port,
         aclmodes = (('host', hosts),
                     ('regex', regexes),
                     ('wildcard', wildcards))
+    if hmode.startswith('http') and letsencrypt:
+        backends.update({
+            'bck_letsencrypt': {
+                'name': 'bck_letsencrypt',
+                'servers': [{
+                    'bind': '{0}:{1}'.format(
+                        letsencrypt_host, letsencrypt_http_port),
+                }]
+            },
+            'bck_letsencrypts': {
+                'name': 'bck_letsencrypts',
+                'servers': [{
+                    'bind': '{0}:{1}'.format(
+                        letsencrypt_host, letsencrypt_tls_port),
+                }]
+            }
+        })
     for aclmode, hosts in aclmodes:
         if hosts:
             for match in hosts:
@@ -552,7 +600,7 @@ def register_servers_to_backends(port,
     return haproxy
 
 
-def make_registrations(data=None, haproxy=None):
+def make_registrations_(data, haproxy):
     '''
     The idea is to have somehow haproxies-as-a-service where minions register
     themselves up to the haproxies.
@@ -564,6 +612,51 @@ def make_registrations(data=None, haproxy=None):
       and backend objects
       for the haproxy configuration
     '''
+    for payload in data:
+        for port, fdata in payload.get(
+            'frontends', DEFAULT_FRONTENDS
+        ).items():
+            port = int(port)
+            hosts = payload.get('hosts', [])
+            wildcards = payload.get('wildcards', [])
+            regexes = payload.get('regexes', [])
+            to_port = int(fdata.get('to_port', port))
+            user = fdata.get('user', None)
+            password = fdata.get('password', None)
+            ssl_terminated = fdata.get('ssl_terminated', None)
+            http_fallback = fdata.get('http_fallback', None)
+            letsencrypt = fdata.get('letsencrypt', haproxy['letsencrypt'])
+            letsencrypt_host = fdata.get(
+                'letsencrypt_host', None)
+            letsencrypt_http_port = fdata.get(
+                'letsencrypt_http_port', None)
+            letsencrypt_tls_port = fdata.get(
+                'letsencrypt_tls_port', None)
+            mode = fdata.get('mode',
+                             haproxy['proxy_modes'].get(port, 'tcp'))
+            register_frontend(port, mode, hosts=hosts,
+                              wildcards=wildcards,
+                              regexes=regexes,
+                              haproxy=haproxy,
+                              letsencrypt=letsencrypt)
+            register_servers_to_backends(
+                port=port, ip=payload['ip'],
+                to_port=to_port, mode=mode,
+                user=user, password=password,
+                hosts=hosts, wildcards=wildcards,
+                regexes=regexes,
+                ssl_terminated=ssl_terminated,
+                http_fallback=http_fallback,
+                haproxy=haproxy,
+                letsencrypt=letsencrypt,
+                letsencrypt_host=letsencrypt_host,
+                letsencrypt_http_port=letsencrypt_http_port,
+                letsencrypt_tls_port=letsencrypt_tls_port
+            )
+    return haproxy
+
+
+def make_registrations(data=None, haproxy=None):
     if data is None:
         data = __pillar__
     if haproxy is None:
@@ -572,34 +665,7 @@ def make_registrations(data=None, haproxy=None):
         a for a in data
         if a.startswith(registration_prefix)
     ]:
-        definitions = data[k]
-        for payload in definitions:
-            for port, fdata in payload.get(
-                'frontends', DEFAULT_FRONTENDS
-            ).items():
-                port = int(port)
-                hosts = payload.get('hosts', [])
-                wildcards = payload.get('wildcards', [])
-                regexes = payload.get('regexes', [])
-                to_port = int(fdata.get('to_port', port))
-                user = fdata.get('user', None)
-                password = fdata.get('password', None)
-                ssl_terminated = fdata.get('ssl_terminated', None)
-                http_fallback = fdata.get('http_fallback', None)
-                mode = fdata.get('mode',
-                                 haproxy['proxy_modes'].get(port, 'tcp'))
-                register_frontend(port, mode, hosts=hosts,
-                                  wildcards=wildcards,
-                                  regexes=regexes,
-                                  haproxy=haproxy)
-                register_servers_to_backends(
-                    port=port, ip=payload['ip'],
-                    to_port=to_port, mode=mode,
-                    user=user, password=password,
-                    hosts=hosts, wildcards=wildcards,
-                    regexes=regexes,
-                    ssl_terminated = ssl_terminated,
-                    http_fallback = http_fallback,
-                    haproxy=haproxy)
+        haproxy = make_registrations_(data[k], haproxy)
+    haproxy = make_registrations_(haproxy["registrations"].values(), haproxy)
     return haproxy
 # vim:set et sts=4 ts=4 tw=80:
