@@ -16,3 +16,4 @@ include:
          {% endif %}
 {% endmacro %}
 {{ h.install_via_cops('localsettings_nodejs', configure=configure) }}
+{{ h.install_via_cops('localsettings_nvm', configure=configure) }}
