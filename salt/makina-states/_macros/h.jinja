@@ -1,4 +1,6 @@
 {% set cops = salt['mc_locations.settings']().cops %}
+{% set ns = salt['mc_nodejs.settings']() %}
+{% set nv = ns.version_via_corpusops %}
 {% macro deliver_config_files(confs,
                               prefix='config-',
                               dir='makina-states/files',
@@ -440,5 +442,5 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
 {{role}}-dummy-post:
   mc_proxy.hook: []
 {% endmacro %}
-{% macro nvm_use(nvmdir='/srv/apps/nvm-latest', node_version='') %}node_version="{{node_version}}" && ( nvm deactivate || true ) && if [[ -z "{{node_version}}" ]] && [[ -e .nvmrc ]];then node_version=$(cat .nvmrc) ;fi && . {{nvmdir}}/nvm.sh && if ! ( nvm use $node_version );then nvm install $node_version;fi && nvm use $node_version{% endmacro %}
+{% macro nvm_use(nvmdir='/srv/apps/nvm-latest', node_version=none) %}{% if node_version is none %}{% set node_version=ns%}{% endif %}node_version="{{node_version}}" && ( nvm deactivate || true ) && if [[ -z "{{node_version}}" ]] && [[ -e .nvmrc ]];then node_version=$(cat .nvmrc) ;fi && . {{nvmdir}}/nvm.sh && if ! ( nvm use $node_version );then nvm install $node_version;fi && nvm use $node_version{% endmacro %}
 {# vim: set nofoldenable #}
