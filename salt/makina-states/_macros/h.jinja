@@ -326,7 +326,7 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
               systemd_exists=""
             fi
           fi
-          if ( hash -r service >/dev/null 2>&1 );then 
+          if ( hash -r service >/dev/null 2>&1 );then
             if ! ( service {{service}} status 2>&1 | egrep -q "could not be found|not-found|unrecognized service|Unit .*service not loaded" ); then
               service {{service}} {{action}}
             fi
@@ -440,4 +440,5 @@ fail-makina-{{pref}}-{{unit}}-restart-service:
 {{role}}-dummy-post:
   mc_proxy.hook: []
 {% endmacro %}
+{% macro nvm_use(nvmdir='/srv/apps/nvm-latest', node_version='') %}node_version="{{node_version}}" && ( nvm deactivate || true ) && if [[ -z "{{node_version}}" ]] && [[ -e .nvmrc ]];then node_version=$(cat .nvmrc) ;fi && . {{nvmdir}}/nvm.sh && if ! ( nvm use $node_version );then nvm install $node_version;fi && nvm use $node_version{% endmacro %}
 {# vim: set nofoldenable #}
