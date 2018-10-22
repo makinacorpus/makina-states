@@ -37,6 +37,9 @@
         gchn = config user.email "gch@makina-corpus.com"
         gche = config user.name 'Guillaume Chéramy'
         gch =  !git gchn && git gche
+        llan = config user.email "lla@makina-corpus.com"
+        llae = config user.name 'Laurent Laborde'
+        lla =  !git llan && git llae
         mpan = config user.email "mpa@makina-corpus.com"
         mpae = config user.name 'Mathieu Le Marec - Pasquet'
         mpa =  !git mpan && git mpae
