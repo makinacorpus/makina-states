@@ -54,6 +54,7 @@ socket_errors = (
 
 
 rei_flags = re.M | re.U | re.S | re.I
+re_flags = re.M | re.U | re.S
 log = logging.getLogger(__name__)
 DOMAIN_PATTERN = '(@{0})|({0}\\.?)$'
 DOTTED_DOMAIN_PATTERN = '(^{domain}|@{domain}|\\.{domain})\\.?$'
