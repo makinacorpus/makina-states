@@ -92,9 +92,10 @@ def settings():
             'group': 'haproxy',
             'stats_enabled': True,
             'defaults': {'extra_opts': '', 'enabled': '1'},
+            'crt_dirs': [ssl['ssl_dir'] + '/haproxy/certs', '{crt_dir}'],
             'crt_dir': ssl['config_dir'] + '/certs',
             'ssl': {
-                  'frontend_bind_options': "crt {main_cert} crt {crt_dir}",
+                  'frontend_bind_options': "crt {main_cert}",
                   'bind_options': "no-sslv3 no-tls-tickets",
                   'server_bind_options': "no-sslv3 no-tls-tickets",
                   'bind_ciphers': CIPHERS,
@@ -254,6 +255,10 @@ def settings():
             data['ssl']['frontend_bind_options'].format(**data)
         )
         data = _s['mc_utils.defaults'](PREFIX, data)
+        fsslfbo = data['ssl']['frontend_bind_options']
+        for crtdir in data['crt_dirs']:
+            fsslfbo = ' crt '.join([fsslfbo, crtdir])
+            data['ssl']['frontend_bind_options'] = fsslfbo
         data = make_registrations(haproxy=data)
         if not data['stats_enabled']:
             data['listeners'].pop('stats', None)

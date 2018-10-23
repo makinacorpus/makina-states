@@ -15,6 +15,14 @@ include:
      mode='644',
      after_macro=rmacro, prefix='haproxy-')}}
 
+makina-haproxy-certs-dir-init:
+  file.directory:
+    - names:
+      {% for i in data.crt_dirs %}
+      - {{i}}
+      {% endfor %}
+    {{rmacro()}}
+
 makina-haproxy-cleanup-old:
   file.absent:
     - names:
