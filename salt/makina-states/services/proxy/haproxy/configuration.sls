@@ -17,6 +17,7 @@ include:
 
 makina-haproxy-certs-dir-init:
   file.directory:
+    - makedirs: true
     - names:
       {% for i in data.crt_dirs %}
       - {{i}}
