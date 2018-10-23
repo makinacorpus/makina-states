@@ -4872,6 +4872,8 @@ def get_ssl_conf(id_, ttl=PILLAR_TTL):
     def _do_ssl_conf(id_):
         _s = __salt__
         gconf = get_configuration(id_)
+        ssl_certs_allow_gen = gconf.get('ssl_certs_allow_gen', '.*')
+        rssl_certs_allow_gen = re.compile(ssl_certs_allow_gen, rei_flags)
         if not gconf.get('manage_ssl', True):
             return {}
         rdata = OrderedDict()
@@ -4904,6 +4906,8 @@ def get_ssl_conf(id_, ttl=PILLAR_TTL):
         for cn in todo:
             certdatas[cn] = get_cert_data(cn)
         for cn, cdata in six.iteritems(certdatas):
+            if not rssl_certs_allow_gen.search(cn):
+                continue
             add_ssl_cert(
                 cdata['cn'], cdata['cert'], cdata['cert_data'][1], rdata)
         return rdata
