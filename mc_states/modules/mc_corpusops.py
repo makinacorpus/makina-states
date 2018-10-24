@@ -14,6 +14,7 @@ import re
 import os
 import logging
 from cStringIO import StringIO
+from salt.utils.odict import OrderedDict
 re_flags = re.M | re.U | re.S
 log = logging.getLogger(__name__)
 
@@ -60,16 +61,34 @@ def export_lxc_compute_node(id_, out_file=None):
     else:
         cfg['compute_nodes_lxcs_makinastates']['hosts'][id_] = None
     for vm in cnconf['vms']:
-        vmdata = lxcmak['hosts'].setdefault(vm, {})
+        vmdata = lxcmak['hosts'].setdefault(vm, OrderedDict())
         domains = _s['mc_pillar.query'](
             'cloud_vm_attrs', {}).get(vm, {}).get('domains', [])
+        vmconf = _s['mc_pillar.get_cloud_conf_for_vm'](vm)
+        np = vmconf.get('network_profile', {})
         if vm not in domains:
             domains.insert(0, vm)
         if domains:
             vmdata['haproxy_hosts'] = domains
-        vmdata['ssh_port'] = _s['mc_pillar.get_ssh_port'](vm)
+        vmdata['ssh_port'] = _s['mc_cloud_compute_node.get_kind_port'](
+            vm, target=id_, kind='ssh')
+        vmdata['eth0_link'] = 'lxcbr1'
+        vmdata['eth0_mac'] = _s['mc_cloud_compute_node.find_mac_for_vm'](
+            vm, target=id_)
         vmdata['local_ip'] = _s['mc_cloud_compute_node.get_ip_for_vm'](
             vm, target=id_)
+        for ethx in [
+            "eth1", "eth2", "eth3", "eth4", "eth5",
+            "eth6", "eth7", "eth8", "eth9"
+        ]:
+            ethxd = np.get(ethx, {})
+            if ethxd:
+                vmdata['{0}_ip'.format(ethx)] = ethxd.get(
+                    'ip',
+                    _s['mc_pillar.ips_for'](vm)[0])
+                vmdata['{0}_mac'.format(ethx)] = ethxd.get(
+                    'hwaddr', ethxd.get('mac', None))
+                vmdata['{0}_link'.format(ethx)] = ethxd['link']
     if out_file and os.path.exists(out_file):
         with open(out_file) as fic:
             content = fic.read()
