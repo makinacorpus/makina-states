@@ -121,7 +121,7 @@ class CheckBurp(object):
 
         tline = lines.pop()
         parts = tline.split()
-        if not 3 == len(parts):
+        if len(parts) not in [3, 4]:
             self.critical(('invalid syntax in '
                            'timestamp file ({0})').format(self.ftimestamp))
 
