@@ -242,7 +242,7 @@ def settings():
 
         postgis_pkgs = []
         client_pkgs = ['libpq-dev']
-        packages = ['libpq-dev', 'postgresql-contrib-{version}']
+        packages = ['libpq-dev']
         postgis = {}
 
         if __grains__.get('os', '') == 'Ubuntu':
@@ -273,11 +273,12 @@ def settings():
                 for pkgs, candidates in [
                     [client_pkgs, ['postgresql-client-{0}'.format(version)]],
                     [packages, ['postgresql-{0}',
+                                'postgresql-contrib-{version}',
                                 'postgresql-server-dev-{0}',
                                 'postgresql-{0}-pgextwlist']]
                 ]:
                     for p in candidates:
-                        p = p.format(version)
+                        p = p.format(version, version=version)
                         if p not in pkgs:
                             pkgs.append(p)
 
