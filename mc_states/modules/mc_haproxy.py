@@ -27,8 +27,9 @@ __name = 'haproxy'
 PREFIX ='makina-states.services.proxy.{0}'.format(__name)
 log = logging.getLogger(__name__)
 
+re_flags = re.M | re.U | re.X
 OBJECT_SANITIZER = re.compile('[\\\@+\$^&~"#\'()\[\]%*.:/]',
-                              flags=re.M | re.U | re.X)
+                              flags=re_flags)
 
 registration_prefix = 'makina-states.haproxy_registrations'
 DEFAULT_FRONTENDS = {80: {}, 443: {}}
@@ -57,6 +58,11 @@ def version(default_ver='1.5'):
     except (CommandExecutionError,):
         ret = default_ver
     return ret
+
+
+wk_re = re.compile('[{](\s+ssl_fc\s+)[}]', flags=re_flags)
+def replace_wk_opts(o):
+    return wk_re.sub('{bracket}\\1{ebracket}', o)
 
 
 def settings():
@@ -112,6 +118,8 @@ def settings():
                     'balance roundrobin',
                     'option forwardfor',
                     'option http-keep-alive',
+                    "http-request set-header X-Forwarded-Proto http   if !{ ssl_fc }",  #noqa
+                    "http-request set-header X-Forwarded-Proto https  if  { ssl_fc }",  #noqa
                     'http-request set-header X-FORWARDED-SSL %[ssl_fc]',
                     'http-request set-header X-SSL %[ssl_fc]',
                     'option httpchk',
@@ -120,6 +128,8 @@ def settings():
                     'balance roundrobin',
                     'option forwardfor',
                     'option http-keep-alive',
+                    "http-request set-header X-Forwarded-Proto http   if !{ ssl_fc }",  #noqa
+                    "http-request set-header X-Forwarded-Proto https  if  { ssl_fc }",  #noqa
                     'option httpchk',
                     'option log-health-checks',
                     'http-check expect rstatus (2|3|4|5)[0-9][0-9]'],
@@ -127,6 +137,8 @@ def settings():
                     'balance roundrobin',
                     'option forwardfor',
                     'option http-keep-alive',
+                    "http-request set-header X-Forwarded-Proto http   if !{ ssl_fc }",  #noqa
+                    "http-request set-header X-Forwarded-Proto https  if  { ssl_fc }",  #noqa
                     'http-request set-header X-FORWARDED-SSL %[ssl_fc]',
                     'http-request set-header X-SSL %[ssl_fc]',
                     'option httpchk',
@@ -252,7 +264,7 @@ def settings():
             data['main_cert'] = cert['crt']
         # complete some options after all options collects
         data['ssl']['frontend_bind_options'] = (
-            data['ssl']['frontend_bind_options'].format(**data)
+            replace_wk_opts(data['ssl']['frontend_bind_options']).format(**data)
         )
         data = _s['mc_utils.defaults'](PREFIX, data)
         fsslfbo = data['ssl']['frontend_bind_options']
@@ -468,13 +480,13 @@ def register_frontend(port,
                 aclsdefs = cfgentries.get(aclmode, cfgentries['default'])
                 for acls in aclsdefs:
                     for cfgentry in acls:
-                        cfgentry = cfgentry.format(
+                        cfgentry = replace_wk_opts(cfgentry).format(
                             port=port,
                             match=(aclmode == 'wildcard' and
                                    match[2:] or
                                    match),
                             sane_match=sane_match,
-                            bck_name=bck_name)
+                            bck_name=bck_name, bracket='{', ebracket='}')
                         if cfgentry not in opts:
                             opts.append(cfgentry)
     if letsencrypt and not frontend.get('letsencrypt_activated'):
@@ -594,7 +606,13 @@ def register_servers_to_backends(port,
                 backend.setdefault('mode', hmode)
                 bopts = backend.setdefault('raw_opts', [])
                 for o in opts:
-                    o = o.format(user=user, password=password)
+                    try:
+                        o = replace_wk_opts(o).format(
+                            user=user, password=password, bracket='{', ebracket='}')
+                    except:
+                        import pdb;pdb.set_trace()  ## Breakpoint ##
+                        raise
+
                     if o not in bopts:
                         bopts.append(o)
                 bopts = backend['raw_opts']
@@ -673,4 +691,4 @@ def make_registrations(data=None, haproxy=None):
         haproxy = make_registrations_(data[k], haproxy)
     haproxy = make_registrations_(haproxy["registrations"].values(), haproxy)
     return haproxy
-# vim:set et sts=4 ts=4 tw=80:
+# vim:set et sts=4 ts=4 tw=0:
