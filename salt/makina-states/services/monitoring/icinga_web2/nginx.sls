@@ -15,7 +15,8 @@ include:
 {{ nginx.virtualhost(**data.nginx)}}
 
 # add a pool php-fpm
-{{php.fpm_pool(domain=data.nginx.domain, **data.phpfpm)}}
+{{php.fpm_pool(data.nginx.domain,        **data.phpfpm)}}
+{{php.fpm_pool(data.nginx.domain, **data.nagvis_phpfpm)}}
 
 # install php5-pgsql
 icinga_web2-php5-deps:

@@ -188,11 +188,13 @@ def settings():
                 )
             ) or
             ('socket' in web_database))
+
         data = _s['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga_web2', {
+                'navgis_module_repo': 'https://github.com/Icinga/icingaweb2-module-nagvis.git://github.com/corpusops/icingaweb2-module-nagvis',
                 'doc_root': "/usr/share/icingaweb2/public",
                 'htpasswd': '/etc/icinga2web.users',
-                'package': ['icingaweb2', 'php5-ldap',
+                'package': ['icingaweb2', 'php5-ldap', 'nagvis',
                             'php5', 'php5-cli', 'php-pear',
                             'php5-xmlrpc', 'php5-xsl', 'apache2-utils',
                             'php-soap', 'php5-gd',
@@ -291,10 +293,35 @@ def settings():
                         'group_class': 'groupOfNames',
                     }
                 },
+                'nagvis_phpfpm': {
+                    'pool_name': 'nagvis',
+                    'include_path': (
+                        '/usr/share/php'
+                        ':/usr/share/icingaweb2/application'
+                        ':/usr/share/icingaweb2/library'
+                        ":/usr/share/nagvis/share/"
+                    ),
+                    'open_basedir': None,
+                    'open_basedir2': (
+                        "/usr/share/icingaweb2/library"
+                        ":/usr/share/icingaweb2/application"
+                        ":{doc_root}"
+                        ":/etc"
+                        ":/usr/share/nagvis/share/"
+                        ":/usr/share/php"
+                        ":/var/run/icinga2/cmd/"
+                        ":/var/cache/icingaweb2/"
+                        ":/var/log/icingaweb2/"),
+                    'etcdir': '/etc/php/5.6',
+                    'extensions_packages': ['php5-pgsql'],
+                    'doc_root': '/usr/share/nagvis/share/',
+                    'session_auto_start': 0,
+                },
                 'phpfpm': {
                     'pool_name': 'icingaweb2',
                     'include_path': (
                         '/usr/share/php'
+                        ":/usr/share/nagvis/share/"
                         ':/usr/share/icingaweb2/application'
                         ':/usr/share/icingaweb2/library'
                     ),
@@ -304,13 +331,14 @@ def settings():
                         ":/usr/share/icingaweb2/application"
                         ":{doc_root}"
                         ":/etc"
+                        ":/usr/share/nagvis/share/"
                         ":/usr/share/php"
                         ":/var/run/icinga2/cmd/"
                         ":/var/cache/icingaweb2/"
                         ":/var/log/icingaweb2/"),
                     'etcdir': '/etc/php/5.6',
-                    'extensions_packages': ['php5-pgsql'],
                     'doc_root': '{doc_root}',
+                    'extensions_packages': ['php5-pgsql', 'php-gettext'],
                     'session_auto_start': 0,
                 },
                 'users': {},
@@ -431,6 +459,8 @@ def settings():
                 'login': i,
                 'password_hash': hpw,
             })
+        data['phpfpm']['session_cookie_domain'] = data['nginx']['domain']
+        data['nagvis_phpfpm']['session_cookie_domain'] = data['nginx']['domain']
         _s['mc_macros.update_local_registry'](
             'icinga_web2', icinga_web2_reg,
             registry_format='pack')

@@ -1,4 +1,10 @@
 {% import "makina-states/_macros/h.jinja" as h with context %}
+{% macro rmacro() %}
+    - watch:
+      - mc_proxy: icinga_web2-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web2-post-conf
+{% endmacro %}
 {#-
 # icinga_web2
 #
@@ -36,7 +42,45 @@ icingaweb2-config-dirs:
     - watch_in:
       - mc_proxy: icinga_web2-post-conf
 
-{% for i, idata in settings.modules_enabled.items() %}
+icingaweb2_navgis:
+  file.directory:
+    - name: /usr/share/icingaweb2/modules
+    - user: root
+    - mode: 755
+    - makedirs: true
+{{rmacro()}}
+  mc_git.latest:
+    - name: https://github.com/corpusops/icingaweb2-module-nagvis
+    - target: /usr/share/icingaweb2/modules/nagvis
+    - user: root
+    - require:
+      - file: icingaweb2_navgis
+{{rmacro()}}
+
+
+icingaweb2_navgis-up:
+  mc_git.latest:
+    - name: https://github.com/corpusops/nagvis.git
+    - target: /usr/share/nagvis/nagvis
+    - user: root
+    - require:
+      - mc_git: icingaweb2_navgis
+  cmd.run:
+    - stateful: true
+    - name: |-
+          cd /usr/share/nagvis
+          for i in userfiles;do
+            rsync -azv nagvis/share/$i/ share/$i/
+          done
+          for i in frontend server;do
+            rsync -azv --delete nagvis/share/$i/ share/$i/
+          done
+          echo "changed=no"
+    - require:
+      - mc_git: icingaweb2_navgis-up
+{{rmacro()}}
+
+{% for i, idata in settings.modules_enabled.items()+[('navgis', {})] %}
 {% set target=idata.get('target', '/usr/share/icingaweb2/modules/{0}'.format(i)) %}
 icingaweb2-config-mod-activate-{{i}}:
   file.symlink:
@@ -45,6 +89,7 @@ icingaweb2-config-mod-activate-{{i}}:
     - makedirs: true
     - watch:
       - mc_proxy: icinga_web2-pre-conf
+      - mc_git: icingaweb2_navgis
       - file: icingaweb2-config-dirs
     - watch_in:
       - mc_proxy: icinga_web2-post-conf
@@ -60,12 +105,6 @@ icingaweb2-config-token:
     - watch_in:
       - mc_proxy: icinga_web2-post-conf
 
-{% macro rmacro() %}
-    - watch:
-      - mc_proxy: icinga_web2-pre-conf
-    - watch_in:
-      - mc_proxy: icinga_web2-post-conf
-{% endmacro %}
 {{ h.deliver_config_files(
      settings.get('configs', {}),
      mode='644',
