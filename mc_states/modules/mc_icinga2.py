@@ -1178,12 +1178,10 @@ def autoconfigure_host(host,
                 if svc == 'web':
                     if ss.get('vars.http_remote', False):
                         command = 'CSSH_HTTP'
-                        check_cert_command = 'CSSH_HTTP'
                         http_host = '127.0.0.1'
                         ss.setdefault('vars.http_host', http_host)
                     else:
                         command = 'C_HTTP'
-                        check_cert_command = 'C_HTTP'
                     http_port = '80'
                     if ss.get('vars.http_ssl', False):
                         http_port = '443'
