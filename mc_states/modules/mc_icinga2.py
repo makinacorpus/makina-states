@@ -1178,10 +1178,12 @@ def autoconfigure_host(host,
                 if svc == 'web':
                     if ss.get('vars.http_remote', False):
                         command = 'CSSH_HTTP'
+                        check_cert_command = 'CSSH_HTTP'
                         http_host = '127.0.0.1'
                         ss.setdefault('vars.http_host', http_host)
                     else:
                         command = 'C_HTTP'
+                        check_cert_command = 'C_HTTP'
                     http_port = '80'
                     if ss.get('vars.http_ssl', False):
                         http_port = '443'
@@ -1226,6 +1228,17 @@ def autoconfigure_host(host,
                 if svc == 'supervisor':
                     ss['vars.command'] = v
                 object_uniquify(ss)
+                if svc == 'web' and  "{0}".format(ss.get('vars.http_ssl', '')) == "1":
+                    check_cert = copy.deepcopy(ss)
+                    for i in ('vars.strings',):
+                        check_cert.pop(i, None)
+                    check_cert['import'] = ['ST_CERT']
+                    d = check_cert['service_description'] = check_cert[
+                        'service_description'].replace('WEB', 'HTTPS_CERT')
+                    check_cert['check_command'] = check_cert['check_command'].replace(
+                        '_STRING', '_CERT')
+                    checks.append(check_cert)
+                    rdata['services_enabled'][d] = check_cert
                 checks.append(ss)
         else:
             skey = svc_name('{1}'.format(host, svc).upper())
