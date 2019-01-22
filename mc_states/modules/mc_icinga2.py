@@ -1226,6 +1226,17 @@ def autoconfigure_host(host,
                 if svc == 'supervisor':
                     ss['vars.command'] = v
                 object_uniquify(ss)
+                if svc == 'web' and  "{0}".format(ss.get('vars.http_ssl', '')) == "1":
+                    check_cert = copy.deepcopy(ss)
+                    for i in ('vars.strings',):
+                        check_cert.pop(i, None)
+                    check_cert['import'] = ['ST_CERT']
+                    d = check_cert['service_description'] = check_cert[
+                        'service_description'].replace('WEB', 'HTTPS_CERT')
+                    check_cert['check_command'] = check_cert['check_command'].replace(
+                        '_STRING', '_CERT')
+                    checks.append(check_cert)
+                    rdata['services_enabled'][d] = check_cert
                 checks.append(ss)
         else:
             skey = svc_name('{1}'.format(host, svc).upper())
