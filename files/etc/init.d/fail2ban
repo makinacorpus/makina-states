@@ -1,4 +1,5 @@
 #! /bin/sh
+### BEGIN INIT INFO 
 # MANAGED VIA SALT -- DO NOT EDIT ### BEGIN INIT INFO
 # Provides:          fail2ban
 # Required-Start:    $local_fs $remote_fs
