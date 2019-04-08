@@ -40,7 +40,9 @@ ubuntu-pkgs:
     - pkgs:
       - debian-archive-keyring
       - debian-keyring
+      {% if grains ['osrelease'] < '18.04' %}
       - ubuntu-cloudimage-keyring
+      {% endif %}
       - ubuntu-cloud-keyring
       {% if grains ['osrelease'] < '15.04' %}
       - ubuntu-extras-keyring
@@ -131,7 +133,7 @@ sys-pkgs:
       - gnupg
       - virt-what
       - python
-      - bsdtar
+      #- bsdtar
       - screen
       - python-dev
       - sudo
@@ -144,7 +146,7 @@ sys-pkgs:
       {% else %}
       - python-software-properties
       {% endif %}
-      - debconf-utils
+      #- debconf-utils
       - at
       {%- endif %}
       {% if salt['mc_nodetypes.is_devhost']() %}- localepurge{%- endif %}
