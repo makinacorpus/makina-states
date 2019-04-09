@@ -18,7 +18,9 @@ install-nagios-plugins:
       - sysstat
       {%endif %}
       {% if grains['os'] not in ['Debian'] %}
+      {% if grains["osrelease"] < "18.04" %}
       - nagios-plugins-extra
+      {% endif %}
       {% endif %}
       - libsnmp-base
       - libsnmp-perl
