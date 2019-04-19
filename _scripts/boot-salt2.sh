@@ -450,7 +450,25 @@ set_vars() {
     BASE_PACKAGES="${BASE_PACKAGES} zlib1g-dev curl python-virtualenv git rsync bzip2 net-tools"
     BASE_PACKAGES="${BASE_PACKAGES} python-pyasn1 python-urllib3 python-openssl"
     BASE_PACKAGES="${BASE_PACKAGES} acl build-essential m4 libtool pkg-config autoconf gettext"
-    BASE_PACKAGES="${BASE_PACKAGES} groff man-db automake tcl8.5 debconf-utils swig"
+    BASE_PACKAGES="${BASE_PACKAGES} man-db automake"
+    if (apt install -s tcl8.5 &>/dev/null);then
+        BASE_PACKAGES="${BASE_PACKAGES} tcl8.5"
+    else
+        BASE_PACKAGES="${BASE_PACKAGES} tcl8.6"
+    fi
+    if (apt install -s groff &>/dev/null);then
+        BASE_PACKAGES="${BASE_PACKAGES} groff"
+    else
+        BASE_PACKAGES="${BASE_PACKAGES} groff-base"
+    fi
+    if (apt install -s debconf-utils &>/dev/null);then
+        BASE_PACKAGES="${BASE_PACKAGES} debconf-utils"
+    else
+        BASE_PACKAGES="${BASE_PACKAGES} debconf-i18n"
+    fi
+    if (apt install -s swig &>/dev/null);then
+        BASE_PACKAGES="${BASE_PACKAGES} swig"
+    fi
     BASE_PACKAGES="${BASE_PACKAGES} libsigc++-2.0-dev libssl-dev libgmp3-dev python-dev python-six"
     BASE_PACKAGES="${BASE_PACKAGES} libffi-dev libzmq3-dev libmemcached-dev"
     NO_MS_VENV_CACHE="${NO_MS_VENV_CACHE:-"no"}"
