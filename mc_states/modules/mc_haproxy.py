@@ -33,6 +33,14 @@ OBJECT_SANITIZER = re.compile('[\\\@+\$^&~"#\'()\[\]%*.:/]',
 
 registration_prefix = 'makina-states.haproxy_registrations'
 DEFAULT_FRONTENDS = {80: {}, 443: {}}
+SSHPROXY = [
+  'option tcplog',
+  'tcp-request inspect-delay 5s',
+  'tcp-request content accept if HTTP',
+  'acl client_attempts_ssh payload(0,7) -m bin 5353482d322e30',
+  'use_backend {ssh_proxy} if !HTTP',
+  'use_backend {ssh_proxy} if client_attempts_ssh',
+  'use_backend {http_proxy} if HTTP']
 
 CIPHERS = '''\
 ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:\
@@ -49,6 +57,9 @@ AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:\
 !EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA\
 '''
 
+
+def get_ssh_backend_proxy_name(ssh_proxy_host, ssh_proxy_port, k='ssh'):
+    return get_backend_name('tcp', ssh_proxy_port, '{0}_{1}'.format(k, ssh_proxy_host))
 
 
 def version(default_ver='1.5'):
@@ -407,26 +418,52 @@ def register_frontend(port,
                       wildcards=None,
                       regexes=None,
                       haproxy=None,
-                      letsencrypt=False):
+                      letsencrypt=False,
+                      ssh_proxy=None,
+                      ssh_proxy_host=None,
+                      ssh_proxy_port=None):
+    proxied_port = port
+    if ssh_proxy:
+        proxied_port = port + 1
     if haproxy is None:
         haproxy = settings()
     sbind = '*:{0}'.format(port)
     if not haproxy['no_ipv6']:
         sbind = '{0},ipv6@:{1}'.format(sbind, port)
+    if ssh_proxy_host is None:
+        ssh_proxy_host = '127.0.0.1'
+    if ssh_proxy_port is None:
+        ssh_proxy_port = 22
     # if this is a TLS backend, append also the certificates
     # configured on the machine
     frontends = haproxy.setdefault('frontends', {})
     has = {'backend': False,
            'ssl': False,
-           'main_cert': haproxy['main_cert'] != None}
-    if mode.startswith('https') or mode  in ['tcps', 'ssl', 'tls']:
+           'main_cert': haproxy['main_cert'] is not None}
+    if mode.startswith('https') or mode in ['tcps', 'ssl', 'tls']:
         has.update({'ssl': True})
         sbind = '{0} ssl {1}'.format(
            sbind,
            haproxy['ssl']['frontend_bind_options'])
-    fr = get_frontend_name(mode, port)
+    fbind = sbind
+    if ssh_proxy:
+        fbind = '127.0.0.1:{0}'.format(proxied_port)
+    fr = get_frontend_name(mode, proxied_port)
     frontend = frontends.setdefault(fr, {})
-    frontend.setdefault('bind', sbind)
+    frontend.setdefault('bind', fbind)
+    if ssh_proxy:
+        ssshbckname = get_ssh_backend_proxy_name(ssh_proxy_host, ssh_proxy_port,
+                                               k='ssh')
+        hsshbckname = get_ssh_backend_proxy_name('127.0.0.1', proxied_port,
+                                               k='https')
+        sshfr = get_frontend_name('tcp', port)
+        sshproxyfrontend = frontends.setdefault(sshfr, {})
+        sshproxyfrontend.setdefault('bind', sbind)
+        sshproxyfrontend["mode"] = "tcp"
+        sshproxyfrontend["raw_opts"] = [
+            a.format(http_proxy=hsshbckname, ssh_proxy=ssshbckname,
+                     bracket='{', ebracket='}')
+            for a in SSHPROXY]
     # normalise https -> http  & default proxy mode to TCP
     hmode = frontend.setdefault(
         'mode',
@@ -519,17 +556,28 @@ def register_servers_to_backends(port,
                                  letsencrypt=None,
                                  letsencrypt_host=None,
                                  letsencrypt_http_port=None,
-                                 letsencrypt_tls_port=None):
+                                 letsencrypt_tls_port=None,
+                                 ssh_proxy=None,
+                                 ssh_proxy_host=None,
+                                 ssh_proxy_port=None):
     '''
     Register a specific minion as a backend server
     where haproxy will forward requests to
     '''
+    if ssh_proxy:
+        proxied_port = port + 1
     if letsencrypt_host is None:
         letsencrypt_host = '127.0.0.1'
     if letsencrypt_http_port is None:
         letsencrypt_http_port = 54080
     if letsencrypt_tls_port is None:
         letsencrypt_tls_port = 54443
+    if ssh_proxy is None:
+        ssh_proxy = False
+    if ssh_proxy_host is None:
+        ssh_proxy_host = '127.0.0.1'
+    if ssh_proxy_port is None:
+        ssh_proxy_port = 22
     # if we proxy some https? traffic, we rely on host to choose a backend
     # and in other cases, we assume to proxy to a TCPs? backend
     if ssl_terminated is None:
@@ -598,6 +646,24 @@ def register_servers_to_backends(port,
                 }]
             }
         })
+    if ssh_proxy:
+        sshbckname = get_ssh_backend_proxy_name(ssh_proxy_host, ssh_proxy_port,
+                                                k='ssh')
+        hsshbckname = get_ssh_backend_proxy_name('127.0.0.1', proxied_port,
+                                                 k='https')
+        backends.update({
+            hsshbckname: {
+                'mode': 'tcp',
+                'servers': [{'bind': '{0}:{1}'.format('127.0.0.1', proxied_port)}],
+            },
+            sshbckname: {
+                'mode': 'tcp',
+                'raw_opts': ['option tcplog', 'timeout server 2h'],
+                'servers': [{
+                    'bind': '{0}:{1}'.format(ssh_proxy_host, ssh_proxy_port)
+                }],
+            },
+        })
     for aclmode, hosts in aclmodes:
         if hosts:
             for match in hosts:
@@ -606,13 +672,9 @@ def register_servers_to_backends(port,
                 backend.setdefault('mode', hmode)
                 bopts = backend.setdefault('raw_opts', [])
                 for o in opts:
-                    try:
-                        o = replace_wk_opts(o).format(
-                            user=user, password=password, bracket='{', ebracket='}')
-                    except:
-                        import pdb;pdb.set_trace()  ## Breakpoint ##
-                        raise
-
+                    o = replace_wk_opts(o).format(
+                        user=user, password=password,
+                        bracket='{', ebracket='}')
                     if o not in bopts:
                         bopts.append(o)
                 bopts = backend['raw_opts']
@@ -649,6 +711,9 @@ def make_registrations_(data, haproxy):
             ssl_terminated = fdata.get('ssl_terminated', None)
             http_fallback = fdata.get('http_fallback', None)
             letsencrypt = fdata.get('letsencrypt', haproxy['letsencrypt'])
+            ssh_proxy = payload.get('ssh_proxy', None)
+            ssh_proxy_host = payload.get('ssh_proxy_host', None)
+            ssh_proxy_port = payload.get('ssh_proxy_port', None)
             letsencrypt_host = fdata.get(
                 'letsencrypt_host', None)
             letsencrypt_http_port = fdata.get(
@@ -661,7 +726,15 @@ def make_registrations_(data, haproxy):
                               wildcards=wildcards,
                               regexes=regexes,
                               haproxy=haproxy,
-                              letsencrypt=letsencrypt)
+                              letsencrypt=letsencrypt,
+                              ssh_proxy=ssh_proxy,
+                              ssh_proxy_host=ssh_proxy_host,
+                              ssh_proxy_port=ssh_proxy_port)
+            if ssh_proxy:
+                payload.setdefault(
+                    'ip', [ssh_proxy_host or '127.0.0.1'])
+            if not isinstance(payload['ip'], list):
+                payload['ip'] = payload['ip']
             register_servers_to_backends(
                 port=port, ip=payload['ip'],
                 to_port=to_port, mode=mode,
@@ -674,7 +747,10 @@ def make_registrations_(data, haproxy):
                 letsencrypt=letsencrypt,
                 letsencrypt_host=letsencrypt_host,
                 letsencrypt_http_port=letsencrypt_http_port,
-                letsencrypt_tls_port=letsencrypt_tls_port
+                letsencrypt_tls_port=letsencrypt_tls_port,
+                ssh_proxy=ssh_proxy,
+                ssh_proxy_host=ssh_proxy_host,
+                ssh_proxy_port=ssh_proxy_port
             )
     return haproxy
 
