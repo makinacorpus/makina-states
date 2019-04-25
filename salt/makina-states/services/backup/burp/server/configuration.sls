@@ -124,6 +124,9 @@ etc-burp-burp-client.{{client}}-backup-init:
     - names:
       - {{data.server_conf.directory}}/{{client}}
       - /etc/burp/clients/{{client}}
+      {% if cdata.ca_csr_dir %}
+      - /etc/burp/clients/{{client}}/{{cdata.ca_csr_dir}}
+      {% endif %}
     - makedirs: true
     - mode: 700
     - user: root

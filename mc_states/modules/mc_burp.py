@@ -267,7 +267,7 @@ def settings():
                     'cross_all_filesystems': '0',
                     'encryption_password': None,
                     'ca_burp_ca': None,
-                    'ca_csr_dir': None,
+                    'ca_csr_dir': "/etc/burp/csr",
                     'ssl_cert': '/etc/burp/ssl_cert-client.pem',
                     'ssl_key': '/etc/burp/ssl_cert-client.key',
                     'ssl_ciphers': None,
