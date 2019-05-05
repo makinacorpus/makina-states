@@ -51,8 +51,7 @@ lxcs_makinastates:
     DEFAULT_COPS_INV += '''
 all:
   hosts:
-    {id_}:
-      vars: {{}}
+    {id_}: {{}}
 '''
     return DEFAULT_COPS_INV
 
@@ -121,11 +120,12 @@ def export_compute_node(id_, out_file=None, lxc=False):
         cfg['all']['hosts'][id_]['ansible_host'] = ip
         if len(tips) > 1:
             if lxc:
-                cfg[
-                    '{}_and_lxcs'.format(id_)
-                ].setdefault('vars', {})['public_ips'] = tips
+                hvars = cfg['{}_and_lxcs'.format(id_)].setdefault('vars', {})
+                hvars['public_ips'] = tips
+                hvars['public_ip'] = "{{public_ips[0]}}"
             else:
                 cfg['all']['hosts'][id_]['public_ips'] = tips
+                cfg['all']['hosts'][id_]['public_ip'] = "{{public_ips[0]}}"
     if out_file and os.path.exists(out_file):
         with open(out_file) as fic:
             content = fic.read()
@@ -142,7 +142,9 @@ def export_compute_node(id_, out_file=None, lxc=False):
         dcfg = _s['mc_dumper.yaml_dump'](cfg, flow=False)
     dcfg = re.sub(': null$', ':', dcfg, flags=re_flags)
     dcfg = dcfg.replace('\n    ssh_bastion', ' {ssh_bastion')
-    dcfg = re.sub('(: {ssh_bastion.*[^}])}.$', '\\1}', dcfg, flags=re_flags)
+    dcfg = dcfg.replace('burpclientserver_profiles_vm\']}\n',
+                        'burpclientserver_profiles_vm\']}}\n')
+    dcfg = re.sub('(: {ssh_bastion[^}]+)}.$', '\\1}', dcfg, flags=re_flags)
     if out_file:
         with open(out_file, 'w') as fic:
             fic.write(dcfg)
