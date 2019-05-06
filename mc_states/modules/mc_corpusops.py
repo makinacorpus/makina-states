@@ -17,10 +17,20 @@ from cStringIO import StringIO
 from salt.utils.odict import OrderedDict
 re_flags = re.M | re.U | re.S
 log = logging.getLogger(__name__)
+cops_regs_fw_pref = (
+    'corpusops_ms_iptables_registrations_registrations_makinastates')
+providerre = re.compile('(ovh|online|sys)-')
 
-DEFAULT_COPS_INV = '''
+
+def cops_inv(lxc=False):
+    DEFAULT_COPS_INV = '''
 ---
-compute_nodes_lxcs_makinastates:
+{provider_}:
+  hosts:
+    {id_}: {{}}
+'''
+    if lxc:
+        DEFAULT_COPS_INV += '''compute_nodes_lxcs_makinastates:
   hosts:
     {id_}: {{}}
 lxcs_makinastates:
@@ -38,28 +48,20 @@ lxcs_makinastates:
   vars: {{ssh_bastion: {id_}}}
   hosts: {{}}
 '''
-cops_regs_fw_pref = (
-    'corpusops_ms_iptables_registrations_registrations_makinastates')
+    DEFAULT_COPS_INV += '''
+all:
+  hosts:
+    {id_}:
+      vars: {{}}
+'''
+    return DEFAULT_COPS_INV
 
 
-def export_lxc_compute_node(id_, out_file=None):
-    '''Generate corpusops inventory slug to paste inside corpusops compatible inventoy'''
-    _s = __salt__
-    db = _s['mc_pillar.get_db_infrastructure_maps']()
+def export_lxc_compute_node(cfg, id_):
+    _s = __salt__  # noqa
+    db = _s['mc_pillar.get_db_infrastructure_maps']()  # noqa
     cnconf = _s['mc_pillar.get_cloud_entry_for_cn'](id_)
-    msiptables = _s['mc_pillar.get_ms_iptables_conf'](id_)
-    cfg = _s['mc_utils.cyaml_load'](
-        DEFAULT_COPS_INV.format(id_=id_))
-    rules = msiptables.get(
-        'makina-states.services.firewall.ms_iptables.config', {}
-    ).get('rules', [])
     lxcmak = cfg[id_+'_lxcs_makinastates']
-    if rules:
-        cfg['compute_nodes_lxcs_makinastates'][
-            'hosts'
-        ][id_].setdefault(cops_regs_fw_pref, {})['rules'] = rules
-    else:
-        cfg['compute_nodes_lxcs_makinastates']['hosts'][id_] = None
     for vm in cnconf['vms']:
         vmdata = lxcmak['hosts'].setdefault(vm, OrderedDict())
         domains = _s['mc_pillar.query'](
@@ -89,6 +91,41 @@ def export_lxc_compute_node(id_, out_file=None):
                 vmdata['{0}_mac'.format(ethx)] = ethxd.get(
                     'hwaddr', ethxd.get('mac', None))
                 vmdata['{0}_link'.format(ethx)] = ethxd['link']
+
+
+def export_compute_node(id_, out_file=None, lxc=False):
+    '''Generate corpusops inventory slug to paste
+    inside corpusops compatible inventoy'''
+    _s = __salt__  # noqa
+    db = _s['mc_pillar.get_db_infrastructure_maps']()  # noqa
+    msiptables = _s['mc_pillar.get_ms_iptables_conf'](id_)
+    providersrm = providerre.search(id_)
+    provider = (not providersrm) and 'ovh' or providersrm.groups()[0]
+    cfg = _s['mc_utils.cyaml_load'](
+        cops_inv(lxc=lxc).format(id_=id_, provider_=provider))
+    rules = msiptables.get(
+        'makina-states.services.firewall.ms_iptables.config', {}
+    ).get('rules', [])
+    if rules:
+        cfg['compute_nodes_lxcs_makinastates'][
+            'hosts'
+        ][id_].setdefault(cops_regs_fw_pref, {})['rules'] = rules
+    else:
+        if lxc:
+            cfg['compute_nodes_lxcs_makinastates']['hosts'][id_] = None
+    if lxc:
+        export_lxc_compute_node(cfg, id_)
+    tips = _s['mc_pillar.ips_for'](id_, fail_over=True)
+    if tips:
+        ip = tips[0]
+        cfg['all']['hosts'][id_]['ansible_host'] = ip
+        if len(tips) > 1:
+            if lxc:
+                cfg[
+                    '{}_and_lxcs'.format(id_)
+                ].setdefault('vars', {})['public_ips'] = tips
+            else:
+                cfg['all']['hosts'][id_]['public_ips'] = tips
     if out_file and os.path.exists(out_file):
         with open(out_file) as fic:
             content = fic.read()
@@ -112,9 +149,9 @@ def export_lxc_compute_node(id_, out_file=None):
     return dcfg
 
 
-def export_lxc_makinastates(export_dir='/tmp', to_file=False):
+def export_makinastates(export_dir='/tmp', to_file=False):
     out = None
-    _s = __salt__
+    _s = __salt__  # noqa
     ret = {}
     for id_ in _s['mc_pillar.query'](
         'vms', {}
@@ -122,7 +159,14 @@ def export_lxc_makinastates(export_dir='/tmp', to_file=False):
         if to_file:
             out = os.path.join(export_dir, '0150_bm_{0}.yml'.format(
                 id_.split('.')[0]))
-        r = export_lxc_compute_node(id_, out_file=out)
+        r = export_compute_node(id_, out_file=out, lxc=True)
+        ret[id_] = r
+    standalone_servers = _s['mc_pillar.query']('backup_servers', {})
+    for id_ in standalone_servers:
+        if to_file:
+            out = os.path.join(export_dir, '0150_bm_{0}.yml'.format(
+                id_.split('.')[0]))
+        r = export_compute_node(id_, out_file=out, lxc=False)
         ret[id_] = r
     return ret
 # vim:set et sts=4 ts=4 tw=80:
