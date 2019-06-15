@@ -25,6 +25,7 @@
         untracked = cyan
 
 [alias]
+        r = !"f() { git reset $@; git checkout $@; }; f"
         changes=diff --name-status -r
         dc = diff --cached
         rc = rebase --continue
@@ -51,7 +52,7 @@
         mst =  !git mstn && git mste
         rn = config user.email "regis.leroy@makina-corpus.com"
         re = config user.name 'Régis Leroy'
-        r =  !git rn && git re
+        rle =  !git rn && git re
         kn = config user.email "kiorky@cryptelium.net"
         ke = config user.name 'Mathieu Le Marec - Pasquet'
         k =  !git kn && git ke
