@@ -44,6 +44,9 @@
         mpan = config user.email "mpa@makina-corpus.com"
         mpae = config user.name 'Mathieu Le Marec - Pasquet'
         mpa =  !git mpan && git mpae
+        hgan = config user.email "hga@makina-corpus.com"
+        hgae = config user.name 'Henri Gauffriau'
+        hga =  !git hgan && git hgae
         jpcn = config user.email "jpc@makina-corpus.com"
         jpce = config user.name 'Jean-Philippe Camguilhem'
         jpc =  !git jpcn && git jpce
