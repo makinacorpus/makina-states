@@ -34,6 +34,9 @@ def cops_inv(lxc=False):
         DEFAULT_COPS_INV += '''compute_nodes_lxcs_makinastates:
   hosts:
     {id_}: {{}}
+baremetals_managed:
+  hosts:
+    {id_}: {{}}
 lxcs_makinastates:
   children:
     {id_}_lxcs_makinastates:
