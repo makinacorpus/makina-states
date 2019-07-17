@@ -1,0 +1,1 @@
+0 2 * * * root /etc/slapd_le.sh &>/dev/null

@@ -29,10 +29,17 @@ olcSizeLimit: 5000
 olcSockbufMaxIncoming: 262143
 olcSockbufMaxIncomingAuth: 16777215
 olcThreads: 16
-{%- if certinfo.cert_data[2]%}
-olcTLSCACertificateFile: {{certinfo.authr}}{%endif%}
+{%- if data.ssl_cert_path %}
+{% if data.ssl_cacert_path %}olcTLSCACertificateFile: {{data.ssl_cacert_path}}{%endif%}
+olcTLSCertificateFile: {{data.ssl_cert_path}}
+olcTLSCertificateKeyFile: {{data.ssl_key_path}}
+{%- else %}
 olcTLSCertificateFile: {{certinfo.only}}
 olcTLSCertificateKeyFile: {{certinfo.key}}
+{%- if certinfo.cert_data[2]%}
+olcTLSCACertificateFile: {{certinfo.authr}}
+{%endif%}
+{%endif%}
 olcTLSVerifyClient: {{data.verify_client}}
 olcToolThreads: 1
 olcWriteTimeout: 0

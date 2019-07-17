@@ -247,6 +247,7 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.dns.slapd', {
                 'slapd_directory': "/etc/ldap/slapd.d",
+                'letsencrypt': False,
                 'extra_dirs': [
                     '/etc/ldap',
                     '/var/lib/ldap',
@@ -277,7 +278,9 @@ def settings():
                 'group_ou': 'Group',
                 'dn': 'dc=sample,dc=com',
                 'verify_client': 'never',
-                'root_dn': None,
+                'ssl_cacert_path': None,
+                'ssl_cert_path': None,
+                'ssl_key_path': None,
                 'root_pw': dn_pass,
                 'eroot_pw': '',
                 'loglevel': 'sync',
@@ -426,5 +429,10 @@ def settings():
                     cfg.replace('slapd.d/cn=config/cn=schema/',
                                 'slapd.d/cn=config/cn=schema/{0}/'.format(
                                     data['fd_ver']))))
+        if data['letsencrypt']:
+            data['cn_config_files'].update({
+                '/etc/slapd_le.sh': {'mode': '0755'},
+                '/etc/cron.d/slapdle': {},
+            })
         return data
     return _settings()
