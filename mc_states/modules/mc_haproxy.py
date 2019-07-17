@@ -273,6 +273,7 @@ def settings():
         # for i, cdata in six.iteritems(ssl['certificates']):
         #     cert = _s['mc_ssl.get_cert_infos'](i, sinfos=cdata[3])
         #     data['main_cert'] = cert['crt']
+        data['main_cert'] = data['crt_dirs'][0]
         # complete some options after all options collects
         data['ssl']['frontend_bind_options'] = (
             replace_wk_opts(data['ssl']['frontend_bind_options']).format(**data)
