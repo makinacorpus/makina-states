@@ -270,9 +270,9 @@ def settings():
         # the default one.
         # Nevertheless, certicates are matched via SNI, the first
         # is always used in THE LAST RESORT
-        for i, cdata in six.iteritems(ssl['certificates']):
-            cert = _s['mc_ssl.get_cert_infos'](i, sinfos=cdata[3])
-            data['main_cert'] = cert['crt']
+        # for i, cdata in six.iteritems(ssl['certificates']):
+        #     cert = _s['mc_ssl.get_cert_infos'](i, sinfos=cdata[3])
+        #     data['main_cert'] = cert['crt']
         # complete some options after all options collects
         data['ssl']['frontend_bind_options'] = (
             replace_wk_opts(data['ssl']['frontend_bind_options']).format(**data)
