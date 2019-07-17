@@ -39,6 +39,7 @@ from mc_states import api
 import mc_states.api
 from distutils.version import LooseVersion
 
+
 _CACHE = {'mid': None}
 _default_marker = object()
 _marker = object()
@@ -909,13 +910,20 @@ def sls_load(sls, get_inner=False):
     return data_l
 
 
-def file_read(fic):
+def indenter(text, amount, ch=' '):
+    padding = amount * ch
+    return ''.join(padding+line for line in text.splitlines(True))
+
+
+def file_read(fic, indent=None, ch=' '):
     '''
     read the content a file
     '''
     data = ''
     with open(fic, 'r') as f:
         data = f.read()
+    if indent:
+        data = indenter(data, indent, ch)
     return data
 
 
