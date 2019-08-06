@@ -12,6 +12,7 @@ haproxy-base-cleanup:
       - sed -i "/makinacorpus/ d" "{{f}}" && echo changed='false'
       - sed -i "/haproxy-1.5/ d" "{{f}}" && echo changed='false'
       - sed -i "/haproxy-1.6/ d" "{{f}}" && echo changed='false'
+      - sed -i "/haproxy-1.7/ d" "{{f}}" && echo changed='false'
 {% if salt['mc_haproxy.version']() >= '1.6' %}
       - |
         if grep "listen stats :" /etc/haproxy/cfg.d/listeners.cfg >/dev/null 2>&1; then
@@ -33,7 +34,7 @@ haproxy-base:
   pkgrepo.managed:
     - retry: {attempts: 6, interval: 10}
     - humanname: haproxy ppa
-    - name: deb http://ppa.launchpad.net/vbernat/haproxy-1.7/ubuntu {{pkgssettings.udist}} main
+    - name: deb http://ppa.launchpad.net/vbernat/haproxy-1.8/ubuntu {{pkgssettings.udist}} main
     - dist: {{pkgssettings.udist}}
     - file: "{{f}}"
     - keyid: 1C61B9CD
