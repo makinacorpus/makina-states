@@ -2,13 +2,20 @@
 if [ "x${DEBUG}" = "x" ];then
     set -x
 fi
-if [ -f /etc/default/haproxy ];then
-    . /etc/default/haproxy
-fi
-if [ "x${1}" = "xcheck" ];then
-    exec /usr/sbin/haproxy -c -f "${CONFIG}" ${EXTRAOPTS}
+for i in /etc/default/haproxy /etc/sysconfig/haproxy;do
+    if [ -f "$i" ];then
+        . "$i"
+    fi
+done
+if [[ -n $CHECK_MODE ]];then
+    exec "$HAPROXYB" -c -f "${CONFIG}" ${EXTRAOPTS}
 elif [ "x${1}" = "xstart" ];then
-    exec /usr/sbin/haproxy-systemd-wrapper -f "${CONFIG}" ${EXTRAOPTS} -p /run/haproxy.pid
+    WS=""
+    # support for old and new wrapper
+    if ( $HAPROXYB --help 2>&1 |grep -q -- "-Ws" );then
+        WS="-Ws"
+    fi
+    exec "$HAPROXYB" $WS -f "${CONFIG}" ${EXTRAOPTS} ${PID_ARGS}
 fi
 exit ${?}
 # vim:set et sts=4 ts=4 tw=80:

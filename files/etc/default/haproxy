@@ -26,3 +26,20 @@ get_cfgs() {
 }
 
 EXTRAOPTS="${EXTRAOPTS} $(get_cfgs)"
+
+HAPROXYW="${HAPROXYW:-"${SCANNED_HAPROXYW:-/usr/sbin/haproxy-systemd-wrapper}"}"
+EXTRAOPTS="{% if data.defaults.extra_opts %}{{data.defaults.extra_opts}}{%endif%}"
+
+CHECK_MODE=""
+for i in $@;do
+    if [ "x${i}" = "xcheck" ];then
+        CHECK_MODE=1
+    fi
+    if [ "x${i}" = "xsystemd" ];then
+        if [ ! -e $HAPROXYW ] && [ -e $HAPROXY ];then
+            HAPROXYB=$HAPROXY
+        fi
+        HAPROXYB=${HAPROXYB:-${HAPROXYW}}
+    fi
+done
+HAPROXYB=${HAPROXYB:-${HAPROXY}}
