@@ -103,7 +103,7 @@ def settings():
             'location': locs['conf_dir'] + '/haproxy',
             'config_dir': '/etc/haproxy',
             'rotate': _s['mc_logrotate.settings']()['days'],
-            'config': 'haproxy.cfg',
+            'config_file': '{config_dir}/haproxy.cfg',
             'user': 'haproxy',
             'use_rsyslog': False,
             'group': 'haproxy',

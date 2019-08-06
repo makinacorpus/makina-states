@@ -5,6 +5,8 @@ After=network.target
 [Service]
 ExecStartPre=/usr/bin/mc_haproxy.sh check systemd
 ExecStart=/usr/bin/mc_haproxy.sh start systemd
+ExecReload=
+ExecReload=/usr/bin/mc_haproxy.sh check systemd
 ExecReload=/bin/kill -USR2 $MAINPID
 KillMode=mixed
 Restart=always

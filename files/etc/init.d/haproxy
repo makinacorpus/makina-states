@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ### BEGIN INIT INFO
 # Provides:          haproxy
 # Required-Start:    $local_fs $network $remote_fs $syslog
@@ -30,7 +30,7 @@ if [ -e /etc/default/haproxy ]; then
 	. /etc/default/haproxy
 fi
 
-
+# test -f "$CONFIG" || exit 0
 
 [ -f /etc/default/rcS ] && . /etc/default/rcS
 . /lib/lsb/init-functions
@@ -43,7 +43,7 @@ haproxy_check_perms() {
 
 check_haproxy_config()
 {
-    $HAPROXY -c -f "$CONFIG" ${EXTRAOPTS}>/dev/null
+    $HAPROXY -c -f "$CONFIG" ${EXTRAOPTS} > /dev/null
 	if [ $? -eq 1 ]; then
 		log_end_msg 1
 		exit 1
@@ -72,10 +72,19 @@ haproxy_stop()
 	fi
 
 	ret=0
+	tmppid="$(mktemp)"
+
+	# HAProxy's pidfile may contain multiple PIDs, if nbproc > 1, so loop
+	# over each PID. Note that start-stop-daemon has a --pid option, but it
+	# was introduced in dpkg 1.17.6, post wheezy, so we use a temporary
+	# pidfile instead to ease backports.
 	for pid in $(cat $PIDFILE); do
-        /bin/kill ${pid} || return 4
+		echo "$pid" > "$tmppid"
+		start-stop-daemon --quiet --oknodo --stop \
+			--retry 5 --pidfile "$tmppid" --exec $HAPROXY || ret=$?
 	done
 
+	rm -f "$tmppid"
 	[ $ret -eq 0 ] && rm -f $PIDFILE
 
 	return $ret

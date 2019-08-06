@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-if [ "x${DEBUG}" = "x" ];then
+set -e
+if [ "x${DEBUG}" != "x" ];then
     set -x
 fi
 for i in /etc/default/haproxy /etc/sysconfig/haproxy;do
@@ -18,4 +19,4 @@ elif [ "x${1}" = "xstart" ];then
     exec "$HAPROXYB" $WS -f "${CONFIG}" ${EXTRAOPTS} ${PID_ARGS}
 fi
 exit ${?}
-# vim:set et sts=4 ts=4 tw=80:
+# vim:set et sts=4 ts=4 tw=0 ft=sh:
