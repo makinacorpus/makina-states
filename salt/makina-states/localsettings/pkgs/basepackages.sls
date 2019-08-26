@@ -77,7 +77,9 @@ ubuntu-pkgs:
       - passwd
       - procps
       - python3
+      {% if grains ['osrelease'] < '18.04' %}
       - resolvconf
+      {%endif%}
       - sudo
       - tzdata
       # light version of ubuntu-standard

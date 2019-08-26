@@ -15,8 +15,10 @@ container-container-pkgs:
       - mc_proxy: makina-lxc-proxy-pkgs-pre
     - watch_in:
       - mc_proxy: makina-lxc-proxy-pkgs
+{% if grains ['osrelease'] < '18.04' %}
       - cmd: container-install-non-harmful-packages
       - cmd: container-do-cleanup
+{% endif %}
 
 {% set extra_confs = {
   '/usr/bin/lxc-setup.sh': {"mode": "755"},
@@ -28,15 +30,22 @@ container-container-pkgs:
   '/sbin/makinastates-snapshot.sh': {"mode": "755"},
   '/sbin/lxc-cleanup.sh': {"mode": "755"},
   '/sbin/reset-passwords.sh': {"mode": "755"},
+  '/usr/bin/lxc-stop.sh': {"mode": "755"}} %}
+{% if grains ['osrelease'] < '18.04' %}
+{% set _ = extra_confs.update({
   '/etc/systemd/system/lxc-stop.service': {"mode": "644"},
   '/etc/systemd/system/lxc-setup.service': {"mode": "644"},
-  '/usr/bin/lxc-stop.sh': {"mode": "755"}} %}
+  })%}
+{% endif %}
+
 {% macro rmacro() %}
     - watch:
       - mc_proxy: makina-lxc-proxy-cfg
     - watch_in:
       - mc_proxy: makina-lxc-proxy-dep
 {% endmacro %}
+
+{# no longer needed
 {{ h.deliver_config_files(extra_confs, after_macro=rmacro, prefix='lxc-conf-')}}
 
 container-install-non-harmful-packages:
@@ -47,6 +56,7 @@ container-install-non-harmful-packages:
     - watch_in:
       - mc_proxy: makina-lxc-proxy-mark
 
+{% if grains ['osrelease'] < '18.04' %}
 container-do-cleanup:
   cmd.run:
     - name: /sbin/lxc-cleanup.sh
@@ -54,6 +64,7 @@ container-do-cleanup:
       - mc_proxy: makina-lxc-proxy-cleanup
     - watch_in:
       - mc_proxy: makina-lxc-proxy-end
+{% endif %}
 
 {% if salt['mc_nodetypes.is_systemd']() and salt['mc_nodetypes.is_container']() %}
 # apply a patch to be sure that future evols of the script are still compatible with our work
@@ -87,14 +98,22 @@ container-do-systemd-sysv-patch:
     - watch_in:
       - mc_proxy: makina-lxc-proxy-end
 # only enable, no stuff around
+
+{% endif %}
+#}
 container-do-setup-services:
   cmd.run:
+    {% if grains ['osrelease'] < '18.04' %}
     - name: "systemctl enable lxc-setup;systemctl enable lxc-stop"
+    {%else %}
+    - name: |-
+        systemctl disable lxc-setup || /bin/true
+        systemctl disable lxc-stop  || /bin/true
+    {% endif %}
     - require:
       - mc_proxy: makina-lxc-proxy-cleanup
       - pkg: container-container-pkgs
     - require_in:
       - mc_proxy: makina-lxc-proxy-end
-{% endif %}
 {% endif %}
 # vim:set nofoldenable:

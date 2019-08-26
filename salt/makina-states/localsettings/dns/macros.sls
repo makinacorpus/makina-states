@@ -31,6 +31,7 @@ ms-dns-pre-{{suf}}:
 
 ms-dns-post-{{suf}}:
   mc_proxy.hook: []
+{% if grains ['osrelease'] < '18.04' %}
 bind-set-defaultdns-{{suf}}-1:
   file.managed:
     - name: /usr/bin/ms-resolv-conf.sh
@@ -110,4 +111,14 @@ bind-set-defaultdns-{{suf}}-2:
       - {{w}}
       {% endfor %}
       {% endif %}
+{% else %}
+use-systemd-resolved:
+    cmd.run:
+        - name: |-
+            apt-get remove -y resolvconf
+            rm -f /etc/resolv.conf
+            ln -sf /var/run/systemd/resolve/resolv.conf /etc/resolv.conf
+            systemctl enable systemd-resolved
+            systemctl restart systemd-resolved
+{%endif%}
 {% endmacro %}
