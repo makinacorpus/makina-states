@@ -1226,7 +1226,11 @@ def autoconfigure_host(host,
                 if svc == 'supervisor':
                     ss['vars.command'] = v
                 object_uniquify(ss)
-                if svc == 'web' and  "{0}".format(ss.get('vars.http_ssl', '')) == "1":
+                if (
+                    svc == 'web' and
+                    "{0}".format(ss.get('vars.http_ssl', '')) == "1" and
+                    ss.get('vars.http_ssl_check', True)
+                ):
                     check_cert = copy.deepcopy(ss)
                     for i in ('vars.strings',):
                         check_cert.pop(i, None)
