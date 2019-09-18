@@ -16,6 +16,7 @@ db_smart_backup:
     - name: https://github.com/kiorky/db_smart_backup.git
     - target: {{locs.apps_dir}}/db_smart_backup
     - user: root
+    - force_reset: true
 
 db_smart_backup-sym:
   file.symlink:
