@@ -11,7 +11,7 @@
 
 include:
   - makina-states.services.monitoring.nagvis.hooks
-  - makina-states.services.monitoring.nagvis.services
+#   - makina-states.services.monitoring.nagvis.services
 
 
 # general configuration

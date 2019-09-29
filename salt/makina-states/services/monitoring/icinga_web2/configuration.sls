@@ -42,7 +42,7 @@ icingaweb2-config-dirs:
     - watch_in:
       - mc_proxy: icinga_web2-post-conf
 
-icingaweb2_navgis:
+icingaweb2_nagvis:
   file.directory:
     - name: /usr/share/icingaweb2/modules
     - user: root
@@ -54,17 +54,17 @@ icingaweb2_navgis:
     - target: /usr/share/icingaweb2/modules/nagvis
     - user: root
     - require:
-      - file: icingaweb2_navgis
+      - file: icingaweb2_nagvis
 {{rmacro()}}
 
 
-icingaweb2_navgis-up:
+icingaweb2_nagvis-up:
   mc_git.latest:
     - name: https://github.com/corpusops/nagvis.git
     - target: /usr/share/nagvis/nagvis
     - user: root
     - require:
-      - mc_git: icingaweb2_navgis
+      - mc_git: icingaweb2_nagvis
   cmd.run:
     - stateful: true
     - name: |-
@@ -77,10 +77,10 @@ icingaweb2_navgis-up:
           done
           echo "changed=no"
     - require:
-      - mc_git: icingaweb2_navgis-up
+      - mc_git: icingaweb2_nagvis-up
 {{rmacro()}}
 
-{% for i, idata in settings.modules_enabled.items()+[('navgis', {})] %}
+{% for i, idata in settings.modules_enabled.items()+[('nagvis', {})] %}
 {% set target=idata.get('target', '/usr/share/icingaweb2/modules/{0}'.format(i)) %}
 icingaweb2-config-mod-activate-{{i}}:
   file.symlink:
@@ -89,7 +89,7 @@ icingaweb2-config-mod-activate-{{i}}:
     - makedirs: true
     - watch:
       - mc_proxy: icinga_web2-pre-conf
-      - mc_git: icingaweb2_navgis
+      - mc_git: icingaweb2_nagvis
       - file: icingaweb2-config-dirs
     - watch_in:
       - mc_proxy: icinga_web2-post-conf

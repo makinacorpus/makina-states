@@ -331,6 +331,7 @@ def settings():
                         ":/usr/share/icingaweb2/application"
                         ":{doc_root}"
                         ":/etc"
+                        ":/usr/share/nagvis/docs/"
                         ":/usr/share/nagvis/share/"
                         ":/usr/share/php"
                         ":/var/run/icinga2/cmd/"

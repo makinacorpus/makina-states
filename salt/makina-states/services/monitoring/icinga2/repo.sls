@@ -3,7 +3,18 @@
 
 include:
   - makina-states.services.monitoring.icinga2.hooks
-
+ 
+icinga2-base-pre:
+  cmd.run:
+    - name: |-
+        set -ex
+        sed -i "/ppa|launchpad/d" {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/icinga2.list
+    - user: root
+    - watch_in:
+      - cmd: icinga2-base
+    - watch:
+      - file: icinga2-base
+      - mc_proxy: icinga2-pre-repo
 icinga2-base:
   file.absent:
     - name: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/icinga.list
@@ -19,8 +30,8 @@ icinga2-base:
   pkgrepo.managed:
     - retry: {attempts: 6, interval: 10}
     - humanname: icinga ppa
-    - name: deb http://ppa.launchpad.net/formorer/icinga/ubuntu {{pkgssettings.udist}} main
-    - dist: {{pkgssettings.udist}}
+    - name: deb http://packages.icinga.com/ubuntu icinga-{{pkgssettings.udist}} main
+    - dist: icinga-{{pkgssettings.udist}}
     - file: {{ salt['mc_locations.settings']().conf_dir }}/apt/sources.list.d/icinga2.list
     - keyid: "36862847"
     - keyserver: keyserver.ubuntu.com

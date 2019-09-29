@@ -251,7 +251,7 @@ def settings():
                     'extensions_packages': ['php-gettext',
                                             'php-net-socket',
                                             'php-pear',
-                                            'php5-sqlite'],
+                                            'php5.6-sqlite3'],
                 },
                 'global_php': {
                     'PROFILE': "false",
