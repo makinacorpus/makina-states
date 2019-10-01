@@ -1126,9 +1126,6 @@ def autoconfigure_host(host,
              (not no_default_checks and
               bool(eval(s))))  # pylint: disable=W0123
         ):
-            if 'ovh-g3-1' in host and s == 'swap':
-                import pdb;pdb.set_trace()  ## Breakpoint ##
-
             services_enabled_types.append(s)
     checks = []
     for svc in services_enabled_types:
