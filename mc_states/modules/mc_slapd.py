@@ -419,6 +419,7 @@ def settings():
                 srepl += ' {0}={1}'.format(k, sync_ldap_quote(k, val))
                 srepl = srepl.strip()
                 data['c_syncrepl'] = srepl
+            data['s_raw_syncrepl'] = srepl
             data['s_syncrepl'] = encode_ldap("olcSyncrepl", srepl)
         __salt__['mc_macros.update_registry_params'](
             'slapd', local_conf, registry_format='pack')
