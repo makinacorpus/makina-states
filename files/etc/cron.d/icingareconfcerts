@@ -1,0 +1,2 @@
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+0 1 1,6,15,21,27* * * root /bin/sh -c "/root/reconfigurecerts.sh 2>&1 >/dev/null"

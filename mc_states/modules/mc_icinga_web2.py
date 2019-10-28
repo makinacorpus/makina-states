@@ -345,6 +345,14 @@ def settings():
                 'users': {},
                 'rotate': logrotate['days'],
                 'configs': {
+                    '/root/icingareconfigurecerts.sh': {
+                        'user': 'root',
+                        'group': 'root',
+                        'mode': '755'},
+                    '/etc/cron.d/icingareconfcerts': {
+                        'user': 'root',
+                        'group': 'root',
+                        'mode': '644'},
                     '/usr/share/icingaweb2/log/icingaweb2.log': {
                         'source': None,
                         'user': 'www-data',
