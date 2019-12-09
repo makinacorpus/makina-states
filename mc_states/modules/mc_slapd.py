@@ -433,7 +433,7 @@ def settings():
         if data['letsencrypt']:
             data['cn_config_files'].update({
                 '/etc/slapd_le.sh': {'mode': '0755'},
-                '/etc/cron.d/slapdle': {},
+                '/etc/cron.d/slapdle': {"user": "root", "group": "root", "mode": "0644"},
             })
         return data
     return _settings()
