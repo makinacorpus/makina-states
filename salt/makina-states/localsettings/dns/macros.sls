@@ -112,7 +112,7 @@ bind-set-defaultdns-{{suf}}-2:
       {% endfor %}
       {% endif %}
 {% else %}
-use-systemd-resolved:
+use-systemd-resolved-{{suf}}:
     cmd.run:
         - name: |-
             apt-get remove -y resolvconf
