@@ -18,5 +18,7 @@ options {
         {% endif %}
         forwarders { {%for f in data.forwarders %}{{f}};{%endfor%} };
         {% endif%}
+        dnssec-enable no;
+        dnssec-validation no;
 };
 // vim: set ft=named:
