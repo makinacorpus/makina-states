@@ -447,10 +447,16 @@ set_vars() {
             fi
         done
     fi
-    BASE_PACKAGES="${BASE_PACKAGES} zlib1g-dev curl python-virtualenv git rsync bzip2 net-tools"
-    BASE_PACKAGES="${BASE_PACKAGES} python-pyasn1 python-urllib3 python-openssl"
+    BASE_PACKAGES="${BASE_PACKAGES} zlib1g-dev curl virtualenv git rsync bzip2 net-tools"
+    BASE_PACKAGES="${BASE_PACKAGES} python-pyasn1 python-openssl"
     BASE_PACKAGES="${BASE_PACKAGES} acl build-essential m4 libtool pkg-config autoconf gettext"
     BASE_PACKAGES="${BASE_PACKAGES} man-db automake"
+    if (apt install -s python-urllib3 &>/dev/null);then
+        BASE_PACKAGES="${BASE_PACKAGES} python-urllib3"
+    fi
+    if (apt install -s python-virtualenv &>/dev/null);then
+        BASE_PACKAGES="${BASE_PACKAGES} python-virtualenv"
+    fi
     if (apt install -s tcl8.5 &>/dev/null);then
         BASE_PACKAGES="${BASE_PACKAGES} tcl8.5"
     else
@@ -1041,7 +1047,11 @@ setup_virtualenv() {
         if [ ! -e "${VENV_PATH}" ]; then
             mkdir -p "${VENV_PATH}"
         fi
-        virtualenv --system-site-packages --unzip-setuptools ${VENV_PATH} &&\
+        ust="--unzip-setuptools"
+        if ! ( $virtualenv --help 2>&1 | grep -q -- $ust );then
+            ust=""
+        fi
+        virtualenv --system-site-packages $ust --python=python2 ${VENV_PATH} &&\
         . "${VENV_PATH}/bin/activate" &&\
         "${VENV_PATH}/bin/easy_install" -U setuptools &&\
         "${VENV_PATH}/bin/pip" install -U pip &&\
