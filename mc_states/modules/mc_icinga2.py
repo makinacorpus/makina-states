@@ -36,6 +36,7 @@ hostname, the booleans are set to True.
 
 from salt.utils.odict import OrderedDict
 import re
+import json
 import os
 import socket
 import logging
@@ -1282,3 +1283,42 @@ def add_check(host, services_enabled, svc, skey, default_value, vdata):
     ss['vars.makinastates_service_type'] = svc
     services_enabled[skey] = ss
     return services_enabled
+
+
+def gen_notif(users, host_name, service=None, services=None, indent=6, **kw):
+    '''
+    users = {
+     'NT_SERVICE_MATRIX': {'users':       ['U_xxx']},
+     'NT_SERVICE':        {'user_groups': ['G_xxx']},
+     }
+    '''
+    ret = OrderedDict()
+    _s = __salt__
+    if not services:
+        services = []
+    if service and (service not in services):
+        services.append(service)
+    bname = 'N__'
+    if host_name:
+        bname += '{host_name}__'
+    for service_name in services:
+        for notif_sys, notif_user in six.iteritems(users):
+            name = bname
+            name += '{service_name}__'
+            ndata = copy.deepcopy(notif_user)
+            if host_name:
+                ndata['host_name'] = host_name
+            ndata['service_name'] = service_name
+            ndata['host_name'] = host_name
+            nusers = '__'.join(
+                notif_user.get('users', notif_user.get('user_groups', []))
+            )
+            ndata['import'] = [notif_sys]
+            ndata['interval'] = 0
+            ndata.update(copy.deepcopy(kw))
+            name += '__{notif_sys}__{nusers}'
+            ret[name.format(**locals())] = {'attrs': ndata}
+    sret = _s['mc_utils.indenter'](
+    _s['mc_dumper.yaml_dump'](ret), indent)
+    return sret
+
