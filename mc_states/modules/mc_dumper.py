@@ -24,6 +24,7 @@ except ImportError:
         Loader as yLoader,
         Dumper as yDumper)
 from salt.utils import yamldumper
+from salt.utils.odict import OrderedDict
 from mc_states import api
 from mc_states import saltapi
 
@@ -171,3 +172,18 @@ def json_dump(data, pretty=False, *args, **kw):
     encode a string in json
     '''
     return api.json_dump(data, pretty=pretty)
+
+
+def setup_yaml_dumper(yaml):
+    def represent_dict_order(self, data):
+        ret = self.represent_mapping('tag:yaml.org,2002:map', data)
+        return ret
+    rep = yaml.representer
+    rep.add_representer(OrderedDict, represent_dict_order)
+    rep.add_representer(
+        list,
+        lambda d, data: d.represent_sequence('tag:yaml.org,2002:seq', data))
+    rep.add_representer(
+        tuple,
+        lambda d, data: d.represent_sequence('tag:yaml.org,2002:seq', data))
+    return yaml

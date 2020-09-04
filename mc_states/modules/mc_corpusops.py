@@ -13,6 +13,7 @@ import ruamel.yaml as _y
 import re
 import os
 import logging
+
 from salt.utils import yamldumper
 from cStringIO import StringIO
 from salt.utils.odict import OrderedDict
@@ -21,7 +22,6 @@ log = logging.getLogger(__name__)
 cops_regs_fw_pref = (
     'corpusops_ms_iptables_registrations_registrations_makinastates')
 providerre = re.compile('(ovh|online|sys)-')
-
 
 def cops_inv(lxc=False):
     DEFAULT_COPS_INV = '''
@@ -151,6 +151,7 @@ def export_compute_node(id_, out_file=None, lxc=False):
         ncfg = _s['mc_utils.dictupdate'](ncfg, cfg)
         remove_dict_attrs(ncfg, ['ssh_bastion'])
         s = StringIO()
+        _s['mc_dumper.setup_yaml_dumper'](yaml)
         yaml.dump(ncfg, s)
         dcfg = s.getvalue()
     else:
@@ -265,5 +266,4 @@ def refresh_backup_monit(groups="backup",
             fic.write(dcfg)
             print('exported: {0}'.format(to_file))
     return conf
-
 # vim:set et sts=4 ts=4 tw=80:
