@@ -16,7 +16,7 @@ get_abspath() {
     else
         "${PYTHON}" << EOF
 import os
-print os.path.abspath("${1}")
+print(os.path.abspath("${1}"))
 EOF
     fi
 }
@@ -25,7 +25,7 @@ get_curgitpackid() {
     python << EOF
 try:
     with open('${1}') as fic:
-        print int(fic.read().strip())
+        print(int(fic.read().strip()))
 except Exception:
     print 0
 EOF
@@ -1053,7 +1053,7 @@ setup_virtualenv() {
         fi
         virtualenv --system-site-packages $ust --python=python2 ${VENV_PATH} &&\
         . "${VENV_PATH}/bin/activate" &&\
-        "${VENV_PATH}/bin/easy_install" -U setuptools &&\
+        "${VENV_PATH}/bin/easy_install" -U "setuptools<50" &&\
         "${VENV_PATH}/bin/pip" install -U pip &&\
         deactivate
         BUILDOUT_REBOOTSTRAP=y
