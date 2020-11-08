@@ -96,6 +96,7 @@ def export_lxc_compute_node(cfg, id_):
                 vmdata['{0}_mac'.format(ethx)] = ethxd.get(
                     'hwaddr', ethxd.get('mac', None))
                 vmdata['{0}_link'.format(ethx)] = ethxd['link']
+    return cnconf
 
 
 def remove_dict_attrs(d, attrs):
@@ -112,6 +113,7 @@ def export_compute_node(id_, out_file=None, lxc=False):
     '''Generate corpusops inventory slug to paste
     inside corpusops compatible inventoy'''
     _s = __salt__  # noqa
+    lxccnconf = None
     db = _s['mc_pillar.get_db_infrastructure_maps']()  # noqa
     msiptables = _s['mc_pillar.get_ms_iptables_conf'](id_)
     providersrm = providerre.search(id_)
@@ -129,7 +131,7 @@ def export_compute_node(id_, out_file=None, lxc=False):
         if lxc:
             cfg['compute_nodes_lxcs_makinastates']['hosts'][id_] = None
     if lxc:
-        export_lxc_compute_node(cfg, id_)
+        lxccnconf = export_lxc_compute_node(cfg, id_)
     tips = _s['mc_pillar.ips_for'](id_, fail_over=True)
     if tips:
         ip = tips.pop(0)
@@ -149,6 +151,11 @@ def export_compute_node(id_, out_file=None, lxc=False):
         yaml.explicit_start = True
         yaml.default_flow_style = False
         ncfg = _s['mc_utils.dictupdate'](ncfg, cfg)
+        if lxccnconf:
+            nhosts = [a for a in ncfg['{0}_lxcs_makinastates'.format(id_)]['hosts']]
+            for i in nhosts:
+                if i not in lxccnconf['vms']:
+                    del ncfg['{0}_lxcs_makinastates'.format(id_)]['hosts'][i]
         remove_dict_attrs(ncfg, ['ssh_bastion'])
         s = StringIO()
         _s['mc_dumper.setup_yaml_dumper'](yaml)
