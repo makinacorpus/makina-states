@@ -93,12 +93,17 @@ def settings():
         # ('rspidel ^Set-cookie:\ IP=    '
         #  '# not let this cookie tell '
         #  'our internal IP address'),
+        v = ((_s['mc_utils.loose_version'](_g.get('osrelease', '')) >= _s['mc_utils.loose_version']('18.04'))
+             and '2.3' or '1.8' )
         haproxy_password = _s['mc_utils.generate_stored_password'](
             'mc_haproxy.password')
+        pkgssettings = _s['mc_pkgs.settings']()
         ssl = _s['mc_ssl.settings']()
         proxy_settings = _s['mc_proxy.settings']()
         reverse_proxy_addresses = proxy_settings['reverse_proxy_addresses']
         data = {
+            'version': v,
+            'ppa': 'deb http://ppa.launchpad.net/vbernat/haproxy-{v}/ubuntu {pkgssettings[udist]} main'.format(**locals()),
             'reverse_proxy_addresses': reverse_proxy_addresses,
             'location': locs['conf_dir'] + '/haproxy',
             'config_dir': '/etc/haproxy',

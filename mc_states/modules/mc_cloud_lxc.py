@@ -83,12 +83,15 @@ def vt_default_settings(cloudSettings, imgSettings):
             The settings are not stored here for obvious performance reasons
     '''
     _s = __salt__
+    _g = __grains__
     clone_from = imgSettings['lxc']['default']
     backing = 'dir'
     # if _s['mc_nodetypes.is_devhost']():
     #     backing = 'overlayfs'
     pkgs = ['lxc-templates', 'lxc', 'python3-lxc',
-            'liblxc1', 'lxcfs', 'dnsmasq', 'cgmanager']
+            'liblxc1', 'lxcfs', 'dnsmasq']
+    if _s['mc_utils.loose_version'](_g.get('osrelease', '')) < _s['mc_utils.loose_version']('20.04'):
+        pkgs.append('cgmanager')
     # package exists but is currently broken
     # if (
     #     __grains__['os'] in ['Ubuntu'] and

@@ -14,13 +14,19 @@ kvm-pkgs:
 {% endif %}
     - pkgs:
       - qemu-kvm
+      {% if salt['mc_utils.loose_version'](grains.get('osrelease', '')) >= salt['mc_utils.loose_version']('20.04') %}
+      - libvirt-clients
+      {% else %}
       - libvirt-bin
+      {% endif %}
       - libguestfs0
       - lvm2
       - libguestfs-tools
       - kpartx
       - ovmf
       - bridge-utils
+      - libvirt-daemon
+      - libvirt-daemon-system
     - watch_in:
       - mc_proxy: kvm-post-pkg
     - watch:
