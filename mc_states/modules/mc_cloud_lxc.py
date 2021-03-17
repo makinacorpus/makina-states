@@ -90,8 +90,11 @@ def vt_default_settings(cloudSettings, imgSettings):
     #     backing = 'overlayfs'
     pkgs = ['lxc-templates', 'lxc', 'python3-lxc',
             'liblxc1', 'lxcfs', 'dnsmasq']
-    if _s['mc_utils.loose_version'](_g.get('osrelease', '')) < _s['mc_utils.loose_version']('20.04'):
-        pkgs.append('cgmanager')
+    try:
+        if _s['mc_utils.loose_version'](_g.get('osrelease', '')) < _s['mc_utils.loose_version']('20.04'):
+            pkgs.append('cgmanager')
+    except AttributeError:
+        pass
     # package exists but is currently broken
     # if (
     #     __grains__['os'] in ['Ubuntu'] and
