@@ -13,6 +13,7 @@ import ruamel.yaml as _y
 import re
 import os
 import logging
+import json
 
 from salt.utils import yamldumper
 from cStringIO import StringIO
@@ -200,7 +201,7 @@ def export_makinastates(export_dir='/tmp', to_file=False):
 
 EXPORT_CMD = '''
 ANSIBLE_FORCE_COLOR= ANSIBLE_NOCOLOR=1 ANSIBLE_STDOUT_CALLBACK=json \
-    $COPS_ROOT/bin/ansible-playbook -i {inv} -l localhost \
+    $COPS_ROOT/bin/ansible-playbook -i {inv} -l {node} \
         $COPS_ROOT/roles/corpusops.roles/export/role.yml'''
 
 
@@ -209,6 +210,7 @@ class AnsibleError(Exception):
 
 
 def get_ansible_inventory(item=None,
+                          node='localhost',
                           inv='/etc/ansible/inventory',
                           mode=None):
     _s = __salt__  # noqa
@@ -216,7 +218,7 @@ def get_ansible_inventory(item=None,
         'host': 'export_host',
         'group': 'export_group',
     }.get(mode, '')
-    cmd = EXPORT_CMD.format(inv=inv)
+    cmd = EXPORT_CMD.format(inv=inv, node=node)
     if item and export_mode:
         cmd += " -e {0}={1}".format(export_mode, item)
     ret = _s['cmd.run_all'](cmd, python_shell=True)
@@ -240,23 +242,39 @@ def get_ansible_inventory(item=None,
 
 def refresh_backup_monit(groups="backup",
                          inv='/etc/ansible/inventory',
+                         node='mastersalt',
+                         filter_groups='',
                          burp_server_group_key='burp_server_group',
                          to_file=None):
     _s = __salt__  # noqa
     lgroups = groups.split(',')
+    filter_groups = filter_groups.split(',')
     arets = {}
-    arets['full'] = get_ansible_inventory(inv=inv)
+    arets['full'] = get_ansible_inventory(inv=inv, node=node)
     for g in lgroups:
-        arets[g] = get_ansible_inventory(g, inv=inv, mode='group')
+        arets[g] = get_ansible_inventory(g, node=node, inv=inv, mode='group')
     ret = {}
     conf = _s['mc_pillar.query'](
         'supervision_configurations', {}
     ).get('definitions', {}).get('autoconfigured_hosts', {})
+    agrps = json.loads(arets['full']['groups'])
+    filtered_hosts = []
+    for i in agrps:
+        if i in filter_groups:
+            filtered_hosts.extend(agrps[i])
     for g in lgroups:
         backuped_hosts = sorted([a for a in arets[g]['dgroups'][g]])
         gserver = arets[g]['vars'][burp_server_group_key]
         bserver = arets['full']['dgroups'][gserver][0]
         for h in backuped_hosts:
+            if h in filtered_hosts:
+                continue
+            try:
+                bconf = conf[h]['services_attrs']['backup_burp_age']
+                if bserver == bconf['vars.ssh_host']:
+                    continue
+            except Keyerror:
+                pass
             monit = conf.setdefault(h, OrderedDict())
             sattrs = monit.setdefault('services_attrs', OrderedDict())
             ba = sattrs.setdefault('backup_burp_age', OrderedDict())
