@@ -751,10 +751,15 @@ def bootstrap(directory='.',
     if config and '"-c"' in content:
         bootstrap_args += ' -c {0}'.format(config)
     if setuptools_egg_ver:
-        bootstrap_args += ' --setuptools-version={0}'.format(
+        sopt = '--setuptools-version'
+        bootstrap_args += ' {0}={1}'.format(
+            sopt,
             setuptools_egg_ver)
     if buildout_egg_ver:
-        bootstrap_args += ' --buildout-version={0}'.format(
+        if '"--version"' in content:
+            vopt = '--version'
+        bootstrap_args += ' {0}={1}'.format(
+            vopt,
             buildout_egg_ver)
     # be sure that the bootstrap belongs to the running user
     try:
