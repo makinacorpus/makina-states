@@ -24,6 +24,7 @@ cops_regs_fw_pref = (
     'corpusops_ms_iptables_registrations_registrations_makinastates')
 providerre = re.compile('(ovh|online|sys)-')
 
+
 def cops_inv(lxc=False):
     DEFAULT_COPS_INV = '''
 ---
@@ -40,18 +41,18 @@ baremetals_managed:
     {id_}: {{}}
 lxcs_makinastates:
   children:
-    {id_}_lxcs_makinastates:
-{id_}_lxcs:
+    {sid_}_lxcs_makinastates:
+{sid_}_lxcs:
   children:
-    {id_}_lxcs_makinastates:
-{id_}_and_lxcs:
+    {sid_}_lxcs_makinastates:
+{sid_}_and_lxcs:
   children:
-    {id_}_lxcs:
+    {sid_}_lxcs:
   vars:
     lxc_compute_node: {id_}
   hosts:
     {id_}:
-{id_}_lxcs_makinastates:
+{sid_}_lxcs_makinastates:
   vars: {{}}
   hosts: {{}}
 '''
@@ -67,7 +68,8 @@ def export_lxc_compute_node(cfg, id_):
     _s = __salt__  # noqa
     db = _s['mc_pillar.get_db_infrastructure_maps']()  # noqa
     cnconf = _s['mc_pillar.get_cloud_entry_for_cn'](id_)
-    lxcmak = cfg[id_+'_lxcs_makinastates']
+    sid_ = get_sid(id_)
+    lxcmak = cfg[sid_ + '_lxcs_makinastates']
     for vm in cnconf['vms']:
         vmdata = lxcmak['hosts'].setdefault(vm, OrderedDict())
         domains = _s['mc_pillar.query'](
@@ -110,6 +112,10 @@ def remove_dict_attrs(d, attrs):
     return d
 
 
+def get_sid(id_):
+    return re.sub('[.-]', '_', id_)
+
+
 def export_compute_node(id_, out_file=None, lxc=False):
     '''Generate corpusops inventory slug to paste
     inside corpusops compatible inventoy'''
@@ -119,8 +125,9 @@ def export_compute_node(id_, out_file=None, lxc=False):
     msiptables = _s['mc_pillar.get_ms_iptables_conf'](id_)
     providersrm = providerre.search(id_)
     provider = (not providersrm) and 'ovh' or providersrm.groups()[0]
+    sid_ = get_sid(id_)
     cfg = _s['mc_utils.cyaml_load'](
-        cops_inv(lxc=lxc).format(id_=id_, provider_=provider))
+        cops_inv(lxc=lxc).format(id_=id_, sid_=sid_, provider_=provider))
     rules = msiptables.get(
         'makina-states.services.firewall.ms_iptables.config', {}
     ).get('rules', [])
@@ -140,7 +147,7 @@ def export_compute_node(id_, out_file=None, lxc=False):
         cfg['all']['hosts'][id_]['ansible_host'] = ip
         cfg['all']['hosts'][id_]['public_ip'] = ip
         if lxc:
-            hvars = cfg['{}_and_lxcs'.format(id_)].setdefault('vars', {})
+            hvars = cfg['{}_and_lxcs'.format(sid_)].setdefault('vars', {})
             hvars['public_ips'] = tips
             hvars['public_ip'] = ip
     if out_file and os.path.exists(out_file):
@@ -153,10 +160,10 @@ def export_compute_node(id_, out_file=None, lxc=False):
         yaml.default_flow_style = False
         ncfg = _s['mc_utils.dictupdate'](ncfg, cfg)
         if lxccnconf:
-            nhosts = [a for a in ncfg['{0}_lxcs_makinastates'.format(id_)]['hosts']]
+            nhosts = [a for a in ncfg['{0}_lxcs_makinastates'.format(sid_)]['hosts']]
             for i in nhosts:
                 if i not in lxccnconf['vms']:
-                    del ncfg['{0}_lxcs_makinastates'.format(id_)]['hosts'][i]
+                    del ncfg['{0}_lxcs_makinastates'.format(sid_)]['hosts'][i]
         remove_dict_attrs(ncfg, ['ssh_bastion'])
         s = StringIO()
         _s['mc_dumper.setup_yaml_dumper'](yaml)
