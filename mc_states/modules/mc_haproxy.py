@@ -28,6 +28,7 @@ PREFIX ='makina-states.services.proxy.{0}'.format(__name)
 log = logging.getLogger(__name__)
 
 re_flags = re.M | re.U | re.X
+OBJECT_CUSTOM_BACKEND = re.compile('letsencrypt|securitytxt')
 OBJECT_SANITIZER = re.compile('[\\\@+\$^&~"#\'()\[\]%*.:/]',
                               flags=re_flags)
 
@@ -116,12 +117,14 @@ def settings():
             'defaults': {'extra_opts': '', 'enabled': '1'},
             'crt_dirs': [ssl['ssl_dir'] + '/haproxy/certs', '{crt_dir}'],
             'crt_dir': ssl['config_dir'] + '/certs',
+            'securitytxt': '',
+            'securitytxt_uri': '/.well-known/security.txt',
             'ssl': {
-                  'frontend_bind_options': "crt {main_cert}",
-                  'bind_options': "no-sslv3 no-tls-tickets",
-                  'server_bind_options': "no-sslv3 no-tls-tickets",
-                  'bind_ciphers': CIPHERS,
-                  'server_bind_ciphers': CIPHERS},
+                'frontend_bind_options': "crt {main_cert}",
+                'bind_options': "no-sslv3 no-tls-tickets",
+                'server_bind_options': "no-sslv3 no-tls-tickets",
+                'bind_ciphers': CIPHERS,
+                'server_bind_ciphers': CIPHERS},
             'main_cert': None,
             'backend_opts': {
                 'http_strict': [
@@ -197,6 +200,7 @@ def settings():
             },
             'configs': {'/etc/haproxy/haproxy.cfg': {},
                         '/etc/systemd/system/haproxy.service': {},
+                        '/etc/haproxy/security.txt': {},
                         '/etc/haproxy/cfg.d/backends.cfg': {},
                         '/etc/haproxy/cfg.d/dispatchers.cfg': {},
                         '/etc/haproxy/cfg.d/frontends.cfg': {},
@@ -424,6 +428,7 @@ def register_frontend(port,
                       wildcards=None,
                       regexes=None,
                       haproxy=None,
+                      securitytxt=None,
                       letsencrypt=False,
                       ssh_proxy=None,
                       ssh_proxy_host=None,
@@ -542,6 +547,10 @@ def register_frontend(port,
         opts.append(
             'use_backend {0} if letsencrypt'.format(letsb))
         frontend['letsencrypt_activated'] = True
+    if securitytxt and not frontend.get('securitytxt_activated'):
+        opts.extend(['acl securitytxt path_beg /.well-known/security.txt',
+                     'use_backend bck_securitytxt if securitytxt'])
+        frontend['securitytxt_activated'] = True
     if has['ssl'] and not has['main_cert'] or not has['backend']:
         frontends.pop(fr, None)
     return haproxy
@@ -559,6 +568,7 @@ def register_servers_to_backends(port,
                                  haproxy=None,
                                  ssl_terminated=None,
                                  http_fallback=None,
+                                 securitytxt=None,
                                  letsencrypt=None,
                                  letsencrypt_host=None,
                                  letsencrypt_http_port=None,
@@ -652,6 +662,13 @@ def register_servers_to_backends(port,
                 }]
             }
         })
+    if hmode.startswith('http') and securitytxt:
+        backends.update({
+            'bck_securitytxt': {
+                'raw_opts': [
+                    'errorfile 503 /etc/haproxy/security.txt',
+                    'errorfile 200 /etc/haproxy/security.txt',
+                ]}})
     if ssh_proxy:
         sshbckname = get_ssh_backend_proxy_name(ssh_proxy_host, ssh_proxy_port,
                                                 k='ssh')
@@ -703,6 +720,7 @@ def make_registrations_(data, haproxy):
       and backend objects
       for the haproxy configuration
     '''
+    securitytxt = haproxy.get('securitytxt', '')
     for payload in data:
         for port, fdata in payload.get(
             'frontends', DEFAULT_FRONTENDS
@@ -732,6 +750,7 @@ def make_registrations_(data, haproxy):
                               wildcards=wildcards,
                               regexes=regexes,
                               haproxy=haproxy,
+                              securitytxt=securitytxt,
                               letsencrypt=letsencrypt,
                               ssh_proxy=ssh_proxy,
                               ssh_proxy_host=ssh_proxy_host,
@@ -750,6 +769,7 @@ def make_registrations_(data, haproxy):
                 ssl_terminated=ssl_terminated,
                 http_fallback=http_fallback,
                 haproxy=haproxy,
+                securitytxt=securitytxt,
                 letsencrypt=letsencrypt,
                 letsencrypt_host=letsencrypt_host,
                 letsencrypt_http_port=letsencrypt_http_port,
