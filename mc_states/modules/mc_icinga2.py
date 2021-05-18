@@ -966,7 +966,8 @@ def autoconfigure_host(host,
                 continue
     rdata = {"host.name": host}
     icingaSettings = __salt__['mc_icinga2.settings']()
-    if 'postgres' not in processes:
+    no_postgresql_check = kwargs.get('postgresql', kwargs.get('pgsql', kwargs.get('postgres', None))) is False
+    if 'postgres' not in processes and not no_postgresql_check:
         if (
             'postgresl' in host or 'pgsql' in host
         ):
@@ -1321,4 +1322,3 @@ def gen_notif(users, host_name, service=None, services=None, indent=6, **kw):
     sret = _s['mc_utils.indenter'](
     _s['mc_dumper.yaml_dump'](ret), indent)
     return sret
-
