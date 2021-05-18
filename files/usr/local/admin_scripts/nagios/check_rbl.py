@@ -48,9 +48,6 @@ serverlist = [
 "combined.abuse.ch",
 "combined.rbl.msrbl.net",
 "db.wpbl.info",
-"dnsbl-1.uceprotect.net",
-"dnsbl-2.uceprotect.net",
-"dnsbl-3.uceprotect.net",
 "dnsbl.cyberlogic.net",
 "dnsbl.inps.de",
 "dnsbl.kempt.net",
@@ -113,6 +110,12 @@ serverlist = [
 "virus.rbl.msrbl.net",
 "wormrbl.imp.ch",
 "zen.spamhaus.org",
+]
+ 
+removed = [
+    "dnsbl-1.uceprotect.net",
+    "dnsbl-2.uceprotect.net",
+    "dnsbl-3.uceprotect.net",
 ]
 
 ####
