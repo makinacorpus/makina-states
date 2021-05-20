@@ -130,6 +130,7 @@ def settings():
                     'chroot_sftp': False,
                 }
             },
+            'custom': '',
             'client': {
                 'StrictHostKeyChecking': 'no',
                 'UserKnownHostsFile': '/dev/null',
