@@ -756,17 +756,20 @@ def bootstrap(directory='.',
             sopt,
             setuptools_egg_ver)
     if buildout_egg_ver:
-        if '"--version"' in content:
+        if '"--buildout-version"' in content:
+            vopt = '--buildout-version'
+        elif '"--version"' in content:
             vopt = '--version'
         bootstrap_args += ' {0}={1}'.format(
             vopt,
             buildout_egg_ver)
     # be sure that the bootstrap belongs to the running user
     try:
+        bootstrap = os.path.join(directory, 'bootstrap.py')
         if runas:
             uid = __salt__['user.info'](runas)['uid']
             gid = __salt__['user.info'](runas)['gid']
-            os.chown('bootstrap.py', uid, gid)
+            os.chown(bootstrap, uid, gid)
     except (IOError, OSError) as exc:
         # don't block here, try to execute it if can pass
         _logger.error('BUILDOUT bootstrap permissions error:'
