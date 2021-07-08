@@ -357,6 +357,7 @@ def vhost_settings(domain, doc_root, **kwargs):
 
     '''
     nginxSettings = copy.deepcopy(__salt__['mc_nginx.settings']())
+    nginxSettings['server_name_in_redirect'] = None
     # retro compat
     extra = kwargs.pop('extra', {})
     kwargs.update(extra)
