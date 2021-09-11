@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -e
 # set -x
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 rsync -azv /home/certbot/mastersalt/live/ /etc/ssl/le/
 chown -Rf openldap:openldap /etc/ssl/le/
 if [[ -z ${NO_RECONFIGURE-} ]];then
