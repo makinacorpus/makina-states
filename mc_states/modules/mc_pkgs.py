@@ -108,9 +108,11 @@ def settings():
         umirror = mirrors['mirrors_ubuntu_plus']
         if _g['os'] in ['Ubuntu']:
             lts_dist = ubuntu_lts
-            if LooseVersion(_g['osrelease']) >= LooseVersion('18.04'):
+            if LooseVersion(_g['osrelease']) >= LooseVersion('20.04'):
+                lts_dist = ubuntu_lts = 'focal'
+            elif LooseVersion(_g['osrelease']) >= LooseVersion('18.04'):
                 lts_dist = ubuntu_lts = 'bionic'
-            if LooseVersion(_g['osrelease']) >= LooseVersion('16.04'):
+            elif LooseVersion(_g['osrelease']) >= LooseVersion('16.04'):
                 lts_dist = ubuntu_lts = 'xenial'
             elif LooseVersion(_g['osrelease']) >= LooseVersion('14.04'):
                 lts_dist = ubuntu_lts = 'trusty'
