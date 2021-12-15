@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+if [[ -z $USEREMAIL ]];then exit 0;fi
 /usr/bin/printf '%b' "
 ***** Monitoring Alert: $NOTIFICATIONTYPE\n *****\n
 Host: $HOSTDISPLAYNAME / $HOSTNAME\n

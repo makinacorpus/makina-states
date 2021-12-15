@@ -5,16 +5,17 @@ MX_SERVER=${MX_SERVER:-$2}
 MX_ROOM=${MX_ROOM:-$3}
 MX_TYPE=${4:-host}
 
-if [[ -z $MX_SERVER ]];then echo no server;exit 1;fi
-if [[ -z $MX_TOKEN ]];then echo no token;exit 1;fi
-if [[ -z $MX_ROOM ]];then echo no room;exit 1;fi
+if [[ -z $MX_ROOM ]];then echo no room;exit 0;fi
+if [[ -z $MX_SERVER ]];then echo no server;exit 0;fi
+if [[ -z $MX_TOKEN ]];then echo no token;exit 0;fi
+if [[ -z $MX_ROOM ]];then echo no room;exit 0;fi
 
 MX_TXN="`date "+%s"`$(( RANDOM % 9999 ))"
 
 warn_ico="⚠"
-error_ico="❌"
-ok_ico="?"
-question_ico="❓"
+error_ico="🟥 "
+ok_ico="🟩"
+question_ic="❓"
 
 #Set the message icon based on service state
 # For nagios, replace  with NAGIOS_ to get the environment variables from Nagios
@@ -46,8 +47,8 @@ fi
 #  message="${message}\n${line}"
 #done
 
-HOST_BODY="MonitoringAlert: ${HOSTDISPLAYNAME}/${HOSTADDRESS}: ${HOSTSTATE} - ${NOTIFICATIONTYPE}"
-SERVICE_BODY="MonitoringAlert: $HOSTDISPLAYNAME: $SERVICENAME/$SERVICESTATE - ${NOTIFICATIONTYPE}"
+HOST_BODY="@room MonitoringAlert: ${ICON-} ${HOSTDISPLAYNAME}/${HOSTADDRESS}: ${HOSTSTATE} - ${NOTIFICATIONTYPE}"
+SERVICE_BODY="@room MonitoringAlert: ${ICON-} $HOSTDISPLAYNAME: $SERVICENAME/$SERVICESTATE - ${NOTIFICATIONTYPE}"
 
 case $MX_TYPE in
     host) BODY=$HOST_BODY;;
