@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Exemples:
@@ -32,6 +32,9 @@ import sys
 import traceback
 import pprint
 from optparse import OptionParser
+
+
+PYTHON3_LATER = int(sys.version[0]) > 2
 
 try:
     from collections import OrderedDict
@@ -137,6 +140,8 @@ ALL_PATHS = {}
 # ALL_PATHS:  all paths to apply perms, combined
 OWNERSHIPS = {}
 UNIX_PERMS = {}
+if PYTHON3_LATER:
+    unicode = str
 
 
 def which(program, environ=None, key='PATH', split=':'):
@@ -232,7 +237,10 @@ def usplitList(seq):
 
 
 def encode_str(p):
-    if isinstance(p, unicode):
+    if PYTHON3_LATER:
+        if isinstance(p, bytes):
+            p = p.decode()
+    elif isinstance(p, unicode):
         p = p.encode('utf-8')
     return p
 
@@ -314,11 +322,8 @@ def chmod_paths(paths, mode):
     if not isinstance(paths, list):
         paths = [paths]
     for path in paths:
-        pref = ''
-        if mode < 1000:
-            pref = '0'
         try:
-            eval('os.chmod(path, 0{1}{0})'.format(mode, pref))
+            os.chmod(path, mode)
         except:
             continue
     # in fact, the python impl. wasnt the bottleneck
@@ -406,10 +411,11 @@ def collect_paths(path,
             if not (uid, gid) in OWNERSHIPS:
                 OWNERSHIPS[(uid, gid)] = []
             OWNERSHIPS[(uid, gid)].append(path)
-        if eval(mode) != stat.S_IMODE(st.st_mode):
-            if mode not in UNIX_PERMS:
-                UNIX_PERMS[mode] = []
-            UNIX_PERMS[mode].append(path)
+        octmode = int(mode, 8)
+        if octmode != stat.S_IMODE(st.st_mode):
+            if octmode not in UNIX_PERMS:
+                UNIX_PERMS[octmode] = []
+            UNIX_PERMS[octmode].append(path)
 
         if is_dir and recursive:
             # skip top level cachedirs
