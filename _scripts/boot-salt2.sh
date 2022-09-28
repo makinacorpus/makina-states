@@ -390,7 +390,7 @@ get_python_version() {
 
 get_salt_branch() {
     if [ "$(get_python_version)" = "3" ];then
-        DEFAULT_SALT_BRANCH="2017.8"
+        DEFAULT_SALT_BRANCH="3004.2"
     else
         DEFAULT_SALT_BRANCH="2016.11"
     fi
