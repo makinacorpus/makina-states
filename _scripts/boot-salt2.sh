@@ -23,11 +23,12 @@ EOF
 
 get_curgitpackid() {
     python << EOF
+from __future__ import print_function
 try:
     with open('${1}') as fic:
         print(int(fic.read().strip()))
 except Exception:
-    print 0
+    print(0)
 EOF
 }
 
@@ -448,9 +449,23 @@ set_vars() {
         done
     fi
     BASE_PACKAGES="${BASE_PACKAGES} zlib1g-dev curl virtualenv git rsync bzip2 net-tools"
-    BASE_PACKAGES="${BASE_PACKAGES} python-pyasn1 python-openssl"
     BASE_PACKAGES="${BASE_PACKAGES} acl build-essential m4 libtool pkg-config autoconf gettext"
     BASE_PACKAGES="${BASE_PACKAGES} man-db automake"
+    if (apt install -s python-dev &>/dev/null);then
+        BASE_PACKAGES="${BASE_PACKAGES} python-dev"
+    else
+        BASE_PACKAGES="${BASE_PACKAGES} python2-dev"
+    fi
+    if (apt install -s python-openssl &>/dev/null);then
+        BASE_PACKAGES="${BASE_PACKAGES} python-openssl"
+    else
+        BASE_PACKAGES="${BASE_PACKAGES} python3-openssl"
+    fi
+    if (apt install -s python-pyasn1 &>/dev/null);then
+        BASE_PACKAGES="${BASE_PACKAGES} python-pyasn1"
+    else
+        BASE_PACKAGES="${BASE_PACKAGES} python3-pyasn1"
+    fi
     if (apt install -s python-urllib3 &>/dev/null);then
         BASE_PACKAGES="${BASE_PACKAGES} python-urllib3"
     fi
@@ -459,7 +474,7 @@ set_vars() {
     fi
     if (apt install -s tcl8.5 &>/dev/null);then
         BASE_PACKAGES="${BASE_PACKAGES} tcl8.5"
-    else
+    elif (apt install -s tcl8.6 &>/dev/null);then
         BASE_PACKAGES="${BASE_PACKAGES} tcl8.6"
     fi
     if (apt install -s groff &>/dev/null);then
@@ -475,7 +490,7 @@ set_vars() {
     if (apt install -s swig &>/dev/null);then
         BASE_PACKAGES="${BASE_PACKAGES} swig"
     fi
-    BASE_PACKAGES="${BASE_PACKAGES} libsigc++-2.0-dev libssl-dev libgmp3-dev python-dev python-six"
+    BASE_PACKAGES="${BASE_PACKAGES} libsigc++-2.0-dev libssl-dev libgmp3-dev python-six"
     BASE_PACKAGES="${BASE_PACKAGES} libffi-dev libzmq3-dev libmemcached-dev"
     NO_MS_VENV_CACHE="${NO_MS_VENV_CACHE:-"no"}"
     DO_INSTALL_PREREQUISITES="${DO_INSTALL_PREREQUISITES:-"y"}"
