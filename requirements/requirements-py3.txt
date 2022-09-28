@@ -43,7 +43,7 @@ dnspython >= 1.12.0
 python-whois-extended
 netaddr >= 0.7.13
 
-msgpack-python >= 0.4.6
+msgpack!=0.5.5,>=0.5
 
 pycparser >= 2.10
 pylibmc >= 1.4.1
