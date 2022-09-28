@@ -1062,7 +1062,7 @@ setup_virtualenv() {
         fi
         virtualenv --system-site-packages $ust --python=python$(get_python_version) ${VENV_PATH} &&\
         . "${VENV_PATH}/bin/activate" &&\
-        "${VENV_PATH}/bin/easy_install" -U "setuptools$([ "$(get_python_version)" = '2' ];then echo '<50';else echo '>=50';fi)" &&\
+        "${VENV_PATH}/bin/easy_install" -U "setuptools$(if [ "$(get_python_version)" = '2' ];then echo '<50';else echo '>=50';fi)" &&\
         "${VENV_PATH}/bin/pip" install -U pip &&\
         deactivate
         BUILDOUT_REBOOTSTRAP=y

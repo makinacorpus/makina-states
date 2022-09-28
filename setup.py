@@ -13,7 +13,10 @@ except:
     HAS_PIP = False
 
 version = {}
-execfile("mc_states/version.py", version)
+try:
+    execfile("mc_states/version.py", version)
+except NameError:
+    exec(open("mc_states/version.py").read(), version)
 
 
 def read(*rnames):
@@ -78,9 +81,9 @@ if HAS_PIP:
                 # match pkg_resources.Requirement
                 if ".Requirement" not in pkgreq:
                     sys.stderr.write('{0} is not a req\n'.format(req))
-        try:
+                try:
                     reqname = req.project_name
-                except AttributeError:
+                except (AttributeError,):
                     reqname = req.name
                 sreq = "{0}".format(req)
                 val = candidates.setdefault(reqname, sreq)
