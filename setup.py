@@ -78,7 +78,7 @@ if HAS_PIP:
                 # match pkg_resources.Requirement
                 if ".Requirement" not in pkgreq:
                     sys.stderr.write('{0} is not a req\n'.format(req))
-		try:
+        try:
                     reqname = req.project_name
                 except AttributeError:
                     reqname = req.name

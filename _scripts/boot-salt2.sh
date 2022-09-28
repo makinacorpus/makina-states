@@ -384,8 +384,17 @@ get_salt_url() {
     get_default_knob salt_url "${SALT_URL}" "https://github.com/makinacorpus/salt.git"
 }
 
+get_python_version() {
+    get_default_knob py_ver "${PYTHON_VERSION}" "2"
+}
+
 get_salt_branch() {
-    get_default_knob salt_branch "${SALT_BRANCH}" "2016.11"
+    if [ "$(get_python_version)" = "3" ];then
+        DEFAULT_SALT_BRANCH="2017.8"
+    else
+        DEFAULT_SALT_BRANCH="2016.11"
+    fi
+    get_default_knob salt_branch "${SALT_BRANCH}" "$DEFAULT_SALT_BRANCH"
 }
 
 get_ansible_url() {
@@ -451,26 +460,10 @@ set_vars() {
     BASE_PACKAGES="${BASE_PACKAGES} zlib1g-dev curl virtualenv git rsync bzip2 net-tools"
     BASE_PACKAGES="${BASE_PACKAGES} acl build-essential m4 libtool pkg-config autoconf gettext"
     BASE_PACKAGES="${BASE_PACKAGES} man-db automake"
-    if (apt install -s python-dev &>/dev/null);then
-        BASE_PACKAGES="${BASE_PACKAGES} python-dev"
+    if [ "$(get_python_version)" = "3" ];then
+        BASE_PACKAGES="${BASE_PACKAGES} python3-dev python3-openssl python3-pyasn1 python3-urllib3 python3-virtualenv python3-six"
     else
-        BASE_PACKAGES="${BASE_PACKAGES} python2-dev"
-    fi
-    if (apt install -s python-openssl &>/dev/null);then
-        BASE_PACKAGES="${BASE_PACKAGES} python-openssl"
-    else
-        BASE_PACKAGES="${BASE_PACKAGES} python3-openssl"
-    fi
-    if (apt install -s python-pyasn1 &>/dev/null);then
-        BASE_PACKAGES="${BASE_PACKAGES} python-pyasn1"
-    else
-        BASE_PACKAGES="${BASE_PACKAGES} python3-pyasn1"
-    fi
-    if (apt install -s python-urllib3 &>/dev/null);then
-        BASE_PACKAGES="${BASE_PACKAGES} python-urllib3"
-    fi
-    if (apt install -s python-virtualenv &>/dev/null);then
-        BASE_PACKAGES="${BASE_PACKAGES} python-virtualenv"
+        BASE_PACKAGES="${BASE_PACKAGES} python-dev  python-openssl  python-pyasn1  python-urllib3  python-virtualenv  python-six"
     fi
     if (apt install -s tcl8.5 &>/dev/null);then
         BASE_PACKAGES="${BASE_PACKAGES} tcl8.5"
@@ -490,7 +483,7 @@ set_vars() {
     if (apt install -s swig &>/dev/null);then
         BASE_PACKAGES="${BASE_PACKAGES} swig"
     fi
-    BASE_PACKAGES="${BASE_PACKAGES} libsigc++-2.0-dev libssl-dev libgmp3-dev python-six"
+    BASE_PACKAGES="${BASE_PACKAGES} libsigc++-2.0-dev libssl-dev libgmp3-dev"
     BASE_PACKAGES="${BASE_PACKAGES} libffi-dev libzmq3-dev libmemcached-dev"
     NO_MS_VENV_CACHE="${NO_MS_VENV_CACHE:-"no"}"
     DO_INSTALL_PREREQUISITES="${DO_INSTALL_PREREQUISITES:-"y"}"
@@ -529,6 +522,7 @@ set_vars() {
     export SALT_BRANCH="$(get_salt_branch)"
     export ANSIBLE_URL="$(get_ansible_url)"
     export ANSIBLE_BRANCH="$(get_ansible_branch)"
+    export PYTHON_VERSION="$(get_python_version)"
     #
     export CONF_ROOT CONF_PREFIX
     #
@@ -576,7 +570,7 @@ recap_(){
     need_confirm="${1}"
     debug="${2:-$SALT_BOOT_DEBUG}"
     bs_yellow_log "----------------------------------------------------------"
-    bs_yellow_log " MAKINA-STATES BOOTSTRAPPER (@$(get_ms_branch)) FOR $DISTRIB_ID"
+    bs_yellow_log " MAKINA-STATES BOOTSTRAPPER (@$(get_ms_branch)) FOR $DISTRIB_ID/$(get_python_version)"
     bs_yellow_log "   - ${THIS} [--help] [--long-help]"
     bs_yellow_log "----------------------------------------------------------"
     bs_log "  Minion Id: $(get_minion_id)"
@@ -1066,9 +1060,9 @@ setup_virtualenv() {
         if ! ( $virtualenv --help 2>&1 | grep -q -- $ust );then
             ust=""
         fi
-        virtualenv --system-site-packages $ust --python=python2 ${VENV_PATH} &&\
+        virtualenv --system-site-packages $ust --python=python$(get_python_version) ${VENV_PATH} &&\
         . "${VENV_PATH}/bin/activate" &&\
-        "${VENV_PATH}/bin/easy_install" -U "setuptools<50" &&\
+        "${VENV_PATH}/bin/easy_install" -U "setuptools$([ "$(get_python_version)" = '2' ];then echo '<50';else echo '>=50';fi)" &&\
         "${VENV_PATH}/bin/pip" install -U pip &&\
         deactivate
         BUILDOUT_REBOOTSTRAP=y
@@ -1104,11 +1098,16 @@ setup_virtualenv() {
         # the rest should not replace themselves us totally not to it
         # shared libs bugs
         # https://github.com/pypa/pip/issues/5366
-        pip install $copt "${PIP_CACHE}" -U pip six \
-        && pip install $copt "${PIP_CACHE}" backports.ssl_match_hostname urllib3 \
-                      pyopenssl ndg-httpsclient pyasn1 \
+        reqs="requirements/requirements.txt"
+        if [[ "$(get_python_version)" = "3" ]];then
+            reqs="requirements/requirements-py3.txt"
+        else
+            pip install $copt "${PIP_CACHE}" -U pip six \
+                && pip install $copt "${PIP_CACHE}" backports.ssl_match_hostname pyopenssl ndg-httpsclient pyasn1
+        fi
+           pip install $copt "${PIP_CACHE}" -U pip six \
         && pip install $copt "${PIP_CACHE}" -I six urllib3 \
-        && pip install -U $copt "${PIP_CACHE}" -r requirements/requirements.txt
+        && pip install -U $copt "${PIP_CACHE}" -r $reqs
         die_in_error "requirements/requirements.txt doesnt install"
         if [ "x${install_git}" != "x" ]; then
             ${SED} -r \
@@ -1430,6 +1429,9 @@ parse_cli_opts() {
         fi
         if [ "x${1}" = "x-m" ] || [ "x${1}" = "x--minion-id" ]; then
             SALT_MINION_ID="${2}";sh="2";argmatch="1"
+        fi
+        if [ "x${1}" = "x--python-version" ]; then
+            PYTHON_VERSION="${2}";sh="2";argmatch="1"
         fi
         if [ "x${1}" = "x--salt-url" ]; then
             SALT_URL="${2}";sh="2";argmatch="1"
