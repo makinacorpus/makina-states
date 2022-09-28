@@ -367,7 +367,7 @@ def format(dictionary, quote_keys=False, quote_values=True, init=True):
             res[res_key] = (value is True) and 'true' or 'false'
         elif isinstance(value, int):
             res[res_key] = str(value)
-        elif isinstance(value, unicode):
+        elif isinstance(value, six.text_type):
             if quote_value:
                 res[res_key] = quotev(value, valtype=valtype)
             else:
@@ -639,7 +639,7 @@ def autoconfigured_host(host, data=None, ttl=60):
                 data['hostname'], **data)
             for k in ['name', 'hostname']:
                 rdata[k] = data[k]
-        except Exception, exc:
+        except (Exception,) as exc:
             log.warning(
                 'Failed autohost for {0}: {1} \n{2}'.format(
                     host, exc, traceback.format_exc()))

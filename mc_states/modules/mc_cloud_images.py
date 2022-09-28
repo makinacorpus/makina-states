@@ -619,9 +619,9 @@ def sf_release(images=None, flavors=None, sync=True):
     '''
     _s = __salt__
     imgSettings = _s['mc_cloud_images.settings']()
-    if isinstance(flavors, basestring):
+    if isinstance(flavors, six.string_types):
         flavors = flavors.split(',')
-    if isinstance(images, basestring):
+    if isinstance(images, six.string_types):
         images = images.split(',')
     if not flavors:
         flavors = []

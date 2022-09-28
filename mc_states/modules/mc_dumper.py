@@ -45,7 +45,7 @@ def first_arg_is_file(*args, **kwargs):
     if is_file is None:
         is_file = (
             args and
-            isinstance(args[0], basestring) and
+            isinstance(args[0], six.string_types) and
             os.path.exists(args[0]))
     return bool(is_file)
 
@@ -146,6 +146,8 @@ def msgpack_load(data, *args, **kw):
     '''
     loade a msgpacked value
     '''
+    if not data:
+        return {}
     value = msgpack.unpackb(data)['value']
     return value
 

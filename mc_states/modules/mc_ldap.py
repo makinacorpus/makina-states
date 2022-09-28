@@ -182,7 +182,7 @@ class _ConnectionHandler(object):
             base = self.base
         if scope is None:
             scope = self.scope
-        if isinstance(scope, basestring):
+        if isinstance(scope, six.string_types):
             scope = {'ONE': 'ONELEVEL'}.get(scope.upper(), scope.upper())
             scope = getattr(ldap, 'SCOPE_{0}'.format(scope.upper()))
         if retrieve_attributes is None:

@@ -23,6 +23,7 @@ Documentation of this module is available with::
 import logging
 # Import salt libs
 import traceback
+import sys
 from copy import deepcopy
 import os
 from salt.utils.odict import OrderedDict
@@ -45,7 +46,6 @@ from OpenSSL._util import (
     lib as _lib,
     exception_from_error_queue as _exception_from_error_queue,
     byte_string as _byte_string,
-    native as _native,
     UNSPECIFIED as _UNSPECIFIED,
     text_to_bytes_and_warn as _text_to_bytes_and_warn,
 )
@@ -689,8 +689,12 @@ def selfsigned_cert(CN,
 
     if alts:
         alts = ", ".join(list(alts))
-        cert.add_extensions([
-            OpenSSL.crypto.X509Extension('subjectAltName', False, alts)])
+        if sys.version[0] > "2":
+            cert.add_extensions([
+                OpenSSL.crypto.X509Extension('subjectAltName'.encode(), False, alts.encode())])
+        else:
+            cert.add_extensions([
+                OpenSSL.crypto.X509Extension('subjectAltName', False, alts)])
 
     cert.set_serial_number(1000)
     cert.set_issuer(cert.get_subject())
@@ -700,6 +704,8 @@ def selfsigned_cert(CN,
         OpenSSL.crypto.FILETYPE_PEM, cert)
     keys = OpenSSL.crypto.dump_privatekey(
         OpenSSL.crypto.FILETYPE_PEM, key)
+    if sys.version[0] > "2":
+        certs, keys = certs.decode(), keys.decode()
     return certs, keys
 
 
@@ -975,7 +981,7 @@ def ssl_certs(domains, gen=False, as_text=False, keytype=None, **kw):
     '''
     if not domains:
         raise ValueError('domains must be set')
-    if isinstance(domains, basestring):
+    if isinstance(domains, six.string_types):
         domains = domains.split(',')
     ssl_certs = []
     for domain in domains:
@@ -993,7 +999,7 @@ def ca_ssl_certs(domains, gen=False, as_text=False, keytype=None, **kwargs):
     if ca is none: ca==''
     '''
     rdomains = []
-    if isinstance(domains, basestring):
+    if isinstance(domains, six.string_types):
         domains = domains.split(',')
     for domain in domains:
         data = ssl_certs(domain, gen=gen, keytype=keytype)
@@ -1179,7 +1185,7 @@ def get_cert_infos(cn_or_cert,
                 trace = traceback.format_exc()
                 log.error('INFOS rsa private key for {0}'.format(cn))
                 log.error(trace)
-        return {'cn': cn,
+        ret = {'cn': cn,
                 'altnames': altnames,
                 'cert_data': cdata,
                 'rsa_key': private_key,
@@ -1216,6 +1222,7 @@ def get_cert_infos(cn_or_cert,
                     separate_ssl_files_path,
                     key_basename or '{0}.key'.format(cn)),
                 'has_chain': bool((cdata[2] or '').strip())}
+        return ret
     cache_key = 'mc_ssl.get_cert_infos{0}{1}'.format(
         cn_or_cert.replace('\n', ''),
         (key or '').replace('\n', ''),

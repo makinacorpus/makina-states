@@ -11,10 +11,15 @@ mc_utils / Some usefull small tools
 
 # Import salt libs
 from pprint import pformat
+import sys
 import copy
 import cProfile
 import crypt
 import collections
+try:
+    from collections.abc import Mapping
+except ImportError:
+    from collections import Mapping
 import datetime
 import traceback
 import socket
@@ -35,10 +40,11 @@ import salt.utils.network
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 from salt.ext import six as six
-from mc_states import api
+from mc_states import api, saltapi
 import mc_states.api
 from distutils.version import LooseVersion
 
+from mc_states.saltapi import DEFAULT_TARGET_DELIM
 
 _CACHE = {'mid': None}
 _default_marker = object()
@@ -103,6 +109,8 @@ def hash(string, typ='md5', func='hexdigest'):
         'md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'
     ]:
         raise TypeError('{0} is not valid hash'.format(typ))
+    if sys.version[0] > "2" and hasattr(string, 'encode'):
+        string = string.encode()
     return getattr(getattr(hashlib, typ)(string), func)()
 
 
@@ -211,8 +219,8 @@ def update_no_list(dest, upd, recursive_update=True):
     Merges upd recursively into dest
     But instead of merging lists, it overrides them from target dict
     '''
-    if (not isinstance(dest, collections.Mapping)) \
-            or (not isinstance(upd, collections.Mapping)):
+    if (not isinstance(dest, Mapping)) \
+            or (not isinstance(upd, Mapping)):
         raise TypeError('Cannot update using non-dict types in dictupdate.update()')
     updkeys = list(upd.keys())
     if not set(list(dest.keys())) & set(updkeys):
@@ -224,8 +232,8 @@ def update_no_list(dest, upd, recursive_update=True):
                 dest_subkey = dest.get(key, None)
             except AttributeError:
                 dest_subkey = None
-            if isinstance(dest_subkey, collections.Mapping) \
-                    and isinstance(val, collections.Mapping):
+            if isinstance(dest_subkey, Mapping) \
+                    and isinstance(val, Mapping):
                 ret = update_no_list(dest_subkey, val)
                 dest[key] = ret
             else:
@@ -533,7 +541,7 @@ def is_iter(value):
     )
 
 
-def traverse_dict(data, key, delimiter=salt.utils.DEFAULT_TARGET_DELIM):
+def traverse_dict(data, key, delimiter=DEFAULT_TARGET_DELIM):
     '''
     Handle the fact to traverse dicts with '.' as it was an old
     default and makina-states relies a lot on it
@@ -546,17 +554,17 @@ def traverse_dict(data, key, delimiter=salt.utils.DEFAULT_TARGET_DELIM):
 
     can be traversed with makina-states.foo.bar.c
     '''
-    delimiters = uniquify([delimiter, salt.utils.DEFAULT_TARGET_DELIM,
+    delimiters = uniquify([delimiter, DEFAULT_TARGET_DELIM,
                            ':', '.'])
     ret = dv = '_|-'
     for dl in delimiters:
         for cdl in reversed(delimiters):
-            ret = salt.utils.traverse_dict(data, key, dv, delimiter=dl)
+            ret = saltapi.traverse_dict(data, key, dv, delimiter=dl)
             if ret != dv:
                 return ret
             if cdl in key and dl not in key:
                 nkey = key.replace(cdl, dl)
-                ret = salt.utils.traverse_dict(data, nkey, dv, delimiter=dl)
+                ret = saltapi.traverse_dict(data, nkey, dv, delimiter=dl)
                 if ret != dv:
                     return ret
                 # if the dict is not at the end, we try to progressivily
@@ -567,7 +575,7 @@ def traverse_dict(data, key, delimiter=salt.utils.DEFAULT_TARGET_DELIM):
                 # we do not test the last element as it is the exact key !
                 for i in range(key.count(cdl)-1):
                     dkey = nkey.replace(dl, cdl, i+1)
-                    ret = salt.utils.traverse_dict(
+                    ret = saltapi.traverse_dict(
                         data, dkey, dv, delimiter=dl)
                     if ret != dv:
                         return ret
@@ -576,7 +584,7 @@ def traverse_dict(data, key, delimiter=salt.utils.DEFAULT_TARGET_DELIM):
 
 def uncached_get(key, default='',
                  local_registry=None, registry_format='pack',
-                 delimiter=salt.utils.DEFAULT_TARGET_DELIM):
+                 delimiter=DEFAULT_TARGET_DELIM):
     '''
     Same as 'config.get' but with different retrieval order.
 
@@ -604,7 +612,7 @@ def uncached_get(key, default='',
                 local_registry = reg
                 break
     if (
-        isinstance(local_registry, basestring) and
+        isinstance(local_registry, six.string_types) and
         local_registry not in ['localsettings']
     ):
         local_registry = _s['mc_macros.get_local_registry'](
@@ -632,7 +640,7 @@ def uncached_get(key, default='',
 
 def cached_get(key, default='',
                local_registry=None, registry_format='pack',
-               delimiter=salt.utils.DEFAULT_TARGET_DELIM, ttl=60):
+               delimiter=DEFAULT_TARGET_DELIM, ttl=60):
     cache_key = 'mc_utils_get.{0}{1}{2}{3}'.format(key,
                                                    local_registry,
                                                    registry_format,
@@ -751,12 +759,13 @@ def defaults(prefix,
         if a not in ignored_keys and isinstance(a, six.string_types):
             to_unicode = False
             for i in prefix, a:
-                if isinstance(i, unicode):
+                if isinstance(i, six.text_type):
                     to_unicode = True
                     break
             k = '{0}.{1}'.format(magicstring(prefix), magicstring(a))
             if to_unicode:
-                k = k.decode('utf-8')
+                if sys.version[0] < '3':
+                    k = k.decode('utf-8')
             pkeys[a] = (k, datadict[a])
     for key, value_data in pkeys.items():
         value_key, default_value = value_data
@@ -852,7 +861,12 @@ def remove_stuff_from_opts(__opts):
 
 def copy_dunder(dunder):
     ndunder = OrderedDict()
-    if isinstance(dunder, dict) or 'dict' in dunder.__class__.__name__.lower():
+    dclass = dunder.__class__.__name__.lower()
+    if (
+        isinstance(dunder, dict) or
+        'dict' in dclass or
+        'loader' in dclass
+    ):
         for k in dunder:
             val = dunder[k]
             ndunder[k] = copy_dunder(val)
@@ -1053,7 +1067,7 @@ def output(mapping, raw=False, outputter='highstate'):
                     continue
                 for k in [
                     j for j in mmapping[state]
-                    if isinstance(mapping[state][j], basestring)
+                    if isinstance(mapping[state][j], six.string_types)
                 ]:
                     mmapping[state][k] = slashre.sub('', mmapping[state][k])
             if outputter == 'highstate':

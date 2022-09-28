@@ -9,10 +9,13 @@ mc_state / module to execute functions on salt
 
 
 import hashlib
+import sys
 
 
 def patch(mod, key=None):
     h = hashlib.new('sha512')
+    if sys.version[0] > '2' and hasattr(key, 'encode'):
+        key = key.encode()
     h.update(key)
     sha = h.hexdigest()
     default = {'__env__': "base", '__instance_id__': sha}

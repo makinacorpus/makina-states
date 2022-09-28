@@ -13,6 +13,7 @@ import datetime
 import copy
 import contextlib
 import hashlib
+import sys
 import json
 import logging
 import os
@@ -25,6 +26,9 @@ import salt.loader
 from mc_states import ping
 import fcntl
 import tempfile
+
+if sys.version[0] > "2":
+    long = int
 
 
 try:
@@ -299,7 +303,7 @@ def get_mc_server(key=None,
         key = _DEFAULT_MC
     if not addrs:
         addrs = os.environ.get('MC_SERVER', '127.0.0.1')
-    if isinstance(addrs, basestring):
+    if isinstance(addrs, six.string_types):
         addrs = addrs.split(',')
     if not addrs:
         addrs = ['127.0.0.1']
@@ -380,7 +384,7 @@ def msplitstrip(mapping, keys=None):
 
 
 def indent(string_or_list, indent='    ', sep='\n'):
-    if isinstance(string_or_list, basestring):
+    if isinstance(string_or_list, six.string_types):
         string_or_list = string_or_list.splitlines()
     if ''.join(string_or_list).strip():
         string_or_list = indent + '{1}{0}'.format(
@@ -389,7 +393,7 @@ def indent(string_or_list, indent='    ', sep='\n'):
 
 
 def yencode(string):
-    if isinstance(string, basestring):
+    if isinstance(string, six.string_types):
         re_y = re.compile(' \.\.\.$', re.M)
         string = re_y.sub('', string)
     return string
@@ -620,7 +624,10 @@ def get_cache_key(key, __opts__=None, *args, **kw):
             except Exception:
                 key += '_nopillar'
         # ckey = _CACHE_PREFIX['key'] + "_" + key.encode('base64')
-        ckey = _CACHE_PREFIX['key'] + "_" + hashlib.sha1(key).hexdigest()
+        if sys.version[0] < '3':
+            ckey = _CACHE_PREFIX['key'] + "_" + hashlib.sha1(key).hexdigest()
+        else:
+            ckey = _CACHE_PREFIX['key'] + "_" + hashlib.sha1(key.encode()).hexdigest()
         _CACHE_KEYS[ckey] = (sha, key)
     return ckey
 
@@ -947,6 +954,8 @@ def magicstring(thestr):
     """
     Convert any string to UTF-8 ENCODED one
     """
+    if sys.version[0] > "2":
+        return thestr
     if not HAS_CHARDET:
         log.error('No chardet support !')
         return thestr
@@ -958,7 +967,7 @@ def magicstring(thestr):
                             datetime.datetime))
     ):
         thestr = "{0}".format(thestr)
-    if isinstance(thestr, unicode):
+    if isinstance(thestr, six.text_type):
         try:
             thestr = thestr.encode('utf-8')
         except Exception:
@@ -981,20 +990,20 @@ def magicstring(thestr):
         ]
         if sdetectedenc not in ('utf-8', 'ascii'):
             try:
-                if not isinstance(thestr, unicode):
+                if not isinstance(thestr, six.text_type):
                     thestr = thestr.decode(detectedenc)
                 thestr = thestr.encode(detectedenc)
             except Exception:
                 for idx, i in enumerate(found_encodings):
                     try:
-                        if not isinstance(thestr, unicode) and detectedenc:
+                        if not isinstance(thestr, six.text_type) and detectedenc:
                             thestr = thestr.decode(detectedenc)
                         thestr = thestr.encode(i)
                         break
                     except Exception:
                         if idx == (len(found_encodings) - 1):
                             raise
-    if isinstance(thestr, unicode):
+    if isinstance(thestr, six.text_type):
         thestr = thestr.encode('utf-8')
     thestr = thestr.decode('utf-8').encode('utf-8')
     return thestr

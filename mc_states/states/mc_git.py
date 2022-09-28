@@ -26,10 +26,6 @@ import salt.utils
 
 from salt.states import git
 
-try:
-    _run_check = git._run_check
-except AttributeError:
-    _run_check = git.mod_run_check
 _fail = git._fail
 _neutral_test = git._neutral_test
 
@@ -41,6 +37,31 @@ def __virtual__():
     Only load if git is available
     '''
     return 'mc_git' if __salt__['cmd.has_exec']('git') else False
+
+
+def _run_check(*args, **check_cmd_opts):
+    """
+    Execute the check_cmd logic.
+
+    Return a result dict if ``check_cmd`` succeeds (check_cmd == 0)
+    otherwise return True
+    """
+
+    cret = __salt__["cmd.run_all"](*args, **check_cmd_opts)
+    if cret["retcode"] != 0:
+        ret = {
+            "comment": "check_cmd execution failed",
+            "skip_watch": True,
+            "result": False,
+        }
+
+        if cret.get("stdout"):
+            ret["comment"] += "\n" + cret["stdout"]
+        if cret.get("stderr"):
+            ret["comment"] += "\n" + cret["stderr"]
+        return ret
+    # No reason to stop, return True
+    return True
 
 
 def old_latest(name,
@@ -246,7 +267,7 @@ def old_latest(name,
                             identity=identity)
                     try:
                         pull()
-                    except Exception, ex:
+                    except (Exception,) as ex:
                         ex_msg = ex.message.lower()
                         # if the pb is the remote branch not being set
                         # just set it and run pull again

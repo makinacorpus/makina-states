@@ -203,7 +203,7 @@ def pack_load_local_registry(name, registryf=None):
                                 registry_format='pack')
     try:
         if os.path.exists(regpath):
-            with open(regpath) as fic:
+            with open(regpath, 'rb') as fic:
                 rvalue = fic.read()
                 value = __salt__['mc_utils.msgpack_load'](
                     rvalue)
@@ -233,7 +233,8 @@ def encode_local_registry(name, registry, registry_format='yaml'):
                 registry_format)](registry)
         sync = False
         if os.path.exists(registryf):
-            with open(registryf) as fic:
+            mode = isinstance(content, bytes) and 'rb' or 'r'
+            with open(registryf, mode) as fic:
                 old_content = fic.read()
                 if old_content != content:
                     sync = True
@@ -242,9 +243,10 @@ def encode_local_registry(name, registry, registry_format='yaml'):
         if sync:
             if not os.path.exists(dregistry):
                 os.makedirs(dregistry)
-            with open(registryf, 'w') as fic:
+            mode = isinstance(content, bytes) and 'wb' or 'w'
+            with open(registryf, mode) as fic:
                 fic.write(content)
-        os.chmod(registryf, 0700)
+        os.chmod(registryf, 448)
 
 
 def _get_local_registry(name,
@@ -488,7 +490,7 @@ def unregister(kind, slss, data=None, suf=''):
     Unregister a/some service(s) in the local registry
     '''
     state = '\n'
-    if isinstance(slss, basestring):
+    if isinstance(slss, six.string_types):
         slss = [slss]
     if slss is None:
         slss = []
@@ -513,7 +515,7 @@ def register(kind, slss, data=None, suf=''):
     Register a/some service(s) in the local registry
     '''
     state = '\n'
-    if isinstance(slss, basestring):
+    if isinstance(slss, six.string_types):
         slss = [slss]
     if slss is None:
         slss = []

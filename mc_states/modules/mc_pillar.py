@@ -1100,7 +1100,7 @@ def ips_canfailover_for(*a, **kw):
         if not ips:
             raise IPRetrievalError()
         return ips
-    except IPRetrievalError:
+    except (IPRetrievalError,):
         kw['fail_over'] = True
         return ips_for(*a, **kw)
 
@@ -1362,7 +1362,7 @@ def rrs_txt_for(domain, ttl=PILLAR_TTL):
             for fqdn, rrs in rrscols.items():
                 if domain_re.search(fqdn):
                     txtrrs = all_rrs.setdefault(fqdn, [])
-                    if isinstance(rrs, basestring):
+                    if isinstance(rrs, six.string_types):
                         rrs = [rrs]
                     dfqdn = fqdn
                     if not dfqdn.endswith('.'):
@@ -1396,7 +1396,7 @@ def rrs_srv_for(domain, ttl=PILLAR_TTL):
         for fqdn, rrs in rrs_srvs.items():
             if domain_re.search(fqdn):
                 srvrrs = all_rrs.setdefault(fqdn, [])
-                if isinstance(rrs, basestring):
+                if isinstance(rrs, six.string_types):
                     rrs = [rrs]
                 dfqdn = fqdn
                 if not dfqdn.endswith('.'):
@@ -1486,7 +1486,7 @@ def get_ns_master(id_, dns_servers=None, default=None, ttl=PILLAR_TTL):
             master = default.get('master', None)
         if not master:
             raise ValueError('No master for {0}'.format(id_))
-        if not isinstance(master, basestring):
+        if not isinstance(master, six.string_types):
             raise ValueError(
                 '{0} is not a string for dns master {1}'.format(
                     master, id_))
@@ -1652,11 +1652,11 @@ def get_ns_slaves(id_, dns_servers=None, default=None, ttl=PILLAR_TTL):
             for nsid in [a for a in slave]:
                 target = slave[nsid]
                 ns_fqdn = nsid
-                if not isinstance(nsid, basestring):
+                if not isinstance(nsid, six.string_types):
                     raise ValueError(
                         '{0} is not a valid dn for nameserver in '
                         '{1}'.format(nsid, id_))
-                if not isinstance(target, basestring):
+                if not isinstance(target, six.string_types):
                     raise ValueError(
                         '{0} is not a valid dn for nameserver target in '
                         '{1}'.format(target, id_))
@@ -2073,7 +2073,7 @@ def rrs_cnames_for(domain, ttl=PILLAR_TTL):
                     # rr
                     try:
                         ips_for(atest, fail_over=True)
-                    except IPRetrievalError, exc:
+                    except (IPRetrievalError,) as exc:
                         do_raise = False
                         fqdmns = get_fqdn_domains(exc.fqdn)
                         for dmn in fqdmns:
@@ -2148,7 +2148,7 @@ def rrs_dnames_for(domain, ttl=PILLAR_TTL):
                     # rr
                     try:
                         ips_for(atest, fail_over=True)
-                    except IPRetrievalError, exc:
+                    except (IPRetrievalError,) as exc:
                         do_raise = False
                         fqdmns = get_fqdn_domains(exc.fqdn)
                         for dmn in fqdmns:
@@ -2303,7 +2303,7 @@ def serial_for(domain,
                     if ns in dns_failures:
                         dns_failures.pop(ns, None)
             serial = max(serial, dns_serial, db_serial)
-        except Exception, ex:
+        except (Exception,) as ex:
 
             hasns, nsip, failure = True, '', {}
             trace = traceback.format_exc()
@@ -4727,7 +4727,7 @@ def ext_pillar_do(id_, pillar=None, raise_error=True, *args, **kw):
             data = dictupdate(data, subpillar)
             data['mc_pillar.generated_for'] = id_
             data['mc_pillar.generated_by'] = __opts__['id']
-        except Exception, ex:
+        except (Exception,) as ex:
             trace = traceback.format_exc()
             msg = 'ERROR in mc_pillar: {0}/{1}'.format(callback, id_)
             raise_error.append(msg)

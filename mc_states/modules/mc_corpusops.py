@@ -16,7 +16,11 @@ import logging
 import json
 
 from salt.utils import yamldumper
-from cStringIO import StringIO
+try:
+    import cStringIO
+except ImportError:
+    import io as cStringIO
+StringIO = cStringIO.StringIO
 from salt.utils.odict import OrderedDict
 re_flags = re.M | re.U | re.S
 log = logging.getLogger(__name__)

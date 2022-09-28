@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
 '''
 .. _module_mc_project_2:
 
@@ -226,9 +227,9 @@ def remove_path(path):
         else:
             os.remove(path)
     else:
-        print
-        print "'%s' was asked to be deleted but does not exists." % path
-        print
+        print()
+        print("'%s' was asked to be deleted but does not exists." % path)
+        print()
 
 def _sls_exec(name, cfg, sls):
     # be sure of the current project beeing loaded in the context
@@ -457,7 +458,7 @@ def _prepare_configuration(name, *args, **kwargs):
             defaultskip.get(step, defaultskip['default']))
     only = kwargs.get('only', cfg.get('only', None))
     if only:
-        if isinstance(only, basestring):
+        if isinstance(only, six.string_types):
             only = only.split(',')
         if not isinstance(only, list):
             raise ValueError('invalid only for {1}: {0}'.format(
@@ -689,7 +690,7 @@ def _merge_statuses(ret, cret, step=None):
             try:
                 ret[k] += '\n{{{0}}}'.format(k).format(**cret)
             except UnicodeEncodeError:
-                if isinstance(cret[k], unicode):
+                if isinstance(cret[k], six.text_type):
                     ret[k] += cret[k].encode('utf-8')
                 else:
                     ret[k] += cret[k].decode('utf-8').encode('utf-8')
@@ -1053,7 +1054,7 @@ def init_user_groups(user, groups=None, ret=None):
                 _append_comment(ret, body=indent(cret['comment']))
     if not os.path.exists('/home/users'):
         os.makedirs('/home/users')
-        os.chmod('/home/users', 0755)
+        os.chmod('/home/users', 493)
     if not _s['user.info'](user):
         cret = _state_exec(suser, 'present',
                            user,
@@ -1338,12 +1339,12 @@ def init_repo(working_copy,
             parent = os.path.dirname(igit)
             if not os.path.exists(parent):
                 _s['file.makedirs_perms'](
-                    parent, user=user, group=group, mode=0750)
-            _s['file.set_mode'](parent, 0750)
+                    parent, user=user, group=group, mode=488)
+            _s['file.set_mode'](parent, 488)
             _s['file.chown'](parent, user=user, group=group)
             if not os.path.exists(os.path.join(igit, '.git')):
                 _s['git.init'](igit, user=user)
-            _s['file.set_mode'](igit, 0750)
+            _s['file.set_mode'](igit, 488)
             _s['file.chown'](igit, user=user, group=group)
             empty = os.path.join(igit, '.empty')
             if not remote_less:
@@ -2067,7 +2068,7 @@ def init_project(name, *args, **kwargs):
         fm = os.path.join(cfg['project_git_root'], 'hooks', 'force_marker')
         if os.path.exists(fm):
             remove_path(fm)
-    except projects_api.ProjectInitException, ex:
+    except (projects_api.ProjectInitException,) as ex:
         trace = traceback.format_exc()
         ret['result'] = False
         _append_comment(ret,
@@ -2110,7 +2111,7 @@ def guarded_step(cfg,
                  *args, **kwargs):
     name = cfg['name']
     ret = _get_ret(name, *args, **kwargs)
-    if isinstance(step_or_steps, basestring):
+    if isinstance(step_or_steps, six.string_types):
         step_or_steps = [step_or_steps]
     if not step_or_steps:
         return ret
@@ -2135,7 +2136,7 @@ def guarded_step(cfg,
                     cret = __salt__['mc_project_{1}.{0}'.format(
                         step, cfg['api_version'])](name, *args, **kwargs)
                 _merge_statuses(ret, cret, step=step)
-        except projects_api.ProjectProcedureException, pr:
+        except (projects_api.ProjectProcedureException,) as pr:
             # if we are not in an inner step, raise in first place !
             # and do not mark for rollback
             if inner_step:
@@ -2143,7 +2144,7 @@ def guarded_step(cfg,
             ret['result'] = False
             # in non editable modes, set the rollback project flag
             _merge_statuses(ret, pr.salt_ret, step=pr.salt_step)
-    except Exception, ex:
+    except (Exception,) as ex:
         error_msg = (
             'Deployment error: {3}\n'
             'Project {0} failed to deploy and triggered a non managed '
@@ -2461,7 +2462,7 @@ def install(name, only_steps=None, task_mode=False, *args, **kwargs):
         cfg = get_configuration(name, *args, **kwargs)
     if not only_steps:
         only_steps = []
-    if isinstance(only_steps, basestring):
+    if isinstance(only_steps, six.string_types):
         only_steps = only_steps.split(',')
     ret = _get_ret(name, *args, **kwargs)
     if ret['result']:
@@ -3050,7 +3051,7 @@ def raise_exc(klass,
     try:
         rmsg = detail_msg.format(*exc_args, **exc_kwargs)
     except UnicodeEncodeError:
-        if not isinstance(detail_msg, unicode):
+        if not isinstance(detail_msg, six.text_type):
             try:
                 rmsg = detail_msg.decode('utf-8').format(
                     *exc_args, **exc_kwargs).encode('utf-8')
@@ -3060,7 +3061,7 @@ def raise_exc(klass,
             try:
                 rmsg = msg.format(*exc_args, **exc_kwargs)
             except UnicodeEncodeError:
-                if not isinstance(msg, unicode):
+                if not isinstance(msg, six.text_type):
                     try:
                         rmsg = msg.decode('utf-8').format(
                             *exc_args, **exc_kwargs).encode('utf-8')

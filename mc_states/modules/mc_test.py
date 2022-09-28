@@ -14,7 +14,10 @@ mc_test
 
 import threading
 import time
-import Queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 import os
 import traceback
 import salt.exceptions
@@ -25,6 +28,8 @@ from mc_states import api
 from mc_states import saltapi
 from mc_states.tests import utils
 
+
+Queue = queue
 
 class TestError(salt.exceptions.SaltException):
     """."""
@@ -63,7 +68,7 @@ def unit_tests(tests=None,
     in_args = '--exe -e mc_test -v -s'
     if not logcapture:
         in_args += ' --nologcapture'
-    if isinstance(tests, basestring):
+    if isinstance(tests, six.string_types):
         tests = tests.split(',')
     if not tests:
         tests = ['mc_states']
@@ -117,7 +122,7 @@ def _echo(inq, outq):
 def run_tests(flavors=None, use_vt=True, echo=False, logcapture=True):
     if not flavors:
         flavors = []
-    if isinstance(flavors, basestring):
+    if isinstance(flavors, six.string_types):
         flavors = flavors.split(',')  # pylint: disable=E1101
     success = OrderedDict()
     failures = OrderedDict()

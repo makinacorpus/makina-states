@@ -51,7 +51,10 @@ import sys
 import copy
 import time
 import logging
-import Queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 from multiprocessing import Queue as mQueue
 import multiprocessing
 import threading
@@ -66,6 +69,7 @@ from mc_states import saltcaller
 from mc_states import saltapi
 
 
+Queue = queue
 six = mc_states.api.six
 
 log = logging.getLogger(__name__)
@@ -79,7 +83,7 @@ class AnsibleInventoryIncomplete(ValueError):
 
 def get_hosts(ids_=None):
     data = set()
-    if isinstance(ids_, basestring):
+    if isinstance(ids_, six.string_types):
         ids_ = ids_.split(',')
     for f in __salt__:
         if f.endswith('.get_masterless_makinastates_hosts'):

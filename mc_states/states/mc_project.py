@@ -34,7 +34,7 @@ def deployed(name, api_ver='2', **kwargs):
     try:
         cret = __salt__['init_project'](api_ver=api_ver, **kwargs)
         ret.update(cret)
-    except Exception, ex:
+    except (Exception,) as ex:
         trace = traceback.format_exc()
         ret['comment'] =(
             'Error while creating project {0}\n{1}'.format(

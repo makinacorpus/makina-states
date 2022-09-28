@@ -19,13 +19,43 @@ import json
 import re
 from pprint import pformat
 import salt.syspaths
-from mc_states.modules.mc_utils import dictupdate
 import copy
 import traceback
-from salt.utils import check_state_result
 import time
 
 import salt.utils
+try:
+    from salt.utils import fopen
+except ImportError:
+    from salt.utils.files import fopen
+
+try:
+    from salt.utils import traverse_dict
+except ImportError:
+    from salt.utils.data import traverse_dict
+
+try:
+    from salt.utils import check_state_result
+    check_result = check_state_result
+except ImportError:
+    from salt.utils.state import check_result
+    check_state_result = check_result
+
+try:
+    from salt.utils import clean_kwargs
+except ImportError:
+    from salt.utils.args import clean_kwargs
+
+try:
+    from salt.utils import get_colors
+except ImportError:
+    from salt.utils.color import get_colors
+
+try:
+    from salt.utils import DEFAULT_TARGET_DELIM
+except ImportError:
+    from salt.defaults import DEFAULT_TARGET_DELIM
+
 from salt.utils.odict import OrderedDict
 import salt.utils.vt
 from salt.client import LocalClient
@@ -44,6 +74,7 @@ from mc_states.api import strip_colors
 from mc_states.api import magicstring
 from mc_states.api import get_ssh_username
 from mc_states.api import no_more_mastersalt
+from mc_states.modules.mc_utils import dictupdate
 
 
 log = logging.getLogger(__name__)
@@ -944,7 +975,7 @@ def check_point(ret, __opts__, output=True):
 
 
 def _colors(color=None, colorize=True):
-    colors = salt.utils.get_colors(colorize)
+    colors = get_colors(colorize)
     if colors and isinstance(colors, dict):
         # compat to old themes
         colors.update({'PURPLE':  colors.get('MAGENTA', ''),

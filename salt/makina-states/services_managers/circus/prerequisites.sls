@@ -20,6 +20,7 @@ circus-install-pkg:
 circus-install-virtualenv:
   virtualenv.managed:
     - name: {{ venv }}
+    - python: python2
   pip.installed:
     - requirements: /etc/circus/requirements.txt
     - bin_env: {{ venv }}/bin/pip

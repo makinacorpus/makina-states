@@ -20,6 +20,7 @@ Documentation of this module is available with::
 # Import python libs
 import logging
 import mc_states.api
+from salt.ext import six as six
 from distutils.version import LooseVersion
 
 __name = 'pkgs'
@@ -147,7 +148,7 @@ def settings():
         for provider in [a for a in mirrors]:
             for test in ['id', 'fqdn', 'domain', 'host', 'nodename']:
                 val = _s['mc_utils.get'](test, '')
-                if isinstance(val, basestring):
+                if isinstance(val, six.string_types):
                     if provider in val.lower():
                         umirror = mirrors.get('mirrors_{0}_{1}'.format(os, provider),
                                               mirrors['mirrors_{0}_dist'.format(os)])

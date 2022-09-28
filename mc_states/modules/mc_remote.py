@@ -645,7 +645,7 @@ def _reraise(exc, typ=None, trace=None, message=None):
             exc.__class__.__name__, typ.__name__)
         eargs = (message, exec_ret)
     # pylint: disable=E0702
-    raise typ, eargs, trace
+    six.reraise(typ, eargs, trace)
 
 
 # pylint: disable=R0902
@@ -1284,9 +1284,9 @@ def ssh(host, script, **kwargs):
         script = _SH_WRAPPER.format(**skw)
     if inline_script:
         tmpfh, script_p = tempfile.mkstemp()
-        with salt.utils.fopen(script_p, 'w') as tmpfile:
+        with mc_states.saltapi.fopen(script_p, 'w') as tmpfile:
             tmpfile.write(script)
-        os.chmod(script_p, 0755)
+        os.chmod(script_p, 493)
     executable = False
     if os.path.exists(script_p):
         fmode = os.stat(script_p)[stat.ST_MODE]

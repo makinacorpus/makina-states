@@ -41,7 +41,10 @@ from salt.ext.six.moves.urllib.request import urlopen as _urlopen
 # pylint: enable=import-error,no-name-in-module,redefined-builtin
 
 # Import salt libs
-import salt.utils
+try:
+    from salt.utils import fopen as salt_fopen
+except ImportError:
+    from salt.utils.files import fopen as salt_fopen
 from salt.exceptions import CommandExecutionError
 
 
@@ -142,7 +145,7 @@ class _Logger(object):
         self._by_level = {}
 
     def _log(self, level, msg):
-        if not isinstance(msg, text_type):
+        if sys.version[0] < '3' and not isinstance(msg, text_type):
             msg = msg.decode('utf-8')
         if level not in self._by_level:
             self._by_level[level] = []
@@ -185,8 +188,11 @@ LOG = _Logger()
 
 
 def _encode_string(string):
-    if isinstance(string, text_type):
-        string = string.encode('utf-8')
+    if sys.version[0] < '3':
+        if isinstance(string, text_type):
+            string = string
+    elif hasattr(string, 'decode'):
+        string = string.decode().encode('utf-8')
     return string
 
 
@@ -391,7 +397,7 @@ def _get_bootstrap_content(directory='.'):
     Get the current bootstrap.py script content
     '''
     try:
-        with salt.utils.fopen(os.path.join(
+        with salt_fopen(os.path.join(
                                 os.path.abspath(directory),
                                 'bootstrap.py')) as fic:
             oldcontent = fic.read()
@@ -416,7 +422,7 @@ def _get_buildout_ver(directory='.'):
     try:
         files = _find_cfgs(directory)
         for f in files:
-            with salt.utils.fopen(f) as fic:
+            with salt_fopen(f) as fic:
                 buildout1re = re.compile(r'^zc\.buildout\s*=\s*1', RE_F)
                 dfic = fic.read()
                 if (
@@ -518,7 +524,7 @@ def upgrade_bootstrap(directory='.',
                 if not os.path.isdir(dbuild):
                     os.makedirs(dbuild)
                 # only try to download once per buildout checkout
-                salt.utils.fopen(os.path.join(
+                salt_fopen(os.path.join(
                     dbuild,
                     '{0}.updated_bootstrap'.format(buildout_ver)))
             except (OSError, IOError):
@@ -533,16 +539,16 @@ def upgrade_bootstrap(directory='.',
             data = '\n'.join(ldata)
         if updated:
             comment = 'Bootstrap updated'
-            with salt.utils.fopen(b_py, 'w') as fic:
+            with salt_fopen(b_py, 'w') as fic:
                 fic.write(data)
         if dled:
-            with salt.utils.fopen(os.path.join(dbuild,
+            with salt_fopen(os.path.join(dbuild,
                                                '{0}.updated_bootstrap'.format(
                                                    buildout_ver)), 'w') as afic:
                 afic.write('foo')
     except (OSError, IOError):
         if oldcontent:
-            with salt.utils.fopen(b_py, 'w') as fic:
+            with salt_fopen(b_py, 'w') as fic:
                 fic.write(oldcontent)
 
     return {'comment': comment}
@@ -741,7 +747,7 @@ def bootstrap(directory='.',
                       buildout_ver=buildout_ver)
     # be sure which buildout bootstrap we have
     b_py = os.path.join(directory, 'bootstrap.py')
-    with salt.utils.fopen(b_py) as fic:
+    with salt_fopen(b_py) as fic:
         content = fic.read()
     if (
         (False != test_release)

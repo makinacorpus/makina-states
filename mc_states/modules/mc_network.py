@@ -47,7 +47,8 @@ from mc_states.api import six
 from mc_states.api import is_valid_ip
 import contextlib
 import socket
-import urllib2
+import urllib3
+
 
 # Import salt libs
 from salt.utils.validate.net import ipv4_addr as _ipv4_addr
@@ -325,13 +326,13 @@ def settings():
                     for k in [b for b in ifdata]:
                         val = ifdata[k]
                         # handle eth0:0
-                        if isinstance(val, basestring):
+                        if isinstance(val, six.string_types):
                             ifdata[k] = val.replace(ethn, newif)
                         # handle pre/post/routing
                         elif isinstance(val, list):
                             newval = []
                             for sube in val:
-                                if isinstance(sube, basestring):
+                                if isinstance(sube, six.string_types):
                                     sube = sube.replace(ethn, newif)
                                 newval.append(sube)
                             ifdata[k] = newval
@@ -347,13 +348,13 @@ def settings():
                         for k in [b for b in ifdata]:
                             val = ifdata[k]
                             # handle eth0:0
-                            if isinstance(val, basestring):
+                            if isinstance(val, six.string_types):
                                 ifdata[k] = val.replace(ethn, newif)
                             # handle pre/post/routing
                             elif isinstance(val, list):
                                 newval = []
                                 for sube in val:
-                                    if isinstance(sube, basestring):
+                                    if isinstance(sube, six.string_types):
                                         sube = sube.replace(ethn, newif)
                                     newval.append(sube)
                                 ifdata[k] = newval
@@ -597,14 +598,13 @@ def ext_ip():
 
     for url in check_ips:
         try:
-            with contextlib.closing(urllib2.urlopen(url, timeout=3)) as req:
-                ip_ = req.read().strip()
-                if not _ipv4_addr(ip_):
-                    continue
+            http = urllib3.PoolManager()
+            req = http.request('GET', url, timeout=3)
+            ip_ = req.data.decode().strip()
+            if not _ipv4_addr(ip_):
+                continue
             return ip_
-        except (urllib2.HTTPError,
-                urllib2.URLError,
-                socket.timeout):
+        except (urllib3.HTTPError, socket.timeout) as exc:
             continue
     return ''
 

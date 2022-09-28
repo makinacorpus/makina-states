@@ -46,7 +46,7 @@ def update(name, params, **kw):
             cret = __salt__['mc_macros.update_registry_params'](name, params)
             ret['changes'] = cret
             ret['comment'] = 'Params updated for {0}'.format(name)
-        except Exception, ex:
+        except (Exception,) as ex:
             trace = traceback.format_exc()
             ret['comment'] =(
                 'Error while creating project {0}\n{1}'.format(

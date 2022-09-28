@@ -347,7 +347,7 @@ def get_endrule(audit=None,
             endrule += ' prefix="{0}"'.format(log_prefix)
     elif audit:
         endrule += ' audit'
-        if isinstance(audit, basestring):
+        if isinstance(audit, six.string_types):
             endrule += ' {0}'.format(audit)
     if limit and (log or audit):
         endrule += ' limit value="{0}"'.format(limit)
@@ -382,7 +382,7 @@ def complete_rules(data):
                 a not in [ruleset])
         ]:
             val = data[i]
-            if isinstance(val, basestring):
+            if isinstance(val, six.string_types):
                 val = [val]
             if isinstance(val, list):
                 for i in val:
@@ -401,7 +401,7 @@ def complete_rules(data):
                     a not in [ruleset])
             ]:
                 val = zdata[i]
-                if isinstance(val, basestring):
+                if isinstance(val, six.string_types):
                     val = [val]
                 if isinstance(val, list):
                     for i in val:
@@ -669,7 +669,7 @@ def complete_rich_rules(rules=None,
     elif audit:
         buffer_rules = []
         logrule += ' audit'
-        if isinstance(audit, basestring):
+        if isinstance(audit, six.string_types):
             logrule += ' {0}'.format(audit)
         for rule in to_add_rules:
             prule = rule

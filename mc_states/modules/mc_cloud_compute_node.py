@@ -288,7 +288,7 @@ def _fencode(filep, value):
     with open(filep, 'w') as fic:
         fic.write(_encode(value))
     try:
-        os.chmod(filep, 0700)
+        os.chmod(filep, 448)
     except (IOError, OSError):
         pass
 

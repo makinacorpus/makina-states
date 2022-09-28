@@ -190,7 +190,7 @@ def get_configuration(
     if not groups:
         groups.append(__salt__['mc_usergroup.settings']()['group'])
     groups = uniquify(groups)
-    if isinstance(domains, basestring):
+    if isinstance(domains, six.string_types):
         domains = domains.split()
     if isinstance(domains, list):
         domains = dict([(a, a) for a in domains])
@@ -208,7 +208,7 @@ def get_configuration(
             except Exception:
                 # mark this domain as localhost
                 domains[adomain] = main_ip
-    if isinstance(domain, basestring):
+    if isinstance(domain, six.string_types):
         domains[domain] = main_ip
     variables = {
         'full': full,

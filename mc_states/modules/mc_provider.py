@@ -14,9 +14,11 @@ or setting
 
 # -*- coding: utf-8 -*-
 # Import python libs
-import xmlrpclib
+try:
+    import xmlrpclib
+except ImportError:
+    import xmlrpc.client as xmlrpclib
 import logging
-import urllib2
 import requests
 import mc_states.api
 from salt.utils.odict import OrderedDict
@@ -143,7 +145,7 @@ def ovh_auth(app_key=None):
     try:
         res = requests.post(end_point, data=payload, headers=headers)
         data = res.json()
-    except (urllib2.HTTPError,) as exc:
+    except (Exception) as exc:
         if exc.getcode() == 404:
             raise Exception('register a new app on'
                             ' https://eu.api.ovh.com/createApp/')
