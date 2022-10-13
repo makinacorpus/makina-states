@@ -35,5 +35,5 @@ try:
     from salt.utils import DEFAULT_TARGET_DELIM
 except ImportError:
     from salt.defaults import DEFAULT_TARGET_DELIM
-       
+
 # vim:set et sts=4 ts=4 tw=80:
