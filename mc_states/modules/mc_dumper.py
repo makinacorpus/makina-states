@@ -28,6 +28,8 @@ from salt.utils.odict import OrderedDict
 from mc_states import api
 from mc_states import saltapi
 
+six = saltapi.six
+
 
 def sanitize_kw(kw):
     return saltapi.sanitize_kw(kw, omit=['is_file'])

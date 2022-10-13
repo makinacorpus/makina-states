@@ -40,11 +40,11 @@ import salt.utils.network
 from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 from salt.ext import six as six
-from mc_states import api, saltapi
+from mc_states import api, saltcompat
 import mc_states.api
 from distutils.version import LooseVersion
 
-from mc_states.saltapi import DEFAULT_TARGET_DELIM
+from mc_states.saltcompat import DEFAULT_TARGET_DELIM
 
 _CACHE = {'mid': None}
 _default_marker = object()
@@ -559,12 +559,12 @@ def traverse_dict(data, key, delimiter=DEFAULT_TARGET_DELIM):
     ret = dv = '_|-'
     for dl in delimiters:
         for cdl in reversed(delimiters):
-            ret = saltapi.traverse_dict(data, key, dv, delimiter=dl)
+            ret = saltcompat.traverse_dict(data, key, dv, delimiter=dl)
             if ret != dv:
                 return ret
             if cdl in key and dl not in key:
                 nkey = key.replace(cdl, dl)
-                ret = saltapi.traverse_dict(data, nkey, dv, delimiter=dl)
+                ret = saltcompat.traverse_dict(data, nkey, dv, delimiter=dl)
                 if ret != dv:
                     return ret
                 # if the dict is not at the end, we try to progressivily
@@ -575,7 +575,7 @@ def traverse_dict(data, key, delimiter=DEFAULT_TARGET_DELIM):
                 # we do not test the last element as it is the exact key !
                 for i in range(key.count(cdl)-1):
                     dkey = nkey.replace(dl, cdl, i+1)
-                    ret = saltapi.traverse_dict(
+                    ret = saltcompat.traverse_dict(
                         data, dkey, dv, delimiter=dl)
                     if ret != dv:
                         return ret

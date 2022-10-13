@@ -24,37 +24,6 @@ import traceback
 import time
 
 import salt.utils
-try:
-    from salt.utils import fopen
-except ImportError:
-    from salt.utils.files import fopen
-
-try:
-    from salt.utils import traverse_dict
-except ImportError:
-    from salt.utils.data import traverse_dict
-
-try:
-    from salt.utils import check_state_result
-    check_result = check_state_result
-except ImportError:
-    from salt.utils.state import check_result
-    check_state_result = check_result
-
-try:
-    from salt.utils import clean_kwargs
-except ImportError:
-    from salt.utils.args import clean_kwargs
-
-try:
-    from salt.utils import get_colors
-except ImportError:
-    from salt.utils.color import get_colors
-
-try:
-    from salt.utils import DEFAULT_TARGET_DELIM
-except ImportError:
-    from salt.defaults import DEFAULT_TARGET_DELIM
 
 from salt.utils.odict import OrderedDict
 import salt.utils.vt
@@ -62,6 +31,14 @@ from salt.client import LocalClient
 import salt.exceptions
 from salt.runner import RunnerClient
 from mc_states import api
+
+from mc_states.saltcompat import (
+    fopen,
+    traverse_dict,
+    check_state_result,
+    clean_kwargs,
+    get_colors,
+    DEFAULT_TARGET_DELIM)
 
 # let do some alias imports for api consumers to let them
 # import also from saltapi to limit the imports todo
