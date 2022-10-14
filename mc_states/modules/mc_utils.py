@@ -42,7 +42,6 @@ from salt.utils.odict import OrderedDict
 from salt.ext import six as six
 from mc_states import api, saltcompat
 import mc_states.api
-import mc_states.saltapi
 from distutils.version import LooseVersion
 
 from mc_states.saltcompat import DEFAULT_TARGET_DELIM
@@ -212,8 +211,43 @@ def deepcopy(arg):
     return copy.deepcopy(arg)
 
 
+
 def update_no_list(dest, upd, recursive_update=True):
-    return mc_states.saltapi.update_no_list(dest, upd, recursive_update=recursive_update)
+    '''
+    Recursive version of the default dict.update
+
+    Merges upd recursively into dest
+    But instead of merging lists, it overrides them from target dict
+    '''
+    if (not isinstance(dest, Mapping)) \
+            or (not isinstance(upd, Mapping)):
+        raise TypeError('Cannot update using non-dict types in dictupdate.update()')
+    updkeys = list(upd.keys())
+    if not set(list(dest.keys())) & set(updkeys):
+        recursive_update = False
+    if recursive_update:
+        for key in updkeys:
+            val = upd[key]
+            try:
+                dest_subkey = dest.get(key, None)
+            except AttributeError:
+                dest_subkey = None
+            if isinstance(dest_subkey, Mapping) \
+                    and isinstance(val, Mapping):
+                ret = update_no_list(dest_subkey, val)
+                dest[key] = ret
+            else:
+                dest[key] = upd[key]
+        return dest
+    else:
+        try:
+            dest.update(upd)
+        except AttributeError:
+            # this mapping is not a dict
+            for k in upd:
+                dest[k] = upd[k]
+        return dest
+
 
 
 def dictupdate(dict1, dict2):
@@ -239,7 +273,13 @@ def dictupdate(dict1, dict2):
       titi:
           tutu
     '''
-    return mc_states.saltapi.dictupdate(dict1, dict2)
+    if not isinstance(dict1, dict):
+        raise SaltException(
+            'mc_utils.dictupdate 1st argument is not a dictionnary!')
+    if not isinstance(dict2, dict):
+        raise SaltException(
+            'mc_utils.dictupdate 2nd argument is not a dictionnary!')
+    return update_no_list(dict1, dict2)
 
 
 def copy_dictupdate(dict1, dict2):
@@ -1375,7 +1415,3 @@ def unicode_free(data, done=None):
             data.append(unicode_free(i, done=done))
         return ndata
     return data
-
-
-def testme():
-    return dictupdate({1:2}, {3:4,1:3})

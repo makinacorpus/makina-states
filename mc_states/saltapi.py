@@ -22,10 +22,6 @@ import salt.syspaths
 import copy
 import traceback
 import time
-try:
-    from collections.abc import Mapping
-except ImportError:
-    from collections import Mapping
 
 import salt.utils
 
@@ -55,6 +51,7 @@ from mc_states.api import strip_colors
 from mc_states.api import magicstring
 from mc_states.api import get_ssh_username
 from mc_states.api import no_more_mastersalt
+from mc_states.modules.mc_utils import dictupdate
 
 
 log = logging.getLogger(__name__)
@@ -283,55 +280,6 @@ class NoResultError(KeyError):
 
 class PillarError(Exception):
     ''''''
-
-def update_no_list(dest, upd, recursive_update=True):
-    '''
-    Recursive version of the default dict.update
-
-    Merges upd recursively into dest
-    But instead of merging lists, it overrides them from target dict
-    '''
-    if (not isinstance(dest, Mapping)) \
-            or (not isinstance(upd, Mapping)):
-        raise TypeError('Cannot update using non-dict types in dictupdate.update()')
-    updkeys = list(upd.keys())
-    if not set(list(dest.keys())) & set(updkeys):
-        recursive_update = False
-    if recursive_update:
-        for key in updkeys:
-            val = upd[key]
-            try:
-                dest_subkey = dest.get(key, None)
-            except AttributeError:
-                dest_subkey = None
-            if isinstance(dest_subkey, Mapping) \
-                    and isinstance(val, Mapping):
-                ret = update_no_list(dest_subkey, val)
-                dest[key] = ret
-            else:
-                dest[key] = upd[key]
-        return dest
-    else:
-        try:
-            dest.update(upd)
-        except AttributeError:
-            # this mapping is not a dict
-            for k in upd:
-                dest[k] = upd[k]
-        return dest
-
-
-def dictupdate(dict1, dict2):
-    '''
-    see mc_states.mc_utils.dictupdate doctstring
-    '''
-    if not isinstance(dict1, dict):
-        raise salt.exceptions.SaltException(
-            'mc_utils.dictupdate 1st argument is not a dictionnary!')
-    if not isinstance(dict2, dict):
-        raise salt.exceptions.SaltException(
-            'mc_utils.dictupdate 2nd argument is not a dictionnary!')
-    return update_no_list(dict1, dict2)
 
 
 def result(**kwargs):
