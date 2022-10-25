@@ -148,16 +148,22 @@ class ImapConnection(object):
                 email_customtag = raw_email.get('X-Custom-Tag')
 
                 if self.clean:
-                    email_server_date_as_unix = self.parse_received(raw_email['Received'])
+                    try:
+                        email_server_date_as_unix = self.parse_received(raw_email['Received'])
+                    except AttributeError:
+                        continue
 
-                    # time_cleanup deletes mails older then 1 hour
-                    time_cleanup = time.time() - int(cleanup_time)
-                    if email_server_date_as_unix < time_cleanup and email_customtag == 'Email-Check-Icinga':
-                        self.imapcon.store(message_id, '+FLAGS', '\\Deleted')
+                        # time_cleanup deletes mails older then 1 hour
+                        time_cleanup = time.time() - int(cleanup_time)
+                        if email_server_date_as_unix < time_cleanup and email_customtag == 'Email-Check-Icinga':
+                            self.imapcon.store(message_id, '+FLAGS', '\\Deleted')
 
                 email_subject = email_subject or ''
                 if self.mailsubject in email_subject:
-                    email_server_date_as_unix = self.parse_received(raw_email['Received'])
+                    try:
+                        email_server_date_as_unix = self.parse_received(raw_email['Received'])
+                    except AttributeError:
+                        continue
 
                     if time.time() > time_warn:
                         return STATUS_WARNING, email_server_date_as_unix
