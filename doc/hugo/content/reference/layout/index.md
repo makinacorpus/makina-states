@@ -42,9 +42,9 @@ menu:
     - Any **SLS/json** file dropped inside `pillar/<$minionid>.pillars.d` will be only loaded for the "\$minionid" host
 
 ## Salt + Ansible bridge notes
-- Makina-states has better to use an [ansible dynamic inventory](https://github.com/makinacorpus/makina-states/blob/v2/ansible/inventories/makinastates.py)
+- Makina-states has better to use an [ansible dynamic inventory](https://github.com/makinacorpus/makina-states/blob/v3/ansible/inventories/makinastates.py)
 that bridges the salt pillar with ansible via a salt module:
-[mc\_remote\_plllar](https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_remote_pillar.py).
+[mc\_remote\_plllar](https://github.com/makinacorpus/makina-states/blob/v3/mc_states/modules/mc_remote_pillar.py).
 
 - This module is pluggable and will search in the salt modules installed
   those who have declared special named functions:
@@ -79,8 +79,8 @@ that bridges the salt pillar with ansible via a salt module:
     - Create a module that implement the ``get_masterless_makinastates_hosts`` && ``get_masterless_makinastates_groups`` functions
     - register the pillar and module to the local makina-states installation (see bellow)
 - Take example on:
-    - [module](https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_pillar.py) : (search for ``get_masterless_makinastates_groups`` && ``get_masterless_makinastates_hosts``
-    - [extpillar](https://github.com/makinacorpus/makina-states/blob/v2/mc_states/pillar/mc_pillar.py)
+    - [module](https://github.com/makinacorpus/makina-states/blob/v3/mc_states/modules/mc_pillar.py) : (search for ``get_masterless_makinastates_groups`` && ``get_masterless_makinastates_hosts``
+    - [extpillar](https://github.com/makinacorpus/makina-states/blob/v3/mc_states/pillar/mc_pillar.py)
 
 - To load your extpillar, you ll have to add it to the local salt configuration. <br/>
   You can add a file this way

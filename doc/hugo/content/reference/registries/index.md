@@ -25,10 +25,10 @@ menu:
     - Configuration of the minion (**__opts__**)
     - Configuration of the minion (**__opts__['master]']**)
     - Exemples:
-        - [mc_apache](https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_apache.py)
-        - [mc_nginx](https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_nginx.py)
-        - [mc_mysql](https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_mysql.py)
-    - Those registries rely on an heavily used function [``mc_utils.default``](https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_utils.py#L681) that will do the job of gathering for the ``configuration prefix`` all the knobs
+        - [mc_apache](https://github.com/makinacorpus/makina-states/blob/v3/mc_states/modules/mc_apache.py)
+        - [mc_nginx](https://github.com/makinacorpus/makina-states/blob/v3/mc_states/modules/mc_nginx.py)
+        - [mc_mysql](https://github.com/makinacorpus/makina-states/blob/v3/mc_states/modules/mc_mysql.py)
+    - Those registries rely on an heavily used function [``mc_utils.default``](https://github.com/makinacorpus/makina-states/blob/v3/mc_states/modules/mc_utils.py#L681) that will do the job of gathering for the ``configuration prefix`` all the knobs
     from the various pieces of data we want (pillar, grains, opts)
 
 - Thus, by example, you want to install the mysql service:<br>
@@ -38,7 +38,7 @@ menu:
       bin/salt-call -linfo --retcode-passthrough \
         state.sls makina-states.servies.db.mysql
       ```
-- Reading the code of [mysql formula](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/db/mysql/configuration.sls#L11), you see that it calls [mc_mysql](https://github.com/makinacorpus/makina-states/blob/v2/mc_states/modules/mc_mysql.py#L157)
+- Reading the code of [mysql formula](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services/db/mysql/configuration.sls#L11), you see that it calls [mc_mysql](https://github.com/makinacorpus/makina-states/blob/v3/mc_states/modules/mc_mysql.py#L157)
     - To override the ``port`` (default: 3306), you can do this in the pillar
       or the grains those ways
 

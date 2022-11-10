@@ -11,7 +11,7 @@ menu:
 ## Organisation & Workflow
 - makina-states primarely use salt to deploy on the targeted environment.<br>
 - Our salt states are thought to be used in a special order,<br/>
-  and specially when you call salt via the **sls**: [``makina-states.top``](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/top.sls).
+  and specially when you call salt via the **sls**: [``makina-states.top``](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/top.sls).
     - We apply first the [nodetype](../nodetype) configuration.
     - Then, we will apply the [controllers](../controllers) configuration.<br/>
     - Then, we will apply [localsettings](../localsettings) states

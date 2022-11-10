@@ -1157,7 +1157,8 @@ def get_cert_infos(cn_or_cert,
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE,
                                         stdin=subprocess.PIPE)
-                (stdout, stderr) = ossl.communicate(cdata[1])
+                (stdout, stderr) = ossl.communicate(cdata[1].encode())
+                (stdout, stderr) = (stdout.decode(), stderr.decode())
                 ossl.wait()
                 if ossl.returncode == 0 and ('BEGIN PUBLIC KEY' in stdout):
                     keys = ssl_keys(stdout)
@@ -1172,7 +1173,8 @@ def get_cert_infos(cn_or_cert,
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE,
                                         stdin=subprocess.PIPE)
-                (stdout, stderr) = ossl.communicate(cdata[1])
+                (stdout, stderr) = ossl.communicate(cdata[1].encode())
+                (stdout, stderr) = (stdout.decode(), stderr.decode())
                 ossl.wait()
                 if (
                     ossl.returncode == 0 and

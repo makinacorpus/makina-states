@@ -12,7 +12,7 @@ Here are a non exhaustive list of macros that makina-states provides and you
 may use in your states.
 
 ## Helpers
-- [h(helpers)](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/_macros/h.jinja)
+- [h(helpers)](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/_macros/h.jinja)
 
 
     - **deliver_deliver_config_files**: push  configuration files
@@ -22,32 +22,32 @@ may use in your states.
 	- **toggle_service**: helper to call **service_restart_reload**
 
 ## ssl
-- [macros](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/localsettings/ssl/macros.jinja)
+- [macros](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/localsettings/ssl/macros.jinja)
     - install_certificate
     - install_cert_in_dir
 
 ## nginx
-- [nginx](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/http/nginx/macros.sls)
-    - [nginx.vhost](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/http/nginx/macros.sls#L31)
+- [nginx](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services/http/nginx/macros.sls)
+    - [nginx.vhost](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services/http/nginx/macros.sls#L31)
 
 
 ## apache
-- [apache](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/http/apache/macros.sls)
-    - [apache.vhost](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/http/apache/macros.sls#L48)
+- [apache](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services/http/apache/macros.sls)
+    - [apache.vhost](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services/http/apache/macros.sls#L48)
 
 ## php
-- [php](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/php/macros.sls)
-    - [php.fpm_pool](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/php/macros.sls#L60)
-    - [php.minimal_index](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/php/macros.sls#L135)
-    - [php.toggle_ext](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/php/macros.sls#L153)
+- [php](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services/php/macros.sls)
+    - [php.fpm_pool](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services/php/macros.sls#L60)
+    - [php.minimal_index](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services/php/macros.sls#L135)
+    - [php.toggle_ext](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services/php/macros.sls#L153)
 
 ## mysql
-- [macros](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/db/mysql/init.sls)
+- [macros](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services/db/mysql/init.sls)
     - mysql_db
     - mysql_group
 
 ## postgresql
-- [macros](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/db/postgresql/init.sls)
+- [macros](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services/db/postgresql/init.sls)
     - postgresql_db
     - postgresql_user
     - postgresql_group
@@ -55,23 +55,23 @@ may use in your states.
     - install_pg_ext
 
 ## circusd
-- [macros](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services_managers/circus/macros.jinja)
+- [macros](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services_managers/circus/macros.jinja)
     - circusAddWatcher
 
 ## supervisord
-- [macros](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services_managers/supervisor/macros.jinja)
+- [macros](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services_managers/supervisor/macros.jinja)
     - supervisorAddProgram
 
 ## mongodb
-- [macros](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/db/mongodb/macros.sls)
+- [macros](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services/db/mongodb/macros.sls)
     - mongodb_db
     - mongodb_user
 
 ## uwsgi
-- [macros](https://github.com/makinacorpus/makina-states/tree/v2/salt/makina-states/services/proxy/uwsgi)
+- [macros](https://github.com/makinacorpus/makina-states/tree/v3/salt/makina-states/services/proxy/uwsgi)
     - config
 
 ## rabbitmq
-- [macros](https://github.com/makinacorpus/makina-states/blob/v2/salt/makina-states/services/queue/rabbitmq/macros.sls)
+- [macros](https://github.com/makinacorpus/makina-states/blob/v3/salt/makina-states/services/queue/rabbitmq/macros.sls)
     - rabbitmq_vhost
 

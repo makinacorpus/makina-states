@@ -338,7 +338,7 @@ set_valid_upstreams() {
     if [ "x${SETTED_VALID_UPSTREAM}" != "x" ]; then
         return
     fi
-    VALID_BRANCHES="${VALID_BRANCHES:-"stable v2"}"
+    VALID_BRANCHES="${VALID_BRANCHES:-"v3"}"
     if [ "x${VALID_BRANCHES}" = "x" ]; then
         if [ -e "${SALT_MS}/.git/config" ]; then
             SETTED_VALID_UPSTREAM="1"
@@ -385,7 +385,8 @@ get_salt_url() {
 }
 
 get_python_version() {
-    get_default_knob py_ver "${PYTHON_VERSION}" "2"
+    store_conf py_ver 3
+    get_default_knob py_ver "3" "3"
 }
 
 get_salt_branch() {
@@ -402,7 +403,7 @@ get_ansible_url() {
 }
 
 get_ansible_branch() {
-    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.2"
+    get_default_knob ansible_branch "${ANSIBLE_BRANCH}" "stable-2.14"
 }
 
 get_ms_url() {
@@ -411,7 +412,7 @@ get_ms_url() {
 
 get_ms_branch() {
     set_valid_upstreams
-    DEFAULT_MS_BRANCH="v2"
+    DEFAULT_MS_BRANCH="v3"
     vmsb=""
     for msb in "${MS_BRANCH}" "$(get_conf ms_branch)";do
         cmsb="$(validate_changeset ${msb})"
@@ -460,11 +461,7 @@ set_vars() {
     BASE_PACKAGES="${BASE_PACKAGES} zlib1g-dev curl virtualenv git rsync bzip2 net-tools"
     BASE_PACKAGES="${BASE_PACKAGES} acl build-essential m4 libtool pkg-config autoconf gettext"
     BASE_PACKAGES="${BASE_PACKAGES} man-db automake"
-    if [ "$(get_python_version)" = "3" ];then
-        BASE_PACKAGES="${BASE_PACKAGES} python3-dev python3-openssl python3-pyasn1 python3-urllib3 python3-virtualenv python3-six"
-    else
-        BASE_PACKAGES="${BASE_PACKAGES} python-dev  python-openssl  python-pyasn1  python-urllib3  python-virtualenv  python-six"
-    fi
+    BASE_PACKAGES="${BASE_PACKAGES} python3-dev python3-openssl python3-pyasn1 python3-urllib3 python3-virtualenv python3-six"
     if (apt install -s tcl8.5 &>/dev/null);then
         BASE_PACKAGES="${BASE_PACKAGES} tcl8.5"
     elif (apt install -s tcl8.6 &>/dev/null);then
@@ -702,11 +699,11 @@ check_restartmarker_and_maybe_restart() {
             touch "${SALT_MS}/.bootsalt_need_restart"
         fi
         if [ -e "${SALT_MS}/.bootsalt_need_restart" ] && [ "x${SALT_BOOT_NO_RESTART}" = "x" ]; then
-            chmod +x "${SALT_MS}/_scripts/boot-salt2.sh"
+            chmod +x "${SALT_MS}/_scripts/boot-salt3.sh"
             export SALT_BOOT_NO_RESTART="1"
             export SALT_BOOT_IN_RESTART="1"
             export DO_NOCONFIRM='1'
-            bootsalt="${SALT_MS}/_scripts/boot-salt2.sh"
+            bootsalt="${SALT_MS}/_scripts/boot-salt3.sh"
             if [ "x${QUIET}" = "x" ]; then
                 bs_log "Restarting ${bootsalt} which needs to update itself"
             fi
@@ -1047,7 +1044,6 @@ setup_virtualenv() {
     cd "${SALT_MS}"
     if     [ ! -e "${VENV_PATH}/bin/activate" ] \
         || [ ! -e "${VENV_PATH}/lib" ] \
-        || [ ! -e "${VENV_PATH}/include" ] \
         ; then
         bs_log "Creating virtualenv in ${VENV_PATH}"
         if [ ! -e "${PIP_CACHE}" ]; then
@@ -1062,7 +1058,7 @@ setup_virtualenv() {
         fi
         virtualenv --system-site-packages $ust --python=python$(get_python_version) ${VENV_PATH} &&\
         . "${VENV_PATH}/bin/activate" &&\
-        "${VENV_PATH}/bin/easy_install" -U "setuptools$(if [ "$(get_python_version)" = '2' ];then echo '<50';else echo '>=50';fi)" &&\
+        if [ -e "${VENV_PATH}/bin/easy_install" ];then "${VENV_PATH}/bin/easy_install" -U "setuptools$(if [ "$(get_python_version)" = '2' ];then echo '<50';else echo '>=50';fi)";fi&&\
         "${VENV_PATH}/bin/pip" install -U pip &&\
         deactivate
         BUILDOUT_REBOOTSTRAP=y

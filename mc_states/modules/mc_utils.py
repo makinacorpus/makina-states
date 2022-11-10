@@ -69,7 +69,11 @@ def empty_caches(extras=None):
         mc_states.api._LOCAL_CACHES,
     ]:
         for i in [a for a in cache]:
-            val = cache[a]
+            try:
+                val = cache[a]
+            except KeyError:
+                continue
+
             if isinstance(val, dict):
                 for v in [b for b in val]:
                     val.pop(v, None)

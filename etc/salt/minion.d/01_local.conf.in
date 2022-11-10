@@ -3,8 +3,8 @@ user: __WHOAMI__
 id: __MS_MINIONID__
 file_roots:
   base:
-    - __MS_MS__/salt/overrides
-    - __MS_MS__/salt
+    - __MS_MS__/fileroot/overrides
+    - __MS_MS__/fileroot
     - __MS_PREFIX__/salt
     - __MS_PREFIX__/salt
 pillar_roots:

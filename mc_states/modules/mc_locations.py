@@ -13,6 +13,9 @@ import copy
 import logging
 import mc_states.api
 
+J = os.path.join
+D = os.path.dirname
+E = os.path.exists
 __name = 'locations'
 
 log = logging.getLogger(__name__)
@@ -88,8 +91,13 @@ def prefix():
 
 def get_default_locs():
     locationsData = copy.deepcopy(default_locs)
-    locationsData['msr'] = msr()
-    locationsData['prefix'] = prefix()
+    lmsr = locationsData['msr'] = msr()
+    lprefix = locationsData['prefix'] = prefix()
+    salt_root = J(lmsr, 'salt')
+    # compat with v1
+    if not E(salt_root):
+        salt_root = J(lmsr, 'fileroot')
+    locationsData['salt_root'] = salt_root
     return locationsData
 
 
@@ -101,8 +109,6 @@ def settings(cached=True):
         data = __salt__['mc_utils.defaults'](
             'makina-states.localsettings.locations',
             get_default_locs())
-        # compat with v1
-        data['ms'] = data['msr']
         return data
     if cached:
         _settings = mc_states.api.lazy_subregistry_get(

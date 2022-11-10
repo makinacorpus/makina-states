@@ -3496,10 +3496,14 @@ def get_supervision_objects_defs(id_):
                 hdata['burp_counters'] = False
             if hdata.get('backup_burp_age', None) is not False:
                 bsm = _s[__name + '.query']('backup_server_map', {})
-                burp_default_server = bsm['default']
+                try:
+                    burp_default_server = bsm['default']
+                except KeyError:
+                    burp_default_server = None
                 burp_server = bsm.get(host, burp_default_server)
                 burpattrs = sattrs.setdefault('backup_burp_age', {})
-                burpattrs.setdefault('vars.ssh_host', burp_server)
+                if burp_server:
+                    burpattrs.setdefault('vars.ssh_host', burp_server)
                 burpattrs.setdefault('vars.ssh_port', 22)
             # if id_ not in parents and id_ not in maps['vms']:
             #    parents.append(id_)
@@ -4552,7 +4556,7 @@ def get_masterless_makinastates_hosts_conf(id_, ttl=PILLAR_TTL):
 def get_db_md5(ttl=10):
     def _doget_db_md5():
         with open(get_db()) as fic:
-            nmd5 = hashlib.md5(fic.read()).hexdigest()
+            nmd5 = hashlib.md5(fic.read().encode()).hexdigest()
         return nmd5
     cache_key = __name + '.get_db_md5' + CACHE_INC_TOKEN
     return __salt__['mc_utils.memoize_cache'](

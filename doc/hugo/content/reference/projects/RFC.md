@@ -11,7 +11,7 @@ menu:
 RFC: corpus, embedded project configuration with salt
 =====================================================
 - <b>ORIGINAL 2012 DOCUMENT ACCUSING ITS AGE and converted to markdown</b>
-- You'd better to read the [Original RST Document](https://github.com/makinacorpus/makina-states/blob/v2/doc/sphinx/v1/usage_projects/project_corpus.rst)
+- You'd better to read the [Original RST Document](https://github.com/makinacorpus/makina-states/blob/v3/doc/sphinx/v1/usage_projects/project_corpus.rst)
 
 ## The origin
 Nowoday no one of the P/I/S/aaS existing platforms fit our needs and

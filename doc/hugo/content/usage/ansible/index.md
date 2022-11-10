@@ -51,10 +51,10 @@ menu:
 
 ### Details
 - See:
-    - [bin/ansible](https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible)
-    - [bin/ansible-galaxy](https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-galaxy)
-    - [bin/ansible-playbook](https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-playbook)
-    - [bin/ansible-wrapper-common](https://github.com/makinacorpus/makina-states/blob/v2/_scripts/ansible-wrapper-common)
+    - [bin/ansible](https://github.com/makinacorpus/makina-states/blob/v3/_scripts/ansible)
+    - [bin/ansible-galaxy](https://github.com/makinacorpus/makina-states/blob/v3/_scripts/ansible-galaxy)
+    - [bin/ansible-playbook](https://github.com/makinacorpus/makina-states/blob/v3/_scripts/ansible-playbook)
+    - [bin/ansible-wrapper-common](https://github.com/makinacorpus/makina-states/blob/v3/_scripts/ansible-wrapper-common)
 
 - We preconfigure in our wrappers a lot of things like:
     - Loading configuration (roles, playbooks, inventories, plugins) from:
@@ -80,7 +80,7 @@ you have your specific ansible installation and the whole will assemble nicely.
     - if makina-states is installed in ``/srv/makina-states``
     - your project is installed inside ``/srv/projects/foo/project``
     - You can create your roles inside ``/srv/projects/foo/project/ansible/roles``
-    - You can make dependencies of any [makina-states roles](https://github.com/makinacorpus/makina-states/tree/v2/ansible/roles) specially ``makinastates_pillar`` that
+    - You can make dependencies of any [makina-states roles](https://github.com/makinacorpus/makina-states/tree/v3/ansible/roles) specially ``makinastates_pillar`` that
       deploy the locally gather pillar for a box to the remote if you are
       not acting on ``localhost``.
     - You ll have to call ``ansible`` or ``ansible-playbook``, do it this way:

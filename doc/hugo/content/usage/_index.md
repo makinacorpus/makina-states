@@ -4,11 +4,11 @@ tags: [topics, installation]
 ---
 
 ## Switch makina-states branch
-- To switch on a makina-states branch, like the **v2** branch in
+- To switch on a makina-states branch, like the **v3** branch in
   production:
 
     ```sh
-    bin/boot-salt2.sh -b v2
+    bin/boot-salt2.sh -b v3
     ```
 
 ## Update makina-states local copy

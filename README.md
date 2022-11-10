@@ -12,4 +12,8 @@ Please go to this [documentation](http://makinastates.makina-corpus.com/)
 
 By [Makina-Corpus developers](http://www.makina-corpus.com).
 
+Remember that we will use:
+
+    - v2 branch and python2
+    - v3 branch and python3
 

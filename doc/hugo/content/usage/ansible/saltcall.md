@@ -10,7 +10,7 @@ menu:
 saltcall Wrapper
 ----------------
 We developped a [special
-module](https://github.com/makinacorpus/makina-states/blob/v2/ansible/library/saltcall.py)
+module](https://github.com/makinacorpus/makina-states/blob/v3/ansible/library/saltcall.py)
 to call saltcall on remote systems.
 
 - You can use it via ansible:
@@ -25,7 +25,7 @@ to call saltcall on remote systems.
       -m saltcall -a "function=grains.get args=fqdn"
     ```
 
-- Or via a playbook like in [our saltcall one](https://github.com/makinacorpus/makina-states/blob/v2/ansible/plays/saltcall.yml) , usable this way:
+- Or via a playbook like in [our saltcall one](https://github.com/makinacorpus/makina-states/blob/v3/ansible/plays/saltcall.yml) , usable this way:
 
     ```sh
     ANSIBLE_TARGETS=$(hostname) bin/ansible-playbook \

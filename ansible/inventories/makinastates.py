@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from __future__ import division
@@ -13,11 +13,15 @@ import re
 import subprocess
 import copy
 import argparse
-import ConfigParser
+import configparser as ConfigParser
 import os
 import time
 import logging
 import pprint
+
+unicode = str
+basestring = str
+
 
 re_flags = re.M | re.U | re.S
 rei_flags = re.M | re.U | re.S | re.I
@@ -316,7 +320,7 @@ class MakinaStatesInventory(object):
 
     def fixperms(self):
         if os.path.exists(self.cache_path):
-            os.chmod(self.cache_path, 0700)
+            os.chmod(self.cache_path, 0o700)
         for i in self.caches.values():
             if i and os.path.exists(i):
                 os.chmod(i, 0o600)
@@ -330,7 +334,7 @@ class MakinaStatesInventory(object):
         """
         Reads the settings from the etc/ansible.ini file
         """
-        config = ConfigParser.SafeConfigParser()
+        config = ConfigParser.ConfigParser()
         self.ms = os.path.dirname(
             os.path.dirname(
                 os.path.dirname(os.path.realpath(__file__))))
@@ -561,7 +565,7 @@ class MakinaStatesInventory(object):
 
     def to_stdout(self):
         if self.args.host:
-            host = self.hostsvars.get(self.args.hosts, {})
+            host = self.hostvars.get(self.args.host, {})
             data_to_print = self.json_format_dict(host, pretty=True)
         else:
             data_to_print = self.json_format_dict(self.inventory, pretty=True)

@@ -298,8 +298,10 @@ def _decode(filep):
     value = None
     try:
         if os.path.exists(filep):
-            with open(filep) as fic:
+            with open(filep, 'rb') as fic:
                 rvalue = fic.read()
+                if hasattr(rvalue, 'encode'):
+                    rvalue = rbvalue.encode()
                 value = msgpack.unpackb(rvalue)['value']
     except msgpack.exceptions.UnpackValueError:
         log.error('decoding error, removing stale {0}'.format(filep))
@@ -618,7 +620,7 @@ def get_kind_port(vm, target=None, kind='ssh', reset=False):
     port_key = '{0}/{1}'.format(vm, kind)
     for a in [a for a in ports_map]:
         ports_map[a] = int(ports_map[a])
-    allocated = ports_map.values()
+    allocated = list(ports_map.values())
     # retrocompat: add snmp and ssh to values
     for k in ['ssh', 'snmp']:
         kkind_map = get_conf_for_target(target, k + '_map', {})

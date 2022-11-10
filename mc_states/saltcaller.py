@@ -79,11 +79,13 @@ def magicstring(thestr):
     '''
     Convert any string to UTF-8 ENCODED one
     '''
+    if sys.version[0] >= '3':
+        return thestr
     if not HAS_CHARDET:
         return thestr
     seek = False
     if (
-        isinstance(thestr, (int, float, long,
+        isinstance(thestr, (int, float,
                             datetime.date,
                             datetime.time,
                             datetime.datetime))
@@ -204,9 +206,9 @@ def do_process_ios(process,
     stdo = non_block_read(process.stdout)
     stde = non_block_read(process.stderr)
     if stdo:
-        stdout.write(stdo)
+        stdout.write(stdo.decode())
     if stde:
-        stderr.write(stde)
+        stderr.write(stde.decode())
     for k, val, out in (
         ('out', stdout.getvalue(), output_out),
         ('err', stderr.getvalue(), output_err),

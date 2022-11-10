@@ -10,5 +10,6 @@ then
 else
     echo "virtualenv not found in ${MS_VENV_PATH}"
 fi
+# hack to remove salt module shadow from newer salt versions
 exec ${MS_VENV_PATH}/bin/${SCRIPT} -c $WC/etc/salt "${@}"
 # vim:set et sts=4 ts=4 tw=80:
