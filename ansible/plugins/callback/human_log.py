@@ -66,6 +66,8 @@ def magicstring(thestr):
     """
     Convert any string to UTF-8 ENCODED one
     """
+    if sys.version[0] >= "3":
+        return the str
     if not HAS_CHARDET:
         log.error('No chardet support !')
         return thestr
