@@ -91,7 +91,7 @@ def prefix():
 
 def get_default_locs():
     locationsData = copy.deepcopy(default_locs)
-    lmsr = locationsData['msr'] = msr()
+    lmsr = locationsData['ms'] = locationsData['msr'] = msr()
     lprefix = locationsData['prefix'] = prefix()
     salt_root = J(lmsr, 'salt')
     # compat with v1

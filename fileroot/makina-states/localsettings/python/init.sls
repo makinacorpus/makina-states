@@ -9,9 +9,10 @@ include:
 {%- set locs = salt['mc_locations.settings']() %}
 {%- set udist = salt['mc_pkgs.settings']().udist %}
 {%- set pyvers = salt['mc_python.settings']().alt_versions %}
-{%- if (grains['os'] in ['Ubuntu'])%}
+{%- if (grains['os'] in ['Ubuntu']) %}
 deadsnakes-ppa:
   pkgrepo.managed:
+    - onlyif: "test 'x{% if salt['mc_utils.loose_version'](grains.get('osrelease', '')) < salt['mc_utils.loose_version']('20.04') %}1{%endif%}' = 'x1'"
     - retry: {attempts: 6, interval: 10}
     - humanname: DeadSnakes PPA
     - name: deb http://ppa.launchpad.net/fkrull/deadsnakes/ubuntu {{udist}} main
@@ -22,6 +23,7 @@ deadsnakes-ppa:
 {%- if  pyvers %}
 deadsnakes:
   pkg.{{salt['mc_pkgs.settings']()['installmode']}}:
+    - onlyif: "test 'x{% if salt['mc_utils.loose_version'](grains.get('osrelease', '')) < salt['mc_utils.loose_version']('20.04') %}1{%endif%}' = 'x1'"
     - require:
       - pkgrepo: deadsnakes-ppa
       - file: apt-sources-list
