@@ -286,8 +286,7 @@ def settings():
         localhosts.extend([
            '{1} {0}'.format(slug, data['main_ip']),
            '127.0.1.1 {0}'.format(slug),
-           '127.0.0.1 {0}'.format(slug),
-           '::1       {0}'.format(slug)])
+           '127.0.0.1 {0}'.format(slug),])
         data['hosts_list'] = hosts_list = []
         for k, edata in pillar.items():
             if k.endswith('makina-hosts'):
