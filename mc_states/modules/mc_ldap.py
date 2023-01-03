@@ -14,6 +14,7 @@ import logging
 import mc_states.api
 from contextlib import contextmanager
 import salt.utils.odict
+import six
 try:
     import ldap
     HAS_LDAP = True
