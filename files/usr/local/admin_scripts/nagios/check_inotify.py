@@ -49,7 +49,11 @@ def get_container(pid):
     if '/system.slice/' in lxc:
         pass
     elif '/lxc' in lxc:
-        lxc = lxc.split('/lxc/', 1)[1]
+        try:
+            lxc = lxc.split('/lxc/', 1)[1]
+        except IndexError:
+            if '/lxc.payload.' in lxc:
+                lxc = lxc.split('/lxc.payload.')[1]
     if lxc == 'MAIN_HOST' and os.path.isfile(envf):
         with open(envf) as fic:
             content = fic.read()

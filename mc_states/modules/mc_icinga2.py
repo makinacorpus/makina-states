@@ -1286,7 +1286,7 @@ def add_check(host, services_enabled, svc, skey, default_value, vdata):
     return services_enabled
 
 
-def gen_notif(users, host_name, service=None, services=None, indent=6, **kw):
+def _gen_notif(users, host_name, service=None, services=None, indent=6, **kw):
     '''
     users = {
      'NT_SERVICE_MATRIX': {'users':       ['U_xxx']},
@@ -1322,3 +1322,11 @@ def gen_notif(users, host_name, service=None, services=None, indent=6, **kw):
     sret = _s['mc_utils.indenter'](
     _s['mc_dumper.yaml_dump'](ret), indent)
     return sret
+
+
+def gen_notif(users, host_names, service=None, services=None, indent=6, **kw):
+    if host_names and not isinstance(host_names, list):
+        host_names = [host_names]
+    return ''.join(
+        [_gen_notif(users, host_name, service=service, services=services, indent=indent, **kw)
+         for host_name in host_names])
