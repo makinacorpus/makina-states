@@ -495,7 +495,6 @@ set_vars() {
     DO_INSTALL_LOGROTATE="${DO_INSTALL_LOGROTATE-}"
     DO_INSTALL_SYSTEM_LINKS="${DO_INSTALL_SYSTEM_LINKS-}"
     VENV_PATH="${VENV_PATH:-"${SALT_MS}/venv"}"
-    EGGS_GIT_DIRS="ansible salt salttesting"
     PIP_CACHE="${VENV_PATH}/cache"
     CONF_ROOT="${SALT_MS}/etc"
     CONF_PREFIX="${CONF_ROOT}/salt"
@@ -510,6 +509,11 @@ set_vars() {
         QUIET_GIT=""
     else
         QUIET_GIT="-q"
+    fi
+    if [ -e "${VENV_PATH}/src/ansible" ];then
+        EGGS_GIT_DIRS="ansible $EGGS_GIT_DIRS"
+    else
+        EGGS_GIT_DIRS="ansible-core $EGGS_GIT_DIRS"
     fi
     # try to get a released version of the virtualenv to speed up installs
     # export variables to support a restart
@@ -844,7 +848,7 @@ update_working_copy() {
          || [ "x${i}" = "x${ms}/src/SaltTesting" ]; then
             co_branch="develop"
         fi
-        if [ "x${i}" = "x${ms}/src/ansible" ]; then
+        if [ "x${i}" = "x${ms}/src/ansible-core" ] || [ "x${i}" = "x${ms}/src/ansible" ]; then
             co_branch="$(get_ansible_branch)"
         fi
         if [ "x${i}" = "x${ms}/src/salt" ]; then
@@ -1103,7 +1107,7 @@ setup_virtualenv() {
         fi
            pip install $copt "${PIP_CACHE}" -U pip six \
         && pip install $copt "${PIP_CACHE}" -I six urllib3 \
-        && pip install -U $copt "${PIP_CACHE}" -r $reqs
+        && pip install --use-pep517 -U $copt "${PIP_CACHE}" -r $reqs
         die_in_error "requirements/requirements.txt doesnt install"
         if [ "x${install_git}" != "x" ]; then
             ${SED} -r \
@@ -1117,7 +1121,7 @@ setup_virtualenv() {
                 > requirements/git_requirements.txt
             # salt & docker had bad history for their deps in setup.py
             # we ignore them and manage that ourselves
-            pip install -U $copt "${PIP_CACHE}" --no-deps \
+            pip install --use-pep517 -U $copt "${PIP_CACHE}" --no-deps \
                 -r requirements/git_requirements.txt
             die_in_error "requirements/git_requirements.txt doesnt install"
         else

@@ -3,4 +3,4 @@
 # -e git+https://github.com/makinacorpus/M2Crypto.git#egg=m2crypto
 
 # -e git+__SALT_URL__@__SALT_BRANCH__#egg=salt
-# -e git+__ANSIBLE_URL__@__ANSIBLE_BRANCH__#egg=ansible
+# -e git+__ANSIBLE_URL__@__ANSIBLE_BRANCH__#egg=ansible-core

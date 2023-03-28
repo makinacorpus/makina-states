@@ -68,3 +68,5 @@ ruamel.yaml
 paramiko
 
 configparser
+# misc
+importlib-metadata>=6.1.0
