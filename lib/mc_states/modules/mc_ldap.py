@@ -28,7 +28,7 @@ __name = 'ldap'
 
 log = logging.getLogger(__name__)
 
-if sys.version > 3:
+if sys.version > '3':
     unicode  = str
 
 
