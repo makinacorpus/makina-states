@@ -3195,19 +3195,22 @@ def get_supervision_conf_kind(id_, kind, ttl=PILLAR_TTL):
     def _doget_supervision_conf_kind(id_, kind):
         rdata = {}
         supervision = __salt__[__name + '.query']('supervision_configurations', {})
-        for cid, data in supervision.items():
-            if data.get(kind, '') == id_:
-                rdata.update(data.get('{0}_conf'.format(kind), {}))
-                if 'nginx' in rdata:
-                    nginx = rdata['nginx']
-                    nginx = rdata.setdefault('nginx', {})
-                    # domain = rdata.get('nginx', {}).get('domain', id_)
-                    # cert, key = __salt__[
-                    #     'mc_ssl.get_selfsigned_cert_for'](domain, gen=True)
-                    # unknown ca signed certs do not work in nginx
-                    # cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
-                    # nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
-                    nginx['ssl_redirect'] = True
+        for knob, sdata in supervision.items():
+            if knob == 'default':
+                continue
+            for cid, data in sdata.items():
+                if data.get(kind, '') == id_:
+                    rdata.update(data.get('{0}_conf'.format(kind), {}))
+                    if 'nginx' in rdata:
+                        nginx = rdata['nginx']
+                        nginx = rdata.setdefault('nginx', {})
+                        # domain = rdata.get('nginx', {}).get('domain', id_)
+                        # cert, key = __salt__[
+                        #     'mc_ssl.get_selfsigned_cert_for'](domain, gen=True)
+                        # unknown ca signed certs do not work in nginx
+                        # cert, key = __salt__['mc_ssl.ssl_certs'](domain, True)[0]
+                        # nginx['ssl_cacert'] = __salt__['mc_ssl.get_cacert'](True)
+                        nginx['ssl_redirect'] = True
 
         return rdata
     # cache_key = __name + '.get_supervision_conf_kind{0}_{1}'.format(
@@ -3263,6 +3266,25 @@ def get_other_ips(vm):
     return other_ips
 
 
+def get_supervision_host_data(id_):
+    _s = __salt__
+    supervision_configurations = _s[__name + '.query']('supervision_configurations', OrderedDict())
+    default_data = supervision_configurations.get('default', OrderedDict())
+    data = supervision_configurations.setdefault(id_, OrderedDict())
+    parts = ['superpervision', 'definitions']
+    for s in supervision_configurations:
+        if s == 'default':
+            continue
+        ddata = supervision_configurations[s]
+        for d in default_data:
+            ddata.setdefault(d, OrderedDict())
+            for sp, deflt in default_data[d].items():
+                try:
+                    ddata[d][sp]
+                except KeyError:
+                    ddata[d][sp] = copy.deepcopy(deflt)
+    return data
+
 def get_supervision_objects_defs(id_):
     rdata = {}
     _s = __salt__
@@ -3276,10 +3298,11 @@ def get_supervision_objects_defs(id_):
                              'ping': False}
     providers = _s['mc_network.providers']()
     physical_hosts_to_check = set()
+    supervision_configurations = _s[__name + '.query']('supervision_configurations', {})
     host = 'HOST'
     if is_supervision_kind(id_, 'master'):
-        data = _s[__name + '.query']('supervision_configurations', {})
-        defs = data.get('definitions', {})
+        data = get_supervision_host_data(id_)
+        defs = data['definitions'] = data['definitions'] or OrderedDict()
         sobjs = defs.setdefault('objects', OrderedDict())
         hhosts = defs.setdefault('autoconfigured_hosts', OrderedDict())
         for hhost in [a for a in hhosts if a not in non_supervised_hosts]:
@@ -3578,13 +3601,11 @@ def get_supervision_ui2_conf(id_, ttl=PILLAR_TTL):
 
 def is_supervision_kind(id_, kind, ttl=PILLAR_TTL):
     def _dois_supervision_kind(id_, kind):
-        supervision = __salt__[__name + '.query'](
-            'supervision_configurations', {})
+        supervision = __salt__[__name + '.get_supervision_host_data'](id_).get('supervision', {})
         if not supervision:
             return False
-        for cid, data in supervision.items():
-            if data.get(kind, '') == id_:
-                return True
+        if supervision.get(kind, '') == id_:
+            return True
         return False
     # cache_key = __name + '.is_supervision_kind{0}{1}'.format(id_, kind)
     # return __salt__['mc_utils.memoize_cache'](
