@@ -10,6 +10,7 @@ mc_ldap / ldap registry
 
 '''
 # Import ldap libs
+import sys
 import logging
 import mc_states.api
 from contextlib import contextmanager
@@ -185,7 +186,7 @@ class _ConnectionHandler(object):
             base = self.base
         if scope is None:
             scope = self.scope
-        if isinstance(scope,  (str; unicode)):
+        if isinstance(scope,  (str, unicode)):
             scope = {'ONE': 'ONELEVEL'}.get(scope.upper(), scope.upper())
             scope = getattr(ldap, 'SCOPE_{0}'.format(scope.upper()))
         if retrieve_attributes is None:
