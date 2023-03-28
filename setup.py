@@ -34,7 +34,7 @@ classifiers = [
 
 name = 'mc_states'
 version = version['VERSION']
-src_dir = '.'
+src_dir = 'lib'
 install_requires = ["setuptools"]
 extra_requires = {}
 candidates = {}

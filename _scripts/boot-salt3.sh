@@ -545,6 +545,8 @@ check_py_modules() {
     # test if salt binaries are there & working
     bin="${VENV_PATH}/bin/python"
     "${bin}" << EOF
+import mc_states
+assert 'lib' in ' '.join(mc_states.__path__)
 import ansible
 import dns
 import docker
