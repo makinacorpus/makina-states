@@ -61,7 +61,11 @@ def main():
             config_dir=dict(required=False, default=None, type='str'),
         )
     )
-    sc = SALTCALLER.decode('base64')
+    if sys.version < '3':
+        sc = SALTCALLER.decode('base64')
+    else:
+        import base64
+        sc = base64.b64decode(SALTCALLER).decode()
     mod = {}
     if sys.hexversion > 0x03000000:
         exec(compile(sc, '<saltcaller_mod>', 'exec'), mod)

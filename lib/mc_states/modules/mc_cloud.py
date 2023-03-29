@@ -111,6 +111,8 @@ def ssh_host_settings(id_, **defaults):
             ssh_host = _s['mc_pillar.ips_for'](id_)[0]
         except IPRetrievalError:
             ssh_host = id_
+    else:
+        ssh_host = id_
     defaults.setdefault('ssh_name', id_)
     defaults.setdefault('ssh_host', ssh_host)
     data = _s['mc_utils.dictupdate'](

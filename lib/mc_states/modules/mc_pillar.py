@@ -3199,7 +3199,7 @@ def get_supervision_conf_kind(id_, kind, ttl=PILLAR_TTL):
             if knob == 'default':
                 continue
             for cid, data in sdata.items():
-                if data.get(kind, '') == id_:
+                if isinstance(data, dict) and data.get(kind, '') == id_:
                     rdata.update(data.get('{0}_conf'.format(kind), {}))
                     if 'nginx' in rdata:
                         nginx = rdata['nginx']
@@ -3555,6 +3555,14 @@ def get_supervision_objects_defs(id_):
             if hh in non_supervised_hosts
         ]:
             defs['autoconfigured_hosts'].pop(h, None)
+        redirect_mails = data.get('redirect_mails', None)
+        if redirect_mails:
+            for o, odata in defs.get('objects', {}).items():
+                if not o.startswith(('U_', 'G_')):
+                    continue
+                for a, attrs in odata.items():
+                    if 'email' in attrs:
+                        attrs['email'] = '{0[0]}+{1[0]}@{0[1]}'.format(redirect_mails.split('@'), attrs['email'].split('@'))
         rdata.update({'icinga2_definitions': defs})
     return rdata
 
@@ -4555,6 +4563,8 @@ def get_masterless_makinastates_hosts(ttl=PILLAR_TTL):
             for kind in ('bms', 'vms'):
                 for id_, idata in six.iteritems(db[kind]):
                     data.add(id_)
+            for h, _ in _s['mc_pillar.get_ssh_hosts']().items():
+                data.add(h)
             return list(data)
         except DatabaseNotFound:
             log.debug('mc_pillar is not configured')
@@ -4717,14 +4727,14 @@ def ext_pillar_do(id_, pillar=None, raise_error=True, *args, **kw):
         (__name + '.get_ssl_conf', {}),
         (__name + '.get_sudoers_conf', {}),
         (__name + '.get_supervision_client_conf', {}),
-        (__name + '.get_supervision_confs', {}),
+        (__name + '.get_supervision_confs', {'only_managed': False}),
         (__name + '.get_sysnet_conf', {}),
         ('mc_cloud.ext_pillar', {}),
         #
         # XXX: SSH CONFIGURATION CAN ONLY BE COMPUTED
         #      AFTER THE CLOUD ONE !
         #
-        (__name + '.get_ssh_connection_conf', {}),
+        (__name + '.get_ssh_connection_conf', {'only_managed': False}),
     ]).items():
         try:
             if '.' not in callback:
