@@ -80,7 +80,7 @@ icingaweb2_nagvis-up:
       - mc_git: icingaweb2_nagvis-up
 {{rmacro()}}
 
-{% for i, idata in settings.modules_enabled.items()+[('nagvis', {})] %}
+{% for i, idata in (settings.modules_enabled.items()|list)+[('nagvis', {})] %}
 {% set target=idata.get('target', '/usr/share/icingaweb2/modules/{0}'.format(i)) %}
 icingaweb2-config-mod-activate-{{i}}:
   file.symlink:

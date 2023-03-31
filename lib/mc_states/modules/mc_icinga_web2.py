@@ -189,16 +189,21 @@ def settings():
             ) or
             ('socket' in web_database))
 
+
+        php_ver = _s['mc_php.default_php_ver']()
+        php_exts = [f'php{php_ver}-pgsql']
+        if float(php_ver) < 8.0:
+            php_exts.append('php-gettext')
         data = _s['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga_web2', {
                 'navgis_module_repo': 'https://github.com/Icinga/icingaweb2-module-nagvis.git://github.com/corpusops/icingaweb2-module-nagvis',
                 'doc_root': "/usr/share/icingaweb2/public",
                 'htpasswd': '/etc/icinga2web.users',
-                'package': ['icingaweb2', 'php5.6-ldap', 'nagvis',
-                            'php5.6', 'php5.6-cli', 'php-pear',
-                            'php5.6-xmlrpc', 'php5.6-xsl', 'apache2-utils',
-                            'php-soap', 'php5.6-gd',
-                            'php5.6-ldap'],
+                'package': [f'icingaweb2', f'php{php_ver}-ldap', f'nagvis',
+                            f'php{php_ver}', f'php{php_ver}-cli', f'php-pear',
+                            f'php{php_ver}-xmlrpc', f'php{php_ver}-xsl', f'apache2-utils',
+                            f'php-soap', f'php{php_ver}-gd',
+                            f'php{php_ver}-ldap'],
                 'configuration_directory': locs['conf_dir'] + "/icinga-web2",
                 'create_pgsql': True,
                 'has_pgsql': ('pgsql' == web_database['type'] and has_sgbd),
@@ -312,8 +317,8 @@ def settings():
                         ":/var/run/icinga2/cmd/"
                         ":/var/cache/icingaweb2/"
                         ":/var/log/icingaweb2/"),
-                    'etcdir': '/etc/php/5.6',
-                    'extensions_packages': ['php5.6-pgsql'],
+                    'etcdir': f'/etc/php/{php_ver}',
+                    'extensions_packages': [f'php{php_ver}-pgsql'],
                     'doc_root': '/usr/share/nagvis/share/',
                     'session_auto_start': 0,
                 },
@@ -337,9 +342,9 @@ def settings():
                         ":/var/run/icinga2/cmd/"
                         ":/var/cache/icingaweb2/"
                         ":/var/log/icingaweb2/"),
-                    'etcdir': '/etc/php/5.6',
+                    'etcdir': f'/etc/php/{php_ver}',
                     'doc_root': '{doc_root}',
-                    'extensions_packages': ['php5.6-pgsql', 'php-gettext'],
+                    'extensions_packages': php_exts,
                     'session_auto_start': 0,
                 },
                 'users': {},

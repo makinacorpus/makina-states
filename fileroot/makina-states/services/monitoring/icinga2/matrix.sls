@@ -14,10 +14,10 @@
 
 include:
   - makina-states.services.monitoring.icinga2.hooks
+{#
   - makina-states.services.monitoring.circus
   - makina-states.localsettings.users.hooks
 
-{{ user.add_user('icinga_supybot') }}
 icinga2-bot-packages:
   pkg.installed:
     - pkgs:
@@ -91,3 +91,4 @@ icinga2-disable-ircbot:
     - watch_in:
       - mc_proxy: icinga2-post-conf
 {% endif %}
+#}

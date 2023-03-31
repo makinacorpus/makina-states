@@ -11,8 +11,19 @@
 install-nagios-plugins:
   pkg.installed:
     - pkgs:
+      {% if grains["osrelease"] < "22.04" %}
       - nagios-plugins
+      - nagios-plugins-basic
       - nagios-plugins-contrib
+      {% else%}
+      - monitoring-plugins
+      - monitoring-plugins-basic
+      - monitoring-plugins-btrfs
+      - monitoring-plugins-common
+      - monitoring-plugins-contrib
+      - monitoring-plugins-standard
+      - monitoring-plugins-systemd
+      {% endif %}
       - libwww-perl
       {% if data.has_sysstat %}
       - sysstat
@@ -24,9 +35,7 @@ install-nagios-plugins:
       {% endif %}
       - libsnmp-base
       - libsnmp-perl
-      - nagios-plugins-basic
       - libsnmp-dev
-      - libsensors4
       - libcrypt-des-perl
       - libxml-xpath-perl
       - libsys-statistics-linux-perl
@@ -45,7 +54,13 @@ install-nagios-plugins:
       {% if grains['os'] in ['Debian'] %}
       - libsnmp15
       {% else %}
+      {% if grains["osrelease"] < "22.04" %}
       - libsnmp30
+      - libsensors4
+      {% else%}
+      - libsnmp40
+      - libsensors5
+      {% endif %}
       {% endif %}
       {% endif %}
 

@@ -20,14 +20,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 #
 
+from __future__ import absolute_import, division, print_function
 import sys, os, getopt, socket, string
 
 rv = (2,6)
 if rv >= sys.version_info:
-    print "ERROR: Requires Python 2.6 or greater"
+    print( "ERROR: Requires Python 2.6 or greater")
     sys.exit(3)
 
-import Queue, threading
+try:
+    import Queue
+except:
+    import queue as Queue
+import threading
 
 serverlist = [
 "0spam.fusionzero.com",
@@ -146,9 +151,9 @@ class ThreadRBL(threading.Thread):
             self.queue.task_done()
 
 def usage(argv0):
-    print "%s -w <WARN level> -c <CRIT level> -h <hostname>" % argv0
-    print " or"
-    print "%s -w <WARN level> -c <CRIT level> -a <ipv4 address>" % argv0
+    print("%s -w <WARN level> -c <CRIT level> -h <hostname>" % argv0)
+    print(" or")
+    print("%s -w <WARN level> -c <CRIT level> -a <ipv4 address>" % argv0)
 
 def main(argv, environ):
     options, remainder = getopt.getopt(argv[1:], "w:c:h:a:", ["warn=","crit=","host=","address="])
@@ -174,18 +179,18 @@ def main(argv, environ):
             sys.exit(status['UNKNOWN'])
 
     if host and addr:
-        print "ERROR: Cannot use both host and address, choose one."
+        print("ERROR: Cannot use both host and address, choose one.")
         sys.exit(status['UNKNOWN'])
 
     if host:
         try:
             addr = socket.gethostbyname(host)
         except:
-            print "ERROR: Host '%s' not found - maybe try a FQDN?" % host
+            print("ERROR: Host '%s' not found - maybe try a FQDN?" % host)
             sys.exit(status['UNKNOWN'])
-    addr_parts = string.split(addr, '.')
+    addr_parts = addr.split('.')
     addr_parts.reverse()
-    check_name = string.join(addr_parts, '.')
+    check_name = '.'.join(addr_parts)
     # We set this to make sure the output is nice. It's not used except for the output after this point.
     host = addr
 
@@ -215,13 +220,13 @@ def main(argv, environ):
         crit = True
     if warn == True:
         if crit == True:
-            print 'CRITICAL: %s on %s spam blacklists|%s' % (host,len(on_blacklist),on_blacklist)
+            print('CRITICAL: %s on %s spam blacklists|%s' % (host,len(on_blacklist),on_blacklist))
             sys.exit(status['CRITICAL'])
         else:
-            print 'WARNING: %s on spam blacklist %s' % (host,on_blacklist[0],)
+            print('WARNING: %s on spam blacklist %s' % (host,on_blacklist[0],))
             sys.exit(status['WARNING'])
     else:
-        print 'OK: %s not on known spam blacklists' % host
+        print('OK: %s not on known spam blacklists' % host)
         sys.exit(status['OK'])
 
 if __name__ == "__main__":

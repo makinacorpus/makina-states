@@ -28,7 +28,8 @@ log = logging.getLogger(__name__)
 
 
 def is_reverse_proxied():
-    return __salt__['mc_cloud.is_vm']()
+    _s, _g = __salt__, __grains__
+    return __salt__['mc_cloud.is_vm']() or _s['mc_utils.get']('makina-states.is.reverse-proxied', False)
 
 
 def settings():
@@ -43,8 +44,8 @@ def settings():
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
     def _settings():
         _s, _g = __salt__, __grains__
-        is_rp = is_reverse_proxied()
         reverse_proxy_addresses = []
+        is_rp = is_reverse_proxied()
         if is_rp:
             gw = _g.get('makina.default_route', {}).get('gateway', '').strip()
             if gw and gw not in reverse_proxy_addresses:

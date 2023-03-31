@@ -374,8 +374,7 @@ def format(dictionary, quote_keys=False, quote_values=True, init=True):
                 res[res_key] = value
         else:
             if quote_value:
-                res[res_key] = quotev(str(value).decode('utf-8'),
-                                      valtype=valtype)
+                res[res_key] = quotev(str(value), valtype=valtype)
             else:
                 res[res_key] = value
     return res
@@ -451,6 +450,10 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
+        if grains["osrelease"] < "22.04":
+            np = 'nagios-plugins'
+        else:
+            np = 'monitoring-plugins'
         icinga2_reg = __salt__[
             'mc_macros.get_local_registry'](
                 'icinga2', registry_format='pack')
@@ -470,7 +473,7 @@ def settings():
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga2', {
                 'package': ['icinga2-bin',
-                            'nagios-plugins',
+                            np,
                             'icinga2-common',
                             'icinga2-doc'],
                 'has_pgsql': False,
@@ -508,7 +511,7 @@ def settings():
                     'TESTPWD': "\"pw\"",
                     'MAIL': "\"@foo.com\"",
                     'MX': "\"@mail.foo.com\"",
-                    'SSHKEY': '\"/var/lib/nagios/id_rsa_supervision\"',
+                    'SSHKEY': '\"/var/lib/nagios/id_ed25519_supervision\"',
                     'ZoneName': "\"NodeName\"",
                 },
                 'matrix': {
@@ -535,8 +538,8 @@ def settings():
                         'endpoints': "[ NodeName ]"},
                 },
                 'ssh': {
-                    'id_rsa_supervision': '',
-                    'id_rsa_supervision.pub': '',
+                    'id_ed25519_supervision': '',
+                    'id_ed25519_supervision.pub': '',
                 },
                 'modules': {
                     'perfdata': {'enabled': True},
@@ -846,6 +849,7 @@ def autoconfigure_host(host,
                        memory=None,
                        ping=None,
                        nic_card=None,
+                       nic_card_out=None,
                        ntp_peers=None,
                        ntp_time=None,
                        postgresql_port=None,
@@ -888,6 +892,7 @@ def autoconfigure_host(host,
                 'mail_server_queues',
                 'mail_smtp',
                 'nic_card',
+                'nic_card_out',
                 'mongodb',
                 'inotify',
                 'ntp_peers',
@@ -911,7 +916,7 @@ def autoconfigure_host(host,
                 'sar',
                 'remote_apache_status',
                 'apache_status']
-    services_multiple = ['disk_space', 'nic_card', 'dns_association',
+    services_multiple = ['disk_space', 'nic_card_out', 'dns_association',
                          'supervisor', 'drbd', 'tomcat', 'sar',
                          'rbl', 'fullpath_processes', 'processes',
                          'web_openid', 'web']
@@ -1002,8 +1007,8 @@ def autoconfigure_host(host,
     filen = '/'.join(['hosts', host+'.conf'])
     if disk_space is None:
         disk_space = ['/']
-    if nic_card is None:
-        nic_card = ['eth0']
+    if nic_card_out is None:
+        nic_card_out = ['eth0']
     if not disk_space:
         disk_space = []
     if not rbl:
@@ -1046,6 +1051,7 @@ def autoconfigure_host(host,
     add_notification(attrs, notification, default_notifiers, is_host=True)
     object_uniquify(rdata['attrs'])
     # services for which a loop is used in the macro
+    dns = {}
     if (
         dns_association_hostname or
         dns_association and
@@ -1059,16 +1065,18 @@ def autoconfigure_host(host,
         if not dns_hostname.endswith('.'):
             dns_hostname += '.'
         dns_address = attrs['address']
+        dns = {
+            'dns_association_hostname': {
+                'vars.hostname': dns_hostname,
+                'vars.dns_address': dns_address},
+            'dns_association': {
+                'vars.hostname': dns_hostname,
+                'vars.dns_address': dns_address}
+        }
     # give the default values for commands parameters values
     # the keys are the services names,
     # not the commands names (use the service filename)
     services_default_attrs = {
-        'dns_association_hostname': {
-            'vars.hostname': dns_hostname,
-            'vars.dns_address': dns_address},
-        'dns_association': {
-            'vars.hostname': dns_hostname,
-            'vars.dns_address': dns_address},
         'load_avg': {
             # 'vars.n_interval': 6000,
         },
@@ -1089,6 +1097,7 @@ def autoconfigure_host(host,
         'memory': {
             'vars.n_interval': 6000,
             'import': [st_mem]}}
+    services_default_attrs.update(dns)
     # if we defined extra properties on a service,
     # enable it automatically
     if 'postgres' in processes:
@@ -1144,7 +1153,7 @@ def autoconfigure_host(host,
         if svc in services_multiple:
             default_vals = {'web': {host: {}}, 'tomcat': {host: {}}}
             if svc in ['drbd', 'disk_space', 'processes', 'sar', 'rbl',
-                       'fullpath_processes', 'nic_card', 'supervisor']:
+                       'fullpath_processes', 'nic_card', 'nic_card_out', 'supervisor']:
                 values = eval(svc)  # pylint: disable=W0123
             else:
                 values = services_attrs.get(svc,
@@ -1230,9 +1239,10 @@ def autoconfigure_host(host,
                             pass
                 if svc in ['drbd']:
                     ss['vars.device'] = v
-                if svc in ['disk_space', 'nic_card']:
+                if svc in ['disk_space', 'nic_card', 'nic_card_out']:
                     ss[{'disk_space': 'vars.path',
-                        'nic_card': 'vars.interface'}[svc]] = v
+                        'nic_card': 'vars.interface',
+                        'nic_card_out': 'vars.interface'}[svc]] = v
                 if svc == 'supervisor':
                     ss['vars.command'] = v
                 object_uniquify(ss)

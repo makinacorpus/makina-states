@@ -37,6 +37,16 @@ log = logging.getLogger(__name__)
 _marker = object()
 
 
+def default_php_ver():
+    _s = __salt__
+    _g = __grains__
+    if _s['mc_utils.loose_version'](_g.get('osrelease', '')) >= _s['mc_utils.loose_version']('22.04'):
+        php_ver = '8.2'
+    else:
+        php_ver = '5.6'
+    return php_ver
+
+
 def settings():
     '''
     This is called from mc_services, loading all PHP default settings
@@ -183,10 +193,12 @@ def settings():
         else:
             s_all = ''
 
-        php_ver = '7.0'
+        php_ver = default_php_ver()
         use_ppa = False
         trusty_onward = (_g['os'] in ['Ubuntu'] and
                          LooseVersion(_g['osrelease']) < LooseVersion('16.04'))
+        jammy_onward = (_g['os'] in ['Ubuntu'] and
+                         LooseVersion(_g['osrelease']) >= LooseVersion('22.04'))
         xenial_onward = (_g['os'] in ['Ubuntu'] and
                          LooseVersion(_g['osrelease']) >= LooseVersion('16.04'))
         if trusty_onward and not xenial_onward:
@@ -198,6 +210,7 @@ def settings():
             'php_ppa_ver': '{php_ver}',
             'use_ppa': use_ppa,
             'coinstallable_php': None,  # computed
+            'php8_onward': None,  # computed
             'php7_onward': None,  # computed
             'php56_onward': None,  # computed
             'configs': {},
@@ -389,7 +402,7 @@ def settings():
         # compute a first time data from pillar to get
         # some settings that will need in a first phase
         customsettings = ['php_ver', 'use_ppa', 'coinstallable_php',
-                          'php7_onward', 'php56_onward',
+                          'php8_onward', 'php7_onward', 'php56_onward',
                           'apc_install', 'opcache_install',
                           'configs',
                           'disabled_fpm_services']
@@ -398,6 +411,8 @@ def settings():
             PREFIX, dict([(a, phpData[a]) for a in customsettings]))
         use_ppa = customsettings1['use_ppa']
         php_ver = customsettings1['php_ver']
+        php8_onward = customsettings1['php8_onward'] = (
+            LooseVersion(php_ver[0]) >= LooseVersion('8'))
         php7_onward = customsettings1['php7_onward'] = (
             LooseVersion(php_ver[0]) >= LooseVersion('7'))
         php56_onward = customsettings1['php56_onward'] = (
@@ -531,7 +546,7 @@ def settings():
                 phpData['disabled_fpm_services'] = []
                 phpData['disabled_fpm_services'].append('php-fpm')
                 for i in [
-                    '5', '5.6', '5.7', '7.0', '7.1', '7.2'
+                    '5', '5.6', '5.7', '7.0', '7.1', '7.2', 
                 ]:
                     if i != php_ver:
                         phpData['disabled_fpm_services'].append(
@@ -717,6 +732,7 @@ def fpmpool_settings(domain, doc_root, **kw):
         '/usr/lib/php5',
         '/usr/lib/php',
         '/usr/lib/php7'
+        '/usr/lib/php8'
     ]:
         if os.path.exists(glob_inc):
             for i in os.listdir(glob_inc):

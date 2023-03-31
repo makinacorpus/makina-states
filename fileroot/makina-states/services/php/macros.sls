@@ -129,6 +129,13 @@ makina-php-pool-{{ data.pool_name.replace('*', 'star') }}-directories:
       - mc_proxy: makina-php-post-inst
     - require_in:
       - mc_proxy: makina-php-pre-restart
+  mc_proxy.hook:
+    - require:
+      - file: makina-php-pool-{{ data.pool_name.replace('*', 'star') }}-directories
+      - mc_proxy: makina-php-post-inst
+    - require_in:
+      - mc_proxy: makina-php-pre-restart
+
 {%- endmacro %}
 
 {# Generate a minimal index.php in the aforementionned doc_root #}

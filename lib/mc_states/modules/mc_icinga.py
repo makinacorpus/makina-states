@@ -307,6 +307,10 @@ def settings():
     def _settings():
         grains = __grains__
         pillar = __pillar__
+        if grains["osrelease"] < "22.04":
+            np = 'nagios-plugins'
+        else:
+            np = 'monitoring-plugins'
         icinga_reg = __salt__[
             'mc_macros.get_local_registry'](
                 'icinga', registry_format='pack')
@@ -743,7 +747,7 @@ def settings():
                         },
                     },
                     'nagios-plugins': {
-                        'package': ['nagios-plugins'],
+                        'package': [np],
                         'enabled': False,
                     },
                 },

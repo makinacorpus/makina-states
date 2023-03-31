@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+from __future__ import absolute_import, division, print_function
 # -*- coding: utf-8 -*-
 # GNU GPL v3
 # This program is free software: you can redistribute it and/or modify
@@ -22,6 +23,7 @@ import argparse
 import time
 import datetime
 import poplib
+import traceback
 
 
 def xstr(s):
@@ -58,27 +60,27 @@ class CheckPop3Cleaner(object):
                 xstr(self.crit_thresold_num),)
 
     def critical(self, msg):
-        print '{0} CRITICAL - {1} | {2}'.format(self._nick,
+        print('{0} CRITICAL - {1} | {2}'.format(self._nick,
                                                 msg,
-                                                self.get_stats())
+                                                self.get_stats()))
         sys.exit(self._critical)
 
     def warning(self, msg):
-        print '{0} WARNING - {1} | {2}'.format(self._nick,
+        print('{0} WARNING - {1} | {2}'.format(self._nick,
                                                msg,
-                                               self.get_stats())
+                                               self.get_stats()))
         sys.exit(self._warning)
 
     def unknown(self, msg):
-        print '{0} UNKNOWN - {1} | {2}'.format(self._nick,
+        print('{0} UNKNOWN - {1} | {2}'.format(self._nick,
                                                msg,
-                                               self.get_stats())
+                                               self.get_stats()))
         sys.exit(self._unknown)
 
     def ok(self, msg):
-        print '{0} OK - {1} | {2}'.format(self._nick,
+        print('{0} OK - {1} | {2}'.format(self._nick,
                                           msg,
-                                          self.get_stats())
+                                          self.get_stats()))
         sys.exit(self._ok)
 
     def opt_parser(self):
@@ -89,7 +91,7 @@ class CheckPop3Cleaner(object):
         self.warn_thresold_num = 0
         self.crit_thresold_size = 0
         self.crit_thresold_num = 0
-        
+
         parser = argparse.ArgumentParser(
             prog=self._program,
             formatter_class=argparse.RawTextHelpFormatter,
@@ -155,14 +157,14 @@ class CheckPop3Cleaner(object):
 
         if self.args['debug']:
             self.debug = True
-            print "DEBUG argparse: {0!r}".format(self.args)
+            print("DEBUG argparse: {0!r}".format(self.args))
 
         self.parse_thresolds()
 
     def parse_thresolds(self):
         """"Parse thresolds arguments."""
         thresolds = self.args['warning'].split(',')
-        if len(thresolds) is not 2:
+        if len(thresolds) != 2:
             self.critical('Invalid format for warning thresolds: "{0}"'.format(
                 self.args['warning']))
         try:
@@ -173,7 +175,7 @@ class CheckPop3Cleaner(object):
                            ' something is not an int there: "{0}"').format(
                                self.args['warning']))
         thresolds = self.args['critical'].split(',')
-        if len(thresolds) is not 2:
+        if len(thresolds) != 2:
             self.critical('Invalid format for critical thresolds: "{0}"'.format(
                 self.args['critical']))
         try:
@@ -192,13 +194,13 @@ class CheckPop3Cleaner(object):
                 self.warn_thresold_num,
                 self.crit_thresold_num)
 
-        if (self.warn_thresold_size is not None 
+        if (self.warn_thresold_size is not None
           and self.crit_thresold_size is not None
           and self.warn_thresold_size >= self.crit_thresold_size):
             self.unknown(('Warning thresold ({0}) should be lower than the '
                           'critical one ({1})').format(self.warn_thresold_size,
                                                        self.crit_thresold_size))
-        if (self.warn_thresold_num is not None 
+        if (self.warn_thresold_num is not None
           and self.crit_thresold_num is not None
           and self.warn_thresold_num >= self.crit_thresold_num):
             self.unknown(('Warning thresold ({0}) should be lower than the '
@@ -207,7 +209,7 @@ class CheckPop3Cleaner(object):
 
     def sizeof_fmt(self,num):
         """output helper, from http://stackoverflow.com/a/1094933/550618
-        
+
         transform an octet number if KB/MB/GB, etc
         """
         if num is None:
@@ -229,7 +231,7 @@ class CheckPop3Cleaner(object):
                 conn = poplib.POP3(host=self.args['hostname'],
                                         port=self.args['port'],
                                         timeout=self.args['timeout'])
-        except Exception, e:
+        except (Exception,) as e:
             self.critical('Error while establish POP3 connection: {0}'.format(e))
 
         try:
@@ -237,14 +239,14 @@ class CheckPop3Cleaner(object):
                 conn.set_debuglevel(2)
             return conn
 
-        except Exception, e:
+        except (Exception,) as e:
             self.force_end_conn(conn)
             self.critical('Early error on POP3 connection: {0}'.format(e))
 
     def force_end_conn(self,conn):
         """Use it to close connection on any aborting code"""
         if self.debug:
-            print "we had a problem, force POP3 session end"
+            print("we had a problem, force POP3 session end")
         conn.quit()
 
     def login(self, conn):
@@ -252,19 +254,19 @@ class CheckPop3Cleaner(object):
         try:
             welcome = conn.getwelcome()
             if self.debug:
-                print "Welcome receveid: {0}".format(welcome)
+                print("Welcome receveid: {0}".format(welcome))
             if self.args['apop']:
                 msg = conn.apop(self.args['user'],self.args['password'])
                 if self.debug:
-                    print msg
+                    print(msg)
             else:
                 msg = conn.user(self.args['user'])
                 if self.debug:
-                    print msg
+                    print(msg)
                 msg = conn.pass_(self.args['password'])
                 if self.debug:
-                    print msg
-        except Exception, e:
+                    print(msg)
+        except (Exception,) as e:
             self.force_end_conn(conn)
             self.critical('Error on login: {0}'.format(e))
 
@@ -274,33 +276,34 @@ class CheckPop3Cleaner(object):
             infos = conn.stat()
             self.mbox_size = infos[1]
             if self.debug:
-                print 'Size of mbox: {0}'.format(self.sizeof_fmt(self.mbox_size))
-            mlist = conn.list()
+                print('Size of mbox: {0}'.format(self.sizeof_fmt(self.mbox_size)))
+            mlist = [a for a in conn.list()]
             self.num_messages = len(mlist[1])
             if self.debug:
-                print 'Number of messages: {0}'.format(self.num_messages)
-                print 'Protocol message: {0}'.format(mlist[0])
-            if not mlist[0].startswith('+OK') :
-                self.critical('Error on LIST response: {0}'.format(mlist[0]))
+                print('Number of messages: {0}'.format(self.num_messages))
+                print('Protocol message: {0}'.format(mlist[0]))
+            if not mlist[0].decode().startswith('+OK') :
+                self.critical('Error on LIST response: {0}'.format(mlist[0].decode()))
             if self.args['delete']:
                 cpt = 0
                 for maildef in mlist[1]:
                     if cpt >= self.args['delete']:
                         break
-                    msgnum = int(maildef.split(' ')[0])
+                    msgnum = int(maildef.decode().split(' ')[0])
                     if self.debug:
-                        print "Deleteting message number {0}".format(msgnum)
+                        print("Deleteting message number {0}".format(msgnum))
                     conn.dele(msgnum)
                     cpt = cpt+1
 
-        except Exception, e:
+        except (Exception,) as e:
+            trace = traceback.format_exc()
             self.force_end_conn(conn)
-            self.critical('Error on messages management: {0}'.format(e))
+            self.critical('Error on messages management: {0}{1}'.format(e, trace))
 
     def test_thresolds(self):
         """Check thresolds of number of messages and size of mbox"""
         warn_num = crit_num = warn_size = crit_size = False
-        if self.warn_thresold_size is not '':
+        if self.warn_thresold_size != '':
             if self.mbox_size >= self.warn_thresold_size:
                 if self.mbox_size >= self.crit_thresold_size:
                     crit_size = True
@@ -363,7 +366,7 @@ class CheckPop3Cleaner(object):
         self.login(conn)
         self.manage_messages(conn)
         if self.debug:
-            print "Closing"
+            print("Closing")
         conn.quit()
 
     def run(self):

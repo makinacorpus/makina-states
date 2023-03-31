@@ -22,7 +22,7 @@ dotdeb-apache-makina-apache-php-pre-inst:
       - pkgrepo: dotdeb-repo
     - watch_in:
       - mc_proxy: makina-php-pre-inst
-{# Manage php-fpm packages @#}
+{# Manage php-fpm packages #}
 {% elif phpSettings.use_ppa %}
 makina-php-repos:
   pkgrepo.managed:
@@ -37,7 +37,6 @@ makina-php-repos:
       - mc_proxy: makina-php-pre-repo
       - mc_proxy: makina-php-fix-repos
     - watch_in:
-      - mc_proxy: makina-php-repos
       - mc_proxy: makina-php-pre-inst
 {% else %}
 makina-php-repos:
