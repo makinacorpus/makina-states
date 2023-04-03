@@ -205,10 +205,20 @@ def do_process_ios(process,
     streams = {'out': stdout_pos, 'err': stderr_pos}
     stdo = non_block_read(process.stdout)
     stde = non_block_read(process.stderr)
-    if stdo:
-        stdout.write(stdo.decode())
-    if stde:
-        stderr.write(stde.decode())
+    for sout, pipe in (stdo, stdout), (stde, stderr):
+        if sout:
+            out = u''
+            try:
+                out = sout.decode()
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                try:
+                    out = sout.decode('utf-8')
+                except (UnicodeEncodeError, UnicodeDecodeError):
+                    out = 'ERROR while decoding output'
+            try:
+                pipe.write(out)
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                pipe.write(magicstring(out))
     for k, val, out in (
         ('out', stdout.getvalue(), output_out),
         ('err', stderr.getvalue(), output_err),
@@ -314,7 +324,7 @@ def cmd(args,
                 break
     except (KeyboardInterrupt, Exception) as exc:
         trace = traceback.format_exc()
-        print(trace)
+        sys.stderr.write(trace)
         try:
             terminate(process)
         except UnboundLocalError:
