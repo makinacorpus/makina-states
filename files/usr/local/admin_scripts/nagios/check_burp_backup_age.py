@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # GNU GPL v3
 # This program is free software: you can redistribute it and/or modify
@@ -40,19 +40,19 @@ class CheckBurp(object):
         self.diff_min = None
 
     def critical(self, msg):
-        print '{0} CRITICAL - {1}'.format(self._nick, msg)
+        print('{0} CRITICAL - {1}'.format(self._nick, msg))
         sys.exit(self._critical)
 
     def warning(self, msg):
-        print '{0} WARNING - {1}'.format(self._nick, msg)
+        print('{0} WARNING - {1}'.format(self._nick, msg))
         sys.exit(self._warning)
 
     def unknown(self, msg):
-        print '{0} UNKNOWN - {1}'.format(self._nick, msg)
+        print('{0} UNKNOWN - {1}'.format(self._nick, msg))
         sys.exit(self._unknown)
 
     def ok(self, msg):
-        print '{0} OK - {1}'.format(self._nick, msg)
+        print('{0} OK - {1}'.format(self._nick, msg))
         sys.exit(self._ok)
 
     def opt_parser(self):
@@ -167,8 +167,8 @@ def main():
     try:
         check_burp = CheckBurp()
         check_burp.run()
-    except Exception, e:
-        print 'Unknown error UNKNOW - {0}'.format(e)
+    except (Exception,) as e:
+        print ('Unknown error UNKNOW - {0}'.format(e))
         sys.exit(3)
 
 

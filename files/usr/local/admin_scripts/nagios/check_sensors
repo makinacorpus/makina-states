@@ -54,7 +54,7 @@ case "$1" in
 			echo "WARNING - sensors returned state $status"
 			exit 1
 		fi
-		if echo ${sensordata} | egrep ALARM > /dev/null; then
+		if echo ${sensordata} | grep -E ALARM > /dev/null; then
 			echo SENSOR CRITICAL - Sensor alarm detected!
 			exit 2
 		else

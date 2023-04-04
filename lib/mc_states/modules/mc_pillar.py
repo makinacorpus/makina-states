@@ -3291,6 +3291,7 @@ def get_supervision_objects_defs(id_):
     net = load_network_infrastructure()
     non_supervised_hosts = get_non_supervised_hosts()
     disable_common_checks = {'disk_space': False,
+                             'nic_card_out': [],
                              'load_avg': False,
                              'memory': False,
                              'ntp_time': False,
@@ -3340,7 +3341,7 @@ def get_supervision_objects_defs(id_):
                              ['cpu', 'task', 'queueln_load',
                               'io_transfer', 'memory_util',
                               'pagestat'])
-            hdata.setdefault('nic_card', ['eth0'])
+            hdata.setdefault('nic_card_out', ['eth0'])
             if vts:
                 hdata['memory_mode'] = 'large'
             for vt in _s['mc_cloud_compute_node.get_all_vts']():
@@ -3402,7 +3403,7 @@ def get_supervision_objects_defs(id_):
             ssh_port = attrs.get('vars.ssh_port', 22)
             snmp_port = attrs.get('vars.snmp_port', 161)
             sconf = get_snmpd_conf(id_)
-            nic_cards = ['eth0']
+            nic_card_out = ['eth0']
             if vt in ['kvm', 'xen']:
                 hdata.setdefault('inotify', True)
             p = ('makina-states.services.monitoring.'
@@ -3448,7 +3449,8 @@ def get_supervision_objects_defs(id_):
                 vt in ['lxc', 'docker']
             ):
                 # specific ip on lxc, monitor eth1
-                nic_cards.append('eth1')
+                # nic_card_out.append('eth1')
+                pass
             groups = attrs.setdefault('groups', [])
             for i in ['HG_HOSTS', 'HG_VMS', 'HG_VM_{0}'.format(vt)]:
                 if i not in groups:
@@ -3462,7 +3464,7 @@ def get_supervision_objects_defs(id_):
             attrs['vars.snmp_host'] = snmp_host
             attrs['vars.ssh_port'] = ssh_port
             attrs['vars.snmp_port'] = snmp_port
-            hdata.setdefault('nic_card', nic_cards)
+            hdata.setdefault('nic_card_out', nic_card_out)
 
         try:
             backup_servers = query('backup_servers', {})

@@ -257,9 +257,9 @@ fi
 
 # Get "Slot" & exclude slot needed
 if [ "$EXCLUDE_SLOT" = "1" ]; then
-        slots=`echo ${check} | egrep -o "Slot \w" | awk '{print $NF}' | grep -v "$excludeslot"`
+        slots=`echo ${check} | grep -E -o "Slot \w" | awk '{print $NF}' | grep -v "$excludeslot"`
 else
-        slots=`echo ${check} | egrep -o "Slot \w" | awk '{print $NF}'`
+        slots=`echo ${check} | grep -E -o "Slot \w" | awk '{print $NF}'`
 fi
 if [ "$DEBUG" = "1" ]; then
         echo "### Get \"Slot\" & exclude slot not needed >>>\n"${slots}"\n"
@@ -299,9 +299,9 @@ done
 
 # Get "Chassis" & exclude chassis not needed
 if [ "$EXCLUDE_CH" = "1" ]; then
-        chassisnames=`echo ${check} | grep -v "in a scenario of" | egrep -o "in \w+" | egrep -v "Slot" | awk '{print $NF}' | grep -v "$excludech"`
+        chassisnames=`echo ${check} | grep -v "in a scenario of" | grep -E -o "in \w+" | grep -E -v "Slot" | awk '{print $NF}' | grep -v "$excludech"`
 else
-        chassisnames=`echo ${check} | grep -v "in a scenario of" | egrep -o "in \w+" | egrep -v "Slot" | awk '{print $NF}'`
+        chassisnames=`echo ${check} | grep -v "in a scenario of" | grep -E -o "in \w+" | grep -E -v "Slot" | awk '{print $NF}'`
 fi
 if [ "$DEBUG" = "1" ]; then
         echo "### Get \"Chassis\" & exclude chassis not needed >>>\n"${chassisnames}"\n"
@@ -343,33 +343,33 @@ done
 if [ "$DEBUG" = "1" ]; then
        echo "### Check STATUS >>>"
 fi
-if echo ${check} | egrep Failed >/dev/null; then
-        echo "RAID CRITICAL - HP Smart Array Failed: "${check} | egrep Failed
+if echo ${check} | grep -E Failed >/dev/null; then
+        echo "RAID CRITICAL - HP Smart Array Failed: "${check} | grep -E Failed
         exit $STATE_CRITICAL
-elif echo ${check} | egrep Disabled >/dev/null; then
-        echo "RAID CRITICAL - HP Smart Array Problem: "${check} | egrep Disabled
+elif echo ${check} | grep -E Disabled >/dev/null; then
+        echo "RAID CRITICAL - HP Smart Array Problem: "${check} | grep -E Disabled
         exit $STATE_CRITICAL
-elif echo ${check2} | egrep Failed >/dev/null; then
-        echo "RAID CRITICAL - HP Smart Array Failed: "${check2} | egrep Failed
+elif echo ${check2} | grep -E Failed >/dev/null; then
+        echo "RAID CRITICAL - HP Smart Array Failed: "${check2} | grep -E Failed
         exit $STATE_CRITICAL
-elif echo ${check2} | egrep Failure >/dev/null; then
-        echo "RAID WARNING - Component Failure: "${check2} | egrep Failure
+elif echo ${check2} | grep -E Failure >/dev/null; then
+        echo "RAID WARNING - Component Failure: "${check2} | grep -E Failure
         exit $STATE_WARNING
-elif echo ${check2} | egrep Rebuild >/dev/null; then
-        echo "RAID WARNING - HP Smart Array Rebuilding: "${check2} | egrep Rebuild
+elif echo ${check2} | grep -E Rebuild >/dev/null; then
+        echo "RAID WARNING - HP Smart Array Rebuilding: "${check2} | grep -E Rebuild
         exit $STATE_WARNING
-elif echo ${check2} | egrep Recover >/dev/null; then
-        echo "RAID WARNING - HP Smart Array Recovering: "${check2} | egrep Recover
+elif echo ${check2} | grep -E Recover >/dev/null; then
+        echo "RAID WARNING - HP Smart Array Recovering: "${check2} | grep -E Recover
         exit $STATE_WARNING
-elif echo ${check} | egrep "Cache Status: Temporarily Disabled" >/dev/null; then
+elif echo ${check} | grep -E "Cache Status: Temporarily Disabled" >/dev/null; then
         echo "RAID WARNING - HP Smart Array Cache Disabled: "${check}
         exit $STATE_WARNING
-elif echo ${check} | egrep FIRMWARE >/dev/null; then
+elif echo ${check} | grep -E FIRMWARE >/dev/null; then
         echo "RAID WARNING - "${check}
         exit $STATE_WARNING
 else
         if [ "$DEBUG" = "1" -o "$VERBOSE" = "1" ]; then
-                check3=`echo "${check}" | egrep Status`
+                check3=`echo "${check}" | grep -E Status`
                 check3=`echo ${check3}`
                 echo "RAID OK: "${check2}" ["${check3}"]"
         else

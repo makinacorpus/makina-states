@@ -143,6 +143,8 @@ class Check(object):
                         '//', '/').split(
                             self.args['data'])[1].split('/')[1]
                     content = fic.read()
+                    if hasattr(content, 'decode'):
+                        content = content.decode()
                     lines = content.split('\n')
                     bib = 'Bytes in backup'
                     line = [a for a in lines if bib in a]
@@ -181,10 +183,10 @@ class Check(object):
                 continue
         counters.update(size_counters)
         counters.update(time_counters)
-        vt_counters = time_counters.items()
-        vt_counters.sort(lambda x, y: int(10000*(x[1] - y[1])))
-        st_counters = size_counters.items()
-        st_counters.sort(lambda x, y: int((x[1] - y[1])))
+        vt_counters = [a for a in time_counters.items()]
+        vt_counters.sort(key=lambda x: int(1000*x[1]))
+        st_counters = [a for a in size_counters.items()]
+        st_counters.sort(key=lambda x: int(x[1]))
         return counters
 
     def get_watch_instances_counters(self):
@@ -211,7 +213,7 @@ def main():
     try:
         check = Check()
         check.run()
-    except Exception, e:
+    except (Exception,) as e:
         trace = traceback.format_exc()
         print('Unknown error UNKNOW - {0}'.format(e))
         print(trace)

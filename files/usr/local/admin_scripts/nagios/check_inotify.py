@@ -261,7 +261,7 @@ def main():
     try:
         check = Check()
         check.run()
-    except Exception, e:
+    except (Exception,) as e:
         trace = traceback.format_exc()
         print('Unknown error UNKNOW - {0}'.format(e))
         print(trace)

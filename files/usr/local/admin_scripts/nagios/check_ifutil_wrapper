@@ -1,0 +1,6 @@
+#!/bin/bash
+cd $(dirname $(readlink -f $0))
+OUT_ROUTE=${OUT_ROUTE:-1.0.0.0}
+OUT_IF=${OUT_IF:-$(ip r get 1.0.0.0|grep 1.0.0.0|awk '{print $5}')}
+./check_ifutil.pl -i $OUT_IF $@
+
