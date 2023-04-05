@@ -3529,7 +3529,7 @@ def get_supervision_objects_defs(id_):
                 burpattrs = sattrs.setdefault('backup_burp_age', {})
                 if burp_server:
                     burpattrs.setdefault('vars.ssh_host', burp_server)
-                burpattrs.setdefault('vars.ssh_port', 22)
+                    burpattrs.setdefault('vars.ssh_port', 22)
             # if id_ not in parents and id_ not in maps['vms']:
             #    parents.append(id_)
             if not hdata['attrs'].get('address'):
