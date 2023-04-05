@@ -3291,7 +3291,6 @@ def get_supervision_objects_defs(id_):
     net = load_network_infrastructure()
     non_supervised_hosts = get_non_supervised_hosts()
     disable_common_checks = {'disk_space': False,
-                             'nic_card_out': [],
                              'load_avg': False,
                              'memory': False,
                              'ntp_time': False,
@@ -3310,7 +3309,7 @@ def get_supervision_objects_defs(id_):
             for i in ['attrs', 'services_attrs']:
                 hhosts[hhost].setdefault(i, OrderedDict())
                 if not isinstance(hhosts[hhost][i], dict):
-                    hhosts[hhost][i] = OrderedDict()
+                    hdata = hhosts[hhost][i] = OrderedDict()
         maps = _s[__name + '.get_db_infrastructure_maps']()
         for host, vts in maps['bms'].items():
             if host in non_supervised_hosts:
@@ -3341,7 +3340,6 @@ def get_supervision_objects_defs(id_):
                              ['cpu', 'task', 'queueln_load',
                               'io_transfer', 'memory_util',
                               'pagestat'])
-            hdata.setdefault('nic_card_out', ['eth0'])
             if vts:
                 hdata['memory_mode'] = 'large'
             for vt in _s['mc_cloud_compute_node.get_all_vts']():
@@ -3403,7 +3401,6 @@ def get_supervision_objects_defs(id_):
             ssh_port = attrs.get('vars.ssh_port', 22)
             snmp_port = attrs.get('vars.snmp_port', 161)
             sconf = get_snmpd_conf(id_)
-            nic_card_out = ['eth0']
             if vt in ['kvm', 'xen']:
                 hdata.setdefault('inotify', True)
             p = ('makina-states.services.monitoring.'
@@ -3449,8 +3446,7 @@ def get_supervision_objects_defs(id_):
                 vt in ['lxc', 'docker']
             ):
                 # specific ip on lxc, monitor eth1
-                # nic_card_out.append('eth1')
-                pass
+                 hdata.setdefault('nic_card', []).append('eth1')
             groups = attrs.setdefault('groups', [])
             for i in ['HG_HOSTS', 'HG_VMS', 'HG_VM_{0}'.format(vt)]:
                 if i not in groups:
@@ -3464,7 +3460,6 @@ def get_supervision_objects_defs(id_):
             attrs['vars.snmp_host'] = snmp_host
             attrs['vars.ssh_port'] = ssh_port
             attrs['vars.snmp_port'] = snmp_port
-            hdata.setdefault('nic_card_out', nic_card_out)
 
         try:
             backup_servers = query('backup_servers', {})
@@ -3482,6 +3477,7 @@ def get_supervision_objects_defs(id_):
             sattrs = hdata.setdefault('services_attrs', OrderedDict())
             rparents = [a for a in parents if a != id_]
             groups = hdata.get('attrs', {}).get('groups', [])
+            hdata.setdefault('nic_card_out', True)
             no_common_checks = hdata.get('no_common_checks', False)
             if no_common_checks:
                 hdata.update(disable_common_checks)
