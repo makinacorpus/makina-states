@@ -932,21 +932,6 @@ def autoconfigure_host(host,
                     'ssh', 'swap']
     defaults = [a for a in services + services_multiple
                 if a not in non_defaults]
-    for _default, checks in [(True, non_defaults),
-                             (False, defaults)]:
-        for check in checks:
-            init_val = eval(check)  # pylint: disable=W0123
-            manual = True
-            if init_val is None:
-                manual = False
-                # pylint: disable=W0122
-                init_val = locs[check] = _default
-            # if manually selected On, be sure to select it for a run
-            # even if we activated no_default_checks
-            if init_val is False and manual is False:
-                services_attrs.pop(check, None)
-            elif bool(init_val):
-                services_attrs.setdefault(check, {})
     disk_space_mode_maps = {
         'large': 'ST_LARGE_DISK_SPACE',
         'ularge': 'ST_ULARGE_DISK_SPACE',
@@ -1052,7 +1037,6 @@ def autoconfigure_host(host,
     add_notification(attrs, notification, default_notifiers, is_host=True)
     object_uniquify(rdata['attrs'])
     # services for which a loop is used in the macro
-    dns = {}
     if (
         dns_association_hostname or
         dns_association and
@@ -1074,10 +1058,9 @@ def autoconfigure_host(host,
                 'vars.hostname': dns_hostname,
                 'vars.dns_address': dns_address}
         }
-    if not dns:
-        for i in ['dns_association', 'dns_association_hostname']:
-            locs.pop(i, None)
-            services_attrs.pop(i, None)
+    else:
+        dns_association = dns_association_hostname = False
+        dns = {}
 
     # give the default values for commands parameters values
     # the keys are the services names,
@@ -1105,6 +1088,10 @@ def autoconfigure_host(host,
             'import': [st_mem]}}
     if dns:
         services_default_attrs.update(dns)
+    else:
+        for i in ['dns_association', 'dns_association_hostname']:
+            locs.pop(i, None)
+            services_attrs.pop(i, None)
     # if we defined extra properties on a service,
     # enable it automatically
     if 'postgres' in processes:
@@ -1145,6 +1132,22 @@ def autoconfigure_host(host,
         #                                'mysql_bufferpool_hitrate',
         #                                'mysql_bufferpool_wait_free',
         #                                'mysql_tmp_disk_tables'])
+    for _default, checks in [(True, non_defaults),
+                             (False, defaults)]:
+        for check in checks:
+            init_val = eval(check)  # pylint: disable=W0123
+            manual = True
+            if init_val is None:
+                manual = False
+                init_val = locs[check] = _default
+            # if manually selected On, be sure to select it for a run
+            # even if we activated no_default_checks
+            if manual is False and init_val is False:
+                services_attrs.pop(check, None)
+            elif bool(init_val):
+                services_attrs.setdefault(check, {})
+                locs[check] = True
+
     for s in services:
         if (
             s not in services_enabled_types and
