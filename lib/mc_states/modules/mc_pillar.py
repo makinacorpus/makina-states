@@ -3271,7 +3271,7 @@ def get_supervision_host_data(id_):
     supervision_configurations = _s[__name + '.query']('supervision_configurations', OrderedDict())
     default_data = supervision_configurations.get('default', OrderedDict())
     data = supervision_configurations.setdefault(id_, OrderedDict())
-    parts = ['superpervision', 'definitions']
+    parts = ['supervision', 'definitions']
     for s in supervision_configurations:
         if s == 'default':
             continue
@@ -3283,6 +3283,8 @@ def get_supervision_host_data(id_):
                     ddata[d][sp]
                 except KeyError:
                     ddata[d][sp] = copy.deepcopy(deflt)
+        for part in parts:
+            _s['mc_utils.dictupdate'](ddata[part], copy.deepcopy(ddata.get(f'{part}_overrides', {})))
     return data
 
 def get_supervision_objects_defs(id_):
