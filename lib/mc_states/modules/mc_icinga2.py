@@ -917,7 +917,7 @@ def autoconfigure_host(host,
                 'sar',
                 'remote_apache_status',
                 'apache_status']
-    services_multiple = ['disk_space', 'nic_card_out', 'dns_association',
+    services_multiple = ['disk_space', 'nic_card', 'dns_association',
                          'supervisor', 'drbd', 'tomcat', 'sar',
                          'rbl', 'fullpath_processes', 'processes',
                          'web_openid', 'web']
@@ -1009,7 +1009,7 @@ def autoconfigure_host(host,
     if disk_space is None:
         disk_space = ['/']
     if nic_card_out is None:
-        nic_card_out = ['eth0']
+        nic_card_out = True
     if not disk_space:
         disk_space = []
     if not rbl:
@@ -1160,7 +1160,7 @@ def autoconfigure_host(host,
         if svc in services_multiple:
             default_vals = {'web': {host: {}}, 'tomcat': {host: {}}}
             if svc in ['drbd', 'disk_space', 'processes', 'sar', 'rbl',
-                       'fullpath_processes', 'nic_card', 'nic_card_out', 'supervisor']:
+                       'fullpath_processes', 'nic_card', 'supervisor']:
                 values = eval(svc)  # pylint: disable=W0123
             else:
                 values = services_attrs.get(svc,
@@ -1246,10 +1246,9 @@ def autoconfigure_host(host,
                             pass
                 if svc in ['drbd']:
                     ss['vars.device'] = v
-                if svc in ['disk_space', 'nic_card', 'nic_card_out']:
+                if svc in ['disk_space', 'nic_card']:
                     ss[{'disk_space': 'vars.path',
-                        'nic_card': 'vars.interface',
-                        'nic_card_out': 'vars.interface'}[svc]] = v
+                        'nic_card': 'vars.interface'}[svc]] = v
                 if svc == 'supervisor':
                     ss['vars.command'] = v
                 object_uniquify(ss)
