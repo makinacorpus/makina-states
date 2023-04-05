@@ -871,6 +871,7 @@ def autoconfigure_host(host,
                        rbl=None,
                        web_openid=None,
                        **kwargs):
+    locs = locals()
     services = ['backup_burp_age',
                 'burp_counters',
                 'cron',
@@ -939,7 +940,7 @@ def autoconfigure_host(host,
             if init_val is None:
                 manual = False
                 # pylint: disable=W0122
-                exec('{0}={1}'.format(check, _default))
+                init_val = locs[check] = _default
             # if manually selected On, be sure to select it for a run
             # even if we activated no_default_checks
             if init_val is False and manual is False:
@@ -1073,6 +1074,11 @@ def autoconfigure_host(host,
                 'vars.hostname': dns_hostname,
                 'vars.dns_address': dns_address}
         }
+    if not dns:
+        for i in ['dns_association', 'dns_association_hostname']:
+            locs.pop(i, None)
+            services_attrs.pop(i, None)
+
     # give the default values for commands parameters values
     # the keys are the services names,
     # not the commands names (use the service filename)
@@ -1097,7 +1103,8 @@ def autoconfigure_host(host,
         'memory': {
             'vars.n_interval': 6000,
             'import': [st_mem]}}
-    services_default_attrs.update(dns)
+    if dns:
+        services_default_attrs.update(dns)
     # if we defined extra properties on a service,
     # enable it automatically
     if 'postgres' in processes:
