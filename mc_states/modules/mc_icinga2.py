@@ -689,7 +689,7 @@ def add_notification(attrs,
     if not default_notifiers:
         default_notifiers = ['G_Sysadmins']
     for i in default_notifiers:
-        if i not in notification_list:
+        if True not in [a.startswith(i) for a in notification_list]:
             notification_list.append(i)
     if notification_list:
         # search for our special notification
