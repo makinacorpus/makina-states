@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
+echo "$@">>/tmp/matrix
 # Matrix items:
 MX_TOKEN=${MX_TOKEN:-$1}
 MX_SERVER=${MX_SERVER:-$2}
 MX_ROOM=${MX_ROOM:-$3}
-MX_TYPE=${4:-host}
+MX_TYPE=${MX_TYPE:-${4:-host}}
 
 if [[ -z $MX_ROOM ]];then echo no room;exit 0;fi
 if [[ -z $MX_SERVER ]];then echo no server;exit 0;fi
 if [[ -z $MX_TOKEN ]];then echo no token;exit 0;fi
-if [[ -z $MX_ROOM ]];then echo no room;exit 0;fi
 
 MX_TXN="`date "+%s"`$(( RANDOM % 9999 ))"
 

@@ -752,27 +752,35 @@ def add_notification(attrs,
             users = default_notification.setdefault(ntyp, [])
             if notifier not in users:
                 users.append(notifier)
+        default_users = default_notification.get('users', [])
+        default_groups = default_notification.get('user_groups', [])
         if icingaSettings['matrix']['enabled']:
             if not default_matrix_notification:
                 # take the second, here !
-                if len(onotifications) > 1:
-                    default_matrix_notification = onotifications[1]
-                else:
+                try:
+                    default_matrix_notification = [
+                        a for a in onotifications
+                        if a.get('vars.n_name', '') == 'matrix_notification'][0]
+                except IndexError:
                     default_matrix_notification = {}
                     default_matrix_notification.setdefault('import', [])
-                    onotifications.append(default_matrix_notification)
-                default_matrix_notification[
-                    'vars.default_matrix_notification'] = True
-            default_matrix_notification.setdefault(
-                'vars.n_name', 'matrix_notification')
-            users = default_matrix_notification.setdefault('users', [])
-            if 'U_matrixbot' not in users:
-                users.append('U_matrixbot')
-            matrix_imports = default_matrix_notification.setdefault('import', [])
-            default_matrix_notification.setdefault('interval', intv)
-            for simport in ['NT_BASE', default_matrix_import]:
-                if simport not in matrix_imports:
-                    matrix_imports.append(simport)
+                    default_matrix_notification['vars.default_matrix_notification'] = True
+            found = False
+            for u in ('users', 'user_groups'):
+                members = default_notification.get(u, None)
+                if default_matrix_notification.get(u, None) is None and members is not None:
+                    default_matrix_notification[u] = members
+                    found = True
+                else:
+                    found = True
+            if found:
+                default_matrix_notification.setdefault('vars.n_name', 'matrix_notification')
+                matrix_imports = default_matrix_notification.setdefault('import', [])
+                default_matrix_notification.setdefault('interval', intv)
+                for simport in ['NT_BASE', default_matrix_import]:
+                    if simport not in matrix_imports:
+                        matrix_imports.append(simport)
+                onotifications.append(default_matrix_notification)
         if icingaSettings['irc']['enabled']:
             if not default_irc_notification:
                 # take the second, here !
@@ -1320,7 +1328,7 @@ def _gen_notif(users, host_name, service=None, services=None, indent=6, **kw):
             name += '__{notif_sys}__{nusers}'
             ret[name.format(**locals())] = {'attrs': ndata}
     sret = _s['mc_utils.indenter'](
-    _s['mc_dumper.yaml_dump'](ret), indent)
+        _s['mc_dumper.yaml_dump'](ret), indent)
     return sret
 
 
