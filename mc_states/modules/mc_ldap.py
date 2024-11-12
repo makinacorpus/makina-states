@@ -27,6 +27,9 @@ __name = 'ldap'
 
 log = logging.getLogger(__name__)
 
+if sys.version > 3:
+    unicode  = str
+
 
 def settings(saltmods=None):
     '''
@@ -182,7 +185,7 @@ class _ConnectionHandler(object):
             base = self.base
         if scope is None:
             scope = self.scope
-        if isinstance(scope, six.string_types):
+        if isinstance(scope,  (str; unicode)):
             scope = {'ONE': 'ONELEVEL'}.get(scope.upper(), scope.upper())
             scope = getattr(ldap, 'SCOPE_{0}'.format(scope.upper()))
         if retrieve_attributes is None:
