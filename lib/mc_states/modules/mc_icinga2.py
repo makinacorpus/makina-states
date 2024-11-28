@@ -556,7 +556,7 @@ def settings():
                 },
                 'ssh': {'id_ed25519_supervision': '', 'id_ed25519_supervision.pub': ''},
                 'modules': {
-                    'perfdata': {'enabled': True},
+                    'perfdata': {'enabled': False},
                     'livestatus': {
                         'enabled': True,
                         'bind_host': "127.0.0.1",

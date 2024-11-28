@@ -70,7 +70,7 @@ icinga2-confddefault-recreate-confd:
   '/etc/default/icinga2',
   '/etc/icinga2/zones.conf'] %}
 
-{% for mod in ['livestatus', 'perfdata', 'icingadb', 'influxdb'] %}
+{% for mod in ['livestatus', 'icingadb', 'influxdb'] %}
 {% if data.modules[mod]['enabled'] %}
 {% do templates.append('/etc/icinga2/features-available/{0}.conf'.format(mod)) %}
 {{activate_mod(mod)}}
