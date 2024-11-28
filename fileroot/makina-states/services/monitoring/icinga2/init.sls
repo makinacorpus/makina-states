@@ -7,7 +7,7 @@ include:
 #}
   - makina-states.services.monitoring.client
 {% if data.has_pgsql %}
-  - makina-states.services.monitoring.icinga2.pgsql
+  - makina-states.services.monitoring.icinga2.icingadb_mysql
 {% endif %}
   - makina-states.services.monitoring.icinga2.prerequisites
   - makina-states.services.monitoring.icinga2.configuration

@@ -18,7 +18,7 @@ include:
 {% macro activate_mod(mod) %}
 icinga2-{{mod}}-enable:
   cmd.run:
-    - name: icinga2-enable-feature {{mod}}
+    - name: icinga2 feature enable {{mod}}
     - unless: test -e /etc/icinga2/features-enabled/{{mod}}.conf
     - watch:
       - mc_proxy: icinga2-templates-gen
@@ -70,38 +70,18 @@ icinga2-confddefault-recreate-confd:
   '/etc/default/icinga2',
   '/etc/icinga2/zones.conf'] %}
 
-{% if data.modules.ido2db.enabled %}
-icinga2-ido2db-conf:
-  file.managed:
-    - name: {{data.configuration_directory}}/features-available/ido-{{data.modules.ido2db.database.type}}.conf
-    - source: salt://makina-states/files/etc/icinga2/features-available/ido-{{data.modules.ido2db.database.type}}.conf
-    - template: jinja
-    - makedirs: true
-    - user: root
-    - group: root
-    - mode: 644
+{% for mod in ['livestatus', 'perfdata', 'icingadb', 'influxdb'] %}
+{% if data.modules[mod]['enabled'] %}
+{% do templates.append('/etc/icinga2/features-available/{0}.conf'.format(mod)) %}
+{{activate_mod(mod)}}
+{% else %}
+icinga2-remove-{{mod}}icingadb-conf:
+  file.absent:
+    - name: {{data.configuration_directory}}/features-available/{{mod}}.conf
     - watch:
       - mc_proxy: icinga2-pre-conf
     - watch_in:
       - mc_proxy: icinga2-post-conf
-    - defaults:
-      data: |
-            {{sdata}}
-
-{{activate_mod('ido-'+data.modules.ido2db.database.type)}}
-# startup ido2db configuration
-{% if grains['os'] in ['Ubuntu'] %}
-{% do templates.append('/etc/init.d/ido2db') %}
-icinga2-ido2db-init-upstart-conf:
-  file.absent:
-    - name: {{ locs['conf_dir'] }}/init/ido2db.conf
-{% endif %}
-{% endif %}
-
-{% for mod in ['livestatus', 'perfdata'] %}
-{% if data.modules[mod]['enabled'] %}
-{% do templates.append('/etc/icinga2/features-available/{0}.conf'.format(mod)) %}
-{{activate_mod(mod)}}
 {% endif %}
 {% endfor %}
 
@@ -129,7 +109,6 @@ icinga2-{{f}}-conf:
 # add objects configuration
 {% import "makina-states/services/monitoring/icinga2/init.sls" as icinga2 with context %}
 
-
 # add templates and commands (and contacts, timeperiods...)
 {% for file, tdata in salt['mc_icinga2.objects']().objects_by_file.items() %}
 {% if not file %}
@@ -155,36 +134,6 @@ icinga2-configuration-{{state_name_salt}}-add-objects-conf:
               {{salt['mc_utils.json_dump'](file)}}
 {% endif %}
 {% endfor %}
-
-{#
-### a file per host, abandonned as hard to maintain
-### and not performant
-## add autoconfigured hosts
-#{% for hostname, odata in salt['mc_icinga2.autoconfigured_hosts']().items() %}
-## add the host/hostgroup object and its services with only one state (the host and its services are in the same file)
-## having all services associated to a host in one file avoid to delete files for disabled services
-## the macro configuration_remove_object isn't called so much
-#
-## the main difference with the previous version, where there was one file per service is that the loops over services
-## are done in the template, not in the sls file.
-#icinga2-configuration-add-auto-host-conf:
-#  file.managed:
-#    - name: {{odata.directory}}/{{odata.file}}
-#    - source: salt://makina-states/files/etc/icinga2/conf.d/template_auto_configuration_hosts.conf
-#    - user: root
-#    - group: root
-#    - mode: 644
-#    - makedirs: True
-#    - watch:
-#      - mc_proxy: icinga2-configuration-pre-object-conf
-#    - watch_in:
-#      - mc_proxy: icinga2-configuration-post-object-conf
-#    - template: jinja
-#    - defaults:
-#        hostname: |
-#                  {{salt['mc_utils.json_dump'](hostname)}}
-#{% endfor %}
-#}
 
 
 # add autoconfigured hosts

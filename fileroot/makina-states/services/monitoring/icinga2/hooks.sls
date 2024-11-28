@@ -118,3 +118,20 @@ icinga2-templates-gen:
       - mc_proxy: icinga2-pre-conf
     - watch_in:
       - mc_proxy: icinga2-post-conf
+# --------------------------
+icingadb-presetup:
+  mc_proxy.hook: []
+
+icingadb-postsetup:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: icingadb-presetup
+    - watch_in:
+      - mc_proxy: icingadb-endsetup
+icingadb-endsetup:
+  mc_proxy.hook:
+    - watch:
+      - mc_proxy: icingadb-postsetup
+    - watch_in:
+      - mc_proxy: icinga2-pre-install
+

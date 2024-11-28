@@ -161,6 +161,7 @@ def objects(core=True, ttl=120):
         dsettings = __salt__['mc_icinga2.settings']()
         rdata['raw_objects'] = data['objects']
         rdata['objects'] = OrderedDict()
+        data['objects'].update(dsettings['api_users'])
         rdata['objects_by_file'] = OrderedDict()
         for obj, data in data['objects'].items():
             try:
@@ -217,6 +218,7 @@ def objects(core=True, ttl=120):
                         if typ_:
                             break
                 file_ = {'NotificationCommand': 'notifications.conf',
+                         'ApiUser': 'api.conf',
                          'Notification': 'notifications.conf',
                          'TimePeriod': 'timeperiods.conf',
                          'CheckCommand': 'checkcommands.conf',
@@ -264,6 +266,19 @@ def objects(core=True, ttl=120):
                     arguments
                 ):
                     attrs['command'] = [cmd]
+                objattrmap = {
+                    'ApiUser': {
+                        'password': __salt__['mc_utils.generate_password'](),
+                        'permissions': ['*']
+                    },
+                }
+                try:
+                    attrsmap = objattrmap[typ_]
+                except KeyError:
+                    continue
+                else:
+                    for k in attrsmap:
+                        attrs.setdefault(k, data.get(k, attrsmap[k]))
                 rdata['objects'][obj] = data
                 fdata = rdata['objects_by_file'].setdefault(
                     data['file'], OrderedDict())
@@ -323,7 +338,7 @@ def format(dictionary, quote_keys=False, quote_values=True, init=True):
                        'ranges']:
                 res[res_key] = format(value, True, True, False)
             # theses dictionaries are quoted
-            elif key in ['notification']:
+            elif key in ['notification', 'password', 'client_cn']:
                 res[res_key] = format(value, False, True, False)
             # theses dictionaries contains booleans
             elif key in ['services_enabled']:
@@ -402,10 +417,10 @@ def settings():
         list of packages to install icinga
     has_pgsql
         install and configure a postgresql service in order to be used
-        with ido2db module
+        with icingadb module
     has_mysql
         install and configure a mysql service in order to be used with
-        ido2db module
+        icingadb module
     user
         icinga user
     group
@@ -441,9 +456,9 @@ def settings():
         livestatus
             enabled
                 enable the livestatus module
-        ido2db
+        icingadb
             enabled
-                enable the ido2db module
+                enable the icingadb module
 
     '''
     @mc_states.api.lazy_subregistry_get(__salt__, __name)
@@ -468,25 +483,30 @@ def settings():
             'mc_macros.get_local_registry'](
                 'icinga2', registry_format='pack')
 
-        password_ido = icinga2_reg.setdefault('ido.db_password', __salt__[
+        icingadb_retention_days = 2 * 365
+
+        password_db = icinga2_reg.setdefault('db.db_password', __salt__[
             'mc_utils.generate_password']())
+        api_users = {'root': {}, 'web': {'permissions': ["actions/*", "objects/modify/*", "objects/query/*", "status/query"]}}
+        for u, udata in api_users.items():
+            udata.setdefault('password', __salt__['mc_utils.generate_stored_password'](f'icinga2__api_{u}'))
+            udata.setdefault('permissions', ['*'])
+            udata.setdefault('type', 'ApiUser')
         data = __salt__['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga2', {
-                'package': ['icinga2-bin',
-                            np,
-                            'icinga2-common',
-                            'icinga2-doc'],
+                'api_users': api_users,
+                'icingadb_retention_days': f'{icingadb_retention_days}',
+                'package': ['icinga2-bin', np, 'icinga2-common', 'icinga2-doc'],
                 'has_pgsql': False,
-                'create_pgsql': True,
+                'create_mysql': True,
+                'create_mysql': True,
                 'has_mysql': False,
                 'user': "nagios",
-                'gen_directory': (
-                    "/etc/icinga2/conf.d/salt_generated"),
+                'gen_directory': "/etc/icinga2/conf.d/salt_generated",
                 'group': "nagios",
                 'cmdgroup': "www-data",
                 'pidfile': "/var/run/icinga2/icinga2.pid",
-                'configuration_directory': (
-                    locs['conf_dir'] + "/icinga2"),
+                'configuration_directory': locs['conf_dir'] + "/icinga2",
                 'niceness': 5,
                 'icinga_conf': {
                     'include': ['"constants.conf"',
@@ -499,8 +519,7 @@ def settings():
                 'constants_conf': {
                     'PluginDir': "\"/usr/lib/nagios/plugins\"",
                     'USER1': "\"/usr/lib/nagios/plugins\"",
-                    'CUSTM_ADM_SCRIPTS': (
-                        '\"/usr/local/admin_scripts/nagios\"'),
+                    'CUSTM_ADM_SCRIPTS': '\"/usr/local/admin_scripts/nagios\"',
                     'SNMP_CRYPT': '\"secret\"',
                     'SNMP_PASS': '\"secret\"',
                     'SNMP_USER': '\"user\"',
@@ -532,63 +551,112 @@ def settings():
                     'server_password': '',
                 },
                 'zones_conf': {
-                    'object Endpoint NodeName': {
-                        'host': "NodeName"},
-                    'object Zone ZoneName': {
-                        'endpoints': "[ NodeName ]"},
+                    'object Endpoint NodeName': {'host': "NodeName"},
+                    'object Zone ZoneName': {'endpoints': "[ NodeName ]"},
                 },
-                'ssh': {
-                    'id_ed25519_supervision': '',
-                    'id_ed25519_supervision.pub': '',
-                },
+                'ssh': {'id_ed25519_supervision': '', 'id_ed25519_supervision.pub': ''},
                 'modules': {
                     'perfdata': {'enabled': True},
                     'livestatus': {
                         'enabled': True,
                         'bind_host': "127.0.0.1",
                         'bind_port': 6558,
-                        'socket_path': (
-                            "/var/run/icinga2/cmd/livestatus"
-                        )
+                        'socket_path': "/var/run/icinga2/cmd/livestatus"
                     },
-                    'ido2db': {
+                    'influxdb': {
+                        'enabled': True,
+                        'database': {
+                            'name': 'icinga2',
+                            'username': 'icinga2',
+                            'password': 'secret',
+                        },
+                        'host': 'localhost',
+                        'port': '8086',
+                        'scheme': 'http',
+                        'uri': None,
+                        'uri_template': '{scheme}://{host}:{port}',
+                    },
+                    'icingadb': {
                         'enabled': True,
                         'user': "nagios",
                         'group': "nagios",
-                        'pidfile': "/var/run/icinga2/ido2db.pid",
+                        'pidfile': "/var/run/icinga2/icingadb.pid",
+                        'redis': {'host': 'localhost',  'port': 6380,},
+                        'retention': {
+                            'history-days': '{icingadb_retention_days}',
+                            'sla-days': '{icingadb_retention_days}',
+                            'options': {
+                                'acknowledgement': '{icingadb_retention_days}',
+                                'comment': '{icingadb_retention_days}',
+                                'downtime': '{icingadb_retention_days}',
+                                'flapping': '{icingadb_retention_days}',
+                                'notification': '{icingadb_retention_days}',
+                                'state': '{icingadb_retention_days}',
+                            }
+                        },
+                        'logging': {
+                            'level': 'info',
+                            'options': {},
+                        },
                         'database': {
-                            'type': "pgsql",
-                            'host': "localhost",
-                            'port': 5432,
-                            'user': "icinga2_ido",
-                            'password': password_ido,
-                            'name': "icinga2_ido",
-                        }
+                            'type': "mysql",
+                            'host': "127.0.0.1",
+                            'port': 3306,
+                            'user': "icinga2_db",
+                            'password': password_db,
+                            'name': "icinga2_db",
+                        },
                     },
                 },
-            }
+            },
         )
-        ido2db = data['modules']['ido2db']
-        data['has_pgsql'] = 'pgsql' == ido2db['database']['type']
-        data['has_mysql'] = 'mysql' == ido2db['database']['type']
-        if data['has_pgsql']:
-            ido2db['package'] = [
-                'icinga2-ido-{0}'.format(
-                    ido2db['database']['type'])]
-            data['modules']['ido2db']['psql_uri'] = (
+        idb = data['modules']['icingadb']
+        idbdb = data['modules']['icingadb']['database']
+        data['has_pgsql'] = 'pgsql' == idb['database']['type']
+        data['has_mysql'] = 'mysql' == idb['database']['type']
+        if data['has_mysql'] or data['has_pgsql']:
+            idbdb['name'] = idbdb.setdefault('database', idbdb.get('name', 'icinga'))
+        if data['has_mysql']:
+            idb['package'] = ['icingadb-redis', 'icingadb', 'mysql-client']
+            data['modules']['icingadb']['mysql_uri'] = (
                 'postgres://{user}:{password}@'
                 '{host}:{port}/{name}'
-                '').format(
-                    **data['modules']['ido2db']['database'])
+                '').format(**data['modules']['icingadb']['database'])
+        if data['has_pgsql']:
+            idb['package'] = ['icingadb-redis', 'icingadb', 'postgresql-client']
+            data['modules']['icingadb']['psql_uri'] = (
+                'postgres://{user}:{password}@'
+                '{host}:{port}/{name}'
+                '').format(**data['modules']['icingadb']['database'])
         if data['has_pgsql'] and data['has_mysql']:
             raise ValueError('choose only one sgbd')
         if not (data['has_pgsql'] or data['has_mysql']):
             raise ValueError('choose at least one sgbd')
+        for d, keys in [
+            (idb['database'], ['port']),
+            (idb['retention'], ['history-days', 'sla-days']),
+            (idb['retention']['options'],
+             ['acknowledgement', 'comment', 'downtime', 'flapping', 'notification', 'state']),
+        ]:
+            for k in keys:
+                d[k] = int(d[k])
         __salt__['mc_macros.update_local_registry'](
             'icinga2', icinga2_reg,
             registry_format='pack')
+        data['modules']['influxdb']['uri'] = data['modules']['influxdb']['uri_template'].format(**data['modules']['influxdb'])
         return data
     return _settings()
+
+def icingadb_settings():
+    _s = __salt__
+    settings = _s['mc_icinga2.settings']()
+    idb = settings['modules']['icingadb']
+    data = {
+        'database': idb['database'],
+        'redis': idb['redis'],
+        'logging': idb['logging'],
+    }
+    return data
 
 
 def replace_chars(s):

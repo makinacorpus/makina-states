@@ -80,7 +80,7 @@ icingaweb2_nagvis-up:
       - mc_git: icingaweb2_nagvis-up
 {{rmacro()}}
 
-{% for i, idata in (settings.modules_enabled.items()|list)+[('nagvis', {})] %}
+{% for i, idata in (settings.modules_enabled.items()|list) %}
 {% set target=idata.get('target', '/usr/share/icingaweb2/modules/{0}'.format(i)) %}
 icingaweb2-config-mod-activate-{{i}}:
   file.symlink:
@@ -109,4 +109,44 @@ icingaweb2-config-token:
      settings.get('configs', {}),
      mode='644',
      after_macro=rmacro, prefix='icingaweb2-')}}
+
+{% if settings['modules']['grafana']['enabled'] %}
+icingaweb2-install-grafanaplugin:
+  cmd.run:
+    - name: |-
+        set -x
+        MODULE_VERSION="{{settings.grafana_icingaplugin_version}}"
+        ICINGAWEB_MODULEPATH="{{settings.grafana_icingaplugin_dir}}"
+        REPO_URL="https://github.com/Mikesch-mp/icingaweb2-module-grafana"
+        TARGET_DIR="${ICINGAWEB_MODULEPATH}/grafana"
+        URL="${REPO_URL}/archive/v${MODULE_VERSION}.tar.gz"
+        rm -rf $TARGET_DIR
+        install -d -m 0755 "${TARGET_DIR}"
+        wget -q -O - "$URL" | tar xfz - -C "${TARGET_DIR}" --strip-components 1
+    - unless: |-
+        set -e
+        grep -q "Version: {{settings.grafana_icingaplugin_version}}" "{{settings.grafana_icingaplugin_dir}}/grafana/module.info"
+    - watch:
+      - cmd: icingaweb2-config-dir
+      - mc_proxy: icinga_web2-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web2-post-conf
+{% endif %}
+
+icingaweb2-patch-logging:
+  cmd.run:
+    - name: |-
+        cd /usr/share/php/
+        sed -i -re \
+          "s/(error_reporting[(]E_ALL \| E_STRICT)[)]/error_reporting((E_ALL | E_STRICT) \& ~E_DEPRECATED \& ~E_USER_DEPRECATED)/g" \
+          Icinga/Application/webrouter.php Icinga/Application/ApplicationBootstrap.php
+    - unless: |
+        for i in /usr/share/php/Icinga/Application/webrouter.php /usr/share/php/Icinga/Application/ApplicationBootstrap.php;do
+          if ( grep -q 'error_reporting(E_ALL | E_STRICT);' $i );then exit 1;fi
+        done
+    - watch:
+      - mc_proxy: icinga_web2-pre-conf
+    - watch_in:
+      - mc_proxy: icinga_web2-post-conf
+
 

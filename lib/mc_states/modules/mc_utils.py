@@ -28,6 +28,8 @@ import logging
 import os
 import pstats
 import re
+import string
+import secrets
 
 
 import salt.loader
@@ -37,7 +39,6 @@ from salt.exceptions import SaltException
 import salt.utils
 import salt.utils.dictupdate
 import salt.utils.network
-from salt.utils.pycrypto import secure_password
 from salt.utils.odict import OrderedDict
 from salt.ext import six as six
 from mc_states import api, saltcompat
@@ -201,7 +202,9 @@ def generate_stored_password(key, length=None, force=False, value=None):
 def generate_password(length=None):
     if length is None:
         length = 16
-    return secure_password(length)
+    alphabet = string.ascii_letters + string.digits
+    password = ''.join(secrets.choice(alphabet) for i in range(length))
+    return password
 
 
 class _CycleError(Exception):

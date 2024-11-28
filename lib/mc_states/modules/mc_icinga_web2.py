@@ -36,7 +36,7 @@ def settings():
     has_pgsql
         install and configure a postgresql service in order
         to store icinga-web2 data
-        (no ido2db data)
+        (no icingadb data)
     modules
         nagvis
             enable
@@ -120,8 +120,8 @@ def settings():
     databases
         dictionary to store databases connections parameters
 
-        ido2db
-            dictionary to store ido2db database connection parameters
+        icingadb
+            dictionary to store icingadb database connection parameters
 
             type
                type of sgbd used "pgsql" or "mysql"
@@ -164,7 +164,7 @@ def settings():
 
         # get default ido database connectionfrom mc_icinga
         icinga_settings = _s['mc_icinga2.settings']()
-        ido2db_database = icinga_settings['modules']['ido2db']['database']
+        icingadb_database = icinga_settings['modules']['icingadb']['database']
 
         web_database = {
             'type': "pgsql",
@@ -175,9 +175,18 @@ def settings():
             'password': 'icinga_web2',
             'name': "icinga_web2",
         }
+        web_database = {
+            'type': "mysql",
+            'host': "127.0.0.1",
+            'port': 3306,
+            # 'socket': "",
+            'user': "icinga_web2",
+            'password': 'icinga_web2',
+            'name': "icinga_web2",
+        }
         logrotate = _s['mc_logrotate.settings']()
 
-        for data in [ido2db_database, web_database]:
+        for data in [icingadb_database, web_database]:
             data.setdefault('prefix', '')
         has_sgbd = (
             (
@@ -190,29 +199,33 @@ def settings():
             ('socket' in web_database))
 
 
-        php_ver = _s['mc_php.default_php_ver']()
-        php_exts = [f'php{php_ver}-pgsql']
-        if float(php_ver) < 8.0:
-            php_exts.append('php-gettext')
         data = _s['mc_utils.defaults'](
             'makina-states.services.monitoring.icinga_web2', {
+                'php_ver': _s['mc_php.settings']()['php_ver'],
                 'navgis_module_repo': 'https://github.com/Icinga/icingaweb2-module-nagvis.git://github.com/corpusops/icingaweb2-module-nagvis',
                 'doc_root': "/usr/share/icingaweb2/public",
                 'htpasswd': '/etc/icinga2web.users',
-                'package': [f'icingaweb2', f'php{php_ver}-ldap', f'nagvis',
-                            f'php{php_ver}', f'php{php_ver}-cli', f'php-pear',
-                            f'php{php_ver}-xmlrpc', f'php{php_ver}-xsl', f'apache2-utils',
-                            f'php-soap', f'php{php_ver}-gd',
-                            f'php{php_ver}-ldap'],
+                'package': ['icingaweb2', 'icingadb-web', 'php{php_ver}-ldap', 'nagvis',
+                            'php{php_ver}', 'php{php_ver}-cli', 'php-pear',
+                            'php{php_ver}-xmlrpc', 'php{php_ver}-xsl', 'apache2-utils',
+                            'php-soap', 'php{php_ver}-gd',
+                            'php{php_ver}-ldap'],
                 'configuration_directory': locs['conf_dir'] + "/icinga-web2",
                 'create_pgsql': True,
+                'create_mysql': True,
+                'has_pgsql': ('mysql' == web_database['type'] and has_sgbd),
                 'has_pgsql': ('pgsql' == web_database['type'] and has_sgbd),
+                'grafana_icingaplugin_version': '2.0.1',
+                'grafana_icingaplugin_dir': '/usr/share/icingaweb2/modules',
                 'modules': {
-                    'pnp4nagios': {
+                    'grafana': {
+                        'enabled': True,
+                    },
+                    'icingadb': {
                         'enabled': True,
                     },
                 },
-                'databases': {'ido2db': ido2db_database,
+                'databases': {'icingadb': icingadb_database,
                               'web': web_database},
                 'nginx': {
                     'ssl_cacert': '',
@@ -234,7 +247,6 @@ def settings():
                 'modules_enabled': {
                     'doc': {},
                     'setup': {},
-                    'monitoring': {},
                     'translation': {}
                 },
                 'resources': {
@@ -260,14 +272,20 @@ def settings():
                     'readonly': {
                         'users': 'readonly',
                         'permissions': ','.join([
-                            "application/share/navigation",
-                            "module/monitoring"
+                            "user/share/navigation",
+                            "module/doc",
+                            "module/grafana",
+                            "grafana/graph",
+                            "grafana/showall",
+                            "grafana/enablelink",
+                            "module/icingadb",
+                            "module/monitoring",
                         ])
                     }
                 },
                 'authentication_settings': {
                     'pgsql': {
-                        'enabled': True,
+                        'enabled': False,
                         'backend': 'db',
                         'resource': 'icingaweb2',
                     },
@@ -281,9 +299,9 @@ def settings():
                         'resource': 'ldap',
                     },
                     'mysql': {
-                        'enabled': False,
+                        'enabled': True,
                         'backend': 'db',
-                        'resource': 'icingaweb-mysql',
+                        'resource': 'icingaweb2',
                     },
                 },
                 'groups': {
@@ -317,8 +335,8 @@ def settings():
                         ":/var/run/icinga2/cmd/"
                         ":/var/cache/icingaweb2/"
                         ":/var/log/icingaweb2/"),
-                    'etcdir': f'/etc/php/{php_ver}',
-                    'extensions_packages': [f'php{php_ver}-pgsql'],
+                    'etcdir': '/etc/php/{php_ver}',
+                    'extensions_packages': ['php{php_ver}-pgsql', 'php{php_ver}-mysql', 'icinga-php-library'],
                     'doc_root': '/usr/share/nagvis/share/',
                     'session_auto_start': 0,
                 },
@@ -342,9 +360,9 @@ def settings():
                         ":/var/run/icinga2/cmd/"
                         ":/var/cache/icingaweb2/"
                         ":/var/log/icingaweb2/"),
-                    'etcdir': f'/etc/php/{php_ver}',
+                    'etcdir': '/etc/php/{php_ver}',
                     'doc_root': '{doc_root}',
-                    'extensions_packages': php_exts,
+                    'extensions_packages': ['php{php_ver}-pgsql', 'php{php_ver}-mysql',],
                     'session_auto_start': 0,
                 },
                 'users': {},
@@ -373,6 +391,10 @@ def settings():
                          'mode': '644'},
                     ('/etc/icingaweb2/modules/'
                      'monitoring/backends.ini'): {
+                         'user': 'www-data',
+                         'mode': '644'},
+                    ('/etc/icingaweb2/modules/'
+                     'icingadb/config.ini'): {
                          'user': 'www-data',
                          'mode': '644'},
                     '/etc/icingaweb2/authentication.ini': {
@@ -420,7 +442,7 @@ def settings():
                 rgroup['enabled'] = True
         for dbn, dbm in six.iteritems(
             {'web': 'icingaweb2',
-             'ido2db': 'icinga2'}
+             'icingadb': 'icinga2'}
         ):
             db = data['databases'][dbn]
             settings = data['resources'].setdefault(dbm, {})

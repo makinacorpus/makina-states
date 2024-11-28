@@ -236,7 +236,7 @@ def settings():
             'display_errors': 0,
             'display_startup_errors': 0,
             'log_errors': 1,
-            'error_reporting': 6143,
+            'error_reporting': "E_ALL & ~E_DEPRECATED & ~E_STRICT & ~E_NOTICE",
             'memory_limit': '256M',
             'max_execution_time': 120,
             'session_auto_start': 1,

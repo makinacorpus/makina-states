@@ -14,9 +14,6 @@ icinga2-pkgs:
       {% for package in icinga2Settings.package %}
       - {{package}}
       {% endfor %}
-      {%  for package in icinga2Settings.modules.ido2db.package %}
-      - {{package}}
-      {%  endfor %}
       - rrdtool
       - librrds-perl
       - libconfig-inifiles-perl
