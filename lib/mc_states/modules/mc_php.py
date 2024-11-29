@@ -216,12 +216,8 @@ def settings():
             'configs': {},
             's_all': s_all,
             'rotate': _s['mc_logrotate.settings']()['days'],
-            'composer': (
-                'http://downloads.sourceforge.net/project'
-                '/makinacorpus/makina-states/'
-                'composer-e77435cd0c984e2031d915a6b42648e7b284dd5c'
-            ),
-            'composer_sha1': '017a611cd72cc1878d3ca1db2c0cc7f0a5f58541',
+            'composer': 'https://getcomposer.org/download/1.10.26/composer.phar',  # noqa
+            'composer_sha1': '61b6bf9bfd71573cafa5f68450f96c54b35114df',
             'fpm_pools': {},
             'timezone': 'Europe/Paris',
             'open_basedir': None,
@@ -546,7 +542,7 @@ def settings():
                 phpData['disabled_fpm_services'] = []
                 phpData['disabled_fpm_services'].append('php-fpm')
                 for i in [
-                    '5', '5.6', '5.7', '7.0', '7.1', '7.2', 
+                    '5', '5.6', '5.7', '7.0', '7.1', '7.2',
                 ]:
                     if i != php_ver:
                         phpData['disabled_fpm_services'].append(
