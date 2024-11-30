@@ -157,13 +157,14 @@ def load_objects(core=True, ttl=120):
 def objects(core=True, ttl=120):
     def _do(core):
         rdata = OrderedDict()
-        data = __salt__['mc_icinga2.load_objects'](core=core)
+        odata = __salt__['mc_icinga2.load_objects'](core=core)
         dsettings = __salt__['mc_icinga2.settings']()
-        rdata['raw_objects'] = data['objects']
+        rdata['raw_objects'] = odata['objects']
         rdata['objects'] = OrderedDict()
-        data['objects'].update(dsettings['api_users'])
-        rdata['objects_by_file'] = OrderedDict()
-        for obj, data in data['objects'].items():
+        odata['objects'].update(dsettings['api_users'])
+        objsr = odata['objects']
+        objsf = rdata['objects_by_file'] = OrderedDict()
+        for obj, data in objsr.items():
             try:
                 # automatic name from ID
                 if not data.get('name', ''):
@@ -275,14 +276,13 @@ def objects(core=True, ttl=120):
                 try:
                     attrsmap = objattrmap[typ_]
                 except KeyError:
-                    continue
+                    pass
                 else:
                     for k in attrsmap:
                         attrs.setdefault(k, data.get(k, attrsmap[k]))
-                rdata['objects'][obj] = data
-                fdata = rdata['objects_by_file'].setdefault(
-                    data['file'], OrderedDict())
-                fdata[obj] = object_uniquify(data)
+                data = object_uniquify(data)
+                objsr[obj] = data
+                objsf.setdefault(data['file'], OrderedDict())[obj] = data
             except (Exception,):
                 log.error(
                     'Icinga object configuration failed for {0}'.format(obj))
