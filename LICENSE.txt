@@ -1,5 +1,5 @@
 Copyright (c) 2013-2016
-Mathieu Le Marec - Pasquet <kiorky@cryptelium.net>
+Makina Corpus <freesoftware@makina-corpus.com>
 Régis Leroy <regis.leroy@gmail.com>
 Makina Corpus <contact@makina-corpus.com>
 All rights reserved.
