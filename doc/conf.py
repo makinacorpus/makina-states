@@ -869,7 +869,7 @@ texinfo_documents = [
   ('index',
    'MakinaStates',
    u'Makina States Documentation',
-   u'Mathieu Le Marec - Pasquet, Régis Leroy & Makina Corpus folks',
+   u'Makina Corpus, Régis Leroy & Makina Corpus folks',
    'MakinaStates', 'One line description of project.',
    'Miscellaneous'),
 ]
